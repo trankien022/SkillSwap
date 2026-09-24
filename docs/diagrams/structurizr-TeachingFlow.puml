@@ -1,0 +1,35 @@
+@startuml
+title <size:24>Dynamic View: SkillSwap System</size>\n<size:24>Teacher creates and teaches a class</size>
+
+set separator none
+left to right direction
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Container>
+
+System_Boundary("SkillSwapSystem_boundary", "SkillSwap System", $tags="") {
+  Container(SkillSwapSystem.WebApplication, "Web Application", $techn="TBD (React/Next.js/Vue)", $descr="Frontend for learners, teachers, verifiers, and administrators", $tags="", $link="")
+  Container(SkillSwapSystem.BackendAPI, "Backend API", $techn="TBD (Node.js/Express/Python/FastAPI)", $descr="REST API handling business logic, authentication, and data access", $tags="", $link="")
+  ContainerDb(SkillSwapSystem.Database, "Database", $techn="PostgreSQL", $descr="Stores user accounts, classes, bookings, credits, reviews, and messages", $tags="", $link="")
+}
+
+Person(Teacher, "Teacher", $descr="Student teacher who submits evidence, creates classes, teaches, and withdraws earnings", $tags="", $link="")
+System(Jitsi, "Jitsi", $descr="Provides online classroom/video conferencing", $tags="", $link="")
+
+Rel(Teacher, SkillSwapSystem.WebApplication, "1: Creates class listing", $techn="HTTPS", $tags="", $link="")
+Rel(SkillSwapSystem.WebApplication, SkillSwapSystem.BackendAPI, "2: POST /classes", $techn="REST/JSON", $tags="", $link="")
+Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.Database, "3: Persist class", $techn="JDBC", $tags="", $link="")
+Rel(SkillSwapSystem.BackendAPI, Jitsi, "4: Start classroom session", $techn="HTTPS/WebRTC", $tags="", $link="")
+Rel(Teacher, Jitsi, "5: Teaches live class", $techn="HTTPS/WebRTC", $tags="", $link="")
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml
