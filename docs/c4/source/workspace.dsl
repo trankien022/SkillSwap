@@ -10,8 +10,8 @@ workspace "SkillSwap" "Student skill marketplace for verified learners and verif
         // Primary System
         skillSwap = softwareSystem "SkillSwap System" "Student skill marketplace for verified learners and verified student teachers" {
             // Containers
-            webApp = container "Web Application" "Frontend for learners, teachers, verifiers, and administrators" "TBD (React/Next.js/Vue)" "WebBrowser"
-            backendApi = container "Backend API" "REST API handling business logic, authentication, and data access" "TBD (Node.js/Express/Python/FastAPI)" 
+            webApp = container "Web Application" "Frontend for learners, teachers, verifiers, and administrators" "Next.js (React)" "WebBrowser"
+            backendApi = container "Backend API" "REST API handling business logic, authentication, and data access" "NestJS (Node.js)" 
             database = container "Database" "Stores user accounts, classes, bookings, credits, reviews, and messages" "PostgreSQL" "Database"
         }
 
@@ -33,10 +33,11 @@ workspace "SkillSwap" "Student skill marketplace for verified learners and verif
 
         // Relationships: People -> External (direct interactions)
         teacher -> jitsi "Teaches live class" "HTTPS/WebRTC"
+        learner -> jitsi "Attends live class" "HTTPS/WebRTC"
 
         // Relationships: Containers -> Containers
         webApp -> backendApi "Makes API calls to" "REST/JSON"
-        backendApi -> database "Reads from and writes to" "JDBC"
+        backendApi -> database "Reads from and writes to" "TypeORM/Prisma"
 
         // Relationships: System -> External
         skillSwap -> paymentGateway "Processes payments via" "REST/JSON"
@@ -85,7 +86,8 @@ workspace "SkillSwap" "Student skill marketplace for verified learners and verif
             webApp -> backendApi "POST /bookings"
             backendApi -> database "Persist booking"
             backendApi -> paymentGateway "Process payment"
-            backendApi -> jitsi "Create/join classroom"
+            backendApi -> jitsi "Create classroom (returns URL)"
+            learner -> jitsi "Joins classroom" "HTTPS/WebRTC"
             autoLayout
         }
 

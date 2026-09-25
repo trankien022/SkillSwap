@@ -27,6 +27,7 @@ Rel(Teacher, SkillSwapSystem, "Submit evidence, create classes, teach, withdraw"
 Rel(Verifier, SkillSwapSystem, "Review and verify teacher skills", $techn="", $tags="", $link="")
 Rel(Administrator, SkillSwapSystem, "Verify students, manage verifiers, handle operations", $techn="", $tags="", $link="")
 Rel(Teacher, Jitsi, "Teaches live class", $techn="HTTPS/WebRTC", $tags="", $link="")
+Rel(Learner, Jitsi, "Attends live class", $techn="HTTPS/WebRTC", $tags="", $link="")
 Rel(SkillSwapSystem, PaymentGateway, "Processes payments via", $techn="REST/JSON", $tags="", $link="")
 Rel(SkillSwapSystem, Jitsi, "Online classroom access via", $techn="HTTPS/WebRTC", $tags="", $link="")
 
