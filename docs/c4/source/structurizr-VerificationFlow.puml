@@ -1,0 +1,32 @@
+@startuml
+title <size:24>Dynamic View: SkillSwap System</size>\n<size:24>Verifier reviews teacher skills</size>
+
+set separator none
+left to right direction
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Container>
+
+System_Boundary("SkillSwapSystem_boundary", "SkillSwap System", $tags="") {
+  Container(SkillSwapSystem.WebApplication, "Web Application", $techn="Next.js (React)", $descr="Frontend for learners, teachers, verifiers, and administrators", $tags="", $link="")
+  Container(SkillSwapSystem.BackendAPI, "Backend API", $techn="NestJS (Node.js)", $descr="REST API handling business logic, authentication, and data access", $tags="", $link="")
+  ContainerDb(SkillSwapSystem.Database, "Database", $techn="PostgreSQL", $descr="Stores user accounts, classes, bookings, credits, reviews, and messages", $tags="", $link="")
+}
+
+Person(Verifier, "Verifier", $descr="Reviews and verifies teacher skills", $tags="", $link="")
+
+Rel(Verifier, SkillSwapSystem.WebApplication, "1: Reviews teacher evidence", $techn="HTTPS", $tags="", $link="")
+Rel(SkillSwapSystem.WebApplication, SkillSwapSystem.BackendAPI, "2: GET /verifications", $techn="REST/JSON", $tags="", $link="")
+Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.Database, "3: Read teacher skills", $techn="TypeORM/Prisma", $tags="", $link="")
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml

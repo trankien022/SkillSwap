@@ -1,0 +1,36 @@
+@startuml
+title <size:24>Deployment View: SkillSwap System - Production</size>\n<size:24>Production deployment architecture</size>
+
+set separator none
+left to right direction
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Container>
+!include <C4/C4_Deployment>
+
+Deployment_Node(Production.CloudProvider, "Cloud Provider", $type="Cloud", $descr="AWS/Azure/GCP", $tags="", $link="") {
+  Deployment_Node(Production.CloudProvider.ApplicationTier, "Application Tier", $type="Kubernetes/ECS", $descr="Container orchestration", $tags="", $link="") {
+    Container(Production.CloudProvider.ApplicationTier.WebApplication_1, "Web Application", $techn="Next.js (React)", $descr="Frontend for learners, teachers, verifiers, and administrators", $tags="", $link="")
+    Container(Production.CloudProvider.ApplicationTier.BackendAPI_1, "Backend API", $techn="NestJS (Node.js)", $descr="REST API handling business logic, authentication, and data access", $tags="", $link="")
+  }
+
+  Deployment_Node(Production.CloudProvider.DataTier, "Data Tier", $type="RDS/Cloud SQL", $descr="Managed database", $tags="", $link="") {
+    ContainerDb(Production.CloudProvider.DataTier.Database_1, "Database", $techn="PostgreSQL", $descr="Stores user accounts, classes, bookings, credits, reviews, and messages", $tags="", $link="")
+  }
+
+}
+
+Rel(Production.CloudProvider.ApplicationTier.WebApplication_1, Production.CloudProvider.ApplicationTier.BackendAPI_1, "Makes API calls to", $techn="REST/JSON", $tags="", $link="")
+Rel(Production.CloudProvider.ApplicationTier.BackendAPI_1, Production.CloudProvider.DataTier.Database_1, "Reads from and writes to", $techn="TypeORM/Prisma", $tags="", $link="")
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml
