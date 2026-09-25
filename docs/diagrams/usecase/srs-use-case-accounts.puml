@@ -1,0 +1,36 @@
+@startuml
+
+skinparam actorStyle stickman
+skinparam usecaseFontSize 13
+skinparam shadowing false
+!include C:/Users/LENOVO/.agents/skills/plantuml-skill/assets/premium-theme.puml
+skinparam backgroundcolor #ffffff
+skinparam linetype polyline
+skinparam ActorFontColor #000000
+skinparam ActorBackgroundColor #F1F1F1
+skinparam ActorBorderColor #181818
+
+left to right direction
+
+rectangle "SkillSwap MVP — Accounts (L1)" {
+  usecase "UC-008\nManage account" as UC008
+  usecase "UC-007\nLog In" as UC007
+  usecase "UC-006\nRegister Account" as UC006
+}
+
+actor "Learner" as LE
+actor "Teacher" as TE
+actor "Administrator" as AD
+actor "Verifier" as VE
+
+LE -- UC006
+TE -- UC006
+VE -- UC006
+AD -- UC006
+LE -- UC007
+TE -- UC007
+VE -- UC007
+AD -- UC007
+LE -- UC008
+TE -- UC008
+@enduml

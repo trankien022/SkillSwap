@@ -1,0 +1,48 @@
+@startuml
+
+skinparam actorStyle stickman
+skinparam rectangleFontSize 14
+skinparam shadowing false
+!include C:/Users/LENOVO/.agents/skills/plantuml-skill/assets/premium-theme.puml
+skinparam backgroundcolor #ffffff
+skinparam linetype polyline
+skinparam ActorFontColor #000000
+skinparam ActorBackgroundColor #F1F1F1
+skinparam ActorBorderColor #181818
+skinparam wrapWidth 170
+
+left to right direction
+
+rectangle "SkillSwap MVP (L0)" as SS {
+  rectangle "Operations" as OPS
+  rectangle "Verification" as VER
+  rectangle "Accounts" as ACC
+  rectangle "Marketplace" as MKT
+  rectangle "Finance" as FIN
+  rectangle "Learning" as LRN
+}
+
+actor "Administrator" as AD
+actor "Verifier" as VE
+actor "Teacher" as TE
+actor "Learner" as LE
+rectangle "«actor»\nPayment Gateway" as GW
+rectangle "«actor»\nJitsi" as JI
+
+LE -- ACC
+LE -- MKT
+LE -- FIN
+LE -- LRN
+TE -- ACC
+TE -- VER
+TE -- MKT
+TE -- FIN
+TE -- LRN
+VE -- ACC
+VE -- VER
+AD -- ACC
+AD -- VER
+AD -- OPS
+GW -- FIN
+JI -- LRN
+@enduml

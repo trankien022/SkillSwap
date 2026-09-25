@@ -1,0 +1,32 @@
+@startuml
+
+skinparam actorStyle stickman
+skinparam usecaseFontSize 13
+skinparam shadowing false
+!include C:/Users/LENOVO/.agents/skills/plantuml-skill/assets/premium-theme.puml
+skinparam backgroundcolor #ffffff
+skinparam linetype polyline
+skinparam ActorFontColor #000000
+skinparam ActorBackgroundColor #F1F1F1
+skinparam ActorBorderColor #181818
+
+left to right direction
+
+rectangle "SkillSwap MVP — Finance (L1)" {
+  usecase "UC-013\nView wallet history" as UC013
+  usecase "UC-012\nTop up wallet" as UC012
+  usecase "UC-005\nWithdraw earnings" as UC005
+}
+
+actor "Learner" as LE
+actor "Teacher" as TE
+rectangle "«actor»\nPayment Gateway" as GW
+
+TE -- UC005
+GW -- UC005
+LE -- UC012
+TE -- UC012
+GW -- UC012
+LE -- UC013
+TE -- UC013
+@enduml
