@@ -5,6 +5,7 @@ SkillSwap là nền tảng web mobile-first kết nối sinh viên có nhu cầu
 ## Product documentation
 
 - [Product intent](docs/intent.md)
+- [Conceptual và logical data model (DBML, SVG, PNG)](docs/diagrams/data/README.md)
 - [SkillSwap MVP Software Development Blueprint](docs/plans/2026-09-15-001-feat-skillswap-mvp-requirements-plan.md)
 - [GitHub Project: SkillSwap MVP Requirements](https://github.com/users/trankien022/projects/1)
 

@@ -1,0 +1,106 @@
+// SkillSwap MVP conceptual model. Business entities and cardinalities only.
+// Source: docs/intent.md, PRD section 9, SRS Appendix B.
+Project SkillSwap_Conceptual {
+  Note: 'Business view of the MVP; attributes, keys, and storage choices are in the logical model.'
+}
+
+Table User {
+  id uuid [pk]
+  Note: 'One student account may act as Learner and Teacher. Verifier and Administrator are assigned roles.'
+}
+
+Table StudentVerification {
+  id uuid [pk]
+  student_id uuid
+}
+
+Table Skill {
+  id uuid [pk]
+  Note: 'A skill concept; taxonomy depth remains OQ-001.'
+}
+
+Table VerifierAssignment {
+  id uuid [pk]
+  verifier_id uuid
+  skill_id uuid
+  Note: 'A Verifier is assigned expertise for a skill.'
+}
+
+Table SkillEvidence {
+  id uuid [pk]
+  teacher_id uuid
+  skill_id uuid
+  Note: 'Each resubmission is retained as a new evidence version.'
+}
+
+Table Class {
+  id uuid [pk]
+  teacher_id uuid
+  skill_id uuid
+}
+
+Table Booking {
+  id uuid [pk]
+  class_id uuid
+  learner_id uuid
+}
+
+Table Wallet {
+  id uuid [pk]
+  owner_id uuid
+  Note: 'Includes user and platform accounts.'
+}
+
+Table LedgerTransaction {
+  id uuid [pk]
+  Note: 'An auditable transfer can affect multiple wallets.'
+}
+
+Table LedgerPosting {
+  id uuid [pk]
+  transaction_id uuid
+  wallet_id uuid
+}
+
+Table TopUp {
+  id uuid [pk]
+  user_id uuid
+  transaction_id uuid
+}
+
+Table WithdrawalRequest {
+  id uuid [pk]
+  teacher_id uuid
+  transaction_id uuid
+}
+
+Table Message {
+  id uuid [pk]
+  class_id uuid
+  sender_id uuid
+}
+
+Table Rating {
+  id uuid [pk]
+  booking_id uuid
+}
+
+Ref: User.id < StudentVerification.student_id
+Ref: User.id < SkillEvidence.teacher_id
+Ref: Skill.id < SkillEvidence.skill_id
+Ref: User.id < VerifierAssignment.verifier_id
+Ref: Skill.id < VerifierAssignment.skill_id
+Ref: User.id < Class.teacher_id
+Ref: Skill.id < Class.skill_id
+Ref: Class.id < Booking.class_id
+Ref: User.id < Booking.learner_id
+Ref: User.id < Wallet.owner_id
+Ref: LedgerTransaction.id < LedgerPosting.transaction_id
+Ref: Wallet.id < LedgerPosting.wallet_id
+Ref: User.id < TopUp.user_id
+Ref: LedgerTransaction.id - TopUp.transaction_id
+Ref: User.id < WithdrawalRequest.teacher_id
+Ref: LedgerTransaction.id - WithdrawalRequest.transaction_id
+Ref: Class.id < Message.class_id
+Ref: User.id < Message.sender_id
+Ref: Booking.id - Rating.booking_id
