@@ -1,0 +1,28 @@
+@startuml
+
+skinparam actorStyle stickman
+skinparam usecaseFontSize 13
+skinparam shadowing false
+!include C:/Users/LENOVO/.agents/skills/plantuml-skill/assets/premium-theme.puml
+skinparam backgroundcolor #ffffff
+skinparam linetype polyline
+skinparam ActorFontColor #000000
+skinparam ActorBackgroundColor #F1F1F1
+skinparam ActorBorderColor #181818
+
+left to right direction
+
+rectangle "SkillSwap MVP — Marketplace (L1)" {
+  usecase "UC-011\nSearch classes" as UC011
+  usecase "UC-003\nBook and pay for a class" as UC003
+  usecase "UC-010\nPublish class" as UC010
+}
+
+actor "Learner" as LE
+actor "Teacher" as TE
+
+LE -- UC003
+TE -- UC003
+TE -- UC010
+LE -- UC011
+@enduml

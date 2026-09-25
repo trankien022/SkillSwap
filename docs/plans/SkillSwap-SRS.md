@@ -67,7 +67,7 @@ SkillSwap MVP is a responsive, mobile-first **web application** in which:
 2. `docs/plans/SkillSwap-PRD.md` v1.0 — Product Requirements Document (FR/BR/NFR/UC/AC/data model/API contract).
 3. `docs/plans/SkillSwap-BRD.md` v1.0 — Business Requirements Document (scope, business rules, A/C/DEP, OQ-001–OQ-011).
 4. `docs/plans/2026-09-15-001-feat-skillswap-mvp-requirements-plan.md` — requirements plan.
-5. `docs/c4/generated/structurizr-SystemContext.png` — system context diagram (C4 Level 1).
+5. `docs/diagrams/c4/generated/structurizr-SystemContext.png` — system context diagram (C4 Level 1).
 6. IEEE Std 830-1998, *IEEE Recommended Practice for Software Requirements Specifications*.
 7. ISO/IEC/IEEE 29148:2018, *Systems and software engineering — Life cycle processes — Requirements engineering*.
 
@@ -81,9 +81,9 @@ Sections 2 and 3 follow the IEEE 830 structure: overall description, then specif
 
 ### 2.1 Product perspective
 
-SkillSwap is a standalone web application that depends on two external systems: a **Payment Gateway** (real-money top-up and payout) and **Jitsi** (video classrooms). The system context is shown below; container-level detail is in `docs/c4/`.
+SkillSwap is a standalone web application that depends on two external systems: a **Payment Gateway** (real-money top-up and payout) and **Jitsi** (video classrooms). The system context is shown below; container-level detail is in `docs/diagrams/c4/`.
 
-![SkillSwap system context](../c4/generated/structurizr-SystemContext.png)
+![SkillSwap system context](../diagrams/c4/generated/structurizr-SystemContext.png)
 
 The software stack is fixed for the MVP: **Next.js (React)** frontend, **NestJS (Node.js)** backend, **PostgreSQL** persistence via **TypeORM/Prisma**. The backend provisions Jitsi rooms and issues short-lived access tokens; Learners and Teachers connect to Jitsi directly via WebRTC, so the backend handles only room metadata and access signaling, never media streams.
 
@@ -214,7 +214,7 @@ Priority follows MoSCoW from the PRD (`Must` / `Should`). Status preserves the P
 
 #### 3.2.3 Use cases
 
-Detailed use cases UC-001–UC-005 are specified in the PRD §11 and restated here with verification-oriented pre/postconditions.
+Detailed use cases UC-001–UC-005 are specified in the PRD §11 and restated here with verification-oriented pre/postconditions; UC-006–UC-014 are specified in the Use Case List (§3.2.5).
 
 **UC-001 — Verify a student**
 - Actors: Student (applicant), Administrator. Trigger: user submits student-status verification.
@@ -246,80 +246,64 @@ Detailed use cases UC-001–UC-005 are specified in the PRD §11 and restated he
 - Alternate flow: timeout/failure keeps balances consistent; replayed callback never pays twice.
 - Postconditions: payout status and trace ID visible in wallet history (AC-008).
 
-#### 3.2.4 Use case diagram
+#### 3.2.4 Use case diagrams (level 0 and level 1)
 
-```mermaid
-flowchart TB
-  subgraph EXT[External systems]
-    GW{{"Payment Gateway"}}
-    JI{{"Jitsi"}}
-  end
+The use case model is leveled into a single **level-0** overview of actors × subsystems and one **level-1** diagram per subsystem. Notation is classic UML: stick-figure actors, elliptical use cases labeled with the immutable code before the name, and unlabeled plain associations connecting actors to use cases only.
 
-  subgraph SS["SkillSwap System"]
-    UC1(["Register / Manage account"])
-    UC2(["Submit student verification<br/>(UC-001)"])
-    UC3(["Review student verification<br/>(UC-001)"])
-    UC4(["Submit skill evidence<br/>(UC-002)"])
-    UC5(["Review skill evidence<br/>(UC-002)"])
-    UC6(["Manage Verifiers"])
-    UC7(["Publish class"])
-    UC8(["Search / browse classes"])
-    UC9(["Book and pay for class<br/>(UC-003)"])
-    UC10(["Top up wallet"])
-    UC11(["View wallet / history"])
-    UC12(["Attend class + chat<br/>(UC-004)"])
-    UC13(["Rate class"])
-    UC14(["Withdraw earnings<br/>(UC-005)"])
-    UC15(["Admin dashboard / audit log"])
-  end
+**Level 0 — actors × subsystems**
 
-  LE(("Learner"))
-  TE(("Teacher"))
-  VE(("Verifier"))
-  AD(("Administrator"))
+![Use case level 0 — actors and subsystems](../diagrams/usecase/srs-use-case-l0.png)
 
-  LE --> UC1
-  LE --> UC2
-  LE --> UC8
-  LE --> UC9
-  LE --> UC10
-  LE --> UC11
-  LE --> UC12
-  LE --> UC13
+**Level 1 — Accounts (UC-006–UC-008)**
 
-  TE --> UC1
-  TE --> UC4
-  TE --> UC7
-  TE --> UC11
-  TE --> UC12
-  TE --> UC14
+![Use case level 1 — Accounts](../diagrams/usecase/srs-use-case-accounts.png)
 
-  VE --> UC5
-  AD --> UC3
-  AD --> UC6
-  AD --> UC15
+**Level 1 — Verification (UC-001, UC-002, UC-009)**
 
-  UC9 -.-> UC11
-  UC12 -.-> UC13
-  UC10 -.-> GW
-  UC14 -.-> GW
-  UC12 -.-> JI
-  UC2 -.-> UC3
-  UC4 -.-> UC5
+![Use case level 1 — Verification](../diagrams/usecase/srs-use-case-verification.png)
 
-  BR010["BR-010: no self-book / self-rate"]
-  UC9 -.- BR010
-  UC13 -.- BR010
+**Level 1 — Marketplace (UC-003, UC-010, UC-011)**
 
-  classDef ext fill:#f5f5f5,stroke:#888,stroke-dasharray: 5 5
-  classDef rule fill:#fff8e1,stroke:#d6b656
-  class GW,JI ext
-  class BR010 rule
-```
+![Use case level 1 — Marketplace](../diagrams/usecase/srs-use-case-marketplace.png)
 
-*Reading: solid arrows are primary associations; dashed arrows are dependencies (`include`-style flows and external-system calls); dotted links annotate enforcing business rules. Use case bodies correspond one-to-one with UC-001–UC-005 and the FR table above.*
+**Level 1 — Finance (UC-005, UC-012, UC-013)**
 
-#### 3.2.5 State models
+![Use case level 1 — Finance](../diagrams/usecase/srs-use-case-finance.png)
+
+**Level 1 — Learning (UC-004)**
+
+![Use case level 1 — Learning](../diagrams/usecase/srs-use-case-learning.png)
+
+**Level 1 — Operations (UC-014)**
+
+![Use case level 1 — Operations](../diagrams/usecase/srs-use-case-operations.png)
+
+*Reading: every diagram shows the SkillSwap MVP boundary. The four human actors are stick figures outside it; Payment Gateway and Jitsi appear as `«actor»` boxes because they are external systems. Lines are unlabeled actor–use case associations — there are no include/extend dependencies, because each use case is a standalone user goal and authentication is captured as a Precondition instead of an included Log In use case (§3.2.5). Register Account (UC-006) and Log In (UC-007) are linked to all four user roles. Every use case carries the identical code and name on its level-1 diagram, in the Use Case List (§3.2.5) and in the traceability matrix (Appendix C.2).*
+
+#### 3.2.5 Use Case List
+
+One row per use case appearing on the diagrams, ordered by subsystem then code. Codes are immutable and names match the diagrams exactly.
+
+| UC ID | Use Case Name | Primary Actor | Secondary Actor(s) | Subsystem | Description | Precondition | Relationships | Priority |
+|---|---|---|---|---|---|---|---|---|
+| UC-006 | Register Account | Learner, Teacher, Verifier, Administrator | — | Accounts | A prospective user creates an account (FR-001); it starts Pending and becomes Active after verification where applicable. | No account exists yet. | — | Must |
+| UC-007 | Log In | Learner, Teacher, Verifier, Administrator | — | Accounts | An existing user authenticates and obtains the session required by every other use case. | Account registered (UC-006). | — | Must |
+| UC-008 | Manage account | Learner, Teacher | — | Accounts | View and edit the profile, switch the active role view (FR-017), and read account status and rejection reason (FR-001). | Logged in. | — | Must |
+| UC-001 | Verify a student | Learner | Administrator | Verification | Submit student-status evidence; an Administrator approves or rejects it, activating the account on approval (FR-002). | Logged in; verification not yet Approved. | — | Must |
+| UC-002 | Verify a Teacher skill | Teacher | Verifier, Administrator | Verification | Submit skill evidence; a domain-matched Verifier (or the Administrator) decides, enabling class publication for that skill (FR-003, FR-018). | Logged in as a verified student; skill not yet Approved. | — | Must |
+| UC-009 | Manage verifiers | Administrator | — | Verification | Invite Verifiers, assign review domains, and suspend or revoke their access (FR-004). | Logged in as Administrator. | — | Must |
+| UC-003 | Book and pay for a class | Learner | Teacher | Marketplace | Book an open class and pay from the wallet; booking and ledger entries commit atomically (FR-007, FR-009). | Logged in; class Published with a free seat and sufficient balance. | — | Must |
+| UC-010 | Publish class | Teacher | — | Marketplace | Create and publish a class listing for an Approved skill so Learners can discover and book it (FR-005). | Logged in as Teacher; at least one skill Approved. | — | Must |
+| UC-011 | Search classes | Learner | — | Marketplace | Discover classes by skill, schedule, price and rating (FR-006). | Registered account. | — | Must |
+| UC-005 | Withdraw earnings | Teacher | Payment Gateway | Finance | Withdraw available balance through the gateway; the payout completes exactly once (FR-014). | Logged in as Teacher; available balance > 0. | — | Must |
+| UC-012 | Top up wallet | Learner, Teacher | Payment Gateway | Finance | Top up wallet credit through the payment gateway (FR-008). | Logged in. | — | Must |
+| UC-013 | View wallet history | Learner, Teacher | — | Finance | Review balance, ledger entries and payout status with trace IDs (FR-010). | Logged in; wallet exists. | — | Must |
+| UC-004 | Attend and review | Learner | Teacher, Jitsi | Learning | Join the Jitsi room in the permitted window, use in-class chat, and submit one rating after completion (FR-011–FR-013, FR-016). | Confirmed booking within the access window. | — | Must |
+| UC-014 | View operations dashboard | Administrator | — | Operations | Review operational metrics and the audit trail (FR-015). | Logged in as Administrator. | — | Must |
+
+*Notes: the Relationships column is `—` for every row because no include/extend relationships apply — each use case is a standalone user goal, and authentication is recorded as the Precondition `Logged in` (or `Registered account` / `Logged in as …`) instead of an included Log In use case. Priority follows the governing FR MoSCoW priorities (all Must). The primary/secondary split mirrors the associations drawn in §3.2.4.*
+
+#### 3.2.6 State models
 
 Five entity lifecycles are normative. Any transition not listed is forbidden.
 
@@ -520,20 +504,29 @@ Derived from PRD §9. Access is server-authorized by role and ownership; sensiti
 
 | Business goal | Requirements | Use case | API / data / NFR |
 |---|---|---|---|
-| Trusted student identity | FR-001, FR-002, FR-015, FR-017 | UC-001 | API-001, User, StudentVerification, NFR-004/008/009 |
-| Trusted Teacher capability | FR-003–FR-005, FR-018 | UC-002 | API-002–API-004, SkillEvidence, VerifierAssignment, NFR-004/009 |
-| Discover and book online learning | FR-005–FR-007 | UC-003 | API-004–API-005, Class, Booking, NFR-001/006/007 |
-| Traceable wallet settlement | FR-008–FR-010, FR-014 | UC-003, UC-005 | API-005–API-007, EVT-001, Wallet/Ledger/Withdrawal, NFR-003/005/009 |
+| Trusted student identity | FR-001, FR-002, FR-017 | UC-001, UC-006–UC-008 | API-001, User, StudentVerification, NFR-004/008/009 |
+| Trusted Teacher capability | FR-003–FR-005, FR-018 | UC-002, UC-009, UC-010 | API-002–API-004, SkillEvidence, VerifierAssignment, NFR-004/009 |
+| Discover and book online learning | FR-005–FR-007 | UC-003, UC-011 | API-004–API-005, Class, Booking, NFR-001/006/007 |
+| Traceable wallet settlement | FR-008–FR-010, FR-014 | UC-003, UC-005, UC-012, UC-013 | API-005–API-007, EVT-001, Wallet/Ledger/Withdrawal, NFR-003/005/009 |
 | Secure class participation | FR-011–FR-013, FR-016 | UC-004 | API-008–API-010, Message/Rating, NFR-006/007/010 |
+| Platform operations | FR-015 | UC-014 | Audit log, NFR-005 |
 
 ### C.3 Diagrams index
 
+Use case diagrams are authored in PlantUML (`docs/diagrams/usecase/srs-use-case-*.puml`) and referenced as PNGs, because GitHub does not render PlantUML natively; state diagrams and the C4 context embed Mermaid/PNG as noted.
+
 | Diagram | Section | Syntax | Rendered PNG |
 |---|---|---|---|
-| Use case diagram (actors, UC-001–UC-005, BR enforcement) | §3.2.4 | Mermaid `flowchart` (GitHub-native rendering; `usecase-beta` requires Mermaid ≥12 and is not guaranteed on GitHub) | `docs/diagrams/srs-use-case.png` |
-| StudentVerification state machine | §3.2.5 | Mermaid `stateDiagram-v2` | `docs/diagrams/srs-state-student-verification.png` |
-| SkillEvidence state machine | §3.2.5 | Mermaid `stateDiagram-v2` | `docs/diagrams/srs-state-skill-evidence.png` |
-| Class state machine | §3.2.5 | Mermaid `stateDiagram-v2` | `docs/diagrams/srs-state-class.png` |
-| Booking state machine | §3.2.5 | Mermaid `stateDiagram-v2` | `docs/diagrams/srs-state-booking.png` |
-| WithdrawalRequest state machine | §3.2.5 | Mermaid `stateDiagram-v2` | `docs/diagrams/srs-state-withdrawal-request.png` |
-| System context (C4 L1) | §2.1 | Embedded PNG from `docs/c4/generated/` | `docs/c4/generated/structurizr-SystemContext.png` |
+| Use case level 0 (actors × subsystems) | §3.2.4 | PlantUML `usecase`/`rectangle` (straight links) | `docs/diagrams/usecase/srs-use-case-l0.png` |
+| Use case level 1 — Accounts (UC-006–UC-008) | §3.2.4 | PlantUML `usecase` (straight links) | `docs/diagrams/usecase/srs-use-case-accounts.png` |
+| Use case level 1 — Verification (UC-001, UC-002, UC-009) | §3.2.4 | PlantUML `usecase` (straight links) | `docs/diagrams/usecase/srs-use-case-verification.png` |
+| Use case level 1 — Marketplace (UC-003, UC-010, UC-011) | §3.2.4 | PlantUML `usecase` (straight links) | `docs/diagrams/usecase/srs-use-case-marketplace.png` |
+| Use case level 1 — Finance (UC-005, UC-012, UC-013) | §3.2.4 | PlantUML `usecase` (straight links) | `docs/diagrams/usecase/srs-use-case-finance.png` |
+| Use case level 1 — Learning (UC-004) | §3.2.4 | PlantUML `usecase` (straight links) | `docs/diagrams/usecase/srs-use-case-learning.png` |
+| Use case level 1 — Operations (UC-014) | §3.2.4 | PlantUML `usecase` (straight links) | `docs/diagrams/usecase/srs-use-case-operations.png` |
+| StudentVerification state machine | §3.2.6 | Mermaid `stateDiagram-v2` | `docs/diagrams/srs-state-student-verification.png` |
+| SkillEvidence state machine | §3.2.6 | Mermaid `stateDiagram-v2` | `docs/diagrams/srs-state-skill-evidence.png` |
+| Class state machine | §3.2.6 | Mermaid `stateDiagram-v2` | `docs/diagrams/srs-state-class.png` |
+| Booking state machine | §3.2.6 | Mermaid `stateDiagram-v2` | `docs/diagrams/srs-state-booking.png` |
+| WithdrawalRequest state machine | §3.2.6 | Mermaid `stateDiagram-v2` | `docs/diagrams/srs-state-withdrawal-request.png` |
+| System context (C4 L1) | §2.1 | Embedded PNG from `docs/diagrams/c4/generated/` | `docs/diagrams/c4/generated/structurizr-SystemContext.png` |

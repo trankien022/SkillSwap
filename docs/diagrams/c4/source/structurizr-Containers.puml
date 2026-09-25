@@ -14,6 +14,9 @@ left to right direction
 !include <C4/C4>
 !include <C4/C4_Context>
 !include <C4/C4_Container>
+!include C:/Users/LENOVO/.agents/skills/plantuml-skill/assets/premium-theme.puml
+skinparam backgroundcolor #ffffff
+skinparam linetype polyline
 
 Person(Learner, "Learner", $descr="Student user who searches, books, pays, attends, and reviews classes", $tags="", $link="")
 Person(Teacher, "Teacher", $descr="Student teacher who submits evidence, creates classes, teaches, and withdraws earnings", $tags="", $link="")
@@ -35,9 +38,10 @@ Rel(Administrator, SkillSwapSystem.WebApplication, "Uses", $techn="HTTPS", $tags
 Rel(Teacher, Jitsi, "Teaches live class", $techn="HTTPS/WebRTC", $tags="", $link="")
 Rel(Learner, Jitsi, "Attends live class", $techn="HTTPS/WebRTC", $tags="", $link="")
 Rel(SkillSwapSystem.WebApplication, SkillSwapSystem.BackendAPI, "Makes API calls to", $techn="REST/JSON", $tags="", $link="")
-Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.Database, "Reads from and writes to", $techn="TypeORM/Prisma", $tags="", $link="")
+Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.Database, "Reads/writes to", $techn="TypeORM/Prisma", $tags="", $link="")
 Rel(SkillSwapSystem.BackendAPI, PaymentGateway, "Processes payments via", $techn="REST/JSON", $tags="", $link="")
 Rel(SkillSwapSystem.BackendAPI, Jitsi, "Creates/joins classroom via", $techn="HTTPS/WebRTC", $tags="", $link="")
+
 
 SHOW_LEGEND(true)
 hide stereotypes

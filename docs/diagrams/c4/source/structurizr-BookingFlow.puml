@@ -14,6 +14,9 @@ left to right direction
 !include <C4/C4>
 !include <C4/C4_Context>
 !include <C4/C4_Container>
+!include C:/Users/LENOVO/.agents/skills/plantuml-skill/assets/premium-theme.puml
+skinparam backgroundcolor #ffffff
+skinparam linetype polyline
 
 System_Boundary("SkillSwapSystem_boundary", "SkillSwap System", $tags="") {
   Container(SkillSwapSystem.WebApplication, "Web Application", $techn="Next.js (React)", $descr="Frontend for learners, teachers, verifiers, and administrators", $tags="", $link="")
@@ -31,6 +34,7 @@ Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.Database, "3: Persist booking", 
 Rel(SkillSwapSystem.BackendAPI, PaymentGateway, "4: Process payment", $techn="REST/JSON", $tags="", $link="")
 Rel(SkillSwapSystem.BackendAPI, Jitsi, "5: Create classroom (returns URL)", $techn="HTTPS/WebRTC", $tags="", $link="")
 Rel(Learner, Jitsi, "6: Joins classroom", $techn="HTTPS/WebRTC", $tags="", $link="")
+
 
 SHOW_LEGEND(true)
 hide stereotypes

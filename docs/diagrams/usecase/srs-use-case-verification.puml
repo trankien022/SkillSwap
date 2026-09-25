@@ -1,0 +1,32 @@
+@startuml
+
+skinparam actorStyle stickman
+skinparam usecaseFontSize 13
+skinparam shadowing false
+!include C:/Users/LENOVO/.agents/skills/plantuml-skill/assets/premium-theme.puml
+skinparam backgroundcolor #ffffff
+skinparam linetype polyline
+skinparam ActorFontColor #000000
+skinparam ActorBackgroundColor #F1F1F1
+skinparam ActorBorderColor #181818
+
+left to right direction
+
+rectangle "SkillSwap MVP — Verification (L1)" {
+  usecase "UC-001\nVerify a student" as UC001
+  usecase "UC-009\nManage verifiers" as UC009
+  usecase "UC-002\nVerify a Teacher skill" as UC002
+}
+
+actor "Learner" as LE
+actor "Administrator" as AD
+actor "Teacher" as TE
+actor "Verifier" as VE
+
+LE -- UC001
+AD -- UC001
+TE -- UC002
+VE -- UC002
+AD -- UC002
+AD -- UC009
+@enduml
