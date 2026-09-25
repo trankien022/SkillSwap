@@ -1,22 +1,22 @@
 ---
 title: SkillSwap MVP Product Requirements Document
 type: prd
-date: 2026-09-22
+date: 2026-09-25
 topic: skillswap-mvp-product-requirements
 status: Ready for Review
 owner: Group 4
-version: 1.0
+version: 1.1
 ---
 
 # SkillSwap MVP Product Requirements Document
 
 **Status:** Ready for Review
 
-**Version:** 1.0
+**Version:** 1.1
 
 **Owner:** Group 4
 
-**Last updated:** 2026-09-22
+**Last updated:** 2026-09-25
 
 **Related document:** SkillSwap-BRD.md
 
@@ -69,7 +69,8 @@ Thầy Hùng nhận thông báo có hồ sơ mới trong chuyên môn của mìn
 |---|---|---|
 | Đăng ký/đăng nhập tài khoản hợp nhất Learner/Teacher | Must | FR-001 |
 | Nộp và duyệt xác minh sinh viên | Must | FR-002 |
-| Nộp và duyệt bằng chứng năng lực Teacher | Must | FR-003, FR-004 |
+| Re-verification và hết hiệu lực xác minh sinh viên | Must | FR-019 |
+| Nộp và duyệt bằng chứng năng lực Teacher | Must | FR-003, FR-004, FR-018 |
 | Công bố lớp học | Must | FR-005 |
 | Tìm kiếm/duyệt lớp | Must | FR-006 |
 | Đặt lớp với kiểm tra điều kiện | Must | FR-007 |
@@ -83,6 +84,7 @@ Thầy Hùng nhận thông báo có hồ sơ mới trong chuyên môn của mìn
 | Quản lý Verifier | Must | FR-004 |
 | Bảng điều khiển Admin cho ngoại lệ | Must | FR-015 |
 | Thông báo cho các sự kiện trạng thái | Should | FR-016 |
+| Theo dõi lifecycle phiên học và xác nhận hoàn tất | Must | FR-020 |
 
 ## 5. Functional Requirements
 
@@ -92,7 +94,7 @@ Thầy Hùng nhận thông báo có hồ sơ mới trong chuyên môn của mìn
 | FR-002 | Functional | Hệ thống phải cho phép sinh viên khai báo tên trường và tải giấy tờ để Administrator phê duyệt hoặc từ chối kèm lý do. | Must | `docs/intent.md` | Confirmed; retention open |
 | FR-003 | Functional | Hệ thống phải cho phép ứng viên Teacher nộp kỹ năng, chứng chỉ hoặc bằng chứng năng lực, với cơ chế nộp lại sau khi bị từ chối. | Must | `docs/intent.md` | Confirmed core; taxonomy open |
 | FR-004 | Functional | Hệ thống phải cho phép Administrator mời, gán chuyên môn, đình chỉ hoặc thu hồi Verifier; chỉ Verifier phù hợp mới được duyệt hồ sơ Teacher. | Must | `docs/intent.md` | Confirmed |
-| FR-005 | Functional | Chỉ Teacher đã được xác minh được tạo và công bố lớp trực tuyến với kỹ năng, mô tả, lịch, thời lượng, giá và quy tắc sức chứa đã được duyệt. | Must | `docs/intent.md` | Confirmed; price/capacity open |
+| FR-005 | Functional | Chỉ Teacher đã được xác minh được tạo và công bố lớp trực tuyến với kỹ năng còn hiệu lực (chưa bị thu hồi/hết hạn), mô tả, lịch không trùng lịch, thời lượng 30–180 phút, giá và quy tắc sức chứa đã được duyệt. | Must | `docs/intent.md` | Confirmed; price/capacity open |
 | FR-006 | Functional | Learner phải có thể duyệt và tìm kiếm lớp đang mở theo thông tin lớp và hồ sơ Teacher. | Must | `docs/intent.md` | Confirmed; taxonomy open |
 | FR-007 | Functional | Learner chỉ có thể đặt lớp còn khả năng nhận booking, bắt đầu sau ít nhất 24 giờ và kéo dài từ 30 phút đến 3 giờ. | Must | `docs/intent.md` | Confirmed; capacity/refund open |
 | FR-008 | Functional | Người dùng phải có thể nạp tiền qua gateway theo tỷ giá áp dụng, với xử lý callback đúng một lần. | Must | `docs/intent.md` | Confirmed core; gateway open |
@@ -105,23 +107,86 @@ Thầy Hùng nhận thông báo có hồ sơ mới trong chuyên môn của mìn
 | FR-015 | Functional | Administrator phải có bảng điều khiển tổng hợp gồm hàng đợi xác minh sinh viên, hàng đợi Verifier theo domain, danh sách tranh chấp/khóa tài khoản và log audit có thể lọc theo actor, thời gian và loại hành động. | Must | `docs/intent.md` | Confirmed |
 | FR-016 | Functional | Hệ thống phải gửi thông báo khi hồ sơ xác minh có kết quả, booking được xác nhận/hủy, lớp sắp bắt đầu, giao dịch ví hoàn tất và withdrawal có kết quả. | Should | `docs/intent.md` | Confirmed |
 | FR-017 | Functional | Learner phải thấy rõ trạng thái tài khoản của mình và lý do nếu bị từ chối, ngay trên màn hình chính. | Must | `docs/intent.md` | Confirmed |
-| FR-018 | Functional | Teacher phải xem được lịch sử quyết định cho từng phiên bản bằng chứng năng lực đã nộp, không chỉ trạng thái mới nhất. | Should | `docs/intent.md` | Confirmed |
+| FR-018 | Functional | Teacher phải xem được lịch sử quyết định cho từng phiên bản bằng chứng năng lực đã nộp, không chỉ trạng thái mới nhất; bằng chứng đã submit bị khóa chỉnh sửa, thay đổi phải tạo phiên bản mới có audit trail. | Must | `docs/intent.md`, BRD BR-014 | Confirmed |
+| FR-019 | Functional | Hệ thống phải hỗ trợ re-verification và tự động hạ quyền truy cập khi trạng thái xác minh sinh viên hết hiệu lực hoặc bị thu hồi, bao gồm cascade tới các quyền được cấp theo trạng thái VERIFIED. | Must | BRD BR-006 | Confirmed; policy open (OQ-008) |
+| FR-020 | Functional | Hệ thống phải quản lý trạng thái phiên học (Scheduled → In progress → Completed/Cancelled) và chỉ coi session là Completed khi thỏa quy tắc hoàn tất; trạng thái COMPLETED là cơ sở cho settlement, rating và các nghiệp vụ sau lớp. | Must | BRD BR-042–BR-043 | Confirmed core; completion rule open (OQ-006) |
 
 ### Business rules
 
-| ID | Rule | Governs |
+Toàn văn 70 quy tắc nghiệp vụ (BR-001–BR-070) được quản lý tập trung tại BRD §7; bảng dưới đây là ánh xạ truy vết sang yêu cầu chức năng.
+
+| ID | Quy tắc (tóm tắt) | Governs |
 |---|---|---|
-| BR-001 | Administrator xét duyệt thủ công tư cách sinh viên từ tên trường và giấy tờ tải lên. | FR-002 |
-| BR-002 | Chỉ Teacher có kỹ năng được Verifier phù hợp chuyên môn duyệt mới được mở lớp cho kỹ năng đó. | FR-003–FR-005 |
-| BR-003 | Mỗi lớp kéo dài tối thiểu 30 phút và tối đa 3 giờ. | FR-005, FR-007 |
-| BR-004 | Booking phải được tạo ít nhất 24 giờ trước giờ bắt đầu. | FR-007 |
-| BR-005 | Tỷ giá khởi điểm là 1 credit = 1.000 VND; giao dịch lưu tỷ giá đã áp dụng để audit. | FR-008, FR-010, FR-014 |
-| BR-006 | Phí nền tảng là 10% giá lớp; 90% còn lại được phân bổ cho Teacher theo trạng thái settlement. | FR-009, FR-014 |
-| BR-007 | MVP chỉ hỗ trợ lớp học trực tuyến. | FR-005, FR-011 |
-| BR-008 | Giao tiếp phục vụ lớp học diễn ra trong nền tảng; cấm chia sẻ liên hệ theo chính sách đã duyệt. | FR-012 |
-| BR-009 | Hồ sơ chất lượng thấp bị giảm hiển thị theo ngưỡng được phê duyệt. | FR-006, FR-013 |
-| BR-010 | Một Teacher không được tự đặt hoặc tự đánh giá lớp của chính mình. | FR-007, FR-013 |
-| BR-011 | Một tài khoản chỉ có một hồ sơ xác minh sinh viên hiệu lực tại một thời điểm. | FR-002 |
+| BR-001 | Hoàn tất xác minh sinh viên trước các chức năng yêu cầu VERIFIED trên marketplace. | FR-002, FR-017 |
+| BR-002 | Yêu cầu xác minh gồm tên trường và ảnh thẻ sinh viên/giấy xác nhận đang theo học. | FR-002 |
+| BR-003 | Admin xem xét thủ công; không dùng cơ sở dữ liệu trường hoặc email domain. | FR-002, FR-015 |
+| BR-004 | Trạng thái UNVERIFIED/PENDING/VERIFIED/REJECTED; quyền truy cập theo trạng thái. | FR-002, FR-017 |
+| BR-005 | Lưu tài liệu, trường, submitted_at, status, reviewer, reviewed_at, lý do từ chối. | FR-002, FR-015 |
+| BR-006 | Quy tắc re-verification/hết hiệu lực trạng thái sinh viên. | FR-019 |
+| BR-007 | Chỉ sinh viên VERIFIED mới trở thành Teacher và nộp xác minh kỹ năng. | FR-003 |
+| BR-008 | Chỉ publish lớp cho skill đã được Verifier chấp thuận. | FR-005 |
+| BR-009 | Xác minh Teacher quản lý theo từng skill, không phải trạng thái chung. | FR-003, FR-005 |
+| BR-010 | Skill verification có NOT_SUBMITTED/PENDING/VERIFIED/REJECTED (+REVOKED/EXPIRED). | FR-003, FR-005 |
+| BR-011 | Verifier là nhóm riêng, được mời, có chuyên môn; không đồng nhất với Admin. | FR-004 |
+| BR-012 | Verifier không được tự xác minh yêu cầu của chính mình. | FR-004, NFR-009 |
+| BR-013 | Teacher không được tự chọn Verifier. | FR-004 |
+| BR-014 | Bằng chứng đã submit bị khóa chỉnh sửa; thay đổi tạo phiên bản mới có audit trail. | FR-018 |
+| BR-015 | Chỉ publish class khi Teacher VERIFIED và skill VERIFIED tương ứng. | FR-005 |
+| BR-016 | Class có tối thiểu tiêu đề, skill, mô tả, giá, thời lượng, lịch, Teacher, online, sức chứa. | FR-005 |
+| BR-017 | Session tối thiểu 30 phút, tối đa 180 phút. | FR-005, FR-007 |
+| BR-018 | MVP chỉ tổ chức class online. | FR-005, FR-011 |
+| BR-019 | Không publish session trùng lịch vượt khả năng tham gia của Teacher. | FR-005 |
+| BR-020 | Không mở lớp mới cho skill đã REVOKED/EXPIRED. | FR-005 |
+| BR-021 | Đặt lớp trước giờ bắt đầu ít nhất 24 giờ. | FR-007 |
+| BR-022 | Chỉ xác nhận booking khi available balance đủ trả toàn bộ giá lớp. | FR-007, FR-009 |
+| BR-023 | Wallet balance không được âm. | FR-009, NFR-003 |
+| BR-024 | Một Learner chỉ có một booking hợp lệ cho cùng session. | FR-007 |
+| BR-025 | Đạt maximum capacity thì ngừng nhận booking và phản ánh FULL. | FR-005, FR-007 |
+| BR-026 | Tạo booking và ghi payment phải nguyên tử, không có thành công một phần. | FR-009, AC-005 |
+| BR-027 | Credit nội bộ; tỷ giá 1 credit = 1.000 VND, có khả năng cấu hình. | FR-008, FR-010, FR-014 |
+| BR-028 | Nạp tiền thật qua gateway; không thanh toán trực tiếp cho Teacher. | FR-008 |
+| BR-029 | Mọi biến động số dư ghi vào ledger và transaction history. | FR-010 |
+| BR-030 | Ledger là nguồn kiểm toán số dư; không cập nhật balance không đi kèm bút toán. | FR-009, FR-010 |
+| BR-031 | Transaction COMPLETED không sửa/xóa; điều chỉnh bằng reversal/adjustment mới. | FR-010, NFR-003, NFR-005 |
+| BR-032 | Callback gateway chỉ cộng credit một lần; top-up idempotent. | FR-008, EVT-001 |
+| BR-033 | Ngăn double charge/double credit/mất credit khi retry, timeout, callback trùng. | FR-008, NFR-003 |
+| BR-034 | Platform thu 10% commission mỗi class transaction. | FR-009 |
+| BR-035 | Commission tính trên giá trị transaction của class. | FR-009 |
+| BR-036 | Teacher nhận phần còn lại sau commission. | FR-009, FR-014 |
+| BR-037 | Product định nghĩa quy tắc làm tròn commission, áp dụng nhất quán. | FR-009, OQ-012 |
+| BR-038 | Thu nhập class chưa hoàn tất ở trạng thái pending/held, không withdraw được. | FR-009, FR-014, OQ-006 |
+| BR-039 | Online session dùng Jitsi theo Intent MVP. | FR-011 |
+| BR-040 | Chỉ Teacher và Learner có booking hợp lệ truy cập room/session. | FR-011 |
+| BR-041 | Thông tin video room không công khai; truy cập theo booking/session. | FR-011, NFR-009 |
+| BR-042 | Session có lifecycle SCHEDULED/IN_PROGRESS/COMPLETED/CANCELLED (hoặc tương đương). | FR-020 |
+| BR-043 | Quy tắc xác định session COMPLETED làm cơ sở settlement, rating, nghiệp vụ sau lớp. | FR-020, FR-013 |
+| BR-044 | Phải có refund/cancellation policy định nghĩa trước khi launch. | FR-007, OQ-003 |
+| BR-045 | Xác định xử lý khi Teacher hủy lớp trước giờ học. | FR-007, OQ-003 |
+| BR-046 | Xác định xử lý khi Learner hủy booking, gồm mốc thời gian và mức hoàn. | FR-007, OQ-003 |
+| BR-047 | Xác định xử lý Teacher no-show và Learner no-show. | FR-007, OQ-003 |
+| BR-048 | Refund/adjustment thủ công thực hiện qua ledger transaction có audit trail. | FR-010, NFR-003 |
+| BR-049 | Chỉ Learner có booking hợp lệ và session COMPLETED được rating Teacher. | FR-013, FR-020 |
+| BR-050 | Mỗi Learner một review hoạt động cho mỗi booking. | FR-013 |
+| BR-051 | Không review trước khi session COMPLETED. | FR-013, FR-020 |
+| BR-052 | Rating aggregate chỉ tính từ review hợp lệ gắn booking/session hợp lệ. | FR-006, FR-013 |
+| BR-053 | Threshold và minimum review count phải định nghĩa trước khi giảm visibility. | FR-006, OQ-004 |
+| BR-054 | MVP không có report/moderation workflow; rating là cơ chế trust chính. | FR-013 |
+| BR-055 | Trao đổi giữa Learner và Teacher diễn ra trong messaging của platform. | FR-012 |
+| BR-056 | Hạn chế/cảnh báo chia sẻ số điện thoại, email, mạng xã hội. | FR-012, OQ-009 |
+| BR-057 | Quyền chat gắn với quan hệ nghiệp vụ hợp lệ (class/booking). | FR-012 |
+| BR-058 | Teacher chỉ rút từ available balance; pending/held không rút được. | FR-014 |
+| BR-059 | Số tiền withdrawal không vượt quá available balance. | FR-014 |
+| BR-060 | Withdrawal có lifecycle REQUESTED/PROCESSING/COMPLETED/FAILED (hoặc tương đương). | FR-014 |
+| BR-061 | Withdrawal COMPLETED không sửa/xóa; điều chỉnh bằng transaction mới. | FR-014, NFR-003 |
+| BR-062 | Product định nghĩa min/max, phí, processing time, failed payout trước launch. | FR-014, OQ-005 |
+| BR-063 | Một tài khoản có thể vừa Learner vừa Teacher; không bắt buộc tách account. | FR-001 |
+| BR-064 | Admin lo student verification; Verifier lo skill/certificate, không mặc định có quyền Admin. | FR-004, FR-015 |
+| BR-065 | Tạo class giới hạn Teacher có skill hợp lệ; verify skill chỉ dành cho Verifier. | FR-004, FR-005 |
+| BR-066 | Hành động tài chính/verification/chuyển trạng thái quan trọng lưu actor, timestamp, audit. | FR-015, NFR-005 |
+| BR-067 | MVP chỉ hỗ trợ tiếng Việt và tiếng Anh. | NFR-002 |
+| BR-068 | Teacher không được tự đặt hoặc tự đánh giá lớp của chính mình. | FR-007, FR-013 |
+| BR-069 | Credit không được quy đổi ngược thành tiền mặt ngoài luồng withdrawal chính thức. | FR-014, NFR-003 |
+| BR-070 | Một tài khoản chỉ có một hồ sơ xác minh sinh viên hiệu lực tại một thời điểm. | FR-002 |
 
 ## 6. Detailed Screen Requirements
 
@@ -192,9 +257,10 @@ Các màn hình chính của MVP gồm: đăng ký/đăng nhập, trang chủ Le
 |---|---|---|---|---|---|
 | User | id, roles, school_name, verification_status | Has verification, wallet, classes/bookings | Pending → Active → Suspended | PII | User/Admin |
 | StudentVerification | id, user_id, document_ref, status, reviewer_id, reason, expires_at | Belongs to User | Draft → Pending → Approved/Rejected/Expired | Sensitive identity document | Administrator |
-| SkillEvidence | id, teacher_id, skill_id, document_ref, version, status | Belongs to Teacher and Skill | Draft → Pending → Approved/Rejected/Superseded | Sensitive credential | Teacher/Verifier |
+| SkillEvidence | id, teacher_id, skill_id, document_ref, version, status | Belongs to Teacher and Skill | Draft → Pending → Approved/Rejected/Superseded; Approved → Revoked/Expired | Sensitive credential | Teacher/Verifier |
 | VerifierAssignment | id, verifier_id, domain, status, assigned_by | Links Verifier to review domain | Invited → Active → Suspended/Revoked | Internal access-control data | Administrator |
 | Class | id, teacher_id, skill_id, schedule, duration, price, capacity, status | Has Bookings | Draft → Published → Full/Closed/Cancelled | Public marketplace data | Teacher |
+| Session | id, class_id, start_at, end_at, status | One per schedule slot of Class; referenced by Booking and Rating | Scheduled → In progress → Completed/Cancelled | Private schedule data | Teacher/Platform |
 | Booking | id, class_id, learner_id, status, settlement_id | Links Class, Learner and ledger | Pending → Confirmed → Completed/Cancelled/Disputed | Private transaction data | Learner/Teacher |
 | Wallet | id, user_id, available_balance, pending_balance | Has ledger entries | Active → Restricted/Closed | Financial | User/Platform |
 | LedgerTransaction | id, wallet_id, type, amount, rate, status, trace_id, idempotency_key | Links top-up, booking or withdrawal | Pending → Posted/Reversed/Failed | Sensitive financial | Platform |
@@ -299,6 +365,8 @@ Actor: Teacher, Payment gateway. Trigger: Teacher yêu cầu rút số dư khả
 - **AC-008 / FR-014:** Given callback payout hợp lệ được gửi lại, when hệ thống xử lý, then withdrawal chỉ hoàn tất một lần.
 - **AC-009 / EVT-001:** Given một callback hợp lệ nhưng cũ hơn trạng thái gateway đã xử lý, when callback đến muộn, then hệ thống acknowledge nhưng không hạ trạng thái.
 - **AC-010 / FR-007:** Given lớp chỉ còn một chỗ, when hai Learner đặt gần như đồng thời, then chỉ một booking được xác nhận và người còn lại nhận lỗi hết chỗ mà không bị trừ credit.
+- **AC-011 / FR-020:** Given một session đã tới giờ diễn ra, when các bên tham gia và buổi học kết thúc thỏa điều kiện hoàn tất, then session chuyển sang Completed và cho phép rating cùng giải ngân thu nhập; nếu bị hủy thì không phát sinh settlement và Learner được xử lý theo chính sách hủy.
+- **AC-012 / FR-019:** Given một hồ sơ xác minh sinh viên đã hết hiệu lực hoặc bị thu hồi, when hệ thống xử lý sự kiện, then các quyền yêu cầu VERIFIED bị hạ ngay và người dùng thấy trạng thái kèm hướng dẫn re-verification.
 
 ```gherkin
 Feature: Đặt lớp học
@@ -342,8 +410,8 @@ Authentication và authorization dùng server-side role/ownership check cho mọ
 
 | Business goal | Requirement | Use case/story | API/data/NFR | Test evidence |
 |---|---|---|---|---|
-| Trusted student identity | FR-001–FR-002, FR-015–FR-017 | UC-001, US-001 | API-001, User, StudentVerification, NFR-004/NFR-008/NFR-009 | Pending implementation |
+| Trusted student identity | FR-001–FR-002, FR-015–FR-017, FR-019 | UC-001, US-001 | API-001, User, StudentVerification, NFR-004/NFR-008/NFR-009 | Pending implementation |
 | Trusted Teacher capability | FR-003–FR-005, FR-018 | UC-002, US-002 | API-002–API-004, SkillEvidence, VerifierAssignment, NFR-004/NFR-009 | Pending implementation |
 | Discover and book online learning | FR-005–FR-007 | UC-003, US-003 | API-004–API-005, Class, Booking, NFR-001/NFR-006/NFR-007 | Pending implementation |
-| Traceable wallet settlement | FR-008–FR-010, FR-014 | UC-003, UC-005, US-003/US-006 | API-005–API-007, EVT-001, Wallet/Ledger/Withdrawal, NFR-003/NFR-005/NFR-009 | Pending implementation |
-| Secure class participation | FR-011–FR-013, FR-016 | UC-004, US-004/US-005 | API-008–API-010, Message/Rating, NFR-006/NFR-007/NFR-010 | Pending implementation |
+| Traceable wallet settlement | FR-008–FR-010, FR-014, FR-020 | UC-003, UC-005, US-003/US-006 | API-005–API-007, EVT-001, Wallet/Ledger/Withdrawal/Session, NFR-003/NFR-005/NFR-009 | Pending implementation |
+| Secure class participation | FR-011–FR-013, FR-016, FR-020 | UC-004, US-004/US-005 | API-008–API-010, Message/Rating/Session, NFR-006/NFR-007/NFR-010 | Pending implementation |
