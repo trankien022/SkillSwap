@@ -1,0 +1,247 @@
+// SkillSwap MVP logical model for PostgreSQL. Design proposal, not an approved migration.
+// Source: docs/intent.md, PRD section 9, SRS Appendix B and BR-001..BR-070.
+Project SkillSwap_Logical {
+  database_type: 'PostgreSQL'
+  Note: 'Amounts are credits with three decimal places. Cross-row rules and financial posting are enforced transactionally by the application/database service.'
+}
+
+Enum account_role {
+  Learner
+  Teacher
+  Verifier
+  Administrator
+}
+
+Table users {
+  id uuid [pk]
+  email varchar(320) [not null, unique]
+  display_name varchar(160) [not null]
+  school_name varchar(200)
+  status varchar(24) [not null, default: 'pending', note: 'pending | active | suspended']
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table user_roles {
+  user_id uuid [not null, ref: > users.id]
+  role account_role [not null]
+  assigned_by uuid [ref: > users.id]
+  assigned_at timestamptz [not null]
+  indexes { (user_id, role) [pk] }
+}
+
+Table student_verifications {
+  id uuid [pk]
+  user_id uuid [not null, ref: > users.id]
+  school_name varchar(200) [not null]
+  document_ref text [not null, note: 'Private encrypted object reference, never a public URL']
+  status varchar(24) [not null, note: 'draft | pending | approved | rejected | expired']
+  reviewer_id uuid [ref: > users.id]
+  decision_reason text
+  submitted_at timestamptz
+  decided_at timestamptz
+  expires_at timestamptz [note: 'Validity period is OQ-008']
+  indexes { (user_id, status) }
+  Note: 'One effective approved verification per user requires a partial unique index on user_id WHERE status = approved (BR-070).'
+}
+
+Table skills {
+  id uuid [pk]
+  name varchar(160) [not null, unique]
+  active boolean [not null, default: true]
+  Note: 'Only the skill itself is modeled; category hierarchy and tags await OQ-001.'
+}
+
+Table verifier_assignments {
+  id uuid [pk]
+  verifier_id uuid [not null, ref: > users.id]
+  skill_id uuid [not null, ref: > skills.id]
+  assigned_by uuid [not null, ref: > users.id]
+  status varchar(24) [not null, note: 'invited | active | suspended | revoked']
+  assigned_at timestamptz [not null]
+  ended_at timestamptz
+  indexes { (verifier_id, skill_id, status) }
+}
+
+Table skill_evidence {
+  id uuid [pk]
+  teacher_id uuid [not null, ref: > users.id]
+  skill_id uuid [not null, ref: > skills.id]
+  version int [not null]
+  document_ref text [not null, note: 'Private encrypted object reference']
+  status varchar(24) [not null, note: 'draft | pending | approved | rejected | superseded']
+  submitted_at timestamptz
+  indexes { (teacher_id, skill_id, version) [unique] }
+  Note: 'Publication requires current approved evidence for the Teacher and skill (BR-008, BR-015).'
+}
+
+Table evidence_decisions {
+  id uuid [pk]
+  evidence_id uuid [not null, ref: > skill_evidence.id]
+  reviewer_id uuid [not null, ref: > users.id]
+  assignment_id uuid [ref: > verifier_assignments.id]
+  decision varchar(16) [not null, note: 'approved | rejected']
+  reason text
+  decided_at timestamptz [not null]
+  indexes { evidence_id [unique] }
+  Note: 'A Verifier decision needs an active assignment for the evidence skill and reviewer_id <> teacher_id (BR-011..BR-013). Administrator decisions are recorded without assignment.'
+}
+
+Table classes {
+  id uuid [pk]
+  teacher_id uuid [not null, ref: > users.id]
+  skill_id uuid [not null, ref: > skills.id]
+  title varchar(200) [not null]
+  description text [not null]
+  starts_at timestamptz [not null]
+  duration_minutes int [not null, note: 'CHECK 30 <= duration_minutes <= 180 (BR-017)']
+  price_credits decimal(18,3) [not null, note: 'CHECK price_credits > 0; pricing policy is OQ-002']
+  capacity int [not null, note: 'CHECK capacity > 0; capacity policy is OQ-007']
+  status varchar(24) [not null, note: 'draft | published/scheduled | full | in_progress | completed | cancelled (BR-042)']
+  jitsi_room_ref varchar(255) [unique, note: 'Room metadata only; access token is short lived and not stored here']
+  created_at timestamptz [not null]
+  indexes {
+    (status, starts_at)
+    (teacher_id, starts_at)
+  }
+}
+
+Table bookings {
+  id uuid [pk]
+  class_id uuid [not null, ref: > classes.id]
+  learner_id uuid [not null, ref: > users.id]
+  status varchar(24) [not null, note: 'pending | confirmed | completed | cancelled | disputed']
+  price_credits decimal(18,3) [not null, note: 'Price snapshot at booking']
+  idempotency_key varchar(128) [not null]
+  created_at timestamptz [not null]
+  confirmed_at timestamptz
+  indexes {
+    (learner_id, idempotency_key) [unique]
+    (class_id, learner_id)
+  }
+  Note: 'Check at write time: Learner differs from Teacher (BR-068), starts_at >= now + 24h (BR-021), capacity available (BR-025); booking and settlement commit atomically (BR-026). A partial unique index should prevent multiple valid bookings per learner/class (BR-024).'
+}
+
+Table wallets {
+  id uuid [pk]
+  owner_user_id uuid [ref: > users.id, unique, note: 'NULL for platform and gateway clearing wallets']
+  kind varchar(32) [not null, note: 'user | platform_fee | gateway_clearing']
+  status varchar(24) [not null, default: 'active']
+  created_at timestamptz [not null]
+  Note: 'Balance is derived from posted ledger entries. One system wallet per kind is an operational invariant.'
+}
+
+Table ledger_transactions {
+  id uuid [pk]
+  kind varchar(32) [not null, note: 'top_up | booking | release | withdrawal | reversal']
+  status varchar(24) [not null, note: 'pending | posted | failed | reversed']
+  booking_id uuid [ref: > bookings.id]
+  exchange_rate_vnd decimal(18,3) [note: 'Snapshot of VND per credit for gateway transfers; initial value 1000']
+  fee_percent decimal(5,2) [note: 'Snapshot of platform fee for booking; MVP value 10.00']
+  trace_id varchar(128) [not null]
+  idempotency_key varchar(128) [not null]
+  created_at timestamptz [not null]
+  posted_at timestamptz
+  indexes {
+    (kind, idempotency_key) [unique]
+    trace_id
+  }
+  Note: 'Each posted transaction has at least two entries whose signed amounts sum to zero. Booking settlements need a partial unique index on booking_id WHERE kind = booking; later release/reversal may reference the same booking.'
+}
+
+Table ledger_entries {
+  id uuid [pk]
+  transaction_id uuid [not null, ref: > ledger_transactions.id]
+  wallet_id uuid [not null, ref: > wallets.id]
+  bucket varchar(16) [not null, note: 'available | pending']
+  amount_credits decimal(18,3) [not null, note: 'Signed delta; CHECK amount_credits <> 0']
+  created_at timestamptz [not null]
+  indexes {
+    (wallet_id, bucket, created_at)
+    (transaction_id, wallet_id, bucket)
+  }
+  Note: 'Example 100-credit booking: Learner available -100, Teacher pending +90, platform fee +10. Commission rounding is OQ-012.'
+}
+
+Table top_up_requests {
+  id uuid [pk]
+  user_id uuid [not null, ref: > users.id]
+  ledger_transaction_id uuid [ref: > ledger_transactions.id, unique]
+  amount_vnd decimal(18,0) [not null]
+  credits decimal(18,3) [not null]
+  exchange_rate_vnd decimal(18,3) [not null]
+  provider_reference varchar(255) [unique]
+  status varchar(24) [not null, note: 'pending | completed | failed']
+  created_at timestamptz [not null]
+}
+
+Table withdrawal_requests {
+  id uuid [pk]
+  teacher_id uuid [not null, ref: > users.id]
+  ledger_transaction_id uuid [ref: > ledger_transactions.id, unique]
+  amount_credits decimal(18,3) [not null]
+  exchange_rate_vnd decimal(18,3) [not null]
+  destination_ref text [not null, note: 'Encrypted payout destination token/reference']
+  provider_reference varchar(255) [unique]
+  status varchar(24) [not null, note: 'pending | processing | completed | failed | reversed']
+  idempotency_key varchar(128) [not null, unique]
+  trace_id varchar(128) [not null]
+  created_at timestamptz [not null]
+  Note: 'Withdrawal limits, fees, release timing and gateway selection await OQ-005, OQ-006, OQ-011.'
+}
+
+Table gateway_events {
+  id uuid [pk]
+  provider_event_id varchar(255) [not null, unique]
+  top_up_id uuid [ref: > top_up_requests.id]
+  withdrawal_id uuid [ref: > withdrawal_requests.id]
+  provider_status varchar(64) [not null]
+  occurred_at timestamptz [not null]
+  received_at timestamptz [not null]
+  processed_at timestamptz
+  Note: 'Exactly one of top_up_id or withdrawal_id. Verify signature and reject stale/replayed transitions before posting.'
+}
+
+Table messages {
+  id uuid [pk]
+  class_id uuid [not null, ref: > classes.id]
+  sender_id uuid [not null, ref: > users.id]
+  body text [not null]
+  created_at timestamptz [not null]
+  Note: 'Read/write access requires Teacher or a valid booking participant. Contact handling awaits OQ-009.'
+}
+
+Table ratings {
+  id uuid [pk]
+  booking_id uuid [not null, unique, ref: > bookings.id]
+  score int [not null, note: 'CHECK score BETWEEN 1 AND 5']
+  comment text
+  status varchar(16) [not null, default: 'published']
+  created_at timestamptz [not null]
+  Note: 'Learner identity comes from Booking; only a completed, eligible booking may be rated once.'
+}
+
+Table audit_events {
+  id uuid [pk]
+  actor_id uuid [ref: > users.id]
+  action varchar(100) [not null]
+  target_type varchar(80) [not null]
+  target_id uuid [not null]
+  trace_id varchar(128)
+  occurred_at timestamptz [not null]
+  metadata_json jsonb [note: 'Sanitized metadata only; no identity documents or secrets']
+  indexes {
+    (actor_id, occurred_at)
+    (target_type, target_id, occurred_at)
+  }
+}
+
+Table notifications {
+  id uuid [pk]
+  user_id uuid [not null, ref: > users.id]
+  event_type varchar(80) [not null]
+  payload_json jsonb [not null, note: 'No secrets or private document content']
+  created_at timestamptz [not null]
+  read_at timestamptz
+  indexes { (user_id, created_at) }
+}
