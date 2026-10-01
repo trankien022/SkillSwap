@@ -103,13 +103,13 @@ Thầy Hùng nhận thông báo có hồ sơ mới trong chuyên môn của mìn
 | FR-011 | Functional | Learner và Teacher của booking phải có thể truy cập đúng phòng Jitsi trong cửa sổ thời gian cho phép. | Must | `docs/intent.md` | Confirmed core |
 | FR-012 | Functional | Các bên thuộc lớp phải có chat nội bộ; người ngoài không được truy cập và chia sẻ liên hệ tuân theo chính sách đã duyệt. | Should | `docs/intent.md` | Confirmed; enforcement open |
 | FR-013 | Functional | Sau lớp, Learner phải có thể rating/comment một lần cho mỗi booking hợp lệ. | Must | `docs/intent.md` | Confirmed core; threshold open |
-| FR-014 | Functional | Teacher phải có thể yêu cầu rút thu nhập qua gateway với idempotency và ledger đầy đủ. | Must | `docs/intent.md` | Confirmed core; policy/gateway open |
+| FR-014 | Functional | Teacher phải có thể yêu cầu rút thu nhập qua gateway với idempotency và ledger đầy đủ; giữ credit khi xác nhận request, chỉ nhả khi xác nhận không chuyển tiền, timeout giữ tiền đến khi có kết quả/đối soát. | Must | `docs/intent.md` | Confirmed core; policy/gateway open |
 | FR-015 | Functional | Administrator phải có bảng điều khiển tổng hợp gồm hàng đợi xác minh sinh viên, hàng đợi Verifier theo domain, danh sách tranh chấp/khóa tài khoản và log audit có thể lọc theo actor, thời gian và loại hành động. | Must | `docs/intent.md` | Confirmed |
 | FR-016 | Functional | Hệ thống phải gửi thông báo khi hồ sơ xác minh có kết quả, booking được xác nhận/hủy, lớp sắp bắt đầu, giao dịch ví hoàn tất và withdrawal có kết quả. | Should | `docs/intent.md` | Confirmed |
 | FR-017 | Functional | Learner phải thấy rõ trạng thái tài khoản của mình và lý do nếu bị từ chối, ngay trên màn hình chính. | Must | `docs/intent.md` | Confirmed |
 | FR-018 | Functional | Teacher phải xem được lịch sử quyết định cho từng phiên bản bằng chứng năng lực đã nộp, không chỉ trạng thái mới nhất; bằng chứng đã submit bị khóa chỉnh sửa, thay đổi phải tạo phiên bản mới có audit trail. | Must | `docs/intent.md`, BRD BR-014 | Confirmed |
 | FR-019 | Functional | Hệ thống phải hỗ trợ re-verification và tự động hạ quyền truy cập khi trạng thái xác minh sinh viên hết hiệu lực hoặc bị thu hồi, bao gồm cascade tới các quyền được cấp theo trạng thái VERIFIED. | Must | BRD BR-006 | Confirmed; policy open (OQ-008) |
-| FR-020 | Functional | Hệ thống phải quản lý trạng thái phiên học (Scheduled → In progress → Completed/Cancelled) và chỉ coi session là Completed khi thỏa quy tắc hoàn tất; trạng thái COMPLETED là cơ sở cho settlement, rating và các nghiệp vụ sau lớp. | Must | BRD BR-042–BR-043 | Confirmed core; completion rule open (OQ-006) |
+| FR-020 | Functional | Mỗi Class trong MVP là một buổi học có lịch; hệ thống quản lý Published/Full → In progress → Completed/Cancelled, lưu thời điểm/căn cứ hoàn tất và chỉ mở rating/giải ngân khi đáp ứng điều kiện tương ứng. | Must | BRD BR-042–BR-043 | Confirmed core; completion/release rule open (OQ-006) |
 
 ### Business rules
 
@@ -200,11 +200,11 @@ Form gồm tên trường (autocomplete), mã số sinh viên tùy chọn, và t
 
 ### 6.3 Xác minh năng lực Teacher
 
-Chọn kỹ năng từ taxonomy, tải nhiều file bằng chứng và mô tả kinh nghiệm. Hàng đợi Verifier lọc theo domain được gán, hiển thị đầy đủ bằng chứng, với lý do bắt buộc khi từ chối.
+Chọn kỹ năng từ taxonomy, tải nhiều file bằng chứng và mô tả kinh nghiệm. Hàng đợi Verifier lọc theo chuyên môn đã được Administrator công nhận, hiển thị đầy đủ bằng chứng, với lý do bắt buộc khi từ chối.
 
 ### 6.4 Công bố lớp
 
-Form gồm kỹ năng đã được duyệt, tiêu đề, mô tả, ngày giờ, thời lượng, giá và sức chứa. Validation áp dụng cả ở client và server cho thời lượng, giá và trùng lịch. Trạng thái lớp gồm Draft, Published, Full, Closed và Cancelled.
+Form gồm các kỹ năng và level đã được duyệt, tiêu đề, mô tả, ngày giờ, thời lượng, giá và sức chứa. Mỗi lớp là một buổi học có lịch cụ thể. Validation áp dụng cả ở client và server cho thời lượng, giá và trùng lịch. Trạng thái gồm Draft, Published, Full, In progress, Completed và Cancelled. Sau booking hợp lệ đầu tiên, khóa Teacher, nội dung chính, kỹ năng/level, lịch và thời lượng; việc hủy vẫn theo policy, giá đã mua giữ theo booking.
 
 ### 6.5 Tìm kiếm và duyệt lớp
 
@@ -224,7 +224,7 @@ Modal xuất hiện sau khi rời phòng Jitsi cho booking đã hoàn thành, ch
 
 ### 6.9 Rút tiền
 
-Màn hình ví Teacher có nút rút tiền, nhập số tiền không vượt quá số dư khả dụng, chọn phương thức nhận và xác thực bổ sung. Trạng thái Pending, Processing, Completed hoặc Failed; khi Failed, số dư được hoàn lại ngay và hiển thị lý do.
+Màn hình ví Teacher có nút rút tiền, nhập số tiền không vượt quá số dư khả dụng, chọn phương thức nhận và xác thực bổ sung. Khi xác nhận yêu cầu, khoản rút được giữ riêng và không thể chi tiếp. Trạng thái Pending, Processing, Completed hoặc Failed; Failed chỉ xuất hiện khi đã xác nhận không chuyển tiền và khoản giữ được hoàn lại. Timeout hiển thị đang chờ kết quả/đối soát, không tự hoàn tiền. Đích nhận và số tiền không được sửa sau khi đã giữ tiền.
 
 ### 6.10 Bảng điều khiển Administrator
 
@@ -255,18 +255,25 @@ Các màn hình chính của MVP gồm: đăng ký/đăng nhập, trang chủ Le
 
 | Entity | Key fields | Relationships | Lifecycle | Classification | Owner |
 |---|---|---|---|---|---|
-| User | id, roles, school_name, verification_status | Has verification, wallet, classes/bookings | Pending → Active → Suspended | PII | User/Admin |
-| StudentVerification | id, user_id, document_ref, status, reviewer_id, reason, expires_at | Belongs to User | Draft → Pending → Approved/Rejected/Expired | Sensitive identity document | Administrator |
-| SkillEvidence | id, teacher_id, skill_id, document_ref, version, status | Belongs to Teacher and Skill | Draft → Pending → Approved/Rejected/Superseded; Approved → Revoked/Expired | Sensitive credential | Teacher/Verifier |
-| VerifierAssignment | id, verifier_id, domain, status, assigned_by | Links Verifier to review domain | Invited → Active → Suspended/Revoked | Internal access-control data | Administrator |
-| Class | id, teacher_id, skill_id, schedule, duration, price, capacity, status | Has Bookings | Draft → Published → Full/Closed/Cancelled | Public marketplace data | Teacher |
-| Session | id, class_id, start_at, end_at, status | One per schedule slot of Class; referenced by Booking and Rating | Scheduled → In progress → Completed/Cancelled | Private schedule data | Teacher/Platform |
-| Booking | id, class_id, learner_id, status, settlement_id | Links Class, Learner and ledger | Pending → Confirmed → Completed/Cancelled/Disputed | Private transaction data | Learner/Teacher |
-| Wallet | id, user_id, available_balance, pending_balance | Has ledger entries | Active → Restricted/Closed | Financial | User/Platform |
-| LedgerTransaction | id, wallet_id, type, amount, rate, status, trace_id, idempotency_key | Links top-up, booking or withdrawal | Pending → Posted/Reversed/Failed | Sensitive financial | Platform |
+| User | id, email, roles, status | Has exactly one Profile, at most one user Wallet and role grants | Pending → Active → Suspended | PII | User/Administrator |
+| UserRole | user_id, role, status, assigned_by, assigned_at | One grant per User/role; role suspension is independent of account suspension | Active → Suspended/Revoked; reactivation audited | Internal authorization | Administrator |
+| Profile | id, user_id, display_name, bio, school_id, major_id | Belongs to User; has ProfileSkills and StudentVerifications | Created with User; school/major change requires re-verification | PII | User/Administrator |
+| School / Major / SchoolMajor | id/code/name; school_id + major_id | Managed school and major catalogs; SchoolMajor lists valid pairs | Active → Inactive | Reference data | Administrator |
+| Skill / ProfileSkill | id, name; profile_id, skill_id, level, verifier_expertise_status | Profile ↔ Skill is many-to-many; level caches effective approval (NULL until approved); active Verifier role plus authorized expertise required | Skill Active/Inactive; valid SkillEvidence.approved_level governs teaching; pending upgrades preserve old approval | Public competency + internal authorization | User/Verifier/Administrator |
+| StudentVerification | id, profile_id, school_id, major_id, document_ref, status, reviewer_id, reason, expires_at | Belongs to Profile; immutable submission snapshots; resubmission creates a new row | Draft → Pending → Approved/Rejected; Approved → Superseded/Revoked/Expired | Sensitive identity document | Administrator |
+| SkillEvidence | id, profile_skill_id, evidence_type, document_ref/description, version, requested_level, approved_level, status, reviewer_id, decided_at | Belongs to ProfileSkill; certificate or Verifier recognition; reviewer updates status with audit, no assignment entity | Draft → Pending → Approved/Rejected; Approved → Superseded/Revoked/Expired | Sensitive credential | Teacher/Verifier |
+| Class | id, teacher_id, starts_at, duration_minutes, price_credits, capacity, status, commitments_locked_at, completed_at/completed_by | One scheduled online session per Class; has Bookings/ClassSkills; Teacher/content/schedule/skills freeze at first confirmed Booking | Draft → Published/Full → In progress → Completed; cancellation by policy | Public marketplace data | Teacher |
+| ClassSkill | class_id, skill_id, target_level | Class ↔ Skill is many-to-many; Teacher approved level must cover target level | Managed with Class | Public marketplace data | Teacher |
+| Booking | id, class_id, learner_id, status, price_credits, idempotency_key | Links Class/Learner/ledger; price snapshot; at most one valid booking per Learner/Class and one full release operation | Pending → Confirmed → Completed/Cancelled/Disputed | Private transaction data | Learner/Teacher |
+| Wallet | id, owner_user_id, kind; available/pending/payout_hold derived from posted postings | At most one wallet per User; system wallets have no owner; payout_hold is reserved and not spendable | Active → Restricted/Closed | Financial | User/Platform |
+| LedgerTransaction | id, kind, booking_id, withdrawal_request_id, initiated_by_user_id, amount_vnd, gateway_credits, rate, provider/reference, reverses_transaction_id, status, trace_id, idempotency_key | Groups balanced kind-specific postings; unique booking/release operations; withdrawal request has hold/payout/hold-release/reversal transactions; original has 0..1 full reversal, linked only for kind reversal | Pending → Posted/Failed; Posted → Reversed with compensating transaction; posted financial fields immutable | Sensitive financial | Platform |
+| LedgerPosting | id, transaction_id, wallet_id, user_id, class_id, bucket, amount_credits | Links transaction/wallet owner/Class; buckets available/pending/payout_hold; system user and non-class transfer Class are NULL | Immutable once posted, including no late inserts; corrections compensate actual transfer chain | Sensitive financial | Platform |
 | Message | id, class_id, sender_id, body, created_at | Belongs to class conversation | Active → Retained/Deleted | Private communication | Participants/Platform |
 | Rating | id, booking_id, learner_id, score, comment | One policy-valid rating per Booking | Published → Hidden/Updated by policy | Public content + private provenance | Learner/Platform |
-| WithdrawalRequest | id, teacher_id, amount, destination_ref, status, trace_id | Produces ledger entries | Pending → Processing → Completed/Failed/Reversed | Sensitive financial | Teacher/Platform |
+| WithdrawalRequest | id, teacher_id, amount_credits, exchange_rate_vnd, destination_ref, status, trace_id | Has many LedgerTransactions through withdrawal_request_id; hold commits before payout; amount/rate/destination frozen | Pending → Processing → Completed/Failed; timeout retains hold until reconciliation; authorized payout reversal → Reversed | Sensitive financial | Teacher/Platform |
+| AuditEvent | id, actor_id, action, target_type/id, old_state_json, new_state_json, occurred_at, trace_id, metadata_json | Commits with state change; whitelisted decision snapshots preserve full evidence/role/completion/financial history | Append-only | Internal audit; no document content or payout destinations | Platform |
+
+ERD chi tiết và các ràng buộc triển khai: [data model](../diagrams/data/README.md). Một Class là một buổi học có lịch/phòng riêng, không có bảng Session. Hai cách xác minh là kiểm tra chứng chỉ hoặc Verifier công nhận năng lực; chỉ Verifier đang active và đúng chuyên môn được quyết định. Không có bảng phân công Verifier hoặc bảng TopUp. Evidence Approved còn hiệu lực quyết định level được phép dạy; pending/rejected replacement giữ quyền cũ còn hiệu lực. Quyết định lưu trên SkillEvidence, lịch sử trước/sau lưu trong audit. Chỉ publish khi Teacher còn xác minh sinh viên hiệu lực và được duyệt đủ level cho **tất cả** skill của lớp; khóa cam kết tại booking Confirmed đầu tiên. Payout giữ credit trước khi gọi gateway; timeout chưa phải thất bại. Thời điểm release, hoàn tiền/nguồn bù sau payout và làm tròn vẫn theo OQ-003/OQ-006/OQ-012.
 
 Access is server-authorized by role and ownership. Sensitive files are encrypted in transit and at rest, stored outside executable paths, and never written to application logs.
 
@@ -274,10 +281,10 @@ Access is server-authorized by role and ownership. Sensitive files are encrypted
 
 | API/Event ID | Method/path | Purpose | Auth | Request/response | Errors |
 |---|---|---|---|---|---|
-| API-001 | POST `/api/student-verifications` | Submit student evidence | Authenticated student | school, document → verification ID/status | validation, unsupported file, duplicate pending request |
-| API-002 | POST `/api/skill-evidence` | Submit Teacher evidence | Verified student | skill, document → evidence ID/status | validation, taxonomy unavailable |
-| API-003 | POST `/api/verifications/{id}/decision` | Approve/reject assigned evidence | Administrator or assigned Verifier by verification type | decision, reason → updated status | forbidden, stale version, invalid transition |
-| API-004 | POST `/api/classes` | Create/publish a class | Teacher approved for skill | class details → class/status | forbidden, invalid duration/price/capacity |
+| API-001 | POST `/api/student-verifications` | Submit student evidence | Authenticated student | profile, school_id, major_id, document → verification ID/status | validation, unsupported file, duplicate pending request |
+| API-002 | POST `/api/skill-evidence` | Submit Teacher evidence | Verified student | profile_skill_id, requested_level, evidence_type, document/assessment → evidence ID/status | validation, taxonomy unavailable |
+| API-003 | POST `/api/verifications/{id}/decision` | Approve/reject eligible evidence | Administrator for student verification; active domain-matched Verifier for skill evidence | decision, approved_level (skill approval), reason → updated status | forbidden, stale version, invalid transition |
+| API-004 | POST `/api/classes` | Create/publish a class | Teacher approved for every class skill and target level | class details → class/status | forbidden, invalid duration/price/capacity |
 | API-005 | POST `/api/classes/{id}/bookings` | Book and settle a class | Verified Learner | booking request/idempotency key → booking/ledger status | insufficient balance, booking window, full, conflict |
 | API-006 | POST `/api/wallet/top-ups` | Start top-up | Authenticated user | amount → gateway reference | gateway unavailable, limit exceeded |
 | EVT-001 | POST `/api/webhooks/payment` | Receive top-up/payout status | Verified gateway signature | provider event ID, transaction reference, sequence/version or occurred-at, status → accepted/ignored duplicate/stale | invalid signature, replay, stale transition, unknown reference |
@@ -328,7 +335,7 @@ Actor: Student, Administrator. Trigger: người dùng yêu cầu xác minh tư 
 
 ### UC-002: Verify a Teacher skill
 
-Actor: Teacher candidate, Verifier, Administrator. Trigger: sinh viên đã xác minh muốn dạy một kỹ năng. Main flow: nộp bằng chứng, phân công Verifier, review, kỹ năng Approved. Alternate flow: thiếu dữ liệu, sai chuyên môn hoặc Reject; Teacher xem lý do và nộp phiên bản mới. Postconditions: chỉ kỹ năng Approved được dùng để công bố lớp.
+Actor: Teacher candidate, Verifier, Administrator. Trigger: sinh viên đã xác minh muốn dạy một kỹ năng. Main flow: nộp chứng chỉ hoặc minh chứng năng lực theo level, Verifier đúng chuyên môn review và cập nhật trạng thái, kỹ năng Approved. Alternate flow: thiếu dữ liệu, sai chuyên môn hoặc Reject; Teacher xem lý do và nộp phiên bản mới. Postconditions: chỉ kỹ năng Approved được dùng để công bố lớp.
 
 ### UC-003: Book and pay for a class
 
@@ -340,7 +347,7 @@ Actor: Learner, Teacher, Jitsi. Trigger: booking hợp lệ đến thời gian d
 
 ### UC-005: Withdraw earnings
 
-Actor: Teacher, Payment gateway. Trigger: Teacher yêu cầu rút số dư khả dụng. Main flow: step-up authentication, tạo withdrawal, gateway payout, callback, ledger Completed. Alternate flow: timeout/failure giữ số dư nhất quán; callback lặp không payout hai lần. Postconditions: trạng thái payout và trace ID hiển thị trong lịch sử ví.
+Actor: Teacher, Payment gateway. Trigger: Teacher yêu cầu rút số dư khả dụng. Main flow: step-up authentication, tạo request và ledger giữ tiền nguyên tử, commit rồi gọi gateway với khóa idempotency ổn định, callback hợp lệ post payout và chuyển Completed. Alternate flow: xác nhận không chuyển tiền thì nhả hold và Failed; timeout giữ hold đến khi có kết quả/đối soát; retry và callback lặp không tạo payout thứ hai. Postconditions: request có các giao dịch giữ/payout/nhả/reversal liên kết; trạng thái payout và trace ID hiển thị trong lịch sử ví.
 
 ### User stories
 
@@ -365,8 +372,15 @@ Actor: Teacher, Payment gateway. Trigger: Teacher yêu cầu rút số dư khả
 - **AC-008 / FR-014:** Given callback payout hợp lệ được gửi lại, when hệ thống xử lý, then withdrawal chỉ hoàn tất một lần.
 - **AC-009 / EVT-001:** Given một callback hợp lệ nhưng cũ hơn trạng thái gateway đã xử lý, when callback đến muộn, then hệ thống acknowledge nhưng không hạ trạng thái.
 - **AC-010 / FR-007:** Given lớp chỉ còn một chỗ, when hai Learner đặt gần như đồng thời, then chỉ một booking được xác nhận và người còn lại nhận lỗi hết chỗ mà không bị trừ credit.
-- **AC-011 / FR-020:** Given một session đã tới giờ diễn ra, when các bên tham gia và buổi học kết thúc thỏa điều kiện hoàn tất, then session chuyển sang Completed và cho phép rating cùng giải ngân thu nhập; nếu bị hủy thì không phát sinh settlement và Learner được xử lý theo chính sách hủy.
+- **AC-011 / FR-020:** Given một Class đã tới giờ diễn ra, when buổi học thỏa quy tắc hoàn tất đã được duyệt, then Class chuyển Completed với thời gian/căn cứ audit và cho phép rating; release chỉ thực hiện khi đạt điều kiện OQ-006, hủy lớp xử lý booking/ledger theo OQ-003.
 - **AC-012 / FR-019:** Given một hồ sơ xác minh sinh viên đã hết hiệu lực hoặc bị thu hồi, when hệ thống xử lý sự kiện, then các quyền yêu cầu VERIFIED bị hạ ngay và người dùng thấy trạng thái kèm hướng dẫn re-verification.
+- **AC-013 / FR-014:** Given available 100 credit, when request rút 80 được xác nhận, then available còn 20 và payout_hold là 80; request rút thêm 80 bị từ chối mà không phát sinh hold hoặc payout mới.
+- **AC-014 / FR-014:** Given payout 80 đang chờ và gateway timeout, then hold vẫn là 80; callback/đối soát thành công đến sau chỉ post payout một lần, không vừa payout vừa nhả tiền.
+- **AC-015 / FR-009:** Given hai booking A/B tạo pending 90 mỗi booking và A đã release, when retry release A bằng key khác, then không release thêm; pending của B vẫn 90, available từ A vẫn 90.
+- **AC-016 / FR-003–FR-005:** Given evidence mid còn hiệu lực và yêu cầu mới xin senior, then pending/rejected replacement vẫn giữ quyền mid; nếu Verifier duyệt bản mới ở mid, cache level và quyền đều mid, bản cũ Superseded cùng transaction/audit.
+- **AC-017 / FR-005, FR-007:** Given booking Confirmed đầu tiên, when sửa Teacher/nội dung/kỹ năng/lịch/thời lượng hoặc hủy hết booking rồi sửa, then cam kết vẫn bị khóa; sửa lớp đồng thời với booking không bán nội dung ngoài cam kết.
+- **AC-018 / FR-004:** Given chỉ có vai trò Administrator, hoặc Verifier suspended/sai chuyên môn/tự duyệt, when quyết định skill evidence, then bị từ chối; chỉ Verifier active đúng chuyên môn và khác chủ hồ sơ được quyết định.
+- **AC-019 / FR-009, FR-010:** Given policy hoàn toàn bộ đã được duyệt và booking đã release nhưng Teacher còn đủ available, when hoàn tiền, then đảo release và booking nguyên tử, không tạo pending âm; sau payout/thiếu nguồn bù không tự post refund trái OQ-003/OQ-006.
 
 ```gherkin
 Feature: Đặt lớp học
@@ -411,7 +425,7 @@ Authentication và authorization dùng server-side role/ownership check cho mọ
 | Business goal | Requirement | Use case/story | API/data/NFR | Test evidence |
 |---|---|---|---|---|
 | Trusted student identity | FR-001–FR-002, FR-015–FR-017, FR-019 | UC-001, US-001 | API-001, User, StudentVerification, NFR-004/NFR-008/NFR-009 | Pending implementation |
-| Trusted Teacher capability | FR-003–FR-005, FR-018 | UC-002, US-002 | API-002–API-004, SkillEvidence, VerifierAssignment, NFR-004/NFR-009 | Pending implementation |
+| Trusted Teacher capability | FR-003–FR-005, FR-018 | UC-002, US-002 | API-002–API-004, ProfileSkill, SkillEvidence, NFR-004/NFR-009 | Pending implementation |
 | Discover and book online learning | FR-005–FR-007 | UC-003, US-003 | API-004–API-005, Class, Booking, NFR-001/NFR-006/NFR-007 | Pending implementation |
 | Traceable wallet settlement | FR-008–FR-010, FR-014, FR-020 | UC-003, UC-005, US-003/US-006 | API-005–API-007, EVT-001, Wallet/Ledger/Withdrawal/Session, NFR-003/NFR-005/NFR-009 | Pending implementation |
 | Secure class participation | FR-011–FR-013, FR-016, FR-020 | UC-004, US-004/US-005 | API-008–API-010, Message/Rating/Session, NFR-006/NFR-007/NFR-010 | Pending implementation |

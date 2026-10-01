@@ -1,0 +1,17 @@
+stateDiagram-v2
+  [*] --> Pending : request and credit hold commit (step-up auth)
+  Pending --> Processing : gateway payout accepted
+  Pending --> Completed : signed success/reconciliation posts payout
+  Processing --> Completed : signed success/reconciliation posts payout
+  Pending --> Failed : definite nonpayment and atomic hold release
+  Processing --> Failed : definite nonpayment and atomic hold release
+  Pending --> Pending : timeout/unknown result, retain hold
+  Processing --> Processing : timeout/unknown result, retain hold
+  Failed --> [*]
+  Completed --> Reversed : authorized reconciled payout reversal (OQ-006)
+  note right of Processing
+    Stable provider key prevents second payout
+    Replayed events never post twice (AC-008/009)
+    Unknown result cannot release credit
+    Success and failure release are exclusive
+  end note

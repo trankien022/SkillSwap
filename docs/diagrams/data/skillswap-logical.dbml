@@ -15,8 +15,6 @@ Enum account_role {
 Table users {
   id uuid [pk]
   email varchar(320) [not null, unique]
-  display_name varchar(160) [not null]
-  school_name varchar(200)
   status varchar(24) [not null, default: 'pending', note: 'pending | active | suspended']
   created_at timestamptz [not null]
   updated_at timestamptz [not null]
@@ -25,25 +23,78 @@ Table users {
 Table user_roles {
   user_id uuid [not null, ref: > users.id]
   role account_role [not null]
+  status varchar(24) [not null, default: 'active', note: 'active | suspended | revoked']
   assigned_by uuid [ref: > users.id]
   assigned_at timestamptz [not null]
+  updated_at timestamptz [not null]
   indexes { (user_id, role) [pk] }
+  Note: 'Retain grants when suspended/revoked; every transition is audited. Suspending a Verifier role does not suspend the User or their Learner/Teacher roles. Skill review requires this role AND matching expertise to be active.'
 }
+
+Enum skill_level {
+  begin
+  mid
+  senior
+}
+
+Table schools {
+  id uuid [pk]
+  code varchar(64) [not null, unique]
+  name varchar(200) [not null]
+  active boolean [not null, default: true]
+}
+
+Table majors {
+  id uuid [pk]
+  code varchar(64) [not null, unique]
+  name varchar(200) [not null]
+  active boolean [not null, default: true]
+}
+
+Table school_majors {
+  school_id uuid [not null, ref: > schools.id]
+  major_id uuid [not null, ref: > majors.id]
+  active boolean [not null, default: true]
+  indexes { (school_id, major_id) [pk] }
+}
+
+Table profiles {
+  id uuid [pk]
+  user_id uuid [not null, unique, ref: - users.id]
+  display_name varchar(160) [not null]
+  bio text
+  avatar_ref text
+  school_id uuid [ref: > schools.id]
+  major_id uuid [ref: > majors.id]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  Note: 'Exactly one profile per User, created atomically with account. Student submission requires school_id and major_id in an active school_majors pair; invited non-student roles may leave both NULL. School/major changes invalidate effective student verification until reviewed again. School catalog is maintained manually; no school database integration.'
+}
+
+Ref: profiles.(school_id, major_id) > school_majors.(school_id, major_id)
 
 Table student_verifications {
   id uuid [pk]
-  user_id uuid [not null, ref: > users.id]
-  school_name varchar(200) [not null]
+  profile_id uuid [not null, ref: > profiles.id]
+  school_id uuid [not null, ref: > schools.id]
+  major_id uuid [not null, ref: > majors.id]
+  school_name_snapshot varchar(200) [not null]
+  major_name_snapshot varchar(200) [not null]
   document_ref text [not null, note: 'Private encrypted object reference, never a public URL']
-  status varchar(24) [not null, note: 'draft | pending | approved | rejected | expired']
+  status varchar(24) [not null, note: 'draft | pending | approved | rejected | superseded | revoked | expired']
   reviewer_id uuid [ref: > users.id]
   decision_reason text
   submitted_at timestamptz
   decided_at timestamptz
   expires_at timestamptz [note: 'Validity period is OQ-008']
-  indexes { (user_id, status) }
-  Note: 'One effective approved verification per user requires a partial unique index on user_id WHERE status = approved (BR-070).'
+  indexes {
+    (profile_id, status)
+    (status, submitted_at)
+  }
+  Note: 'One approved verification per profile requires a partial unique index on profile_id WHERE status = approved (BR-070). Check expires_at at authorization time; transition stale approvals before replacing them. Submission snapshots are immutable; resubmission creates a new row. Administrator approval supersedes any previous approval atomically; revocation or profile school/major changes invalidate current approval with a reason and audit. Every transition records before/after state, actor, time and reason; validity and cascade policy remain OQ-008.'
 }
+
+Ref: student_verifications.(school_id, major_id) > school_majors.(school_id, major_id)
 
 Table skills {
   id uuid [pk]
@@ -52,58 +103,77 @@ Table skills {
   Note: 'Only the skill itself is modeled; category hierarchy and tags await OQ-001.'
 }
 
-Table verifier_assignments {
+Table profile_skills {
   id uuid [pk]
-  verifier_id uuid [not null, ref: > users.id]
+  profile_id uuid [not null, ref: > profiles.id]
   skill_id uuid [not null, ref: > skills.id]
-  assigned_by uuid [not null, ref: > users.id]
-  status varchar(24) [not null, note: 'invited | active | suspended | revoked']
-  assigned_at timestamptz [not null]
-  ended_at timestamptz
-  indexes { (verifier_id, skill_id, status) }
+  level skill_level [note: 'Cached effective approved level; NULL before approval or when no effective approval remains. Not self-editable.']
+  verifier_expertise_status varchar(24) [not null, default: 'none', note: 'none | active | suspended | revoked; managed only by Administrator for invited Verifiers']
+  expertise_approved_by uuid [ref: > users.id]
+  expertise_approved_at timestamptz
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  indexes {
+    (profile_id, skill_id) [unique]
+    (skill_id, verifier_expertise_status)
+  }
+  Note: 'Valid approved SkillEvidence.approved_level is the authority for teaching permission; level is only a cache. A new requested level belongs to the new evidence, leaving the old valid approval usable while pending or rejected. Approval atomically supersedes the previous evidence and updates this cache, including approval below the requested level. Expiry/revocation invalidates the cache; authorization always checks live evidence and certificate expiry. Active Verifier expertise requires an active Verifier role and Administrator approval.'
 }
 
 Table skill_evidence {
   id uuid [pk]
-  teacher_id uuid [not null, ref: > users.id]
-  skill_id uuid [not null, ref: > skills.id]
-  version int [not null]
-  document_ref text [not null, note: 'Private encrypted object reference']
-  status varchar(24) [not null, note: 'draft | pending | approved | rejected | superseded']
+  profile_skill_id uuid [not null, ref: > profile_skills.id]
+  version int [not null, note: 'CHECK version > 0']
+  evidence_type varchar(24) [not null, note: 'certificate | verifier_recognition']
+  document_ref text [note: 'Private encrypted object or file-manifest reference; required for certificate']
+  description text [note: 'Proof of competency or assessment record; required for verifier_recognition']
+  certificate_issuer varchar(200)
+  certificate_number varchar(160)
+  certificate_expires_at timestamptz
+  requested_level skill_level [not null]
+  approved_level skill_level
+  status varchar(24) [not null, note: 'draft | pending | approved | rejected | superseded | revoked | expired']
+  reviewer_id uuid [ref: > users.id]
+  decision_reason text
   submitted_at timestamptz
-  indexes { (teacher_id, skill_id, version) [unique] }
-  Note: 'Publication requires current approved evidence for the Teacher and skill (BR-008, BR-015).'
-}
-
-Table evidence_decisions {
-  id uuid [pk]
-  evidence_id uuid [not null, ref: > skill_evidence.id]
-  reviewer_id uuid [not null, ref: > users.id]
-  assignment_id uuid [ref: > verifier_assignments.id]
-  decision varchar(16) [not null, note: 'approved | rejected']
-  reason text
-  decided_at timestamptz [not null]
-  indexes { evidence_id [unique] }
-  Note: 'A Verifier decision needs an active assignment for the evidence skill and reviewer_id <> teacher_id (BR-011..BR-013). Administrator decisions are recorded without assignment.'
+  decided_at timestamptz
+  expires_at timestamptz [note: 'Verification validity remains OQ-008; certificate expiry is also checked']
+  indexes {
+    (profile_skill_id, version) [unique]
+    (status, submitted_at)
+  }
+  Note: 'No assignment table. Only an active, domain-matched Verifier may decide; Administrator role alone never grants skill-review permission. Reviewer cannot be the owner (BR-011..BR-013). Approval requires reviewer, time and approved level; rejection/revocation requires reason. Certificates are reviewed, never auto-approved. Submitted proof and requested level are immutable; resubmission creates a new version. Partial unique index on profile_skill_id WHERE status = approved. Replacement approval, old evidence supersession, profile_skills.level update and structured audit commit atomically under a ProfileSkill lock. Pending/rejected replacements preserve old valid permission. Every transition retains old/new decision data in audit_events (FR-018).'
 }
 
 Table classes {
   id uuid [pk]
   teacher_id uuid [not null, ref: > users.id]
-  skill_id uuid [not null, ref: > skills.id]
   title varchar(200) [not null]
   description text [not null]
   starts_at timestamptz [not null]
   duration_minutes int [not null, note: 'CHECK 30 <= duration_minutes <= 180 (BR-017)']
   price_credits decimal(18,3) [not null, note: 'CHECK price_credits > 0; pricing policy is OQ-002']
   capacity int [not null, note: 'CHECK capacity > 0; capacity policy is OQ-007']
-  status varchar(24) [not null, note: 'draft | published/scheduled | full | in_progress | completed | cancelled (BR-042)']
+  status varchar(24) [not null, note: 'draft | published | full | in_progress | completed | cancelled (BR-042)']
   jitsi_room_ref varchar(255) [unique, note: 'Room metadata only; access token is short lived and not stored here']
+  commitments_locked_at timestamptz [note: 'Set atomically at the first confirmed booking; never reset after cancellation']
+  completed_at timestamptz
+  completed_by uuid [ref: > users.id, note: 'NULL for system completion; audit records its rule and source']
   created_at timestamptz [not null]
+  updated_at timestamptz [not null]
   indexes {
     (status, starts_at)
     (teacher_id, starts_at)
   }
+  Note: 'One Class is one scheduled online session in MVP; no Session table. After the first confirmed booking, freeze Teacher, title/description, starts_at, duration and all ClassSkills. Price remains snapshotted per Booking; cancellation follows OQ-003. Serialize publication/schedule changes per Teacher to prevent overlapping active sessions (BR-019). Completion requires completed_at plus audited actor/source and rule; the completion/release condition remains OQ-006.'
+}
+
+Table class_skills {
+  class_id uuid [not null, ref: > classes.id]
+  skill_id uuid [not null, ref: > skills.id]
+  target_level skill_level [not null, note: 'Intended learning level; begin < mid < senior']
+  indexes { (class_id, skill_id) [pk] }
+  Note: 'Every published Class has at least one Skill. For EVERY linked skill, Teacher must have matching profile_skills and valid approved evidence.approved_level at or above target_level, plus effective student verification (BR-008, BR-015). Check all skills on publication, editing and new booking; revocation/expiry blocks new sales. INSERT/UPDATE/DELETE are forbidden after classes.commitments_locked_at is set; serialize edits and first booking on the Class row.'
 }
 
 Table bookings {
@@ -118,24 +188,32 @@ Table bookings {
   indexes {
     (learner_id, idempotency_key) [unique]
     (class_id, learner_id)
+    (learner_id, created_at)
   }
-  Note: 'Check at write time: Learner differs from Teacher (BR-068), starts_at >= now + 24h (BR-021), capacity available (BR-025); booking and settlement commit atomically (BR-026). A partial unique index should prevent multiple valid bookings per learner/class (BR-024).'
+  Note: 'Lock the Class row before counting eligible bookings and checking capacity; lock affected wallets in consistent ID order and recompute balances after locks. Require an active verified Learner, no self-booking (BR-068), starts_at >= now + 24h (BR-021), and an eligible Class/Teacher. Booking confirmation, first commitment lock and settlement commit atomically (BR-026). Partial unique (class_id, learner_id) for confirmed/completed/disputed prevents duplicate valid bookings (BR-024); failed attempts leave no committed booking/payment. Capacity policy remains OQ-007.'
 }
 
 Table wallets {
   id uuid [pk]
-  owner_user_id uuid [ref: > users.id, unique, note: 'NULL for platform and gateway clearing wallets']
+  owner_user_id uuid [ref: - users.id, unique, note: 'NULL for platform and gateway clearing wallets']
   kind varchar(32) [not null, note: 'user | platform_fee | gateway_clearing']
   status varchar(24) [not null, default: 'active']
   created_at timestamptz [not null]
-  Note: 'Balance is derived from posted ledger entries. One system wallet per kind is an operational invariant.'
+  Note: 'At most one wallet per User; system wallets have no owner. CHECK user kind has an owner and system kinds do not; partial unique kind for system wallets. Owner/kind never change after posting. available, pending and payout_hold are derived from transactions with posted_at, including reversed originals and compensations. Lock this wallet row for every user spend/hold/release and prevent negative user buckets; never count pending or payout_hold as spendable.'
 }
 
 Table ledger_transactions {
   id uuid [pk]
-  kind varchar(32) [not null, note: 'top_up | booking | release | withdrawal | reversal']
+  kind varchar(32) [not null, note: 'top_up | booking | release | withdrawal_hold | withdrawal | withdrawal_release | reversal']
   status varchar(24) [not null, note: 'pending | posted | failed | reversed']
   booking_id uuid [ref: > bookings.id]
+  withdrawal_request_id uuid [ref: > withdrawal_requests.id]
+  initiated_by_user_id uuid [ref: > users.id, note: 'Required for user commands; NULL only for audited system operations']
+  provider varchar(64)
+  provider_reference varchar(255)
+  amount_vnd decimal(18,0) [note: 'Positive real-money amount for top_up/withdrawal']
+  gateway_credits decimal(18,3) [note: 'Positive intended credit amount for top_up/withdrawal, retained even if failed']
+  reverses_transaction_id uuid [unique, ref: - ledger_transactions.id, note: 'One full reversal per original. Required only for kind reversal; NULL for other kinds.']
   exchange_rate_vnd decimal(18,3) [note: 'Snapshot of VND per credit for gateway transfers; initial value 1000']
   fee_percent decimal(5,2) [note: 'Snapshot of platform fee for booking; MVP value 10.00']
   trace_id varchar(128) [not null]
@@ -145,61 +223,56 @@ Table ledger_transactions {
   indexes {
     (kind, idempotency_key) [unique]
     trace_id
+    (provider, provider_reference) [unique]
+    (withdrawal_request_id, kind)
   }
-  Note: 'Each posted transaction has at least two entries whose signed amounts sum to zero. Booking settlements need a partial unique index on booking_id WHERE kind = booking; later release/reversal may reference the same booking.'
+  Note: 'Posted transactions require at least two nonzero postings summing to zero AND exact wallets/buckets/amounts for their kind. Partial unique booking_id separately for booking and release: one full release operation per Booking, reused on retries regardless of client key. Release requires completed/eligible Class and its own unreleased booking income, not aggregate Teacher pending. Withdrawal hold/payout/release require withdrawal_request_id and no booking_id; partial unique (withdrawal_request_id, kind) for those three kinds. Hold and request commit before external payout; only one terminal outcome wins under request/wallet locks. Gateway top_up/withdrawal requires provider/reference and positive intended VND/credits/rate matching callback and request. Timeout stays pending until definite outcome/reconciliation. Reversal requires original ID, same business context and audited authorization; other kinds require a NULL original ID. UNIQUE reverses_transaction_id prevents duplicate full reversals while allowing multiple NULLs. Before class refund after release, reverse the release then booking atomically when policy allows and funds exist; after payout, funding/recovery remains OQ-003/OQ-006, never invent negative user balance. All posted financial headers and postings are immutable; audited lifecycle status may become reversed, but original posted_at/amounts remain in balance. Partial refund/adjustment design awaits policy.'
 }
 
-Table ledger_entries {
+Table ledger_postings {
   id uuid [pk]
   transaction_id uuid [not null, ref: > ledger_transactions.id]
   wallet_id uuid [not null, ref: > wallets.id]
-  bucket varchar(16) [not null, note: 'available | pending']
+  user_id uuid [ref: > users.id, note: 'Wallet owner; NULL only for system wallets']
+  class_id uuid [ref: > classes.id, note: 'Required for class-related transactions, NULL for top_up/withdrawal']
+  bucket varchar(16) [not null, note: 'available | pending | payout_hold']
   amount_credits decimal(18,3) [not null, note: 'Signed delta; CHECK amount_credits <> 0']
   created_at timestamptz [not null]
   indexes {
     (wallet_id, bucket, created_at)
+    (user_id, created_at)
+    (class_id, created_at)
     (transaction_id, wallet_id, bucket)
   }
-  Note: 'Example 100-credit booking: Learner available -100, Teacher pending +90, platform fee +10. Commission rounding is OQ-012.'
-}
-
-Table top_up_requests {
-  id uuid [pk]
-  user_id uuid [not null, ref: > users.id]
-  ledger_transaction_id uuid [ref: > ledger_transactions.id, unique]
-  amount_vnd decimal(18,0) [not null]
-  credits decimal(18,3) [not null]
-  exchange_rate_vnd decimal(18,3) [not null]
-  provider_reference varchar(255) [unique]
-  status varchar(24) [not null, note: 'pending | completed | failed']
-  created_at timestamptz [not null]
+  Note: 'Kind-specific templates: booking debits the booked Learner and credits the immutable Class Teacher pending plus platform fee available; release moves only that Booking income from Teacher pending to available. withdrawal_hold: Teacher available -amount, payout_hold +amount; successful withdrawal: Teacher payout_hold -amount, gateway clearing available +amount; definite failure withdrawal_release reverses the hold between those Teacher buckets. No Class for payout operations. user_id equals immutable wallet owner (NULL for system wallets); class_id equals transaction.booking_id -> bookings.class_id. System wallets use available only. Freeze all postings and prevent late inserts after transaction posting. Compute fee once under OQ-012 and Teacher income as price minus fee to preserve zero sum.'
 }
 
 Table withdrawal_requests {
   id uuid [pk]
   teacher_id uuid [not null, ref: > users.id]
-  ledger_transaction_id uuid [ref: > ledger_transactions.id, unique]
-  amount_credits decimal(18,3) [not null]
-  exchange_rate_vnd decimal(18,3) [not null]
+  amount_credits decimal(18,3) [not null, note: 'CHECK amount_credits > 0; immutable once held']
+  exchange_rate_vnd decimal(18,3) [not null, note: 'CHECK exchange_rate_vnd > 0; applied snapshot']
   destination_ref text [not null, note: 'Encrypted payout destination token/reference']
-  provider_reference varchar(255) [unique]
   status varchar(24) [not null, note: 'pending | processing | completed | failed | reversed']
   idempotency_key varchar(128) [not null, unique]
   trace_id varchar(128) [not null]
   created_at timestamptz [not null]
-  Note: 'Withdrawal limits, fees, release timing and gateway selection await OQ-005, OQ-006, OQ-011.'
+  updated_at timestamptz [not null]
+  indexes { (teacher_id, created_at) }
+  Note: 'One request has many ledger transactions for hold, payout, hold release and authorized reversal. Freeze amount/rate/destination after holding; provider/reference lives on its withdrawal ledger transaction. Pending already has a posted hold. Create request plus hold atomically, then dispatch outside database transaction with one stable provider idempotency key; retries/timeout must not create a second payout. Unknown result retains hold and pending/processing status until reconciled. completed requires posted payout; failed requires definite nonpayment plus posted hold release; these outcomes are mutually exclusive. Requests are terminal after failed/completed except authorized payout reversal; no retry with a new transfer on the same failed request. Limits/fees/reversal policy/gateway remain OQ-005/OQ-006/OQ-011.'
 }
 
 Table gateway_events {
   id uuid [pk]
-  provider_event_id varchar(255) [not null, unique]
-  top_up_id uuid [ref: > top_up_requests.id]
-  withdrawal_id uuid [ref: > withdrawal_requests.id]
+  provider varchar(64) [not null]
+  provider_event_id varchar(255) [not null]
+  ledger_transaction_id uuid [not null, ref: > ledger_transactions.id]
   provider_status varchar(64) [not null]
   occurred_at timestamptz [not null]
   received_at timestamptz [not null]
   processed_at timestamptz
-  Note: 'Exactly one of top_up_id or withdrawal_id. Verify signature and reject stale/replayed transitions before posting.'
+  indexes { (provider, provider_event_id) [unique] }
+  Note: 'References the gateway-facing top_up or withdrawal transaction, never internal withdrawal_hold/withdrawal_release. Verify provider/reference, amount and signature; deduplicate and apply only valid provider transitions. Process callback/reconciliation, financial posting, request outcome and audit atomically. Unknown/timeouts retain the payout hold; contradictory terminal events require reconciliation. A new valid gateway reversal creates a compensating ledger transaction with the same request/context; no top-up table is needed.'
 }
 
 Table messages {
@@ -208,12 +281,13 @@ Table messages {
   sender_id uuid [not null, ref: > users.id]
   body text [not null]
   created_at timestamptz [not null]
+  indexes { (class_id, created_at, id) }
   Note: 'Read/write access requires Teacher or a valid booking participant. Contact handling awaits OQ-009.'
 }
 
 Table ratings {
   id uuid [pk]
-  booking_id uuid [not null, unique, ref: > bookings.id]
+  booking_id uuid [not null, unique, ref: - bookings.id]
   score int [not null, note: 'CHECK score BETWEEN 1 AND 5']
   comment text
   status varchar(16) [not null, default: 'published']
@@ -229,11 +303,14 @@ Table audit_events {
   target_id uuid [not null]
   trace_id varchar(128)
   occurred_at timestamptz [not null]
+  old_state_json jsonb [note: 'Sanitized previous state; NULL only for creation/non-state events']
+  new_state_json jsonb [note: 'Sanitized resulting state; NULL only for deletion/non-state events']
   metadata_json jsonb [note: 'Sanitized metadata only; no identity documents or secrets']
   indexes {
     (actor_id, occurred_at)
     (target_type, target_id, occurred_at)
   }
+  Note: 'Append-only. State transitions require old/new status, actor or explicit system source, timestamp and action-specific reason. Evidence decision snapshots include reviewer_id, decided_at and approved_level so later revocation/supersession cannot overwrite FR-018 history. Role transitions and completion record their source/rule; ledger/request transitions share trace_id. Store identifiers and whitelisted decision fields only, never document content, payout destination, secrets or raw gateway payloads. Audit commits with the state change.'
 }
 
 Table notifications {

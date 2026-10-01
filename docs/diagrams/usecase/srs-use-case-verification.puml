@@ -1,9 +1,18 @@
 @startuml
+!pragma layout smetana
 
 skinparam actorStyle stickman
 skinparam usecaseFontSize 13
 skinparam shadowing false
-!include C:/Users/LENOVO/.agents/skills/plantuml-skill/assets/premium-theme.puml
+skinparam defaultFontName Arial
+skinparam dpi 200
+skinparam ArrowColor #769AFF
+skinparam ArrowThickness 1.5
+skinparam UsecaseBackgroundColor #F1F1F1
+skinparam UsecaseBorderColor #181818
+skinparam UsecaseFontColor #000000
+skinparam RectangleBackgroundColor #FFFFFF
+skinparam RectangleBorderColor #181818
 skinparam backgroundcolor #ffffff
 skinparam linetype polyline
 skinparam ActorFontColor #000000
@@ -27,6 +36,5 @@ LE -- UC001
 AD -- UC001
 TE -- UC002
 VE -- UC002
-AD -- UC002
 AD -- UC009
 @enduml

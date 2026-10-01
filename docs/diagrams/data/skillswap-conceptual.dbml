@@ -9,9 +9,21 @@ Table User {
   Note: 'One student account may act as Learner and Teacher. Verifier and Administrator are assigned roles.'
 }
 
+Table UserRole {
+  user_id uuid [not null]
+  role varchar [not null, note: 'Learner | Teacher | Verifier | Administrator']
+  status varchar [not null, note: 'active | suspended | revoked']
+  indexes { (user_id, role) [pk] }
+  Note: 'Role grants are retained and audited; a Verifier role and matching expertise must both be active to review skills.'
+}
+
 Table StudentVerification {
   id uuid [pk]
-  student_id uuid
+  profile_id uuid [not null]
+  school_id uuid [not null]
+  major_id uuid [not null]
+  status varchar
+  Note: 'Keep each immutable submission; approvals can be superseded, revoked or expired, with structured decision history.'
 }
 
 Table Skill {
@@ -19,88 +31,141 @@ Table Skill {
   Note: 'A skill concept; taxonomy depth remains OQ-001.'
 }
 
-Table VerifierAssignment {
+Table Profile {
   id uuid [pk]
-  verifier_id uuid
-  skill_id uuid
-  Note: 'A Verifier is assigned expertise for a skill.'
+  user_id uuid [not null, unique]
+  school_id uuid
+  major_id uuid
+  Note: 'One profile per User; school and major may be absent for invited non-student roles.'
+}
+
+Table School {
+  id uuid [pk]
+}
+
+Table Major {
+  id uuid [pk]
+}
+
+Table SchoolMajor {
+  school_id uuid
+  major_id uuid
+  indexes { (school_id, major_id) [pk] }
+}
+
+Table ProfileSkill {
+  id uuid [pk]
+  profile_id uuid [not null]
+  skill_id uuid [not null]
+  level varchar [note: 'Cached effective approved level: begin | mid | senior; NULL until approved']
+  verifier_expertise_status varchar
+  Note: 'Many skills per profile. Valid SkillEvidence.approved_level controls teaching permission. Pending upgrades retain the old valid approval; a new approval updates the cache atomically. Administrator authorizes Verifier expertise.'
 }
 
 Table SkillEvidence {
   id uuid [pk]
-  teacher_id uuid
-  skill_id uuid
-  Note: 'Each resubmission is retained as a new evidence version.'
+  profile_skill_id uuid [not null]
+  evidence_type varchar [note: 'certificate | verifier_recognition']
+  status varchar
+  requested_level varchar
+  approved_level varchar
+  reviewer_id uuid
+  Note: 'Only an active domain-matched Verifier reviews certificates or recognizes skill; Administrator role alone cannot decide. Preserve versions and old/new decision audit; no assignment entity.'
 }
 
 Table Class {
   id uuid [pk]
-  teacher_id uuid
-  skill_id uuid
+  teacher_id uuid [not null]
+  Note: 'One Class is one scheduled online session. Teacher, content, schedule and ClassSkills are frozen at the first confirmed Booking; completion records time and audited source/rule.'
+}
+
+Table ClassSkill {
+  class_id uuid [not null]
+  skill_id uuid [not null]
+  target_level varchar [note: 'begin | mid | senior']
+  indexes { (class_id, skill_id) [pk] }
+  Note: 'Class covers one or more skills, each approved for its Teacher at a sufficient level.'
 }
 
 Table Booking {
   id uuid [pk]
-  class_id uuid
-  learner_id uuid
+  class_id uuid [not null]
+  learner_id uuid [not null]
+  Note: 'At most one valid Booking per Learner/Class; capacity and payment are committed atomically. One full income release operation per Booking.'
 }
 
 Table Wallet {
   id uuid [pk]
-  owner_id uuid
-  Note: 'Includes user and platform accounts.'
+  owner_id uuid [unique]
+  Note: 'At most one user wallet per User; system wallets have no User owner. Balances derive from available, pending and payout_hold postings.'
 }
 
 Table LedgerTransaction {
   id uuid [pk]
-  Note: 'An auditable transfer can affect multiple wallets.'
+  initiated_by_user_id uuid
+  booking_id uuid
+  withdrawal_request_id uuid
+  reverses_transaction_id uuid [unique, note: 'Only full reversal refers to an original; at most one full reversal per original.']
+  kind varchar [note: 'top_up | booking | release | withdrawal_hold | withdrawal | withdrawal_release | reversal']
+  Note: 'Balanced transfers also obey kind-specific participants/amounts. Top-up is a kind. One withdrawal request groups hold, payout/release and authorized compensations; retries reuse the business operation.'
 }
 
 Table LedgerPosting {
   id uuid [pk]
-  transaction_id uuid
-  wallet_id uuid
-}
-
-Table TopUp {
-  id uuid [pk]
+  transaction_id uuid [not null]
+  wallet_id uuid [not null]
   user_id uuid
-  transaction_id uuid
+  class_id uuid
+  bucket varchar [not null, note: 'available | pending | payout_hold']
+  Note: 'User is wallet owner (NULL for system wallets); Class is present for booking transfers. Payout holds cannot be spent; posted amounts remain immutable, including reversed originals.'
 }
 
 Table WithdrawalRequest {
   id uuid [pk]
-  teacher_id uuid
-  transaction_id uuid
+  teacher_id uuid [not null]
+  Note: 'Has many LedgerTransactions; hold credit before payout. Timeout retains the hold until a definitive result or reconciliation. Successful payout and failure hold release are mutually exclusive.'
 }
 
 Table Message {
   id uuid [pk]
-  class_id uuid
-  sender_id uuid
+  class_id uuid [not null]
+  sender_id uuid [not null]
 }
 
 Table Rating {
   id uuid [pk]
-  booking_id uuid
+  booking_id uuid [not null, unique]
+  Note: 'A Booking has zero or one Rating; only its eligible Learner may review a completed Class.'
 }
 
-Ref: User.id < StudentVerification.student_id
-Ref: User.id < SkillEvidence.teacher_id
-Ref: Skill.id < SkillEvidence.skill_id
-Ref: User.id < VerifierAssignment.verifier_id
-Ref: Skill.id < VerifierAssignment.skill_id
+Ref: User.id < UserRole.user_id
+Ref: User.id - Profile.user_id
+Ref: School.id < Profile.school_id
+Ref: Major.id < Profile.major_id
+Ref: School.id < SchoolMajor.school_id
+Ref: Major.id < SchoolMajor.major_id
+Ref: Profile.id < StudentVerification.profile_id
+Ref: School.id < StudentVerification.school_id
+Ref: Major.id < StudentVerification.major_id
+Ref: Profile.id < ProfileSkill.profile_id
+Ref: Skill.id < ProfileSkill.skill_id
+Ref: ProfileSkill.id < SkillEvidence.profile_skill_id
+Ref: User.id < SkillEvidence.reviewer_id
 Ref: User.id < Class.teacher_id
-Ref: Skill.id < Class.skill_id
+Ref: Class.id < ClassSkill.class_id
+Ref: Skill.id < ClassSkill.skill_id
 Ref: Class.id < Booking.class_id
 Ref: User.id < Booking.learner_id
-Ref: User.id < Wallet.owner_id
+Ref: User.id - Wallet.owner_id
 Ref: LedgerTransaction.id < LedgerPosting.transaction_id
 Ref: Wallet.id < LedgerPosting.wallet_id
-Ref: User.id < TopUp.user_id
-Ref: LedgerTransaction.id - TopUp.transaction_id
+Ref: User.id < LedgerPosting.user_id
+Ref: Class.id < LedgerPosting.class_id
+Ref: User.id < LedgerTransaction.initiated_by_user_id
+Ref: Booking.id < LedgerTransaction.booking_id
 Ref: User.id < WithdrawalRequest.teacher_id
-Ref: LedgerTransaction.id - WithdrawalRequest.transaction_id
+Ref: WithdrawalRequest.id < LedgerTransaction.withdrawal_request_id
+Ref: LedgerTransaction.reverses_transaction_id - LedgerTransaction.id
 Ref: Class.id < Message.class_id
 Ref: User.id < Message.sender_id
 Ref: Booking.id - Rating.booking_id

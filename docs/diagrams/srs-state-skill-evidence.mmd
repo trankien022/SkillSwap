@@ -1,0 +1,22 @@
+stateDiagram-v2
+  [*] --> Draft
+  Draft --> Pending : submit immutable evidence version N
+  Pending --> Approved : active domain-matched Verifier approves
+  Pending --> Rejected : active domain-matched Verifier rejects
+  Approved --> Superseded : replacement approved atomically
+  Approved --> Revoked : authorized Verifier revokes with reason
+  Approved --> Expired : verification or certificate validity ends
+  Rejected --> [*]
+  Superseded --> [*]
+  Revoked --> [*]
+  Expired --> [*]
+  note right of Approved
+    Valid approved level controls teaching
+    Pending upgrade retains old valid permission
+    Replacement updates level cache and audit atomically
+  end note
+  note right of Pending
+    Administrator role alone cannot decide
+    Reviewer cannot be the evidence owner
+    Resubmission creates a new version
+  end note
