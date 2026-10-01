@@ -1,0 +1,21 @@
+stateDiagram-v2
+  [*] --> Draft
+  Draft --> Published : verified Teacher publishes valid schedule
+  Published --> Full : last seat booked
+  Full --> Published : seat released by allowed cancellation
+  Published --> InProgress : session begins
+  Full --> InProgress : session begins
+  InProgress --> Completed : approved completion rule satisfied (OQ-006)
+  Draft --> Cancelled : Teacher discards
+  Published --> Cancelled : allowed cancellation (OQ-003)
+  Full --> Cancelled : allowed cancellation (OQ-003)
+  InProgress --> Cancelled : allowed cancellation (OQ-003)
+  note right of Published
+    One Class is one scheduled online session
+    First confirmed booking freezes commitments
+    Duration remains 30 min to 3 h
+  end note
+  note right of Completed
+    Record completion time and audited source/rule
+    Release timing still requires OQ-006
+  end note

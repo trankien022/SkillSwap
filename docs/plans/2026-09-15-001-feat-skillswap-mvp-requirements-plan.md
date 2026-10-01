@@ -90,12 +90,13 @@ version: 0.2
 | OQ-003 | Chính sách hủy, no-show, tranh chấp, hoàn tiền thủ công và workflow Administrator thực thi các quyết định này. | Product Owner + Administrator | FR-007, FR-009–FR-011, FR-013 | Before implementation planning |
 | OQ-004 | Ngưỡng rating, số đánh giá tối thiểu và cách khôi phục hiển thị. | Product Owner | FR-006, FR-013 | Before implementation planning |
 | OQ-005 | Điều kiện, giới hạn, phí và thời gian xử lý withdrawal. | Product Owner + Finance | FR-010, FR-014 | Before implementation planning |
-| OQ-006 | Khi nào khoản 90% của Teacher chuyển từ pending sang available; cách xử lý chargeback và reversal. | Product Owner + Finance | FR-008, FR-009, FR-014 | Before implementation planning |
+| OQ-006 | Khi nào khoản 90% của từng booking chuyển từ pending sang available một lần; cách xử lý chargeback/reversal và nguồn bù sau payout. | Product Owner + Finance | FR-008, FR-009, FR-014 | Before implementation planning |
 | OQ-007 | Lớp là một-một, lớp nhóm hay cả hai; sức chứa, quy tắc giữ/nhả chỗ và kết quả khi nhiều Learner đồng thời đặt chỗ cuối. | Product Owner | FR-005, FR-007 | Before implementation planning |
 | OQ-008 | Thời hạn hiệu lực xác minh sinh viên, thời hạn lưu/xóa giấy tờ, và quy tắc cascade hoặc grandfather khi Student/Verifier hết hiệu lực hoặc bị thu hồi đối với SkillEvidence, lớp đã công bố, booking, quyền vào phòng, thu nhập pending và payout. | Product Owner + Security | FR-002–FR-005, FR-007, FR-011, FR-014, NFR-004 | Before storage and lifecycle design |
 | OQ-009 | Chat cảnh báo, chặn hay chỉ ghi nhận khi phát hiện thông tin liên hệ cá nhân. | Product Owner | FR-012 | Before implementation planning |
 | OQ-010 | Giá trị mục tiêu cho bốn success metrics và phạm vi trường pilot. | Product Owner | Product rollout | Before pilot planning |
 | OQ-011 | Payment gateway nào đáp ứng top-up, payout, webhook, reconciliation và reversal. | Engineering + Finance | FR-008, FR-014 | Before integration design |
+| OQ-012 | Quy tắc và độ chính xác làm tròn commission; tính phí một lần, thu nhập Teacher bằng giá trừ phí. | Product Owner + Finance | FR-009, FR-014 | Before financial posting design |
 
 ## 5. Process Analysis
 
@@ -127,7 +128,7 @@ version: 0.2
 | FR-011 | Functional | Learner và Teacher của booking phải có thể truy cập đúng phòng Jitsi; giới hạn quyền theo booking và cửa sổ thời gian là kiểm soát đề xuất chờ Engineering duyệt. | Must | `docs/intent.md` + Proposed | Confirmed core; access controls Proposed |
 | FR-012 | Functional | Các bên thuộc lớp phải có chat nội bộ; người ngoài không được truy cập và hành vi chia sẻ liên hệ tuân theo OQ-009. | Should | `docs/intent.md` | Confirmed; enforcement open |
 | FR-013 | Functional | Sau lớp, Learner phải có thể rating/comment; điều kiện booking hợp lệ, giới hạn một lần và ảnh hưởng hiển thị là đề xuất/chính sách chờ OQ-004. | Must | `docs/intent.md` + Proposed | Confirmed core; eligibility/uniqueness Proposed; threshold open |
-| FR-014 | Functional | Teacher phải có thể yêu cầu rút thu nhập qua gateway; khái niệm số dư available phụ thuộc OQ-005/OQ-006, còn idempotency và ledger là thiết kế đề xuất. | Must | `docs/intent.md` + Proposed | Confirmed core; payout controls Proposed; policy/gateway open |
+| FR-014 | Functional | Teacher phải có thể yêu cầu rút thu nhập qua gateway; giữ credit trong ledger cùng request trước payout, timeout giữ tiền đến khi đối soát; giới hạn/phí/release/reversal vẫn theo OQ-005/OQ-006, contract gateway theo OQ-011. | Must | `docs/intent.md` + Proposed | Confirmed core; payout controls Proposed; policy/gateway open |
 
 ### Business rules
 
@@ -219,17 +220,25 @@ version: 0.2
 
 | Entity | Key fields | Relationships | Lifecycle | Classification | Owner |
 |---|---|---|---|---|---|
-| User | id, roles, school_name, verification_status | Has verification, wallet, classes/bookings | Pending → Active → Suspended | PII | User/Admin |
-| StudentVerification | id, user_id, document_ref, status, reviewer_id, reason, expires_at | Belongs to User | Draft → Pending → Approved/Rejected/Expired | Sensitive identity document | Administrator |
-| SkillEvidence | id, teacher_id, skill_id, document_ref, version, status | Belongs to Teacher and Skill | Draft → Pending → Approved/Rejected/Superseded | Sensitive credential | Teacher/Verifier |
-| VerifierAssignment | id, verifier_id, domain, status, assigned_by | Links Verifier to review domain | Invited → Active → Suspended/Revoked | Internal access-control data | Administrator |
-| Class | id, teacher_id, skill_id, schedule, duration, price, capacity, status | Has Bookings | Draft → Published → Full/Closed/Cancelled | Public marketplace data | Teacher |
-| Booking | id, class_id, learner_id, status, settlement_id | Links Class, Learner and ledger | Pending → Confirmed → Completed/Cancelled/Disputed | Private transaction data | Learner/Teacher |
-| Wallet | id, user_id, available_balance, pending_balance | Has ledger entries | Active → Restricted/Closed | Financial | User/Platform |
-| LedgerTransaction | id, wallet_id, type, amount, rate, status, trace_id, idempotency_key | Links top-up, booking or withdrawal | Pending → Posted/Reversed/Failed | Sensitive financial | Platform |
+| User | id, email, roles, status | Has exactly one Profile, at most one user Wallet and role grants | Pending → Active → Suspended | PII | User/Administrator |
+| UserRole | user_id, role, status, assigned_by, assigned_at | One grant per User/role; role suspension is independent of account suspension | Active → Suspended/Revoked; reactivation audited | Internal authorization | Administrator |
+| Profile | id, user_id, display_name, bio, school_id, major_id | Belongs to User; has ProfileSkills and StudentVerifications | Created with User; school/major change requires re-verification | PII | User/Administrator |
+| School / Major / SchoolMajor | id/code/name; school_id + major_id | Managed school and major catalogs; SchoolMajor lists valid pairs | Active → Inactive | Reference data | Administrator |
+| Skill / ProfileSkill | id, name; profile_id, skill_id, level, verifier_expertise_status | Profile ↔ Skill is many-to-many; level caches effective approval (NULL until approved); active Verifier role plus authorized expertise required | Skill Active/Inactive; valid SkillEvidence.approved_level governs teaching; pending upgrades preserve old approval | Public competency + internal authorization | User/Verifier/Administrator |
+| StudentVerification | id, profile_id, school_id, major_id, document_ref, status, reviewer_id, reason, expires_at | Belongs to Profile; immutable submission snapshots; resubmission creates a new row | Draft → Pending → Approved/Rejected; Approved → Superseded/Revoked/Expired | Sensitive identity document | Administrator |
+| SkillEvidence | id, profile_skill_id, evidence_type, document_ref/description, version, requested_level, approved_level, status, reviewer_id, decided_at | Belongs to ProfileSkill; certificate or Verifier recognition; reviewer updates status with audit, no assignment entity | Draft → Pending → Approved/Rejected; Approved → Superseded/Revoked/Expired | Sensitive credential | Teacher/Verifier |
+| Class | id, teacher_id, starts_at, duration_minutes, price_credits, capacity, status, commitments_locked_at, completed_at/completed_by | One scheduled online session per Class; has Bookings/ClassSkills; Teacher/content/schedule/skills freeze at first confirmed Booking | Draft → Published/Full → In progress → Completed; cancellation by policy | Public marketplace data | Teacher |
+| ClassSkill | class_id, skill_id, target_level | Class ↔ Skill is many-to-many; Teacher approved level must cover target level | Managed with Class | Public marketplace data | Teacher |
+| Booking | id, class_id, learner_id, status, price_credits, idempotency_key | Links Class/Learner/ledger; price snapshot; at most one valid booking per Learner/Class and one full release operation | Pending → Confirmed → Completed/Cancelled/Disputed | Private transaction data | Learner/Teacher |
+| Wallet | id, owner_user_id, kind; available/pending/payout_hold derived from posted postings | At most one wallet per User; system wallets have no owner; payout_hold is reserved and not spendable | Active → Restricted/Closed | Financial | User/Platform |
+| LedgerTransaction | id, kind, booking_id, withdrawal_request_id, initiated_by_user_id, amount_vnd, gateway_credits, rate, provider/reference, reverses_transaction_id, status, trace_id, idempotency_key | Groups balanced kind-specific postings; unique booking/release operations; withdrawal request has hold/payout/hold-release/reversal transactions; original has 0..1 full reversal, linked only for kind reversal | Pending → Posted/Failed; Posted → Reversed with compensating transaction; posted financial fields immutable | Sensitive financial | Platform |
+| LedgerPosting | id, transaction_id, wallet_id, user_id, class_id, bucket, amount_credits | Links transaction/wallet owner/Class; buckets available/pending/payout_hold; system user and non-class transfer Class are NULL | Immutable once posted, including no late inserts; corrections compensate actual transfer chain | Sensitive financial | Platform |
 | Message | id, class_id, sender_id, body, created_at | Belongs to class conversation | Active → Retained/Deleted | Private communication | Participants/Platform |
 | Rating | id, booking_id, learner_id, score, comment | One policy-valid rating per Booking | Published → Hidden/Updated by policy | Public content + private provenance | Learner/Platform |
-| WithdrawalRequest | id, teacher_id, amount, destination_ref, status, trace_id | Produces ledger entries | Pending → Processing → Completed/Failed/Reversed | Sensitive financial | Teacher/Platform |
+| WithdrawalRequest | id, teacher_id, amount_credits, exchange_rate_vnd, destination_ref, status, trace_id | Has many LedgerTransactions through withdrawal_request_id; hold commits before payout; amount/rate/destination frozen | Pending → Processing → Completed/Failed; timeout retains hold until reconciliation; authorized payout reversal → Reversed | Sensitive financial | Teacher/Platform |
+| AuditEvent | id, actor_id, action, target_type/id, old_state_json, new_state_json, occurred_at, trace_id, metadata_json | Commits with state change; whitelisted decision snapshots preserve full evidence/role/completion/financial history | Append-only | Internal audit; no document content or payout destinations | Platform |
+
+ERD chi tiết và các ràng buộc triển khai: [data model](../diagrams/data/README.md). Một Class là một buổi học có lịch/phòng riêng, không có bảng Session. Hai cách xác minh là kiểm tra chứng chỉ hoặc Verifier công nhận năng lực; chỉ Verifier đang active và đúng chuyên môn được quyết định. Không có bảng phân công Verifier hoặc bảng TopUp. Evidence Approved còn hiệu lực quyết định level được phép dạy; pending/rejected replacement giữ quyền cũ còn hiệu lực. Quyết định lưu trên SkillEvidence, lịch sử trước/sau lưu trong audit. Chỉ publish khi Teacher còn xác minh sinh viên hiệu lực và được duyệt đủ level cho **tất cả** skill của lớp; khóa cam kết tại booking Confirmed đầu tiên. Payout giữ credit trước khi gọi gateway; timeout chưa phải thất bại. Thời điểm release, hoàn tiền/nguồn bù sau payout và làm tròn vẫn theo OQ-003/OQ-006/OQ-012.
 
 **Data rules:** Access is server-authorized by role and ownership. Sensitive files are encrypted in transit and at rest, stored outside executable paths, and never written to application logs. Exact retention/deletion periods require OQ-008 approval.
 
@@ -239,10 +248,10 @@ These contracts are `Proposed` until Engineering approves the design and OQ-011 
 
 | API/Event ID | Method/path | Purpose | Auth | Request/response | Errors |
 |---|---|---|---|---|---|
-| API-001 | POST `/api/student-verifications` | Submit student evidence | Authenticated student | school, document → verification ID/status | validation, unsupported file, duplicate pending request |
-| API-002 | POST `/api/skill-evidence` | Submit Teacher evidence | Verified student | skill, document → evidence ID/status | validation, taxonomy unavailable |
-| API-003 | POST `/api/verifications/{id}/decision` | Approve/reject assigned evidence | Administrator or assigned Verifier by verification type | decision, reason → updated status | forbidden, stale version, invalid transition |
-| API-004 | POST `/api/classes` | Create/publish a class | Teacher approved for skill | class details → class/status | forbidden, invalid duration/price/capacity |
+| API-001 | POST `/api/student-verifications` | Submit student evidence | Authenticated student | profile, school_id, major_id, document → verification ID/status | validation, unsupported file, duplicate pending request |
+| API-002 | POST `/api/skill-evidence` | Submit Teacher evidence | Verified student | profile_skill_id, requested_level, evidence_type, document/assessment → evidence ID/status | validation, taxonomy unavailable |
+| API-003 | POST `/api/verifications/{id}/decision` | Approve/reject eligible evidence | Administrator for student verification; active domain-matched Verifier for skill evidence | decision, approved_level (skill approval), reason → updated status | forbidden, stale version, invalid transition |
+| API-004 | POST `/api/classes` | Create/publish a class | Teacher approved for every class skill and target level | class details → class/status | forbidden, invalid duration/price/capacity |
 | API-005 | POST `/api/classes/{id}/bookings` | Book and settle a class | Verified Learner | booking request/idempotency key → booking/ledger status | insufficient balance, booking window, full, conflict |
 | API-006 | POST `/api/wallet/top-ups` | Start top-up | Authenticated user | amount → gateway reference | gateway unavailable, limit exceeded |
 | EVT-001 | POST `/api/webhooks/payment` | Receive top-up/payout status | Verified gateway signature | provider event ID, transaction reference, sequence/version or occurred-at, status → accepted/ignored duplicate/stale | invalid signature, replay, stale transition, unknown reference |
@@ -295,7 +304,7 @@ These contracts are `Proposed` until Engineering approves the design and OQ-011 
 | Business goal | Requirement | Use case/story | API/data/NFR | Test evidence |
 |---|---|---|---|---|
 | Trusted student identity | FR-001–FR-002 | UC-001, US-001 | API-001, User, StudentVerification, NFR-004/NFR-008/NFR-009 | Pending implementation |
-| Trusted Teacher capability | FR-003–FR-005 | UC-002, US-002 | API-002–API-004, SkillEvidence, VerifierAssignment, NFR-004/NFR-009 | Pending implementation |
+| Trusted Teacher capability | FR-003–FR-005 | UC-002, US-002 | API-002–API-004, ProfileSkill, SkillEvidence, NFR-004/NFR-009 | Pending implementation |
 | Discover and book online learning | FR-005–FR-007 | UC-003, US-003 | API-004–API-005, Class, Booking, NFR-001/NFR-006/NFR-007 | Pending implementation |
 | Traceable wallet settlement | FR-008–FR-010, FR-014 | UC-003, UC-005, US-003/US-006 | API-005–API-007, EVT-001, Wallet/Ledger/Withdrawal, NFR-003/NFR-005/NFR-009 | Pending implementation |
 | Secure class participation | FR-011–FR-013 | UC-004, US-004/US-005 | API-008–API-010, Message/Rating, NFR-006/NFR-007/NFR-010 | Pending implementation |

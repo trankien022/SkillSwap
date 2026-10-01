@@ -1,0 +1,18 @@
+stateDiagram-v2
+  [*] --> Draft
+  Draft --> Pending : submit school/major and document
+  Pending --> Approved : Administrator approves
+  Pending --> Rejected : Administrator rejects with reason
+  Approved --> Expired : validity period elapses (OQ-008)
+  Approved --> Revoked : Administrator revokes or school/major changes
+  Approved --> Superseded : replacement approved atomically
+  Rejected --> [*]
+  Expired --> [*]
+  Revoked --> [*]
+  Superseded --> [*]
+  note right of Approved
+    One effective approval per Profile
+    Check expiry at authorization time
+    Resubmission creates a new row
+    Every transition retains audited history
+  end note

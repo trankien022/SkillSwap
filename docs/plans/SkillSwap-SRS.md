@@ -22,7 +22,7 @@ version: 1.0
 
 **Related documents:** `SkillSwap-PRD.md`, `SkillSwap-BRD.md`, `docs/intent.md`
 
-**Requirement policy:** This SRS contains **confirmed requirements only**. Requirements whose content is governed by an unresolved Open Question (OQ-001–OQ-011 in the BRD) are stated only at their confirmed core; the unconfirmed portions are excluded from the body and listed for traceability in [Appendix A](#appendix-a—excluded-open-question-governed-clauses). Source status labels from the PRD (`Confirmed core`, `… open`) are preserved in the requirement tables.
+**Requirement policy:** This SRS contains **confirmed requirements only**. Requirements whose content is governed by an unresolved Open Question (OQ-001–OQ-012 in the BRD) are stated only at their confirmed core; the unconfirmed portions are excluded from the body and listed for traceability in [Appendix A](#appendix-a—excluded-open-question-governed-clauses). Source status labels from the PRD (`Confirmed core`, `… open`) are preserved in the requirement tables.
 
 ---
 
@@ -52,7 +52,7 @@ SkillSwap MVP is a responsive, mobile-first **web application** in which:
 | Verifier | An invited domain expert who reviews Teacher skill evidence. |
 | Administrator | Platform operator who approves student verifications, manages Verifiers and handles exceptions. |
 | Credit | Internal currency unit; initial rate 1 credit = 1,000 VND (BR-005). |
-| Wallet | Per-user ledger-backed balance of available and pending credit. |
+| Wallet | Per-user ledger-backed available, pending income and reserved payout_hold credit; only available is spendable. |
 | Booking | A Learner's reservation of a seat in a Class, settled atomically against the wallet ledger. |
 | Settlement | Atomic ledger posting that debits the Learner and splits the price 90% Teacher / 10% platform. |
 | Class | A single online teaching session with skill, schedule, duration, price and capacity. |
@@ -65,7 +65,7 @@ SkillSwap MVP is a responsive, mobile-first **web application** in which:
 
 1. `docs/intent.md` — SkillSwap intent (problem, outcome, constraints, open questions).
 2. `docs/plans/SkillSwap-PRD.md` v1.0 — Product Requirements Document (FR/BR/NFR/UC/AC/data model/API contract).
-3. `docs/plans/SkillSwap-BRD.md` v1.0 — Business Requirements Document (scope, business rules, A/C/DEP, OQ-001–OQ-011).
+3. `docs/plans/SkillSwap-BRD.md` v1.0 — Business Requirements Document (scope, business rules, A/C/DEP, OQ-001–OQ-012).
 4. `docs/plans/2026-09-15-001-feat-skillswap-mvp-requirements-plan.md` — requirements plan.
 5. `docs/diagrams/c4/generated/structurizr-SystemContext.png` — system context diagram (C4 Level 1).
 6. IEEE Std 830-1998, *IEEE Recommended Practice for Software Requirements Specifications*.
@@ -189,11 +189,13 @@ Priority follows MoSCoW from the PRD (`Must` / `Should`). Status preserves the P
 | FR-011 | The system shall grant the Learner and Teacher of a booking access to the correct Jitsi room within the permitted time window. | Must | intent.md | Confirmed core |
 | FR-012 | The system shall provide in-class chat to booking participants only; outsiders shall be denied and contact sharing handled per approved policy. | Should | intent.md | Confirmed; enforcement open (OQ-009) |
 | FR-013 | After class, the system shall allow the Learner to submit exactly one rating/comment per valid booking. | Must | intent.md | Confirmed core; threshold open (OQ-004) |
-| FR-014 | The system shall let a Teacher request withdrawal of earnings through the gateway with idempotency and complete ledger records. | Must | intent.md | Confirmed core; policy/gateway open (OQ-005, OQ-011) |
+| FR-014 | The system shall reserve credit atomically with a Teacher withdrawal request before gateway payout, retain the hold while the result is unknown, and post exactly one payout or release on a definitive outcome with complete ledger records. | Must | intent.md | Confirmed core; policy/gateway open (OQ-005, OQ-011) |
 | FR-015 | The system shall provide an Administrator dashboard aggregating the student-verification queue, Verifier queue by domain, dispute/account-lock lists, and an audit log filterable by actor, time and action type. | Must | intent.md | Confirmed |
 | FR-016 | The system shall notify users on verification outcomes, booking confirmed/cancelled, class starting soon, completed wallet transactions and withdrawal outcomes. | Should | intent.md | Confirmed |
 | FR-017 | The system shall show the Learner their account status and any rejection reason on the main screen. | Must | intent.md | Confirmed |
-| FR-018 | The system shall show a Teacher the decision history for each submitted evidence version, not only the latest status. | Should | intent.md | Confirmed |
+| FR-018 | The system shall show a Teacher the complete decision history for each immutable submitted evidence version, retaining old/new decisions when superseded, revoked or expired. | Must | intent.md | Confirmed |
+| FR-019 | The system shall support student re-verification and invalidate rights requiring VERIFIED when approval expires or is revoked; treatment of existing commitments follows the approved cascade policy. | Must | BRD BR-006 | Confirmed core; cascade/validity policy open (OQ-008) |
+| FR-020 | The system shall treat each Class as one scheduled online session, record its completion time and audited source/rule, and gate rating and income release on their eligibility conditions. | Must | BRD BR-042–BR-043 | Confirmed core; completion/release rule open (OQ-006) |
 
 #### 3.2.2 Business rules
 
@@ -225,7 +227,7 @@ Detailed use cases UC-001–UC-005 are specified in the PRD §11 and restated he
 **UC-002 — Verify a Teacher skill**
 - Actors: Teacher candidate, Verifier, Administrator. Trigger: verified student registers to teach a skill.
 - Main flow: submit evidence → routed to domain-matched Verifier → review → skill Approved → class publication allowed for that skill.
-- Alternate flow: incomplete data, wrong domain, or Reject with reason → Teacher views reason → submits a new version (previous → Superseded).
+- Alternate flow: incomplete data, wrong domain, or Reject with reason → Teacher views reason → submits a new version. Existing valid approval remains usable while the replacement is Pending/Rejected; only approval of the replacement supersedes it and updates the cached level atomically. Administrator role alone cannot decide skill evidence.
 - Postconditions: only Approved skills may publish classes; full decision history retained (FR-018).
 
 **UC-003 — Book and pay for a class**
@@ -242,8 +244,8 @@ Detailed use cases UC-001–UC-005 are specified in the PRD §11 and restated he
 
 **UC-005 — Withdraw earnings**
 - Actors: Teacher, Payment gateway. Trigger: Teacher requests payout of available balance.
-- Main flow: step-up authentication → create withdrawal (Pending) → gateway payout → signed callback → ledger Completed.
-- Alternate flow: timeout/failure keeps balances consistent; replayed callback never pays twice.
+- Main flow: step-up authentication → atomically create Pending request plus posted credit hold → commit → gateway payout with stable provider idempotency key → signed callback posts payout and sets Completed atomically.
+- Alternate flow: definite nonpayment posts hold release and Failed; timeout/unknown result retains hold in Pending/Processing until callback or reconciliation. Dispatch/retry never creates a second payout; terminal outcomes serialize on request/wallet locks.
 - Postconditions: payout status and trace ID visible in wallet history (AC-008).
 
 #### 3.2.4 Use case diagrams (level 0 and level 1)
@@ -290,7 +292,7 @@ One row per use case appearing on the diagrams, ordered by subsystem then code. 
 | UC-007 | Log In | Learner, Teacher, Verifier, Administrator | — | Accounts | An existing user authenticates and obtains the session required by every other use case. | Account registered (UC-006). | — | Must |
 | UC-008 | Manage account | Learner, Teacher | — | Accounts | View and edit the profile, switch the active role view (FR-017), and read account status and rejection reason (FR-001). | Logged in. | — | Must |
 | UC-001 | Verify a student | Learner | Administrator | Verification | Submit student-status evidence; an Administrator approves or rejects it, activating the account on approval (FR-002). | Logged in; verification not yet Approved. | — | Must |
-| UC-002 | Verify a Teacher skill | Teacher | Verifier, Administrator | Verification | Submit skill evidence; a domain-matched Verifier (or the Administrator) decides, enabling class publication for that skill (FR-003, FR-018). | Logged in as a verified student; skill not yet Approved. | — | Must |
+| UC-002 | Verify a Teacher skill | Teacher | Verifier | Verification | Submit skill evidence; only an active domain-matched Verifier decides, preserving version/decision history and enabling publication at the approved level (FR-003, FR-018). | Logged in as a verified student; initial or replacement evidence submitted. | — | Must |
 | UC-009 | Manage verifiers | Administrator | — | Verification | Invite Verifiers, assign review domains, and suspend or revoke their access (FR-004). | Logged in as Administrator. | — | Must |
 | UC-003 | Book and pay for a class | Learner | Teacher | Marketplace | Book an open class and pay from the wallet; booking and ledger entries commit atomically (FR-007, FR-009). | Logged in; class Published with a free seat and sufficient balance. | — | Must |
 | UC-010 | Publish class | Teacher | — | Marketplace | Create and publish a class listing for an Approved skill so Learners can discover and book it (FR-005). | Logged in as Teacher; at least one skill Approved. | — | Must |
@@ -305,23 +307,28 @@ One row per use case appearing on the diagrams, ordered by subsystem then code. 
 
 #### 3.2.6 State models
 
-Five entity lifecycles are normative. Any transition not listed is forbidden.
+Five entity lifecycles define the allowed structural transitions. Any transition not listed is forbidden; a transition governed by an OQ may execute only after its policy is approved. Re-submission creates a new verification/evidence row rather than returning an immutable submission to Draft.
 
 **1. StudentVerification (FR-002, BR-001, BR-011)**
 
 ```mermaid
 stateDiagram-v2
   [*] --> Draft
-  Draft --> Pending : submit school name + document
+  Draft --> Pending : submit school/major and document
   Pending --> Approved : Administrator approves
   Pending --> Rejected : Administrator rejects with reason
-  Rejected --> Draft : user edits and resubmits
-  Approved --> Expired : validity period elapses (per retention policy, OQ-008)
-  Expired --> Draft : re-verification
+  Approved --> Expired : validity period elapses (OQ-008)
+  Approved --> Revoked : Administrator revokes or school/major changes
+  Approved --> Superseded : replacement approved atomically
   Rejected --> [*]
+  Expired --> [*]
+  Revoked --> [*]
+  Superseded --> [*]
   note right of Approved
-    Only one effective verification
-    per account (BR-011)
+    One effective approval per Profile
+    Check expiry at authorization time
+    Resubmission creates a new row
+    Every transition retains audited history
   end note
 ```
 
@@ -330,15 +337,25 @@ stateDiagram-v2
 ```mermaid
 stateDiagram-v2
   [*] --> Draft
-  Draft --> Pending : submit evidence version N
-  Pending --> Approved : matched Verifier approves
-  Pending --> Rejected : matched Verifier rejects with reason
-  Rejected --> Draft : Teacher submits new version
-  Approved --> Superseded : newer version approved
-  Approved --> [*] : skill usable to publish classes
+  Draft --> Pending : submit immutable evidence version N
+  Pending --> Approved : active domain-matched Verifier approves
+  Pending --> Rejected : active domain-matched Verifier rejects
+  Approved --> Superseded : replacement approved atomically
+  Approved --> Revoked : authorized Verifier revokes with reason
+  Approved --> Expired : verification or certificate validity ends
+  Rejected --> [*]
+  Superseded --> [*]
+  Revoked --> [*]
+  Expired --> [*]
+  note right of Approved
+    Valid approved level controls teaching
+    Pending upgrade retains old valid permission
+    Replacement updates level cache and audit atomically
+  end note
   note right of Pending
-    Routed only to a Verifier
-    matching the skill domain (BR-002)
+    Administrator role alone cannot decide
+    Reviewer cannot be the evidence owner
+    Resubmission creates a new version
   end note
 ```
 
@@ -347,17 +364,24 @@ stateDiagram-v2
 ```mermaid
 stateDiagram-v2
   [*] --> Draft
-  Draft --> Published : verified Teacher publishes (validated schedule/duration/price)
+  Draft --> Published : verified Teacher publishes valid schedule
   Published --> Full : last seat booked
   Full --> Published : seat released by allowed cancellation
-  Published --> Closed : class concluded
-  Full --> Closed : class concluded
+  Published --> InProgress : session begins
+  Full --> InProgress : session begins
+  InProgress --> Completed : approved completion rule satisfied (OQ-006)
   Draft --> Cancelled : Teacher discards
-  Published --> Cancelled : Teacher cancels (policy, OQ-003)
-  Full --> Cancelled : Teacher cancels (policy, OQ-003)
+  Published --> Cancelled : allowed cancellation (OQ-003)
+  Full --> Cancelled : allowed cancellation (OQ-003)
+  InProgress --> Cancelled : allowed cancellation (OQ-003)
   note right of Published
-    Duration enforced 30 min–3 h (BR-003)
-    at every save
+    One Class is one scheduled online session
+    First confirmed booking freezes commitments
+    Duration remains 30 min to 3 h
+  end note
+  note right of Completed
+    Record completion time and audited source/rule
+    Release timing still requires OQ-006
   end note
 ```
 
@@ -384,16 +408,21 @@ stateDiagram-v2
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Pending : Teacher requests (step-up auth)
+  [*] --> Pending : request and credit hold commit (step-up auth)
   Pending --> Processing : gateway payout accepted
-  Processing --> Completed : signed callback succeeded (once)
-  Processing --> Failed : gateway timeout / failure
-  Failed --> [*] : balance restored immediately
-  Completed --> Reversed : valid reversal event only
+  Pending --> Completed : signed success/reconciliation posts payout
+  Processing --> Completed : signed success/reconciliation posts payout
+  Pending --> Failed : definite nonpayment and atomic hold release
+  Processing --> Failed : definite nonpayment and atomic hold release
+  Pending --> Pending : timeout/unknown result, retain hold
+  Processing --> Processing : timeout/unknown result, retain hold
+  Failed --> [*]
+  Completed --> Reversed : authorized reconciled payout reversal (OQ-006)
   note right of Processing
-    Replayed provider_event_id is
-    acknowledged, never re-applied
-    (AC-008, AC-009)
+    Stable provider key prevents second payout
+    Replayed events never post twice (AC-008/009)
+    Unknown result cannot release credit
+    Success and failure release are exclusive
   end note
 ```
 
@@ -460,12 +489,13 @@ Confirmed cores of these requirements appear in §3.2.1; the following **depende
 | OQ-003 | Cancellation, no-show, dispute, manual refund and Admin enforcement workflow. | Product Owner + Administrator | FR-007, FR-009–FR-011, FR-013 | Cancellation paths in Class/Booking state models, refund handling, dispute procedure. |
 | OQ-004 | Rating threshold, minimum review count, visibility recovery. | Product Owner | FR-006, FR-013 | Down-ranking threshold mechanics (BR-009 value). |
 | OQ-005 | Withdrawal conditions, limits, fees, processing time. | Product Owner + Finance | FR-010, FR-014 | Minimum/maximum payout, fees, SLA in WithdrawalRequest model. |
-| OQ-006 | When the Teacher's 90% moves pending → available; chargeback/reversal handling. | Product Owner + Finance | FR-008, FR-009, FR-014 | Settlement release timing (value behind `Completed → Reversed` policy). |
+| OQ-006 | Completion rule, release timing, chargeback/reversal and funding/recovery after payout. | Product Owner + Finance | FR-008, FR-009, FR-014, FR-020 | Timing/conditions behind one full booking release; refund chain and funding when credit is no longer held. |
 | OQ-007 | 1-1 vs. group classes; capacity and seat hold/release rules. | Product Owner | FR-005, FR-007 | Capacity semantics in FR-007, seat-hold logic around Full ⇄ Published. |
 | OQ-008 | Verification validity period, document retention/deletion, expiry cascade. | Product Owner + Security | FR-002–FR-005, FR-007, FR-011, FR-014, NFR-004 | Retention duration, `Approved → Expired` timing, deletion/anonymization rules. |
 | OQ-009 | Chat handling of detected personal contact info: block / warn+log / log only. | Product Owner | FR-012 | Enforcement mechanism behind BR-008. |
 | OQ-010 | Target values for success metrics and pilot scope. | Product Owner | Product rollout | Quantified performance/availability targets for NFR-011/NFR-012. |
 | OQ-011 | Payment gateway selection (top-up, payout, webhook, reconciliation, reversal). | Engineering + Finance | FR-008, FR-014 | Gateway-specific integration contract in §3.1.3. |
+| OQ-012 | Commission rounding method and precision. | Product Owner + Finance | FR-009, FR-014 | Fee computed once and Teacher income derived as price minus fee; rounding method remains unapproved. |
 
 ## Appendix B — Data dictionary
 
@@ -473,17 +503,25 @@ Derived from PRD §9. Access is server-authorized by role and ownership; sensiti
 
 | Entity | Key fields | Relationships | Lifecycle | Classification | Owner |
 |---|---|---|---|---|---|
-| User | id, roles, school_name, verification_status | Has verification, wallet, classes/bookings | Pending → Active → Suspended | PII | User/Admin |
-| StudentVerification | id, user_id, document_ref, status, reviewer_id, reason, expires_at | Belongs to User | Draft → Pending → Approved/Rejected/Expired | Sensitive identity document | Administrator |
-| SkillEvidence | id, teacher_id, skill_id, document_ref, version, status | Belongs to Teacher and Skill | Draft → Pending → Approved/Rejected/Superseded | Sensitive credential | Teacher/Verifier |
-| VerifierAssignment | id, verifier_id, domain, status, assigned_by | Links Verifier to review domain | Invited → Active → Suspended/Revoked | Internal access-control data | Administrator |
-| Class | id, teacher_id, skill_id, schedule, duration, price, capacity, status | Has Bookings | Draft → Published → Full/Closed/Cancelled | Public marketplace data | Teacher |
-| Booking | id, class_id, learner_id, status, settlement_id | Links Class, Learner and ledger | Pending → Confirmed → Completed/Cancelled/Disputed | Private transaction data | Learner/Teacher |
-| Wallet | id, user_id, available_balance, pending_balance | Has ledger entries | Active → Restricted/Closed | Financial | User/Platform |
-| LedgerTransaction | id, wallet_id, type, amount, rate, status, trace_id, idempotency_key | Links top-up, booking or withdrawal | Pending → Posted/Reversed/Failed | Sensitive financial | Platform |
+| User | id, email, roles, status | Has exactly one Profile, at most one user Wallet and role grants | Pending → Active → Suspended | PII | User/Administrator |
+| UserRole | user_id, role, status, assigned_by, assigned_at | One grant per User/role; role suspension is independent of account suspension | Active → Suspended/Revoked; reactivation audited | Internal authorization | Administrator |
+| Profile | id, user_id, display_name, bio, school_id, major_id | Belongs to User; has ProfileSkills and StudentVerifications | Created with User; school/major change requires re-verification | PII | User/Administrator |
+| School / Major / SchoolMajor | id/code/name; school_id + major_id | Managed school and major catalogs; SchoolMajor lists valid pairs | Active → Inactive | Reference data | Administrator |
+| Skill / ProfileSkill | id, name; profile_id, skill_id, level, verifier_expertise_status | Profile ↔ Skill is many-to-many; level caches effective approval (NULL until approved); active Verifier role plus authorized expertise required | Skill Active/Inactive; valid SkillEvidence.approved_level governs teaching; pending upgrades preserve old approval | Public competency + internal authorization | User/Verifier/Administrator |
+| StudentVerification | id, profile_id, school_id, major_id, document_ref, status, reviewer_id, reason, expires_at | Belongs to Profile; immutable submission snapshots; resubmission creates a new row | Draft → Pending → Approved/Rejected; Approved → Superseded/Revoked/Expired | Sensitive identity document | Administrator |
+| SkillEvidence | id, profile_skill_id, evidence_type, document_ref/description, version, requested_level, approved_level, status, reviewer_id, decided_at | Belongs to ProfileSkill; certificate or Verifier recognition; reviewer updates status with audit, no assignment entity | Draft → Pending → Approved/Rejected; Approved → Superseded/Revoked/Expired | Sensitive credential | Teacher/Verifier |
+| Class | id, teacher_id, starts_at, duration_minutes, price_credits, capacity, status, commitments_locked_at, completed_at/completed_by | One scheduled online session per Class; has Bookings/ClassSkills; Teacher/content/schedule/skills freeze at first confirmed Booking | Draft → Published/Full → In progress → Completed; cancellation by policy | Public marketplace data | Teacher |
+| ClassSkill | class_id, skill_id, target_level | Class ↔ Skill is many-to-many; Teacher approved level must cover target level | Managed with Class | Public marketplace data | Teacher |
+| Booking | id, class_id, learner_id, status, price_credits, idempotency_key | Links Class/Learner/ledger; price snapshot; at most one valid booking per Learner/Class and one full release operation | Pending → Confirmed → Completed/Cancelled/Disputed | Private transaction data | Learner/Teacher |
+| Wallet | id, owner_user_id, kind; available/pending/payout_hold derived from posted postings | At most one wallet per User; system wallets have no owner; payout_hold is reserved and not spendable | Active → Restricted/Closed | Financial | User/Platform |
+| LedgerTransaction | id, kind, booking_id, withdrawal_request_id, initiated_by_user_id, amount_vnd, gateway_credits, rate, provider/reference, reverses_transaction_id, status, trace_id, idempotency_key | Groups balanced kind-specific postings; unique booking/release operations; withdrawal request has hold/payout/hold-release/reversal transactions; original has 0..1 full reversal, linked only for kind reversal | Pending → Posted/Failed; Posted → Reversed with compensating transaction; posted financial fields immutable | Sensitive financial | Platform |
+| LedgerPosting | id, transaction_id, wallet_id, user_id, class_id, bucket, amount_credits | Links transaction/wallet owner/Class; buckets available/pending/payout_hold; system user and non-class transfer Class are NULL | Immutable once posted, including no late inserts; corrections compensate actual transfer chain | Sensitive financial | Platform |
 | Message | id, class_id, sender_id, body, created_at | Belongs to class conversation | Active → Retained/Deleted | Private communication | Participants/Platform |
 | Rating | id, booking_id, learner_id, score, comment | One policy-valid rating per Booking | Published → Hidden/Updated by policy | Public content + private provenance | Learner/Platform |
-| WithdrawalRequest | id, teacher_id, amount, destination_ref, status, trace_id | Produces ledger entries | Pending → Processing → Completed/Failed/Reversed | Sensitive financial | Teacher/Platform |
+| WithdrawalRequest | id, teacher_id, amount_credits, exchange_rate_vnd, destination_ref, status, trace_id | Has many LedgerTransactions through withdrawal_request_id; hold commits before payout; amount/rate/destination frozen | Pending → Processing → Completed/Failed; timeout retains hold until reconciliation; authorized payout reversal → Reversed | Sensitive financial | Teacher/Platform |
+| AuditEvent | id, actor_id, action, target_type/id, old_state_json, new_state_json, occurred_at, trace_id, metadata_json | Commits with state change; whitelisted decision snapshots preserve full evidence/role/completion/financial history | Append-only | Internal audit; no document content or payout destinations | Platform |
+
+ERD chi tiết và các ràng buộc triển khai: [data model](../diagrams/data/README.md). Một Class là một buổi học có lịch/phòng riêng, không có bảng Session. Hai cách xác minh là kiểm tra chứng chỉ hoặc Verifier công nhận năng lực; chỉ Verifier đang active và đúng chuyên môn được quyết định. Không có bảng phân công Verifier hoặc bảng TopUp. Evidence Approved còn hiệu lực quyết định level được phép dạy; pending/rejected replacement giữ quyền cũ còn hiệu lực. Quyết định lưu trên SkillEvidence, lịch sử trước/sau lưu trong audit. Chỉ publish khi Teacher còn xác minh sinh viên hiệu lực và được duyệt đủ level cho **tất cả** skill của lớp; khóa cam kết tại booking Confirmed đầu tiên. Payout giữ credit trước khi gọi gateway; timeout chưa phải thất bại. Thời điểm release, hoàn tiền/nguồn bù sau payout và làm tròn vẫn theo OQ-003/OQ-006/OQ-012.
 
 ## Appendix C — Acceptance criteria and traceability
 
@@ -499,15 +537,24 @@ Derived from PRD §9. Access is server-authorized by role and ownership; sensiti
 - **AC-008 / FR-014:** Given a valid payout callback replayed, the withdrawal completes exactly once.
 - **AC-009 / EVT-001:** Given a valid callback older than the processed gateway state, the system acknowledges it but does not lower the status.
 - **AC-010 / FR-007:** Given a class with one seat left, when two Learners book near-simultaneously, exactly one booking confirms; the other receives a full-class error with no credit deducted.
+- **AC-011 / FR-020:** Given một Class đã tới giờ diễn ra, when buổi học thỏa quy tắc hoàn tất đã được duyệt, then Class chuyển Completed với thời gian/căn cứ audit và cho phép rating; release chỉ thực hiện khi đạt điều kiện OQ-006, hủy lớp xử lý booking/ledger theo OQ-003.
+- **AC-012 / FR-019:** Given một hồ sơ xác minh sinh viên đã hết hiệu lực hoặc bị thu hồi, when hệ thống xử lý sự kiện, then các quyền yêu cầu VERIFIED bị hạ ngay và người dùng thấy trạng thái kèm hướng dẫn re-verification.
+- **AC-013 / FR-014:** Given available 100 credit, when request rút 80 được xác nhận, then available còn 20 và payout_hold là 80; request rút thêm 80 bị từ chối mà không phát sinh hold hoặc payout mới.
+- **AC-014 / FR-014:** Given payout 80 đang chờ và gateway timeout, then hold vẫn là 80; callback/đối soát thành công đến sau chỉ post payout một lần, không vừa payout vừa nhả tiền.
+- **AC-015 / FR-009:** Given hai booking A/B tạo pending 90 mỗi booking và A đã release, when retry release A bằng key khác, then không release thêm; pending của B vẫn 90, available từ A vẫn 90.
+- **AC-016 / FR-003–FR-005:** Given evidence mid còn hiệu lực và yêu cầu mới xin senior, then pending/rejected replacement vẫn giữ quyền mid; nếu Verifier duyệt bản mới ở mid, cache level và quyền đều mid, bản cũ Superseded cùng transaction/audit.
+- **AC-017 / FR-005, FR-007:** Given booking Confirmed đầu tiên, when sửa Teacher/nội dung/kỹ năng/lịch/thời lượng hoặc hủy hết booking rồi sửa, then cam kết vẫn bị khóa; sửa lớp đồng thời với booking không bán nội dung ngoài cam kết.
+- **AC-018 / FR-004:** Given chỉ có vai trò Administrator, hoặc Verifier suspended/sai chuyên môn/tự duyệt, when quyết định skill evidence, then bị từ chối; chỉ Verifier active đúng chuyên môn và khác chủ hồ sơ được quyết định.
+- **AC-019 / FR-009, FR-010:** Given policy hoàn toàn bộ đã được duyệt và booking đã release nhưng Teacher còn đủ available, when hoàn tiền, then đảo release và booking nguyên tử, không tạo pending âm; sau payout/thiếu nguồn bù không tự post refund trái OQ-003/OQ-006.
 
 ### C.2 Traceability matrix
 
 | Business goal | Requirements | Use case | API / data / NFR |
 |---|---|---|---|
-| Trusted student identity | FR-001, FR-002, FR-017 | UC-001, UC-006–UC-008 | API-001, User, StudentVerification, NFR-004/008/009 |
-| Trusted Teacher capability | FR-003–FR-005, FR-018 | UC-002, UC-009, UC-010 | API-002–API-004, SkillEvidence, VerifierAssignment, NFR-004/009 |
+| Trusted student identity | FR-001, FR-002, FR-017, FR-019 | UC-001, UC-006–UC-008 | API-001, User, StudentVerification, NFR-004/008/009 |
+| Trusted Teacher capability | FR-003–FR-005, FR-018 | UC-002, UC-009, UC-010 | API-002–API-004, ProfileSkill, SkillEvidence, NFR-004/009 |
 | Discover and book online learning | FR-005–FR-007 | UC-003, UC-011 | API-004–API-005, Class, Booking, NFR-001/006/007 |
-| Traceable wallet settlement | FR-008–FR-010, FR-014 | UC-003, UC-005, UC-012, UC-013 | API-005–API-007, EVT-001, Wallet/Ledger/Withdrawal, NFR-003/005/009 |
+| Traceable wallet settlement | FR-008–FR-010, FR-014, FR-020 | UC-003, UC-005, UC-012, UC-013 | API-005–API-007, EVT-001, Wallet/Ledger/Withdrawal, NFR-003/005/009 |
 | Secure class participation | FR-011–FR-013, FR-016 | UC-004 | API-008–API-010, Message/Rating, NFR-006/007/010 |
 | Platform operations | FR-015 | UC-014 | Audit log, NFR-005 |
 
@@ -524,9 +571,9 @@ Use case diagrams are authored in PlantUML (`docs/diagrams/usecase/srs-use-case-
 | Use case level 1 — Finance (UC-005, UC-012, UC-013) | §3.2.4 | PlantUML `usecase` (straight links) | `docs/diagrams/usecase/srs-use-case-finance.png` |
 | Use case level 1 — Learning (UC-004) | §3.2.4 | PlantUML `usecase` (straight links) | `docs/diagrams/usecase/srs-use-case-learning.png` |
 | Use case level 1 — Operations (UC-014) | §3.2.4 | PlantUML `usecase` (straight links) | `docs/diagrams/usecase/srs-use-case-operations.png` |
-| StudentVerification state machine | §3.2.6 | Mermaid `stateDiagram-v2` | `docs/diagrams/srs-state-student-verification.png` |
-| SkillEvidence state machine | §3.2.6 | Mermaid `stateDiagram-v2` | `docs/diagrams/srs-state-skill-evidence.png` |
-| Class state machine | §3.2.6 | Mermaid `stateDiagram-v2` | `docs/diagrams/srs-state-class.png` |
+| StudentVerification state machine | §3.2.6 | Mermaid `stateDiagram-v2` | [source](../diagrams/srs-state-student-verification.mmd) · [PNG](../diagrams/srs-state-student-verification.png) |
+| SkillEvidence state machine | §3.2.6 | Mermaid `stateDiagram-v2` | [source](../diagrams/srs-state-skill-evidence.mmd) · [PNG](../diagrams/srs-state-skill-evidence.png) |
+| Class state machine | §3.2.6 | Mermaid `stateDiagram-v2` | [source](../diagrams/srs-state-class.mmd) · [PNG](../diagrams/srs-state-class.png) |
 | Booking state machine | §3.2.6 | Mermaid `stateDiagram-v2` | `docs/diagrams/srs-state-booking.png` |
-| WithdrawalRequest state machine | §3.2.6 | Mermaid `stateDiagram-v2` | `docs/diagrams/srs-state-withdrawal-request.png` |
+| WithdrawalRequest state machine | §3.2.6 | Mermaid `stateDiagram-v2` | [source](../diagrams/srs-state-withdrawal-request.mmd) · [PNG](../diagrams/srs-state-withdrawal-request.png) |
 | System context (C4 L1) | §2.1 | Embedded PNG from `docs/diagrams/c4/generated/` | `docs/diagrams/c4/generated/structurizr-SystemContext.png` |
