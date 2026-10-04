@@ -1,0 +1,164 @@
+import {
+  advanceStatusResultSchema,
+  advanceStatusSchema,
+  apiErrorSchema,
+  bookingConfirmedSchema,
+  eventEnvelopeSchema,
+  identityHeadersSchema,
+  moduleStatusSchema,
+  statusChangedSchema,
+} from './index';
+
+describe('advanceStatusSchema', () => {
+  it('accepts a target state', () => {
+    expect(advanceStatusSchema.parse({ toState: 'reviewing' })).toEqual({
+      toState: 'reviewing',
+    });
+  });
+
+  it('rejects an empty target state', () => {
+    expect(() => advanceStatusSchema.parse({ toState: '' })).toThrow();
+  });
+
+  it('rejects a missing target state', () => {
+    expect(() => advanceStatusSchema.parse({})).toThrow();
+  });
+});
+
+describe('moduleStatusSchema', () => {
+  it('accepts a status with a timestamp', () => {
+    const parsed = moduleStatusSchema.parse({
+      module: 'admin-operation',
+      state: 'open',
+      updatedAt: '2026-10-04T00:00:00.000Z',
+    });
+    expect(parsed.module).toBe('admin-operation');
+  });
+
+  it('accepts a null timestamp', () => {
+    expect(moduleStatusSchema.parse({ module: 'wallet-ledger', state: 'active', updatedAt: null })).toEqual({
+      module: 'wallet-ledger',
+      state: 'active',
+      updatedAt: null,
+    });
+  });
+
+  it('rejects a malformed timestamp', () => {
+    expect(() =>
+      moduleStatusSchema.parse({ module: 'schedule', state: 'open', updatedAt: 'yesterday' }),
+    ).toThrow();
+  });
+});
+
+describe('advanceStatusResultSchema', () => {
+  it('round-trips previous and new state', () => {
+    expect(advanceStatusResultSchema.parse({ previousState: 'draft', newState: 'submitted' })).toEqual({
+      previousState: 'draft',
+      newState: 'submitted',
+    });
+  });
+});
+
+describe('eventEnvelopeSchema', () => {
+  it('accepts a well-formed envelope', () => {
+    const parsed = eventEnvelopeSchema.parse({
+      id: '7f9a1c2e-3b4d-4e5f-8a9b-0c1d2e3f4a5b',
+      eventType: 'admin-operation.status.changed',
+      occurredAt: '2026-10-04T12:00:00.000Z',
+      payload: { module: 'admin-operation' },
+    });
+    expect(parsed.eventType).toBe('admin-operation.status.changed');
+  });
+
+  it('rejects a non-uuid id', () => {
+    expect(() =>
+      eventEnvelopeSchema.parse({
+        id: 'not-a-uuid',
+        eventType: 'x',
+        occurredAt: '2026-10-04T12:00:00.000Z',
+        payload: {},
+      }),
+    ).toThrow();
+  });
+});
+
+describe('bookingConfirmedSchema', () => {
+  it('accepts a positive integer credit amount', () => {
+    const parsed = bookingConfirmedSchema.parse({
+      bookingId: 'b-1',
+      studentId: 's-1',
+      teacherId: 't-1',
+      amountCredits: 25,
+    });
+    expect(parsed.amountCredits).toBe(25);
+  });
+
+  it('rejects zero credits', () => {
+    expect(() =>
+      bookingConfirmedSchema.parse({
+        bookingId: 'b-1',
+        studentId: 's-1',
+        teacherId: 't-1',
+        amountCredits: 0,
+      }),
+    ).toThrow();
+  });
+
+  it('rejects fractional credits', () => {
+    expect(() =>
+      bookingConfirmedSchema.parse({
+        bookingId: 'b-1',
+        studentId: 's-1',
+        teacherId: 't-1',
+        amountCredits: 1.5,
+      }),
+    ).toThrow();
+  });
+});
+
+describe('statusChangedSchema', () => {
+  it('accepts a full transition payload', () => {
+    const parsed = statusChangedSchema.parse({
+      module: 'skill-verification',
+      previousState: 'submitted',
+      newState: 'assessing',
+      changedBy: 'user-42',
+      changedAt: '2026-10-04T12:00:00.000Z',
+    });
+    expect(parsed.newState).toBe('assessing');
+  });
+});
+
+describe('apiErrorSchema', () => {
+  it('accepts an error without the optional code', () => {
+    expect(apiErrorSchema.parse({ statusCode: 409, message: 'conflict' })).toEqual({
+      statusCode: 409,
+      message: 'conflict',
+    });
+  });
+
+  it('accepts an error with the optional code', () => {
+    expect(apiErrorSchema.parse({ statusCode: 400, message: 'bad', error: 'Bad Request' }).error).toBe(
+      'Bad Request',
+    );
+  });
+});
+
+describe('identityHeadersSchema', () => {
+  it('accepts empty headers', () => {
+    expect(identityHeadersSchema.parse({})).toEqual({});
+  });
+
+  it('accepts gateway-injected headers', () => {
+    const parsed = identityHeadersSchema.parse({
+      'x-user-id': 'user-1',
+      'x-user-email': 'a@b.co',
+      'x-user-role': 'student',
+    });
+    expect(parsed['x-user-id']).toBe('user-1');
+  });
+
+  it('rejects a malformed email', () => {
+    expect(() => identityHeadersSchema.parse({ 'x-user-email': 'nope' })).toThrow();
+  });
+});

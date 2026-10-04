@@ -32,7 +32,7 @@ Deployment_Node(Production.CloudProvider, "Cloud Provider", $type="Cloud", $desc
 }
 
 Rel(Production.CloudProvider.ApplicationTier.WebApplication_1, Production.CloudProvider.ApplicationTier.BackendAPI_1, "Makes API calls to", $techn="REST/JSON", $tags="", $link="")
-Rel(Production.CloudProvider.ApplicationTier.BackendAPI_1, Production.CloudProvider.DataTier.Database_1, "Reads/writes to", $techn="TypeORM/Prisma", $tags="", $link="")
+Rel(Production.CloudProvider.ApplicationTier.BackendAPI_1, Production.CloudProvider.DataTier.Database_1, "Reads/writes to", $techn="TypeORM", $tags="", $link="")
 
 
 SHOW_LEGEND(true)

@@ -46,7 +46,7 @@ Container diagram trình bày cấu trúc nội bộ của **SkillSwap System** 
   - **Jitsi Integration**: Tạo phòng học, lấy URL join
 - **Tương tác**:
   - Nhận request từ Web App (REST/JSON)
-  - Truy vấn/ghi Database (TypeORM/Prisma ORM)
+  - Truy vấn/ghi Database (TypeORM)
   - Gọi Payment Gateway (REST/JSON)
   - Gọi Jitsi API (REST/HTTPS) để tạo phòng
 

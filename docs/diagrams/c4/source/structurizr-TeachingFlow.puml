@@ -29,7 +29,7 @@ System(Jitsi, "Jitsi", $descr="Provides online classroom/video conferencing", $t
 
 Rel(Teacher, SkillSwapSystem.WebApplication, "1: Creates class listing", $techn="HTTPS", $tags="", $link="")
 Rel(SkillSwapSystem.WebApplication, SkillSwapSystem.BackendAPI, "2: POST /classes", $techn="REST/JSON", $tags="", $link="")
-Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.Database, "3: Persist class", $techn="TypeORM/Prisma", $tags="", $link="")
+Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.Database, "3: Persist class", $techn="TypeORM", $tags="", $link="")
 Rel(Teacher, Jitsi, "5: Teaches live class", $techn="HTTPS/WebRTC", $tags="", $link="")
 Rel(SkillSwapSystem.BackendAPI, Jitsi, "4: Start classroom session", $techn="HTTPS/WebRTC", $tags="", $link="")
 

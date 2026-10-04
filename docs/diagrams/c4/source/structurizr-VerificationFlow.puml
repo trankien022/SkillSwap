@@ -28,7 +28,7 @@ Person(Verifier, "Verifier", $descr="Reviews and verifies teacher skills", $tags
 
 Rel(Verifier, SkillSwapSystem.WebApplication, "1: Reviews teacher evidence", $techn="HTTPS", $tags="", $link="")
 Rel(SkillSwapSystem.WebApplication, SkillSwapSystem.BackendAPI, "2: GET /verifications", $techn="REST/JSON", $tags="", $link="")
-Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.Database, "3: Read teacher skills", $techn="TypeORM/Prisma", $tags="", $link="")
+Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.Database, "3: Read teacher skills", $techn="TypeORM", $tags="", $link="")
 
 
 SHOW_LEGEND(true)
