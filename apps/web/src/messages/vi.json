@@ -1,0 +1,20 @@
+{
+  "Home": {
+    "title": "Trao đổi kỹ năng, cùng nhau phát triển",
+    "subtitle": "SkillSwap kết nối người học đã xác minh với sinh viên giảng dạy đã xác minh — đặt lớp, tích lũy credit, rồi quay lại giảng dạy.",
+    "statusLink": "Xem trạng thái hệ thống"
+  },
+  "Status": {
+    "title": "Trạng thái hệ thống",
+    "description": "Sức khỏe trực tiếp của gateway và API SkillSwap.",
+    "gateway": "Gateway",
+    "api": "API",
+    "operational": "Hoạt động bình thường",
+    "degraded": "Suy giảm",
+    "down": "Không thể kết nối",
+    "checking": "Đang kiểm tra…",
+    "refresh": "Làm mới",
+    "lastChecked": "Kiểm tra lần cuối lúc {time}",
+    "failed": "Không thể kết nối tới {url}."
+  }
+}

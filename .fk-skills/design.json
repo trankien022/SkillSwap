@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-04T00:00:00.000Z",
+  "title": "Design System: SkillSwap",
+  "extensions": {
+    "colorMeta": {
+      "campus-emerald": {
+        "role": "primary",
+        "displayName": "Campus Emerald",
+        "canonical": "#059669",
+        "tonalRamp": ["#ecfdf5", "#d1fae5", "#a7f3d0", "#6ee7b7", "#34d399", "#10b981", "#059669", "#047857", "#065f46", "#064e3b"]
+      },
+      "campus-emerald-deep": {
+        "role": "primary",
+        "displayName": "Campus Emerald Deep",
+        "canonical": "#047857",
+        "tonalRamp": ["#ecfdf5", "#d1fae5", "#a7f3d0", "#6ee7b7", "#34d399", "#10b981", "#059669", "#047857", "#065f46", "#064e3b"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#0f172a",
+        "tonalRamp": ["#f8fafc", "#f1f5f9", "#e2e8f0", "#cbd5e1", "#94a3b8", "#64748b", "#475569", "#334155", "#1e293b", "#0f172a"]
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "Ink Soft",
+        "canonical": "#475569",
+        "tonalRamp": ["#f8fafc", "#f1f5f9", "#e2e8f0", "#cbd5e1", "#94a3b8", "#64748b", "#475569", "#334155", "#1e293b", "#0f172a"]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Ink Muted",
+        "canonical": "#64748b",
+        "tonalRamp": ["#f8fafc", "#f1f5f9", "#e2e8f0", "#cbd5e1", "#94a3b8", "#64748b", "#475569", "#334155", "#1e293b", "#0f172a"]
+      },
+      "mist": {
+        "role": "neutral",
+        "displayName": "Mist",
+        "canonical": "#f8fafc",
+        "tonalRamp": ["#f8fafc", "#f1f5f9", "#e2e8f0", "#cbd5e1", "#94a3b8", "#64748b", "#475569", "#334155", "#1e293b", "#0f172a"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface",
+        "canonical": "#ffffff",
+        "tonalRamp": ["#ffffff", "#f8fafc", "#f1f5f9", "#e2e8f0", "#cbd5e1", "#94a3b8", "#64748b", "#475569", "#334155", "#0f172a"]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Border",
+        "canonical": "#e2e8f0",
+        "tonalRamp": ["#f8fafc", "#f1f5f9", "#e2e8f0", "#cbd5e1", "#94a3b8", "#64748b", "#475569", "#334155", "#1e293b", "#0f172a"]
+      },
+      "success-tint": { "role": "semantic", "displayName": "Success Tint", "canonical": "#d1fae5" },
+      "success-ink": { "role": "semantic", "displayName": "Success Ink", "canonical": "#047857" },
+      "warning-tint": { "role": "semantic", "displayName": "Warning Tint", "canonical": "#fef3c7" },
+      "warning-ink": { "role": "semantic", "displayName": "Warning Ink", "canonical": "#b45309" },
+      "danger-tint": { "role": "semantic", "displayName": "Danger Tint", "canonical": "#fee2e2" },
+      "danger-ink": { "role": "semantic", "displayName": "Danger Ink", "canonical": "#b91c1c" },
+      "neutral-tint": { "role": "semantic", "displayName": "Neutral Tint", "canonical": "#f1f5f9" },
+      "neutral-ink": { "role": "semantic", "displayName": "Neutral Ink", "canonical": "#475569" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Page titles only — bold, tight tracking." },
+      "headline": { "displayName": "Headline", "purpose": "Page descriptions and lead paragraphs." },
+      "title": { "displayName": "Title", "purpose": "Card titles and section labels." },
+      "body": { "displayName": "Body", "purpose": "Standard content; max ~75ch line length." },
+      "label": { "displayName": "Label", "purpose": "Buttons, nav links, form labels; badges drop to 12px/600." }
+    },
+    "shadows": [
+      { "name": "card-ambient", "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)", "purpose": "White cards at rest — the only resting shadow in the system." },
+      { "name": "overlay", "value": "0 4px 6px -1px rgb(0 0 0 / 0.1)", "purpose": "Future modals/toasts only; never used at rest." }
+    ],
+    "motion": [
+      { "name": "ease-standard", "value": "150ms ease", "purpose": "Color-only state transitions on buttons and links. No scale, no choreography." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single committing action per screen (Get started, Top up, Book class).",
+      "html": "<button class=\"ds-btn-primary\">Get started</button>",
+      "css": ".ds-btn-primary { background: #059669; color: #ffffff; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 14px; font-weight: 500; line-height: 1.5; padding: 10px 20px; border: none; border-radius: 9999px; cursor: pointer; transition: background 150ms ease; } .ds-btn-primary:hover { background: #047857; } .ds-btn-primary:focus-visible { outline: 2px solid rgba(5, 150, 105, 0.4); outline-offset: 2px; } .ds-btn-primary:active { background: #047857; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Utility actions (Refresh, Cancel) that must stay visible without stealing the emerald.",
+      "html": "<button class=\"ds-btn-secondary\">Refresh</button>",
+      "css": ".ds-btn-secondary { background: #0f172a; color: #ffffff; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 14px; font-weight: 500; line-height: 1.5; padding: 8px 16px; border: none; border-radius: 8px; cursor: pointer; transition: background 150ms ease; } .ds-btn-secondary:hover { background: #334155; } .ds-btn-secondary:focus-visible { outline: 2px solid rgba(15, 23, 42, 0.4); outline-offset: 2px; }"
+    },
+    {
+      "name": "Status Pill",
+      "kind": "chip",
+      "refersTo": "badge-success",
+      "description": "Semantic state chip — always carries text, never color alone. Variants: success, warning, danger, neutral.",
+      "html": "<span class=\"ds-pill ds-pill-success\">Operational</span> <span class=\"ds-pill ds-pill-warning\">Degraded</span> <span class=\"ds-pill ds-pill-danger\">Down</span> <span class=\"ds-pill ds-pill-neutral\">Checking</span>",
+      "css": ".ds-pill { display: inline-flex; align-items: center; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 12px; font-weight: 600; line-height: 1.5; padding: 4px 12px; border-radius: 9999px; white-space: nowrap; } .ds-pill-success { background: #d1fae5; color: #047857; } .ds-pill-warning { background: #fef3c7; color: #b45309; } .ds-pill-danger { background: #fee2e2; color: #b91c1c; } .ds-pill-neutral { background: #f1f5f9; color: #475569; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "White surface on mist canvas, hairline border, resting shadow-sm. The universal container.",
+      "html": "<div class=\"ds-card\"><h3 class=\"ds-card-title\">Gateway</h3><p class=\"ds-card-body\">Live edge and API gateway health.</p></div>",
+      "css": ".ds-card { background: #ffffff; color: #0f172a; border: 1px solid #e2e8f0; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; } .ds-card-title { font-size: 16px; font-weight: 600; line-height: 1.5; margin: 0; } .ds-card-body { font-size: 14px; font-weight: 400; line-height: 1.6; color: #475569; margin: 4px 0 0; }"
+    },
+    {
+      "name": "Navigation",
+      "kind": "nav",
+      "refersTo": "navigation",
+      "description": "Slim white header on mist; nav must never out-shout the page's primary CTA.",
+      "html": "<nav class=\"ds-nav\"><span class=\"ds-nav-brand\">SkillSwap</span><div class=\"ds-nav-links\"><a class=\"ds-nav-link\" href=\"#\">Home</a><a class=\"ds-nav-link ds-nav-link-active\" href=\"#\">Status</a></div></nav>",
+      "css": ".ds-nav { display: flex; align-items: center; justify-content: space-between; gap: 24px; background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 12px 24px; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; } .ds-nav-brand { font-size: 16px; font-weight: 700; letter-spacing: -0.025em; color: #0f172a; } .ds-nav-links { display: flex; gap: 16px; } .ds-nav-link { font-size: 14px; font-weight: 500; color: #0f172a; text-decoration: none; transition: color 150ms ease; min-height: 44px; display: inline-flex; align-items: center; } .ds-nav-link:hover { color: #64748b; } .ds-nav-link-active { font-weight: 600; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Honest Ledger",
+    "overview": "SkillSwap moves real money between real classmates, so the interface reads like a well-kept ledger: every amount exact, every state named, every commitment visible before it is made. The system is mobile-first (360 px), calm, and legible — plainspoken rather than polished-over. It pairs a single confident accent (Campus Emerald) with cool slate neutrals so that color always *means* something: emerald says verified, paid, or 'this is the action'; everything else stays quiet.\n\nThis system explicitly rejects PRODUCT.md's anti-references: generic SaaS landing pages (gradient hero, feature-card grid, logo strip), low-trust classifieds clutter, and flashy neobank/crypto aesthetics. No gradient heroes, no glassmorphism, no neon — trust here is earned through precision, not atmosphere. Density is comfortable, not cramped: one task per screen, generous tap targets, and status pills that read at a glance.",
+    "keyCharacteristics": [
+      "One accent (emerald) reserved for action and verified/positive states; neutrals do all the rest",
+      "Flat-by-default surfaces — white cards floating on a soft mist background, shadow-sm only",
+      "Pill-shaped primary CTAs against softly rounded cards (16 px)",
+      "Status communicated by tinted pills + text, never color alone",
+      "System sans typography with tight, bold display headings"
+    ],
+    "rules": [
+      { "name": "The Emerald Rationing Rule", "body": "Campus Emerald appears on ≤10% of any screen: the primary CTA, verified/success signals, and nothing else. Its rarity is the point — if everything is emerald, nothing is trustworthy.", "section": "colors" },
+      { "name": "The No-Color-Only Rule", "body": "Status is never communicated by hue alone: every tinted pill carries text, every icon carries a label. Color-blind users and sunlight-on-a-phone users get the same information.", "section": "colors" },
+      { "name": "The Tight-Head Rule", "body": "Display headings always use negative tracking (-0.025em) with weight 700 — loose or light headings read as marketing, which is exactly what this product is not.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "Surfaces are flat at rest; if a shadow is dark enough to notice, it is wrong — 'if it looks like a 2014 app, the shadow is too dark and the blur is too small.'", "section": "elevation" }
+    ],
+    "dos": [
+      "**Do** reserve Campus Emerald (#059669) for the single committing action per screen plus verified/success signals — ≤10% of the surface (The Emerald Rationing Rule).",
+      "**Do** show money as exact integers in VND and credit (1 credit = 1,000 VND) in tabular, ink-colored text — precision *is* the brand ('Trust is visible' in PRODUCT.md).",
+      "**Do** build every status as a tinted pill with text (success/warning/danger/neutral) so state reads without color vision.",
+      "**Do** keep the Mist → Surface → Border stack as the only layering device, with `shadow-sm` as the maximum resting shadow.",
+      "**Do** use pill radii (9999px) for primary CTAs and status pills, 16 px for cards, 8 px for utility buttons — the extracted starter geometry.",
+      "**Do** design at 360 px first: one task per screen, ≥44 px tap targets, no horizontal scroll."
+    ],
+    "donts": [
+      "**Don't** build generic SaaS landing pages — gradient hero + feature-card grid + logo strip is an explicit PRODUCT.md anti-reference. No gradient heroes, no logo walls.",
+      "**Don't** use flashy neobank/crypto aesthetics: dark neon gradients, glassmorphism, glow borders, or hype-y money styling.",
+      "**Don't** create classifieds clutter — dense undifferentiated listing walls with no hierarchy (the Facebook-Marketplace anti-reference).",
+      "**Don't** communicate status or verification by color alone — always pair the tint with a text label.",
+      "**Don't** add shadows darker than `shadow-sm` at rest, or drop shadows on buttons/pills/text; if a shadow is noticeable, it's wrong.",
+      "**Don't** use loose or light-weight display headings (violates The Tight-Head Rule) or a decorative display face — the system sans stack is the only family."
+    ]
+  }
+}

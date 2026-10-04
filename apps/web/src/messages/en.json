@@ -1,0 +1,20 @@
+{
+  "Home": {
+    "title": "Swap skills, grow together",
+    "subtitle": "SkillSwap pairs verified students who want to learn with verified student teachers — book a class, earn credits, then teach back.",
+    "statusLink": "View system status"
+  },
+  "Status": {
+    "title": "System status",
+    "description": "Live health of the SkillSwap gateway and API.",
+    "gateway": "Gateway",
+    "api": "API",
+    "operational": "Operational",
+    "degraded": "Degraded",
+    "down": "Unreachable",
+    "checking": "Checking…",
+    "refresh": "Refresh",
+    "lastChecked": "Last checked {time}",
+    "failed": "Could not reach {url}."
+  }
+}

@@ -38,7 +38,7 @@ Rel(Administrator, SkillSwapSystem.WebApplication, "Uses", $techn="HTTPS", $tags
 Rel(Teacher, Jitsi, "Teaches live class", $techn="HTTPS/WebRTC", $tags="", $link="")
 Rel(Learner, Jitsi, "Attends live class", $techn="HTTPS/WebRTC", $tags="", $link="")
 Rel(SkillSwapSystem.WebApplication, SkillSwapSystem.BackendAPI, "Makes API calls to", $techn="REST/JSON", $tags="", $link="")
-Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.Database, "Reads/writes to", $techn="TypeORM/Prisma", $tags="", $link="")
+Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.Database, "Reads/writes to", $techn="TypeORM", $tags="", $link="")
 Rel(SkillSwapSystem.BackendAPI, PaymentGateway, "Processes payments via", $techn="REST/JSON", $tags="", $link="")
 Rel(SkillSwapSystem.BackendAPI, Jitsi, "Creates/joins classroom via", $techn="HTTPS/WebRTC", $tags="", $link="")
 

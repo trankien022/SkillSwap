@@ -85,7 +85,7 @@ SkillSwap is a standalone web application that depends on two external systems: 
 
 ![SkillSwap system context](../diagrams/c4/generated/structurizr-SystemContext.png)
 
-The software stack is fixed for the MVP: **Next.js (React)** frontend, **NestJS (Node.js)** backend, **PostgreSQL** persistence via **TypeORM/Prisma**. The backend provisions Jitsi rooms and issues short-lived access tokens; Learners and Teachers connect to Jitsi directly via WebRTC, so the backend handles only room metadata and access signaling, never media streams.
+The software stack is fixed for the MVP: **Next.js (React)** frontend, **NestJS (Node.js)** backend, **PostgreSQL** persistence via **TypeORM**. The backend provisions Jitsi rooms and issues short-lived access tokens; Learners and Teachers connect to Jitsi directly via WebRTC, so the backend handles only room metadata and access signaling, never media streams.
 
 ### 2.2 Product functions (summary)
 
@@ -118,7 +118,7 @@ All four roles share one account model: a single account may hold both Learner a
 | C-005 | Platform fee 10% per class purchase; 90% allocated to Teacher. | BRD §8 / BR-006, Confirmed |
 | C-006 | Mobile-first responsive web; no horizontal scrolling at 360 px/390 px. | PRD NFR-001, Confirmed |
 | C-007 | Vietnamese and English only; no mixed language on one screen. | PRD NFR-002, Confirmed |
-| C-008 | Stack: Next.js frontend, NestJS backend, PostgreSQL with TypeORM/Prisma. | Engineering decision |
+| C-008 | Stack: Next.js frontend, NestJS backend, PostgreSQL with TypeORM. | Engineering decision |
 | C-009 | All class communication stays in-platform; contact sharing is prohibited per approved policy. | BR-008, Confirmed (enforcement mechanism deferred — OQ-009) |
 | C-010 | MVP has no automated report/account-lock system; ratings + comments surface bad behavior. | intent.md, Confirmed |
 
@@ -157,7 +157,7 @@ None. The system is browser-based; the only client hardware assumptions are a ca
 |---|---|---|
 | Payment gateway | Outbound (REST), inbound webhook `POST /api/webhooks/payment` (EVT-001) | Signature verification, timestamp/replay protection, monotonic status matrix, one application per provider event ID. Specific gateway is OQ-011 (excluded — Appendix A). |
 | Jitsi | Outbound room provisioning + token issuance (`POST /api/bookings/{id}/room-token`, API-008) | Short-lived authorization for booking participants only; no discoverable public room link. Deployment choice (self-hosted vs. service) is DEP-002. |
-| PostgreSQL | Internal persistence | TypeORM/Prisma data access; financial writes are transactional. |
+| PostgreSQL | Internal persistence | TypeORM data access; financial writes are transactional. |
 | Email service | Outbound | Standard password-recovery flow (PRD §6.1). Provider not fixed at MVP scope level. |
 
 #### 3.1.4 Communication interfaces
@@ -437,7 +437,7 @@ stateDiagram-v2
 
 ### 3.4 Design constraints
 
-1. **Architecture:** Next.js frontend, NestJS backend, PostgreSQL via TypeORM/Prisma (C-008); Jitsi room provisioning and token issuance by backend; media flows directly over WebRTC.
+1. **Architecture:** Next.js frontend, NestJS backend, PostgreSQL via TypeORM (C-008); Jitsi room provisioning and token issuance by backend; media flows directly over WebRTC.
 2. **Atomicity:** all booking/settlement writes occur in a single database transaction; no partial financial success (NFR-003, AC-005).
 3. **Idempotency:** every financially effective command requires an idempotency key and trace ID (PRD §10 integration rules).
 4. **Authorization:** server-side role/ownership checks on every endpoint; Administrator/Verifier require MFA; payouts and payout-destination changes require step-up authentication (NFR-009).

@@ -37,7 +37,7 @@ workspace "SkillSwap" "Student skill marketplace for verified learners and verif
 
         // Relationships: Containers -> Containers
         webApp -> backendApi "Makes API calls to" "REST/JSON"
-        backendApi -> database "Reads from and writes to" "TypeORM/Prisma"
+        backendApi -> database "Reads from and writes to" "TypeORM"
 
         // Relationships: System -> External
         skillSwap -> paymentGateway "Processes payments via" "REST/JSON"
