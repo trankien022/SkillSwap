@@ -23,6 +23,7 @@ apps/web        Next.js 15 + next-intl (vi/en), port 3000
 apps/mobile     Expo/React Native client (planned, ADR-015 — not yet scaffolded)
 packages/contracts  Zod schemas shared by api/gateway (EVT-001 etc.)
 scripts/        migrate.mjs, generate-dev-keys.mjs, generate-api-modules.mjs
+githooks/       commit-msg convention gate (enable: git config core.hooksPath githooks)
 docker/         postgres init (7 roles + 7 schemas, ADR-007)
 ```
 
@@ -41,6 +42,7 @@ Test runners: **jest** in `api`, `gateway`, `contracts`; **vitest** in `web`. Li
 
 ## Hard rules
 
+- **Plan before code:** before implementing, fixing, or refactoring anything in the codebase except docs, first write a detailed plan split into multiple phases, and land each phase as its own meaningful commit. Docs-only changes are exempt.
 - **Money:** integer VND everywhere; 1 credit = 1,000 VND; platform fee 1000 bps (10%, 90/10 split). Never floats.
 - **Persistence:** TypeORM only (ADR-014). One database `skillswap`, seven schemas, each owned by role `skillswap_<schema>`; app code connects with per-module credentials (`ApiConfig.databaseCredentials`). No cross-schema joins/foreign keys.
 - **Migrations:** generated entities only; the migration table is `schema_migrations` in each schema. Prefer the existing data-source pattern; don't hand-edit applied migrations.
@@ -53,6 +55,7 @@ Test runners: **jest** in `api`, `gateway`, `contracts`; **vitest** in `web`. Li
 ## Conventions
 
 - TypeScript strict everywhere; path alias via `tsconfig.base.json`.
+- **Commits:** `git commit -m "type(scope): msg" -m "desc"` — type from `build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test`, scope optional (lowercase, dashes), subject ≤ 72 chars, body explains why. This rule is enforced at git-hook level: `githooks/commit-msg` rejects anything else **before the commit lands** (enable once per clone with `git config core.hooksPath githooks`).
 - Ports: gateway 4000, api 4001, web 3000 (postgres 5432, rabbitmq 5672/15672).
 - Env: copy `.env.example`; secrets never committed (`.env`, `.secrets/` are gitignored).
 - IDs in docs: requirement IDs stay stable — reference them, don't renumber.

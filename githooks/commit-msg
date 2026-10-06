@@ -1,0 +1,46 @@
+#!/bin/sh
+# Commit convention gate for this repo (AGENTS.md -> Conventions):
+#   git commit -m "type(scope): msg" -m "desc"
+# type: build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test
+# scope: optional, lowercase/digits/dashes; subject <= 72 chars; body required.
+# Enable per clone: git config core.hooksPath githooks
+
+msg_file="$1"
+if [ -z "$msg_file" ] || [ ! -f "$msg_file" ]; then
+  echo "commit-msg: message file not provided" >&2
+  exit 1
+fi
+
+subject=$(sed -n '1p' "$msg_file" | tr -d '\r')
+
+# Git-generated messages keep their own shape.
+case "$subject" in
+  "Merge "*|"Revert \""*|"fixup! "*|"squash! "*|"amend! "*) exit 0 ;;
+esac
+
+if [ -z "$subject" ]; then
+  echo "commit-msg: empty commit message" >&2
+  exit 1
+fi
+
+types='build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test'
+if ! printf '%s\n' "$subject" | grep -Eq "^($types)(\([a-z0-9][a-z0-9-]*\))?: [^ ].*$"; then
+  echo "commit-msg: subject does not match 'type(scope): msg'" >&2
+  echo "  got:      $subject" >&2
+  echo "  example:  feat(gateway): add booking endpoint" >&2
+  exit 1
+fi
+
+len=$(printf '%s' "$subject" | wc -m | tr -d ' ')
+if [ "$len" -gt 72 ]; then
+  echo "commit-msg: subject too long ($len > 72 chars): $subject" >&2
+  exit 1
+fi
+
+body=$(sed '1d' "$msg_file" | tr -d '\r' | grep -v '^#' | grep -v '^[[:space:]]*$' | head -n 1)
+if [ -z "$body" ]; then
+  echo "commit-msg: missing body — use: git commit -m \"type(scope): msg\" -m \"desc\"" >&2
+  exit 1
+fi
+
+exit 0
