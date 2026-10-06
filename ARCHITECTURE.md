@@ -290,7 +290,7 @@ Decision drivers: Performance, Cost efficiency, Scalability, Security & Privacy,
 
 **Decision.** Adopt **Centralized** (centralized, client–server). A single central system serves all users and all branches over the network.
 
-**Rationale.** Centralized (centralized, client–server) was chosen because the number of branches is moderate, the network is stable, and data must be immediately consistent. This option is strong on the priority drivers: Performance, Cost efficiency, Testability, Deployability, Time-to-market. Compared with Distributed / Federated: higher weighted score (3.90 vs 2.80); Distributed / Federated has the problem that a small team will struggle to operate multiple nodes and synchronization mechanisms.
+**Rationale.** Centralized (centralized, client–server) was chosen because the number of branches is moderate, the network is stable, and data must be immediately consistent. This option is strong on the priority drivers: Performance, Cost efficiency, Testability, Deployability, Time-to-market. Compared with Distributed / Federated: higher weighted score (3.90 vs 2.85); Distributed / Federated has the problem that a small team will struggle to operate multiple nodes and synchronization mechanisms.
 
 **Consequences.**
 
@@ -332,7 +332,7 @@ Context notes: Check the data-hosting region and legal regulations.
 
 **Decision.** Adopt **Public cloud**. Use the cloud provider's infrastructure and ready-made managed services (managed DB, queue, storage).
 
-**Rationale.** Public cloud was chosen because we need to launch quickly, the load varies, and few people are available to operate the system. This option is strong on the priority drivers: Performance, Cost efficiency, Scalability, Modifiability, Testability, Interoperability, Deployability, Time-to-market. Compared with Hybrid: higher weighted score (4.25 vs 3.05); Hybrid has the problem that a small team will struggle to operate two environments.
+**Rationale.** Public cloud was chosen because we need to launch quickly, the load varies, and few people are available to operate the system. This option is strong on the priority drivers: Performance, Cost efficiency, Scalability, Modifiability, Testability, Interoperability, Deployability, Time-to-market. Compared with Hybrid: higher weighted score (4.15 vs 3.10); Hybrid has the problem that a small team will struggle to operate two environments.
 
 **Consequences.**
 
@@ -454,7 +454,7 @@ Context notes: Fits the team size; domain-based module boundaries keep the busin
 
 **Decision.** Adopt **Modular monolith** (a monolith divided into modules). A single deployable unit, divided into modules by domain (bounded context) with hard boundaries and their own public APIs.
 
-**Rationale.** Modular monolith (a monolith divided into modules) was chosen because the team has 3–15 people, the domain is clear, and we want a fallback path toward microservices. This option is strong on the priority drivers: Performance, Cost efficiency, Modifiability, Testability, Time-to-market. Fits the context: fits the team size; domain-based module boundaries keep the business logic tidy. Compared with Serverless: lower score (3.80 vs 3.85) but [state the reason it is still chosen].
+**Rationale.** Modular monolith (a monolith divided into modules) was chosen because the team has 3–15 people, the domain is clear, and we want a fallback path toward microservices. This option is strong on the priority drivers: Performance, Cost efficiency, Modifiability, Testability, Time-to-market. Fits the context: fits the team size; domain-based module boundaries keep the business logic tidy. Compared with Serverless: higher weighted score (3.85 vs 3.80); Serverless would split business logic across functions, making the compiler-checked module boundaries of a modular monolith harder to enforce.
 
 **Consequences.**
 
@@ -533,7 +533,7 @@ Decision drivers: Performance, Cost efficiency, Scalability, Security & Privacy,
 
 **Decision.** Adopt **Schema per module** (one database, a separate schema for each module). One database server, where each module owns its own schema; other modules access it only through that module's API.
 
-**Rationale.** Schema per module (one database, a separate schema for each module) was chosen because this is a modular monolith and we want to be ready to split into services later. This option is strong on the priority drivers: Performance, Cost efficiency, Modifiability, Testability, Time-to-market. Compared with CQRS + read model: higher weighted score (3.80 vs 3.50).
+**Rationale.** Schema per module (one database, a separate schema for each module) was chosen because this is a modular monolith and we want to be ready to split into services later. This option is strong on the priority drivers: Performance, Cost efficiency, Modifiability, Testability, Time-to-market. Compared with CQRS + read model: higher weighted score (3.85 vs 3.55).
 
 **Consequences.**
 
@@ -572,7 +572,7 @@ Decision drivers: Performance, Cost efficiency, Scalability, Security & Privacy,
 
 **Decision.** Adopt **API Gateway** (a shared API gateway). A single entry point handling TLS, authentication, rate limiting and routing to the backend containers.
 
-**Rationale.** API Gateway (a shared API gateway) was chosen because there are multiple backend containers or a need for a centralized security policy. This option is strong on the priority drivers: Cost efficiency, Scalability, Modifiability, Testability, Interoperability, Deployability, Time-to-market. Compared with Direct client-to-backend: higher weighted score (3.85 vs 3.60).
+**Rationale.** API Gateway (a shared API gateway) was chosen because there are multiple backend containers or a need for a centralized security policy. This option is strong on the priority drivers: Cost efficiency, Scalability, Modifiability, Testability, Interoperability, Deployability, Time-to-market. Compared with Direct client-to-backend: higher weighted score (3.90 vs 3.55).
 
 **Consequences.**
 
@@ -613,7 +613,7 @@ Context notes: Protect complex business logic from infrastructure details.
 
 **Decision.** Adopt **Hexagonal (Ports & Adapters)** (hexagon: ports and adapters). The domain and use cases sit at the center and define ports (interfaces); inbound adapters (REST, consumers) and outbound adapters (DB, broker, external APIs) implement the ports.
 
-**Rationale.** Hexagonal (Ports & Adapters) (hexagon: ports and adapters) was chosen because there are many integrations, the infrastructure may need to be swapped, and business logic must be testable in isolation. This option is strong on the priority drivers: Performance, Modifiability, Testability, Interoperability. Fits the context: protecting complex business logic from infrastructure details. Compared with Pipe-and-filter: higher weighted score (3.80 vs 3.80).
+**Rationale.** Hexagonal (Ports & Adapters) (hexagon: ports and adapters) was chosen because there are many integrations, the infrastructure may need to be swapped, and business logic must be testable in isolation. This option is strong on the priority drivers: Performance, Modifiability, Testability, Interoperability. Fits the context: protecting complex business logic from infrastructure details. Compared with Pipe-and-filter: higher weighted score (3.85 vs 3.80).
 
 **Consequences.**
 
@@ -655,7 +655,7 @@ Context notes: Put business invariants in aggregates.
 
 **Decision.** Adopt **Domain model (DDD aggregates)** (behavior-rich domain model). Aggregates encapsulate state and rules; every state change goes through a method of the aggregate root, where invariants are preserved.
 
-**Rationale.** Domain model (DDD aggregates) (behavior-rich domain model) was chosen because the business logic is complex, with many invariants (no double booking, limits, state lifecycles). This option is strong on the priority drivers: Performance, Modifiability, Testability. Fits the context: put business invariants in aggregates. Compared with Transaction script: lower score (3.50 vs 3.55) but [state the reason it is still chosen]; Transaction script has the problem that business invariants would be scattered across procedures. Accepted trade-off: low score on Time-to-market.
+**Rationale.** Domain model (DDD aggregates) (behavior-rich domain model) was chosen because the business logic is complex, with many invariants (no double booking, limits, state lifecycles). This option is strong on the priority drivers: Performance, Modifiability, Testability. Fits the context: put business invariants in aggregates. Compared with Transaction script: scores tie (3.55 vs 3.55), but Transaction script has the problem that business invariants would be scattered across procedures. Accepted trade-off: low score on Time-to-market.
 
 **Consequences.**
 
@@ -695,7 +695,7 @@ Decision drivers: Performance, Cost efficiency, Scalability, Security & Privacy,
 
 **Decision.** Adopt **Package by component** (split by component with a public interface). Each component has exactly one public interface; all implementation classes are kept in internal scope (internal/package-private).
 
-**Rationale.** Package by component (split by component with a public interface) was chosen because a modular monolith needs compiler-checked boundaries. This option is strong on the priority drivers: Cost efficiency, Modifiability, Testability, Deployability. Compared with Package by feature / module: higher weighted score (3.60 vs 3.55).
+**Rationale.** Package by component (split by component with a public interface) was chosen because a modular monolith needs compiler-checked boundaries. This option is strong on the priority drivers: Cost efficiency, Modifiability, Testability, Deployability. Compared with Package by feature / module: higher weighted score (3.60 vs 3.50).
 
 **Consequences.**
 

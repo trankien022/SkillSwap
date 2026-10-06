@@ -1,0 +1,14 @@
+stateDiagram-v2
+  [*] --> Pending : booking attempt started
+  Pending --> Confirmed : atomic settlement succeeded (debit 100%, split 90/10)
+  Pending --> [*] : eligibility failed — no side effects
+  Confirmed --> Completed : class held, rating window open
+  Confirmed --> Cancelled : cancellation per approved policy (OQ-003)
+  Completed --> Disputed : dispute raised (manual process)
+  Cancelled --> [*]
+  Disputed --> [*]
+  note right of Confirmed
+    No partial success state exists:
+    booking and ledger commit or
+    roll back together (AC-005)
+  end note

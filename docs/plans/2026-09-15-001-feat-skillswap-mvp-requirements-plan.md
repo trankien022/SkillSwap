@@ -129,20 +129,31 @@ version: 0.2
 | FR-012 | Functional | Các bên thuộc lớp phải có chat nội bộ; người ngoài không được truy cập và hành vi chia sẻ liên hệ tuân theo OQ-009. | Should | `docs/intent.md` | Confirmed; enforcement open |
 | FR-013 | Functional | Sau lớp, Learner phải có thể rating/comment; điều kiện booking hợp lệ, giới hạn một lần và ảnh hưởng hiển thị là đề xuất/chính sách chờ OQ-004. | Must | `docs/intent.md` + Proposed | Confirmed core; eligibility/uniqueness Proposed; threshold open |
 | FR-014 | Functional | Teacher phải có thể yêu cầu rút thu nhập qua gateway; giữ credit trong ledger cùng request trước payout, timeout giữ tiền đến khi đối soát; giới hạn/phí/release/reversal vẫn theo OQ-005/OQ-006, contract gateway theo OQ-011. | Must | `docs/intent.md` + Proposed | Confirmed core; payout controls Proposed; policy/gateway open |
+| FR-015 | Functional | Administrator phải có bảng điều khiển tổng hợp gồm hàng đợi xác minh sinh viên, hàng đợi Verifier theo domain, danh sách tranh chấp/khóa tài khoản và log audit có thể lọc theo actor, thời gian và loại hành động. | Must | `docs/intent.md` | Confirmed |
+| FR-016 | Functional | Hệ thống phải gửi thông báo khi hồ sơ xác minh có kết quả, booking được xác nhận/hủy, lớp sắp bắt đầu, giao dịch ví hoàn tất và withdrawal có kết quả. | Should | `docs/intent.md` | Confirmed |
+| FR-017 | Functional | Learner phải thấy rõ trạng thái tài khoản của mình và lý do nếu bị từ chối, ngay trên màn hình chính. | Must | `docs/intent.md` | Confirmed |
+| FR-018 | Functional | Teacher phải xem được lịch sử quyết định cho từng phiên bản bằng chứng năng lực đã nộp, không chỉ trạng thái mới nhất; bằng chứng đã submit bị khóa chỉnh sửa, thay đổi phải tạo phiên bản mới có audit trail. | Must | `docs/intent.md`, BRD BR-014 | Confirmed |
+| FR-019 | Functional | Hệ thống phải hỗ trợ re-verification và tự động hạ quyền truy cập khi trạng thái xác minh sinh viên hết hiệu lực hoặc bị thu hồi, bao gồm cascade tới các quyền được cấp theo trạng thái VERIFIED. | Must | BRD BR-006 | Confirmed; policy open (OQ-008) |
+| FR-020 | Functional | Mỗi Class trong MVP là một buổi học có lịch; hệ thống quản lý Published/Full → In progress → Completed/Cancelled, lưu thời điểm/căn cứ hoàn tất và chỉ mở rating/giải ngân khi đáp ứng điều kiện tương ứng. | Must | BRD BR-042–BR-043 | Confirmed core; completion/release rule open (OQ-006) |
 
 ### Business rules
 
-| ID | Rule | Governs |
-|---|---|---|
-| BR-001 | Administrator xét duyệt thủ công tư cách sinh viên từ tên trường và giấy tờ tải lên. | FR-002 |
-| BR-002 | Chỉ Teacher có kỹ năng được Verifier phù hợp chuyên môn duyệt mới được mở lớp cho kỹ năng đó. | FR-003–FR-005 |
-| BR-003 | Mỗi lớp kéo dài tối thiểu 30 phút và tối đa 3 giờ. | FR-005, FR-007 |
-| BR-004 | Booking phải được tạo ít nhất 24 giờ trước giờ bắt đầu. | FR-007 |
-| BR-005 | Tỷ giá khởi điểm là 1 credit = 1.000 VND; giao dịch lưu tỷ giá đã áp dụng để audit. | FR-008, FR-010, FR-014 |
-| BR-006 | Phí nền tảng là 10% giá lớp; 90% còn lại được phân bổ cho Teacher theo trạng thái settlement. | FR-009, FR-014 |
-| BR-007 | MVP chỉ hỗ trợ lớp học trực tuyến. | FR-005, FR-011 |
-| BR-008 | Giao tiếp phục vụ lớp học diễn ra trong nền tảng; cách thực thi cấm chia sẻ liên hệ theo OQ-009. | FR-012 |
-| BR-009 | Hồ sơ chất lượng thấp bị giảm hiển thị theo ngưỡng được phê duyệt. | FR-006, FR-013 |
+Bảng ngắn gọn theo SRS (namespace `SR-BR-*`). Quy tắc nghiệp vụ chuẩn (BR-001–BR-070) xem BRD §7; cột cuối ánh xạ về ID chuẩn.
+
+| ID | Quy tắc | Governs | Quy tắc BRD chuẩn |
+|---|---|---|---|
+| SR-BR-001 | Administrator xét duyệt thủ công tư cách sinh viên từ tên trường và giấy tờ tải lên. | FR-002 | BR-002, BR-003, BR-005 |
+| SR-BR-002 | Chỉ Teacher có kỹ năng được Verifier phù hợp chuyên môn duyệt mới được mở lớp cho kỹ năng đó. | FR-003–FR-005 | BR-008, BR-011, BR-015 |
+| SR-BR-003 | Mỗi lớp kéo dài tối thiểu 30 phút và tối đa 3 giờ. | FR-005, FR-007 | BR-016, BR-017 |
+| SR-BR-004 | Booking phải được tạo ít nhất 24 giờ trước giờ bắt đầu. | FR-007 | BR-021 |
+| SR-BR-005 | Tỷ giá khởi điểm là 1 credit = 1.000 VND; giao dịch lưu tỷ giá đã áp dụng để audit. | FR-008, FR-010, FR-014 | BR-027 |
+| SR-BR-006 | Phí nền tảng là 10% giá lớp; 90% còn lại được phân bổ cho Teacher theo trạng thái settlement. | FR-009, FR-014 | BR-034, BR-035, BR-036 |
+| SR-BR-007 | MVP chỉ hỗ trợ lớp học trực tuyến. | FR-005, FR-011 | BR-018 |
+| SR-BR-008 | Giao tiếp phục vụ lớp học diễn ra trong nền tảng; cách thực thi cấm chia sẻ liên hệ theo OQ-009. | FR-012 | BR-055, BR-056 |
+| SR-BR-009 | Hồ sơ chất lượng thấp bị giảm hiển thị theo ngưỡng được phê duyệt. | FR-006, FR-013 | BR-053, BR-054 |
+| SR-BR-010 | Teacher không được tự đặt hoặc tự đánh giá lớp của mình. | FR-007, FR-013 | BR-068 |
+| SR-BR-011 | Một tài khoản chỉ có tối đa một xác minh sinh viên hiệu lực tại một thời điểm. | FR-002 | BR-070 |
+| SR-BR-012 | Credit không được chuyển thành tiền mặt ngoài quy trình rút tiền chính thức của Teacher. | FR-014 | BR-069 |
 
 ## 7. Use Cases and User Stories
 
@@ -212,9 +223,19 @@ version: 0.2
 - **AC-006 / FR-011:** Given người dùng không thuộc booking hoặc truy cập ngoài thời gian cho phép, when mở phòng, then hệ thống từ chối.
 - **AC-007 / FR-013:** Given lớp đã kết thúc và Learner thuộc booking, when gửi rating/comment hợp lệ, then review được gắn với booking và không bị tạo trùng trái chính sách.
 - **AC-008 / FR-014:** Given callback payout hợp lệ được gửi lại, when hệ thống xử lý, then withdrawal chỉ hoàn tất một lần.
-- **AC-009 / EVT-001:** Given một callback hợp lệ nhưng cũ hơn trạng thái gateway đã xử lý, when callback đến muộn, then hệ thống acknowledge nhưng không hạ trạng thái; `Completed → Reversed` chỉ xảy ra với sự kiện reversal mới, hợp lệ và được reconciliation xác nhận.
-- **AC-010 / OQ-007:** Sau khi OQ-007 được duyệt, acceptance suite phải bao gồm hai yêu cầu đồng thời cho chỗ cuối và việc tự động nhả capacity hold hết hạn.
-- **AC-011 / OQ-008:** Sau khi OQ-008 được duyệt, acceptance suite phải kiểm tra cả hai hướng quyết định cascade và grandfather đối với lớp, booking, room access, thu nhập pending và payout.
+- **AC-009 / EVT-001:** Given một callback hợp lệ nhưng cũ hơn trạng thái gateway đã xử lý, when callback đến muộn, then hệ thống acknowledge nhưng không hạ trạng thái.
+- **AC-010 / FR-007:** Given lớp còn đúng một chỗ, when hai Learner đặt gần như đồng thời, then đúng một booking được xác nhận; booking còn lại nhận lỗi lớp đầy và không bị trừ credit.
+- **AC-011 / FR-020:** Given một Class đã tới giờ diễn ra, when buổi học thỏa quy tắc hoàn tất đã được duyệt, then Class chuyển Completed với thời gian/căn cứ audit và cho phép rating; release chỉ thực hiện khi đạt điều kiện OQ-006, hủy lớp xử lý booking/ledger theo OQ-003.
+- **AC-012 / FR-019:** Given một hồ sơ xác minh sinh viên đã hết hiệu lực hoặc bị thu hồi, when hệ thống xử lý sự kiện, then các quyền yêu cầu VERIFIED bị hạ ngay và người dùng thấy trạng thái kèm hướng dẫn re-verification.
+- **AC-013 / FR-014:** Given available 100 credit, when request rút 80 được xác nhận, then available còn 20 và payout_hold là 80; request rút thêm 80 bị từ chối mà không phát sinh hold hoặc payout mới.
+- **AC-014 / FR-014:** Given payout 80 đang chờ và gateway timeout, then hold vẫn là 80; callback/đối soát thành công đến sau chỉ post payout một lần, không vừa payout vừa nhả tiền.
+- **AC-015 / FR-009:** Given hai booking A/B tạo pending 90 mỗi booking và A đã release, when retry release A bằng key khác, then không release thêm; pending của B vẫn 90, available từ A vẫn 90.
+- **AC-016 / FR-003–FR-005:** Given evidence mid còn hiệu lực và yêu cầu mới xin senior, then pending/rejected replacement vẫn giữ quyền mid; nếu Verifier duyệt bản mới ở mid, cache level và quyền đều mid, bản cũ Superseded cùng transaction/audit.
+- **AC-017 / FR-005, FR-007:** Given booking Confirmed đầu tiên, when sửa Teacher/nội dung/kỹ năng/lịch/thời lượng hoặc hủy hết booking rồi sửa, then cam kết vẫn bị khóa; sửa lớp đồng thời với booking không bán nội dung ngoài cam kết.
+- **AC-018 / FR-004:** Given chỉ có vai trò Administrator, hoặc Verifier suspended/sai chuyên môn/tự duyệt, when quyết định skill evidence, then bị từ chối; chỉ Verifier active đúng chuyên môn và khác chủ hồ sơ được quyết định.
+- **AC-019 / FR-009, FR-010:** Given policy hoàn toàn bộ đã được duyệt và booking đã release nhưng Teacher còn đủ available, when hoàn tiền, then đảo release và booking nguyên tử, không tạo pending âm; sau payout/thiếu nguồn bù không tự post refund trái OQ-003/OQ-006.
+- **AC-020 / OQ-007:** Sau khi OQ-007 được duyệt, acceptance suite phải bao gồm hai yêu cầu đồng thời cho chỗ cuối và việc tự động nhả capacity hold hết hạn.
+- **AC-021 / OQ-008:** Sau khi OQ-008 được duyệt, acceptance suite phải kiểm tra cả hai hướng quyết định cascade và grandfather đối với lớp, booking, room access, thu nhập pending và payout.
 
 ## 8. Data Model
 
@@ -291,23 +312,28 @@ These contracts are `Proposed` until Engineering approves the design and OQ-011 
 
 ## 12. Delivery Plan and Dependencies
 
+Mirror của PRD §14; cột Dependency được mở rộng với các OQ gating increment tương ứng (đối chiếu SRS §3.7).
+
 | Increment | Scope | Dependency | Exit criteria | Risk |
 |---|---|---|---|---|
-| 1 | Resolve architecture/security choices and only the OQs required by the next increment; track remaining OQs by their own `Required by` gate. | Product Owner, Engineering, Finance/Security | Decisions needed for Increment 2 are approved and affected Issues meet Definition of Ready. | High |
-| 2 | Identity, student verification and Verifier lifecycle. | OQ-001, OQ-008 | Acceptance criteria and authorization/upload tests pass. | High |
-| 3 | Teacher evidence and class publishing. | Increment 2, OQ-001/OQ-002/OQ-007 | Verified Teacher can publish only approved skills. | High |
-| 4 | Booking, wallet, gateway and settlement. | OQ-002/OQ-003/OQ-005/OQ-006/OQ-011 | Atomic ledger, webhook, chargeback and reconciliation evidence pass. | Critical |
-| 5 | Jitsi, chat, rating and mobile/accessibility completion. | Confirmed booking lifecycle, OQ-004/OQ-009 | Secure access, content safety and end-to-end flow evidence pass. | High |
+| 1 | Kiến trúc nền, xác thực tài khoản, khung bảng điều khiển Admin. | Product Owner, Engineering, Finance/Security | Quyết định cần cho Increment 2 được phê duyệt. | High |
+| 2 | Xác minh sinh viên, thông báo trạng thái. | Increment 1, OQ-008 | UC-001 pass toàn bộ acceptance criteria. | High |
+| 3 | Đăng ký/xác minh Teacher, quản lý Verifier, công bố lớp. | Increment 2, OQ-001/OQ-002/OQ-007 | UC-002 pass; chỉ kỹ năng Approved công bố được lớp. | High |
+| 4 | Tìm kiếm, đặt lớp, ví, gateway, ledger, rút tiền. | Increment 3, OQ-002/OQ-003/OQ-005/OQ-006/OQ-011/OQ-012 | UC-003, UC-005 pass; test concurrency và idempotency. | Critical |
+| 5 | Jitsi, chat, rating, hoàn thiện mobile/accessibility. | Increment 4, OQ-004/OQ-009 | UC-004 pass; các NFR liên quan pass. | High |
+
+Ghi chú: OQ-008 có required-by là gate thiết kế storage/lifecycle (BRD §11) và được bổ sung vào Dependency của Increment 2; OQ-010 gate pilot planning sau Increment 5 nên không thuộc Increments 1–5. Các OQ còn lại giữ nguyên gate `Required by` của BRD §11.
 
 ## 13. Traceability Matrix
 
 | Business goal | Requirement | Use case/story | API/data/NFR | Test evidence |
 |---|---|---|---|---|
-| Trusted student identity | FR-001–FR-002 | UC-001, US-001 | API-001, User, StudentVerification, NFR-004/NFR-008/NFR-009 | Pending implementation |
-| Trusted Teacher capability | FR-003–FR-005 | UC-002, US-002 | API-002–API-004, ProfileSkill, SkillEvidence, NFR-004/NFR-009 | Pending implementation |
-| Discover and book online learning | FR-005–FR-007 | UC-003, US-003 | API-004–API-005, Class, Booking, NFR-001/NFR-006/NFR-007 | Pending implementation |
-| Traceable wallet settlement | FR-008–FR-010, FR-014 | UC-003, UC-005, US-003/US-006 | API-005–API-007, EVT-001, Wallet/Ledger/Withdrawal, NFR-003/NFR-005/NFR-009 | Pending implementation |
-| Secure class participation | FR-011–FR-013 | UC-004, US-004/US-005 | API-008–API-010, Message/Rating, NFR-006/NFR-007/NFR-010 | Pending implementation |
+| Trusted student identity | FR-001, FR-002, FR-017, FR-019 | UC-001, UC-006–UC-008, US-001 | API-001, User, StudentVerification, NFR-004/NFR-008/NFR-009 | Pending implementation |
+| Trusted Teacher capability | FR-003–FR-005, FR-018 | UC-002, UC-009, UC-010, US-002 | API-002–API-004, ProfileSkill, SkillEvidence, NFR-004/NFR-009 | Pending implementation |
+| Discover and book online learning | FR-005–FR-007 | UC-003, UC-011, US-003 | API-004–API-005, Class, Booking, NFR-001/NFR-006/NFR-007 | Pending implementation |
+| Traceable wallet settlement | FR-008–FR-010, FR-014, FR-020 | UC-003, UC-005, UC-012, UC-013, US-003/US-006 | API-005–API-007, EVT-001, Wallet/Ledger/Withdrawal, NFR-003/NFR-005/NFR-009 | Pending implementation |
+| Secure class participation | FR-011–FR-013, FR-016 | UC-004, US-004/US-005 | API-008–API-010, Message/Rating, NFR-006/NFR-007/NFR-010 | Pending implementation |
+| Platform operations | FR-015 | UC-014 | Audit log, NFR-005 | Pending implementation |
 
 ## 14. Risks and Decisions
 
@@ -333,12 +359,13 @@ These contracts are `Proposed` until Engineering approves the design and OQ-011 
 - **Gate 5 — GitHub Delivery Complete:** Not started for product features. No feature is `Done` until its code PR is merged and test/review evidence is recorded.
 - **Reviewers:** Product Owner, Engineering, QA, Security/Finance as applicable.
 - **Approval decision:** Pending.
-- **Unresolved questions:** OQ-001–OQ-011.
+- **Unresolved questions:** OQ-001–OQ-012.
 
 ## GitHub Delivery Mapping
 
 - GitHub Project: https://github.com/users/trankien022/projects/1
 - Functional Issues: https://github.com/trankien022/SkillSwap/issues/1 through https://github.com/trankien022/SkillSwap/issues/14
+- Note: GitHub issues are not yet filed for FR-015–FR-020 (planned increment for platform-operations scope); no feature work for those FRs starts until issues exist.
 - Decision Spikes: https://github.com/trankien022/SkillSwap/issues/15 through https://github.com/trankien022/SkillSwap/issues/19 and https://github.com/trankien022/SkillSwap/issues/22 through https://github.com/trankien022/SkillSwap/issues/27.
 - Governance alignment Issue: https://github.com/trankien022/SkillSwap/issues/21
 - Original blueprint PR: https://github.com/trankien022/SkillSwap/pull/20

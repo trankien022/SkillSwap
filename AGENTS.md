@@ -46,7 +46,7 @@ Test runners: **jest** in `api`, `gateway`, `contracts`; **vitest** in `web`. Li
 - **Events:** transactional outbox + idempotent consumers (ADR-013). Broker access lives in `apps/api/src/shared/messaging` only; exchange `skillswap.events`. Contracts: don't invent event schemas beyond those in `packages/contracts`.
 - **Module codegen:** `scripts/generate-api-modules.mjs` overwrites module scaffolding — only run with `--force` when you mean it.
 - **Never edit `ARCHITECTURE.md`.** If reality must change, add/update an ADR in `docs/adr/` first.
-- **Diagrams:** edit `docs/diagrams/c4/source/*.puml`, then re-render via the plantuml-skill `render.py` into `docs/diagrams/c4/generated`. Keep ORM mentions in sync with ADR-014 ("TypeORM", never "TypeORM/Prisma" — except the historical quote in `ARCHITECTURE.md`/ADR-014 themselves).
+- **Diagrams:** edit `docs/diagrams/c4/source/workspace.dsl` and the six `structurizr-*.puml` views beside it, then re-render via the plantuml-skill `render.py` (`C:\Users\LENOVO\.agents\skills\plantuml-skill\scripts\render.py`) into `docs/diagrams/c4/generated`. Keep ORM mentions in sync with ADR-014 ("TypeORM", never "TypeORM/Prisma" — except the historical quote in `ARCHITECTURE.md`/ADR-014 themselves).
 - **Frontend:** design comes from `DESIGN.md` (register: `product`). No gradient heroes / SaaS-landing patterns. Mobile-first 360 px, no horizontal scroll, vn/en never mixed on one screen, status always text + color.
 
 ## Conventions
