@@ -8,7 +8,7 @@ Instructions for AI agents (and new humans) working in this repository.
 2. **`PRODUCT.md`** — who the product serves, brand personality ("trustworthy, clear, peer-to-peer"), design principles.
 3. **`DESIGN.md`** — visual tokens and rules (slate neutrals + Campus Emerald, pill CTAs, flat-by-default). Read before touching any UI.
 4. **`docs/plans/SkillSwap-SRS.md`** — requirements with stable IDs (`FR`/`BR`/`NFR`/`OQ`/`AC`/`ST`). Only **Confirmed** FRs are implementable.
-5. **`docs/adr/`** — decisions: `ADR-013` (RabbitMQ + outbox), `ADR-014` (TypeORM persistence, 7 schemas, per-module credentials). ADRs are append-mostly: don't rewrite history.
+5. **`docs/adr/`** — decisions: `ADR-013` (RabbitMQ + outbox), `ADR-014` (TypeORM persistence, 7 schemas, per-module credentials), `ADR-015` (Expo mobile client + doc sync). ADRs are append-mostly: don't rewrite history.
 
 ## Repo map
 
@@ -20,6 +20,7 @@ apps/api        NestJS modular monolith, port 4001 — business logic
                 (hexagonal: domain/ application/ adapter/ internal/)
   src/shared/   config, messaging (amqplib only here), cross-cutting
 apps/web        Next.js 15 + next-intl (vi/en), port 3000
+apps/mobile     Expo/React Native client (planned, ADR-015 — not yet scaffolded)
 packages/contracts  Zod schemas shared by api/gateway (EVT-001 etc.)
 scripts/        migrate.mjs, generate-dev-keys.mjs, generate-api-modules.mjs
 docker/         postgres init (7 roles + 7 schemas, ADR-007)

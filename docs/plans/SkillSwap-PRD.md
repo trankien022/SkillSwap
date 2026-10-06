@@ -420,7 +420,8 @@ Authentication và authorization dùng server-side role/ownership check cho mọ
 | 2 | Xác minh sinh viên, thông báo trạng thái. | Increment 1 | UC-001 pass toàn bộ acceptance criteria. | High |
 | 3 | Đăng ký/xác minh Teacher, quản lý Verifier, công bố lớp. | Increment 2 | UC-002 pass; chỉ kỹ năng Approved công bố được lớp. | High |
 | 4 | Tìm kiếm, đặt lớp, ví, gateway, ledger, rút tiền. | Increment 3 | UC-003, UC-005 pass; test concurrency và idempotency. | Critical |
-| 5 | Jitsi, chat, rating, hoàn thiện mobile/accessibility. | Increment 4 | UC-004 pass; các NFR liên quan pass. | High |
+| 5 | Jitsi, chat, rating, hoàn thiện mobile-web/accessibility. | Increment 4 | UC-004 pass; các NFR liên quan pass. | High |
+| 6 | Ứng dụng mobile Expo/React Native (iOS/Android) cho Learner và Teacher. | Increment 5 | Gói cài đặt iOS/Android chạy được; UC-001–UC-005 pass trên app. | Medium |
 
 ## 15. Traceability Matrix
 

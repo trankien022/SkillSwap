@@ -29,7 +29,7 @@ version: 0.2
 - **Business problem:** Sinh viên muốn học kỹ năng thực tế với chi phí phù hợp nhưng thiếu một kênh đáng tin cậy để tìm, đánh giá và thanh toán cho người dạy là sinh viên có năng lực.
 - **Desired outcome:** Sinh viên đã được xác minh có thể tìm, đặt và tham gia lớp trực tuyến; Teacher đã được thẩm định có thể mở lớp và nhận thu nhập qua ledger credit có thể truy vết.
 - **Proposed success metrics:** Số Teacher đã xác minh, tỷ lệ tìm kiếm dẫn đến booking, tỷ lệ lớp hoàn thành và tỷ lệ giao dịch ledger thành công. Giá trị mục tiêu phải được Product Owner phê duyệt trong OQ-010 trước khi pilot.
-- **Recommended direction:** MVP web mobile-first, xác minh thủ công, lớp trực tuyến qua Jitsi, chat nội bộ và thanh toán bằng credit.
+- **Recommended direction:** MVP web mobile-first và ứng dụng mobile Expo/React Native (ADR-015), xác minh thủ công, lớp trực tuyến qua Jitsi, chat nội bộ và thanh toán bằng credit.
 - **Product authority:** `docs/intent.md` là nguồn nghiệp vụ chính. Nội dung suy ra để hoàn thiện đặc tả được ghi là `Proposed`; nội dung chưa đủ căn cứ được ghi là `Open Question`.
 
 ## 2. Scope
@@ -37,6 +37,7 @@ version: 0.2
 ### In scope
 
 - Web responsive mobile-first cho Learner, Teacher, Verifier và Administrator.
+- Ứng dụng mobile Expo/React Native (iOS/Android) cho Learner và Teacher — Increment 6 (ADR-015).
 - Xác minh sinh viên và năng lực Teacher bằng quy trình thủ công.
 - Marketplace lớp trực tuyến, booking, ví credit, Jitsi, chat và rating/comment.
 - Nạp và rút tiền thông qua một payment gateway được chọn ở bước thiết kế.
@@ -44,7 +45,7 @@ version: 0.2
 
 ### Out of scope
 
-- Ứng dụng native iOS hoặc Android.
+- Ứng dụng desktop/tablet native.
 - AI matching hoặc recommendation engine.
 - Automatic refund.
 - Tích hợp cơ sở dữ liệu sinh viên của trường hoặc xác minh tự động bằng email trường.
@@ -320,9 +321,10 @@ Mirror của PRD §14; cột Dependency được mở rộng với các OQ gatin
 | 2 | Xác minh sinh viên, thông báo trạng thái. | Increment 1, OQ-008 | UC-001 pass toàn bộ acceptance criteria. | High |
 | 3 | Đăng ký/xác minh Teacher, quản lý Verifier, công bố lớp. | Increment 2, OQ-001/OQ-002/OQ-007 | UC-002 pass; chỉ kỹ năng Approved công bố được lớp. | High |
 | 4 | Tìm kiếm, đặt lớp, ví, gateway, ledger, rút tiền. | Increment 3, OQ-002/OQ-003/OQ-005/OQ-006/OQ-011/OQ-012 | UC-003, UC-005 pass; test concurrency và idempotency. | Critical |
-| 5 | Jitsi, chat, rating, hoàn thiện mobile/accessibility. | Increment 4, OQ-004/OQ-009 | UC-004 pass; các NFR liên quan pass. | High |
+| 5 | Jitsi, chat, rating, hoàn thiện mobile-web/accessibility. | Increment 4, OQ-004/OQ-009 | UC-004 pass; các NFR liên quan pass. | High |
+| 6 | Ứng dụng mobile Expo/React Native (iOS/Android) cho Learner và Teacher. | Increment 5 | Gói cài đặt iOS/Android chạy được; UC-001–UC-005 pass trên app. | Medium |
 
-Ghi chú: OQ-008 có required-by là gate thiết kế storage/lifecycle (BRD §11) và được bổ sung vào Dependency của Increment 2; OQ-010 gate pilot planning sau Increment 5 nên không thuộc Increments 1–5. Các OQ còn lại giữ nguyên gate `Required by` của BRD §11.
+Ghi chú: OQ-008 có required-by là gate thiết kế storage/lifecycle (BRD §11) và được bổ sung vào Dependency của Increment 2; OQ-010 gate pilot planning sau Increment 6 nên không thuộc Increments 1–6. Increment 6 không có OQ mới, kế thừa các gate của Increment 5. Các OQ còn lại giữ nguyên gate `Required by` của BRD §11.
 
 ## 13. Traceability Matrix
 

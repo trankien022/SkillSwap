@@ -34,14 +34,14 @@ This document specifies the software requirements for the **SkillSwap MVP**, a p
 
 ### 1.2 Scope
 
-SkillSwap MVP is a responsive, mobile-first **web application** in which:
+SkillSwap MVP ships two clients — a responsive, mobile-first **web application** and a native **mobile app** (Expo/React Native, iOS/Android) — in which:
 
 - Students register, verify their student status, and learn from verified peer Teachers.
 - Teachers are verified per skill by domain-expert Verifiers before they may publish classes.
 - Classes are booked and paid with an internal **credit wallet** funded through a payment gateway; every financial effect is recorded in an auditable ledger with a 90/10 Teacher/platform split.
 - Classes run online in **Jitsi** rooms granted per booking with time-bounded access, with in-platform chat and post-class ratings.
 
-**Out of scope (MVP):** native mobile apps, AI matching/recommendation, automatic refunds, integration with school student databases, moderation/report tooling beyond ratings, offline classes, languages other than Vietnamese/English (see BRD §4.2).
+**Out of scope (MVP):** desktop/tablet-native apps, AI matching/recommendation, automatic refunds, integration with school student databases, moderation/report tooling beyond ratings, offline classes, languages other than Vietnamese/English (see BRD §4.2).
 
 ### 1.3 Definitions, acronyms and abbreviations
 
@@ -82,11 +82,11 @@ Sections 2 and 3 follow the IEEE 830 structure: overall description, then specif
 
 ### 2.1 Product perspective
 
-SkillSwap is a standalone web application that depends on two external systems: a **Payment Gateway** (real-money top-up and payout) and **Jitsi** (video classrooms). The system context is shown below; container-level detail is in `docs/diagrams/c4/`.
+SkillSwap is a standalone system with two clients — a responsive web app and a native mobile app (ADR-015) — that depends on two external systems: a **Payment Gateway** (real-money top-up and payout) and **Jitsi** (video classrooms). The system context is shown below; container-level detail is in `docs/diagrams/c4/`.
 
 ![SkillSwap system context](../diagrams/c4/generated/structurizr-SystemContext.png)
 
-The software stack is fixed for the MVP: **Next.js (React)** frontend, **NestJS (Node.js)** backend, **PostgreSQL** persistence via **TypeORM**. The backend provisions Jitsi rooms and issues short-lived access tokens; Learners and Teachers connect to Jitsi directly via WebRTC, so the backend handles only room metadata and access signaling, never media streams.
+The software stack is fixed for the MVP: **Next.js (React)** web frontend, **Expo (React Native)** mobile client, **NestJS (Node.js)** backend, **PostgreSQL** persistence via **TypeORM** (ADR-014, ADR-015). The backend provisions Jitsi rooms and issues short-lived access tokens; Learners and Teachers connect to Jitsi directly via WebRTC, so the backend handles only room metadata and access signaling, never media streams.
 
 ### 2.2 Product functions (summary)
 
@@ -119,7 +119,7 @@ All four roles share one account model: a single account may hold both Learner a
 | C-005 | Platform fee 10% per class purchase; 90% allocated to Teacher. | BRD §8 / SR-BR-006, Confirmed |
 | C-006 | Mobile-first responsive web; no horizontal scrolling at 360 px/390 px. | PRD NFR-001, Confirmed |
 | C-007 | Vietnamese and English only; no mixed language on one screen. | PRD NFR-002, Confirmed |
-| C-008 | Stack: Next.js frontend, NestJS backend, PostgreSQL with TypeORM. | Engineering decision |
+| C-008 | Stack: Next.js web frontend, Expo/React Native mobile client, NestJS backend, PostgreSQL with TypeORM. | Engineering decision (ADR-015 for mobile) |
 | C-009 | All class communication stays in-platform; contact sharing is prohibited per approved policy. | SR-BR-008, Confirmed (enforcement mechanism deferred — OQ-009) |
 | C-010 | MVP has no automated report/account-lock system; ratings + comments surface bad behavior. | intent.md, Confirmed |
 
@@ -143,14 +143,14 @@ All four roles share one account model: a single account may hold both Learner a
 
 #### 3.1.1 User interfaces
 
-- Responsive web UI, mobile-first (360 px, 390 px and desktop viewports); no horizontal scrolling; touch targets sized for touch; WCAG 2.2 AA on main flows (NFR-001, NFR-007).
+- Responsive web UI and native mobile app UI, mobile-first (360 px, 390 px and desktop viewports); no horizontal scrolling; touch targets sized for touch; WCAG 2.2 AA on main flows (NFR-001, NFR-007).
 - Main screens: register/login, Learner home + search, class detail, booking confirmation, student verification form, Teacher registration, Teacher dashboard, class publish/edit, wallet, classroom + chat, rating modal, public Teacher profile, Verifier dashboard, Administrator dashboard, notification center (PRD §8).
 - Language: Vietnamese or English per locale, never mixed on one screen (NFR-002).
 - Account status (including rejection reasons) must be visible on the Learner home screen with a resubmit path (FR-017).
 
 #### 3.1.2 Hardware interfaces
 
-None. The system is browser-based; the only client hardware assumptions are a camera/microphone for Jitsi participation on the user's own device.
+None. The clients are browser-based web plus a native mobile app; the only client hardware assumptions are a camera/microphone for Jitsi participation on the user's own device.
 
 #### 3.1.3 Software interfaces
 
@@ -440,7 +440,7 @@ stateDiagram-v2
 
 ### 3.4 Design constraints
 
-1. **Architecture:** Next.js frontend, NestJS backend, PostgreSQL via TypeORM (C-008); Jitsi room provisioning and token issuance by backend; media flows directly over WebRTC.
+1. **Architecture:** Next.js web frontend, Expo/React Native mobile client (ADR-015), NestJS backend, PostgreSQL via TypeORM (C-008); Jitsi room provisioning and token issuance by backend; media flows directly over WebRTC.
 2. **Atomicity:** all booking/settlement writes occur in a single database transaction; no partial financial success (NFR-003, AC-005).
 3. **Idempotency:** every financially effective command requires an idempotency key and trace ID (PRD §10 integration rules).
 4. **Authorization:** server-side role/ownership checks on every endpoint; Administrator/Verifier require MFA; payouts and payout-destination changes require step-up authentication (NFR-009).
@@ -463,7 +463,7 @@ stateDiagram-v2
 
 **Maintainability:** requirements, acceptance criteria and tests keyed by stable IDs (FR/BR/NFR/UC/AC) enabling the traceability matrix in Appendix C.
 
-**Portability:** responsive web only; browser support covers current mobile and desktop browsers (BRD §4.1).
+**Portability:** responsive web plus a native mobile app (Expo/React Native, ADR-015); browser support covers current mobile and desktop browsers (BRD §4.1).
 
 **Accessibility (NFR-007):** WCAG 2.2 AA on main flows — keyboard navigation, visible focus, screen-reader labels.
 
@@ -477,7 +477,7 @@ stateDiagram-v2
 
 ### 3.7 Open items blocking implementation
 
-Implementation of the clauses listed in Appendix A is blocked until the corresponding Open Question is approved (decision policy: **block until resolved**). Affected increments (increment definitions per PRD §14): Increment 2 (OQ-008), Increment 3 (OQ-001, OQ-002, OQ-007), Increment 4 (OQ-002, OQ-003, OQ-005, OQ-006, OQ-011, OQ-012), Increment 5 (OQ-004, OQ-009), storage/lifecycle design (OQ-008), pilot planning (OQ-010).
+Implementation of the clauses listed in Appendix A is blocked until the corresponding Open Question is approved (decision policy: **block until resolved**). Affected increments (increment definitions per PRD §14): Increment 2 (OQ-008), Increment 3 (OQ-001, OQ-002, OQ-007), Increment 4 (OQ-002, OQ-003, OQ-005, OQ-006, OQ-011, OQ-012), Increment 5 (OQ-004, OQ-009), Increment 6 (no additional OQ; inherits Increment 5 gates), storage/lifecycle design (OQ-008), pilot planning (OQ-010).
 
 ---
 

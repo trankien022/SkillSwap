@@ -52,7 +52,7 @@ Giá trị mục tiêu cụ thể cho từng success metric là quyết định 
 
 ### 3.1 Non-goals
 
-MVP chủ đích không theo đuổi tăng trưởng đa quốc gia hay đa ngôn ngữ ngoài Việt/Anh, không theo đuổi tự động hóa matching bằng AI trước khi kiểm chứng mô hình thủ công, và không theo đuổi ứng dụng di động native trước khi xác nhận nhu cầu qua web mobile-first.
+MVP chủ đích không theo đuổi tăng trưởng đa quốc gia hay đa ngôn ngữ ngoài Việt/Anh, không theo đuổi tự động hóa matching bằng AI trước khi kiểm chứng mô hình thủ công, và không theo đuổi ứng dụng desktop/tablet native (ứng dụng mobile native đã gia nhập phạm vi MVP theo ADR-015).
 
 ## 4. Scope
 
@@ -60,7 +60,7 @@ MVP chủ đích không theo đuổi tăng trưởng đa quốc gia hay đa ngô
 
 | Nhóm | Nội dung |
 |---|---|
-| Nền tảng | Web responsive, mobile-first, hỗ trợ các trình duyệt hiện hành trên di động và desktop. |
+| Nền tảng | Web responsive, mobile-first (hỗ trợ các trình duyệt hiện hành trên di động và desktop) và ứng dụng mobile native Expo/React Native cho iOS/Android (ADR-015). |
 | Vai trò người dùng | Learner, Teacher, Verifier, Administrator. |
 | Xác minh | Xác minh sinh viên thủ công (tên trường và giấy tờ); xác minh năng lực Teacher thủ công theo từng kỹ năng, bởi Verifier đúng chuyên môn. |
 | Marketplace | Tạo/công bố lớp, tìm kiếm/duyệt lớp, đặt lớp theo sức chứa. |
@@ -74,7 +74,7 @@ MVP chủ đích không theo đuổi tăng trưởng đa quốc gia hay đa ngô
 
 | Hạng mục | Lý do loại trừ |
 |---|---|
-| Ứng dụng native iOS/Android | Web responsive đủ để kiểm chứng mô hình kinh doanh ở giai đoạn MVP. |
+| Ứng dụng desktop/tablet native | MVP tập trung vào điện thoại (web mobile + ứng dụng mobile); desktop dùng web responsive. |
 | AI matching/recommendation | Cần dữ liệu hành vi người dùng thực tế trước khi đầu tư mô hình. |
 | Automatic refund | Cần chính sách hủy/tranh chấp được duyệt trước; hoàn tiền tự động không kiểm soát có thể bị lạm dụng. |
 | Tích hợp dữ liệu sinh viên của trường | Không có thỏa thuận API với các trường ở giai đoạn MVP. |

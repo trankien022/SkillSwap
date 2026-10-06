@@ -1,8 +1,8 @@
 # SkillSwap
 
-SkillSwap là nền tảng web mobile-first kết nối sinh viên có nhu cầu học kỹ năng với sinh viên đã được xác minh năng lực để giảng dạy trực tuyến.
+SkillSwap là nền tảng mobile-first (web mobile + ứng dụng mobile Expo/React Native) kết nối sinh viên có nhu cầu học kỹ năng với sinh viên đã được xác minh năng lực để giảng dạy trực tuyến.
 
-A peer-to-peer skill marketplace: learners top up real money into credits (1 credit = 1,000 VND) and book classes from verified student teachers; the platform keeps 10%. Integer VND everywhere, Vietnamese/English, mobile-first.
+A peer-to-peer skill marketplace: learners top up real money into credits (1 credit = 1,000 VND) and book classes from verified student teachers; the platform keeps 10%. Integer VND everywhere, Vietnamese/English, mobile-first — responsive web plus native mobile app ([ADR-015](docs/adr/ADR-015-mobile-client-expo.md)).
 
 ## Stack
 
@@ -56,7 +56,7 @@ docs/           intent, plans (SRS/PRD/BRD), ADRs, C4 diagrams
 - [PRODUCT.md](PRODUCT.md) · [DESIGN.md](DESIGN.md) — users, brand, visual system
 - [docs/intent.md](docs/intent.md) — problem, outcome, users
 - [docs/plans/SkillSwap-SRS.md](docs/plans/SkillSwap-SRS.md) — requirements with stable IDs (`FR`/`BR`/`NFR`/`OQ`/`AC`/`ST`)
-- [docs/adr/](docs/adr/) — ADR-013 (RabbitMQ), ADR-014 (TypeORM)
+- [docs/adr/](docs/adr/) — ADR-013 (RabbitMQ), ADR-014 (TypeORM), ADR-015 (mobile app + doc sync)
 - [Conceptual và logical data model (DBML, SVG, PNG)](docs/diagrams/data/README.md)
 - [SkillSwap MVP Software Development Blueprint](docs/plans/2026-09-15-001-feat-skillswap-mvp-requirements-plan.md)
 - [GitHub Project: SkillSwap MVP Requirements](https://github.com/users/trankien022/projects/1)
