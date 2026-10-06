@@ -11,8 +11,11 @@ workspace "SkillSwap" "Student skill marketplace for verified learners and verif
         skillSwap = softwareSystem "SkillSwap System" "Student skill marketplace for verified learners and verified student teachers" {
             // Containers
             webApp = container "Web Application" "Frontend for learners, teachers, verifiers, and administrators" "Next.js (React)" "WebBrowser"
+            mobileApp = container "Mobile Application" "iOS/Android client for learners and teachers (planned, ADR-015)" "Expo (React Native)" "MobileApp"
+            gateway = container "Gateway" "Public REST entry point: auth, rate limiting, route → RPC" "NestJS (Node.js)"
             backendApi = container "Backend API" "REST API handling business logic, authentication, and data access" "NestJS (Node.js)" 
             database = container "Database" "Stores user accounts, classes, bookings, credits, reviews, and messages" "PostgreSQL" "Database"
+            messageBroker = container "Message Broker" "Topic exchange skillswap.events: transactional outbox relay, idempotent consumers, DLQ (ADR-013)" "RabbitMQ" "Queue"
         }
 
         // External Systems
@@ -30,14 +33,19 @@ workspace "SkillSwap" "Student skill marketplace for verified learners and verif
         teacher -> webApp "Uses" "HTTPS"
         verifier -> webApp "Uses" "HTTPS"
         admin -> webApp "Uses" "HTTPS"
+        learner -> mobileApp "Uses" "HTTPS"
+        teacher -> mobileApp "Uses" "HTTPS"
 
         // Relationships: People -> External (direct interactions)
         teacher -> jitsi "Teaches live class" "HTTPS/WebRTC"
         learner -> jitsi "Attends live class" "HTTPS/WebRTC"
 
         // Relationships: Containers -> Containers
-        webApp -> backendApi "Makes API calls to" "REST/JSON"
+        webApp -> gateway "Makes API calls to" "HTTPS"
+        mobileApp -> gateway "Makes API calls to" "HTTPS"
+        gateway -> backendApi "Forwards requests to" "REST/JSON"
         backendApi -> database "Reads from and writes to" "TypeORM"
+        backendApi -> messageBroker "Publishes integration events via outbox" "AMQP"
 
         // Relationships: System -> External
         skillSwap -> paymentGateway "Processes payments via" "REST/JSON"
@@ -52,7 +60,11 @@ workspace "SkillSwap" "Student skill marketplace for verified learners and verif
             deploymentNode "Cloud Provider" "AWS/Azure/GCP" "Cloud" {
                 deploymentNode "Application Tier" "Container orchestration" "Kubernetes/ECS" {
                     containerInstance webApp
+                    containerInstance gateway
                     containerInstance backendApi
+                }
+                deploymentNode "Messaging Tier" "Message broker" "RabbitMQ 3.13" {
+                    containerInstance messageBroker
                 }
                 deploymentNode "Data Tier" "Managed database" "RDS/Cloud SQL" {
                     containerInstance database
@@ -83,7 +95,8 @@ workspace "SkillSwap" "Student skill marketplace for verified learners and verif
         // Dynamic: Key flows
         dynamic skillSwap "BookingFlow" "Learner books and attends a class" {
             learner -> webApp "Searches & books class"
-            webApp -> backendApi "POST /bookings"
+            webApp -> gateway "POST /bookings"
+            gateway -> backendApi "Forwards request"
             backendApi -> database "Persist booking"
             backendApi -> paymentGateway "Process payment"
             backendApi -> jitsi "Create classroom (returns URL)"
@@ -93,7 +106,8 @@ workspace "SkillSwap" "Student skill marketplace for verified learners and verif
 
         dynamic skillSwap "TeachingFlow" "Teacher creates and teaches a class" {
             teacher -> webApp "Creates class listing"
-            webApp -> backendApi "POST /classes"
+            webApp -> gateway "POST /classes"
+            gateway -> backendApi "Forwards request"
             backendApi -> database "Persist class"
             backendApi -> jitsi "Start classroom session"
             teacher -> jitsi "Teaches live class"
@@ -102,7 +116,8 @@ workspace "SkillSwap" "Student skill marketplace for verified learners and verif
 
         dynamic skillSwap "VerificationFlow" "Verifier reviews teacher skills" {
             verifier -> webApp "Reviews teacher evidence"
-            webApp -> backendApi "GET /verifications"
+            webApp -> gateway "GET /verifications"
+            gateway -> backendApi "Forwards request"
             backendApi -> database "Read teacher skills"
             autoLayout
         }
@@ -129,6 +144,9 @@ workspace "SkillSwap" "Student skill marketplace for verified learners and verif
             }
             element "WebBrowser" {
                 shape WebBrowser
+            }
+            element "MobileApp" {
+                shape MobileApp
             }
             element "External" {
                 background #999999

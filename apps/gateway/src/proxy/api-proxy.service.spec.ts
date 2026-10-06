@@ -159,9 +159,10 @@ describe('ApiProxyService', () => {
   describe('auth disabled (AUTH_REQUIRED=false)', () => {
     it('forwards without identity headers even when a token is sent', () => {
       const { service: svc, proxy } = createService({});
+      const token = validToken();
 
       svc.middleware(
-        request({ authorization: `Bearer ${validToken()}` }),
+        request({ authorization: `Bearer ${token}` }),
         response().res,
         jest.fn(),
       );
@@ -171,7 +172,7 @@ describe('ApiProxyService', () => {
       expect(headers['x-user-id']).toBeUndefined();
       expect(headers['x-user-email']).toBeUndefined();
       expect(headers['x-user-role']).toBeUndefined();
-      expect(headers.authorization).toBe(`Bearer ${validToken()}`);
+      expect(headers.authorization).toBe(`Bearer ${token}`);
     });
   });
 

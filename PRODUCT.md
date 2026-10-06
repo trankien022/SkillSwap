@@ -11,7 +11,7 @@ product
 - **Verifier** — a specially invited domain expert (not an admin). Job: review evidence and decide, with a 48–72 h review SLA.
 - **Administrator** — verifies student status from uploaded documents, manages verifiers, handles day-to-day operations.
 
-Context: campus students using mobile web first (360 px/390 px screens), in Vietnamese or English.
+Context: campus students on phones — mobile web first plus a native app (360 px/390 px screens), in Vietnamese or English.
 
 ## Product Purpose
 
@@ -36,7 +36,7 @@ SkillSwap is a peer-to-peer skill marketplace with an internal credit wallet. Le
 
 ## Accessibility & Inclusion
 
-- Web only — responsive mobile-first, no horizontal scrolling at 360 px/390 px (C-006).
+- Responsive web and native mobile app (Expo/React Native) — mobile-first, no horizontal scrolling at 360 px/390 px (C-006).
 - Vietnamese and English locales; never mixed on one screen (C-007).
 - Body text contrast ≥ 4.5:1; all flows keyboard-reachable; `prefers-reduced-motion` respected.
 - Money and status must remain legible without color alone (icons + text alongside color cues).

@@ -20,6 +20,7 @@ skinparam linetype polyline
 
 System_Boundary("SkillSwapSystem_boundary", "SkillSwap System", $tags="") {
   Container(SkillSwapSystem.WebApplication, "Web Application", $techn="Next.js (React)", $descr="Frontend for learners, teachers, verifiers, and administrators", $tags="", $link="")
+  Container(SkillSwapSystem.Gateway, "Gateway", $techn="NestJS (Node.js)", $descr="Public REST entry point: auth, rate limiting, route to RPC", $tags="", $link="")
   Container(SkillSwapSystem.BackendAPI, "Backend API", $techn="NestJS (Node.js)", $descr="REST API handling business logic, authentication, and data access", $tags="", $link="")
   ContainerDb(SkillSwapSystem.Database, "Database", $techn="PostgreSQL", $descr="Stores user accounts, classes, bookings, credits, reviews, and messages", $tags="", $link="")
 }
@@ -27,8 +28,9 @@ System_Boundary("SkillSwapSystem_boundary", "SkillSwap System", $tags="") {
 Person(Verifier, "Verifier", $descr="Reviews and verifies teacher skills", $tags="", $link="")
 
 Rel(Verifier, SkillSwapSystem.WebApplication, "1: Reviews teacher evidence", $techn="HTTPS", $tags="", $link="")
-Rel(SkillSwapSystem.WebApplication, SkillSwapSystem.BackendAPI, "2: GET /verifications", $techn="REST/JSON", $tags="", $link="")
-Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.Database, "3: Read teacher skills", $techn="TypeORM", $tags="", $link="")
+Rel(SkillSwapSystem.WebApplication, SkillSwapSystem.Gateway, "2: GET /verifications", $techn="HTTPS", $tags="", $link="")
+Rel(SkillSwapSystem.Gateway, SkillSwapSystem.BackendAPI, "3: Forwards request", $techn="REST/JSON", $tags="", $link="")
+Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.Database, "4: Read teacher skills", $techn="TypeORM", $tags="", $link="")
 
 
 SHOW_LEGEND(true)

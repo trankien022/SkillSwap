@@ -36,13 +36,13 @@ SkillSwap is a platform where students top up a system wallet and use that balan
 - The process for teachers withdrawing credit as real money will be defined at the spec.md stage — not part of the intent-level decisions
 - Session duration: 30 min minimum, 3 hours maximum
 - Must book at least 24 hours in advance
-- Mobile-first design — students primarily use smartphones
+- Mobile-first design — students primarily use smartphones; MVP ships the responsive web app plus a native mobile app (iOS/Android, Expo/React Native — ADR-015)
 - All communication through platform — no sharing personal contact info
 - No automated report/account-lock system in the MVP — relies on ratings with comments after each class to surface bad behavior (no-shows, harassment, teaching not as advertised, spam, etc.); low-rated profiles will have reduced visibility/be hidden from search results
 
 ## Out of scope (MVP)
 
-- Native mobile app (iOS/Android) — web responsive only, mobile-first
+- Desktop/tablet-native applications — MVP targets phones (responsive web plus the native mobile app)
 - AI-based skill matching / recommendation engine
 - Automatic refunds
 - Direct integration with any school's student system (no access available)

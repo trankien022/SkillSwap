@@ -158,8 +158,8 @@ Toàn văn 70 quy tắc nghiệp vụ (BR-001–BR-070) được quản lý tậ
 | BR-039 | Online session dùng Jitsi theo Intent MVP. | FR-011 |
 | BR-040 | Chỉ Teacher và Learner có booking hợp lệ truy cập room/session. | FR-011 |
 | BR-041 | Thông tin video room không công khai; truy cập theo booking/session. | FR-011, NFR-009 |
-| BR-042 | Session có lifecycle SCHEDULED/IN_PROGRESS/COMPLETED/CANCELLED (hoặc tương đương). | FR-020 |
-| BR-043 | Quy tắc xác định session COMPLETED làm cơ sở settlement, rating, nghiệp vụ sau lớp. | FR-020, FR-013 |
+| BR-042 | Class đại diện một buổi học trong MVP, có lifecycle Draft, Published, Full, In progress, Completed, Cancelled theo policy; không có thực thể Session riêng. | FR-020 |
+| BR-043 | Quy tắc xác định Class COMPLETED làm cơ sở settlement, rating, nghiệp vụ sau lớp. | FR-020, FR-013 |
 | BR-044 | Phải có refund/cancellation policy định nghĩa trước khi launch. | FR-007, OQ-003 |
 | BR-045 | Xác định xử lý khi Teacher hủy lớp trước giờ học. | FR-007, OQ-003 |
 | BR-046 | Xác định xử lý khi Learner hủy booking, gồm mốc thời gian và mức hoàn. | FR-007, OQ-003 |
@@ -381,6 +381,8 @@ Actor: Teacher, Payment gateway. Trigger: Teacher yêu cầu rút số dư khả
 - **AC-017 / FR-005, FR-007:** Given booking Confirmed đầu tiên, when sửa Teacher/nội dung/kỹ năng/lịch/thời lượng hoặc hủy hết booking rồi sửa, then cam kết vẫn bị khóa; sửa lớp đồng thời với booking không bán nội dung ngoài cam kết.
 - **AC-018 / FR-004:** Given chỉ có vai trò Administrator, hoặc Verifier suspended/sai chuyên môn/tự duyệt, when quyết định skill evidence, then bị từ chối; chỉ Verifier active đúng chuyên môn và khác chủ hồ sơ được quyết định.
 - **AC-019 / FR-009, FR-010:** Given policy hoàn toàn bộ đã được duyệt và booking đã release nhưng Teacher còn đủ available, when hoàn tiền, then đảo release và booking nguyên tử, không tạo pending âm; sau payout/thiếu nguồn bù không tự post refund trái OQ-003/OQ-006.
+- **AC-020 / OQ-007:** Sau khi OQ-007 được duyệt, acceptance suite phải bao gồm hai yêu cầu đồng thời cho chỗ cuối và việc tự động nhả capacity hold hết hạn.
+- **AC-021 / OQ-008:** Sau khi OQ-008 được duyệt, acceptance suite phải kiểm tra cả hai hướng quyết định cascade và grandfather đối với lớp, booking, room access, thu nhập pending và payout.
 
 ```gherkin
 Feature: Đặt lớp học
@@ -418,14 +420,16 @@ Authentication và authorization dùng server-side role/ownership check cho mọ
 | 2 | Xác minh sinh viên, thông báo trạng thái. | Increment 1 | UC-001 pass toàn bộ acceptance criteria. | High |
 | 3 | Đăng ký/xác minh Teacher, quản lý Verifier, công bố lớp. | Increment 2 | UC-002 pass; chỉ kỹ năng Approved công bố được lớp. | High |
 | 4 | Tìm kiếm, đặt lớp, ví, gateway, ledger, rút tiền. | Increment 3 | UC-003, UC-005 pass; test concurrency và idempotency. | Critical |
-| 5 | Jitsi, chat, rating, hoàn thiện mobile/accessibility. | Increment 4 | UC-004 pass; các NFR liên quan pass. | High |
+| 5 | Jitsi, chat, rating, hoàn thiện mobile-web/accessibility. | Increment 4 | UC-004 pass; các NFR liên quan pass. | High |
+| 6 | Ứng dụng mobile Expo/React Native (iOS/Android) cho Learner và Teacher. | Increment 5 | Gói cài đặt iOS/Android chạy được; UC-001–UC-005 pass trên app. | Medium |
 
 ## 15. Traceability Matrix
 
 | Business goal | Requirement | Use case/story | API/data/NFR | Test evidence |
 |---|---|---|---|---|
-| Trusted student identity | FR-001–FR-002, FR-015–FR-017, FR-019 | UC-001, US-001 | API-001, User, StudentVerification, NFR-004/NFR-008/NFR-009 | Pending implementation |
+| Trusted student identity | FR-001–FR-002, FR-017, FR-019 | UC-001, US-001 | API-001, User, StudentVerification, NFR-004/NFR-008/NFR-009 | Pending implementation |
 | Trusted Teacher capability | FR-003–FR-005, FR-018 | UC-002, US-002 | API-002–API-004, ProfileSkill, SkillEvidence, NFR-004/NFR-009 | Pending implementation |
 | Discover and book online learning | FR-005–FR-007 | UC-003, US-003 | API-004–API-005, Class, Booking, NFR-001/NFR-006/NFR-007 | Pending implementation |
-| Traceable wallet settlement | FR-008–FR-010, FR-014, FR-020 | UC-003, UC-005, US-003/US-006 | API-005–API-007, EVT-001, Wallet/Ledger/Withdrawal/Session, NFR-003/NFR-005/NFR-009 | Pending implementation |
-| Secure class participation | FR-011–FR-013, FR-016, FR-020 | UC-004, US-004/US-005 | API-008–API-010, Message/Rating/Session, NFR-006/NFR-007/NFR-010 | Pending implementation |
+| Traceable wallet settlement | FR-008–FR-010, FR-014, FR-020 | UC-003, UC-005, US-003/US-006 | API-005–API-007, EVT-001, Wallet/Ledger/Withdrawal, NFR-003/NFR-005/NFR-009 | Pending implementation |
+| Secure class participation | FR-011–FR-013, FR-016 | UC-004, US-004/US-005 | API-008–API-010, Message/Rating, NFR-006/NFR-007/NFR-010 | Pending implementation |
+| Platform operations | FR-015 | (UC-014 in SRS) | Audit log, NFR-005 | Pending implementation |

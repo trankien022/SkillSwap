@@ -20,6 +20,7 @@ skinparam linetype polyline
 
 System_Boundary("SkillSwapSystem_boundary", "SkillSwap System", $tags="") {
   Container(SkillSwapSystem.WebApplication, "Web Application", $techn="Next.js (React)", $descr="Frontend for learners, teachers, verifiers, and administrators", $tags="", $link="")
+  Container(SkillSwapSystem.Gateway, "Gateway", $techn="NestJS (Node.js)", $descr="Public REST entry point: auth, rate limiting, route to RPC", $tags="", $link="")
   Container(SkillSwapSystem.BackendAPI, "Backend API", $techn="NestJS (Node.js)", $descr="REST API handling business logic, authentication, and data access", $tags="", $link="")
   ContainerDb(SkillSwapSystem.Database, "Database", $techn="PostgreSQL", $descr="Stores user accounts, classes, bookings, credits, reviews, and messages", $tags="", $link="")
 }
@@ -28,10 +29,11 @@ Person(Teacher, "Teacher", $descr="Student teacher who submits evidence, creates
 System(Jitsi, "Jitsi", $descr="Provides online classroom/video conferencing", $tags="", $link="")
 
 Rel(Teacher, SkillSwapSystem.WebApplication, "1: Creates class listing", $techn="HTTPS", $tags="", $link="")
-Rel(SkillSwapSystem.WebApplication, SkillSwapSystem.BackendAPI, "2: POST /classes", $techn="REST/JSON", $tags="", $link="")
-Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.Database, "3: Persist class", $techn="TypeORM", $tags="", $link="")
-Rel(Teacher, Jitsi, "5: Teaches live class", $techn="HTTPS/WebRTC", $tags="", $link="")
-Rel(SkillSwapSystem.BackendAPI, Jitsi, "4: Start classroom session", $techn="HTTPS/WebRTC", $tags="", $link="")
+Rel(SkillSwapSystem.WebApplication, SkillSwapSystem.Gateway, "2: POST /classes", $techn="HTTPS", $tags="", $link="")
+Rel(SkillSwapSystem.Gateway, SkillSwapSystem.BackendAPI, "3: Forwards request", $techn="REST/JSON", $tags="", $link="")
+Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.Database, "4: Persist class", $techn="TypeORM", $tags="", $link="")
+Rel(Teacher, Jitsi, "6: Teaches live class", $techn="HTTPS/WebRTC", $tags="", $link="")
+Rel(SkillSwapSystem.BackendAPI, Jitsi, "5: Start classroom session", $techn="HTTPS/WebRTC", $tags="", $link="")
 
 
 SHOW_LEGEND(true)

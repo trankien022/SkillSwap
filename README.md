@@ -1,12 +1,12 @@
 # SkillSwap
 
-SkillSwap là nền tảng web mobile-first kết nối sinh viên có nhu cầu học kỹ năng với sinh viên đã được xác minh năng lực để giảng dạy trực tuyến.
+SkillSwap là nền tảng mobile-first (web mobile + ứng dụng mobile Expo/React Native) kết nối sinh viên có nhu cầu học kỹ năng với sinh viên đã được xác minh năng lực để giảng dạy trực tuyến.
 
-A peer-to-peer skill marketplace: learners top up real money into credits (1 credit = 1,000 VND) and book classes from verified student teachers; the platform keeps 10%. Integer VND everywhere, Vietnamese/English, mobile-first.
+A peer-to-peer skill marketplace: learners top up real money into credits (1 credit = 1,000 VND) and book classes from verified student teachers; the platform keeps 10%. Integer VND everywhere, Vietnamese/English, mobile-first — responsive web plus native mobile app ([ADR-015](docs/adr/ADR-015-mobile-client-expo.md)).
 
 ## Stack
 
-- **pnpm monorepo** — `apps/gateway` (NestJS BFF, :4000) · `apps/api` (NestJS modular monolith, :4001) · `apps/web` (Next.js 15 + next-intl, :3000) · `packages/contracts` (Zod)
+- **pnpm monorepo** — `apps/gateway` (NestJS BFF, :4000) · `apps/api` (NestJS modular monolith, :4001) · `apps/web` (Next.js 15 + next-intl, :3000) · `apps/mobile` (Expo/React Native — planned, [ADR-015](docs/adr/ADR-015-mobile-client-expo.md)) · `packages/contracts` (Zod)
 - **PostgreSQL 17** — one database, seven schemas, per-module roles/credentials ([ADR-014](docs/adr/ADR-014-persistence-typeorm.md), TypeORM)
 - **RabbitMQ 3.13** — topic exchange `skillswap.events`, transactional outbox + idempotent consumers ([ADR-013](docs/adr/ADR-013-message-broker-rabbitmq.md))
 
@@ -42,6 +42,7 @@ Tests: jest (`api`, `gateway`, `contracts`), vitest (`web`). Lint is `--max-warn
 apps/gateway    NestJS BFF — public REST, auth, route → RPC
 apps/api        business logic — 7 hexagonal modules under src/modules/
 apps/web        Next.js UI (register: product — see DESIGN.md)
+apps/mobile     Expo/React Native client (planned — ADR-015)
 packages/contracts  Zod schemas shared by api/gateway
 scripts/        migrate.mjs, generate-dev-keys.mjs, generate-api-modules.mjs
 docker/         postgres init (7 roles + 7 schemas, ADR-007)
@@ -56,7 +57,7 @@ docs/           intent, plans (SRS/PRD/BRD), ADRs, C4 diagrams
 - [PRODUCT.md](PRODUCT.md) · [DESIGN.md](DESIGN.md) — users, brand, visual system
 - [docs/intent.md](docs/intent.md) — problem, outcome, users
 - [docs/plans/SkillSwap-SRS.md](docs/plans/SkillSwap-SRS.md) — requirements with stable IDs (`FR`/`BR`/`NFR`/`OQ`/`AC`/`ST`)
-- [docs/adr/](docs/adr/) — ADR-013 (RabbitMQ), ADR-014 (TypeORM)
+- [docs/adr/](docs/adr/) — ADR-013 (RabbitMQ), ADR-014 (TypeORM), ADR-015 (mobile app + doc sync)
 - [Conceptual và logical data model (DBML, SVG, PNG)](docs/diagrams/data/README.md)
 - [SkillSwap MVP Software Development Blueprint](docs/plans/2026-09-15-001-feat-skillswap-mvp-requirements-plan.md)
 - [GitHub Project: SkillSwap MVP Requirements](https://github.com/users/trankien022/projects/1)
