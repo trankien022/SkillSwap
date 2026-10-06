@@ -105,10 +105,13 @@ SkillSwap is a platform where students top up a system wallet and use that balan
 | Sub-system | Communication | Sync queries + async events | ADR-006 | Accepted |
 | Sub-system | Data management | Schema per module | ADR-007 | Accepted |
 | Sub-system | Edge / client access | API Gateway | ADR-008 | Accepted |
+| Sub-system | Mobile client | Expo (React Native) | ADR-015 | Accepted |
 | Software | Internal architecture | Hexagonal (Ports & Adapters) | ADR-009 | Accepted |
 | Software | Domain logic | Domain model (DDD aggregates) | ADR-010 | Accepted |
 | Software | Code organisation | Package by component | ADR-011 | Accepted |
 | Software | Read / write model | CQRS (in-process) | ADR-012 | Accepted |
+| Software | Message broker | RabbitMQ + transactional outbox | ADR-013 | Accepted |
+| Software | Persistence framework | TypeORM | ADR-014 | Accepted |
 
 ```mermaid
 flowchart TB
@@ -125,6 +128,7 @@ flowchart TB
     sub_comm["Communication<br/><b>Sync queries + async events</b>"]
     sub_data["Data management<br/><b>Schema per module</b>"]
     sub_edge["Edge / client access<br/><b>API Gateway</b>"]
+    sub_mobile["Mobile client<br/><b>Expo (React Native)</b>"]
   end
   subgraph L2["Software — Component"]
     direction LR
@@ -132,6 +136,8 @@ flowchart TB
     sw_domain["Domain logic<br/><b>Domain model (DDD aggregates)</b>"]
     sw_org["Code organisation<br/><b>Package by component</b>"]
     sw_rw["Read / write model<br/><b>CQRS (in-process)</b>"]
+    sw_broker["Message broker<br/><b>RabbitMQ + transactional outbox</b>"]
+    sw_persistence["Persistence framework<br/><b>TypeORM</b>"]
   end
   L0 -->|constrains| L1
   L1 -->|constrains| L2
@@ -163,6 +169,8 @@ flowchart TB
 - [ADR-007 · Schema per module] No SQL query or ORM mapping touches another module's schema; cross-module data goes through the module's public API or events.
 - [ADR-008 · API Gateway] All external traffic enters through the gateway; backends are not reachable from the internet.
 - [ADR-008 · API Gateway] The gateway validates tokens and forwards the user identity in a trusted header.
+- [ADR-015 · Expo mobile client] The mobile app is a separate deployable (`apps/mobile`) that calls the gateway like the web app; it never reaches the database, broker or backend directly.
+- [ADR-015 · Expo mobile client] Mobile and web share `packages/contracts` (Zod schemas) and the same public REST contract; do not fork business rules into the client.
 
 ### Software level
 
@@ -175,18 +183,24 @@ flowchart TB
 - [ADR-011 · Package by component] Each component exposes one public interface; implementation classes are internal/package-private.
 - [ADR-011 · Package by component] Other components depend only on the public interface.
 - [ADR-012 · CQRS (in-process)] Commands go through application services and aggregates; queries are separate query handlers returning DTOs and never load aggregates.
+- [ADR-013 · RabbitMQ] Publishers write outbox rows in the same transaction; only the relay in `apps/api/src/shared/messaging` reaches the broker (topic exchange `skillswap.events`).
+- [ADR-013 · RabbitMQ] Every consumer binds its own durable queue with `.retry` + `.dlq` companions and deduplicates on `messageId` before applying side effects.
+- [ADR-014 · TypeORM] TypeORM only; one entity set per module schema, no cross-schema joins or foreign keys, per-module credentials from `ApiConfig.databaseCredentials`.
+- [ADR-014 · TypeORM] `typeorm` is imported only under `adapter/out/persistence/`; domain and application import neither `typeorm` nor `@nestjs/*`.
 
 ### Global rules
 
 - Do not introduce a new deployable unit, datastore, message broker or architectural layer without a new ADR.
 - Keep dependencies pointing in the directions stated above; never add a shortcut import to make a feature work.
 - When a rule here conflicts with a task, stop and report the conflict; do not silently diverge.
-- Every new rule-carrying behaviour ships with tests; architecture tests in `tests/architecture/` must stay green.
+- Every new rule-carrying behaviour ships with tests; `pnpm test:arch` (dependency-cruiser) must stay green.
 
 ## 5. Suggested source layout
 
+The repository is a pnpm monorepo: `apps/gateway` (BFF, :4000), `apps/api` (the modular monolith below, :4001), `apps/web` (Next.js, :3000), `apps/mobile` (Expo — planned, ADR-015), and `packages/contracts` (shared Zod schemas).
+
 ```text
-src/
+apps/api/src/
 ├── modules/
 │   ├── admin-operation/
 │   │   ├── api/        (public interface, the only package other modules may import)
@@ -237,13 +251,13 @@ src/
 │   │   ├── internal/adapter/in/web/
 │   │   └── internal/adapter/out/persistence/
 │   └── …
-├── shared/        (technical utilities only, no business rules)
+├── shared/        (technical utilities only — config, messaging relay, cross-cutting; no business rules)
 └── bootstrap/     (composition root, configuration)
-tests/
-└── architecture/  (fitness functions listed below)
 ```
 
 _Derived from Package by component × Hexagonal (Ports & Adapters). Adapt names to the language's conventions._
+
+Architecture fitness functions are enforced by `pnpm test:arch` (dependency-cruiser rules in `.dependency-cruiser.cjs`), not by a `tests/architecture/` folder.
 
 ## 6. Fitness functions (must stay green)
 
@@ -259,6 +273,9 @@ _Derived from Package by component × Hexagonal (Ports & Adapters). Adapt names 
 - [ ] **ADR-010** — Unit tests for every valid state transition and the important invalid state transitions.
 - [ ] **ADR-011** — The build fails when a component accesses the internal classes of another component.
 - [ ] **ADR-012** — Architecture test: query handlers do not depend on the domain package.
+- [ ] **ADR-013** — Shut RabbitMQ down, commit business transactions: they succeed (outbox rows accumulate); restart it: the outbox drains and consumers apply each event exactly once after deduplicating on `messageId`; poison messages land in the `.dlq` after N retries. Architecture test: nothing outside `apps/api/src/shared/messaging` imports `amqplib`.
+- [ ] **ADR-014** — Architecture test: no file outside `adapter/out/persistence/` imports `typeorm`; `domain/` and `application/` import neither `typeorm` nor `@nestjs/*`. Each schema's role can only access its own schema (ADR-007).
+- [ ] **ADR-015** — Grep across `docs/`, `PRODUCT.md`, `README.md` finds no remaining claim that native mobile is out of MVP scope; ARCHITECTURE.md and the C4 container view show the mobile client alongside web and match the code (`pnpm verify` green). When `apps/mobile` is scaffolded: `pnpm test:arch` includes and passes `isolated-app-mobile`.
 
 ## 7. Architecture Decision Records
 
@@ -745,6 +762,14 @@ Context notes: Keep the domain model lean.
 - (−) Two code paths for the same data
 
 **Verification.** Architecture test: query handlers do not depend on the domain package.
+
+### ADR-013 … ADR-015 — held in `docs/adr/`
+
+ADR-001 … ADR-012 are embedded above for historical context. The later records live only in the ADR folder (the repo's append-mostly convention from ADR-013 onward):
+
+- [ADR-013](docs/adr/ADR-013-message-broker-rabbitmq.md) — Message broker: RabbitMQ, transactional outbox, idempotent consumers, DLQ (Accepted 2026-10-04)
+- [ADR-014](docs/adr/ADR-014-persistence-typeorm.md) — Persistence framework: TypeORM, one schema + migration folder per module, per-module credentials (Accepted 2026-10-04)
+- [ADR-015](docs/adr/ADR-015-mobile-client-expo.md) — Mobile client: Expo (React Native) joins MVP scope as Increment 6; authorizes this document's and the C4 sources' edits (Accepted 2026-10-06)
 
 ## 8. Open issues
 
