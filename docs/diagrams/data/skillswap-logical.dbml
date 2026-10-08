@@ -153,7 +153,7 @@ Table classes {
   starts_at timestamptz [not null]
   duration_minutes int [not null, note: 'CHECK 30 <= duration_minutes <= 180 (BR-017)']
   price_credits decimal(18,3) [not null, note: 'CHECK price_credits > 0; pricing policy is OQ-002']
-  capacity int [not null, note: 'CHECK capacity > 0; capacity policy is OQ-007']
+  capacity int [not null, note: 'CHECK capacity > 0 (OQ-007 resolved; AC-028): Teacher-supplied integer >= 1; 1 = 1-1, >1 = group']
   status varchar(24) [not null, note: 'draft | published | full | in_progress | completed | cancelled (BR-042)']
   jitsi_room_ref varchar(255) [unique, note: 'Room metadata only; access token is short lived and not stored here']
   commitments_locked_at timestamptz [note: 'Set atomically at the first confirmed booking; never reset after cancellation']
@@ -190,7 +190,7 @@ Table bookings {
     (class_id, learner_id)
     (learner_id, created_at)
   }
-  Note: 'Lock the Class row before counting eligible bookings and checking capacity; lock affected wallets in consistent ID order and recompute balances after locks. Require an active verified Learner, no self-booking (BR-068), starts_at >= now + 24h (BR-021), and an eligible Class/Teacher. Booking confirmation, first commitment lock and settlement commit atomically (BR-026). Partial unique (class_id, learner_id) for confirmed/completed/disputed prevents duplicate valid bookings (BR-024); failed attempts leave no committed booking/payment. Capacity policy remains OQ-007. Cancellation/refund policy resolved (OQ-003; AC-022-AC-027): app-wallet credit refunds only, no booking cancellation, Teacher no-show 15-min credit refund.'
+  Note: 'Lock the Class row before counting eligible bookings and checking capacity; lock affected wallets in consistent ID order and recompute balances after locks. Require an active verified Learner, no self-booking (BR-068), starts_at >= now + 24h (BR-021), and an eligible Class/Teacher. Booking confirmation, first commitment lock and settlement commit atomically (BR-026). Partial unique (class_id, learner_id) for confirmed/completed/disputed prevents duplicate valid bookings (BR-024); failed attempts leave no committed booking/payment. Capacity policy resolved (OQ-007; AC-028-AC-030): Teacher-supplied capacity >= 1, Pending and Confirmed both hold a seat, Full when seats reached, seats release only on booking Cancelled. Cancellation/refund policy resolved (OQ-003; AC-022-AC-027): app-wallet credit refunds only, no booking cancellation, Teacher no-show 15-min credit refund.'
 }
 
 Table wallets {

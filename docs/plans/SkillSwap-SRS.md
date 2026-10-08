@@ -181,9 +181,9 @@ Priority follows MoSCoW from the PRD (`Must` / `Should`). Status preserves the P
 | FR-002 | The system shall allow a student to declare a school name and upload documents for Administrator approval or rejection with a reason. | Must | intent.md | Confirmed; retention open (OQ-008) |
 | FR-003 | The system shall allow a Teacher candidate to submit skills, certificates or capability evidence, with resubmission after rejection. | Must | intent.md | Confirmed core; taxonomy open (OQ-001) |
 | FR-004 | The system shall allow an Administrator to invite, assign domains to, suspend or revoke Verifiers; only a matched Verifier may approve a Teacher's evidence. | Must | intent.md | Confirmed |
-| FR-005 | Only a verified Teacher shall be able to create and publish an online class with skill, description, schedule, duration, price and approved capacity rules. | Must | intent.md | Confirmed core; price/capacity open (OQ-002, OQ-007) |
+| FR-005 | Only a verified Teacher shall be able to create and publish an online class with skill, description, schedule, duration, price and approved capacity rules. | Must | intent.md | Confirmed core; price open (OQ-002); capacity resolved (OQ-007, AC-028–AC-030) |
 | FR-006 | The system shall let a Learner browse and search open classes by class information and Teacher profile. | Must | intent.md | Confirmed core; taxonomy open (OQ-001) |
-| FR-007 | The system shall only allow booking a class that has capacity, starts at least 24 hours from now, and lasts 30 minutes to 3 hours. | Must | intent.md | Confirmed core; capacity open (OQ-007); refund/cancellation resolved (OQ-003, AC-022–AC-027) |
+| FR-007 | The system shall only allow booking a class that has capacity, starts at least 24 hours from now, and lasts 30 minutes to 3 hours. | Must | intent.md | Confirmed core; capacity resolved (OQ-007, AC-028–AC-030); refund/cancellation resolved (OQ-003, AC-022–AC-027) |
 | FR-008 | The system shall allow top-up through a payment gateway at the applied rate, with exactly-once callback processing. | Must | intent.md | Confirmed core; gateway open (OQ-011) |
 | FR-009 | When a Learner buys a class, the system shall atomically debit the full price and allocate 90% to the Teacher and 10% platform fee. | Must | intent.md | Confirmed split; release timing open (OQ-006) |
 | FR-010 | The system shall let a wallet owner view balance and history of top-ups, payments, income, fees and withdrawals. | Must | intent.md | Confirmed core |
@@ -477,7 +477,7 @@ stateDiagram-v2
 
 ### 3.7 Open items blocking implementation
 
-Implementation of the clauses listed in Appendix A is blocked until the corresponding Open Question is approved (decision policy: **block until resolved**). Affected increments (increment definitions per PRD §14): Increment 2 (OQ-008), Increment 3 (OQ-001, OQ-002, OQ-007), Increment 4 (OQ-002, OQ-005, OQ-006, OQ-011, OQ-012; OQ-003 resolved), Increment 5 (OQ-004, OQ-009), Increment 6 (no additional OQ; inherits Increment 5 gates), storage/lifecycle design (OQ-008), pilot planning (OQ-010).
+Implementation of the clauses listed in Appendix A is blocked until the corresponding Open Question is approved (decision policy: **block until resolved**). Affected increments (increment definitions per PRD §14): Increment 2 (OQ-008), Increment 3 (OQ-001, OQ-002; OQ-007 resolved), Increment 4 (OQ-002, OQ-005, OQ-006, OQ-011, OQ-012; OQ-003 resolved), Increment 5 (OQ-004, OQ-009), Increment 6 (no additional OQ; inherits Increment 5 gates), storage/lifecycle design (OQ-008), pilot planning (OQ-010).
 
 ---
 
@@ -493,7 +493,7 @@ Confirmed cores of these requirements appear in §3.2.1; the following **depende
 | OQ-004 | Rating threshold, minimum review count, visibility recovery. | Product Owner | FR-006, FR-013 | Down-ranking threshold mechanics (SR-BR-009 value). |
 | OQ-005 | Withdrawal conditions, limits, fees, processing time. | Product Owner + Finance | FR-010, FR-014 | Minimum/maximum payout, fees, SLA in WithdrawalRequest model. |
 | OQ-006 | Completion rule, release timing, chargeback/reversal and funding/recovery after payout. | Product Owner + Finance | FR-008, FR-009, FR-014, FR-020 | Timing/conditions behind one full booking release; refund chain and funding when credit is no longer held. |
-| OQ-007 | 1-1 vs. group classes; capacity and seat hold/release rules. | Product Owner | FR-005, FR-007 | Capacity semantics in FR-007, seat-hold logic around Full ⇄ Published. |
+| OQ-007 | 1-1 vs. group classes; capacity and seat hold/release rules. | Product Owner | FR-005, FR-007 | **Resolved (2026-10-08):** capacity is a Teacher-supplied integer ≥ 1 at publish time (1 = 1-1, >1 = group); 0/negative rejected. Pending and Confirmed bookings both hold a seat; class becomes Full when seats reach capacity. Seats release only on booking Cancelled (MVP: only via Pending ~15-minute expiry, AC-026). Last-seat races are protected by a Class-row lock / uniqueness (AC-010). See AC-028–AC-030. |
 | OQ-008 | Verification validity period, document retention/deletion, expiry cascade. | Product Owner + Security | FR-002–FR-005, FR-007, FR-011, FR-014, NFR-004 | Retention duration, `Approved → Expired` timing, deletion/anonymization rules. |
 | OQ-009 | Chat handling of detected personal contact info: block / warn+log / log only. | Product Owner | FR-012 | Enforcement mechanism behind SR-BR-008. |
 | OQ-010 | Target values for success metrics and pilot scope. | Product Owner | Product rollout | Quantified performance/availability targets for NFR-011/NFR-012. |
@@ -557,6 +557,9 @@ ERD chi tiết và các ràng buộc triển khai: [data model](../diagrams/data
 - **AC-025 / FR-007, OQ-003:** Given Learner không tham gia, when lớp kết thúc, then MVP không áp dụng quy tắc phạt/hoàn tự động cho Learner no-show.
 - **AC-026 / FR-007, OQ-003:** Given một Pending booking, when tạo, then booking giữ chỗ (tính vào capacity) và hết hạn sau ~15 phút thì tự động chuyển Cancelled và nhả chỗ.
 - **AC-027 / FR-007, OQ-003:** Given một booking Confirmed, when chuyển Cancelled, then Learner được hoàn credit vào ví nội bộ.
+- **AC-028 / FR-005, OQ-007:** Given Teacher công bố lớp, when nhập sức chứa, then sức chứa là số nguyên ≥ 1 (1 = lớp 1-1, >1 = lớp nhóm) và bị từ chối nếu bằng 0 hoặc âm.
+- **AC-029 / FR-007, OQ-007:** Given một lớp còn chỗ, when Learner đặt, then booking ở trạng thái Pending và giữ một chỗ; số chỗ còn lại = sức chứa − (Pending + Confirmed).
+- **AC-030 / FR-005, FR-007, OQ-007:** Given lớp đã đủ sức chứa, when có booking mới, then lớp chuyển Full và hệ thống từ chối booking mới; chỗ chỉ được nhả khi booking Cancelled.
 
 ### C.2 Traceability matrix
 

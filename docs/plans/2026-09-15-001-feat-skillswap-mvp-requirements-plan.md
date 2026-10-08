@@ -92,7 +92,7 @@ version: 0.2
 | OQ-004 | Ngưỡng rating, số đánh giá tối thiểu và cách khôi phục hiển thị. | Product Owner | FR-006, FR-013 | Before implementation planning |
 | OQ-005 | Điều kiện, giới hạn, phí và thời gian xử lý withdrawal. | Product Owner + Finance | FR-010, FR-014 | Before implementation planning |
 | OQ-006 | Khi nào khoản 90% của từng booking chuyển từ pending sang available một lần; cách xử lý chargeback/reversal và nguồn bù sau payout. | Product Owner + Finance | FR-008, FR-009, FR-014 | Before implementation planning |
-| OQ-007 | Lớp là một-một, lớp nhóm hay cả hai; sức chứa, quy tắc giữ/nhả chỗ và kết quả khi nhiều Learner đồng thời đặt chỗ cuối. | Product Owner | FR-005, FR-007 | Before implementation planning |
+| OQ-007 | Lớp là một-một, lớp nhóm hay cả hai; sức chứa, quy tắc giữ/nhả chỗ và kết quả khi nhiều Learner đồng thời đặt chỗ cuối. | Product Owner | FR-005, FR-007 | **Resolved (2026-10-08)** — xem AC-028–AC-030: Teacher tự nhập sức chứa số nguyên ≥ 1 (1 = 1-1, >1 = nhóm), từ chối 0/âm; Pending và Confirmed đều giữ chỗ; lớp Full khi đạt sức chứa; chỗ chỉ nhả khi booking Cancelled (MVP: Pending hết hạn ~15 phút); tranh chỗ cuối bảo vệ bằng khóa dòng/duy nhất. |
 | OQ-008 | Thời hạn hiệu lực xác minh sinh viên, thời hạn lưu/xóa giấy tờ, và quy tắc cascade hoặc grandfather khi Student/Verifier hết hiệu lực hoặc bị thu hồi đối với SkillEvidence, lớp đã công bố, booking, quyền vào phòng, thu nhập pending và payout. | Product Owner + Security | FR-002–FR-005, FR-007, FR-011, FR-014, NFR-004 | Before storage and lifecycle design |
 | OQ-009 | Chat cảnh báo, chặn hay chỉ ghi nhận khi phát hiện thông tin liên hệ cá nhân. | Product Owner | FR-012 | Before implementation planning |
 | OQ-010 | Giá trị mục tiêu cho bốn success metrics và phạm vi trường pilot. | Product Owner | Product rollout | Before pilot planning |
@@ -105,7 +105,7 @@ version: 0.2
 |---|---|---|---|---|
 | 1 | Sinh viên khó chứng minh danh tính trong marketplace ngang hàng. | Người dùng nộp tên trường và giấy tờ; Administrator duyệt thủ công. | Student, Administrator | Từ chối phải có lý do; hiệu lực xác minh theo OQ-008. |
 | 2 | Năng lực người dạy chưa có bên chuyên môn xác nhận. | Teacher nộp bằng chứng; Verifier phù hợp chuyên môn review. | Teacher, Verifier | Administrator không thay thế quyết định chuyên môn. |
-| 3 | Lớp học và giá chưa có kênh chuẩn hóa. | Teacher đã xác minh công bố lớp cho kỹ năng được duyệt. | Teacher | Giá theo OQ-002; sức chứa theo OQ-007. |
+| 3 | Lớp học và giá chưa có kênh chuẩn hóa. | Teacher đã xác minh công bố lớp cho kỹ năng được duyệt. | Teacher | Giá theo OQ-002; sức chứa đã resolved (OQ-007; AC-028–AC-030). |
 | 4 | Booking và thanh toán dễ đứt traceability. | Hệ thống kiểm tra điều kiện, ghi booking và ledger nguyên tử. | Learner, Wallet | Không đủ số dư, hết chỗ hoặc dưới 24 giờ thì không trừ credit. |
 | 5 | Thu nhập và tranh chấp chưa có quy trình chung. | Tiền Teacher được theo dõi theo trạng thái pending/available và payout. | Wallet, Teacher, Administrator | Release, chargeback theo OQ-006; chính sách hủy/hoàn tiền đã resolved (OQ-003; AC-022–AC-027). |
 | 6 | Việc học và phản hồi diễn ra rời rạc. | Người tham gia vào phòng Jitsi, chat nội bộ và rating sau lớp. | Learner, Teacher, Jitsi | Chỉ thành viên booking hợp lệ được truy cập. |
@@ -243,6 +243,9 @@ Bảng ngắn gọn theo SRS (namespace `SR-BR-*`). Quy tắc nghiệp vụ chu�
 - **AC-025 / FR-007, OQ-003:** Given Learner không tham gia, when lớp kết thúc, then MVP không áp dụng quy tắc phạt/hoàn tự động cho Learner no-show.
 - **AC-026 / FR-007, OQ-003:** Given một Pending booking, when tạo, then booking giữ chỗ (tính vào capacity) và hết hạn sau ~15 phút thì tự động chuyển Cancelled và nhả chỗ.
 - **AC-027 / FR-007, OQ-003:** Given một booking Confirmed, when chuyển Cancelled, then Learner được hoàn credit vào ví nội bộ.
+- **AC-028 / FR-005, OQ-007:** Given Teacher công bố lớp, when nhập sức chứa, then sức chứa là số nguyên ≥ 1 (1 = lớp 1-1, >1 = lớp nhóm) và bị từ chối nếu bằng 0 hoặc âm.
+- **AC-029 / FR-007, OQ-007:** Given một lớp còn chỗ, when Learner đặt, then booking ở trạng thái Pending và giữ một chỗ; số chỗ còn lại = sức chứa − (Pending + Confirmed).
+- **AC-030 / FR-005, FR-007, OQ-007:** Given lớp đã đủ sức chứa, when có booking mới, then lớp chuyển Full và hệ thống từ chối booking mới; chỗ chỉ được nhả khi booking Cancelled.
 
 ## 8. Data Model
 
@@ -325,7 +328,7 @@ Mirror của PRD §14; cột Dependency được mở rộng với các OQ gatin
 |---|---|---|---|---|
 | 1 | Kiến trúc nền, xác thực tài khoản, khung bảng điều khiển Admin. | Product Owner, Engineering, Finance/Security | Quyết định cần cho Increment 2 được phê duyệt. | High |
 | 2 | Xác minh sinh viên, thông báo trạng thái. | Increment 1, OQ-008 | UC-001 pass toàn bộ acceptance criteria. | High |
-| 3 | Đăng ký/xác minh Teacher, quản lý Verifier, công bố lớp. | Increment 2, OQ-001/OQ-002/OQ-007 | UC-002 pass; chỉ kỹ năng Approved công bố được lớp. | High |
+| 3 | Đăng ký/xác minh Teacher, quản lý Verifier, công bố lớp. | Increment 2, OQ-001/OQ-002 (OQ-007 resolved) | UC-002 pass; chỉ kỹ năng Approved công bố được lớp. | High |
 | 4 | Tìm kiếm, đặt lớp, ví, gateway, ledger, rút tiền. | Increment 3, OQ-002/OQ-005/OQ-006/OQ-011/OQ-012 (OQ-003 resolved) | UC-003, UC-005 pass; test concurrency và idempotency. | Critical |
 | 5 | Jitsi, chat, rating, hoàn thiện mobile-web/accessibility. | Increment 4, OQ-004/OQ-009 | UC-004 pass; các NFR liên quan pass. | High |
 | 6 | Ứng dụng mobile Expo/React Native (iOS/Android) cho Learner và Teacher. | Increment 5 | Gói cài đặt iOS/Android chạy được; UC-001–UC-005 pass trên app. | Medium |

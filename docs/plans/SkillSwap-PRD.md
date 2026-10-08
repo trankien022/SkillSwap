@@ -389,6 +389,9 @@ Actor: Teacher, Payment gateway. Trigger: Teacher yêu cầu rút số dư khả
 - **AC-025 / FR-007, OQ-003:** Given Learner không tham gia, when lớp kết thúc, then MVP không áp dụng quy tắc phạt/hoàn tự động cho Learner no-show.
 - **AC-026 / FR-007, OQ-003:** Given một Pending booking, when tạo, then booking giữ chỗ (tính vào capacity) và hết hạn sau ~15 phút thì tự động chuyển Cancelled và nhả chỗ.
 - **AC-027 / FR-007, OQ-003:** Given một booking Confirmed, when chuyển Cancelled, then Learner được hoàn credit vào ví nội bộ.
+- **AC-028 / FR-005, OQ-007:** Given Teacher công bố lớp, when nhập sức chứa, then sức chứa là số nguyên ≥ 1 (1 = lớp 1-1, >1 = lớp nhóm) và bị từ chối nếu bằng 0 hoặc âm.
+- **AC-029 / FR-007, OQ-007:** Given một lớp còn chỗ, when Learner đặt, then booking ở trạng thái Pending và giữ một chỗ; số chỗ còn lại = sức chứa − (Pending + Confirmed).
+- **AC-030 / FR-005, FR-007, OQ-007:** Given lớp đã đủ sức chứa, when có booking mới, then lớp chuyển Full và hệ thống từ chối booking mới; chỗ chỉ được nhả khi booking Cancelled.
 
 ```gherkin
 Feature: Đặt lớp học
