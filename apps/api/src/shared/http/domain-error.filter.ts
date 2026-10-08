@@ -18,6 +18,14 @@ const NAME_TO_STATUS: Record<string, number> = {
   StatusTransitionError: 409,
   UnknownStateError: 400,
   ModuleNotInitialisedError: 500,
+  BookingNotAllowedError: 409,
+  ClassNotFoundError: 404,
+  UnknownClassStateError: 400,
+  ClassTransitionError: 409,
+  InvalidDurationError: 400,
+  InvalidCapacityError: 400,
+  InvalidPriceError: 400,
+  InvalidStartTimeError: 400,
 };
 
 /** Maps domain errors and unexpected failures onto the apiErrorSchema shape. */
