@@ -20,7 +20,7 @@ apps/api        NestJS modular monolith, port 4001 — business logic
                 (hexagonal: domain/ application/ adapter/ internal/)
   src/shared/   config, messaging (amqplib only here), cross-cutting
 apps/web        Next.js 15 + next-intl (vi/en), port 3000
-apps/mobile     Expo/React Native client (planned, ADR-015 — not yet scaffolded)
+apps/mobile     Expo/React Native client (ADR-015; domain/application/infrastructure/ui)
 packages/contracts  Zod schemas shared by api/gateway (EVT-001 etc.)
 scripts/        migrate.mjs, generate-dev-keys.mjs, generate-api-modules.mjs
 githooks/       commit-msg convention gate (enable: git config core.hooksPath githooks)
@@ -36,7 +36,7 @@ docker/         postgres init (7 roles + 7 schemas, ADR-007)
 | Dev stack (postgres + rabbitmq) | `pnpm db:up` (down: `pnpm db:down`) |
 | Apply DB migrations | `pnpm db:migrate` |
 | Dev JWT/signing keys | `pnpm keys:gen` |
-| One app | `pnpm --filter @skillswap/api …` (names: `api`, `gateway`, `web`, `contracts`) |
+| One app | `pnpm --filter @skillswap/api …` (names: `api`, `gateway`, `web`, `mobile`, `contracts`) |
 
 Test runners: **jest** in `api`, `gateway`, `contracts`; **vitest** in `web`. Lint runs with `--max-warnings=0`.
 

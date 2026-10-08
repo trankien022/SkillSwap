@@ -39,7 +39,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['scripts/**/*.{mjs,js,cjs}', '**/*.config.{mjs,js,cjs}', '**/*.cjs'],
+    files: ['scripts/**/*.{mjs,js,cjs}', '**/*.config.{mjs,js,cjs}', '**/*.cjs', 'apps/mobile/*.config.js'],
     languageOptions: {
       globals: {
         ...globals.node,
@@ -47,6 +47,7 @@ export default tseslint.config(
     },
     rules: {
       'no-console': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
     },
   },
   {
