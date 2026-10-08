@@ -183,7 +183,7 @@ Priority follows MoSCoW from the PRD (`Must` / `Should`). Status preserves the P
 | FR-004 | The system shall allow an Administrator to invite, assign domains to, suspend or revoke Verifiers; only a matched Verifier may approve a Teacher's evidence. | Must | intent.md | Confirmed |
 | FR-005 | Only a verified Teacher shall be able to create and publish an online class with skill, description, schedule, duration, price and approved capacity rules. | Must | intent.md | Confirmed core; price/capacity open (OQ-002, OQ-007) |
 | FR-006 | The system shall let a Learner browse and search open classes by class information and Teacher profile. | Must | intent.md | Confirmed core; taxonomy open (OQ-001) |
-| FR-007 | The system shall only allow booking a class that has capacity, starts at least 24 hours from now, and lasts 30 minutes to 3 hours. | Must | intent.md | Confirmed core; capacity/refund open (OQ-003, OQ-007) |
+| FR-007 | The system shall only allow booking a class that has capacity, starts at least 24 hours from now, and lasts 30 minutes to 3 hours. | Must | intent.md | Confirmed core; capacity open (OQ-007); refund/cancellation resolved (OQ-003, AC-022–AC-027) |
 | FR-008 | The system shall allow top-up through a payment gateway at the applied rate, with exactly-once callback processing. | Must | intent.md | Confirmed core; gateway open (OQ-011) |
 | FR-009 | When a Learner buys a class, the system shall atomically debit the full price and allocate 90% to the Teacher and 10% platform fee. | Must | intent.md | Confirmed split; release timing open (OQ-006) |
 | FR-010 | The system shall let a wallet owner view balance and history of top-ups, payments, income, fees and withdrawals. | Must | intent.md | Confirmed core |
@@ -374,9 +374,9 @@ stateDiagram-v2
   Full --> InProgress : session begins
   InProgress --> Completed : approved completion rule satisfied (OQ-006)
   Draft --> Cancelled : Teacher discards
-  Published --> Cancelled : allowed cancellation (OQ-003)
-  Full --> Cancelled : allowed cancellation (OQ-003)
-  InProgress --> Cancelled : allowed cancellation (OQ-003)
+  Published --> Cancelled : allowed cancellation (OQ-003 resolved; AC-022)
+  Full --> Cancelled : allowed cancellation (OQ-003 resolved; AC-022)
+  InProgress --> Cancelled : allowed cancellation (OQ-003 resolved; AC-022)
   note right of Published
     One Class is one scheduled online session
     First confirmed booking freezes commitments
@@ -396,7 +396,7 @@ stateDiagram-v2
   Pending --> Confirmed : atomic settlement succeeded (debit 100%, split 90/10)
   Pending --> [*] : eligibility failed — no side effects
   Confirmed --> Completed : class held, rating window open
-  Confirmed --> Cancelled : cancellation per approved policy (OQ-003)
+  Confirmed --> Cancelled : cancellation per approved policy (OQ-003 resolved; AC-027)
   Completed --> Disputed : dispute raised (manual process)
   Cancelled --> [*]
   Disputed --> [*]
@@ -477,7 +477,7 @@ stateDiagram-v2
 
 ### 3.7 Open items blocking implementation
 
-Implementation of the clauses listed in Appendix A is blocked until the corresponding Open Question is approved (decision policy: **block until resolved**). Affected increments (increment definitions per PRD §14): Increment 2 (OQ-008), Increment 3 (OQ-001, OQ-002, OQ-007), Increment 4 (OQ-002, OQ-003, OQ-005, OQ-006, OQ-011, OQ-012), Increment 5 (OQ-004, OQ-009), Increment 6 (no additional OQ; inherits Increment 5 gates), storage/lifecycle design (OQ-008), pilot planning (OQ-010).
+Implementation of the clauses listed in Appendix A is blocked until the corresponding Open Question is approved (decision policy: **block until resolved**). Affected increments (increment definitions per PRD §14): Increment 2 (OQ-008), Increment 3 (OQ-001, OQ-002, OQ-007), Increment 4 (OQ-002, OQ-005, OQ-006, OQ-011, OQ-012; OQ-003 resolved), Increment 5 (OQ-004, OQ-009), Increment 6 (no additional OQ; inherits Increment 5 gates), storage/lifecycle design (OQ-008), pilot planning (OQ-010).
 
 ---
 
@@ -489,7 +489,7 @@ Confirmed cores of these requirements appear in §3.2.1; the following **depende
 |---|---|---|---|---|
 | OQ-001 | Skill taxonomy structure and search granularity. | Product Owner | FR-003, FR-005, FR-006 | Exact category tree, free-text/tag hybrid, search index behavior. |
 | OQ-002 | Teacher self-pricing vs. price bands vs. hybrid with floor/cap. | Product Owner | FR-005, FR-007–FR-009 | Price rules, minimum/maximum price validation. |
-| OQ-003 | Cancellation, no-show, dispute, manual refund and Admin enforcement workflow. | Product Owner + Administrator | FR-007, FR-009–FR-011, FR-013 | Cancellation paths in Class/Booking state models, refund handling, dispute procedure. |
+| OQ-003 | Cancellation, no-show, dispute, manual refund and Admin enforcement workflow. | Product Owner + Administrator | FR-007, FR-009–FR-011, FR-013 | **Resolved (2026-10-08):** refunds are app-wallet credits only (no real-money refund); no booking-cancellation policy; Teacher no-show = not joined within the first 15 minutes → credit refund, no penalty; Learner no-show has no automatic rule; Pending holds a seat and auto-cancels after ~15 minutes; Confirmed→Cancelled refunds credits. See AC-022–AC-027. |
 | OQ-004 | Rating threshold, minimum review count, visibility recovery. | Product Owner | FR-006, FR-013 | Down-ranking threshold mechanics (SR-BR-009 value). |
 | OQ-005 | Withdrawal conditions, limits, fees, processing time. | Product Owner + Finance | FR-010, FR-014 | Minimum/maximum payout, fees, SLA in WithdrawalRequest model. |
 | OQ-006 | Completion rule, release timing, chargeback/reversal and funding/recovery after payout. | Product Owner + Finance | FR-008, FR-009, FR-014, FR-020 | Timing/conditions behind one full booking release; refund chain and funding when credit is no longer held. |
@@ -524,11 +524,11 @@ Derived from PRD §9. Access is server-authorized by role and ownership; sensiti
 | WithdrawalRequest | id, teacher_id, amount_credits, exchange_rate_vnd, destination_ref, status, trace_id | Has many LedgerTransactions through withdrawal_request_id; hold commits before payout; amount/rate/destination frozen | Pending → Processing → Completed/Failed; timeout retains hold until reconciliation; authorized payout reversal → Reversed | Sensitive financial | Teacher/Platform |
 | AuditEvent | id, actor_id, action, target_type/id, old_state_json, new_state_json, occurred_at, trace_id, metadata_json | Commits with state change; whitelisted decision snapshots preserve full evidence/role/completion/financial history | Append-only | Internal audit; no document content or payout destinations | Platform |
 
-ERD chi tiết và các ràng buộc triển khai: [data model](../diagrams/data/README.md). Một Class là một buổi học có lịch/phòng riêng, không có bảng Session. Hai cách xác minh là kiểm tra chứng chỉ hoặc Verifier công nhận năng lực; chỉ Verifier đang active và đúng chuyên môn được quyết định. Không có bảng phân công Verifier hoặc bảng TopUp. Evidence Approved còn hiệu lực quyết định level được phép dạy; pending/rejected replacement giữ quyền cũ còn hiệu lực. Quyết định lưu trên SkillEvidence, lịch sử trước/sau lưu trong audit. Chỉ publish khi Teacher còn xác minh sinh viên hiệu lực và được duyệt đủ level cho **tất cả** skill của lớp; khóa cam kết tại booking Confirmed đầu tiên. Payout giữ credit trước khi gọi gateway; timeout chưa phải thất bại. Thời điểm release, hoàn tiền/nguồn bù sau payout và làm tròn vẫn theo OQ-003/OQ-006/OQ-012.
+ERD chi tiết và các ràng buộc triển khai: [data model](../diagrams/data/README.md). Một Class là một buổi học có lịch/phòng riêng, không có bảng Session. Hai cách xác minh là kiểm tra chứng chỉ hoặc Verifier công nhận năng lực; chỉ Verifier đang active và đúng chuyên môn được quyết định. Không có bảng phân công Verifier hoặc bảng TopUp. Evidence Approved còn hiệu lực quyết định level được phép dạy; pending/rejected replacement giữ quyền cũ còn hiệu lực. Quyết định lưu trên SkillEvidence, lịch sử trước/sau lưu trong audit. Chỉ publish khi Teacher còn xác minh sinh viên hiệu lực và được duyệt đủ level cho **tất cả** skill của lớp; khóa cam kết tại booking Confirmed đầu tiên. Payout giữ credit trước khi gọi gateway; timeout chưa phải thất bại. Thời điểm release, hoàn tiền/nguồn bù sau payout và làm tròn vẫn theo OQ-003 (đã resolved, xem AC-022–AC-027)/OQ-006/OQ-012.
 
 ## Appendix C — Acceptance criteria and traceability
 
-### C.1 Acceptance criteria (AC-001–AC-021)
+### C.1 Acceptance criteria (AC-001–AC-027)
 
 - **AC-001 / FR-002:** Given a school name and a valid file, when the user submits, the status is Pending and an Administrator can review it.
 - **AC-002 / FR-003–FR-005:** Given an unapproved skill, when a Teacher attempts to publish a class, the system refuses and directs them to complete verification.
@@ -551,6 +551,12 @@ ERD chi tiết và các ràng buộc triển khai: [data model](../diagrams/data
 - **AC-019 / FR-009, FR-010:** Given policy hoàn toàn bộ đã được duyệt và booking đã release nhưng Teacher còn đủ available, when hoàn tiền, then đảo release và booking nguyên tử, không tạo pending âm; sau payout/thiếu nguồn bù không tự post refund trái OQ-003/OQ-006.
 - **AC-020 / OQ-007:** Sau khi OQ-007 được duyệt, acceptance suite phải bao gồm hai yêu cầu đồng thời cho chỗ cuối và việc tự động nhả capacity hold hết hạn.
 - **AC-021 / OQ-008:** Sau khi OQ-008 được duyệt, acceptance suite phải kiểm tra cả hai hướng quyết định cascade và grandfather đối với lớp, booking, room access, thu nhập pending và payout.
+- **AC-022 / FR-007, OQ-003:** Given một lớp Published/Full, when Teacher hủy lớp trước giờ học, then mọi Learner bị ảnh hưởng được hoàn credit vào ví nội bộ (không hoàn tiền thật).
+- **AC-023 / FR-007, OQ-003:** Given một booking, when Learner muốn hủy, then MVP không cung cấp hủy booking (không có chính sách hủy booking).
+- **AC-024 / FR-007, OQ-003:** Given Teacher không tham gia trong 15 phút đầu kể từ giờ bắt đầu, when xử lý no-show, then Learner được hoàn credit và chưa áp dụng hình phạt (hành vi dạy sai lệch do rating xử lý).
+- **AC-025 / FR-007, OQ-003:** Given Learner không tham gia, when lớp kết thúc, then MVP không áp dụng quy tắc phạt/hoàn tự động cho Learner no-show.
+- **AC-026 / FR-007, OQ-003:** Given một Pending booking, when tạo, then booking giữ chỗ (tính vào capacity) và hết hạn sau ~15 phút thì tự động chuyển Cancelled và nhả chỗ.
+- **AC-027 / FR-007, OQ-003:** Given một booking Confirmed, when chuyển Cancelled, then Learner được hoàn credit vào ví nội bộ.
 
 ### C.2 Traceability matrix
 

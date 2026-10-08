@@ -88,7 +88,7 @@ version: 0.2
 |---|---|---|---|---|
 | OQ-001 | Cấu trúc taxonomy kỹ năng và cấp tìm kiếm. | Product Owner | FR-003, FR-005, FR-006 | Before implementation planning |
 | OQ-002 | Teacher tự đặt giá, dùng khung giá hay mô hình kết hợp. | Product Owner | FR-005, FR-007–FR-009 | Before implementation planning |
-| OQ-003 | Chính sách hủy, no-show, tranh chấp, hoàn tiền thủ công và workflow Administrator thực thi các quyết định này. | Product Owner + Administrator | FR-007, FR-009–FR-011, FR-013 | Before implementation planning |
+| OQ-003 | Chính sách hủy, no-show, tranh chấp, hoàn tiền thủ công và workflow Administrator thực thi các quyết định này. | Product Owner + Administrator | FR-007, FR-009–FR-011, FR-013 | **Resolved (2026-10-08)** — xem AC-022–AC-027: hoàn tiền chỉ bằng credit ví nội bộ; không có chính sách hủy booking; Teacher no-show = không tham gia 15 phút đầu → hoàn credit, chưa phạt; Learner no-show không tự động; Pending giữ chỗ, hết hạn ~15 phút → auto-cancel; Confirmed→Cancelled hoàn credit. |
 | OQ-004 | Ngưỡng rating, số đánh giá tối thiểu và cách khôi phục hiển thị. | Product Owner | FR-006, FR-013 | Before implementation planning |
 | OQ-005 | Điều kiện, giới hạn, phí và thời gian xử lý withdrawal. | Product Owner + Finance | FR-010, FR-014 | Before implementation planning |
 | OQ-006 | Khi nào khoản 90% của từng booking chuyển từ pending sang available một lần; cách xử lý chargeback/reversal và nguồn bù sau payout. | Product Owner + Finance | FR-008, FR-009, FR-014 | Before implementation planning |
@@ -107,7 +107,7 @@ version: 0.2
 | 2 | Năng lực người dạy chưa có bên chuyên môn xác nhận. | Teacher nộp bằng chứng; Verifier phù hợp chuyên môn review. | Teacher, Verifier | Administrator không thay thế quyết định chuyên môn. |
 | 3 | Lớp học và giá chưa có kênh chuẩn hóa. | Teacher đã xác minh công bố lớp cho kỹ năng được duyệt. | Teacher | Giá theo OQ-002; sức chứa theo OQ-007. |
 | 4 | Booking và thanh toán dễ đứt traceability. | Hệ thống kiểm tra điều kiện, ghi booking và ledger nguyên tử. | Learner, Wallet | Không đủ số dư, hết chỗ hoặc dưới 24 giờ thì không trừ credit. |
-| 5 | Thu nhập và tranh chấp chưa có quy trình chung. | Tiền Teacher được theo dõi theo trạng thái pending/available và payout. | Wallet, Teacher, Administrator | Release, refund, chargeback theo OQ-003/OQ-006. |
+| 5 | Thu nhập và tranh chấp chưa có quy trình chung. | Tiền Teacher được theo dõi theo trạng thái pending/available và payout. | Wallet, Teacher, Administrator | Release, chargeback theo OQ-006; chính sách hủy/hoàn tiền đã resolved (OQ-003; AC-022–AC-027). |
 | 6 | Việc học và phản hồi diễn ra rời rạc. | Người tham gia vào phòng Jitsi, chat nội bộ và rating sau lớp. | Learner, Teacher, Jitsi | Chỉ thành viên booking hợp lệ được truy cập. |
 
 ## 6. Requirements
@@ -237,6 +237,12 @@ Bảng ngắn gọn theo SRS (namespace `SR-BR-*`). Quy tắc nghiệp vụ chu�
 - **AC-019 / FR-009, FR-010:** Given policy hoàn toàn bộ đã được duyệt và booking đã release nhưng Teacher còn đủ available, when hoàn tiền, then đảo release và booking nguyên tử, không tạo pending âm; sau payout/thiếu nguồn bù không tự post refund trái OQ-003/OQ-006.
 - **AC-020 / OQ-007:** Sau khi OQ-007 được duyệt, acceptance suite phải bao gồm hai yêu cầu đồng thời cho chỗ cuối và việc tự động nhả capacity hold hết hạn.
 - **AC-021 / OQ-008:** Sau khi OQ-008 được duyệt, acceptance suite phải kiểm tra cả hai hướng quyết định cascade và grandfather đối với lớp, booking, room access, thu nhập pending và payout.
+- **AC-022 / FR-007, OQ-003:** Given một lớp Published/Full, when Teacher hủy lớp trước giờ học, then mọi Learner bị ảnh hưởng được hoàn credit vào ví nội bộ (không hoàn tiền thật).
+- **AC-023 / FR-007, OQ-003:** Given một booking, when Learner muốn hủy, then MVP không cung cấp hủy booking (không có chính sách hủy booking).
+- **AC-024 / FR-007, OQ-003:** Given Teacher không tham gia trong 15 phút đầu kể từ giờ bắt đầu, when xử lý no-show, then Learner được hoàn credit và chưa áp dụng hình phạt (hành vi dạy sai lệch do rating xử lý).
+- **AC-025 / FR-007, OQ-003:** Given Learner không tham gia, when lớp kết thúc, then MVP không áp dụng quy tắc phạt/hoàn tự động cho Learner no-show.
+- **AC-026 / FR-007, OQ-003:** Given một Pending booking, when tạo, then booking giữ chỗ (tính vào capacity) và hết hạn sau ~15 phút thì tự động chuyển Cancelled và nhả chỗ.
+- **AC-027 / FR-007, OQ-003:** Given một booking Confirmed, when chuyển Cancelled, then Learner được hoàn credit vào ví nội bộ.
 
 ## 8. Data Model
 
@@ -320,7 +326,7 @@ Mirror của PRD §14; cột Dependency được mở rộng với các OQ gatin
 | 1 | Kiến trúc nền, xác thực tài khoản, khung bảng điều khiển Admin. | Product Owner, Engineering, Finance/Security | Quyết định cần cho Increment 2 được phê duyệt. | High |
 | 2 | Xác minh sinh viên, thông báo trạng thái. | Increment 1, OQ-008 | UC-001 pass toàn bộ acceptance criteria. | High |
 | 3 | Đăng ký/xác minh Teacher, quản lý Verifier, công bố lớp. | Increment 2, OQ-001/OQ-002/OQ-007 | UC-002 pass; chỉ kỹ năng Approved công bố được lớp. | High |
-| 4 | Tìm kiếm, đặt lớp, ví, gateway, ledger, rút tiền. | Increment 3, OQ-002/OQ-003/OQ-005/OQ-006/OQ-011/OQ-012 | UC-003, UC-005 pass; test concurrency và idempotency. | Critical |
+| 4 | Tìm kiếm, đặt lớp, ví, gateway, ledger, rút tiền. | Increment 3, OQ-002/OQ-005/OQ-006/OQ-011/OQ-012 (OQ-003 resolved) | UC-003, UC-005 pass; test concurrency và idempotency. | Critical |
 | 5 | Jitsi, chat, rating, hoàn thiện mobile-web/accessibility. | Increment 4, OQ-004/OQ-009 | UC-004 pass; các NFR liên quan pass. | High |
 | 6 | Ứng dụng mobile Expo/React Native (iOS/Android) cho Learner và Teacher. | Increment 5 | Gói cài đặt iOS/Android chạy được; UC-001–UC-005 pass trên app. | Medium |
 
@@ -345,7 +351,7 @@ Ghi chú: OQ-008 có required-by là gate thiết kế storage/lifecycle (BRD §
 | RISK-002 | Ledger ghi sai hoặc xử lý trùng. | Critical | Medium | Engineering | Atomic entries, idempotency and concurrency tests. |
 | RISK-003 | Giấy tờ giả hoặc tệp tải lên độc hại. | High | Medium | Administrator/Security | Review checklist, upload scanning and audit. |
 | RISK-004 | Verifier thông đồng hoặc vượt phạm vi chuyên môn. | High | Medium | Administrator | Separation of duty, assignment scope and periodic audit. |
-| RISK-005 | Tranh chấp/no-show không có quy trình. | High | High | Product Owner/Administrator | Resolve OQ-003 before booking implementation. |
+| RISK-005 | Tranh chấp/no-show không có quy trình. | High | High | Product Owner/Administrator | OQ-003 resolved (2026-10-08): refund = credit ví nội bộ, no booking cancellation, Teacher no-show 15 phút; xem AC-022–AC-027. |
 | RISK-006 | Thiếu Teacher đã xác minh khi pilot. | High | Medium | Product Owner | Recruit and verify supply before learner expansion. |
 | RISK-007 | Rò rỉ giấy tờ, chat hoặc dữ liệu tài chính. | Critical | Medium | Security | Encryption, least privilege, retention decision and security tests. |
 | DEC-001 | MVP chỉ hỗ trợ lớp trực tuyến qua Jitsi. | — | — | Product Owner | Confirmed; governs FR-005/FR-011. |
