@@ -1,30 +1,14 @@
 /**
  * Booking domain for the mobile client (FR-007).
  *
- * These types mirror the API-004 / API-005 response shapes (class and booking
- * views). They are declared locally because the shared `@skillswap/contracts`
- * does not export them on `main` yet; once the FR-007 contracts land, these can
- * be replaced by re-exports from `@skillswap/contracts` without changing the UI.
+ * The class and booking view types come from the shared `@skillswap/contracts`
+ * package (the API-004 / API-005 shapes), so the client can never drift from
+ * the backend. Only the rejection reasons and the error type are local.
  */
 
-export interface ClassView {
-  id: string;
-  teacherId: string;
-  state: string;
-  startsAt: string;
-  durationMinutes: number;
-  priceCredits: number;
-  capacity: number;
-}
+export type { ClassView, BookingView, BookingRequestInput } from '@skillswap/contracts';
 
-export interface BookingView {
-  bookingId: string;
-  classId: string;
-  learnerId: string;
-  state: string;
-  priceCredits: number;
-  createdAt: string;
-}
+import type { BookingView } from '@skillswap/contracts';
 
 /** Mirrors apps/api live-class domain/booking.ts BOOKING_REJECTION_REASONS. */
 export const BOOKING_REJECTION_REASONS = [

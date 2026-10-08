@@ -11,6 +11,7 @@ module.exports = {
   },
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^@skillswap/contracts$': '<rootDir>/../../packages/contracts/src/index.ts',
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
 };
