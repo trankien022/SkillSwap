@@ -117,6 +117,16 @@ export interface ClassView {
   capacity: number;
 }
 
+/** Validated class facts, before an id is assigned by storage. */
+export interface PublishedClass {
+  teacherId: string;
+  state: ClassState;
+  startsAt: Date;
+  durationMinutes: number;
+  priceCredits: number;
+  capacity: number;
+}
+
 function assertDuration(durationMinutes: number): void {
   if (
     !Number.isInteger(durationMinutes) ||
@@ -144,7 +154,7 @@ function assertPrice(priceCredits: number): void {
  * `published`. Capacity is Teacher-supplied and must be >= 1 (OQ-007): 1 is a
  * 1-1 class, greater values are group classes.
  */
-export function publishClass(id: string, draft: ClassDraft, now: Date): ClassView {
+export function publishClass(draft: ClassDraft, now: Date): PublishedClass {
   if (draft.teacherId.trim() === '') {
     throw new InvalidStartTimeError('Class must have a teacher');
   }
@@ -158,7 +168,6 @@ export function publishClass(id: string, draft: ClassDraft, now: Date): ClassVie
     throw new InvalidStartTimeError('Class must start in the future');
   }
   return {
-    id,
     teacherId: draft.teacherId,
     state: 'published',
     startsAt: draft.startsAt,

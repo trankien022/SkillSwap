@@ -52,9 +52,8 @@ describe('class aggregate', () => {
   });
 
   it('publishes a valid class', () => {
-    const view = publishClass('cls-1', draft(), NOW);
+    const view = publishClass(draft(), NOW);
     expect(view).toEqual({
-      id: 'cls-1',
       teacherId: 'teacher-1',
       state: 'published',
       startsAt: draft().startsAt,
@@ -65,41 +64,41 @@ describe('class aggregate', () => {
   });
 
   it('accepts duration boundaries of exactly 30 and 180 minutes', () => {
-    expect(() => publishClass('c', draft({ durationMinutes: 30 }), NOW)).not.toThrow();
-    expect(() => publishClass('c', draft({ durationMinutes: 180 }), NOW)).not.toThrow();
-    expect(() => publishClass('c', draft({ durationMinutes: 29 }), NOW)).toThrow(InvalidDurationError);
-    expect(() => publishClass('c', draft({ durationMinutes: 181 }), NOW)).toThrow(InvalidDurationError);
-    expect(() => publishClass('c', draft({ durationMinutes: 60.5 }), NOW)).toThrow(InvalidDurationError);
+    expect(() => publishClass(draft({ durationMinutes: 30 }), NOW)).not.toThrow();
+    expect(() => publishClass(draft({ durationMinutes: 180 }), NOW)).not.toThrow();
+    expect(() => publishClass(draft({ durationMinutes: 29 }), NOW)).toThrow(InvalidDurationError);
+    expect(() => publishClass(draft({ durationMinutes: 181 }), NOW)).toThrow(InvalidDurationError);
+    expect(() => publishClass(draft({ durationMinutes: 60.5 }), NOW)).toThrow(InvalidDurationError);
   });
 
   it('requires a capacity of at least 1 (OQ-007)', () => {
-    expect(() => publishClass('c', draft({ capacity: 1 }), NOW)).not.toThrow();
-    expect(() => publishClass('c', draft({ capacity: 20 }), NOW)).not.toThrow();
-    expect(() => publishClass('c', draft({ capacity: 0 }), NOW)).toThrow(InvalidCapacityError);
-    expect(() => publishClass('c', draft({ capacity: -3 }), NOW)).toThrow(InvalidCapacityError);
-    expect(() => publishClass('c', draft({ capacity: 2.5 }), NOW)).toThrow(InvalidCapacityError);
+    expect(() => publishClass(draft({ capacity: 1 }), NOW)).not.toThrow();
+    expect(() => publishClass(draft({ capacity: 20 }), NOW)).not.toThrow();
+    expect(() => publishClass(draft({ capacity: 0 }), NOW)).toThrow(InvalidCapacityError);
+    expect(() => publishClass(draft({ capacity: -3 }), NOW)).toThrow(InvalidCapacityError);
+    expect(() => publishClass(draft({ capacity: 2.5 }), NOW)).toThrow(InvalidCapacityError);
   });
 
   it('requires a positive integer price', () => {
-    expect(() => publishClass('c', draft({ priceCredits: 1 }), NOW)).not.toThrow();
-    expect(() => publishClass('c', draft({ priceCredits: 0 }), NOW)).toThrow(InvalidPriceError);
-    expect(() => publishClass('c', draft({ priceCredits: -10 }), NOW)).toThrow(InvalidPriceError);
-    expect(() => publishClass('c', draft({ priceCredits: 9.9 }), NOW)).toThrow(InvalidPriceError);
+    expect(() => publishClass(draft({ priceCredits: 1 }), NOW)).not.toThrow();
+    expect(() => publishClass(draft({ priceCredits: 0 }), NOW)).toThrow(InvalidPriceError);
+    expect(() => publishClass(draft({ priceCredits: -10 }), NOW)).toThrow(InvalidPriceError);
+    expect(() => publishClass(draft({ priceCredits: 9.9 }), NOW)).toThrow(InvalidPriceError);
   });
 
   it('requires a future start time and a teacher', () => {
-    expect(() => publishClass('c', draft({ startsAt: NOW }), NOW)).toThrow(InvalidStartTimeError);
-    expect(() => publishClass('c', draft({ startsAt: new Date(NOW.getTime() - 1) }), NOW)).toThrow(
+    expect(() => publishClass(draft({ startsAt: NOW }), NOW)).toThrow(InvalidStartTimeError);
+    expect(() => publishClass(draft({ startsAt: new Date(NOW.getTime() - 1) }), NOW)).toThrow(
       InvalidStartTimeError,
     );
-    expect(() => publishClass('c', draft({ teacherId: '  ' }), NOW)).toThrow(InvalidStartTimeError);
-    expect(() => publishClass('c', draft({ startsAt: new Date('nope') }), NOW)).toThrow(
+    expect(() => publishClass(draft({ teacherId: '  ' }), NOW)).toThrow(InvalidStartTimeError);
+    expect(() => publishClass(draft({ startsAt: new Date('nope') }), NOW)).toThrow(
       InvalidStartTimeError,
     );
   });
 
   it('reports whether the class has started', () => {
-    const view = publishClass('c', draft({ startsAt: new Date(NOW.getTime() + BOOKING_LEAD_TIME_MS) }), NOW);
+    const view = publishClass(draft({ startsAt: new Date(NOW.getTime() + BOOKING_LEAD_TIME_MS) }), NOW);
     expect(hasStarted(view, NOW)).toBe(false);
     expect(hasStarted(view, new Date(NOW.getTime() + BOOKING_LEAD_TIME_MS))).toBe(true);
   });
