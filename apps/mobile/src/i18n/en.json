@@ -1,0 +1,22 @@
+{
+  "Booking": {
+    "title": "Book a class",
+    "duration": "{minutes} min",
+    "price": "{credits} credits",
+    "capacity": "{seats} seats",
+    "startsAt": "Starts {when}",
+    "bookCta": "Book class",
+    "booking": "Booking…",
+    "pending": "Pending — seat held",
+    "pendingHint": "Your seat is held. Confirm by topping up within 15 minutes.",
+    "errorTitle": "Could not book",
+    "error.class_not_bookable": "This class is no longer open for booking.",
+    "error.class_started": "This class has already started.",
+    "error.booking_window_closed": "Bookings close 24 hours before the class starts.",
+    "error.class_full": "This class is full.",
+    "error.duplicate_booking": "You already have a booking for this class.",
+    "error.self_booking": "You cannot book your own class.",
+    "error.invalid_duration": "This class has an invalid duration.",
+    "error.unknown": "Something went wrong. Please try again."
+  }
+}

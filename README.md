@@ -6,7 +6,7 @@ A peer-to-peer skill marketplace: learners top up real money into credits (1 cre
 
 ## Stack
 
-- **pnpm monorepo** — `apps/gateway` (NestJS BFF, :4000) · `apps/api` (NestJS modular monolith, :4001) · `apps/web` (Next.js 15 + next-intl, :3000) · `apps/mobile` (Expo/React Native — planned, [ADR-015](docs/adr/ADR-015-mobile-client-expo.md)) · `packages/contracts` (Zod)
+- **pnpm monorepo** — `apps/gateway` (NestJS BFF, :4000) · `apps/api` (NestJS modular monolith, :4001) · `apps/web` (Next.js 15 + next-intl, :3000) · `apps/mobile` (Expo/React Native, [ADR-015](docs/adr/ADR-015-mobile-client-expo.md)) · `packages/contracts` (Zod)
 - **PostgreSQL 17** — one database, seven schemas, per-module roles/credentials ([ADR-014](docs/adr/ADR-014-persistence-typeorm.md), TypeORM)
 - **RabbitMQ 3.13** — topic exchange `skillswap.events`, transactional outbox + idempotent consumers ([ADR-013](docs/adr/ADR-013-message-broker-rabbitmq.md))
 
@@ -32,9 +32,9 @@ pnpm verify            # lint && build && typecheck && test && test:arch
 | Dev stack | `pnpm db:up` / `pnpm db:down` |
 | Migrations | `pnpm db:migrate` |
 | Dev keys | `pnpm keys:gen` |
-| One app | `pnpm --filter @skillswap/api …` (`api`, `gateway`, `web`, `contracts`) |
+| One app | `pnpm --filter @skillswap/api …` (`api`, `gateway`, `web`, `mobile`, `contracts`) |
 
-Tests: jest (`api`, `gateway`, `contracts`), vitest (`web`). Lint is `--max-warnings=0`. CI runs `pnpm verify` on every push/PR (`.github/workflows/ci.yml`).
+Tests: jest (`api`, `gateway`, `contracts`, `mobile`), vitest (`web`). Lint is `--max-warnings=0`. CI runs `pnpm verify` on every push/PR (`.github/workflows/ci.yml`).
 
 ## Repository layout
 
@@ -42,7 +42,7 @@ Tests: jest (`api`, `gateway`, `contracts`), vitest (`web`). Lint is `--max-warn
 apps/gateway    NestJS BFF — public REST, auth, route → RPC
 apps/api        business logic — 7 hexagonal modules under src/modules/
 apps/web        Next.js UI (register: product — see DESIGN.md)
-apps/mobile     Expo/React Native client (planned — ADR-015)
+apps/mobile     Expo/React Native client (ADR-015; booking flow is mock-only)
 packages/contracts  Zod schemas shared by api/gateway
 scripts/        migrate.mjs, generate-dev-keys.mjs, generate-api-modules.mjs
 docker/         postgres init (7 roles + 7 schemas, ADR-007)
