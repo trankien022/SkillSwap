@@ -341,7 +341,7 @@ Ghi chú: OQ-008 có required-by là gate thiết kế storage/lifecycle (BRD §
 |---|---|---|---|---|
 | Trusted student identity | FR-001, FR-002, FR-017, FR-019 | UC-001, UC-006–UC-008, US-001 | API-001, User, StudentVerification, NFR-004/NFR-008/NFR-009 | Pending implementation |
 | Trusted Teacher capability | FR-003–FR-005, FR-018 | UC-002, UC-009, UC-010, US-002 | API-002–API-004, ProfileSkill, SkillEvidence, NFR-004/NFR-009 | Pending implementation |
-| Discover and book online learning | FR-005–FR-007 | UC-003, UC-011, US-003 | API-004–API-005, Class, Booking, NFR-001/NFR-006/NFR-007 | Pending implementation |
+| Discover and book online learning | FR-005–FR-007 | UC-003, UC-011, US-003 | API-004–API-005, Class, Booking, NFR-001/NFR-006/NFR-007 | FR-005 publish and FR-007 booking implemented (live-class); FR-006 search pending |
 | Traceable wallet settlement | FR-008–FR-010, FR-014, FR-020 | UC-003, UC-005, UC-012, UC-013, US-003/US-006 | API-005–API-007, EVT-001, Wallet/Ledger/Withdrawal, NFR-003/NFR-005/NFR-009 | Pending implementation |
 | Secure class participation | FR-011–FR-013, FR-016 | UC-004, US-004/US-005 | API-008–API-010, Message/Rating, NFR-006/NFR-007/NFR-010 | Pending implementation |
 | Platform operations | FR-015 | UC-014 | Audit log, NFR-005 | Pending implementation |

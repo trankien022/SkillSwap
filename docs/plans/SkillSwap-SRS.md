@@ -567,8 +567,7 @@ ERD chi tiết và các ràng buộc triển khai: [data model](../diagrams/data
 |---|---|---|---|
 | Trusted student identity | FR-001, FR-002, FR-017, FR-019 | UC-001, UC-006–UC-008 | API-001, User, StudentVerification, NFR-004/008/009 |
 | Trusted Teacher capability | FR-003–FR-005, FR-018 | UC-002, UC-009, UC-010 | API-002–API-004, ProfileSkill, SkillEvidence, NFR-004/009 |
-| Discover and book online learning | FR-005–FR-007 | UC-003, UC-011 | API-004–API-005, Class, Booking, NFR-001/006/007 |
-| Traceable wallet settlement | FR-008–FR-010, FR-014, FR-020 | UC-003, UC-005, UC-012, UC-013 | API-005–API-007, EVT-001, Wallet/Ledger/Withdrawal, NFR-003/005/009 |
+| Discover and book online learning | FR-005–FR-007 | UC-003, UC-011 | API-004–API-005, Class, Booking, NFR-001/006/007 || Traceable wallet settlement | FR-008–FR-010, FR-014, FR-020 | UC-003, UC-005, UC-012, UC-013 | API-005–API-007, EVT-001, Wallet/Ledger/Withdrawal, NFR-003/005/009 |
 | Secure class participation | FR-011–FR-013, FR-016 | UC-004 | API-008–API-010, Message/Rating, NFR-006/007/010 |
 | Platform operations | FR-015 | UC-014 | Audit log, NFR-005 |
 
@@ -591,3 +590,20 @@ Use case diagrams are authored in PlantUML (`docs/diagrams/usecase/srs-use-case-
 | Booking state machine | §3.2.6 | Mermaid `stateDiagram-v2` | [source](../diagrams/srs-state-booking.mmd) · [PNG](../diagrams/srs-state-booking.png) |
 | WithdrawalRequest state machine | §3.2.6 | Mermaid `stateDiagram-v2` | [source](../diagrams/srs-state-withdrawal-request.mmd) · [PNG](../diagrams/srs-state-withdrawal-request.png) |
 | System context (C4 L1) | §2.1 | Embedded PNG from `docs/diagrams/c4/generated/` | `docs/diagrams/c4/generated/structurizr-SystemContext.png` |
+
+### C.4 FR-007 implementation traceability
+
+FR-007 (booking eligibility) is implemented in the `live-class` module. Test locations below are authoritative for this increment.
+
+| Rule / AC | Domain / application code | Test |
+|---|---|---|
+| Duration 30–180 min (SR-BR-003) | `class.ts` `publishClass`, `booking.ts` `assertBookable` | `class.spec.ts` (duration boundaries), `booking.spec.ts` |
+| Capacity ≥ 1 (OQ-007, AC-028) | `class.ts` `assertCapacity` | `class.spec.ts` ("requires a capacity of at least 1") |
+| ≥ 24 h lead time (SR-BR-004, AC-003) | `booking.ts` `assertBookable` | `booking.spec.ts` (<24 h reject, exact boundary) |
+| Capacity / Full (BR-025, AC-029/AC-030) | `booking.ts` `availableSeats` | `booking.spec.ts`, `book-class.use-case.spec.ts` |
+| One valid booking per learner/class (BR-024) | `booking.ts` duplicate rule + SQL unique index | `book-class.concurrency.spec.ts` |
+| No self-booking (SR-BR-010) | `booking.ts` self-booking rule | `booking.spec.ts` |
+| Last-seat race → exactly one booking (AC-010) | `sql-booking-repository.ts` `createWithSeatGuard` (row lock) | `book-class.concurrency.spec.ts` |
+| Idempotent replay | `book-class.use-case.ts` | `book-class.use-case.spec.ts`, `book-class.concurrency.spec.ts` |
+
+Lifecycle ACs resolved from OQ-003 (AC-022–AC-027) are documented but not implemented in this increment.

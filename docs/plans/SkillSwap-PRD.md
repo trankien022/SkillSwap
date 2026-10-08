@@ -96,7 +96,7 @@ Thầy Hùng nhận thông báo có hồ sơ mới trong chuyên môn của mìn
 | FR-004 | Functional | Hệ thống phải cho phép Administrator mời, gán chuyên môn, đình chỉ hoặc thu hồi Verifier; chỉ Verifier phù hợp mới được duyệt hồ sơ Teacher. | Must | `docs/intent.md` | Confirmed |
 | FR-005 | Functional | Chỉ Teacher đã được xác minh được tạo và công bố lớp trực tuyến với kỹ năng còn hiệu lực (chưa bị thu hồi/hết hạn), mô tả, lịch không trùng lịch, thời lượng 30–180 phút, giá và quy tắc sức chứa đã được duyệt. | Must | `docs/intent.md` | Confirmed; price/capacity open |
 | FR-006 | Functional | Learner phải có thể duyệt và tìm kiếm lớp đang mở theo thông tin lớp và hồ sơ Teacher. | Must | `docs/intent.md` | Confirmed; taxonomy open |
-| FR-007 | Functional | Learner chỉ có thể đặt lớp còn khả năng nhận booking, bắt đầu sau ít nhất 24 giờ và kéo dài từ 30 phút đến 3 giờ. | Must | `docs/intent.md` | Confirmed; capacity/refund open |
+| FR-007 | Functional | Learner chỉ có thể đặt lớp còn khả năng nhận booking, bắt đầu sau ít nhất 24 giờ và kéo dài từ 30 phút đến 3 giờ. | Must | `docs/intent.md` | Confirmed core; capacity resolved (OQ-007, AC-028–AC-030); refund/cancellation resolved (OQ-003, AC-022–AC-027) |
 | FR-008 | Functional | Người dùng phải có thể nạp tiền qua gateway theo tỷ giá áp dụng, với xử lý callback đúng một lần. | Must | `docs/intent.md` | Confirmed core; gateway open |
 | FR-009 | Functional | Khi Learner mua lớp, hệ thống phải ghi nợ toàn bộ giá lớp và phân bổ 90% cho Teacher, 10% phí nền tảng, bằng bút toán nguyên tử. | Must | `docs/intent.md` | Confirmed split; release timing open |
 | FR-010 | Functional | Chủ ví phải xem được số dư và lịch sử nạp, thanh toán, thu nhập, phí và withdrawal. | Must | `docs/intent.md` | Confirmed core |
@@ -438,7 +438,7 @@ Authentication và authorization dùng server-side role/ownership check cho mọ
 |---|---|---|---|---|
 | Trusted student identity | FR-001–FR-002, FR-017, FR-019 | UC-001, US-001 | API-001, User, StudentVerification, NFR-004/NFR-008/NFR-009 | Pending implementation |
 | Trusted Teacher capability | FR-003–FR-005, FR-018 | UC-002, US-002 | API-002–API-004, ProfileSkill, SkillEvidence, NFR-004/NFR-009 | Pending implementation |
-| Discover and book online learning | FR-005–FR-007 | UC-003, US-003 | API-004–API-005, Class, Booking, NFR-001/NFR-006/NFR-007 | Pending implementation |
+| Discover and book online learning | FR-005–FR-007 | UC-003, US-003 | API-004–API-005, Class, Booking, NFR-001/NFR-006/NFR-007 | FR-005 publish and FR-007 booking implemented (live-class); FR-006 search pending |
 | Traceable wallet settlement | FR-008–FR-010, FR-014, FR-020 | UC-003, UC-005, US-003/US-006 | API-005–API-007, EVT-001, Wallet/Ledger/Withdrawal, NFR-003/NFR-005/NFR-009 | Pending implementation |
 | Secure class participation | FR-011–FR-013, FR-016 | UC-004, US-004/US-005 | API-008–API-010, Message/Rating, NFR-006/NFR-007/NFR-010 | Pending implementation |
 | Platform operations | FR-015 | (UC-014 in SRS) | Audit log, NFR-005 | Pending implementation |
