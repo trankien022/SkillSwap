@@ -1,4 +1,5 @@
 {
+  "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
     "noImplicitOverride": true,
@@ -7,11 +8,13 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "declaration": true,
-    "sourceMap": true,
+    "jsx": "react-jsx",
+    "types": ["jest", "react", "node"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["apps/mobile/src/*"]
+      "@/*": ["./src/*"]
     }
-  }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "app/**/*.ts", "app/**/*.tsx", "expo-env.d.ts"],
+  "exclude": ["node_modules", "dist"]
 }

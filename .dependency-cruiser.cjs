@@ -155,7 +155,7 @@ module.exports = {
         path: '[\\\\/]amqplib[\\\\/]',
       },
     },
-    ...['api', 'gateway', 'web'].map((a) => ({
+    ...['api', 'gateway', 'web', 'mobile'].map((a) => ({
       name: `isolated-app-${a}`,
       severity: 'error',
       comment: `apps/${a} must not import code from another app (one deployable per app).`,

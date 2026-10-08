@@ -197,7 +197,7 @@ flowchart TB
 
 ## 5. Suggested source layout
 
-The repository is a pnpm monorepo: `apps/gateway` (BFF, :4000), `apps/api` (the modular monolith below, :4001), `apps/web` (Next.js, :3000), `apps/mobile` (Expo — planned, ADR-015), and `packages/contracts` (shared Zod schemas).
+The repository is a pnpm monorepo: `apps/gateway` (BFF, :4000), `apps/api` (the modular monolith below, :4001), `apps/web` (Next.js, :3000), `apps/mobile` (Expo/React Native, ADR-015), and `packages/contracts` (shared Zod schemas).
 
 ```text
 apps/api/src/
