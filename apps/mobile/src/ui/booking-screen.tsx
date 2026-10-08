@@ -5,6 +5,7 @@ import { newIdempotencyKey } from '@/application/idempotency';
 import { BookingError, type BookingView, type ClassView } from '@/domain/booking/booking';
 import { colors, spacing, typography } from '@/design/tokens';
 import { BookButton } from './book-button';
+import { ClassCard } from './class-card';
 import { StatusPill } from './status-pill';
 
 export interface BookingScreenCopy {
@@ -14,6 +15,9 @@ export interface BookingScreenCopy {
   pending: string;
   pendingHint: string;
   errorTitle: string;
+  notFound: string;
+  durationLabel: string;
+  seatsLabel: string;
   error: (reason: string) => string;
   duration: (minutes: number) => string;
   price: (credits: number) => string;
@@ -23,6 +27,7 @@ export interface BookingScreenCopy {
 
 type State =
   | { phase: 'loading' }
+  | { phase: 'not_found' }
   | { phase: 'ready'; classView: ClassView }
   | { phase: 'error'; message: string }
   | { phase: 'submitting'; classView: ClassView }
@@ -30,7 +35,7 @@ type State =
 
 /**
  * Container for the learner booking flow. Owns the state machine; rendering is
- * delegated to BookButton / StatusPill so the logic stays testable.
+ * delegated to BookButton / StatusPill / ClassCard so the logic stays testable.
  */
 export function BookingScreen({
   classId,
@@ -52,12 +57,12 @@ export function BookingScreen({
         if (active) setState({ phase: 'ready', classView });
       })
       .catch(() => {
-        if (active) setState({ phase: 'error', message: copy.error('unknown') });
+        if (active) setState({ phase: 'not_found' });
       });
     return () => {
       active = false;
     };
-  }, [classId, service, copy]);
+  }, [classId, service]);
 
   const onBook = useCallback(async () => {
     if (state.phase !== 'ready') return;
@@ -78,20 +83,40 @@ export function BookingScreen({
     );
   }
 
+  if (state.phase === 'not_found') {
+    return (
+      <View style={styles.stack}>
+        <StatusPill tone="neutral" label={copy.errorTitle} />
+        <Text style={styles.body}>{copy.notFound}</Text>
+      </View>
+    );
+  }
+
   if (state.phase === 'error') {
     return (
       <View style={styles.stack}>
         <StatusPill tone="danger" label={copy.errorTitle} />
-        <Text style={styles.body}>{state.message}</Text>
+        <Text style={styles.body} accessibilityRole="alert">
+          {state.message}
+        </Text>
       </View>
     );
   }
 
   const classView = state.classView;
-  const price = copy.price(classView.priceCredits);
 
   return (
     <View style={styles.stack}>
+      <ClassCard
+        copy={{
+          startsAt: copy.startsAt(new Date(classView.startsAt).toLocaleString()),
+          duration: copy.duration(classView.durationMinutes),
+          capacity: copy.capacity(classView.capacity),
+          price: copy.price(classView.priceCredits),
+          durationLabel: copy.durationLabel,
+          seatsLabel: copy.seatsLabel,
+        }}
+      />
       {state.phase === 'booked' ? (
         <>
           <StatusPill tone="success" label={copy.pending} />
@@ -106,7 +131,6 @@ export function BookingScreen({
           onPress={() => void onBook()}
         />
       )}
-      <Text style={styles.price}>{price}</Text>
     </View>
   );
 }
@@ -118,10 +142,5 @@ const styles = StyleSheet.create({
   body: {
     color: colors.inkSoft,
     fontSize: typography.body.fontSize,
-  },
-  price: {
-    color: colors.ink,
-    fontSize: typography.heading.fontSize,
-    fontWeight: '600',
   },
 });
