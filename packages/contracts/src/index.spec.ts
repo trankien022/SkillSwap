@@ -3,6 +3,10 @@ import {
   advanceStatusSchema,
   apiErrorSchema,
   bookingConfirmedSchema,
+  bookingRequestSchema,
+  bookingSchema,
+  classSchema,
+  createClassSchema,
   eventEnvelopeSchema,
   identityHeadersSchema,
   moduleStatusSchema,
@@ -160,5 +164,80 @@ describe('identityHeadersSchema', () => {
 
   it('rejects a malformed email', () => {
     expect(() => identityHeadersSchema.parse({ 'x-user-email': 'nope' })).toThrow();
+  });
+});
+
+describe('createClassSchema', () => {
+  const valid = {
+    skillIds: ['skill-1'],
+    description: 'Intro to guitar',
+    startsAt: '2026-10-10T10:00:00.000Z',
+    durationMinutes: 60,
+    priceCredits: 100,
+    capacity: 1,
+  };
+
+  it('accepts a valid class payload', () => {
+    expect(createClassSchema.parse(valid)).toEqual(valid);
+  });
+
+  it('enforces the 30 to 180 minute duration', () => {
+    expect(() => createClassSchema.parse({ ...valid, durationMinutes: 29 })).toThrow();
+    expect(() => createClassSchema.parse({ ...valid, durationMinutes: 181 })).toThrow();
+    expect(createClassSchema.parse({ ...valid, durationMinutes: 30 }).durationMinutes).toBe(30);
+    expect(createClassSchema.parse({ ...valid, durationMinutes: 180 }).durationMinutes).toBe(180);
+  });
+
+  it('rejects a non-positive capacity (OQ-007)', () => {
+    expect(() => createClassSchema.parse({ ...valid, capacity: 0 })).toThrow();
+    expect(() => createClassSchema.parse({ ...valid, capacity: -1 })).toThrow();
+    expect(createClassSchema.parse({ ...valid, capacity: 5 }).capacity).toBe(5);
+  });
+
+  it('rejects a non-positive price and an empty skill list', () => {
+    expect(() => createClassSchema.parse({ ...valid, priceCredits: 0 })).toThrow();
+    expect(() => createClassSchema.parse({ ...valid, skillIds: [] })).toThrow();
+  });
+});
+
+describe('classSchema', () => {
+  it('round-trips a published class view', () => {
+    const view = {
+      id: 'cls-1',
+      teacherId: 'teacher-1',
+      state: 'published',
+      startsAt: '2026-10-10T10:00:00.000Z',
+      durationMinutes: 60,
+      priceCredits: 100,
+      capacity: 2,
+    };
+    expect(classSchema.parse(view)).toEqual(view);
+  });
+});
+
+describe('bookingRequestSchema', () => {
+  it('accepts an idempotency key', () => {
+    expect(bookingRequestSchema.parse({ idempotencyKey: 'key-1' })).toEqual({
+      idempotencyKey: 'key-1',
+    });
+  });
+
+  it('rejects an empty idempotency key', () => {
+    expect(() => bookingRequestSchema.parse({ idempotencyKey: '' })).toThrow();
+    expect(() => bookingRequestSchema.parse({})).toThrow();
+  });
+});
+
+describe('bookingSchema', () => {
+  it('round-trips a booking view', () => {
+    const view = {
+      bookingId: 'bkg-1',
+      classId: 'cls-1',
+      learnerId: 'learner-1',
+      state: 'pending',
+      priceCredits: 100,
+      createdAt: '2026-10-08T00:00:00.000Z',
+    };
+    expect(bookingSchema.parse(view)).toEqual(view);
   });
 });
