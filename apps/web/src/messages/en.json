@@ -16,5 +16,30 @@
     "refresh": "Refresh",
     "lastChecked": "Last checked {time}",
     "failed": "Could not reach {url}."
+  },
+  "Booking": {
+    "title": "Book a class",
+    "duration": "{minutes} min",
+    "price": "{credits} credits",
+    "capacity": "{seats} seats",
+    "startsAt": "Starts {when}",
+    "durationLabel": "Duration",
+    "seatsLabel": "Seats",
+    "bookCta": "Book class",
+    "booking": "Booking…",
+    "pending": "Pending — seat held",
+    "pendingHint": "Your seat is held. Confirm by topping up within 15 minutes.",
+    "errorTitle": "Could not book",
+    "notFound": "We could not find that class.",
+    "error": {
+      "class_not_bookable": "This class is no longer open for booking.",
+      "class_started": "This class has already started.",
+      "booking_window_closed": "Bookings close 24 hours before the class starts.",
+      "class_full": "This class is full.",
+      "duplicate_booking": "You already have a booking for this class.",
+      "self_booking": "You cannot book your own class.",
+      "invalid_duration": "This class has an invalid duration.",
+      "unknown": "Something went wrong. Please try again."
+    }
   }
 }
