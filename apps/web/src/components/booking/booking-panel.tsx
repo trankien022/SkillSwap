@@ -1,14 +1,16 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BookingError, type BookingView, type ClassView } from '../../lib/booking/domain';
 import { BookClassService } from '../../lib/booking/service';
+import { MockBookingGateway } from '../../lib/booking/mock-gateway';
 import { newIdempotencyKey } from '../../lib/booking/idempotency';
 import { BookButton } from './book-button';
 import { ClassCard } from './class-card';
 import { StatusPill } from './status-pill';
 
-export interface BookingCopy {
+/** Plain, serializable messages passed from the server component. */
+export interface BookingMessages {
   title: string;
   bookCta: string;
   booking: string;
@@ -16,13 +18,17 @@ export interface BookingCopy {
   pendingHint: string;
   errorTitle: string;
   notFound: string;
-  error: (reason: string) => string;
-  duration: (minutes: number) => string;
-  price: (credits: number) => string;
-  capacity: (seats: number) => string;
-  startsAt: (when: string) => string;
   durationLabel: string;
   seatsLabel: string;
+  durationTemplate: string;
+  priceTemplate: string;
+  capacityTemplate: string;
+  startsAtTemplate: string;
+  errorReasons: Record<string, string>;
+}
+
+function fill(template: string, name: string, value: string | number): string {
+  return template.replace(`{${name}}`, String(value));
 }
 
 type State =
@@ -34,20 +40,30 @@ type State =
   | { phase: 'booked'; classView: ClassView; booking: BookingView };
 
 /**
- * Container for the learner booking flow. Owns the state machine; rendering is
- * delegated to presentational components so the logic stays testable.
+ * Container for the learner booking flow. Owns the service, the copy and the
+ * state machine; rendering is delegated to presentational components. `service`
+ * is injectable for tests; the page relies on the default mock.
  */
 export function BookingPanel({
   classId,
-  service,
-  copy,
+  messages,
+  service: injected,
 }: {
   classId: string;
-  service: BookClassService;
-  copy: BookingCopy;
+  messages: BookingMessages;
+  service?: BookClassService;
 }) {
+  const service = useMemo(
+    () => injected ?? new BookClassService(new MockBookingGateway()),
+    [injected],
+  );
   const [state, setState] = useState<State>({ phase: 'loading' });
   const [key] = useState<string>(() => newIdempotencyKey());
+
+  const errorText = useCallback(
+    (reason: string) => messages.errorReasons[reason] ?? messages.errorReasons.unknown ?? reason,
+    [messages],
+  );
 
   useEffect(() => {
     let active = true;
@@ -73,21 +89,27 @@ export function BookingPanel({
       setState({ phase: 'booked', classView, booking });
     } catch (error) {
       const reason = error instanceof BookingError ? error.reason : 'unknown';
-      setState({ phase: 'error', message: copy.error(reason) });
+      setState({ phase: 'error', message: errorText(reason) });
     }
-  }, [state, service, classId, key, copy]);
+  }, [state, service, classId, key, errorText]);
 
   if (state.phase === 'loading') {
     return (
-      <BookButton label={copy.bookCta} busyLabel={copy.booking} busy disabled onPress={() => undefined} />
+      <BookButton
+        label={messages.bookCta}
+        busyLabel={messages.booking}
+        busy
+        disabled
+        onPress={() => undefined}
+      />
     );
   }
 
   if (state.phase === 'not_found') {
     return (
       <div className="space-y-3">
-        <StatusPill tone="neutral">{copy.errorTitle}</StatusPill>
-        <p className="text-slate-600">{copy.notFound}</p>
+        <StatusPill tone="neutral">{messages.errorTitle}</StatusPill>
+        <p className="text-slate-600">{messages.notFound}</p>
       </div>
     );
   }
@@ -95,7 +117,7 @@ export function BookingPanel({
   if (state.phase === 'error') {
     return (
       <div className="space-y-3">
-        <StatusPill tone="danger">{copy.errorTitle}</StatusPill>
+        <StatusPill tone="danger">{messages.errorTitle}</StatusPill>
         <p className="text-slate-600" role="alert">
           {state.message}
         </p>
@@ -109,23 +131,23 @@ export function BookingPanel({
     <div className="space-y-6">
       <ClassCard
         copy={{
-          startsAt: copy.startsAt(new Date(classView.startsAt).toLocaleString()),
-          duration: copy.duration(classView.durationMinutes),
-          capacity: copy.capacity(classView.capacity),
-          price: copy.price(classView.priceCredits),
-          durationLabel: copy.durationLabel,
-          seatsLabel: copy.seatsLabel,
+          startsAt: fill(messages.startsAtTemplate, 'when', new Date(classView.startsAt).toLocaleString()),
+          duration: fill(messages.durationTemplate, 'minutes', classView.durationMinutes),
+          capacity: fill(messages.capacityTemplate, 'seats', classView.capacity),
+          price: fill(messages.priceTemplate, 'credits', classView.priceCredits),
+          durationLabel: messages.durationLabel,
+          seatsLabel: messages.seatsLabel,
         }}
       />
       {state.phase === 'booked' ? (
         <div className="space-y-2">
-          <StatusPill tone="success">{copy.pending}</StatusPill>
-          <p className="text-slate-600">{copy.pendingHint}</p>
+          <StatusPill tone="success">{messages.pending}</StatusPill>
+          <p className="text-slate-600">{messages.pendingHint}</p>
         </div>
       ) : (
         <BookButton
-          label={copy.bookCta}
-          busyLabel={copy.booking}
+          label={messages.bookCta}
+          busyLabel={messages.booking}
           busy={state.phase === 'submitting'}
           disabled={false}
           onPress={() => void onBook()}

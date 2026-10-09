@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import en from '../../messages/en.json';
-import { BookingPanel, type BookingCopy } from './booking-panel';
+import { BookingPanel, type BookingMessages } from './booking-panel';
 import { BookClassService } from '../../lib/booking/service';
 import { MockBookingGateway, DEMO_CLASS_ID } from '../../lib/booking/mock-gateway';
 import { demoClass } from '../../lib/booking/demo-class';
@@ -12,7 +12,7 @@ afterEach(cleanup);
 const t = en.Booking;
 const errors = t.error as Record<string, string>;
 
-const copy: BookingCopy = {
+const messages: BookingMessages = {
   title: t.title,
   bookCta: t.bookCta,
   booking: t.booking,
@@ -20,18 +20,18 @@ const copy: BookingCopy = {
   pendingHint: t.pendingHint,
   errorTitle: t.errorTitle,
   notFound: t.notFound,
-  error: (reason: string) => errors[reason] ?? errors.unknown,
-  duration: (minutes: number) => t.duration.replace('{minutes}', String(minutes)),
-  price: (credits: number) => t.price.replace('{credits}', String(credits)),
-  capacity: (seats: number) => t.capacity.replace('{seats}', String(seats)),
-  startsAt: (when: string) => t.startsAt.replace('{when}', when),
   durationLabel: t.durationLabel,
   seatsLabel: t.seatsLabel,
+  durationTemplate: t.duration,
+  priceTemplate: t.price,
+  capacityTemplate: t.capacity,
+  startsAtTemplate: t.startsAt,
+  errorReasons: errors,
 };
 
 function renderPanel(gateway: MockBookingGateway, classId = DEMO_CLASS_ID) {
   return render(
-    <BookingPanel classId={classId} service={new BookClassService(gateway)} copy={copy} />,
+    <BookingPanel classId={classId} messages={messages} service={new BookClassService(gateway)} />,
   );
 }
 
@@ -51,8 +51,7 @@ describe('BookingPanel (FR-007)', () => {
   });
 
   it('shows the full-class reason when the seat is taken', async () => {
-    const gateway = new MockBookingGateway([{ ...demoClass(), capacity: 0 }]);
-    renderPanel(gateway);
+    renderPanel(new MockBookingGateway([{ ...demoClass(), capacity: 0 }]));
     await clickBook();
     expect((await screen.findByRole('alert')).textContent).toContain(errors.class_full);
   });
@@ -73,7 +72,7 @@ describe('BookingPanel (FR-007)', () => {
     expect(await screen.findByText(t.notFound)).toBeTruthy();
   });
 
-  it('shows a generic error when the gateway throws unexpectedly', async () => {
+  it('shows a specific error when the gateway throws unexpectedly', async () => {
     const gateway = new MockBookingGateway();
     gateway.bookClass = async () => {
       throw new BookingError('invalid_duration', 'boom');

@@ -1,7 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { BookingPanel, type BookingCopy } from '../../../../components/booking/booking-panel';
-import { BookClassService } from '../../../../lib/booking/service';
-import { MockBookingGateway } from '../../../../lib/booking/mock-gateway';
+import { BookingPanel, type BookingMessages } from '../../../../components/booking/booking-panel';
 
 type PageProps = {
   params: Promise<{ locale: string; id: string }>;
@@ -13,7 +11,9 @@ export default async function ClassDetailPage({ params }: PageProps) {
   setRequestLocale(locale);
   const t = await getTranslations('Booking');
 
-  const copy: BookingCopy = {
+  // Only plain strings cross the server→client boundary; the panel builds the
+  // service and formats values itself.
+  const messages: BookingMessages = {
     title: t('title'),
     bookCta: t('bookCta'),
     booking: t('booking'),
@@ -21,20 +21,20 @@ export default async function ClassDetailPage({ params }: PageProps) {
     pendingHint: t('pendingHint'),
     errorTitle: t('errorTitle'),
     notFound: t('notFound'),
-    error: (reason: string) => t(`error.${reason}`),
-    duration: (minutes: number) => t('duration', { minutes }),
-    price: (credits: number) => t('price', { credits }),
-    capacity: (seats: number) => t('capacity', { seats }),
-    startsAt: (when: string) => t('startsAt', { when }),
     durationLabel: t('durationLabel'),
     seatsLabel: t('seatsLabel'),
+    durationTemplate: t('duration'),
+    priceTemplate: t('price'),
+    capacityTemplate: t('capacity'),
+    startsAtTemplate: t('startsAt'),
+    errorReasons: t.raw('error') as Record<string, string>,
   };
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-12">
-      <h1 className="text-3xl font-bold tracking-tight text-slate-900">{copy.title}</h1>
+      <h1 className="text-3xl font-bold tracking-tight text-slate-900">{messages.title}</h1>
       <div className="mt-6">
-        <BookingPanel classId={id} service={new BookClassService(new MockBookingGateway())} copy={copy} />
+        <BookingPanel classId={id} messages={messages} />
       </div>
     </main>
   );
