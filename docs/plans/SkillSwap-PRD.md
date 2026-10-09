@@ -96,7 +96,7 @@ Thầy Hùng nhận thông báo có hồ sơ mới trong chuyên môn của mìn
 | FR-004 | Functional | Hệ thống phải cho phép Administrator mời, gán chuyên môn, đình chỉ hoặc thu hồi Verifier; chỉ Verifier phù hợp mới được duyệt hồ sơ Teacher. | Must | `docs/intent.md` | Confirmed |
 | FR-005 | Functional | Chỉ Teacher đã được xác minh được tạo và công bố lớp trực tuyến với kỹ năng còn hiệu lực (chưa bị thu hồi/hết hạn), mô tả, lịch không trùng lịch, thời lượng 30–180 phút, giá và quy tắc sức chứa đã được duyệt. | Must | `docs/intent.md` | Confirmed; price/capacity open |
 | FR-006 | Functional | Learner phải có thể duyệt và tìm kiếm lớp đang mở theo thông tin lớp và hồ sơ Teacher. | Must | `docs/intent.md` | Confirmed; taxonomy open |
-| FR-007 | Functional | Learner chỉ có thể đặt lớp còn khả năng nhận booking, bắt đầu sau ít nhất 24 giờ và kéo dài từ 30 phút đến 3 giờ. | Must | `docs/intent.md` | Confirmed; capacity/refund open |
+| FR-007 | Functional | Learner chỉ có thể đặt lớp còn khả năng nhận booking, bắt đầu sau ít nhất 24 giờ và kéo dài từ 30 phút đến 3 giờ. | Must | `docs/intent.md` | Confirmed core; capacity resolved (OQ-007, AC-028–AC-030); refund/cancellation resolved (OQ-003, AC-022–AC-027) |
 | FR-008 | Functional | Người dùng phải có thể nạp tiền qua gateway theo tỷ giá áp dụng, với xử lý callback đúng một lần. | Must | `docs/intent.md` | Confirmed core; gateway open |
 | FR-009 | Functional | Khi Learner mua lớp, hệ thống phải ghi nợ toàn bộ giá lớp và phân bổ 90% cho Teacher, 10% phí nền tảng, bằng bút toán nguyên tử. | Must | `docs/intent.md` | Confirmed split; release timing open |
 | FR-010 | Functional | Chủ ví phải xem được số dư và lịch sử nạp, thanh toán, thu nhập, phí và withdrawal. | Must | `docs/intent.md` | Confirmed core |
@@ -160,10 +160,10 @@ Toàn văn 70 quy tắc nghiệp vụ (BR-001–BR-070) được quản lý tậ
 | BR-041 | Thông tin video room không công khai; truy cập theo booking/session. | FR-011, NFR-009 |
 | BR-042 | Class đại diện một buổi học trong MVP, có lifecycle Draft, Published, Full, In progress, Completed, Cancelled theo policy; không có thực thể Session riêng. | FR-020 |
 | BR-043 | Quy tắc xác định Class COMPLETED làm cơ sở settlement, rating, nghiệp vụ sau lớp. | FR-020, FR-013 |
-| BR-044 | Phải có refund/cancellation policy định nghĩa trước khi launch. | FR-007, OQ-003 |
-| BR-045 | Xác định xử lý khi Teacher hủy lớp trước giờ học. | FR-007, OQ-003 |
-| BR-046 | Xác định xử lý khi Learner hủy booking, gồm mốc thời gian và mức hoàn. | FR-007, OQ-003 |
-| BR-047 | Xác định xử lý Teacher no-show và Learner no-show. | FR-007, OQ-003 |
+| BR-044 | Hoàn tiền khi hủy chỉ bằng credit ví nội bộ (không tiền thật); OQ-003 resolved. | FR-007, FR-009 |
+| BR-045 | Teacher hủy lớp trước giờ học → hoàn credit cho Learner bị ảnh hưởng; OQ-003 resolved. | FR-007, FR-009 |
+| BR-046 | MVP không cung cấp hủy booking; không có chính sách hủy booking; OQ-003 resolved. | FR-007, FR-009 |
+| BR-047 | Teacher no-show = không tham gia trong 15 phút đầu → hoàn credit, chưa phạt; Learner no-show không xử lý tự động; OQ-003 resolved. | FR-007, FR-011 |
 | BR-048 | Refund/adjustment thủ công thực hiện qua ledger transaction có audit trail. | FR-010, NFR-003 |
 | BR-049 | Chỉ Learner có booking hợp lệ và session COMPLETED được rating Teacher. | FR-013, FR-020 |
 | BR-050 | Mỗi Learner một review hoạt động cho mỗi booking. | FR-013 |
@@ -273,7 +273,7 @@ Các màn hình chính của MVP gồm: đăng ký/đăng nhập, trang chủ Le
 | WithdrawalRequest | id, teacher_id, amount_credits, exchange_rate_vnd, destination_ref, status, trace_id | Has many LedgerTransactions through withdrawal_request_id; hold commits before payout; amount/rate/destination frozen | Pending → Processing → Completed/Failed; timeout retains hold until reconciliation; authorized payout reversal → Reversed | Sensitive financial | Teacher/Platform |
 | AuditEvent | id, actor_id, action, target_type/id, old_state_json, new_state_json, occurred_at, trace_id, metadata_json | Commits with state change; whitelisted decision snapshots preserve full evidence/role/completion/financial history | Append-only | Internal audit; no document content or payout destinations | Platform |
 
-ERD chi tiết và các ràng buộc triển khai: [data model](../diagrams/data/README.md). Một Class là một buổi học có lịch/phòng riêng, không có bảng Session. Hai cách xác minh là kiểm tra chứng chỉ hoặc Verifier công nhận năng lực; chỉ Verifier đang active và đúng chuyên môn được quyết định. Không có bảng phân công Verifier hoặc bảng TopUp. Evidence Approved còn hiệu lực quyết định level được phép dạy; pending/rejected replacement giữ quyền cũ còn hiệu lực. Quyết định lưu trên SkillEvidence, lịch sử trước/sau lưu trong audit. Chỉ publish khi Teacher còn xác minh sinh viên hiệu lực và được duyệt đủ level cho **tất cả** skill của lớp; khóa cam kết tại booking Confirmed đầu tiên. Payout giữ credit trước khi gọi gateway; timeout chưa phải thất bại. Thời điểm release, hoàn tiền/nguồn bù sau payout và làm tròn vẫn theo OQ-003/OQ-006/OQ-012.
+ERD chi tiết và các ràng buộc triển khai: [data model](../diagrams/data/README.md). Một Class là một buổi học có lịch/phòng riêng, không có bảng Session. Hai cách xác minh là kiểm tra chứng chỉ hoặc Verifier công nhận năng lực; chỉ Verifier đang active và đúng chuyên môn được quyết định. Không có bảng phân công Verifier hoặc bảng TopUp. Evidence Approved còn hiệu lực quyết định level được phép dạy; pending/rejected replacement giữ quyền cũ còn hiệu lực. Quyết định lưu trên SkillEvidence, lịch sử trước/sau lưu trong audit. Chỉ publish khi Teacher còn xác minh sinh viên hiệu lực và được duyệt đủ level cho **tất cả** skill của lớp; khóa cam kết tại booking Confirmed đầu tiên. Payout giữ credit trước khi gọi gateway; timeout chưa phải thất bại. Thời điểm release, hoàn tiền/nguồn bù sau payout và làm tròn vẫn theo OQ-003 (đã resolved, xem AC-022–AC-027)/OQ-006/OQ-012.
 
 Access is server-authorized by role and ownership. Sensitive files are encrypted in transit and at rest, stored outside executable paths, and never written to application logs.
 
@@ -383,6 +383,15 @@ Actor: Teacher, Payment gateway. Trigger: Teacher yêu cầu rút số dư khả
 - **AC-019 / FR-009, FR-010:** Given policy hoàn toàn bộ đã được duyệt và booking đã release nhưng Teacher còn đủ available, when hoàn tiền, then đảo release và booking nguyên tử, không tạo pending âm; sau payout/thiếu nguồn bù không tự post refund trái OQ-003/OQ-006.
 - **AC-020 / OQ-007:** Sau khi OQ-007 được duyệt, acceptance suite phải bao gồm hai yêu cầu đồng thời cho chỗ cuối và việc tự động nhả capacity hold hết hạn.
 - **AC-021 / OQ-008:** Sau khi OQ-008 được duyệt, acceptance suite phải kiểm tra cả hai hướng quyết định cascade và grandfather đối với lớp, booking, room access, thu nhập pending và payout.
+- **AC-022 / FR-007, OQ-003:** Given một lớp Published/Full, when Teacher hủy lớp trước giờ học, then mọi Learner bị ảnh hưởng được hoàn credit vào ví nội bộ (không hoàn tiền thật).
+- **AC-023 / FR-007, OQ-003:** Given một booking, when Learner muốn hủy, then MVP không cung cấp hủy booking (không có chính sách hủy booking).
+- **AC-024 / FR-007, OQ-003:** Given Teacher không tham gia trong 15 phút đầu kể từ giờ bắt đầu, when xử lý no-show, then Learner được hoàn credit và chưa áp dụng hình phạt (hành vi dạy sai lệch do rating xử lý).
+- **AC-025 / FR-007, OQ-003:** Given Learner không tham gia, when lớp kết thúc, then MVP không áp dụng quy tắc phạt/hoàn tự động cho Learner no-show.
+- **AC-026 / FR-007, OQ-003:** Given một Pending booking, when tạo, then booking giữ chỗ (tính vào capacity) và hết hạn sau ~15 phút thì tự động chuyển Cancelled và nhả chỗ.
+- **AC-027 / FR-007, OQ-003:** Given một booking Confirmed, when chuyển Cancelled, then Learner được hoàn credit vào ví nội bộ.
+- **AC-028 / FR-005, OQ-007:** Given Teacher công bố lớp, when nhập sức chứa, then sức chứa là số nguyên ≥ 1 (1 = lớp 1-1, >1 = lớp nhóm) và bị từ chối nếu bằng 0 hoặc âm.
+- **AC-029 / FR-007, OQ-007:** Given một lớp còn chỗ, when Learner đặt, then booking ở trạng thái Pending và giữ một chỗ; số chỗ còn lại = sức chứa − (Pending + Confirmed).
+- **AC-030 / FR-005, FR-007, OQ-007:** Given lớp đã đủ sức chứa, when có booking mới, then lớp chuyển Full và hệ thống từ chối booking mới; chỗ chỉ được nhả khi booking Cancelled.
 
 ```gherkin
 Feature: Đặt lớp học
@@ -429,7 +438,7 @@ Authentication và authorization dùng server-side role/ownership check cho mọ
 |---|---|---|---|---|
 | Trusted student identity | FR-001–FR-002, FR-017, FR-019 | UC-001, US-001 | API-001, User, StudentVerification, NFR-004/NFR-008/NFR-009 | Pending implementation |
 | Trusted Teacher capability | FR-003–FR-005, FR-018 | UC-002, US-002 | API-002–API-004, ProfileSkill, SkillEvidence, NFR-004/NFR-009 | Pending implementation |
-| Discover and book online learning | FR-005–FR-007 | UC-003, US-003 | API-004–API-005, Class, Booking, NFR-001/NFR-006/NFR-007 | Pending implementation |
+| Discover and book online learning | FR-005–FR-007 | UC-003, US-003 | API-004–API-005, Class, Booking, NFR-001/NFR-006/NFR-007 | FR-005 publish and FR-007 booking implemented (live-class); FR-006 search pending |
 | Traceable wallet settlement | FR-008–FR-010, FR-014, FR-020 | UC-003, UC-005, US-003/US-006 | API-005–API-007, EVT-001, Wallet/Ledger/Withdrawal, NFR-003/NFR-005/NFR-009 | Pending implementation |
 | Secure class participation | FR-011–FR-013, FR-016 | UC-004, US-004/US-005 | API-008–API-010, Message/Rating, NFR-006/NFR-007/NFR-010 | Pending implementation |
 | Platform operations | FR-015 | (UC-014 in SRS) | Audit log, NFR-005 | Pending implementation |

@@ -57,3 +57,41 @@ export const apiErrorSchema = z.object({
   error: z.string().optional(),
 });
 export type ApiError = z.infer<typeof apiErrorSchema>;
+
+/** FR-005 / API-004: create and publish a class. */
+export const createClassSchema = z.object({
+  skillIds: z.array(z.string().min(1)).min(1),
+  description: z.string().min(1),
+  startsAt: z.string().datetime({ offset: true }),
+  durationMinutes: z.number().int().min(30).max(180),
+  priceCredits: z.number().int().positive(),
+  capacity: z.number().int().positive(),
+});
+export type CreateClassInput = z.infer<typeof createClassSchema>;
+
+export const classSchema = z.object({
+  id: z.string().min(1),
+  teacherId: z.string().min(1),
+  state: z.string().min(1),
+  startsAt: z.string().datetime({ offset: true }),
+  durationMinutes: z.number().int(),
+  priceCredits: z.number().int(),
+  capacity: z.number().int(),
+});
+export type ClassView = z.infer<typeof classSchema>;
+
+/** FR-007 / API-005: book a class. The idempotency key makes retries safe. */
+export const bookingRequestSchema = z.object({
+  idempotencyKey: z.string().min(1),
+});
+export type BookingRequestInput = z.infer<typeof bookingRequestSchema>;
+
+export const bookingSchema = z.object({
+  bookingId: z.string().min(1),
+  classId: z.string().min(1),
+  learnerId: z.string().min(1),
+  state: z.string().min(1),
+  priceCredits: z.number().int(),
+  createdAt: z.string().datetime({ offset: true }),
+});
+export type BookingView = z.infer<typeof bookingSchema>;

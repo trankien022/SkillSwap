@@ -1,5 +1,4 @@
 import { StyleSheet, Text, View } from 'react-native';
-import type { ClassView } from '@/domain/booking/booking';
 import { colors, radius, spacing, typography } from '@/design/tokens';
 
 export interface ClassCardCopy {
@@ -7,19 +6,24 @@ export interface ClassCardCopy {
   price: string;
   capacity: string;
   startsAt: string;
+  durationLabel: string;
+  seatsLabel: string;
 }
 
 /** Presentational class summary card (DESIGN.md: white card on mist, 16px radius). */
-export function ClassCard({ classView, copy }: { classView: ClassView; copy: ClassCardCopy }) {
+export function ClassCard({ copy }: { copy: ClassCardCopy }) {
   return (
     <View style={styles.card}>
       <Text style={styles.title}>{copy.startsAt}</Text>
       <View style={styles.row}>
-        <Text style={styles.meta}>{copy.duration}</Text>
-        <Text style={styles.meta}>{copy.capacity}</Text>
+        <Text style={styles.meta}>
+          {copy.durationLabel}: <Text style={styles.metaStrong}>{copy.duration}</Text>
+        </Text>
+        <Text style={styles.meta}>
+          {copy.seatsLabel}: <Text style={styles.metaStrong}>{copy.capacity}</Text>
+        </Text>
       </View>
       <Text style={styles.price}>{copy.price}</Text>
-      <Text style={styles.state}>{classView.state}</Text>
     </View>
   );
 }
@@ -46,13 +50,13 @@ const styles = StyleSheet.create({
     color: colors.inkSoft,
     fontSize: typography.body.fontSize,
   },
+  metaStrong: {
+    color: colors.ink,
+    fontWeight: '600',
+  },
   price: {
     color: colors.ink,
     fontSize: typography.heading.fontSize,
     fontWeight: '600',
-  },
-  state: {
-    color: colors.inkMuted,
-    fontSize: typography.caption.fontSize,
   },
 });

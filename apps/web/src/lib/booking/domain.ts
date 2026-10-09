@@ -1,14 +1,14 @@
 /**
- * Booking domain for the mobile client (FR-007).
+ * Web booking layer (FR-007).
  *
- * The class and booking view types come from the shared `@skillswap/contracts`
- * package (the API-004 / API-005 shapes), so the client can never drift from
- * the backend. Only the rejection reasons and the error type are local.
+ * The seam between the UI and the data source. Types come from the shared
+ * `@skillswap/contracts` (the API-004 / API-005 shapes); the mock gateway
+ * implements this port today and a real HTTP adapter can replace it later.
  */
 
 export type { ClassView, BookingView, BookingRequestInput } from '@skillswap/contracts';
 
-import type { BookingView } from '@skillswap/contracts';
+import type { BookingView, ClassView } from '@skillswap/contracts';
 
 /** Mirrors apps/api live-class domain/booking.ts BOOKING_REJECTION_REASONS. */
 export const BOOKING_REJECTION_REASONS = [
@@ -38,4 +38,10 @@ export class BookingError extends Error {
     super(message);
     this.name = 'BookingError';
   }
+}
+
+/** Port the UI depends on. */
+export interface BookingGateway {
+  getClass(classId: string): Promise<ClassView>;
+  bookClass(classId: string, idempotencyKey: string): Promise<BookClassResult>;
 }

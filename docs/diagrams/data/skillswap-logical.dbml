@@ -153,7 +153,7 @@ Table classes {
   starts_at timestamptz [not null]
   duration_minutes int [not null, note: 'CHECK 30 <= duration_minutes <= 180 (BR-017)']
   price_credits decimal(18,3) [not null, note: 'CHECK price_credits > 0; pricing policy is OQ-002']
-  capacity int [not null, note: 'CHECK capacity > 0; capacity policy is OQ-007']
+  capacity int [not null, note: 'CHECK capacity > 0 (OQ-007 resolved; AC-028): Teacher-supplied integer >= 1; 1 = 1-1, >1 = group']
   status varchar(24) [not null, note: 'draft | published | full | in_progress | completed | cancelled (BR-042)']
   jitsi_room_ref varchar(255) [unique, note: 'Room metadata only; access token is short lived and not stored here']
   commitments_locked_at timestamptz [note: 'Set atomically at the first confirmed booking; never reset after cancellation']
@@ -165,7 +165,7 @@ Table classes {
     (status, starts_at)
     (teacher_id, starts_at)
   }
-  Note: 'One Class is one scheduled online session in MVP; no Session table. After the first confirmed booking, freeze Teacher, title/description, starts_at, duration and all ClassSkills. Price remains snapshotted per Booking; cancellation follows OQ-003. Serialize publication/schedule changes per Teacher to prevent overlapping active sessions (BR-019). Completion requires completed_at plus audited actor/source and rule; the completion/release condition remains OQ-006.'
+  Note: 'One Class is one scheduled online session in MVP; no Session table. After the first confirmed booking, freeze Teacher, title/description, starts_at, duration and all ClassSkills. Price remains snapshotted per Booking; cancellation follows OQ-003 (resolved; AC-022-AC-027). Serialize publication/schedule changes per Teacher to prevent overlapping active sessions (BR-019). Completion requires completed_at plus audited actor/source and rule; the completion/release condition remains OQ-006.'
 }
 
 Table class_skills {
@@ -190,7 +190,7 @@ Table bookings {
     (class_id, learner_id)
     (learner_id, created_at)
   }
-  Note: 'Lock the Class row before counting eligible bookings and checking capacity; lock affected wallets in consistent ID order and recompute balances after locks. Require an active verified Learner, no self-booking (BR-068), starts_at >= now + 24h (BR-021), and an eligible Class/Teacher. Booking confirmation, first commitment lock and settlement commit atomically (BR-026). Partial unique (class_id, learner_id) for confirmed/completed/disputed prevents duplicate valid bookings (BR-024); failed attempts leave no committed booking/payment. Capacity policy remains OQ-007.'
+  Note: 'Lock the Class row before counting eligible bookings and checking capacity; lock affected wallets in consistent ID order and recompute balances after locks. Require an active verified Learner, no self-booking (BR-068), starts_at >= now + 24h (BR-021), and an eligible Class/Teacher. Booking confirmation, first commitment lock and settlement commit atomically (BR-026). Partial unique (class_id, learner_id) for confirmed/completed/disputed prevents duplicate valid bookings (BR-024); failed attempts leave no committed booking/payment. Capacity policy resolved (OQ-007; AC-028-AC-030): Teacher-supplied capacity >= 1, Pending and Confirmed both hold a seat, Full when seats reached, seats release only on booking Cancelled. Cancellation/refund policy resolved (OQ-003; AC-022-AC-027): app-wallet credit refunds only, no booking cancellation, Teacher no-show 15-min credit refund.'
 }
 
 Table wallets {
@@ -226,7 +226,7 @@ Table ledger_transactions {
     (provider, provider_reference) [unique]
     (withdrawal_request_id, kind)
   }
-  Note: 'Posted transactions require at least two nonzero postings summing to zero AND exact wallets/buckets/amounts for their kind. Partial unique booking_id separately for booking and release: one full release operation per Booking, reused on retries regardless of client key. Release requires completed/eligible Class and its own unreleased booking income, not aggregate Teacher pending. Withdrawal hold/payout/release require withdrawal_request_id and no booking_id; partial unique (withdrawal_request_id, kind) for those three kinds. Hold and request commit before external payout; only one terminal outcome wins under request/wallet locks. Gateway top_up/withdrawal requires provider/reference and positive intended VND/credits/rate matching callback and request. Timeout stays pending until definite outcome/reconciliation. Reversal requires original ID, same business context and audited authorization; other kinds require a NULL original ID. UNIQUE reverses_transaction_id prevents duplicate full reversals while allowing multiple NULLs. Before class refund after release, reverse the release then booking atomically when policy allows and funds exist; after payout, funding/recovery remains OQ-003/OQ-006, never invent negative user balance. All posted financial headers and postings are immutable; audited lifecycle status may become reversed, but original posted_at/amounts remain in balance. Partial refund/adjustment design awaits policy.'
+  Note: 'Posted transactions require at least two nonzero postings summing to zero AND exact wallets/buckets/amounts for their kind. Partial unique booking_id separately for booking and release: one full release operation per Booking, reused on retries regardless of client key. Release requires completed/eligible Class and its own unreleased booking income, not aggregate Teacher pending. Withdrawal hold/payout/release require withdrawal_request_id and no booking_id; partial unique (withdrawal_request_id, kind) for those three kinds. Hold and request commit before external payout; only one terminal outcome wins under request/wallet locks. Gateway top_up/withdrawal requires provider/reference and positive intended VND/credits/rate matching callback and request. Timeout stays pending until definite outcome/reconciliation. Reversal requires original ID, same business context and audited authorization; other kinds require a NULL original ID. UNIQUE reverses_transaction_id prevents duplicate full reversals while allowing multiple NULLs. Before class refund after release, reverse the release then booking atomically when policy allows and funds exist; after payout, funding/recovery remains OQ-006, never invent negative user balance (booking refund policy resolved at OQ-003; AC-022-AC-027). All posted financial headers and postings are immutable; audited lifecycle status may become reversed, but original posted_at/amounts remain in balance. Partial refund/adjustment design awaits policy.'
 }
 
 Table ledger_postings {
