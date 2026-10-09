@@ -2,7 +2,17 @@ import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from
 import type { AuthMode } from '../config/api-config';
 import { headerValue, type RequestWithIdentity } from './identity';
 
-const PUBLIC_PREFIXES = ['/api/health', '/api/docs', '/api/docs-json'];
+const PUBLIC_PREFIXES = [
+  '/api/health',
+  '/api/docs',
+  '/api/docs-json',
+  // FR-001 / ADR-016: reachable before a session exists. `GET /api/auth/me`
+  // is intentionally NOT public — it reads the trusted identity.
+  '/api/auth/register',
+  '/api/auth/login',
+  '/api/auth/refresh',
+  '/api/auth/logout',
+];
 
 /**
  * In strict mode, accepts the X-User-* headers injected by the trusted

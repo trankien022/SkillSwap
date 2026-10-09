@@ -26,6 +26,15 @@ const NAME_TO_STATUS: Record<string, number> = {
   InvalidCapacityError: 400,
   InvalidPriceError: 400,
   InvalidStartTimeError: 400,
+  // FR-001 auth (ADR-016).
+  EmailTakenError: 409,
+  InvalidCredentialsError: 401,
+  AccountSuspendedError: 403,
+  AccountNotFoundError: 404,
+  InvalidAccountRoleError: 400,
+  WeakPasswordError: 400,
+  SessionExpiredError: 401,
+  SessionRevokedError: 401,
 };
 
 /** Maps domain errors and unexpected failures onto the apiErrorSchema shape. */
