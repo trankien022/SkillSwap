@@ -12,6 +12,9 @@ const PUBLIC_PREFIXES = [
   '/api/auth/login',
   '/api/auth/refresh',
   '/api/auth/logout',
+  // FR-008 / ADR-017: the provider callback is authenticated by its HMAC
+  // signature, not a user session.
+  '/api/wallet/top-ups/callback',
 ];
 
 /**

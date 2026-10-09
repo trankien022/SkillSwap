@@ -9,7 +9,10 @@ import { ApiConfig } from '../shared/config/api-config';
 import { AppLogger } from '../shared/logger/app-logger';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+    rawBody: true,
+  });
   const config = app.get(ApiConfig);
   const logger = app.get(AppLogger);
 

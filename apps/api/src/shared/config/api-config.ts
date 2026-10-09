@@ -42,6 +42,7 @@ export class ApiConfig {
   readonly authMode: AuthMode;
   readonly jwtPrivateKeyPath: string;
   readonly accessTokenTtlSeconds: number;
+  readonly paymentWebhookSecret: string;
   readonly logLevel: string;
 
   constructor() {
@@ -65,6 +66,7 @@ export class ApiConfig {
     const keyPath = readString('JWT_PRIVATE_KEY_PATH', '../../.secrets/jwt-private.pem');
     this.jwtPrivateKeyPath = isAbsolute(keyPath) ? keyPath : resolve(process.cwd(), keyPath);
     this.accessTokenTtlSeconds = readInt('ACCESS_TOKEN_TTL_SECONDS', 900);
+    this.paymentWebhookSecret = readString('PAYMENT_WEBHOOK_SECRET', 'dev-webhook-secret');
   }
 
   /** Per-schema credentials (ADR-007): DATABASE_<SCHEMA>_USER / _PASSWORD. */
