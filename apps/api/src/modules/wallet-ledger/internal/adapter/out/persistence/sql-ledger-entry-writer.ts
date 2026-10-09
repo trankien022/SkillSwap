@@ -2,6 +2,7 @@ import type { ModuleDataSourceRegistry } from '../../../../../../shared/messagin
 import { insertOutboxStatement } from '../../../../../../shared/messaging/outbox-statements';
 import { qualified } from '../../../../../../shared/sql/ident';
 import type {
+  AppendEntryRequest,
   CreditTeacherRequest,
   CreditTeacherResult,
   LedgerEntryWriter,
@@ -22,7 +23,7 @@ export class SqlLedgerEntryWriter implements LedgerEntryWriter {
     const table = qualified(schema, LEDGER_TABLE);
     return source.transaction(async (manager) => {
       const inserted = (await manager.query(
-        `INSERT INTO ${table} ("booking_id", "teacher_id", "amount_credits", "direction") VALUES ($1, $2, $3, 'credit') ON CONFLICT ("booking_id") DO NOTHING RETURNING "id"`,
+        `INSERT INTO ${table} ("booking_id", "teacher_id", "amount_credits", "direction", "entry_type", "reference_id") VALUES ($1, $2, $3, 'credit', 'teacher_credit', $1) ON CONFLICT ("booking_id") DO NOTHING RETURNING "id"`,
         [request.bookingId, request.teacherId, request.amountCredits],
       )) as Array<{ id: string | number }>;
       if (inserted.length === 0) {
@@ -39,5 +40,23 @@ export class SqlLedgerEntryWriter implements LedgerEntryWriter {
       ]);
       return { recorded: true, amountCredits: request.amountCredits };
     });
+  }
+
+  async append(request: AppendEntryRequest): Promise<void> {
+    const source = this.registry.get(this.moduleName);
+    const table = qualified(this.registry.getSchema(this.moduleName), LEDGER_TABLE);
+    await source.query(
+      `INSERT INTO ${table}
+         ("booking_id", "teacher_id", "amount_credits", "direction", "entry_type", "owner_id", "reference_id", "trace_id")
+       VALUES (NULL, $1, $2, $3, $4, $1, $5, $6)`,
+      [
+        request.ownerId,
+        request.amountCredits,
+        request.direction,
+        request.type,
+        request.referenceId,
+        request.traceId,
+      ],
+    );
   }
 }
