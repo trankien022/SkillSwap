@@ -8,7 +8,8 @@ export interface BookingConfirmedInput {
 }
 
 export interface RecordBookingConfirmedResult {
-  recorded: boolean;
+  /** False when the booking was already settled (idempotent replay). */
+  applied: boolean;
   teacherCredits: number;
   platformFeeCredits: number;
 }
