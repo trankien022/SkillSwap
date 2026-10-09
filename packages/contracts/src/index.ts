@@ -140,3 +140,34 @@ export const meResponseSchema = z.object({
   status: z.string().min(1),
 });
 export type MeResponse = z.infer<typeof meResponseSchema>;
+
+/** FR-008: wallet top-up and callback (ADR-017). Amounts are integer VND. */
+export const topUpRequestSchema = z.object({
+  amountVnd: z.number().int().positive().max(100_000_000),
+});
+export type TopUpRequestInput = z.infer<typeof topUpRequestSchema>;
+
+export const topUpIntentSchema = z.object({
+  id: z.string().min(1),
+  ownerId: z.string().min(1),
+  provider: z.string().min(1),
+  providerRef: z.string().min(1),
+  amountVnd: z.number().int().positive(),
+  amountCredits: z.number().int().positive(),
+  status: z.string().min(1),
+  paymentUrl: z.string().min(1).optional(),
+});
+export type TopUpIntentView = z.infer<typeof topUpIntentSchema>;
+
+export const topUpCallbackSchema = z.object({
+  providerRef: z.string().min(1),
+  amountVnd: z.number().int().positive(),
+  status: z.enum(['settled', 'failed', 'reversed']),
+});
+export type TopUpCallbackInput = z.infer<typeof topUpCallbackSchema>;
+
+export const walletBalanceSchema = z.object({
+  availableCredits: z.number().int(),
+  pendingCredits: z.number().int(),
+});
+export type WalletBalanceView = z.infer<typeof walletBalanceSchema>;

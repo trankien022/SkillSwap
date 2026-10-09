@@ -17,6 +17,10 @@ import {
   registerSchema,
   statusChangedSchema,
   tokenResponseSchema,
+  topUpCallbackSchema,
+  topUpIntentSchema,
+  topUpRequestSchema,
+  walletBalanceSchema,
 } from './index';
 
 describe('advanceStatusSchema', () => {
@@ -291,5 +295,40 @@ describe('auth schemas (ADR-016)', () => {
       password: 'x',
     });
     expect(() => loginSchema.parse({ email: 'nope', password: 'x' })).toThrow();
+  });
+});
+
+describe('top-up schemas (FR-008)', () => {
+  it('accepts a positive integer VND amount and rejects non-positive', () => {
+    expect(topUpRequestSchema.parse({ amountVnd: 100_000 })).toEqual({ amountVnd: 100_000 });
+    expect(() => topUpRequestSchema.parse({ amountVnd: 0 })).toThrow();
+    expect(() => topUpRequestSchema.parse({ amountVnd: -1 })).toThrow();
+    expect(() => topUpRequestSchema.parse({ amountVnd: 1.5 })).toThrow();
+  });
+
+  it('accepts only settled/failed/reversed callbacks', () => {
+    expect(topUpCallbackSchema.parse({ providerRef: 'r', amountVnd: 1000, status: 'settled' }).status).toBe(
+      'settled',
+    );
+    expect(() =>
+      topUpCallbackSchema.parse({ providerRef: 'r', amountVnd: 1000, status: 'pending' }),
+    ).toThrow();
+  });
+
+  it('round-trips an intent and a balance', () => {
+    const intent = {
+      id: 'i1',
+      ownerId: 'u1',
+      provider: 'mock',
+      providerRef: 'r1',
+      amountVnd: 100_000,
+      amountCredits: 100,
+      status: 'pending',
+    };
+    expect(topUpIntentSchema.parse(intent)).toEqual(intent);
+    expect(walletBalanceSchema.parse({ availableCredits: 100, pendingCredits: 0 })).toEqual({
+      availableCredits: 100,
+      pendingCredits: 0,
+    });
   });
 });
