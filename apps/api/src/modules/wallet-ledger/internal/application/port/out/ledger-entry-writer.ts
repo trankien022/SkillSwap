@@ -11,6 +11,19 @@ export interface CreditTeacherResult {
   amountCredits: number;
 }
 
+export type LedgerEntryType = 'teacher_credit' | 'top_up' | 'reversal';
+
+export interface AppendEntryRequest {
+  type: LedgerEntryType;
+  ownerId: string;
+  direction: 'credit' | 'debit';
+  amountCredits: number;
+  /** Booking id (teacher credits) or top-up intent id (top-up/reversal). */
+  referenceId: string;
+  traceId: string;
+}
+
 export interface LedgerEntryWriter {
   creditTeacher(request: CreditTeacherRequest): Promise<CreditTeacherResult>;
+  append(request: AppendEntryRequest): Promise<void>;
 }

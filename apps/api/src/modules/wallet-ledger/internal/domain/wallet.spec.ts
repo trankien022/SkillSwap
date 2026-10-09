@@ -1,4 +1,15 @@
-import { DEFAULT_FEE_BPS, applyPlatformFee, canWithdraw } from './wallet';
+import {
+  assertCanSpend,
+  canAdvanceTopUp,
+  DEFAULT_FEE_BPS,
+  applyPlatformFee,
+  canWithdraw,
+  InsufficientBalanceError,
+  InvalidTopUpAmountError,
+  isTopUpStatus,
+  topUpStatusRank,
+  vndToCredits,
+} from './wallet';
 
 describe('wallet credit math', () => {
   it('splits the default 10% platform fee with no rounding drift', () => {
@@ -24,5 +35,32 @@ describe('wallet credit math', () => {
     expect(canWithdraw('active')).toBe(true);
     expect(canWithdraw('frozen')).toBe(false);
     expect(canWithdraw('closed')).toBe(false);
+  });
+});
+
+describe('top-up domain (FR-008 / ADR-017)', () => {
+  it('converts whole VND to credits at the fixed rate and rejects the rest', () => {
+    expect(vndToCredits(1000)).toBe(1);
+    expect(vndToCredits(100_000)).toBe(100);
+    expect(() => vndToCredits(1500)).toThrow(InvalidTopUpAmountError);
+    expect(() => vndToCredits(0)).toThrow(InvalidTopUpAmountError);
+    expect(() => vndToCredits(-1000)).toThrow(InvalidTopUpAmountError);
+  });
+
+  it('ranks statuses monotonically so older callbacks cannot regress state', () => {
+    expect(isTopUpStatus('settled')).toBe(true);
+    expect(isTopUpStatus('nope')).toBe(false);
+    expect(topUpStatusRank('pending')).toBeLessThan(topUpStatusRank('settled'));
+    expect(topUpStatusRank('settled')).toBeLessThan(topUpStatusRank('reversed'));
+    // Equal rank (settled vs failed) is a no-op replay, never an advance.
+    expect(canAdvanceTopUp('pending', 'settled')).toBe(true);
+    expect(canAdvanceTopUp('settled', 'failed')).toBe(false);
+    expect(canAdvanceTopUp('reversed', 'settled')).toBe(false);
+  });
+
+  it('blocks spending while the wallet is in deficit', () => {
+    expect(() => assertCanSpend(100, 100)).not.toThrow();
+    expect(() => assertCanSpend(100, 101)).toThrow(InsufficientBalanceError);
+    expect(() => assertCanSpend(-10, 1)).toThrow(InsufficientBalanceError);
   });
 });
