@@ -31,10 +31,12 @@ import {
   HANDLE_TOP_UP_CALLBACK,
   type HandleTopUpCallbackPort,
 } from '../../../application/port/in/handle-top-up-callback';
+import {
+  WEBHOOK_SIGNATURE_VERIFIER,
+  type WebhookSignatureVerifier,
+} from '../../../application/port/out/webhook-signature-verifier';
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
 import { ZodValidationPipe } from '../../../../../../shared/http/zod-validation.pipe';
-import { ApiConfig } from '../../../../../../shared/config/api-config';
-import { verifyWebhookSignature } from '../../out/payment/webhook-signature';
 
 /** Express request with the raw body captured by Nest (for HMAC verification). */
 interface RequestWithRawBody extends RequestWithIdentity {
@@ -48,7 +50,7 @@ export class WalletController {
     @Inject(INITIATE_TOP_UP) private readonly initiateTopUp: InitiateTopUpPort,
     @Inject(GET_WALLET_BALANCE) private readonly getBalance: GetWalletBalancePort,
     @Inject(HANDLE_TOP_UP_CALLBACK) private readonly callback: HandleTopUpCallbackPort,
-    private readonly config: ApiConfig,
+    @Inject(WEBHOOK_SIGNATURE_VERIFIER) private readonly verifier: WebhookSignatureVerifier,
   ) {}
 
   @Post('top-ups')
@@ -71,7 +73,7 @@ export class WalletController {
     @Req() request: RequestWithRawBody,
   ): Promise<{ applied: boolean; status: string }> {
     const rawBody = request.rawBody?.toString('utf8') ?? JSON.stringify(body);
-    if (!verifyWebhookSignature(rawBody, signature ?? '', this.config.paymentWebhookSecret)) {
+    if (!this.verifier.verify(rawBody, signature ?? '')) {
       throw new UnauthorizedException('Invalid payment signature');
     }
     return this.callback.execute(body);
