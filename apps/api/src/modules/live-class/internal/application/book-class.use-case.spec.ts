@@ -61,6 +61,7 @@ function setup(options: {
         return { booking: created, created: true };
       },
     ),
+    confirmAndEmit: jest.fn(async () => ({ confirmed: false, booking: null })),
   };
 
   const clock: Clock = { now: () => NOW };

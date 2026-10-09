@@ -1,4 +1,4 @@
-import { Body, Controller, Inject, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Inject, Param, Post, Req } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   bookingRequestSchema,
@@ -16,6 +16,11 @@ import {
   type BookClassPort,
   type BookClassResult,
 } from '../../../application/port/in/book-class';
+import {
+  CONFIRM_BOOKING,
+  type ConfirmBookingPort,
+  type ConfirmBookingResult,
+} from '../../../application/port/in/confirm-booking';
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
 import { ZodValidationPipe } from '../../../../../../shared/http/zod-validation.pipe';
 
@@ -25,6 +30,7 @@ export class ClassesController {
   constructor(
     @Inject(CREATE_CLASS) private readonly createClass: CreateClassPort,
     @Inject(BOOK_CLASS) private readonly bookClass: BookClassPort,
+    @Inject(CONFIRM_BOOKING) private readonly confirmBooking: ConfirmBookingPort,
   ) {}
 
   @Post()
@@ -58,5 +64,16 @@ export class ClassesController {
       learnerId: currentUserId(request),
       idempotencyKey: body.idempotencyKey,
     });
+  }
+
+  @Post('bookings/:bookingId/confirm')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Confirm a pending booking and settle payment (FR-009 / API-006)' })
+  @ApiOkResponse({ description: 'Whether the booking was confirmed' })
+  confirm(
+    @Param('bookingId') bookingId: string,
+    @Req() request: RequestWithIdentity,
+  ): Promise<ConfirmBookingResult> {
+    return this.confirmBooking.execute({ bookingId, learnerId: currentUserId(request) });
   }
 }

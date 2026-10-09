@@ -12,10 +12,12 @@ import { ClassesController } from './internal/adapter/in/web/classes.controller'
 import { AdvanceStatusUseCase } from './internal/application/advance-status.use-case';
 import { CreateClassUseCase } from './internal/application/create-class.use-case';
 import { BookClassUseCase } from './internal/application/book-class.use-case';
+import { ConfirmBookingUseCase } from './internal/application/confirm-booking.use-case';
 import { GET_MODULE_STATUS } from './internal/application/port/in/get-module-status';
 import { ADVANCE_STATUS } from './internal/application/port/in/advance-status';
 import { CREATE_CLASS, type CreateClassPort } from './internal/application/port/in/create-class';
 import { BOOK_CLASS, type BookClassPort } from './internal/application/port/in/book-class';
+import { CONFIRM_BOOKING, type ConfirmBookingPort } from './internal/application/port/in/confirm-booking';
 import { STATUS_READER, type ModuleStatusReader } from './internal/application/port/out/module-status-reader';
 import { STATUS_WRITER, type ModuleStatusWriter } from './internal/application/port/out/module-status-writer';
 import { CLASS_REPOSITORY, type ClassRepository } from './internal/application/port/out/class-repository';
@@ -95,6 +97,12 @@ const systemClock: Clock = { now: () => new Date() };
         clock: Clock,
       ): BookClassPort => new BookClassUseCase(classes, bookings, clock),
       inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY, CLOCK],
+    },
+    {
+      provide: CONFIRM_BOOKING,
+      useFactory: (bookings: BookingRepository): ConfirmBookingPort =>
+        new ConfirmBookingUseCase(bookings),
+      inject: [BOOKING_REPOSITORY],
     },
     LiveClassRegistrar,
   ],
