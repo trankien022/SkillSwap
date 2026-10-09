@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { isAbsolute, resolve } from 'node:path';
 
 export type AuthMode = 'off' | 'strict';
 
@@ -39,6 +40,8 @@ export class ApiConfig {
   readonly maxDeliveryAttempts: number;
   readonly apiPort: number;
   readonly authMode: AuthMode;
+  readonly jwtPrivateKeyPath: string;
+  readonly accessTokenTtlSeconds: number;
   readonly logLevel: string;
 
   constructor() {
@@ -58,6 +61,10 @@ export class ApiConfig {
       throw new Error(`Invalid AUTH_MODE: ${authMode} (expected "off" or "strict")`);
     }
     this.authMode = authMode;
+
+    const keyPath = readString('JWT_PRIVATE_KEY_PATH', '../../.secrets/jwt-private.pem');
+    this.jwtPrivateKeyPath = isAbsolute(keyPath) ? keyPath : resolve(process.cwd(), keyPath);
+    this.accessTokenTtlSeconds = readInt('ACCESS_TOKEN_TTL_SECONDS', 900);
   }
 
   /** Per-schema credentials (ADR-007): DATABASE_<SCHEMA>_USER / _PASSWORD. */

@@ -1,6 +1,6 @@
 import type { IncomingHttpHeaders } from 'node:http';
 
-/** Identity injected by the gateway as trusted headers (ADR-011). */
+/** Identity injected by the gateway as trusted headers (ADR-008/ADR-016). */
 export interface AuthenticatedUser {
   id: string;
   email?: string;

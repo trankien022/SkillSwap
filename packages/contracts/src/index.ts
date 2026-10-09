@@ -95,3 +95,48 @@ export const bookingSchema = z.object({
   createdAt: z.string().datetime({ offset: true }),
 });
 export type BookingView = z.infer<typeof bookingSchema>;
+
+/** FR-001: local accounts, sign-in and session lifecycle (ADR-016). */
+export const accountRoleSchema = z.enum(['learner', 'teacher', 'admin']);
+export type AccountRole = z.infer<typeof accountRoleSchema>;
+
+export const registerSchema = z.object({
+  email: z.string().email(),
+  displayName: z.string().min(1).max(120),
+  password: z.string().min(8).max(200),
+  role: accountRoleSchema.default('learner'),
+});
+export type RegisterInput = z.infer<typeof registerSchema>;
+
+export const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+});
+export type LoginInput = z.infer<typeof loginSchema>;
+
+export const refreshRequestSchema = z.object({
+  refreshToken: z.string().min(1),
+});
+export type RefreshRequestInput = z.infer<typeof refreshRequestSchema>;
+
+export const logoutRequestSchema = z.object({
+  refreshToken: z.string().min(1),
+});
+export type LogoutRequestInput = z.infer<typeof logoutRequestSchema>;
+
+export const tokenResponseSchema = z.object({
+  accessToken: z.string().min(1),
+  refreshToken: z.string().min(1),
+  expiresIn: z.number().int().positive(),
+  tokenType: z.literal('Bearer'),
+});
+export type TokenResponse = z.infer<typeof tokenResponseSchema>;
+
+export const meResponseSchema = z.object({
+  id: z.string().min(1),
+  email: z.string().email(),
+  displayName: z.string().min(1),
+  role: accountRoleSchema,
+  status: z.string().min(1),
+});
+export type MeResponse = z.infer<typeof meResponseSchema>;

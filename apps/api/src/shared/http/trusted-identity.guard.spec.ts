@@ -62,4 +62,18 @@ describe('TrustedIdentityGuard', () => {
       expect(context.switchToHttp().getRequest<{ user: CapturedUser }>().user?.id).toBe('anonymous');
     }
   });
+
+  it('lets the pre-session auth routes through even in strict mode (ADR-016)', () => {
+    const guard = new TrustedIdentityGuard('strict');
+    for (const path of ['/api/auth/register', '/api/auth/login', '/api/auth/refresh', '/api/auth/logout']) {
+      const context = contextFor({}, path);
+      expect(guard.canActivate(context)).toBe(true);
+      expect(context.switchToHttp().getRequest<{ user: CapturedUser }>().user?.id).toBe('anonymous');
+    }
+  });
+
+  it('still requires identity for /api/auth/me in strict mode', () => {
+    const guard = new TrustedIdentityGuard('strict');
+    expect(() => guard.canActivate(contextFor({}, '/api/auth/me'))).toThrow();
+  });
 });

@@ -14,6 +14,24 @@ import {
 } from './identity';
 import { verifyBearerToken } from './jwt';
 
+/** Routes reachable without a token even when AUTH_REQUIRED=true (ADR-016). */
+const PUBLIC_PATHS = [
+  '/api/health',
+  '/api/docs',
+  '/api/docs-json',
+  '/api/auth/register',
+  '/api/auth/login',
+  '/api/auth/refresh',
+  '/api/auth/logout',
+];
+
+function isPublicPath(path: string): boolean {
+  const withoutQuery = path.split('?')[0];
+  return PUBLIC_PATHS.some(
+    (prefix) => withoutQuery === prefix || withoutQuery.startsWith(`${prefix}/`),
+  );
+}
+
 /**
  * The slice of http-proxy this service uses — narrow so tests can fake it.
  * Constructed in app.module.ts with the target from GatewayConfig.
@@ -85,6 +103,8 @@ export class ApiProxyService implements OnModuleDestroy {
   private authorize(req: Request): GatewayIdentity | undefined {
     // AUTH_REQUIRED=false: dev mode — tokens are ignored, no headers injected.
     if (!this.config.authRequired) return undefined;
+    // Routes that must stay reachable with auth on (health/docs + FR-001 entry).
+    if (isPublicPath(req.originalUrl ?? req.path ?? req.url ?? '')) return undefined;
     const token = bearerToken(req.headers.authorization);
     if (token === undefined) throw new AuthError(401, 'Missing bearer token');
     if (this.publicKey === undefined) {

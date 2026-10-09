@@ -94,6 +94,13 @@ function request(headers: Record<string, string | string[] | undefined> = {}): R
   } as unknown as Request;
 }
 
+function requestTo(
+  path: string,
+  headers: Record<string, string | string[] | undefined> = {},
+): Request {
+  return { ...request(headers), url: path, originalUrl: path } as Request;
+}
+
 function response(): { mock: MockResponse; res: Response } {
   const mock = new MockResponse();
   return { mock, res: mock as unknown as Response };
@@ -109,6 +116,7 @@ function createService(
 function validToken(): string {
   return sign({ sub: 'user-42', email: 'u@skillswap.dev', role: 'student' }, privatePem, {
     algorithm: 'RS256',
+    expiresIn: '15m',
   });
 }
 
@@ -262,6 +270,38 @@ describe('ApiProxyService', () => {
           JWT_PUBLIC_KEY_PATH: join(keyDir, 'missing.pem'),
         }),
       ).toThrow('pnpm keys:gen');
+    });
+
+    it('lets public auth and health routes through without a token (ADR-016)', () => {
+      const { service: svc, proxy } = createService({ ...authEnv, JWT_PUBLIC_KEY_PATH: keyPath });
+
+      for (const path of ['/api/auth/login', '/api/auth/register', '/api/auth/refresh', '/api/auth/logout', '/api/health']) {
+        svc.middleware(requestTo(path), response().res, jest.fn());
+      }
+
+      expect(proxy.forwarded).toHaveLength(5);
+      // Public routes carry no injected identity.
+      expect(proxy.forwarded[0].headers['x-user-id']).toBeUndefined();
+    });
+
+    it('still requires a token for /api/auth/me', () => {
+      const { service: svc, proxy } = createService({ ...authEnv, JWT_PUBLIC_KEY_PATH: keyPath });
+      const { mock, res } = response();
+
+      svc.middleware(requestTo('/api/auth/me'), res, jest.fn());
+
+      expect(mock.statusCode).toBe(401);
+      expect(proxy.forwarded).toHaveLength(0);
+    });
+
+    it('rejects a token without an exp claim', () => {
+      const { service: svc } = createService({ ...authEnv, JWT_PUBLIC_KEY_PATH: keyPath });
+      const noExp = sign({ sub: 'user-42' }, privatePem, { algorithm: 'RS256', noTimestamp: true });
+      const { mock, res } = response();
+
+      svc.middleware(request({ authorization: `Bearer ${noExp}` }), res, jest.fn());
+
+      expect(mock.statusCode).toBe(401);
     });
   });
 
