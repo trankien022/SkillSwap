@@ -4,7 +4,7 @@ import type { LedgerEntryWriter } from './port/out/ledger-entry-writer';
 describe('RecordBookingConfirmedUseCase', () => {
   function setup(recorded = true) {
     const creditTeacher = jest.fn().mockResolvedValue({ recorded, amountCredits: 900 });
-    const ledger: LedgerEntryWriter = { creditTeacher };
+    const ledger: LedgerEntryWriter = { creditTeacher, append: jest.fn().mockResolvedValue(undefined) };
     return { useCase: new RecordBookingConfirmedUseCase(ledger), creditTeacher };
   }
 
