@@ -567,7 +567,8 @@ ERD chi tiết và các ràng buộc triển khai: [data model](../diagrams/data
 |---|---|---|---|
 | Trusted student identity | FR-001, FR-002, FR-017, FR-019 | UC-001, UC-006–UC-008 | API-001, User, StudentVerification, NFR-004/008/009 |
 | Trusted Teacher capability | FR-003–FR-005, FR-018 | UC-002, UC-009, UC-010 | API-002–API-004, ProfileSkill, SkillEvidence, NFR-004/009 |
-| Discover and book online learning | FR-005–FR-007 | UC-003, UC-011 | API-004–API-005, Class, Booking, NFR-001/006/007 || Traceable wallet settlement | FR-008–FR-010, FR-014, FR-020 | UC-003, UC-005, UC-012, UC-013 | API-005–API-007, EVT-001, Wallet/Ledger/Withdrawal, NFR-003/005/009 |
+| Discover and book online learning | FR-005–FR-007 | UC-003, UC-011 | API-004–API-005, Class, Booking, NFR-001/006/007 |
+| Traceable wallet settlement | FR-008–FR-010, FR-014, FR-020 | UC-003, UC-005, UC-012, UC-013 | API-005–API-007, EVT-001, Wallet/Ledger/Withdrawal, NFR-003/005/009 |
 | Secure class participation | FR-011–FR-013, FR-016 | UC-004 | API-008–API-010, Message/Rating, NFR-006/007/010 |
 | Platform operations | FR-015 | UC-014 | Audit log, NFR-005 |
 
@@ -607,3 +608,17 @@ FR-007 (booking eligibility) is implemented in the `live-class` module. Test loc
 | Idempotent replay | `book-class.use-case.ts` | `book-class.use-case.spec.ts`, `book-class.concurrency.spec.ts` |
 
 Lifecycle ACs resolved from OQ-003 (AC-022–AC-027) are documented but not implemented in this increment.
+
+#### Frontend (web + mobile), mock-only
+
+The learner booking screen is built on both clients against a mock gateway that reproduces the API-004/API-005 response shapes and rejection reasons; no backend call is made. Class and booking view types come from `@skillswap/contracts`.
+
+| Concern | Web (`apps/web`) | Mobile (`apps/mobile`) |
+|---|---|---|
+| Booking view types (contract) | `src/lib/booking/domain.ts` (re-exports) | `src/domain/booking/booking.ts` (re-exports) |
+| Gateway port + mock | `src/lib/booking/gateway` (`mock-gateway.ts`) | `src/application/port/booking-gateway.ts`, `src/infrastructure/mock/mock-booking-gateway.ts` |
+| Application service | `src/lib/booking/service.ts` | `src/application/book-class-service.ts` |
+| Screen / route | `src/components/booking/booking-panel.tsx`, `app/[locale]/classes/[id]/page.tsx` | `src/ui/booking-screen.tsx`, `app/classes/[id].tsx` |
+| Tests | `src/lib/booking/mock-gateway.test.ts`, `src/components/booking/booking-panel.test.tsx` | `src/infrastructure/mock/mock-booking-gateway.spec.ts`, `src/application/book-class-service.spec.ts` |
+
+UI states covered: loading, ready, submitting, booked (pending pill + hint), not-found, and error per rejection reason. Status is always a tinted pill with text (NFR-007); en/vi parity is enforced by each app's messages test.
