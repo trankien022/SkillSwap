@@ -23,6 +23,7 @@ const PUBLIC_PATHS = [
   '/api/auth/login',
   '/api/auth/refresh',
   '/api/auth/logout',
+  '/api/wallet/top-ups/callback',
 ];
 
 function isPublicPath(path: string): boolean {

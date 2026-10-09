@@ -275,11 +275,18 @@ describe('ApiProxyService', () => {
     it('lets public auth and health routes through without a token (ADR-016)', () => {
       const { service: svc, proxy } = createService({ ...authEnv, JWT_PUBLIC_KEY_PATH: keyPath });
 
-      for (const path of ['/api/auth/login', '/api/auth/register', '/api/auth/refresh', '/api/auth/logout', '/api/health']) {
+      for (const path of [
+        '/api/auth/login',
+        '/api/auth/register',
+        '/api/auth/refresh',
+        '/api/auth/logout',
+        '/api/wallet/top-ups/callback',
+        '/api/health',
+      ]) {
         svc.middleware(requestTo(path), response().res, jest.fn());
       }
 
-      expect(proxy.forwarded).toHaveLength(5);
+      expect(proxy.forwarded).toHaveLength(6);
       // Public routes carry no injected identity.
       expect(proxy.forwarded[0].headers['x-user-id']).toBeUndefined();
     });
