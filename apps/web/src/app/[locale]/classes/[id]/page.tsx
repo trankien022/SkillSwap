@@ -23,10 +23,10 @@ export default async function ClassDetailPage({ params }: PageProps) {
     notFound: t('notFound'),
     durationLabel: t('durationLabel'),
     seatsLabel: t('seatsLabel'),
-    durationTemplate: t('duration'),
-    priceTemplate: t('price'),
-    capacityTemplate: t('capacity'),
-    startsAtTemplate: t('startsAt'),
+    durationTemplate: t.raw('duration'),
+    priceTemplate: t.raw('price'),
+    capacityTemplate: t.raw('capacity'),
+    startsAtTemplate: t.raw('startsAt'),
     errorReasons: t.raw('error') as Record<string, string>,
   };
 
