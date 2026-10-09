@@ -1,4 +1,5 @@
 import {
+  accountRoleSchema,
   advanceStatusResultSchema,
   advanceStatusSchema,
   apiErrorSchema,
@@ -9,8 +10,13 @@ import {
   createClassSchema,
   eventEnvelopeSchema,
   identityHeadersSchema,
+  loginSchema,
+  meResponseSchema,
   moduleStatusSchema,
+  refreshRequestSchema,
+  registerSchema,
   statusChangedSchema,
+  tokenResponseSchema,
 } from './index';
 
 describe('advanceStatusSchema', () => {
@@ -239,5 +245,51 @@ describe('bookingSchema', () => {
       createdAt: '2026-10-08T00:00:00.000Z',
     };
     expect(bookingSchema.parse(view)).toEqual(view);
+  });
+});
+
+describe('auth schemas (ADR-016)', () => {
+  it('accepts a valid registration and defaults the role to learner', () => {
+    const parsed = registerSchema.parse({
+      email: 'a@b.co',
+      displayName: 'An',
+      password: 'secret-password',
+    });
+    expect(parsed.role).toBe('learner');
+  });
+
+  it('rejects a short password and a bad email', () => {
+    expect(() => registerSchema.parse({ email: 'a@b.co', displayName: 'An', password: 'short' })).toThrow();
+    expect(() =>
+      registerSchema.parse({ email: 'nope', displayName: 'An', password: 'secret-password' }),
+    ).toThrow();
+  });
+
+  it('accepts only the known account roles', () => {
+    expect(accountRoleSchema.parse('teacher')).toBe('teacher');
+    expect(() => accountRoleSchema.parse('superuser')).toThrow();
+  });
+
+  it('round-trips a token response', () => {
+    const token = { accessToken: 'a', refreshToken: 'r', expiresIn: 900, tokenType: 'Bearer' as const };
+    expect(tokenResponseSchema.parse(token)).toEqual(token);
+  });
+
+  it('round-trips a me response', () => {
+    const me = { id: 'u1', email: 'a@b.co', displayName: 'An', role: 'learner', status: 'active' };
+    expect(meResponseSchema.parse(me)).toEqual(me);
+  });
+
+  it('requires a non-empty refresh token', () => {
+    expect(() => refreshRequestSchema.parse({ refreshToken: '' })).toThrow();
+    expect(refreshRequestSchema.parse({ refreshToken: 'r' })).toEqual({ refreshToken: 'r' });
+  });
+
+  it('accepts a login payload and rejects a bad email', () => {
+    expect(loginSchema.parse({ email: 'a@b.co', password: 'x' })).toEqual({
+      email: 'a@b.co',
+      password: 'x',
+    });
+    expect(() => loginSchema.parse({ email: 'nope', password: 'x' })).toThrow();
   });
 });
