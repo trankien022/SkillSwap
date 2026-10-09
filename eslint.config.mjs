@@ -14,6 +14,7 @@ export default tseslint.config(
       '**/*.min.js',
       '**/next-env.d.ts',
       'docs/**',
+      'tmp/**',
     ],
   },
   js.configs.recommended,
