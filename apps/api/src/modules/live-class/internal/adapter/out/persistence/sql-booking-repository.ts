@@ -7,11 +7,12 @@ import type {
   CreateBookingRecord,
   PersistedBooking,
 } from '../../../application/port/out/booking-repository';
-import type { BookingState } from '../../../domain/booking';
+import type { BookingState, CancelReason } from '../../../domain/booking';
 
 const BOOKINGS_TABLE = 'bookings';
 const CLASSES_TABLE = 'classes';
 const BOOKING_CONFIRMED_EVENT = 'booking.confirmed';
+const BOOKING_CANCELLED_EVENT = 'booking.cancelled';
 
 interface BookingRow {
   id: string;
@@ -21,10 +22,15 @@ interface BookingRow {
   price_credits: number;
   idempotency_key: string;
   created_at: Date | string;
+  expires_at: Date | string | null;
 }
 
 function toDate(value: Date | string): Date {
   return value instanceof Date ? value : new Date(value);
+}
+
+function toNullableDate(value: Date | string | null): Date | null {
+  return value === null ? null : toDate(value);
 }
 
 function toPersisted(row: BookingRow): PersistedBooking {
@@ -36,8 +42,12 @@ function toPersisted(row: BookingRow): PersistedBooking {
     priceCredits: row.price_credits,
     idempotencyKey: row.idempotency_key,
     createdAt: toDate(row.created_at),
+    expiresAt: toNullableDate(row.expires_at),
   };
 }
+
+const BOOKING_COLUMNS =
+  '"id", "class_id", "learner_id", "state", "price_credits", "idempotency_key", "created_at", "expires_at"';
 
 export class SqlBookingRepository implements BookingRepository {
   constructor(
@@ -53,10 +63,19 @@ export class SqlBookingRepository implements BookingRepository {
     const source = this.registry.get(this.moduleName);
     const table = qualified(this.schema, BOOKINGS_TABLE);
     const rows = (await source.query(
-      `SELECT "id", "class_id", "learner_id", "state", "price_credits", "idempotency_key", "created_at"
-         FROM ${table} WHERE "idempotency_key" = $1`,
+      `SELECT ${BOOKING_COLUMNS} FROM ${table} WHERE "idempotency_key" = $1`,
       [idempotencyKey],
     )) as BookingRow[];
+    const row = rows[0];
+    return row === undefined ? null : toPersisted(row);
+  }
+
+  async findById(bookingId: string): Promise<PersistedBooking | null> {
+    const source = this.registry.get(this.moduleName);
+    const table = qualified(this.schema, BOOKINGS_TABLE);
+    const rows = (await source.query(`SELECT ${BOOKING_COLUMNS} FROM ${table} WHERE "id" = $1`, [
+      bookingId,
+    ])) as BookingRow[];
     const row = rows[0];
     return row === undefined ? null : toPersisted(row);
   }
@@ -73,8 +92,7 @@ export class SqlBookingRepository implements BookingRepository {
       await manager.query(`SELECT "id" FROM ${classes} WHERE "id" = $1 FOR UPDATE`, [record.classId]);
 
       const existing = (await manager.query(
-        `SELECT "id", "class_id", "learner_id", "state", "price_credits", "idempotency_key", "created_at"
-           FROM ${bookings} WHERE "idempotency_key" = $1`,
+        `SELECT ${BOOKING_COLUMNS} FROM ${bookings} WHERE "idempotency_key" = $1`,
         [record.idempotencyKey],
       )) as BookingRow[];
       if (existing[0] !== undefined) {
@@ -90,15 +108,16 @@ export class SqlBookingRepository implements BookingRepository {
       guard(seatRows.map((row) => ({ learnerId: row.learner_id, state: row.state as BookingState })));
 
       const inserted = (await manager.query(
-        `INSERT INTO ${bookings} ("class_id", "learner_id", "state", "price_credits", "idempotency_key")
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING "id", "class_id", "learner_id", "state", "price_credits", "idempotency_key", "created_at"`,
+        `INSERT INTO ${bookings} ("class_id", "learner_id", "state", "price_credits", "idempotency_key", "expires_at")
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING ${BOOKING_COLUMNS}`,
         [
           record.classId,
           record.learnerId,
           record.state,
           record.priceCredits,
           record.idempotencyKey,
+          record.expiresAt.toISOString(),
         ],
       )) as BookingRow[];
       const created = inserted[0];
@@ -119,8 +138,7 @@ export class SqlBookingRepository implements BookingRepository {
     return source.transaction(async (manager) => {
       // Lock the booking row, then only confirm if still pending (FR-009 / AC-005).
       const locked = (await manager.query(
-        `SELECT "id", "class_id", "learner_id", "state", "price_credits", "idempotency_key", "created_at"
-           FROM ${bookings} WHERE "id" = $1 AND "learner_id" = $2 FOR UPDATE`,
+        `SELECT ${BOOKING_COLUMNS} FROM ${bookings} WHERE "id" = $1 AND "learner_id" = $2 FOR UPDATE`,
         [bookingId, learnerId],
       )) as BookingRow[];
       const current = locked[0];
@@ -129,32 +147,112 @@ export class SqlBookingRepository implements BookingRepository {
       }
 
       const confirmedRows = (await manager.query(
-        `UPDATE ${bookings} SET "state" = 'confirmed', "updated_at" = now()
+        `UPDATE ${bookings} SET "state" = 'confirmed', "confirmed_at" = now(), "updated_at" = now()
            WHERE "id" = $1
-           RETURNING "id", "class_id", "learner_id", "state", "price_credits", "idempotency_key", "created_at"`,
+           RETURNING ${BOOKING_COLUMNS}`,
         [bookingId],
       )) as BookingRow[];
       const booking = toPersisted(confirmedRows[0]);
-
-      const teacherRows = (await manager.query(
-        `SELECT "teacher_id" FROM ${classes} WHERE "id" = $1`,
-        [current.class_id],
-      )) as Array<{ teacher_id: string }>;
-      const teacherId = teacherRows[0]?.teacher_id;
-      if (teacherId === undefined) {
-        throw new Error(`Class ${current.class_id} not found for booking ${bookingId}`);
-      }
-
-      await manager.query(insertOutboxStatement(this.schema), [
-        BOOKING_CONFIRMED_EVENT,
-        {
-          bookingId: booking.id,
-          studentId: booking.learnerId,
-          teacherId,
-          amountCredits: booking.priceCredits,
-        },
-      ]);
+      await this.emitBookingEvent(manager, BOOKING_CONFIRMED_EVENT, booking, null);
       return { confirmed: true, booking };
     });
+  }
+
+  async cancelAndEmit(
+    bookingId: string,
+    reason: CancelReason,
+  ): Promise<{ cancelled: boolean; booking: PersistedBooking | null }> {
+    const source = this.registry.get(this.moduleName);
+    const bookings = qualified(this.schema, BOOKINGS_TABLE);
+    return source.transaction(async (manager) => {
+      const locked = (await manager.query(
+        `SELECT ${BOOKING_COLUMNS} FROM ${bookings} WHERE "id" = $1 FOR UPDATE`,
+        [bookingId],
+      )) as BookingRow[];
+      const current = locked[0];
+      if (current === undefined || (current.state !== 'pending' && current.state !== 'confirmed')) {
+        return { cancelled: false, booking: current === undefined ? null : toPersisted(current) };
+      }
+      const cancelledRows = (await manager.query(
+        `UPDATE ${bookings}
+           SET "state" = 'cancelled', "cancelled_at" = now(), "cancel_reason" = $2, "updated_at" = now()
+         WHERE "id" = $1
+         RETURNING ${BOOKING_COLUMNS}`,
+        [bookingId, reason],
+      )) as BookingRow[];
+      const booking = toPersisted(cancelledRows[0]);
+      await this.emitBookingEvent(manager, BOOKING_CANCELLED_EVENT, booking, reason);
+      return { cancelled: true, booking };
+    });
+  }
+
+  async expirePendingHolds(now: Date): Promise<number> {
+    const source = this.registry.get(this.moduleName);
+    const bookings = qualified(this.schema, BOOKINGS_TABLE);
+    return source.transaction(async (manager) => {
+      const expired = (await manager.query(
+        `UPDATE ${bookings}
+           SET "state" = 'cancelled', "cancelled_at" = now(), "cancel_reason" = 'expired', "updated_at" = now()
+         WHERE "state" = 'pending' AND "expires_at" IS NOT NULL AND "expires_at" <= $1
+         RETURNING ${BOOKING_COLUMNS}`,
+        [now.toISOString()],
+      )) as BookingRow[];
+      for (const row of expired) {
+        await this.emitBookingEvent(manager, BOOKING_CANCELLED_EVENT, toPersisted(row), 'expired');
+      }
+      return expired.length;
+    });
+  }
+
+  async countByClassAndState(classId: string, state: BookingState): Promise<number> {
+    const source = this.registry.get(this.moduleName);
+    const bookings = qualified(this.schema, BOOKINGS_TABLE);
+    const rows = (await source.query(
+      `SELECT COUNT(*)::int AS "count" FROM ${bookings} WHERE "class_id" = $1 AND "state" = $2`,
+      [classId, state],
+    )) as Array<{ count: number }>;
+    return rows[0]?.count ?? 0;
+  }
+
+  async findActiveByClass(classId: string): Promise<PersistedBooking[]> {
+    const source = this.registry.get(this.moduleName);
+    const bookings = qualified(this.schema, BOOKINGS_TABLE);
+    const rows = (await source.query(
+      `SELECT ${BOOKING_COLUMNS} FROM ${bookings}
+        WHERE "class_id" = $1 AND "state" IN ('pending', 'confirmed')`,
+      [classId],
+    )) as BookingRow[];
+    return rows.map(toPersisted);
+  }
+
+  /** Emits a booking event carrying the class's teacher so the wallet can settle/refund. */
+  private async emitBookingEvent(
+    manager: { query: (sql: string, params?: unknown[]) => Promise<unknown> },
+    eventType: string,
+    booking: PersistedBooking,
+    reason: CancelReason | null,
+  ): Promise<void> {
+    const classes = qualified(this.schema, CLASSES_TABLE);
+    const teacherRows = (await manager.query(
+      `SELECT "teacher_id" FROM ${classes} WHERE "id" = $1`,
+      [booking.classId],
+    )) as Array<{ teacher_id: string }>;
+    const teacherId = teacherRows[0]?.teacher_id;
+    if (teacherId === undefined) {
+      throw new Error(`Class ${booking.classId} not found for booking ${booking.id}`);
+    }
+    const payload: Record<string, unknown> = {
+      bookingId: booking.id,
+      classId: booking.classId,
+      studentId: booking.learnerId,
+      learnerId: booking.learnerId,
+      teacherId,
+      amountCredits: booking.priceCredits,
+      priceCredits: booking.priceCredits,
+    };
+    if (reason !== null) {
+      payload.reason = reason;
+    }
+    await manager.query(insertOutboxStatement(this.schema), [eventType, payload]);
   }
 }

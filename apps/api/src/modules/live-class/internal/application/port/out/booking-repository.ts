@@ -1,4 +1,4 @@
-import type { BookingState } from '../../../domain/booking';
+import type { BookingState, CancelReason } from '../../../domain/booking';
 
 export const BOOKING_REPOSITORY = Symbol('BOOKING_REPOSITORY');
 
@@ -10,6 +10,7 @@ export interface PersistedBooking {
   priceCredits: number;
   idempotencyKey: string;
   createdAt: Date;
+  expiresAt: Date | null;
 }
 
 export interface CreateBookingRecord {
@@ -18,6 +19,7 @@ export interface CreateBookingRecord {
   state: BookingState;
   priceCredits: number;
   idempotencyKey: string;
+  expiresAt: Date;
 }
 
 /** A booking row as needed for capacity and duplicate checks. */
@@ -45,6 +47,7 @@ export interface BookingRepository {
     guard: (seatRows: readonly BookingSeatRow[]) => void,
   ): Promise<{ booking: PersistedBooking; created: boolean }>;
   findByIdempotencyKey(idempotencyKey: string): Promise<PersistedBooking | null>;
+  findById(bookingId: string): Promise<PersistedBooking | null>;
   /**
    * FR-009 (ADR-018): atomically flips a `pending` booking to `confirmed` and
    * writes a `booking.confirmed` row to the outbox in the SAME transaction, so
@@ -55,4 +58,23 @@ export interface BookingRepository {
     bookingId: string,
     learnerId: string,
   ): Promise<{ confirmed: boolean; booking: PersistedBooking | null }>;
+  /**
+   * FR-007 / ADR-019: cancels a `pending` or `confirmed` booking, records the
+   * reason, and (for a confirmed booking) writes a `booking.cancelled` outbox
+   * row in the SAME transaction so the wallet refunds exactly once.
+   */
+  cancelAndEmit(
+    bookingId: string,
+    reason: CancelReason,
+  ): Promise<{ cancelled: boolean; booking: PersistedBooking | null }>;
+  /**
+   * FR-007 / AC-026: cancels every `pending` booking whose hold has expired at
+   * or before `now` (atomic, idempotent) and emits one `booking.cancelled`
+   * (reason `expired`) per cancelled booking. Returns the cancelled count.
+   */
+  expirePendingHolds(now: Date): Promise<number>;
+  /** Count bookings in a given state for a class (edit-lock, class cancel). */
+  countByClassAndState(classId: string, state: BookingState): Promise<number>;
+  /** Active (pending|confirmed) bookings for a class, for class cancellation. */
+  findActiveByClass(classId: string): Promise<PersistedBooking[]>;
 }
