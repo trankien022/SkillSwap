@@ -27,17 +27,24 @@ export const SKILL_LEVEL_ORDER: Readonly<Record<SkillLevel, number>> = {
 export const EVIDENCE_TYPES = ['certificate', 'verifier_assessment'] as const;
 export type EvidenceType = (typeof EVIDENCE_TYPES)[number];
 
-export const EVIDENCE_STATUSES = ['pending', 'approved', 'rejected', 'superseded'] as const;
+export const EVIDENCE_STATUSES = ['pending', 'claimed', 'approved', 'rejected', 'superseded'] as const;
 export type EvidenceStatus = (typeof EVIDENCE_STATUSES)[number];
 
 export const INITIAL_EVIDENCE_STATUS: EvidenceStatus = 'pending';
 
-/** Statuses an owner (or a Verifier) may still act on: only a `pending` version. */
-export const EFFECTIVE_EVIDENCE_STATUSES = ['pending', 'approved'] as const;
+/** Statuses an owner (or a Verifier) may still act on. */
+export const EFFECTIVE_EVIDENCE_STATUSES = ['pending', 'claimed', 'approved'] as const;
 export type EffectiveEvidenceStatus = (typeof EFFECTIVE_EVIDENCE_STATUSES)[number];
+
+/** Statuses a request can still be claimed from: only a fresh `pending` version. */
+export const CLAIMABLE_EVIDENCE_STATUSES = ['pending'] as const;
+export type ClaimableEvidenceStatus = (typeof CLAIMABLE_EVIDENCE_STATUSES)[number];
 
 export const SKILL_EVIDENCE_EVENTS = {
   submitted: 'skill.evidence.submitted',
+  claimed: 'skill.evidence.claimed',
+  approved: 'skill.evidence.approved',
+  rejected: 'skill.evidence.rejected',
 } as const;
 
 // --- Errors ----------------------------------------------------------------
@@ -81,6 +88,22 @@ export class EvidenceDocumentRequiredError extends Error {
   constructor(type: EvidenceType) {
     super(`A ${type} evidence submission requires a document`);
     this.name = 'EvidenceDocumentRequiredError';
+  }
+}
+
+/** FR-004: a rejection requires a non-empty reason. */
+export class ReasonRequiredError extends Error {
+  constructor(action = 'rejection') {
+    super(`A ${action} requires a non-empty reason`);
+    this.name = 'ReasonRequiredError';
+  }
+}
+
+/** FR-004: the referenced evidence version does not exist. */
+export class EvidenceNotFoundError extends Error {
+  constructor(evidenceId: string) {
+    super(`Skill evidence not found: ${evidenceId}`);
+    this.name = 'EvidenceNotFoundError';
   }
 }
 
@@ -201,6 +224,8 @@ export interface SkillEvidenceSnapshot {
   readonly requestedLevel: SkillLevel;
   readonly approvedLevel: SkillLevel | null;
   readonly status: EvidenceStatus;
+  readonly claimedBy: string | null;
+  readonly claimedAt: Date | null;
   readonly reviewerId: string | null;
   readonly reason: string | null;
   readonly decidedAt: Date | null;
@@ -218,6 +243,8 @@ export class SkillEvidence {
     readonly requestedLevel: SkillLevel,
     readonly approvedLevel: SkillLevel | null,
     readonly status: EvidenceStatus,
+    readonly claimedBy: string | null,
+    readonly claimedAt: Date | null,
     readonly reviewerId: string | null,
     readonly reason: string | null,
     readonly decidedAt: Date | null,
@@ -265,6 +292,8 @@ export class SkillEvidence {
       null,
       null,
       null,
+      null,
+      null,
       input.submittedAt,
     );
   }
@@ -286,6 +315,8 @@ export class SkillEvidence {
       snapshot.requestedLevel,
       snapshot.approvedLevel,
       snapshot.status,
+      snapshot.claimedBy,
+      snapshot.claimedAt,
       snapshot.reviewerId,
       snapshot.reason,
       snapshot.decidedAt,
@@ -297,6 +328,115 @@ export class SkillEvidence {
   get isPending(): boolean {
     return this.status === 'pending';
   }
+
+  /** FR-004: a fresh request no Verifier has claimed yet. */
+  get isClaimable(): boolean {
+    return this.status === 'pending';
+  }
+
+  /** FR-004: this request is locked to a Verifier (`claimed`). */
+  get isClaimed(): boolean {
+    return this.status === 'claimed';
+  }
+}
+
+// --- FR-004: verifier authority, claim and decision ------------------------
+
+export function isClaimableStatus(status: EvidenceStatus): status is ClaimableEvidenceStatus {
+  return (CLAIMABLE_EVIDENCE_STATUSES as readonly string[]).includes(status);
+}
+
+export class EvidenceNotClaimableError extends Error {
+  constructor(status: EvidenceStatus) {
+    super(`Evidence with status ${status} cannot be claimed`);
+    this.name = 'EvidenceNotClaimableError';
+  }
+}
+
+export class EvidenceNotClaimedError extends Error {
+  constructor(status: EvidenceStatus) {
+    super(`Evidence with status ${status} is not claimed by any Verifier`);
+    this.name = 'EvidenceNotClaimedError';
+  }
+}
+
+export class NotClaimOwnerError extends Error {
+  constructor(verifierId: string) {
+    super(`Verifier ${verifierId} does not hold the claim on this evidence`);
+    this.name = 'NotClaimOwnerError';
+  }
+}
+
+export interface EvidenceClaim {
+  status: 'claimed';
+  claimedBy: string;
+  claimedAt: Date;
+}
+
+/**
+ * FR-004 / BR-071: a Verifier claims a **pending** request, locking it to them.
+ * Only a `pending` request is claimable; a `claimed` or decided one is refused.
+ * The caller has already checked the Verifier's expertise matches the evidence skill.
+ */
+export function claimEvidence(
+  status: EvidenceStatus,
+  verifierId: string,
+  now: Date,
+): EvidenceClaim {
+  if (!isClaimableStatus(status)) {
+    throw new EvidenceNotClaimableError(status);
+  }
+  return { status: 'claimed', claimedBy: verifierId, claimedAt: now };
+}
+
+export interface EvidenceDecision {
+  status: 'approved' | 'rejected';
+  reviewerId: string;
+  approvedLevel: SkillLevel | null;
+  reason: string | null;
+  decidedAt: Date;
+}
+
+/**
+ * FR-004 / BR-013, BR-014, AC-018: applies a Verifier decision to a **claimed**
+ * request. Only the Verifier who holds the claim may decide. `approve` may set an
+ * `approvedLevel` (defaulting to the requested level); `reject` requires a reason.
+ */
+export function decideEvidence(
+  evidence: { status: EvidenceStatus; claimedBy: string | null; requestedLevel: SkillLevel },
+  decision: { decision: 'approve' | 'reject'; approvedLevel?: SkillLevel; reason?: string },
+  context: { reviewerId: string; now: Date },
+): EvidenceDecision {
+  if (evidence.status !== 'claimed' || evidence.claimedBy === null) {
+    throw new EvidenceNotClaimedError(evidence.status);
+  }
+  if (evidence.claimedBy !== context.reviewerId) {
+    throw new NotClaimOwnerError(context.reviewerId);
+  }
+
+  if (decision.decision === 'reject') {
+    const reason = decision.reason?.trim();
+    if (!reason) {
+      throw new ReasonRequiredError();
+    }
+    return {
+      status: 'rejected',
+      reviewerId: context.reviewerId,
+      approvedLevel: null,
+      reason,
+      decidedAt: context.now,
+    };
+  }
+
+  const approvedLevel = decision.approvedLevel ?? evidence.requestedLevel;
+  assertSkillLevel(approvedLevel);
+  return {
+    status: 'approved',
+    reviewerId: context.reviewerId,
+    approvedLevel,
+    reason: null,
+    decidedAt: context.now,
+  };
 }
 
 /**

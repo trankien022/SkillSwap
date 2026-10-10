@@ -149,9 +149,9 @@ Teacher yêu cầu rút số dư khả dụng và xác thực bổ sung. Hệ th
 | BR-008 | Teacher & Skill Verification | Teacher chỉ được tạo hoặc publish lớp cho những skill đã được Verifier chấp thuận. |
 | BR-009 | Teacher & Skill Verification | Xác minh Teacher phải được quản lý theo từng skill, không phải một trạng thái xác minh chung cho toàn bộ năng lực của Teacher. |
 | BR-010 | Teacher & Skill Verification | Skill verification phải có các trạng thái tối thiểu: NOT_SUBMITTED, PENDING, VERIFIED, REJECTED và REVOKED/EXPIRED nếu hệ thống hỗ trợ thu hồi hoặc hết hạn. |
-| BR-011 | Teacher & Skill Verification | Verifier phải là nhóm người dùng riêng, được mời vào hệ thống và có chuyên môn phù hợp; Verifier không đồng nhất với Admin. |
+| BR-011 | Teacher & Skill Verification | Verifier phải là nhóm người dùng riêng và có chuyên môn phù hợp; Verifier không đồng nhất với Admin. Tài khoản Verifier được **tạo sẵn ngoài ứng dụng (seed/onboarding)**, không có luồng Administrator mời/tạo hay gán chuyên môn qua API; chuyên môn (tập skill trong taxonomy) được seed cùng tài khoản. |
 | BR-012 | Teacher & Skill Verification | Verifier không được tự xác minh yêu cầu skill/certificate của chính mình. |
-| BR-013 | Teacher & Skill Verification | Teacher không được tự chọn Verifier cho yêu cầu của mình; hệ thống hoặc quy trình vận hành chỉ cho Verifier có vai trò và chuyên môn đang hiệu lực review để giảm xung đột lợi ích; quyết định cập nhật trực tiếp trạng thái evidence, lưu người duyệt và audit, không cần bảng phân công riêng. |
+| BR-013 | Teacher & Skill Verification | Teacher không được tự chọn Verifier cho yêu cầu của mình; hệ thống chỉ cho Verifier có vai trò và chuyên môn đang hiệu lực review (hàng đợi lọc theo chuyên môn) để giảm xung đột lợi ích; quyết định cập nhật trực tiếp trạng thái evidence, lưu người duyệt và audit, không cần bảng phân công riêng (claim là trạng thái trên chính evidence, không phải bảng phân công). |
 | BR-014 | Teacher & Skill Verification | Sau submit, evidence/certificate và level đề nghị không được chỉnh sửa; nộp lại tạo phiên bản mới. Lịch sử quyết định trước/sau, reviewer, thời gian, approved level và lý do được giữ trong audit cùng transaction. |
 | BR-015 | Class Management | Chỉ Teacher có student verification còn hiệu lực và evidence Approved còn hiệu lực với approved_level đủ cho tất cả skill của lớp mới được publish. ProfileSkill.level là cache, không tự cấp quyền; pending/rejected replacement giữ quyền cũ còn hiệu lực. |
 | BR-016 | Class Management | Mỗi Class trong MVP là một buổi học online có tiêu đề, skill/level mục tiêu, mô tả, giá, thời lượng, lịch, Teacher và capacity. Từ booking Confirmed đầu tiên, khóa Teacher, nội dung, skill/level, lịch và thời lượng; hủy booking không mở lại quyền sửa cam kết. |
@@ -209,6 +209,7 @@ Teacher yêu cầu rút số dư khả dụng và xác thực bổ sung. Hệ th
 | BR-068 | Roles & Permissions | Một Teacher không được tự đặt hoặc tự đánh giá lớp của chính mình. |
 | BR-069 | Wallet & Ledger | Credit không được quy đổi ngược thành tiền mặt ngoài luồng rút tiền chính thức của Teacher. |
 | BR-070 | Identity & Student Verification | Mỗi tài khoản chỉ có một student verification Approved còn hiệu lực. Duyệt thay thế supersede bản cũ nguyên tử; thu hồi/đổi trường-ngành revoke kèm lý do, hết hạn thành Expired. Nộp lại tạo dòng mới; quyền kiểm tra thời hạn trực tiếp. |
+| BR-071 | Teacher & Skill Verification | Verifier chỉ thấy yêu cầu evidence có skill nằm trong chuyên môn của mình. Verifier **nhận (claim)** một yêu cầu trước khi quyết định; claim **khóa** yêu cầu đó cho Verifier ấy nên Verifier khác không thể nhận hoặc quyết định nữa. Trong MVP **không có nhả claim** (kể cả khi Verifier bị suspended/revoked hay bởi Administrator). Sau khi claim, chỉ Verifier đó approve/reject. |
 
 **Ghi chú:** BR-068–BR-070 được bổ sung từ bộ quy tắc cũ ngoài danh sách gốc BR-001–BR-067, giữ nguyên ngữ nghĩa; OQ-012 (làm tròn commission) áp dụng cho BR-037.
 
@@ -280,6 +281,7 @@ Rủi ro tài chính chính là chargeback hoặc reversal sau khi đã phân b�
 | OQ-010 | Giá trị mục tiêu cho bốn success metrics và phạm vi trường pilot. | Product Owner | Product rollout | Trước pilot planning | Pilot một trường; pilot 2–3 trường cùng khu vực. | Pilot nội bộ một trường trước. |
 | OQ-011 | Payment gateway nào đáp ứng top-up, payout, webhook, reconciliation và reversal. | Engineering + Finance | FR-008, FR-014 | Trước integration design | So sánh các gateway nội địa hỗ trợ VND. | Cần bảng so sánh chi phí/khả năng payout trước khi chọn. |
 | OQ-012 | Quy tắc làm tròn commission khi kết quả tính phí không phải số credit nguyên (BR-037), và làm tròn ở đâu trong pipeline tính phí. | Product Owner + Finance | FR-009, FR-014 | Trước implementation planning | Làm tròn xuống (floor) mỗi bút toán; làm tròn tròn nửa (round half-up); làm tròn ở khâu sinh bút toán thay vì ở ledger. | Làm tròn floor tại thời điểm sinh bút toán, ghi số làm tròn vào ledger để audit. |
+| OQ-013 | Mô hình chuyên môn Verifier và cách gán/claim yêu cầu duyệt. | Product Owner | FR-004 | Trước implementation planning | Admin gán chuyên môn; seed chuyên môn; Verifier tự chọn từ hàng đợi và claim. | **Resolved (2026-10-11, ADR-027):** chuyên môn là **tập skill được seed** cùng tài khoản Verifier (không admin gán qua API, không self-service); hàng đợi lọc theo chuyên môn; Verifier **claim** một yêu cầu → khóa vĩnh viễn cho họ, **không nhả** (kể cả khi suspended/revoked); sau claim mới approve/reject; không tự duyệt; Admin không tự có quyền duyệt. Xem BR-071. |
 
 ## 12. Compliance and Legal Considerations
 
@@ -293,7 +295,7 @@ Giấy tờ xác minh sinh viên và chứng chỉ Teacher là dữ liệu đị
 - **Gate 4 — Delivery Ready:** In progress; stakeholder approval pending.
 - **Reviewers:** Product Owner, Engineering, QA, Security/Finance as applicable.
 - **Approval decision:** Pending.
-- **Unresolved questions:** OQ-001–OQ-012.
+- **Unresolved questions:** OQ-002, OQ-004, OQ-005, OQ-008 (room-access/storage clauses resolved; cascade scope for FR-019 resolved in ADR-025), OQ-009, OQ-010, OQ-011 (MVP-scope resolved). OQ-001, OQ-003, OQ-006, OQ-007, OQ-012, OQ-013 resolved.
 
 ## GitHub Delivery Mapping
 

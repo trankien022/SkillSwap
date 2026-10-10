@@ -14,7 +14,20 @@ Table UserRole {
   role varchar [not null, note: 'Learner | Teacher | Verifier | Administrator']
   status varchar [not null, note: 'active | suspended | revoked']
   indexes { (user_id, role) [pk] }
-  Note: 'Role grants are retained and audited; a Verifier role and matching expertise must both be active to review skills.'
+  Note: 'Role grants are retained and audited; a Verifier role and matching expertise must both be active to review skills. Verifier accounts and their expertise are provisioned operationally (seeded), not via an admin API (ADR-027).'
+}
+
+Table Verifier {
+  account_id uuid [pk]
+  status varchar [not null, note: 'active | suspended | revoked']
+  Note: 'A reviewer account with a seeded expertise set of skills (from the taxonomy). Expertise scopes the pending queue and the decision authority; no admin assignment and no self-service (ADR-027).'
+}
+
+Table VerifierExpertise {
+  account_id uuid [not null]
+  skill_id uuid [not null]
+  indexes { (account_id, skill_id) [pk] }
+  Note: 'The skills a Verifier is competent to review. Seeded; a Verifier may hold several skills (ADR-027).'
 }
 
 Table StudentVerification {
@@ -28,7 +41,8 @@ Table StudentVerification {
 
 Table Skill {
   id uuid [pk]
-  Note: 'A skill concept; taxonomy depth remains OQ-001.'
+  category varchar [not null]
+  Note: 'A skill in the managed two-level category → skill catalogue, admin-seeded (OQ-001 resolved, ADR-026).'
 }
 
 Table Profile {
@@ -57,20 +71,21 @@ Table ProfileSkill {
   id uuid [pk]
   profile_id uuid [not null]
   skill_id uuid [not null]
-  level varchar [note: 'Cached effective approved level: begin | mid | senior; NULL until approved']
-  verifier_expertise_status varchar
-  Note: 'Many skills per profile. Valid SkillEvidence.approved_level controls teaching permission. Pending upgrades retain the old valid approval; a new approval updates the cache atomically. Administrator authorizes Verifier expertise.'
+  level varchar [note: 'Cached effective approved level: beginner | intermediate | advanced | expert; NULL until approved']
+  Note: 'Many skills per profile. Valid SkillEvidence.approved_level controls teaching permission. Pending upgrades retain the old valid approval; a new approval updates the cache atomically.'
 }
 
 Table SkillEvidence {
   id uuid [pk]
   profile_skill_id uuid [not null]
-  evidence_type varchar [note: 'certificate | verifier_recognition']
+  evidence_type varchar [note: 'certificate | verifier_assessment']
   status varchar
   requested_level varchar
   approved_level varchar
+  claimed_by uuid
+  claimed_at timestamp
   reviewer_id uuid
-  Note: 'Only an active domain-matched Verifier reviews certificates or recognizes skill; Administrator role alone cannot decide. Preserve versions and old/new decision audit; no assignment entity.'
+  Note: 'Only an active, expertise-matched Verifier (not Admin, not the owner) reviews. A distinct claim locks the row to one Verifier permanently (no release, ADR-027). Preserve versions and old/new decision audit; the claim is a state on the row, not an assignment entity.'
 }
 
 Table Class {

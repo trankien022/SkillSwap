@@ -2,10 +2,14 @@ import {
   EVIDENCE_STATUSES,
   EVIDENCE_TYPES,
   EvidenceDocumentRequiredError,
+  EvidenceNotClaimableError,
+  EvidenceNotClaimedError,
   INITIAL_EVIDENCE_STATUS,
   InvalidEvidenceTypeError,
   InvalidLevelError,
+  NotClaimOwnerError,
   ProfileSkill,
+  ReasonRequiredError,
   SKILL_EVIDENCE_EVENTS,
   SKILL_LEVELS,
   SkillEvidence,
@@ -13,6 +17,8 @@ import {
   assertEvidenceStatus,
   assertEvidenceType,
   assertSkillLevel,
+  claimEvidence,
+  decideEvidence,
   effectiveApprovedLevel,
   isEvidenceStatus,
   isEvidenceType,
@@ -27,9 +33,14 @@ describe('skill evidence domain', () => {
   it('declares stable levels, evidence types, statuses and event names', () => {
     expect(SKILL_LEVELS).toEqual(['beginner', 'intermediate', 'advanced', 'expert']);
     expect(EVIDENCE_TYPES).toEqual(['certificate', 'verifier_assessment']);
-    expect(EVIDENCE_STATUSES).toEqual(['pending', 'approved', 'rejected', 'superseded']);
+    expect(EVIDENCE_STATUSES).toEqual(['pending', 'claimed', 'approved', 'rejected', 'superseded']);
     expect(INITIAL_EVIDENCE_STATUS).toBe('pending');
-    expect(SKILL_EVIDENCE_EVENTS).toEqual({ submitted: 'skill.evidence.submitted' });
+    expect(SKILL_EVIDENCE_EVENTS).toEqual({
+      submitted: 'skill.evidence.submitted',
+      claimed: 'skill.evidence.claimed',
+      approved: 'skill.evidence.approved',
+      rejected: 'skill.evidence.rejected',
+    });
   });
 
   it('recognises and asserts known levels, types and statuses', () => {
@@ -172,6 +183,8 @@ describe('skill evidence domain', () => {
       requestedLevel: 'intermediate',
       approvedLevel: null,
       status: 'pending',
+      claimedBy: null,
+      claimedAt: null,
       reviewerId: null,
       reason: null,
       decidedAt: null,
@@ -204,6 +217,74 @@ describe('skill evidence domain', () => {
     it('returns null when nothing is approved yet', () => {
       expect(effectiveApprovedLevel([snapshot({ status: 'pending' })])).toBeNull();
       expect(effectiveApprovedLevel([])).toBeNull();
+    });
+  });
+
+  describe('FR-004 claim and decision ownership', () => {
+    const claimed = { status: 'claimed' as const, claimedBy: 'vf-1', requestedLevel: 'intermediate' as const };
+
+    it('claims only a pending request, stamping the Verifier and time', () => {
+      expect(claimEvidence('pending', 'vf-1', now)).toEqual({
+        status: 'claimed',
+        claimedBy: 'vf-1',
+        claimedAt: now,
+      });
+      expect(() => claimEvidence('claimed', 'vf-2', now)).toThrow(EvidenceNotClaimableError);
+      expect(() => claimEvidence('approved', 'vf-2', now)).toThrow(EvidenceNotClaimableError);
+      expect(() => claimEvidence('rejected', 'vf-2', now)).toThrow(EvidenceNotClaimableError);
+    });
+
+    it('lets only the claim holder decide', () => {
+      const decision = decideEvidence(claimed, { decision: 'approve' }, { reviewerId: 'vf-1', now });
+      expect(decision).toEqual({
+        status: 'approved',
+        reviewerId: 'vf-1',
+        approvedLevel: 'intermediate',
+        reason: null,
+        decidedAt: now,
+      });
+
+      expect(() =>
+        decideEvidence(claimed, { decision: 'approve' }, { reviewerId: 'vf-2', now }),
+      ).toThrow(NotClaimOwnerError);
+    });
+
+    it('refuses to decide an unclaimed request', () => {
+      expect(() =>
+        decideEvidence(
+          { status: 'pending', claimedBy: null, requestedLevel: 'intermediate' },
+          { decision: 'approve' },
+          { reviewerId: 'vf-1', now },
+        ),
+      ).toThrow(EvidenceNotClaimedError);
+    });
+
+    it('approve defaults to the requested level or takes an explicit one', () => {
+      const bumped = decideEvidence(
+        claimed,
+        { decision: 'approve', approvedLevel: 'advanced' },
+        { reviewerId: 'vf-1', now },
+      );
+      expect(bumped.approvedLevel).toBe('advanced');
+    });
+
+    it('reject requires a reason and carries no approved level', () => {
+      expect(() =>
+        decideEvidence(claimed, { decision: 'reject' }, { reviewerId: 'vf-1', now }),
+      ).toThrow(ReasonRequiredError);
+
+      const rejected = decideEvidence(
+        claimed,
+        { decision: 'reject', reason: 'Illegible certificate' },
+        { reviewerId: 'vf-1', now },
+      );
+      expect(rejected).toEqual({
+        status: 'rejected',
+        reviewerId: 'vf-1',
+        approvedLevel: null,
+        reason: 'Illegible certificate',
+        decidedAt: now,
+      });
     });
   });
 });

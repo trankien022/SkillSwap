@@ -66,4 +66,5 @@ for a known skill at a valid level creates a `profile_skill` (level `NULL`) and 
 version. Architecture tests stay green.
 
 **Related:** ADR-013 (outbox), ADR-014 (per-module schema), ADR-023 (student verification), ADR-024
-(cross-module trust projection), FR-003/FR-004/FR-005/FR-006.
+(cross-module trust projection), ADR-027 (verifier expertise & claim — governs *who may decide*, the
+counterpart to this ADR's taxonomy), FR-003/FR-004/FR-005/FR-006.
