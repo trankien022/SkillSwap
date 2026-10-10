@@ -62,6 +62,7 @@ describe('student verification domain', () => {
       schoolName: '  FPT University  ',
       major: '  SE  ',
       documentRef: 'doc-ref-1',
+      submittedAt: now,
     });
     expect(v.status).toBe('pending');
     expect(v.schoolName).toBe('FPT University');
@@ -69,12 +70,19 @@ describe('student verification domain', () => {
     expect(v.reviewerId).toBeNull();
     expect(v.reason).toBeNull();
     expect(v.expiresAt).toBeNull();
+    expect(v.submittedAt).toBe(now);
     expect(v.isEffective).toBe(true);
   });
 
   it('rejects an empty school name', () => {
     expect(() =>
-      Verification.submit({ id: 'v1', accountId: 'a1', schoolName: '   ', documentRef: 'd' }),
+      Verification.submit({
+        id: 'v1',
+        accountId: 'a1',
+        schoolName: '   ',
+        documentRef: 'd',
+        submittedAt: now,
+      }),
     ).toThrow(RangeError);
   });
 
@@ -138,6 +146,7 @@ describe('student verification domain', () => {
       reason: null,
       decidedAt: now,
       expiresAt: addDays(now, 1),
+      submittedAt: now,
     });
     expect(approved.isExpired(now)).toBe(false);
     expect(approved.isExpired(addDays(now, 2))).toBe(true);

@@ -26,6 +26,7 @@ interface VerificationRow {
   reason: string | null;
   decided_at: Date | string | null;
   expires_at: Date | string | null;
+  created_at: Date | string;
 }
 
 function toDate(value: Date | string | null): Date | null {
@@ -45,12 +46,13 @@ function toDomain(row: VerificationRow): Verification {
     reason: row.reason,
     decidedAt: toDate(row.decided_at),
     expiresAt: toDate(row.expires_at),
+    submittedAt: new Date(row.created_at),
   });
 }
 
 const SELECT_COLUMNS =
   '"id", "account_id", "school_name", "major", "document_ref", "status", ' +
-  '"reviewer_id", "reason", "decided_at", "expires_at"';
+  '"reviewer_id", "reason", "decided_at", "expires_at", "created_at"';
 
 export class SqlVerificationRepository implements VerificationRepository {
   constructor(
@@ -72,10 +74,17 @@ export class SqlVerificationRepository implements VerificationRepository {
       const rows = returnedRows<VerificationRow>(
         await source.query(
           `INSERT INTO ${this.table}
-             ("id", "account_id", "school_name", "major", "document_ref", "status")
-           VALUES ($1, $2, $3, $4, $5, 'pending')
+             ("id", "account_id", "school_name", "major", "document_ref", "status", "created_at")
+           VALUES ($1, $2, $3, $4, $5, 'pending', $6)
            RETURNING ${SELECT_COLUMNS}`,
-          [request.id, request.accountId, request.schoolName, request.major, request.documentRef],
+          [
+            request.id,
+            request.accountId,
+            request.schoolName,
+            request.major,
+            request.documentRef,
+            request.submittedAt.toISOString(),
+          ],
         ),
       );
       const row = rows[0];

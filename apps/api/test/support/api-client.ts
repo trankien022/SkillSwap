@@ -3,6 +3,7 @@ export class ApiClient {
   private accessToken: string | null = null;
   /** Identity the trusted-identity guard reads (stand-in for the gateway). */
   private userId: string | null = null;
+  private userRole: string | null = null;
 
   constructor(private readonly baseUrl: string) {}
 
@@ -11,8 +12,9 @@ export class ApiClient {
   }
 
   /** Acts as `userId` for subsequent requests (AUTH_MODE=off uses the header when present). */
-  actAs(userId: string | null): void {
+  actAs(userId: string | null, role: string | null = null): void {
     this.userId = userId;
+    this.userRole = role;
   }
 
   private headers(extra: Record<string, string> = {}): Record<string, string> {
@@ -22,6 +24,9 @@ export class ApiClient {
     }
     if (this.userId !== null) {
       headers['x-user-id'] = this.userId;
+    }
+    if (this.userRole !== null) {
+      headers['x-user-role'] = this.userRole;
     }
     return headers;
   }

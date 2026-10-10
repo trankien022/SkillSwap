@@ -115,6 +115,7 @@ export class Verification {
     readonly reason: string | null,
     readonly decidedAt: Date | null,
     readonly expiresAt: Date | null,
+    readonly submittedAt: Date,
   ) {}
 
   static submit(input: {
@@ -123,6 +124,7 @@ export class Verification {
     schoolName: string;
     major?: string | null;
     documentRef: string;
+    submittedAt: Date;
   }): Verification {
     const schoolName = input.schoolName.trim();
     if (schoolName.length === 0) {
@@ -142,6 +144,7 @@ export class Verification {
       null,
       null,
       null,
+      input.submittedAt,
     );
   }
 
@@ -157,6 +160,7 @@ export class Verification {
     reason: string | null;
     decidedAt: Date | null;
     expiresAt: Date | null;
+    submittedAt: Date;
   }): Verification {
     assertVerificationStatus(input.status);
     return new Verification(
@@ -170,6 +174,7 @@ export class Verification {
       input.reason,
       input.decidedAt,
       input.expiresAt,
+      input.submittedAt,
     );
   }
 

@@ -1,0 +1,122 @@
+import { startHarness, type Harness } from './harness';
+import { accountIdFromToken, ApiClient, waitFor } from './support/api-client';
+import { resetDatabase } from './support/db';
+
+jest.setTimeout(60_000);
+
+/**
+ * FR-002 (ADR-023) against the REAL stack (Postgres + RabbitMQ): a Learner
+ * submits, an Administrator decides, and the owner-scoped read reflects status
+ * and reason. The emitted event flows through the outbox.
+ */
+describe('E2E: student verification (FR-002)', () => {
+  let harness: Harness;
+  let api: ApiClient;
+
+  beforeAll(async () => {
+    harness = await startHarness();
+    api = new ApiClient(harness.baseUrl);
+    await resetDatabase(harness);
+  });
+
+  afterAll(async () => {
+    if (harness) {
+      await harness.close();
+    }
+  });
+
+  async function registerLearner(email: string): Promise<string> {
+    const res = await api.post('/api/auth/register', {
+      email,
+      displayName: 'Verify Learner',
+      password: 'learner-password',
+      role: 'learner',
+    });
+    return accountIdFromToken(res.json.accessToken);
+  }
+
+  it('submits, rejects with a reason, and the owner sees it', async () => {
+    const learnerId = await registerLearner('sv-reject@skillswap.test');
+    api.actAs(learnerId);
+
+    const submitted = await api.post('/api/student-verifications', {
+      schoolName: 'FPT University',
+      major: 'Software Engineering',
+      documentRef: 'doc-ref-reject',
+    });
+    expect(submitted.status).toBe(201);
+    expect(submitted.json.status).toBe('pending');
+    const verificationId = submitted.json.id as string;
+
+    // A second submission is refused while one is effective (SR-BR-011).
+    const duplicate = await api.post('/api/student-verifications', {
+      schoolName: 'FPT University',
+      documentRef: 'doc-ref-2',
+    });
+    expect(duplicate.status).toBe(409);
+
+    // A non-admin cannot decide (NFR-009).
+    api.actAs(learnerId, 'learner');
+    const forbidden = await api.post(`/api/student-verifications/${verificationId}/decision`, {
+      decision: 'reject',
+      reason: 'nope',
+    });
+    expect(forbidden.status).toBe(403);
+
+    // The Administrator rejects with a reason.
+    api.actAs('admin-1', 'admin');
+    const decided = await api.post(`/api/student-verifications/${verificationId}/decision`, {
+      decision: 'reject',
+      reason: 'Illegible document',
+    });
+    expect(decided.status).toBe(200);
+    expect(decided.json.status).toBe('rejected');
+    expect(decided.json.reason).toBe('Illegible document');
+    expect(decided.json.reviewerId).toBe('admin-1');
+
+    // The owner-scoped read (FR-017) reflects status + reason.
+    api.actAs(learnerId, 'learner');
+    const mine = await api.get('/api/student-verifications/me');
+    expect(mine.status).toBe(200);
+    expect(mine.json.status).toBe('rejected');
+    expect(mine.json.reason).toBe('Illegible document');
+
+    // The decision event reached the outbox and was published.
+    await waitFor(async () => {
+      const rows = await harness.query<{ status: string }>(
+        'student-verification',
+        `SELECT "status" FROM outbox_messages WHERE "event_type" = 'student.verification.rejected' LIMIT 1`,
+      );
+      return rows[0]?.status === 'PUBLISHED' ? rows : null;
+    });
+  });
+
+  it('approves a pending verification and stamps a 365-day expiry', async () => {
+    const learnerId = await registerLearner('sv-approve@skillswap.test');
+    api.actAs(learnerId, 'learner');
+
+    const submitted = await api.post('/api/student-verifications', {
+      schoolName: 'HCMUS',
+      documentRef: 'doc-ref-approve',
+    });
+    const verificationId = submitted.json.id as string;
+
+    api.actAs('admin-2', 'admin');
+    const decided = await api.post(`/api/student-verifications/${verificationId}/decision`, {
+      decision: 'approve',
+      approvedMajor: 'Computer Science',
+    });
+    expect(decided.status).toBe(200);
+    expect(decided.json.status).toBe('approved');
+    expect(decided.json.major).toBe('Computer Science');
+    expect(decided.json.expiresAt).not.toBeNull();
+
+    const decidedAt = new Date(decided.json.decidedAt as string).getTime();
+    const expiresAt = new Date(decided.json.expiresAt as string).getTime();
+    expect(Math.round((expiresAt - decidedAt) / (24 * 60 * 60 * 1000))).toBe(365);
+
+    api.actAs(learnerId, 'learner');
+    const mine = await api.get('/api/student-verifications/me');
+    expect(mine.json.status).toBe('approved');
+  });
+});

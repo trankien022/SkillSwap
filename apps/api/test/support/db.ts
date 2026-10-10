@@ -14,6 +14,7 @@ export async function resetDatabase(harness: Harness): Promise<void> {
     'wallet-ledger',
     'TRUNCATE wallets, ledger_entries, top_up_intents CASCADE',
   );
+  await harness.query('student-verification', 'TRUNCATE student_verifications CASCADE');
 }
 
 /** Reads a wallet balance straight from Postgres. */
