@@ -35,7 +35,9 @@ const moduleRules = modules.flatMap((m) => [
     name: `module-isolation-${m}`,
     severity: 'error',
     comment: `Code outside ${m} may only import ${m}/api, never its internals (ADR-005/ADR-011).`,
-    from: { pathNot: mod(m) },
+    // Integration tests under apps/api/test may reach internals (they boot the
+    // real app and nudge schedulers); production code may not.
+    from: { pathNot: `^(apps/api/test/|${mod(m)})` },
     to: { path: mod(m, 'internal/') },
   },
   {

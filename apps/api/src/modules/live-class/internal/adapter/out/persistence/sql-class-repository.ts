@@ -1,6 +1,7 @@
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { insertOutboxStatement } from '../../../../../../shared/messaging/outbox-statements';
 import { qualified } from '../../../../../../shared/sql/ident';
+import { returnedRows } from '../../../../../../shared/sql/result';
 import type {
   ClassEdit,
   ClassRepository,
@@ -123,21 +124,23 @@ export class SqlClassRepository implements ClassRepository {
     const classes = qualified(this.schema, CLASSES_TABLE);
     const skills = qualified(this.schema, CLASS_SKILLS_TABLE);
     return source.transaction(async (manager) => {
-      const rows = (await manager.query(
-        `UPDATE ${classes}
-           SET "starts_at" = $2, "duration_minutes" = $3, "price_credits" = $4,
-               "capacity" = $5, "description" = $6, "updated_at" = now()
-         WHERE "id" = $1
-         RETURNING "id", "teacher_id", "state", "starts_at", "duration_minutes", "price_credits", "capacity", "description"`,
-        [
-          id,
-          edit.startsAt.toISOString(),
-          edit.durationMinutes,
-          edit.priceCredits,
-          edit.capacity,
-          edit.description,
-        ],
-      )) as Array<Omit<ClassRow, 'skill_ids'>>;
+      const rows = returnedRows<Omit<ClassRow, 'skill_ids'>>(
+        await manager.query(
+          `UPDATE ${classes}
+             SET "starts_at" = $2, "duration_minutes" = $3, "price_credits" = $4,
+                 "capacity" = $5, "description" = $6, "updated_at" = now()
+           WHERE "id" = $1
+           RETURNING "id", "teacher_id", "state", "starts_at", "duration_minutes", "price_credits", "capacity", "description"`,
+          [
+            id,
+            edit.startsAt.toISOString(),
+            edit.durationMinutes,
+            edit.priceCredits,
+            edit.capacity,
+            edit.description,
+          ],
+        ),
+      );
       const updated = rows[0];
       if (updated === undefined) {
         throw new Error(`Class ${id} not found for update`);
@@ -157,12 +160,14 @@ export class SqlClassRepository implements ClassRepository {
     const source = this.registry.get(this.moduleName);
     const classes = qualified(this.schema, CLASSES_TABLE);
     return source.transaction(async (manager) => {
-      const rows = (await manager.query(
-        `UPDATE ${classes} SET "state" = 'in_progress', "updated_at" = now()
-          WHERE "id" = $1 AND "state" IN ('published', 'full')
-        RETURNING "id"`,
-        [classId],
-      )) as Array<{ id: string }>;
+      const rows = returnedRows<{ id: string }>(
+        await manager.query(
+          `UPDATE ${classes} SET "state" = 'in_progress', "updated_at" = now()
+            WHERE "id" = $1 AND "state" IN ('published', 'full')
+          RETURNING "id"`,
+          [classId],
+        ),
+      );
       if (rows.length === 0) {
         return { started: false };
       }
@@ -182,13 +187,15 @@ export class SqlClassRepository implements ClassRepository {
     const classes = qualified(this.schema, CLASSES_TABLE);
     const bookings = qualified(this.schema, BOOKINGS_TABLE);
     return source.transaction(async (manager) => {
-      const rows = (await manager.query(
-        `UPDATE ${classes}
-           SET "state" = 'completed', "completed_at" = now(), "completion_basis" = $2, "updated_at" = now()
-         WHERE "id" = $1 AND "state" IN ('published', 'full', 'in_progress')
-         RETURNING "id", "teacher_id"`,
-        [classId, basis],
-      )) as Array<{ id: string; teacher_id: string }>;
+      const rows = returnedRows<{ id: string; teacher_id: string }>(
+        await manager.query(
+          `UPDATE ${classes}
+             SET "state" = 'completed', "completed_at" = now(), "completion_basis" = $2, "updated_at" = now()
+           WHERE "id" = $1 AND "state" IN ('published', 'full', 'in_progress')
+           RETURNING "id", "teacher_id"`,
+          [classId, basis],
+        ),
+      );
       const completed = rows[0];
       if (completed === undefined) {
         return { completed: false, bookingIds: [] };
@@ -224,13 +231,15 @@ export class SqlClassRepository implements ClassRepository {
     const source = this.registry.get(this.moduleName);
     const classes = qualified(this.schema, CLASSES_TABLE);
     return source.transaction(async (manager) => {
-      const rows = (await manager.query(
-        `UPDATE ${classes}
-           SET "state" = 'cancelled', "cancelled_at" = now(), "cancellation_reason" = $2, "updated_at" = now()
-         WHERE "id" = $1 AND "state" NOT IN ('completed', 'cancelled')
-         RETURNING "id"`,
-        [classId, reason],
-      )) as Array<{ id: string }>;
+      const rows = returnedRows<{ id: string }>(
+        await manager.query(
+          `UPDATE ${classes}
+             SET "state" = 'cancelled', "cancelled_at" = now(), "cancellation_reason" = $2, "updated_at" = now()
+           WHERE "id" = $1 AND "state" NOT IN ('completed', 'cancelled')
+           RETURNING "id"`,
+          [classId, reason],
+        ),
+      );
       if (rows.length === 0) {
         return { cancelled: false };
       }

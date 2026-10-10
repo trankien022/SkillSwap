@@ -1,6 +1,7 @@
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { insertOutboxStatement } from '../../../../../../shared/messaging/outbox-statements';
 import { qualified } from '../../../../../../shared/sql/ident';
+import { returnedRows } from '../../../../../../shared/sql/result';
 import type {
   BookingRepository,
   BookingSeatRow,
@@ -151,7 +152,7 @@ export class SqlBookingRepository implements BookingRepository {
            RETURNING ${BOOKING_COLUMNS}`,
         [bookingId],
       )) as BookingRow[];
-      const booking = toPersisted(confirmedRows[0]);
+      const booking = toPersisted(returnedRows<BookingRow>(confirmedRows)[0]);
       await this.emitBookingEvent(manager, BOOKING_CONFIRMED_EVENT, booking, null);
       return { confirmed: true, booking };
     });
@@ -172,13 +173,15 @@ export class SqlBookingRepository implements BookingRepository {
       if (current === undefined || (current.state !== 'pending' && current.state !== 'confirmed')) {
         return { cancelled: false, booking: current === undefined ? null : toPersisted(current) };
       }
-      const cancelledRows = (await manager.query(
-        `UPDATE ${bookings}
-           SET "state" = 'cancelled', "cancelled_at" = now(), "cancel_reason" = $2, "updated_at" = now()
-         WHERE "id" = $1
-         RETURNING ${BOOKING_COLUMNS}`,
-        [bookingId, reason],
-      )) as BookingRow[];
+      const cancelledRows = returnedRows<BookingRow>(
+        await manager.query(
+          `UPDATE ${bookings}
+             SET "state" = 'cancelled', "cancelled_at" = now(), "cancel_reason" = $2, "updated_at" = now()
+           WHERE "id" = $1
+           RETURNING ${BOOKING_COLUMNS}`,
+          [bookingId, reason],
+        ),
+      );
       const booking = toPersisted(cancelledRows[0]);
       await this.emitBookingEvent(manager, BOOKING_CANCELLED_EVENT, booking, reason);
       return { cancelled: true, booking };
@@ -189,13 +192,15 @@ export class SqlBookingRepository implements BookingRepository {
     const source = this.registry.get(this.moduleName);
     const bookings = qualified(this.schema, BOOKINGS_TABLE);
     return source.transaction(async (manager) => {
-      const expired = (await manager.query(
-        `UPDATE ${bookings}
-           SET "state" = 'cancelled', "cancelled_at" = now(), "cancel_reason" = 'expired', "updated_at" = now()
-         WHERE "state" = 'pending' AND "expires_at" IS NOT NULL AND "expires_at" <= $1
-         RETURNING ${BOOKING_COLUMNS}`,
-        [now.toISOString()],
-      )) as BookingRow[];
+      const expired = returnedRows<BookingRow>(
+        await manager.query(
+          `UPDATE ${bookings}
+             SET "state" = 'cancelled', "cancelled_at" = now(), "cancel_reason" = 'expired', "updated_at" = now()
+           WHERE "state" = 'pending' AND "expires_at" IS NOT NULL AND "expires_at" <= $1
+           RETURNING ${BOOKING_COLUMNS}`,
+          [now.toISOString()],
+        ),
+      );
       for (const row of expired) {
         await this.emitBookingEvent(manager, BOOKING_CANCELLED_EVENT, toPersisted(row), 'expired');
       }
