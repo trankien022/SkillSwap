@@ -224,6 +224,18 @@ export class SqlBookingRepository implements BookingRepository {
     return rows.map(toPersisted);
   }
 
+  async hasTeacherNoShow(classId: string): Promise<boolean> {
+    const source = this.registry.get(this.moduleName);
+    const bookings = qualified(this.schema, BOOKINGS_TABLE);
+    const rows = (await source.query(
+      `SELECT 1 FROM ${bookings}
+        WHERE "class_id" = $1 AND "state" = 'cancelled' AND "cancel_reason" = 'teacher_no_show'
+        LIMIT 1`,
+      [classId],
+    )) as unknown[];
+    return rows.length > 0;
+  }
+
   /** Emits a booking event carrying the class's teacher so the wallet can settle/refund. */
   private async emitBookingEvent(
     manager: { query: (sql: string, params?: unknown[]) => Promise<unknown> },

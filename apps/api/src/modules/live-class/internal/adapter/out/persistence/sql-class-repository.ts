@@ -1,15 +1,21 @@
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
+import { insertOutboxStatement } from '../../../../../../shared/messaging/outbox-statements';
 import { qualified } from '../../../../../../shared/sql/ident';
 import type {
   ClassEdit,
   ClassRepository,
+  CompletableClass,
   CreateClassRecord,
   PersistedClass,
 } from '../../../application/port/out/class-repository';
-import type { ClassState } from '../../../domain/class';
+import type { ClassCancellationReason, ClassState, CompletionBasis } from '../../../domain/class';
 
 const CLASSES_TABLE = 'classes';
 const CLASS_SKILLS_TABLE = 'class_skills';
+const BOOKINGS_TABLE = 'bookings';
+const CLASS_STARTED_EVENT = 'class.started';
+const CLASS_COMPLETED_EVENT = 'class.completed';
+const CLASS_CANCELLED_EVENT = 'class.cancelled';
 
 interface ClassRow {
   id: string;
@@ -145,5 +151,118 @@ export class SqlClassRepository implements ClassRepository {
       }
       return toPersisted({ ...updated, skill_ids: edit.skillIds });
     });
+  }
+
+  async startAndEmit(classId: string): Promise<{ started: boolean }> {
+    const source = this.registry.get(this.moduleName);
+    const classes = qualified(this.schema, CLASSES_TABLE);
+    return source.transaction(async (manager) => {
+      const rows = (await manager.query(
+        `UPDATE ${classes} SET "state" = 'in_progress', "updated_at" = now()
+          WHERE "id" = $1 AND "state" IN ('published', 'full')
+        RETURNING "id"`,
+        [classId],
+      )) as Array<{ id: string }>;
+      if (rows.length === 0) {
+        return { started: false };
+      }
+      await manager.query(insertOutboxStatement(this.schema), [
+        CLASS_STARTED_EVENT,
+        { classId, startedAt: new Date().toISOString() },
+      ]);
+      return { started: true };
+    });
+  }
+
+  async completeAndEmit(
+    classId: string,
+    basis: CompletionBasis,
+  ): Promise<{ completed: boolean; bookingIds: string[] }> {
+    const source = this.registry.get(this.moduleName);
+    const classes = qualified(this.schema, CLASSES_TABLE);
+    const bookings = qualified(this.schema, BOOKINGS_TABLE);
+    return source.transaction(async (manager) => {
+      const rows = (await manager.query(
+        `UPDATE ${classes}
+           SET "state" = 'completed', "completed_at" = now(), "completion_basis" = $2, "updated_at" = now()
+         WHERE "id" = $1 AND "state" IN ('published', 'full', 'in_progress')
+         RETURNING "id", "teacher_id"`,
+        [classId, basis],
+      )) as Array<{ id: string; teacher_id: string }>;
+      const completed = rows[0];
+      if (completed === undefined) {
+        return { completed: false, bookingIds: [] };
+      }
+      // Confirmed bookings of this class earn the teacher's income (ADR-021).
+      const confirmed = (await manager.query(
+        `SELECT "id", "learner_id", "price_credits" FROM ${bookings}
+          WHERE "class_id" = $1 AND "state" = 'confirmed'`,
+        [classId],
+      )) as Array<{ id: string; learner_id: string; price_credits: number }>;
+      await manager.query(insertOutboxStatement(this.schema), [
+        CLASS_COMPLETED_EVENT,
+        {
+          classId,
+          teacherId: completed.teacher_id,
+          basis,
+          completedAt: new Date().toISOString(),
+          bookings: confirmed.map((row) => ({
+            bookingId: row.id,
+            learnerId: row.learner_id,
+            priceCredits: row.price_credits,
+          })),
+        },
+      ]);
+      return { completed: true, bookingIds: confirmed.map((row) => row.id) };
+    });
+  }
+
+  async cancelWithReason(
+    classId: string,
+    reason: ClassCancellationReason,
+  ): Promise<{ cancelled: boolean }> {
+    const source = this.registry.get(this.moduleName);
+    const classes = qualified(this.schema, CLASSES_TABLE);
+    return source.transaction(async (manager) => {
+      const rows = (await manager.query(
+        `UPDATE ${classes}
+           SET "state" = 'cancelled', "cancelled_at" = now(), "cancellation_reason" = $2, "updated_at" = now()
+         WHERE "id" = $1 AND "state" NOT IN ('completed', 'cancelled')
+         RETURNING "id"`,
+        [classId, reason],
+      )) as Array<{ id: string }>;
+      if (rows.length === 0) {
+        return { cancelled: false };
+      }
+      await manager.query(insertOutboxStatement(this.schema), [
+        CLASS_CANCELLED_EVENT,
+        { classId, reason, cancelledAt: new Date().toISOString() },
+      ]);
+      return { cancelled: true };
+    });
+  }
+
+  async findAwaitingCompletion(now: Date): Promise<CompletableClass[]> {
+    const source = this.registry.get(this.moduleName);
+    const classes = qualified(this.schema, CLASSES_TABLE);
+    const rows = (await source.query(
+      `SELECT "id", "teacher_id", "state", "starts_at", "duration_minutes" FROM ${classes}
+        WHERE "state" IN ('published', 'full', 'in_progress')
+          AND ("starts_at" + ("duration_minutes" || ' minutes')::interval) <= $1`,
+      [now.toISOString()],
+    )) as Array<{
+      id: string;
+      teacher_id: string;
+      state: string;
+      starts_at: Date | string;
+      duration_minutes: number;
+    }>;
+    return rows.map((row) => ({
+      id: row.id,
+      teacherId: row.teacher_id,
+      state: row.state as ClassState,
+      startsAt: toDate(row.starts_at),
+      durationMinutes: row.duration_minutes,
+    }));
   }
 }
