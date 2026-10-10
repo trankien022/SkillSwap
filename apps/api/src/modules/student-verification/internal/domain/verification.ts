@@ -1,14 +1,15 @@
 /**
- * FR-002 / ADR-023: the Student verification aggregate.
+ * FR-002 / ADR-023 + FR-019 / ADR-025: the Student verification aggregate.
  *
  * A Learner submits a school name plus an uploaded document (`documentRef` = the
  * object key); an Administrator approves or rejects with a reason. At most one
  * verification is "effective" (pending or approved) per account (SR-BR-011).
- * Approval does not expire in the MVP (developer decision). Framework-free: no
+ * Approval does not expire in the MVP (developer decision); an Administrator may
+ * revoke it, which demotes rights (cascade, no grandfather). Framework-free: no
  * NestJS, no TypeORM.
  */
 
-export const VERIFICATION_STATUSES = ['pending', 'approved', 'rejected'] as const;
+export const VERIFICATION_STATUSES = ['pending', 'approved', 'rejected', 'revoked'] as const;
 export type VerificationStatus = (typeof VERIFICATION_STATUSES)[number];
 
 /** Statuses that count as the account's current verification (SR-BR-011). */
@@ -21,6 +22,7 @@ export const VERIFICATION_EVENTS = {
   submitted: 'student.verification.submitted',
   approved: 'student.verification.approved',
   rejected: 'student.verification.rejected',
+  revoked: 'student.verification.revoked',
 } as const;
 
 export function isVerificationStatus(value: string): value is VerificationStatus {
@@ -52,8 +54,8 @@ export class InvalidVerificationTransitionError extends Error {
 }
 
 export class ReasonRequiredError extends Error {
-  constructor() {
-    super('A rejection requires a non-empty reason');
+  constructor(action = 'rejection') {
+    super(`A ${action} requires a non-empty reason`);
     this.name = 'ReasonRequiredError';
   }
 }
@@ -72,10 +74,18 @@ export class InvalidDeciderError extends Error {
   }
 }
 
+export class InvalidRevocationError extends Error {
+  constructor(status: VerificationStatus) {
+    super(`A ${status} verification cannot be revoked`);
+    this.name = 'InvalidRevocationError';
+  }
+}
+
 const TRANSITIONS: Readonly<Record<VerificationStatus, readonly VerificationStatus[]>> = {
-  pending: ['approved', 'rejected'],
-  approved: [],
+  pending: ['approved', 'rejected', 'revoked'],
+  approved: ['revoked'],
   rejected: [],
+  revoked: [],
 };
 
 export function canDecide(
@@ -89,6 +99,16 @@ export function assertDecidable(from: VerificationStatus, to: VerificationStatus
   if (!canDecide(from, to)) {
     throw new InvalidVerificationTransitionError(from, to);
   }
+}
+
+/** FR-019 / ADR-025: only `approved` grants `VERIFIED` rights; revoked does not. */
+export function hasVerifiedRights(status: VerificationStatus): boolean {
+  return status === 'approved';
+}
+
+/** Whether a verification can be revoked (only an effective one can). */
+export function canRevoke(status: VerificationStatus): boolean {
+  return TRANSITIONS[status].includes('revoked');
 }
 
 export interface VerificationDecision {
@@ -111,6 +131,8 @@ export class Verification {
     readonly reason: string | null,
     readonly decidedAt: Date | null,
     readonly submittedAt: Date,
+    readonly revokedAt: Date | null = null,
+    readonly revocationReason: string | null = null,
   ) {}
 
   static submit(input: {
@@ -154,6 +176,8 @@ export class Verification {
     reason: string | null;
     decidedAt: Date | null;
     submittedAt: Date;
+    revokedAt?: Date | null;
+    revocationReason?: string | null;
   }): Verification {
     assertVerificationStatus(input.status);
     return new Verification(
@@ -167,11 +191,23 @@ export class Verification {
       input.reason,
       input.decidedAt,
       input.submittedAt,
+      input.revokedAt ?? null,
+      input.revocationReason ?? null,
     );
   }
 
   get isEffective(): boolean {
     return isEffectiveStatus(this.status);
+  }
+
+  /** FR-019: whether this verification currently grants `VERIFIED` rights. */
+  get hasVerifiedRights(): boolean {
+    return hasVerifiedRights(this.status);
+  }
+
+  /** Owner-facing reason to show: the rejection or revocation reason. */
+  get displayReason(): string | null {
+    return this.status === 'revoked' ? this.revocationReason : this.reason;
   }
 }
 
@@ -213,4 +249,32 @@ export function decideVerification(
     decidedAt: context.now,
     reviewerId: context.reviewerId,
   };
+}
+
+export interface VerificationRevocation {
+  status: 'revoked';
+  reason: string;
+  revokedAt: Date;
+}
+
+/**
+ * FR-019 / ADR-025: revokes an effective verification. Requires the admin role
+ * and a reason; only `pending`/`approved` can be revoked.
+ */
+export function revokeVerification(
+  status: VerificationStatus,
+  input: { reason?: string },
+  context: { reviewerRole: string | undefined; reviewerId: string; now: Date },
+): VerificationRevocation {
+  if (context.reviewerRole !== 'admin') {
+    throw new InvalidDeciderError(context.reviewerId);
+  }
+  if (!canRevoke(status)) {
+    throw new InvalidRevocationError(status);
+  }
+  const reason = input.reason?.trim();
+  if (!reason) {
+    throw new ReasonRequiredError('revocation');
+  }
+  return { status: 'revoked', reason, revokedAt: context.now };
 }

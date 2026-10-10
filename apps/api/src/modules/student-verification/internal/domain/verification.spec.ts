@@ -3,6 +3,7 @@ import {
   EFFECTIVE_STATUSES,
   INITIAL_VERIFICATION_STATUS,
   InvalidDeciderError,
+  InvalidRevocationError,
   InvalidVerificationTransitionError,
   ReasonRequiredError,
   VERIFICATION_EVENTS,
@@ -12,22 +13,26 @@ import {
   assertDecidable,
   assertVerificationStatus,
   canDecide,
+  canRevoke,
   decideVerification,
+  hasVerifiedRights,
   isEffectiveStatus,
   isVerificationStatus,
+  revokeVerification,
 } from './verification';
 
 describe('student verification domain', () => {
   const now = new Date('2026-10-10T00:00:00.000Z');
 
   it('declares stable statuses and event names', () => {
-    expect(VERIFICATION_STATUSES).toEqual(['pending', 'approved', 'rejected']);
+    expect(VERIFICATION_STATUSES).toEqual(['pending', 'approved', 'rejected', 'revoked']);
     expect(EFFECTIVE_STATUSES).toEqual(['pending', 'approved']);
     expect(INITIAL_VERIFICATION_STATUS).toBe('pending');
     expect(VERIFICATION_EVENTS).toEqual({
       submitted: 'student.verification.submitted',
       approved: 'student.verification.approved',
       rejected: 'student.verification.rejected',
+      revoked: 'student.verification.revoked',
     });
   });
 
@@ -42,6 +47,14 @@ describe('student verification domain', () => {
     expect(isEffectiveStatus('pending')).toBe(true);
     expect(isEffectiveStatus('approved')).toBe(true);
     expect(isEffectiveStatus('rejected')).toBe(false);
+    expect(isEffectiveStatus('revoked')).toBe(false);
+  });
+
+  it('grants VERIFIED rights only for approved (FR-019)', () => {
+    expect(hasVerifiedRights('approved')).toBe(true);
+    expect(hasVerifiedRights('pending')).toBe(false);
+    expect(hasVerifiedRights('rejected')).toBe(false);
+    expect(hasVerifiedRights('revoked')).toBe(false);
   });
 
   it('allows only pending to be decided', () => {
@@ -50,6 +63,13 @@ describe('student verification domain', () => {
     expect(canDecide('approved', 'approved')).toBe(false);
     expect(canDecide('rejected', 'approved')).toBe(false);
     expect(() => assertDecidable('approved', 'rejected')).toThrow(InvalidVerificationTransitionError);
+  });
+
+  it('revokes only effective verifications (FR-019)', () => {
+    expect(canRevoke('pending')).toBe(true);
+    expect(canRevoke('approved')).toBe(true);
+    expect(canRevoke('rejected')).toBe(false);
+    expect(canRevoke('revoked')).toBe(false);
   });
 
   it('starts a submission as pending with no decision fields', () => {
@@ -151,5 +171,60 @@ describe('student verification domain', () => {
     const error = new DuplicateActiveVerificationError('a1');
     expect(error.name).toBe('DuplicateActiveVerificationError');
     expect(error.message).toContain('a1');
+  });
+
+  describe('revokeVerification (FR-019 / ADR-025)', () => {
+    const context = { reviewerRole: 'admin' as string | undefined, reviewerId: 'admin-1', now };
+
+    it('revokes an approved verification with a reason', () => {
+      const result = revokeVerification('approved', { reason: ' fake document ' }, context);
+      expect(result).toEqual({ status: 'revoked', reason: 'fake document', revokedAt: now });
+    });
+
+    it('revokes a pending verification too', () => {
+      expect(revokeVerification('pending', { reason: 'fraud' }, context).status).toBe('revoked');
+    });
+
+    it('requires a reason to revoke', () => {
+      expect(() => revokeVerification('approved', {}, context)).toThrow(ReasonRequiredError);
+      expect(() => revokeVerification('approved', { reason: '  ' }, context)).toThrow(
+        ReasonRequiredError,
+      );
+    });
+
+    it('requires the admin role', () => {
+      expect(() =>
+        revokeVerification('approved', { reason: 'x' }, { ...context, reviewerRole: 'learner' }),
+      ).toThrow(InvalidDeciderError);
+    });
+
+    it('refuses to revoke a non-effective verification', () => {
+      expect(() => revokeVerification('rejected', { reason: 'x' }, context)).toThrow(
+        InvalidRevocationError,
+      );
+      expect(() => revokeVerification('revoked', { reason: 'x' }, context)).toThrow(
+        InvalidRevocationError,
+      );
+    });
+
+    it('exposes the revocation reason as the display reason and drops rights', () => {
+      const revoked = Verification.reconstitute({
+        id: 'v1',
+        accountId: 'a1',
+        schoolName: 'FPT',
+        major: null,
+        documentRef: 'doc',
+        status: 'revoked',
+        reviewerId: 'admin-1',
+        reason: null,
+        decidedAt: now,
+        submittedAt: now,
+        revokedAt: now,
+        revocationReason: 'fake document',
+      });
+      expect(revoked.displayReason).toBe('fake document');
+      expect(revoked.hasVerifiedRights).toBe(false);
+      expect(revoked.isEffective).toBe(false);
+    });
   });
 });
