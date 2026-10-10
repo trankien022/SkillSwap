@@ -6,6 +6,7 @@ import { CreateModuleTables1791072000000 } from './migrations/1791072000000-Crea
 import { CreateClassBookingTables1791072000001 } from './migrations/1791072000001-CreateClassBookingTables';
 import { AddBookingLifecycleColumns1791072000002 } from './migrations/1791072000002-AddBookingLifecycleColumns';
 import { CreateRoomAccessIncidents1791072000003 } from './migrations/1791072000003-CreateRoomAccessIncidents';
+import { AddClassCompletionColumns1791072000004 } from './migrations/1791072000004-AddClassCompletionColumns';
 import { SCHEMA } from './schema';
 
 /** One connection pool per module schema (ARCHITECTURE.md §5). */
@@ -25,6 +26,7 @@ export function createModuleDataSource(config: ApiConfig, schema: string = SCHEM
       CreateClassBookingTables1791072000001,
       AddBookingLifecycleColumns1791072000002,
       CreateRoomAccessIncidents1791072000003,
+      AddClassCompletionColumns1791072000004,
     ],
     migrationsTableName: MIGRATIONS_TABLE,
     synchronize: false,

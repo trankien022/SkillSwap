@@ -45,6 +45,9 @@ const NAME_TO_STATUS: Record<string, number> = {
   RoomAccessDeniedError: 403,
   BookingNotFoundError: 404,
   RoomUnavailableError: 503,
+  // FR-020 class lifecycle (ADR-021).
+  ClassNotCompletableError: 409,
+  InvalidCompletionBasisError: 400,
 };
 
 /** Maps domain errors and unexpected failures onto the apiErrorSchema shape. */

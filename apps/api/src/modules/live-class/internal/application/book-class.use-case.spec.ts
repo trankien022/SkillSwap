@@ -42,6 +42,10 @@ function setup(options: {
       persistedClass({ ...edit, teacherId: 'teacher-1', state: 'published' }),
     ),
     markCancelled: jest.fn(async () => undefined),
+    startAndEmit: jest.fn(async () => ({ started: false })),
+    completeAndEmit: jest.fn(async () => ({ completed: false, bookingIds: [] })),
+    cancelWithReason: jest.fn(async () => ({ cancelled: false })),
+    findAwaitingCompletion: jest.fn(async () => []),
   };
 
   const bookings: BookingRepository = {
@@ -71,6 +75,7 @@ function setup(options: {
     expirePendingHolds: jest.fn(async () => 0),
     countByClassAndState: jest.fn(async () => 0),
     findActiveByClass: jest.fn(async () => []),
+    hasTeacherNoShow: jest.fn(async () => false),
   };
 
   const clock: Clock = { now: () => NOW };

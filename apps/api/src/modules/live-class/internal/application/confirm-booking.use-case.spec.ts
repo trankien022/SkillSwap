@@ -24,6 +24,7 @@ function repo(confirmed: boolean, result: PersistedBooking | null): BookingRepos
     expirePendingHolds: jest.fn(async () => 0),
     countByClassAndState: jest.fn(async () => 0),
     findActiveByClass: jest.fn(async () => []),
+    hasTeacherNoShow: jest.fn(async () => false),
   };
 }
 

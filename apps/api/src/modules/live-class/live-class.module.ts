@@ -19,7 +19,11 @@ import { CancelClassUseCase } from './internal/application/cancel-class.use-case
 import { MarkTeacherNoShowUseCase } from './internal/application/mark-teacher-no-show.use-case';
 import { ExpirePendingBookingsUseCase } from './internal/application/expire-pending-bookings.use-case';
 import { RequestRoomAccessUseCase } from './internal/application/request-room-access.use-case';
+import { StartClassUseCase } from './internal/application/start-class.use-case';
+import { CompleteClassUseCase } from './internal/application/complete-class.use-case';
+import { CompleteElapsedClassesUseCase } from './internal/application/complete-elapsed-classes.use-case';
 import { PendingHoldSweeper } from './internal/adapter/in/scheduler/pending-hold.sweeper';
+import { ClassCompletionSweeper } from './internal/adapter/in/scheduler/class-completion.sweeper';
 import { JitsiRoomTokenIssuer } from './internal/adapter/out/jitsi/jitsi-room-token-issuer';
 import { SqlRoomIncidentRecorder } from './internal/adapter/out/persistence/sql-room-incident-recorder';
 import { GET_MODULE_STATUS } from './internal/application/port/in/get-module-status';
@@ -41,6 +45,12 @@ import {
   REQUEST_ROOM_ACCESS,
   type RequestRoomAccessPort,
 } from './internal/application/port/in/request-room-access';
+import { START_CLASS, type StartClassPort } from './internal/application/port/in/start-class';
+import { COMPLETE_CLASS, type CompleteClassPort } from './internal/application/port/in/complete-class';
+import {
+  COMPLETE_ELAPSED_CLASSES,
+  type CompleteElapsedClassesPort,
+} from './internal/application/port/in/complete-elapsed-classes';
 import {
   ROOM_TOKEN_ISSUER,
   type RoomTokenIssuer,
@@ -209,6 +219,31 @@ const systemClock: Clock = { now: () => new Date() };
       useFactory: (expire: ExpirePendingBookingsPort, logger: AppLogger) =>
         new PendingHoldSweeper(expire, logger),
       inject: [EXPIRE_PENDING_BOOKINGS, AppLogger],
+    },
+    {
+      provide: START_CLASS,
+      useFactory: (classes: ClassRepository): StartClassPort => new StartClassUseCase(classes),
+      inject: [CLASS_REPOSITORY],
+    },
+    {
+      provide: COMPLETE_CLASS,
+      useFactory: (classes: ClassRepository): CompleteClassPort => new CompleteClassUseCase(classes),
+      inject: [CLASS_REPOSITORY],
+    },
+    {
+      provide: COMPLETE_ELAPSED_CLASSES,
+      useFactory: (
+        classes: ClassRepository,
+        bookings: BookingRepository,
+        clock: Clock,
+      ): CompleteElapsedClassesPort => new CompleteElapsedClassesUseCase(classes, bookings, clock),
+      inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY, CLOCK],
+    },
+    {
+      provide: ClassCompletionSweeper,
+      useFactory: (complete: CompleteElapsedClassesPort, logger: AppLogger) =>
+        new ClassCompletionSweeper(complete, logger),
+      inject: [COMPLETE_ELAPSED_CLASSES, AppLogger],
     },
     LiveClassRegistrar,
   ],

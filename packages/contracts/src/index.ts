@@ -53,6 +53,22 @@ export const bookingCancelledSchema = z.object({
 });
 export type BookingCancelled = z.infer<typeof bookingCancelledSchema>;
 
+/** FR-020 / ADR-021: a completed class releases the teacher's pending income. */
+export const classCompletedSchema = z.object({
+  classId: z.string().min(1),
+  teacherId: z.string().min(1),
+  basis: z.enum(['scheduled_end', 'teacher_ended']),
+  completedAt: z.string().datetime({ offset: true }),
+  bookings: z.array(
+    z.object({
+      bookingId: z.string().min(1),
+      learnerId: z.string().min(1),
+      priceCredits: z.number().int().positive(),
+    }),
+  ),
+});
+export type ClassCompleted = z.infer<typeof classCompletedSchema>;
+
 export const statusChangedSchema = z.object({
   module: z.string().min(1),
   previousState: z.string().min(1),

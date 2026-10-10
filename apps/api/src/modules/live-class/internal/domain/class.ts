@@ -211,3 +211,81 @@ export function assertClassEditable(classId: string, confirmedBookingCount: numb
     throw new ClassLockedError(classId);
   }
 }
+
+// ── FR-020 class lifecycle & completion (ADR-021) ───────────────────────────
+
+export const COMPLETION_BASES = ['scheduled_end', 'teacher_ended'] as const;
+export type CompletionBasis = (typeof COMPLETION_BASES)[number];
+
+export const CLASS_CANCELLATION_REASONS = [
+  'teacher_cancelled',
+  'teacher_no_show',
+] as const;
+export type ClassCancellationReason = (typeof CLASS_CANCELLATION_REASONS)[number];
+
+/** States from which a class may be confirmed complete (the Teacher held it). */
+export const COMPLETABLE_STATES: readonly ClassState[] = ['published', 'full', 'in_progress'];
+
+export class ClassNotCompletableError extends Error {
+  constructor(state: ClassState) {
+    super(`Class in state ${state} cannot be completed`);
+    this.name = 'ClassNotCompletableError';
+  }
+}
+
+export class InvalidCompletionBasisError extends Error {
+  constructor(basis: string) {
+    super(`Unknown completion basis: ${basis}`);
+    this.name = 'InvalidCompletionBasisError';
+  }
+}
+
+export function isCompletionBasis(value: string): value is CompletionBasis {
+  return (COMPLETION_BASES as readonly string[]).includes(value);
+}
+
+export function assertCompletionBasis(value: string): asserts value is CompletionBasis {
+  if (!isCompletionBasis(value)) {
+    throw new InvalidCompletionBasisError(value);
+  }
+}
+
+/** A class may complete only from a non-terminal state (idempotency: terminal = no-op). */
+export function canComplete(state: ClassState): boolean {
+  return COMPLETABLE_STATES.includes(state);
+}
+
+export function assertCompletable(state: ClassState): void {
+  if (!canComplete(state)) {
+    throw new ClassNotCompletableError(state);
+  }
+}
+
+/** Auto-completion time for a class: `starts_at + duration` (ADR-021). */
+export function scheduledEnd(view: Pick<ClassView, 'startsAt' | 'durationMinutes'>): Date {
+  return new Date(view.startsAt.getTime() + view.durationMinutes * 60 * 1000);
+}
+
+/** True once the class has reached its scheduled end. */
+export function hasEnded(view: Pick<ClassView, 'startsAt' | 'durationMinutes'>, now: Date): boolean {
+  return scheduledEnd(view).getTime() <= now.getTime();
+}
+
+/**
+ * ADR-021: a class is Completed unless the Teacher no-showed (FR-007 cancelled a
+ * booking for `teacher_no_show`), in which case it is Cancelled and nothing is
+ * released. Learner no-shows never change the outcome.
+ */
+export function completionOutcome(
+  hasTeacherNoShow: boolean,
+): { state: ClassState; basis: CompletionBasis | null; reason: ClassCancellationReason | null } {
+  if (hasTeacherNoShow) {
+    return { state: 'cancelled', basis: null, reason: 'teacher_no_show' };
+  }
+  return { state: 'completed', basis: 'scheduled_end', reason: null };
+}
+
+/** A completed class is the authorized basis for rating (FR-013 consumes this). */
+export function isRatingEligible(state: ClassState): boolean {
+  return state === 'completed';
+}

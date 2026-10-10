@@ -16,6 +16,10 @@ function setup() {
     findById: jest.fn(async () => null),
     update: jest.fn(async (_id: string, edit) => ({ id: _id, teacherId: 'teacher-1', state: 'published', ...edit }) as PersistedClass),
     markCancelled: jest.fn(async () => undefined),
+    startAndEmit: jest.fn(async () => ({ started: false })),
+    completeAndEmit: jest.fn(async () => ({ completed: false, bookingIds: [] })),
+    cancelWithReason: jest.fn(async () => ({ cancelled: false })),
+    findAwaitingCompletion: jest.fn(async () => []),
   };
   const clock: Clock = { now: () => NOW };
   return { useCase: new CreateClassUseCase(classes, clock), classes, calls };

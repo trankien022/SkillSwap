@@ -77,4 +77,6 @@ export interface BookingRepository {
   countByClassAndState(classId: string, state: BookingState): Promise<number>;
   /** Active (pending|confirmed) bookings for a class, for class cancellation. */
   findActiveByClass(classId: string): Promise<PersistedBooking[]>;
+  /** FR-020 / ADR-021: whether any booking of the class was cancelled for a teacher no-show. */
+  hasTeacherNoShow(classId: string): Promise<boolean>;
 }
