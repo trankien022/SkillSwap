@@ -17,6 +17,8 @@ import type {
   TopUpIntentRepository,
 } from '../port/out/top-up-intent-repository';
 import type { InitiatePaymentRequest, InitiatePaymentResult, PaymentGateway } from '../port/out/payment-gateway';
+import type { HistoryQuery, WalletReader } from '../port/out/wallet-reader';
+import type { WalletHistoryItemView, WalletHistoryPage } from '@skillswap/contracts';
 
 export class FakeWalletRepository implements WalletRepository {
   readonly balances = new Map<string, number>();
@@ -112,5 +114,33 @@ export class FakePaymentGateway implements PaymentGateway {
 
   async initiateTopUp(request: InitiatePaymentRequest): Promise<InitiatePaymentResult> {
     return { paymentUrl: `https://mock.pay.local/checkout?ref=${request.providerRef}` };
+  }
+}
+
+/** In-memory wallet reader: entries are stored newest-first per owner. */
+export class FakeWalletReader implements WalletReader {
+  readonly entries = new Map<string, WalletHistoryItemView[]>();
+
+  seed(ownerId: string, items: WalletHistoryItemView[]): void {
+    this.entries.set(ownerId, items);
+  }
+
+  async history(query: HistoryQuery): Promise<WalletHistoryPage> {
+    const all = this.entries.get(query.ownerId) ?? [];
+    const start = query.cursor === undefined ? 0 : Number.parseInt(query.cursor, 10);
+    const slice = all.slice(start, start + query.limit);
+    const next = start + query.limit < all.length ? String(start + query.limit) : null;
+    return { items: slice, nextCursor: next };
+  }
+
+  async sums(ownerId: string): Promise<{ credits: number; debits: number }> {
+    const all = this.entries.get(ownerId) ?? [];
+    return all.reduce(
+      (acc, item) =>
+        item.direction === 'credit'
+          ? { ...acc, credits: acc.credits + item.amountCredits }
+          : { ...acc, debits: acc.debits + item.amountCredits },
+      { credits: 0, debits: 0 },
+    );
   }
 }
