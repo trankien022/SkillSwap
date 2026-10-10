@@ -1,3 +1,4 @@
+import type { AccountVerificationStatus } from '@skillswap/contracts';
 import type { Account } from '../../domain/account';
 import type { PasswordHash } from '../../domain/credential';
 import type { Session } from '../../domain/session';
@@ -6,6 +7,12 @@ import type { CredentialRepository } from '../port/out/credential-repository';
 import type { SessionRepository, NewSession } from '../port/out/session-repository';
 import type { PasswordHasher } from '../port/out/password-hasher';
 import type { AccessTokenInput, IssuedAccessToken, TokenService } from '../port/out/token-service';
+import type {
+  ProjectedVerificationStatus,
+  UpsertVerificationStatusRequest,
+  VerificationStatusReader,
+  VerificationStatusWriter,
+} from '../port/out/verification-status-projector';
 
 export class FakeAccountRepository implements AccountRepository {
   private readonly byEmail = new Map<string, Account>();
@@ -125,3 +132,31 @@ export class FakeClock {
     this.current = date;
   }
 }
+
+/** In-memory FR-017 verification-status projection (reader + writer). */
+export class FakeVerificationStatusProjector
+  implements VerificationStatusReader, VerificationStatusWriter
+{
+  private readonly rows = new Map<
+    string,
+    { status: AccountVerificationStatus; reason: string | null; occurredAt: string }
+  >();
+
+  async findByAccount(accountId: string): Promise<ProjectedVerificationStatus | null> {
+    const row = this.rows.get(accountId);
+    return row === undefined ? null : { status: row.status, reason: row.reason };
+  }
+
+  async upsert(request: UpsertVerificationStatusRequest): Promise<void> {
+    const existing = this.rows.get(request.accountId);
+    if (existing !== undefined && existing.occurredAt >= request.occurredAt) {
+      return;
+    }
+    this.rows.set(request.accountId, {
+      status: request.status,
+      reason: request.reason,
+      occurredAt: request.occurredAt,
+    });
+  }
+}
+
