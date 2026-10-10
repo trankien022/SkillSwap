@@ -17,6 +17,10 @@ function loadRootEnv() {
       (value.startsWith("'") && value.endsWith("'"))
     ) {
       value = value.slice(1, -1);
+    } else {
+      // Strip an inline comment from an unquoted value ("off # comment" -> "off"),
+      // matching how dotenv treats .env.example lines.
+      value = value.replace(/\s+#.*$/, '').trim();
     }
     if (process.env[match[1]] === undefined && value !== '') {
       process.env[match[1]] = value;

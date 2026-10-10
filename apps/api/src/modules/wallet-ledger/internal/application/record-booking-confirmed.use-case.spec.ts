@@ -1,53 +1,59 @@
+import { InsufficientBalanceError } from '../domain/wallet';
 import { RecordBookingConfirmedUseCase } from './record-booking-confirmed.use-case';
-import type { LedgerEntryWriter } from './port/out/ledger-entry-writer';
+import { FakeWalletRepository } from './testing/fakes';
 
-describe('RecordBookingConfirmedUseCase', () => {
-  function setup(recorded = true) {
-    const creditTeacher = jest.fn().mockResolvedValue({ recorded, amountCredits: 900 });
-    const ledger: LedgerEntryWriter = { creditTeacher, append: jest.fn().mockResolvedValue(undefined) };
-    return { useCase: new RecordBookingConfirmedUseCase(ledger), creditTeacher };
+describe('RecordBookingConfirmedUseCase (FR-009 / ADR-018)', () => {
+  async function setup(learnerBalance = 10_000) {
+    const wallets = new FakeWalletRepository();
+    if (learnerBalance > 0) {
+      await wallets.addAvailable('st-1', learnerBalance);
+    }
+    return { wallets, useCase: new RecordBookingConfirmedUseCase(wallets) };
   }
 
-  it('splits the fee and credits the teacher', async () => {
-    const { useCase, creditTeacher } = setup();
+  it('debits the learner, splits 90/10 and credits the teacher pending (AC-004)', async () => {
+    const { wallets, useCase } = await setup();
     const result = await useCase.execute({
       bookingId: 'bk-1',
       studentId: 'st-1',
       teacherId: 'tc-1',
-      amountCredits: 1000,
+      amountCredits: 100,
     });
-    expect(creditTeacher).toHaveBeenCalledWith({
-      bookingId: 'bk-1',
-      teacherId: 'tc-1',
-      amountCredits: 900,
-    });
-    expect(result).toEqual({ recorded: true, teacherCredits: 900, platformFeeCredits: 100 });
+    expect(result).toEqual({ applied: true, teacherCredits: 90, platformFeeCredits: 10 });
+    expect(await wallets.getBalance('st-1')).toEqual({ availableCredits: 9900, pendingCredits: 0 });
+    expect(await wallets.getBalance('tc-1')).toEqual({ availableCredits: 0, pendingCredits: 90 });
   });
 
-  it('reports duplicate bookings without crediting again', async () => {
-    const { useCase } = setup(false);
+  it('gives the rounding remainder to the teacher (OQ-012)', async () => {
+    const { useCase } = await setup();
     const result = await useCase.execute({
-      bookingId: 'bk-1',
+      bookingId: 'bk-2',
       studentId: 'st-1',
       teacherId: 'tc-1',
-      amountCredits: 400,
+      amountCredits: 101,
     });
-    expect(result).toEqual({ recorded: false, teacherCredits: 360, platformFeeCredits: 40 });
+    expect(result).toEqual({ applied: true, teacherCredits: 91, platformFeeCredits: 10 });
   });
 
-  it('rejects invalid amounts before touching the ledger', async () => {
-    const { useCase, creditTeacher } = setup();
-    await expect(
-      useCase.execute({ bookingId: 'bk-2', studentId: 'st-1', teacherId: 'tc-1', amountCredits: 0 }),
-    ).rejects.toThrow(RangeError);
-    expect(creditTeacher).not.toHaveBeenCalled();
+  it('is a no-op on replay for the same booking', async () => {
+    const { wallets, useCase } = await setup();
+    await useCase.execute({ bookingId: 'bk-3', studentId: 'st-1', teacherId: 'tc-1', amountCredits: 100 });
+    const replay = await useCase.execute({
+      bookingId: 'bk-3',
+      studentId: 'st-1',
+      teacherId: 'tc-1',
+      amountCredits: 100,
+    });
+    expect(replay.applied).toBe(false);
+    expect(await wallets.getBalance('st-1')).toEqual({ availableCredits: 9900, pendingCredits: 0 });
   });
 
-  it('propagates ledger failures', async () => {
-    const { useCase, creditTeacher } = setup();
-    creditTeacher.mockRejectedValue(new Error('db down'));
+  it('leaves no partial state when the learner cannot pay (AC-005)', async () => {
+    const { wallets, useCase } = await setup(50);
     await expect(
-      useCase.execute({ bookingId: 'bk-3', studentId: 'st-1', teacherId: 'tc-1', amountCredits: 100 }),
-    ).rejects.toThrow('db down');
+      useCase.execute({ bookingId: 'bk-4', studentId: 'st-1', teacherId: 'tc-1', amountCredits: 100 }),
+    ).rejects.toThrow(InsufficientBalanceError);
+    expect(await wallets.getBalance('st-1')).toEqual({ availableCredits: 50, pendingCredits: 0 });
+    expect(await wallets.getBalance('tc-1')).toEqual({ availableCredits: 0, pendingCredits: 0 });
   });
 });

@@ -43,6 +43,11 @@ export class ApiConfig {
   readonly jwtPrivateKeyPath: string;
   readonly accessTokenTtlSeconds: number;
   readonly paymentWebhookSecret: string;
+  readonly jitsiAppId: string;
+  readonly jitsiAppSecret: string;
+  readonly jitsiDomain: string;
+  readonly jitsiTokenTtlSeconds: number;
+  readonly jitsiOpenMinutes: number;
   readonly logLevel: string;
 
   constructor() {
@@ -67,6 +72,12 @@ export class ApiConfig {
     this.jwtPrivateKeyPath = isAbsolute(keyPath) ? keyPath : resolve(process.cwd(), keyPath);
     this.accessTokenTtlSeconds = readInt('ACCESS_TOKEN_TTL_SECONDS', 900);
     this.paymentWebhookSecret = readString('PAYMENT_WEBHOOK_SECRET', 'dev-webhook-secret');
+
+    this.jitsiAppId = readString('JITSI_APP_ID', 'skillswap');
+    this.jitsiAppSecret = readString('JITSI_APP_SECRET', 'skillswap_jitsi_dev_secret');
+    this.jitsiDomain = readString('JITSI_DOMAIN', 'localhost:8443');
+    this.jitsiTokenTtlSeconds = readInt('JITSI_TOKEN_TTL_SECONDS', 3600);
+    this.jitsiOpenMinutes = readInt('JITSI_OPEN_MINUTES', 15);
   }
 
   /** Per-schema credentials (ADR-007): DATABASE_<SCHEMA>_USER / _PASSWORD. */

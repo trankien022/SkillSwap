@@ -1,14 +1,14 @@
 import { Inject, Injectable, Module, type OnModuleInit } from '@nestjs/common';
-import { bookingConfirmedSchema } from '@skillswap/contracts';
+import { bookingCancelledSchema, bookingConfirmedSchema, classCompletedSchema } from '@skillswap/contracts';
 import { ApiConfig } from '../../shared/config/api-config';
 import { EventHandlerRegistry, type BusMessage } from '../../shared/messaging/event-handler-registry';
 import { ModuleDataSourceRegistry } from '../../shared/messaging/module-registry';
 import { createModuleDataSource } from './internal/adapter/out/persistence/data-source';
 import { SCHEMA } from './internal/adapter/out/persistence/schema';
-import { SqlLedgerEntryWriter } from './internal/adapter/out/persistence/sql-ledger-entry-writer';
 import { SqlModuleStatusReader } from './internal/adapter/out/persistence/sql-module-status-reader';
 import { SqlModuleStatusWriter } from './internal/adapter/out/persistence/sql-module-status-writer';
 import { SqlWalletRepository } from './internal/adapter/out/persistence/sql-wallet-repository';
+import { SqlWalletReader } from './internal/adapter/out/persistence/sql-wallet-reader';
 import { SqlTopUpIntentRepository } from './internal/adapter/out/persistence/sql-top-up-intent-repository';
 import { MockPaymentGateway } from './internal/adapter/out/payment/mock-payment-gateway';
 import { HmacWebhookSignatureVerifier } from './internal/adapter/out/payment/hmac-webhook-signature-verifier';
@@ -16,9 +16,15 @@ import { StatusController } from './internal/adapter/in/web/status.controller';
 import { WalletController } from './internal/adapter/in/web/wallet.controller';
 import { AdvanceStatusUseCase } from './internal/application/advance-status.use-case';
 import { RecordBookingConfirmedUseCase } from './internal/application/record-booking-confirmed.use-case';
+import { RefundCancelledBookingUseCase } from './internal/application/refund-cancelled-booking.use-case';
+import { ReleaseIncomeUseCase } from './internal/application/release-income.use-case';
+import { ReleaseCompletedClassUseCase } from './internal/application/release-completed-class.use-case';
 import { InitiateTopUpUseCase } from './internal/application/initiate-top-up.use-case';
 import { HandleTopUpCallbackUseCase } from './internal/application/handle-top-up-callback.use-case';
 import { GetWalletBalanceUseCase } from './internal/application/get-wallet-balance.use-case';
+import { GetWalletHistoryQueryHandler } from './internal/application/get-wallet-history.query';
+import { GET_WALLET_HISTORY } from './internal/application/port/in/get-wallet-history';
+import { WALLET_READER, type WalletReader } from './internal/application/port/out/wallet-reader';
 import { GET_MODULE_STATUS } from './internal/application/port/in/get-module-status';
 import { ADVANCE_STATUS } from './internal/application/port/in/advance-status';
 import { INITIATE_TOP_UP } from './internal/application/port/in/initiate-top-up';
@@ -28,10 +34,15 @@ import {
   RECORD_BOOKING_CONFIRMED,
   type RecordBookingConfirmedPort,
 } from './internal/application/port/in/record-booking-confirmed';
+import { RELEASE_INCOME } from './internal/application/port/in/release-income';
 import {
-  LEDGER_ENTRY_WRITER,
-  type LedgerEntryWriter,
-} from './internal/application/port/out/ledger-entry-writer';
+  REFUND_CANCELLED_BOOKING,
+  type RefundCancelledBookingPort,
+} from './internal/application/port/in/refund-cancelled-booking';
+import {
+  RELEASE_COMPLETED_CLASS,
+  type ReleaseCompletedClassPort,
+} from './internal/application/port/in/release-completed-class';
 import { WALLET_REPOSITORY, type WalletRepository } from './internal/application/port/out/wallet-repository';
 import {
   TOP_UP_INTENT_REPOSITORY,
@@ -55,6 +66,8 @@ export class WalletLedgerRegistrar implements OnModuleInit {
     private readonly config: ApiConfig,
     private readonly handlers: EventHandlerRegistry,
     @Inject(RECORD_BOOKING_CONFIRMED) private readonly recordBooking: RecordBookingConfirmedPort,
+    @Inject(REFUND_CANCELLED_BOOKING) private readonly refundBooking: RefundCancelledBookingPort,
+    @Inject(RELEASE_COMPLETED_CLASS) private readonly releaseClass: ReleaseCompletedClassPort,
   ) {}
 
   onModuleInit(): void {
@@ -68,6 +81,24 @@ export class WalletLedgerRegistrar implements OnModuleInit {
       handler: async (message: BusMessage): Promise<void> => {
         const event = bookingConfirmedSchema.parse(message.payload);
         await this.recordBooking.execute(event);
+      },
+    });
+    this.handlers.register({
+      moduleName: MODULE_NAME,
+      eventType: 'booking.cancelled',
+      queue: 'wallet-ledger.booking-cancelled',
+      handler: async (message: BusMessage): Promise<void> => {
+        const event = bookingCancelledSchema.parse(message.payload);
+        await this.refundBooking.execute(event);
+      },
+    });
+    this.handlers.register({
+      moduleName: MODULE_NAME,
+      eventType: 'class.completed',
+      queue: 'wallet-ledger.class-completed',
+      handler: async (message: BusMessage): Promise<void> => {
+        const event = classCompletedSchema.parse(message.payload);
+        await this.releaseClass.execute(event);
       },
     });
   }
@@ -100,15 +131,9 @@ export class WalletLedgerRegistrar implements OnModuleInit {
       inject: [STATUS_READER],
     },
     {
-      provide: LEDGER_ENTRY_WRITER,
-      useFactory: (registry: ModuleDataSourceRegistry) =>
-        new SqlLedgerEntryWriter(registry, MODULE_NAME),
-      inject: [ModuleDataSourceRegistry],
-    },
-    {
       provide: RECORD_BOOKING_CONFIRMED,
-      useFactory: (ledger: LedgerEntryWriter) => new RecordBookingConfirmedUseCase(ledger),
-      inject: [LEDGER_ENTRY_WRITER],
+      useFactory: (wallets: WalletRepository) => new RecordBookingConfirmedUseCase(wallets),
+      inject: [WALLET_REPOSITORY],
     },
     {
       provide: WALLET_REPOSITORY,
@@ -144,6 +169,32 @@ export class WalletLedgerRegistrar implements OnModuleInit {
     {
       provide: GET_WALLET_BALANCE,
       useFactory: (wallets: WalletRepository) => new GetWalletBalanceUseCase(wallets),
+      inject: [WALLET_REPOSITORY],
+    },
+    {
+      provide: WALLET_READER,
+      useFactory: (registry: ModuleDataSourceRegistry): WalletReader =>
+        new SqlWalletReader(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
+      provide: GET_WALLET_HISTORY,
+      useFactory: (reader: WalletReader) => new GetWalletHistoryQueryHandler(reader),
+      inject: [WALLET_READER],
+    },
+    {
+      provide: RELEASE_INCOME,
+      useFactory: (wallets: WalletRepository) => new ReleaseIncomeUseCase(wallets),
+      inject: [WALLET_REPOSITORY],
+    },
+    {
+      provide: REFUND_CANCELLED_BOOKING,
+      useFactory: (wallets: WalletRepository) => new RefundCancelledBookingUseCase(wallets),
+      inject: [WALLET_REPOSITORY],
+    },
+    {
+      provide: RELEASE_COMPLETED_CLASS,
+      useFactory: (wallets: WalletRepository) => new ReleaseCompletedClassUseCase(wallets),
       inject: [WALLET_REPOSITORY],
     },
     WalletLedgerRegistrar,

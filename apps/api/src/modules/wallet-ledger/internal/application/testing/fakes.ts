@@ -1,19 +1,38 @@
 import { randomUUID } from 'node:crypto';
 import type { WalletBalance, TopUpStatus } from '../../domain/wallet';
-import type { ApplyTopUpRequest, WalletRepository } from '../port/out/wallet-repository';
+import { InsufficientBalanceError } from '../../domain/wallet';
+import type {
+  ApplyTopUpRequest,
+  RefundBookingRequest,
+  RefundBookingResult,
+  ReleaseIncomeRequest,
+  ReleaseIncomeResult,
+  SettleBookingRequest,
+  SettleBookingResult,
+  WalletRepository,
+} from '../port/out/wallet-repository';
 import type {
   NewTopUpIntent,
   TopUpIntent,
   TopUpIntentRepository,
 } from '../port/out/top-up-intent-repository';
 import type { InitiatePaymentRequest, InitiatePaymentResult, PaymentGateway } from '../port/out/payment-gateway';
+import type { HistoryQuery, WalletReader } from '../port/out/wallet-reader';
+import type { WalletHistoryItemView, WalletHistoryPage } from '@skillswap/contracts';
 
 export class FakeWalletRepository implements WalletRepository {
   readonly balances = new Map<string, number>();
+  readonly pending = new Map<string, number>();
   readonly entries: Array<ApplyTopUpRequest & { direction: string }> = [];
+  readonly settledBookings = new Set<string>();
+  readonly releasedKeys = new Set<string>();
+  readonly refundedBookings = new Set<string>();
 
   async getBalance(ownerId: string): Promise<WalletBalance> {
-    return { availableCredits: this.balances.get(ownerId) ?? 0, pendingCredits: 0 };
+    return {
+      availableCredits: this.balances.get(ownerId) ?? 0,
+      pendingCredits: this.pending.get(ownerId) ?? 0,
+    };
   }
 
   async addAvailable(ownerId: string, deltaCredits: number): Promise<WalletBalance> {
@@ -25,6 +44,46 @@ export class FakeWalletRepository implements WalletRepository {
     this.entries.push(request);
     const delta = request.direction === 'credit' ? request.amountCredits : -request.amountCredits;
     return this.addAvailable(request.ownerId, delta);
+  }
+
+  async settleBooking(request: SettleBookingRequest): Promise<SettleBookingResult> {
+    if (this.settledBookings.has(request.bookingId)) {
+      return { applied: false, teacherCredits: request.teacherCredits, platformFeeCredits: request.platformFeeCredits };
+    }
+    const available = this.balances.get(request.learnerId) ?? 0;
+    if (available < request.priceCredits) {
+      throw new InsufficientBalanceError(available, request.priceCredits);
+    }
+    this.balances.set(request.learnerId, available - request.priceCredits);
+    this.pending.set(request.teacherId, (this.pending.get(request.teacherId) ?? 0) + request.teacherCredits);
+    this.settledBookings.add(request.bookingId);
+    return { applied: true, teacherCredits: request.teacherCredits, platformFeeCredits: request.platformFeeCredits };
+  }
+
+  async releaseIncome(request: ReleaseIncomeRequest): Promise<ReleaseIncomeResult> {
+    const key = `${request.bookingId}:${request.releaseKey}`;
+    if (this.releasedKeys.has(key)) {
+      return { applied: false };
+    }
+    this.releasedKeys.add(key);
+    this.pending.set(request.teacherId, (this.pending.get(request.teacherId) ?? 0) - request.amountCredits);
+    this.balances.set(request.teacherId, (this.balances.get(request.teacherId) ?? 0) + request.amountCredits);
+    return { applied: true };
+  }
+
+  async refundBooking(request: RefundBookingRequest): Promise<RefundBookingResult> {
+    if (!this.settledBookings.has(request.bookingId) || this.refundedBookings.has(request.bookingId)) {
+      return { applied: false };
+    }
+    this.refundedBookings.add(request.bookingId);
+    // Mirror splitSettlement: floor fee, remainder to the teacher.
+    const teacherShare = request.priceCredits - Math.floor((request.priceCredits * 1000) / 10_000);
+    this.balances.set(request.learnerId, (this.balances.get(request.learnerId) ?? 0) + request.priceCredits);
+    this.pending.set(
+      request.teacherId,
+      Math.max(0, (this.pending.get(request.teacherId) ?? 0) - teacherShare),
+    );
+    return { applied: true };
   }
 }
 
@@ -55,5 +114,33 @@ export class FakePaymentGateway implements PaymentGateway {
 
   async initiateTopUp(request: InitiatePaymentRequest): Promise<InitiatePaymentResult> {
     return { paymentUrl: `https://mock.pay.local/checkout?ref=${request.providerRef}` };
+  }
+}
+
+/** In-memory wallet reader: entries are stored newest-first per owner. */
+export class FakeWalletReader implements WalletReader {
+  readonly entries = new Map<string, WalletHistoryItemView[]>();
+
+  seed(ownerId: string, items: WalletHistoryItemView[]): void {
+    this.entries.set(ownerId, items);
+  }
+
+  async history(query: HistoryQuery): Promise<WalletHistoryPage> {
+    const all = this.entries.get(query.ownerId) ?? [];
+    const start = query.cursor === undefined ? 0 : Number.parseInt(query.cursor, 10);
+    const slice = all.slice(start, start + query.limit);
+    const next = start + query.limit < all.length ? String(start + query.limit) : null;
+    return { items: slice, nextCursor: next };
+  }
+
+  async sums(ownerId: string): Promise<{ credits: number; debits: number }> {
+    const all = this.entries.get(ownerId) ?? [];
+    return all.reduce(
+      (acc, item) =>
+        item.direction === 'credit'
+          ? { ...acc, credits: acc.credits + item.amountCredits }
+          : { ...acc, debits: acc.debits + item.amountCredits },
+      { credits: 0, debits: 0 },
+    );
   }
 }

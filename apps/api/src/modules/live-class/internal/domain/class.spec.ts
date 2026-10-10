@@ -1,18 +1,29 @@
 import {
   BOOKING_LEAD_TIME_MS,
   CLASS_STATES,
+  ClassLockedError,
+  ClassNotCompletableError,
   ClassTransitionError,
   INITIAL_CLASS_STATE,
   InvalidCapacityError,
+  InvalidCompletionBasisError,
   InvalidDurationError,
   InvalidPriceError,
   InvalidStartTimeError,
   UnknownClassStateError,
+  assertClassEditable,
   assertClassState,
+  assertCompletable,
+  assertCompletionBasis,
   assertTransition,
+  canComplete,
   canTransition,
+  completionOutcome,
+  hasEnded,
   hasStarted,
   isClassState,
+  isRatingEligible,
+  scheduledEnd,
   publishClass,
   type ClassDraft,
 } from './class';
@@ -101,5 +112,58 @@ describe('class aggregate', () => {
     const view = publishClass(draft({ startsAt: new Date(NOW.getTime() + BOOKING_LEAD_TIME_MS) }), NOW);
     expect(hasStarted(view, NOW)).toBe(false);
     expect(hasStarted(view, new Date(NOW.getTime() + BOOKING_LEAD_TIME_MS))).toBe(true);
+  });
+
+  it('locks a class once it has a confirmed booking (AC-017)', () => {
+    expect(() => assertClassEditable('cls-1', 0)).not.toThrow();
+    expect(() => assertClassEditable('cls-1', 1)).toThrow(ClassLockedError);
+    expect(() => assertClassEditable('cls-1', 3)).toThrow(ClassLockedError);
+  });
+});
+
+describe('class lifecycle & completion (FR-020 / ADR-021)', () => {
+  it('allows the approved transitions and blocks terminal ones', () => {
+    expect(canComplete('published')).toBe(true);
+    expect(canComplete('full')).toBe(true);
+    expect(canComplete('in_progress')).toBe(true);
+    expect(canComplete('completed')).toBe(false);
+    expect(canComplete('cancelled')).toBe(false);
+    expect(canComplete('draft')).toBe(false);
+    expect(() => assertCompletable('completed')).toThrow(ClassNotCompletableError);
+  });
+
+  it('computes the scheduled end and detects it', () => {
+    const view = { startsAt: new Date('2026-10-12T10:00:00.000Z'), durationMinutes: 60 };
+    expect(scheduledEnd(view).toISOString()).toBe('2026-10-12T11:00:00.000Z');
+    expect(hasEnded(view, new Date('2026-10-12T10:59:59.000Z'))).toBe(false);
+    expect(hasEnded(view, new Date('2026-10-12T11:00:00.000Z'))).toBe(true);
+  });
+
+  it('completes at scheduled end when there is no teacher no-show', () => {
+    expect(completionOutcome(false)).toEqual({
+      state: 'completed',
+      basis: 'scheduled_end',
+      reason: null,
+    });
+  });
+
+  it('cancels a teacher no-show class without a completion basis', () => {
+    expect(completionOutcome(true)).toEqual({
+      state: 'cancelled',
+      basis: null,
+      reason: 'teacher_no_show',
+    });
+  });
+
+  it('treats only a completed class as rating-eligible', () => {
+    expect(isRatingEligible('completed')).toBe(true);
+    expect(isRatingEligible('in_progress')).toBe(false);
+    expect(isRatingEligible('cancelled')).toBe(false);
+  });
+
+  it('validates the completion basis', () => {
+    expect(() => assertCompletionBasis('scheduled_end')).not.toThrow();
+    expect(() => assertCompletionBasis('teacher_ended')).not.toThrow();
+    expect(() => assertCompletionBasis('guess')).toThrow(InvalidCompletionBasisError);
   });
 });

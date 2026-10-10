@@ -1,4 +1,5 @@
-# SkillSwap local infrastructure (ADR-007 schema-per-module, ADR-013 RabbitMQ).
+# SkillSwap local infrastructure (ADR-007 schema-per-module, ADR-013 RabbitMQ,
+# ADR-020 self-hosted Jitsi with JWT auth).
 # Usage: `docker compose up -d` — init scripts seed roles/schemas on first boot.
 services:
   postgres:
@@ -32,6 +33,116 @@ services:
       timeout: 5s
       retries: 10
 
+  # ── FR-011: self-hosted Jitsi (ADR-020) ──────────────────────────────────
+  # JWT-authenticated rooms. The API signs tokens with JITSI_APP_ID /
+  # JITSI_APP_SECRET; Prosody accepts only those issuers.
+  jitsi-web:
+    image: jitsi/web:stable
+    container_name: skillswap-jitsi-web
+    restart: unless-stopped
+    ports:
+      - '8443:443'
+      - '8000:80'
+    environment:
+      ENABLE_AUTH: '1'
+      ENABLE_GUESTS: '1'
+      AUTH_TYPE: jwt
+      JWT_APP_ID: ${JITSI_APP_ID:-skillswap}
+      JWT_APP_SECRET: ${JITSI_APP_SECRET:-skillswap_jitsi_dev_secret}
+      JWT_ACCEPTED_ISSUERS: ${JITSI_APP_ID:-skillswap}
+      JWT_ACCEPTED_AUDIENCES: ${JITSI_APP_ID:-skillswap}
+      ENABLE_LETSENCRYPT: '0'
+      ENABLE_HTTP_REDIRECT: '0'
+      DISABLE_HTTPS: '1'
+      PUBLIC_URL: https://localhost:8443
+      XMPP_DOMAIN: meet.jitsi
+      XMPP_AUTH_DOMAIN: auth.meet.jitsi
+      XMPP_MUC_DOMAIN: muc.meet.jitsi
+      XMPP_INTERNAL_MUC_DOMAIN: internal-muc.meet.jitsi
+      XMPP_GUEST_DOMAIN: guest.meet.jitsi
+      XMPP_RECORDER_DOMAIN: recorder.meet.jitsi
+      CONFIG_EXTERNAL_CONNECT: '1'
+      TZ: UTC
+    volumes:
+      - jitsi-web-config:/config
+      - jitsi-web-transcripts:/usr/share/jitsi-meet/transcripts
+    depends_on:
+      - jitsi-prosody
+
+  jitsi-prosody:
+    image: jitsi/prosody:stable
+    container_name: skillswap-jitsi-prosody
+    restart: unless-stopped
+    expose:
+      - '5222'
+      - '5269'
+      - '5280'
+    environment:
+      ENABLE_AUTH: '1'
+      ENABLE_GUESTS: '1'
+      AUTH_TYPE: jwt
+      JWT_APP_ID: ${JITSI_APP_ID:-skillswap}
+      JWT_APP_SECRET: ${JITSI_APP_SECRET:-skillswap_jitsi_dev_secret}
+      JWT_ACCEPTED_ISSUERS: ${JITSI_APP_ID:-skillswap}
+      JWT_ACCEPTED_AUDIENCES: ${JITSI_APP_ID:-skillswap}
+      XMPP_DOMAIN: meet.jitsi
+      XMPP_AUTH_DOMAIN: auth.meet.jitsi
+      XMPP_MUC_DOMAIN: muc.meet.jitsi
+      XMPP_INTERNAL_MUC_DOMAIN: internal-muc.meet.jitsi
+      XMPP_GUEST_DOMAIN: guest.meet.jitsi
+      XMPP_RECORDER_DOMAIN: recorder.meet.jitsi
+      TZ: UTC
+    volumes:
+      - jitsi-prosody-config:/config
+      - jitsi-prosody-plugins:/prosody-plugins-custom
+
+  jitsi-jicofo:
+    image: jitsi/jicofo:stable
+    container_name: skillswap-jitsi-jicofo
+    restart: unless-stopped
+    environment:
+      ENABLE_AUTH: '1'
+      AUTH_TYPE: jwt
+      JWT_APP_ID: ${JITSI_APP_ID:-skillswap}
+      JWT_APP_SECRET: ${JITSI_APP_SECRET:-skillswap_jitsi_dev_secret}
+      XMPP_DOMAIN: meet.jitsi
+      XMPP_AUTH_DOMAIN: auth.meet.jitsi
+      XMPP_INTERNAL_MUC_DOMAIN: internal-muc.meet.jitsi
+      XMPP_MUC_DOMAIN: muc.meet.jitsi
+      XMPP_SERVER: jitsi-prosody
+      TZ: UTC
+    volumes:
+      - jitsi-jicofo-config:/config
+    depends_on:
+      - jitsi-prosody
+
+  jitsi-jvb:
+    image: jitsi/jvb:stable
+    container_name: skillswap-jitsi-jvb
+    restart: unless-stopped
+    ports:
+      - '10000:10000/udp'
+    environment:
+      XMPP_AUTH_DOMAIN: auth.meet.jitsi
+      XMPP_INTERNAL_MUC_DOMAIN: internal-muc.meet.jitsi
+      XMPP_SERVER: jitsi-prosody
+      JVB_AUTH_USER: jvb
+      JVB_AUTH_PASSWORD: ${JITSI_JVB_PASSWORD:-skillswap_jvb_dev_password}
+      JVB_BREWERY_MUC: jvbbrewery
+      JVB_PORT: '10000'
+      JVB_TCP_HARVESTER_DISABLED: 'true'
+      TZ: UTC
+    volumes:
+      - jitsi-jvb-config:/config
+    depends_on:
+      - jitsi-prosody
+
 volumes:
   postgres-data:
   rabbitmq-data:
+  jitsi-web-config:
+  jitsi-web-transcripts:
+  jitsi-prosody-config:
+  jitsi-prosody-plugins:
+  jitsi-jicofo-config:
+  jitsi-jvb-config:

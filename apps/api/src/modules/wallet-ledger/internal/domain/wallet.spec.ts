@@ -7,6 +7,7 @@ import {
   InsufficientBalanceError,
   InvalidTopUpAmountError,
   isTopUpStatus,
+  splitSettlement,
   topUpStatusRank,
   vndToCredits,
 } from './wallet';
@@ -62,5 +63,29 @@ describe('top-up domain (FR-008 / ADR-017)', () => {
     expect(() => assertCanSpend(100, 100)).not.toThrow();
     expect(() => assertCanSpend(100, 101)).toThrow(InsufficientBalanceError);
     expect(() => assertCanSpend(-10, 1)).toThrow(InsufficientBalanceError);
+  });
+});
+
+describe('settlement split (FR-009 / ADR-018)', () => {
+  it('floors the fee and gives the remainder to the teacher', () => {
+    expect(splitSettlement(100)).toEqual({ platformFeeCredits: 10, teacherCredits: 90 });
+    expect(splitSettlement(101)).toEqual({ platformFeeCredits: 10, teacherCredits: 91 });
+    expect(splitSettlement(1)).toEqual({ platformFeeCredits: 0, teacherCredits: 1 });
+    expect(splitSettlement(999)).toEqual({ platformFeeCredits: 99, teacherCredits: 900 });
+  });
+
+  it('keeps the integer invariant teacher + fee == price', () => {
+    for (const price of [1, 3, 7, 99, 100, 101, 12345, 999_999]) {
+      const { teacherCredits, platformFeeCredits } = splitSettlement(price);
+      expect(teacherCredits + platformFeeCredits).toBe(price);
+      expect(Number.isInteger(teacherCredits)).toBe(true);
+      expect(Number.isInteger(platformFeeCredits)).toBe(true);
+    }
+  });
+
+  it('rejects non-positive or non-integer prices', () => {
+    expect(() => splitSettlement(0)).toThrow(RangeError);
+    expect(() => splitSettlement(-5)).toThrow(RangeError);
+    expect(() => splitSettlement(1.5)).toThrow(RangeError);
   });
 });

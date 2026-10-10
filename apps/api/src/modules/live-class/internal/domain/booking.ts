@@ -51,6 +51,81 @@ export function holdsSeat(state: BookingState): boolean {
   return SEAT_HOLDING_STATES.includes(state);
 }
 
+// ── FR-007 lifecycle remainder (ADR-019) ────────────────────────────────────
+
+/** A pending hold auto-cancels after this long (OQ-007 / AC-026). */
+export const DEFAULT_HOLD_TTL_MS = 15 * 60 * 1000;
+
+/** A confirmed booking is a Teacher no-show after this window from start (AC-024). */
+export const TEACHER_NO_SHOW_WINDOW_MS = 15 * 60 * 1000;
+
+export const CANCEL_REASONS = [
+  'expired',
+  'class_cancelled',
+  'teacher_no_show',
+] as const;
+export type CancelReason = (typeof CANCEL_REASONS)[number];
+
+/** States from which a booking may still transition to cancelled. */
+export const CANCELLABLE_STATES: readonly BookingState[] = ['pending', 'confirmed'];
+
+export function isCancellable(state: BookingState): boolean {
+  return CANCELLABLE_STATES.includes(state);
+}
+
+/** A settled (charged) booking is the only one that warrants a refund. */
+export function isRefundable(state: BookingState): boolean {
+  return state === 'confirmed';
+}
+
+export function computeHoldExpiry(createdAt: Date, ttlMs: number = DEFAULT_HOLD_TTL_MS): Date {
+  return new Date(createdAt.getTime() + ttlMs);
+}
+
+export function isPendingExpired(
+  booking: { state: BookingState; expiresAt: Date | null },
+  now: Date,
+): boolean {
+  if (booking.state !== 'pending' || booking.expiresAt === null) {
+    return false;
+  }
+  return booking.expiresAt.getTime() <= now.getTime();
+}
+
+export function isTeacherNoShow(
+  classView: { startsAt: Date },
+  teacherJoinedAt: Date | null,
+  now: Date,
+  windowMs: number = TEACHER_NO_SHOW_WINDOW_MS,
+): boolean {
+  const windowEnds = classView.startsAt.getTime() + windowMs;
+  if (now.getTime() < windowEnds) {
+    return false;
+  }
+  return teacherJoinedAt === null || teacherJoinedAt.getTime() > windowEnds;
+}
+
+export class BookingTransitionError extends Error {
+  constructor(from: BookingState, to: BookingState) {
+    super(`Illegal booking transition: ${from} -> ${to}`);
+    this.name = 'BookingTransitionError';
+  }
+}
+
+/** Only a `pending` booking may become `confirmed` (FR-009 settlement). */
+export function assertConfirmable(state: BookingState): void {
+  if (state !== 'pending') {
+    throw new BookingTransitionError(state, 'confirmed');
+  }
+}
+
+/** Only a `pending` or `confirmed` booking may become `cancelled`. */
+export function assertCancellable(state: BookingState): void {
+  if (!isCancellable(state)) {
+    throw new BookingTransitionError(state, 'cancelled');
+  }
+}
+
 export interface ExistingBooking {
   learnerId: string;
   state: BookingState;

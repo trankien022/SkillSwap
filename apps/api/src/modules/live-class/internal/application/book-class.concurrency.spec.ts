@@ -1,5 +1,5 @@
 import { BookClassUseCase } from './book-class.use-case';
-import { BookingNotAllowedError } from '../domain/booking';
+import { BookingNotAllowedError, type BookingState, type CancelReason } from '../domain/booking';
 import type {
   BookingRepository,
   BookingSeatRow,
@@ -74,9 +74,65 @@ class LockingInMemoryBookingRepository implements BookingRepository {
       priceCredits: record.priceCredits,
       idempotencyKey: record.idempotencyKey,
       createdAt: new Date(),
+      expiresAt: record.expiresAt,
     };
     this.rows.push(booking);
     return { booking, created: true };
+  }
+
+  async confirmAndEmit(
+    bookingId: string,
+    learnerId: string,
+  ): Promise<{ confirmed: boolean; booking: PersistedBooking | null }> {
+    const row = this.rows.find((r) => r.id === bookingId && r.learnerId === learnerId);
+    if (row === undefined || row.state !== 'pending') {
+      return { confirmed: false, booking: row ?? null };
+    }
+    row.state = 'confirmed';
+    return { confirmed: true, booking: row };
+  }
+
+  async findById(bookingId: string): Promise<PersistedBooking | null> {
+    return this.rows.find((row) => row.id === bookingId) ?? null;
+  }
+
+  async cancelAndEmit(
+    bookingId: string,
+    reason: CancelReason,
+  ): Promise<{ cancelled: boolean; booking: PersistedBooking | null }> {
+    void reason;
+    const row = this.rows.find((r) => r.id === bookingId);
+    if (row === undefined || (row.state !== 'pending' && row.state !== 'confirmed')) {
+      return { cancelled: false, booking: row ?? null };
+    }
+    row.state = 'cancelled';
+    return { cancelled: true, booking: row };
+  }
+
+  async expirePendingHolds(now: Date): Promise<number> {
+    let count = 0;
+    for (const row of this.rows) {
+      if (row.state === 'pending' && row.expiresAt !== null && row.expiresAt.getTime() <= now.getTime()) {
+        row.state = 'cancelled';
+        count += 1;
+      }
+    }
+    return count;
+  }
+
+  async countByClassAndState(classId: string, state: BookingState): Promise<number> {
+    return this.rows.filter((row) => row.classId === classId && row.state === state).length;
+  }
+
+  async findActiveByClass(classId: string): Promise<PersistedBooking[]> {
+    return this.rows.filter(
+      (row) => row.classId === classId && (row.state === 'pending' || row.state === 'confirmed'),
+    );
+  }
+
+  async hasTeacherNoShow(classId: string): Promise<boolean> {
+    void classId;
+    return false;
   }
 }
 
@@ -84,6 +140,14 @@ function classRepo(view: PersistedClass): ClassRepository {
   return {
     insert: jest.fn(),
     findById: jest.fn(async () => view),
+    update: jest.fn(async (_id: string, edit) =>
+      ({ ...view, ...edit }) as PersistedClass,
+    ),
+    markCancelled: jest.fn(async () => undefined),
+    startAndEmit: jest.fn(async () => ({ started: false })),
+    completeAndEmit: jest.fn(async () => ({ completed: false, bookingIds: [] })),
+    cancelWithReason: jest.fn(async () => ({ cancelled: false })),
+    findAwaitingCompletion: jest.fn(async () => []),
   };
 }
 
