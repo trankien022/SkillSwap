@@ -21,6 +21,27 @@ export async function resetDatabase(harness: Harness): Promise<void> {
     'student-verification',
     'TRUNCATE student_verifications, verification_documents CASCADE',
   );
+  await harness.query(
+    'skill-verification',
+    'TRUNCATE skill_evidence, profile_skills, skills, verified_students CASCADE',
+  );
+}
+
+/** Seeds a skill into the managed catalogue and returns its id (FR-003 / ADR-026). */
+export async function seedSkill(
+  harness: Harness,
+  input: { name: string; category: string } = { name: 'IELTS', category: 'Languages' },
+): Promise<string> {
+  const rows = await harness.query<{ id: string }>(
+    'skill-verification',
+    'INSERT INTO skills ("name", "category") VALUES ($1, $2) RETURNING "id"',
+    [input.name, input.category],
+  );
+  const row = rows[0];
+  if (row === undefined) {
+    throw new Error('Failed to seed skill');
+  }
+  return row.id;
 }
 
 /** Reads a wallet balance straight from Postgres. */

@@ -62,6 +62,13 @@ const NAME_TO_STATUS: Record<string, number> = {
   UnsupportedDocumentTypeError: 415,
   DocumentTooLargeError: 413,
   InvalidDocumentFileError: 400,
+  // FR-003 skill evidence (ADR-026).
+  UnknownSkillError: 404,
+  InvalidLevelError: 400,
+  InvalidEvidenceTypeError: 400,
+  UnknownEvidenceStatusError: 400,
+  NotVerifiedStudentError: 403,
+  EvidenceDocumentRequiredError: 400,
 };
 
 /** Maps domain errors and unexpected failures onto the apiErrorSchema shape. */
