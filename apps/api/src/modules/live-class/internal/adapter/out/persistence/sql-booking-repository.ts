@@ -1,4 +1,5 @@
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
+import { insertOutboxStatement } from '../../../../../../shared/messaging/outbox-statements';
 import { qualified } from '../../../../../../shared/sql/ident';
 import type {
   BookingRepository,
@@ -10,6 +11,7 @@ import type { BookingState } from '../../../domain/booking';
 
 const BOOKINGS_TABLE = 'bookings';
 const CLASSES_TABLE = 'classes';
+const BOOKING_CONFIRMED_EVENT = 'booking.confirmed';
 
 interface BookingRow {
   id: string;
@@ -104,6 +106,55 @@ export class SqlBookingRepository implements BookingRepository {
         throw new Error('Booking insert returned no row');
       }
       return { booking: toPersisted(created), created: true };
+    });
+  }
+
+  async confirmAndEmit(
+    bookingId: string,
+    learnerId: string,
+  ): Promise<{ confirmed: boolean; booking: PersistedBooking | null }> {
+    const source = this.registry.get(this.moduleName);
+    const bookings = qualified(this.schema, BOOKINGS_TABLE);
+    const classes = qualified(this.schema, CLASSES_TABLE);
+    return source.transaction(async (manager) => {
+      // Lock the booking row, then only confirm if still pending (FR-009 / AC-005).
+      const locked = (await manager.query(
+        `SELECT "id", "class_id", "learner_id", "state", "price_credits", "idempotency_key", "created_at"
+           FROM ${bookings} WHERE "id" = $1 AND "learner_id" = $2 FOR UPDATE`,
+        [bookingId, learnerId],
+      )) as BookingRow[];
+      const current = locked[0];
+      if (current === undefined || current.state !== 'pending') {
+        return { confirmed: false, booking: current === undefined ? null : toPersisted(current) };
+      }
+
+      const confirmedRows = (await manager.query(
+        `UPDATE ${bookings} SET "state" = 'confirmed', "updated_at" = now()
+           WHERE "id" = $1
+           RETURNING "id", "class_id", "learner_id", "state", "price_credits", "idempotency_key", "created_at"`,
+        [bookingId],
+      )) as BookingRow[];
+      const booking = toPersisted(confirmedRows[0]);
+
+      const teacherRows = (await manager.query(
+        `SELECT "teacher_id" FROM ${classes} WHERE "id" = $1`,
+        [current.class_id],
+      )) as Array<{ teacher_id: string }>;
+      const teacherId = teacherRows[0]?.teacher_id;
+      if (teacherId === undefined) {
+        throw new Error(`Class ${current.class_id} not found for booking ${bookingId}`);
+      }
+
+      await manager.query(insertOutboxStatement(this.schema), [
+        BOOKING_CONFIRMED_EVENT,
+        {
+          bookingId: booking.id,
+          studentId: booking.learnerId,
+          teacherId,
+          amountCredits: booking.priceCredits,
+        },
+      ]);
+      return { confirmed: true, booking };
     });
   }
 }

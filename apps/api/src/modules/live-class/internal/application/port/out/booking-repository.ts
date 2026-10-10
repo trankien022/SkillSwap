@@ -45,4 +45,14 @@ export interface BookingRepository {
     guard: (seatRows: readonly BookingSeatRow[]) => void,
   ): Promise<{ booking: PersistedBooking; created: boolean }>;
   findByIdempotencyKey(idempotencyKey: string): Promise<PersistedBooking | null>;
+  /**
+   * FR-009 (ADR-018): atomically flips a `pending` booking to `confirmed` and
+   * writes a `booking.confirmed` row to the outbox in the SAME transaction, so
+   * the wallet-ledger settlement can never diverge from the booking state.
+   * Returns `{ confirmed: false }` when the booking is not `pending` (replay).
+   */
+  confirmAndEmit(
+    bookingId: string,
+    learnerId: string,
+  ): Promise<{ confirmed: boolean; booking: PersistedBooking | null }>;
 }

@@ -89,3 +89,27 @@ export function assertCanSpend(balance: number, amount: number): void {
     throw new InsufficientBalanceError(balance, amount);
   }
 }
+
+// ── FR-009 booking settlement (ADR-018) ─────────────────────────────────────
+
+export const SETTLEMENT_ENTRY_TYPES = [
+  'learner_debit',
+  'teacher_pending',
+  'platform_fee',
+  'release',
+] as const;
+export type SettlementEntryType = (typeof SETTLEMENT_ENTRY_TYPES)[number];
+
+export interface SettlementSplit {
+  teacherCredits: number;
+  platformFeeCredits: number;
+}
+
+/**
+ * FR-009 / OQ-012 (ADR-018): the 90/10 split with floor-fee rounding and the
+ * exact integer invariant `teacher + fee == price` (remainder to the Teacher).
+ */
+export function splitSettlement(priceCredits: number, feeBps: number = DEFAULT_FEE_BPS): SettlementSplit {
+  const { platformFeeCredits, teacherCredits } = applyPlatformFee(priceCredits, feeBps);
+  return { teacherCredits, platformFeeCredits };
+}

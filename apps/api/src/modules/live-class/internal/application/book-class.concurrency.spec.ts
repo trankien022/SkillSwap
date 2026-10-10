@@ -78,6 +78,18 @@ class LockingInMemoryBookingRepository implements BookingRepository {
     this.rows.push(booking);
     return { booking, created: true };
   }
+
+  async confirmAndEmit(
+    bookingId: string,
+    learnerId: string,
+  ): Promise<{ confirmed: boolean; booking: PersistedBooking | null }> {
+    const row = this.rows.find((r) => r.id === bookingId && r.learnerId === learnerId);
+    if (row === undefined || row.state !== 'pending') {
+      return { confirmed: false, booking: row ?? null };
+    }
+    row.state = 'confirmed';
+    return { confirmed: true, booking: row };
+  }
 }
 
 function classRepo(view: PersistedClass): ClassRepository {

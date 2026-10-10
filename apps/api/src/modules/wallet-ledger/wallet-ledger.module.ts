@@ -5,7 +5,6 @@ import { EventHandlerRegistry, type BusMessage } from '../../shared/messaging/ev
 import { ModuleDataSourceRegistry } from '../../shared/messaging/module-registry';
 import { createModuleDataSource } from './internal/adapter/out/persistence/data-source';
 import { SCHEMA } from './internal/adapter/out/persistence/schema';
-import { SqlLedgerEntryWriter } from './internal/adapter/out/persistence/sql-ledger-entry-writer';
 import { SqlModuleStatusReader } from './internal/adapter/out/persistence/sql-module-status-reader';
 import { SqlModuleStatusWriter } from './internal/adapter/out/persistence/sql-module-status-writer';
 import { SqlWalletRepository } from './internal/adapter/out/persistence/sql-wallet-repository';
@@ -16,6 +15,7 @@ import { StatusController } from './internal/adapter/in/web/status.controller';
 import { WalletController } from './internal/adapter/in/web/wallet.controller';
 import { AdvanceStatusUseCase } from './internal/application/advance-status.use-case';
 import { RecordBookingConfirmedUseCase } from './internal/application/record-booking-confirmed.use-case';
+import { ReleaseIncomeUseCase } from './internal/application/release-income.use-case';
 import { InitiateTopUpUseCase } from './internal/application/initiate-top-up.use-case';
 import { HandleTopUpCallbackUseCase } from './internal/application/handle-top-up-callback.use-case';
 import { GetWalletBalanceUseCase } from './internal/application/get-wallet-balance.use-case';
@@ -28,10 +28,7 @@ import {
   RECORD_BOOKING_CONFIRMED,
   type RecordBookingConfirmedPort,
 } from './internal/application/port/in/record-booking-confirmed';
-import {
-  LEDGER_ENTRY_WRITER,
-  type LedgerEntryWriter,
-} from './internal/application/port/out/ledger-entry-writer';
+import { RELEASE_INCOME } from './internal/application/port/in/release-income';
 import { WALLET_REPOSITORY, type WalletRepository } from './internal/application/port/out/wallet-repository';
 import {
   TOP_UP_INTENT_REPOSITORY,
@@ -100,15 +97,9 @@ export class WalletLedgerRegistrar implements OnModuleInit {
       inject: [STATUS_READER],
     },
     {
-      provide: LEDGER_ENTRY_WRITER,
-      useFactory: (registry: ModuleDataSourceRegistry) =>
-        new SqlLedgerEntryWriter(registry, MODULE_NAME),
-      inject: [ModuleDataSourceRegistry],
-    },
-    {
       provide: RECORD_BOOKING_CONFIRMED,
-      useFactory: (ledger: LedgerEntryWriter) => new RecordBookingConfirmedUseCase(ledger),
-      inject: [LEDGER_ENTRY_WRITER],
+      useFactory: (wallets: WalletRepository) => new RecordBookingConfirmedUseCase(wallets),
+      inject: [WALLET_REPOSITORY],
     },
     {
       provide: WALLET_REPOSITORY,
@@ -144,6 +135,11 @@ export class WalletLedgerRegistrar implements OnModuleInit {
     {
       provide: GET_WALLET_BALANCE,
       useFactory: (wallets: WalletRepository) => new GetWalletBalanceUseCase(wallets),
+      inject: [WALLET_REPOSITORY],
+    },
+    {
+      provide: RELEASE_INCOME,
+      useFactory: (wallets: WalletRepository) => new ReleaseIncomeUseCase(wallets),
       inject: [WALLET_REPOSITORY],
     },
     WalletLedgerRegistrar,
