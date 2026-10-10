@@ -1,4 +1,5 @@
 import {
+  EvidenceNotClaimableError,
   ProfileSkill,
   SkillEvidence,
   type Skill,
@@ -31,13 +32,6 @@ export class InMemorySkillRepository implements SkillRepository {
 
   async findActiveById(skillId: string): Promise<Skill | null> {
     return this.skills.find((skill) => skill.id === skillId && skill.active) ?? null;
-  }
-}
-
-function replaceEvidence(rows: SkillEvidence[], next: SkillEvidence): void {
-  const index = rows.findIndex((row) => row.id === next.id);
-  if (index !== -1) {
-    rows[index] = next;
   }
 }
 
@@ -199,7 +193,7 @@ export class InMemorySkillEvidenceRepository implements SkillEvidenceRepository 
   async claim(request: ClaimRequest): Promise<ClaimedEvidence> {
     const index = this.rows.findIndex((row) => row.id === request.evidenceId && row.status === 'pending');
     if (index === -1) {
-      throw new Error('Evidence is not claimable');
+      throw new EvidenceNotClaimableError('claimed');
     }
     const claimed = withEvidence(this.rows[index], {
       status: 'claimed',

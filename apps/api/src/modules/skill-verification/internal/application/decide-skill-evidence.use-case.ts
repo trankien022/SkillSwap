@@ -77,6 +77,11 @@ export class DecideSkillEvidenceUseCase implements DecideSkillEvidencePort {
       throw new EvidenceNotDecidableError(command.evidenceId);
     }
 
+    // AC-016: on approval, cache the effective level on the profile-skill.
+    if (decision.status === 'approved') {
+      await this.profileSkills.applyApprovedLevel(profileSkill.id, decision.approvedLevel);
+    }
+
     const stored = await this.evidence.findById(command.evidenceId);
     if (stored === null) {
       throw new EvidenceNotFoundError(command.evidenceId);

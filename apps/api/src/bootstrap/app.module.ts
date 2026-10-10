@@ -33,8 +33,11 @@ import { HealthController } from './health.controller';
       useFactory: (config: ApiConfig) => new TrustedIdentityGuard(config.authMode),
       inject: [ApiConfig],
     },
-    // FR-002: opt-in role enforcement; a no-op on routes without @Roles.
-    RolesGuard,
+    // FR-001/FR-002/FR-004: opt-in role enforcement; a no-op on routes without @Roles.
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
     {
       provide: APP_FILTER,
       useFactory: (logger: AppLogger) => new DomainErrorFilter(logger.child('http')),

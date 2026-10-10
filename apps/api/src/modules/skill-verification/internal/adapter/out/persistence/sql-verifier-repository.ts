@@ -62,14 +62,12 @@ export class SqlVerifierRepository implements VerifierRepository {
     const rows = (await source.query(
       `UPDATE ${this.table} SET "status" = $2, "updated_at" = now()
         WHERE "account_id" = $1
-        RETURNING "account_id", "status"`,
+        RETURNING "account_id"`,
       [accountId, status],
-    )) as { account_id: string; status: string }[];
-    const row = rows[0];
-    if (row === undefined) {
+    )) as { account_id: string }[];
+    if (rows.length === 0) {
       return null;
     }
-    const updated = await this.findById(row.account_id);
-    return updated;
+    return this.findById(accountId);
   }
 }

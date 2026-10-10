@@ -23,7 +23,7 @@ export async function resetDatabase(harness: Harness): Promise<void> {
   );
   await harness.query(
     'skill-verification',
-    'TRUNCATE skill_evidence, profile_skills, skills, verified_students CASCADE',
+    'TRUNCATE skill_evidence, profile_skills, skills, verified_students, verifier_expertise, verifiers CASCADE',
   );
 }
 
@@ -42,6 +42,27 @@ export async function seedSkill(
     throw new Error('Failed to seed skill');
   }
   return row.id;
+}
+
+/** Seeds a Verifier account with expertise (FR-004 / ADR-027; operator-provisioned). */
+export async function seedVerifier(
+  harness: Harness,
+  input: { accountId: string; expertise: string[]; status?: 'active' | 'suspended' | 'revoked' },
+): Promise<void> {
+  await harness.query(
+    'skill-verification',
+    `INSERT INTO verifiers ("account_id", "status") VALUES ($1, $2)
+       ON CONFLICT ("account_id") DO UPDATE SET "status" = EXCLUDED."status"`,
+    [input.accountId, input.status ?? 'active'],
+  );
+  for (const skillId of input.expertise) {
+    await harness.query(
+      'skill-verification',
+      `INSERT INTO verifier_expertise ("account_id", "skill_id") VALUES ($1, $2)
+         ON CONFLICT DO NOTHING`,
+      [input.accountId, skillId],
+    );
+  }
 }
 
 /** Reads a wallet balance straight from Postgres. */

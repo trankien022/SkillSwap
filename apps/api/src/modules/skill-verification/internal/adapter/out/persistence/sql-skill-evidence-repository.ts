@@ -247,18 +247,13 @@ export class SqlSkillEvidenceRepository implements SkillEvidenceRepository {
         return { applied: false };
       }
       if (request.status === 'approved') {
-        // AC-016: supersede the previous approval, then update the cache — same tx.
+        // AC-016: supersede the previous approval in the same transaction. The
+        // profile-skill level cache is written by the use case (applyApprovedLevel).
         await manager.query(
           `UPDATE ${this.table}
              SET "status" = 'superseded'
            WHERE "profile_skill_id" = $1 AND "status" = 'approved' AND "id" <> $2`,
           [row.profile_skill_id, row.id],
-        );
-        await manager.query(
-          `UPDATE ${qualified(this.schema, 'profile_skills')}
-             SET "approved_level" = $2, "updated_at" = now()
-           WHERE "id" = $1`,
-          [row.profile_skill_id, row.approved_level],
         );
       }
       await manager.query(insertOutboxStatement(this.schema), [
