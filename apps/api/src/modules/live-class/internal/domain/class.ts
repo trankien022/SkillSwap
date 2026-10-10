@@ -181,3 +181,33 @@ export function publishClass(draft: ClassDraft, now: Date): PublishedClass {
 export function hasStarted(view: Pick<ClassView, 'startsAt'>, now: Date): boolean {
   return view.startsAt.getTime() <= now.getTime();
 }
+
+// ── FR-007 commitment lock (AC-017) ─────────────────────────────────────────
+
+/** Fields a Teacher may edit. Once any booking is confirmed, none are editable. */
+export const EDITABLE_CLASS_FIELDS = [
+  'startsAt',
+  'durationMinutes',
+  'priceCredits',
+  'capacity',
+  'description',
+  'skillIds',
+] as const;
+
+export class ClassLockedError extends Error {
+  constructor(classId: string) {
+    super(`Class ${classId} is locked once a booking is confirmed (AC-017)`);
+    this.name = 'ClassLockedError';
+  }
+}
+
+/**
+ * AC-017: once a class has at least one confirmed booking, its committed facts
+ * are frozen; only cancellation remains. `confirmedBookingCount` is supplied by
+ * the caller from storage.
+ */
+export function assertClassEditable(classId: string, confirmedBookingCount: number): void {
+  if (confirmedBookingCount > 0) {
+    throw new ClassLockedError(classId);
+  }
+}

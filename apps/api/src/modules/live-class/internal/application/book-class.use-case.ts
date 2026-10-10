@@ -1,4 +1,4 @@
-import { assertBookable } from '../domain/booking';
+import { assertBookable, computeHoldExpiry } from '../domain/booking';
 import type {
   BookClassCommand,
   BookClassPort,
@@ -36,6 +36,7 @@ export class BookClassUseCase implements BookClassPort {
         state: 'pending',
         priceCredits: classView.priceCredits,
         idempotencyKey: command.idempotencyKey,
+        expiresAt: computeHoldExpiry(now),
       },
       (seatRows) => {
         assertBookable({

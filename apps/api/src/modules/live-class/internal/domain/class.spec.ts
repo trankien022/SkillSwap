@@ -1,6 +1,7 @@
 import {
   BOOKING_LEAD_TIME_MS,
   CLASS_STATES,
+  ClassLockedError,
   ClassTransitionError,
   INITIAL_CLASS_STATE,
   InvalidCapacityError,
@@ -8,6 +9,7 @@ import {
   InvalidPriceError,
   InvalidStartTimeError,
   UnknownClassStateError,
+  assertClassEditable,
   assertClassState,
   assertTransition,
   canTransition,
@@ -101,5 +103,11 @@ describe('class aggregate', () => {
     const view = publishClass(draft({ startsAt: new Date(NOW.getTime() + BOOKING_LEAD_TIME_MS) }), NOW);
     expect(hasStarted(view, NOW)).toBe(false);
     expect(hasStarted(view, new Date(NOW.getTime() + BOOKING_LEAD_TIME_MS))).toBe(true);
+  });
+
+  it('locks a class once it has a confirmed booking (AC-017)', () => {
+    expect(() => assertClassEditable('cls-1', 0)).not.toThrow();
+    expect(() => assertClassEditable('cls-1', 1)).toThrow(ClassLockedError);
+    expect(() => assertClassEditable('cls-1', 3)).toThrow(ClassLockedError);
   });
 });

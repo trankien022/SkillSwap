@@ -42,6 +42,17 @@ export const bookingConfirmedSchema = z.object({
 });
 export type BookingConfirmed = z.infer<typeof bookingConfirmedSchema>;
 
+/** FR-007 / ADR-019: a cancelled booking that the wallet may need to refund. */
+export const bookingCancelledSchema = z.object({
+  bookingId: z.string().min(1),
+  classId: z.string().min(1),
+  learnerId: z.string().min(1),
+  teacherId: z.string().min(1),
+  priceCredits: z.number().int().positive(),
+  reason: z.enum(['expired', 'class_cancelled', 'teacher_no_show']),
+});
+export type BookingCancelled = z.infer<typeof bookingCancelledSchema>;
+
 export const statusChangedSchema = z.object({
   module: z.string().min(1),
   previousState: z.string().min(1),
@@ -79,6 +90,19 @@ export const classSchema = z.object({
   capacity: z.number().int(),
 });
 export type ClassView = z.infer<typeof classSchema>;
+
+/** FR-007 / AC-017: edit a class before its first confirmed booking locks it. */
+export const updateClassSchema = z
+  .object({
+    skillIds: z.array(z.string().min(1)).min(1).optional(),
+    description: z.string().min(1).optional(),
+    startsAt: z.string().datetime({ offset: true }).optional(),
+    durationMinutes: z.number().int().min(30).max(180).optional(),
+    priceCredits: z.number().int().positive().optional(),
+    capacity: z.number().int().positive().optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, { message: 'At least one field is required' });
+export type UpdateClassInput = z.infer<typeof updateClassSchema>;
 
 /** FR-007 / API-005: book a class. The idempotency key makes retries safe. */
 export const bookingRequestSchema = z.object({

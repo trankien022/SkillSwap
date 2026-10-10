@@ -14,6 +14,8 @@ function setup() {
       return { id: 'cls-new', ...record } as PersistedClass;
     }),
     findById: jest.fn(async () => null),
+    update: jest.fn(async (_id: string, edit) => ({ id: _id, teacherId: 'teacher-1', state: 'published', ...edit }) as PersistedClass),
+    markCancelled: jest.fn(async () => undefined),
   };
   const clock: Clock = { now: () => NOW };
   return { useCase: new CreateClassUseCase(classes, clock), classes, calls };

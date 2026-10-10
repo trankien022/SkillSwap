@@ -1,6 +1,7 @@
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { qualified } from '../../../../../../shared/sql/ident';
 import type {
+  ClassEdit,
   ClassRepository,
   CreateClassRecord,
   PersistedClass,
@@ -99,5 +100,50 @@ export class SqlClassRepository implements ClassRepository {
     )) as ClassRow[];
     const row = rows[0];
     return row === undefined ? null : toPersisted(row);
+  }
+
+  async markCancelled(id: string): Promise<void> {
+    const source = this.registry.get(this.moduleName);
+    const classes = qualified(this.schema, CLASSES_TABLE);
+    await source.query(
+      `UPDATE ${classes} SET "state" = 'cancelled', "updated_at" = now()
+        WHERE "id" = $1 AND "state" <> 'cancelled'`,
+      [id],
+    );
+  }
+
+  async update(id: string, edit: ClassEdit): Promise<PersistedClass> {
+    const source = this.registry.get(this.moduleName);
+    const classes = qualified(this.schema, CLASSES_TABLE);
+    const skills = qualified(this.schema, CLASS_SKILLS_TABLE);
+    return source.transaction(async (manager) => {
+      const rows = (await manager.query(
+        `UPDATE ${classes}
+           SET "starts_at" = $2, "duration_minutes" = $3, "price_credits" = $4,
+               "capacity" = $5, "description" = $6, "updated_at" = now()
+         WHERE "id" = $1
+         RETURNING "id", "teacher_id", "state", "starts_at", "duration_minutes", "price_credits", "capacity", "description"`,
+        [
+          id,
+          edit.startsAt.toISOString(),
+          edit.durationMinutes,
+          edit.priceCredits,
+          edit.capacity,
+          edit.description,
+        ],
+      )) as Array<Omit<ClassRow, 'skill_ids'>>;
+      const updated = rows[0];
+      if (updated === undefined) {
+        throw new Error(`Class ${id} not found for update`);
+      }
+      await manager.query(`DELETE FROM ${skills} WHERE "class_id" = $1`, [id]);
+      for (const skillId of edit.skillIds) {
+        await manager.query(
+          `INSERT INTO ${skills} ("class_id", "skill_id") VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+          [id, skillId],
+        );
+      }
+      return toPersisted({ ...updated, skill_ids: edit.skillIds });
+    });
   }
 }

@@ -1,16 +1,22 @@
-import { Body, Controller, HttpCode, HttpStatus, Inject, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Inject, Param, Patch, Post, Req } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   bookingRequestSchema,
   createClassSchema,
+  updateClassSchema,
   type BookingRequestInput,
   type CreateClassInput,
+  type UpdateClassInput,
 } from '@skillswap/contracts';
 import {
   CREATE_CLASS,
   type ClassResource,
   type CreateClassPort,
 } from '../../../application/port/in/create-class';
+import {
+  UPDATE_CLASS,
+  type UpdateClassPort,
+} from '../../../application/port/in/update-class';
 import {
   BOOK_CLASS,
   type BookClassPort,
@@ -21,6 +27,16 @@ import {
   type ConfirmBookingPort,
   type ConfirmBookingResult,
 } from '../../../application/port/in/confirm-booking';
+import {
+  CANCEL_CLASS,
+  type CancelClassPort,
+  type CancelClassResult,
+} from '../../../application/port/in/cancel-class';
+import {
+  MARK_TEACHER_NO_SHOW,
+  type MarkTeacherNoShowPort,
+  type MarkTeacherNoShowResult,
+} from '../../../application/port/in/mark-teacher-no-show';
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
 import { ZodValidationPipe } from '../../../../../../shared/http/zod-validation.pipe';
 
@@ -29,8 +45,11 @@ import { ZodValidationPipe } from '../../../../../../shared/http/zod-validation.
 export class ClassesController {
   constructor(
     @Inject(CREATE_CLASS) private readonly createClass: CreateClassPort,
+    @Inject(UPDATE_CLASS) private readonly updateClass: UpdateClassPort,
     @Inject(BOOK_CLASS) private readonly bookClass: BookClassPort,
     @Inject(CONFIRM_BOOKING) private readonly confirmBooking: ConfirmBookingPort,
+    @Inject(CANCEL_CLASS) private readonly cancelClass: CancelClassPort,
+    @Inject(MARK_TEACHER_NO_SHOW) private readonly markNoShow: MarkTeacherNoShowPort,
   ) {}
 
   @Post()
@@ -75,5 +94,36 @@ export class ClassesController {
     @Req() request: RequestWithIdentity,
   ): Promise<ConfirmBookingResult> {
     return this.confirmBooking.execute({ bookingId, learnerId: currentUserId(request) });
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Edit a class before its first confirmed booking (FR-007 / AC-017)' })
+  @ApiOkResponse({ description: 'The updated class' })
+  update(
+    @Param('id') classId: string,
+    @Body(new ZodValidationPipe(updateClassSchema)) body: UpdateClassInput,
+    @Req() request: RequestWithIdentity,
+  ): Promise<ClassResource> {
+    return this.updateClass.execute({ classId, teacherId: currentUserId(request), ...body });
+  }
+
+  @Post(':id/cancel')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Cancel a class and refund affected learners (FR-007 / AC-022)' })
+  @ApiOkResponse({ description: 'Cancellation summary' })
+  cancel(
+    @Param('id') classId: string,
+    @Req() request: RequestWithIdentity,
+  ): Promise<CancelClassResult> {
+    return this.cancelClass.execute({ classId, teacherId: currentUserId(request) });
+  }
+
+  @Post('bookings/:bookingId/no-show')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Mark a teacher no-show for a booking (FR-007 / AC-024)' })
+  @ApiOkResponse({ description: 'Whether the booking was cancelled for no-show' })
+  noShow(@Param('bookingId') bookingId: string): Promise<MarkTeacherNoShowResult> {
+    // Join evidence comes from FR-011 room access; until then a null join is assumed.
+    return this.markNoShow.execute({ bookingId, teacherJoinedAt: null });
   }
 }

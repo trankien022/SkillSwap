@@ -10,14 +10,20 @@ function booking(state: PersistedBooking['state']): PersistedBooking {
     priceCredits: 100,
     idempotencyKey: 'key-1',
     createdAt: new Date('2026-10-08T00:00:00.000Z'),
+    expiresAt: new Date('2026-10-08T00:15:00.000Z'),
   };
 }
 
 function repo(confirmed: boolean, result: PersistedBooking | null): BookingRepository {
   return {
     findByIdempotencyKey: jest.fn(),
+    findById: jest.fn(),
     createWithSeatGuard: jest.fn(),
     confirmAndEmit: jest.fn(async () => ({ confirmed, booking: result })),
+    cancelAndEmit: jest.fn(async () => ({ cancelled: false, booking: null })),
+    expirePendingHolds: jest.fn(async () => 0),
+    countByClassAndState: jest.fn(async () => 0),
+    findActiveByClass: jest.fn(async () => []),
   };
 }
 
