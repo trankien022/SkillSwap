@@ -106,4 +106,39 @@ describe('E2E: learner account status (FR-017)', () => {
     expect(approved.json.studentVerification?.status).toBe('approved');
     expect(approved.json.studentVerification?.reason).toBeNull();
   });
+
+  it('cascades a revocation into the owner view (FR-019 / ADR-025)', async () => {
+    const learnerId = await registerLearner('fr19-revoke@skillswap.test');
+    api.actAs(learnerId, 'learner');
+
+    const documentId = await upload();
+    const submitted = await api.post('/api/student-verifications', {
+      schoolName: 'FPT University',
+      documentId,
+    });
+    const verificationId = submitted.json.id as string;
+
+    api.actAs('admin-3', 'admin');
+    await api.post(`/api/student-verifications/${verificationId}/decision`, { decision: 'approve' });
+    await meUntilStatus(learnerId, 'approved');
+
+    // Revoke — the cascade event demotes the projected status to revoked + reason.
+    api.actAs('admin-3', 'admin');
+    const revoked = await api.post(`/api/student-verifications/${verificationId}/revocation`, {
+      reason: 'Fake document',
+    });
+    expect(revoked.status).toBe(200);
+    expect(revoked.json.status).toBe('revoked');
+    expect(revoked.json.reason).toBe('Fake document');
+
+    const mine = await meUntilStatus(learnerId, 'revoked');
+    expect(mine.json.studentVerification).toEqual({ status: 'revoked', reason: 'Fake document' });
+
+    // A non-admin cannot revoke (NFR-009).
+    api.actAs(learnerId, 'learner');
+    const forbidden = await api.post(`/api/student-verifications/${verificationId}/revocation`, {
+      reason: 'x',
+    });
+    expect(forbidden.status).toBe(403);
+  });
 });
