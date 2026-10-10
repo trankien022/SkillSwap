@@ -41,6 +41,10 @@ const NAME_TO_STATUS: Record<string, number> = {
   ClassAlreadyCancelledError: 409,
   BookingTransitionError: 409,
   InvalidClassEditError: 400,
+  // FR-011 room access (ADR-020).
+  RoomAccessDeniedError: 403,
+  BookingNotFoundError: 404,
+  RoomUnavailableError: 503,
 };
 
 /** Maps domain errors and unexpected failures onto the apiErrorSchema shape. */

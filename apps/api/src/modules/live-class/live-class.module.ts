@@ -18,7 +18,10 @@ import { UpdateClassUseCase } from './internal/application/update-class.use-case
 import { CancelClassUseCase } from './internal/application/cancel-class.use-case';
 import { MarkTeacherNoShowUseCase } from './internal/application/mark-teacher-no-show.use-case';
 import { ExpirePendingBookingsUseCase } from './internal/application/expire-pending-bookings.use-case';
+import { RequestRoomAccessUseCase } from './internal/application/request-room-access.use-case';
 import { PendingHoldSweeper } from './internal/adapter/in/scheduler/pending-hold.sweeper';
+import { JitsiRoomTokenIssuer } from './internal/adapter/out/jitsi/jitsi-room-token-issuer';
+import { SqlRoomIncidentRecorder } from './internal/adapter/out/persistence/sql-room-incident-recorder';
 import { GET_MODULE_STATUS } from './internal/application/port/in/get-module-status';
 import { ADVANCE_STATUS } from './internal/application/port/in/advance-status';
 import { CREATE_CLASS, type CreateClassPort } from './internal/application/port/in/create-class';
@@ -33,7 +36,19 @@ import {
 import {
   EXPIRE_PENDING_BOOKINGS,
   type ExpirePendingBookingsPort,
-} from './internal/application/port/in/expire-pending-bookings';import { STATUS_READER, type ModuleStatusReader } from './internal/application/port/out/module-status-reader';
+} from './internal/application/port/in/expire-pending-bookings';
+import {
+  REQUEST_ROOM_ACCESS,
+  type RequestRoomAccessPort,
+} from './internal/application/port/in/request-room-access';
+import {
+  ROOM_TOKEN_ISSUER,
+  type RoomTokenIssuer,
+} from './internal/application/port/out/room-token-issuer';
+import {
+  ROOM_INCIDENT_RECORDER,
+  type RoomIncidentRecorder,
+} from './internal/application/port/out/room-incident-recorder';import { STATUS_READER, type ModuleStatusReader } from './internal/application/port/out/module-status-reader';
 import { STATUS_WRITER, type ModuleStatusWriter } from './internal/application/port/out/module-status-writer';
 import { CLASS_REPOSITORY, type ClassRepository } from './internal/application/port/out/class-repository';
 import { BOOKING_REPOSITORY, type BookingRepository } from './internal/application/port/out/booking-repository';
@@ -148,6 +163,46 @@ const systemClock: Clock = { now: () => new Date() };
       useFactory: (bookings: BookingRepository, clock: Clock) =>
         new ExpirePendingBookingsUseCase(bookings, clock),
       inject: [BOOKING_REPOSITORY, CLOCK],
+    },
+    {
+      provide: ROOM_TOKEN_ISSUER,
+      useFactory: (config: ApiConfig): RoomTokenIssuer =>
+        new JitsiRoomTokenIssuer(config.jitsiAppId, config.jitsiAppSecret, config.jitsiTokenTtlSeconds),
+      inject: [ApiConfig],
+    },
+    {
+      provide: ROOM_INCIDENT_RECORDER,
+      useFactory: (registry: ModuleDataSourceRegistry): RoomIncidentRecorder =>
+        new SqlRoomIncidentRecorder(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
+      provide: REQUEST_ROOM_ACCESS,
+      useFactory: (
+        bookings: BookingRepository,
+        classes: ClassRepository,
+        tokens: RoomTokenIssuer,
+        incidents: RoomIncidentRecorder,
+        clock: Clock,
+        config: ApiConfig,
+      ): RequestRoomAccessPort =>
+        new RequestRoomAccessUseCase(
+          bookings,
+          classes,
+          tokens,
+          incidents,
+          clock,
+          config.jitsiDomain,
+          config.jitsiOpenMinutes,
+        ),
+      inject: [
+        BOOKING_REPOSITORY,
+        CLASS_REPOSITORY,
+        ROOM_TOKEN_ISSUER,
+        ROOM_INCIDENT_RECORDER,
+        CLOCK,
+        ApiConfig,
+      ],
     },
     {
       provide: PendingHoldSweeper,
