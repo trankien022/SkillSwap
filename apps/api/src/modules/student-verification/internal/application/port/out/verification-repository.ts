@@ -27,6 +27,14 @@ export interface ApplyDecisionResult {
   readonly applied: boolean;
 }
 
+/** The fields applied when an Administrator revokes a verification (FR-019). */
+export interface RevokeVerificationRequest {
+  readonly verificationId: string;
+  readonly reviewerId: string;
+  readonly reason: string;
+  readonly revokedAt: Date;
+}
+
 export interface VerificationRepository {
   /** Inserts a pending verification, rejecting a second effective one. */
   create(request: CreateVerificationRequest): Promise<Verification>;
@@ -41,4 +49,10 @@ export interface VerificationRepository {
    * non-pending row is a no-op.
    */
   decide(request: ApplyDecisionRequest): Promise<ApplyDecisionResult>;
+  /**
+   * FR-019/ADR-025: revokes an effective verification and writes the
+   * `student.verification.revoked` event in the same transaction. A revoke on a
+   * non-effective row is a no-op.
+   */
+  revoke(request: RevokeVerificationRequest): Promise<ApplyDecisionResult>;
 }

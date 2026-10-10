@@ -173,7 +173,7 @@ export const tokenResponseSchema = z.object({
 export type TokenResponse = z.infer<typeof tokenResponseSchema>;
 
 /** FR-017 (ADR-024): the account's trust summary, projected from verification events. */
-export const accountVerificationStatusSchema = z.enum(['pending', 'approved', 'rejected']);
+export const accountVerificationStatusSchema = z.enum(['pending', 'approved', 'rejected', 'revoked']);
 export type AccountVerificationStatus = z.infer<typeof accountVerificationStatusSchema>;
 
 export const studentVerificationSummarySchema = z.object({
@@ -263,7 +263,7 @@ export const roomAccessResponseSchema = z.object({
 export type RoomAccessResponse = z.infer<typeof roomAccessResponseSchema>;
 
 /** FR-002: student verification (ADR-023). At most one effective per account; no expiry. */
-export const verificationStatusSchema = z.enum(['pending', 'approved', 'rejected']);
+export const verificationStatusSchema = z.enum(['pending', 'approved', 'rejected', 'revoked']);
 export type VerificationStatus = z.infer<typeof verificationStatusSchema>;
 
 export const submitStudentVerificationSchema = z.object({

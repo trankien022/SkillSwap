@@ -10,6 +10,7 @@ import type {
   ApplyDecisionRequest,
   ApplyDecisionResult,
   CreateVerificationRequest,
+  RevokeVerificationRequest,
   VerificationRepository,
 } from '../port/out/verification-repository';
 
@@ -64,6 +65,29 @@ export class InMemoryVerificationRepository implements VerificationRepository {
       reason: request.reason,
       decidedAt: request.decidedAt,
       submittedAt: current.submittedAt,
+    });
+    return { applied: true };
+  }
+
+  async revoke(request: RevokeVerificationRequest): Promise<ApplyDecisionResult> {
+    const index = this.rows.findIndex((row) => row.id === request.verificationId);
+    if (index === -1 || !this.rows[index].isEffective) {
+      return { applied: false };
+    }
+    const current = this.rows[index];
+    this.rows[index] = Verification.reconstitute({
+      id: current.id,
+      accountId: current.accountId,
+      schoolName: current.schoolName,
+      major: current.major,
+      documentRef: current.documentRef,
+      status: 'revoked',
+      reviewerId: request.reviewerId,
+      reason: current.reason,
+      decidedAt: current.decidedAt,
+      submittedAt: current.submittedAt,
+      revokedAt: request.revokedAt,
+      revocationReason: request.reason,
     });
     return { applied: true };
   }
