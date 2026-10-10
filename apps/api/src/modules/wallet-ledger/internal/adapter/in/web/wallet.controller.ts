@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Inject,
   Post,
+  Query,
   Req,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -14,10 +15,13 @@ import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   topUpCallbackSchema,
   topUpRequestSchema,
+  walletHistoryQuerySchema,
   type TopUpCallbackInput,
   type TopUpIntentView,
   type TopUpRequestInput,
   type WalletBalanceView,
+  type WalletHistoryPage,
+  type WalletHistoryQueryInput,
 } from '@skillswap/contracts';
 import {
   INITIATE_TOP_UP,
@@ -27,6 +31,10 @@ import {
   GET_WALLET_BALANCE,
   type GetWalletBalancePort,
 } from '../../../application/port/in/get-wallet-balance';
+import {
+  GET_WALLET_HISTORY,
+  type GetWalletHistoryPort,
+} from '../../../application/port/in/get-wallet-history';
 import {
   HANDLE_TOP_UP_CALLBACK,
   type HandleTopUpCallbackPort,
@@ -49,6 +57,7 @@ export class WalletController {
   constructor(
     @Inject(INITIATE_TOP_UP) private readonly initiateTopUp: InitiateTopUpPort,
     @Inject(GET_WALLET_BALANCE) private readonly getBalance: GetWalletBalancePort,
+    @Inject(GET_WALLET_HISTORY) private readonly getHistory: GetWalletHistoryPort,
     @Inject(HANDLE_TOP_UP_CALLBACK) private readonly callback: HandleTopUpCallbackPort,
     @Inject(WEBHOOK_SIGNATURE_VERIFIER) private readonly verifier: WebhookSignatureVerifier,
   ) {}
@@ -84,5 +93,19 @@ export class WalletController {
   @ApiOkResponse({ description: 'Available and pending credits' })
   balance(@Req() request: RequestWithIdentity): Promise<WalletBalanceView> {
     return this.getBalance.execute(currentUserId(request));
+  }
+
+  @Get('history')
+  @ApiOperation({ summary: 'Read the wallet ledger history (FR-010 / ADR-022)' })
+  @ApiOkResponse({ description: 'A page of owner-scoped ledger entries, newest first' })
+  history(
+    @Query(new ZodValidationPipe(walletHistoryQuerySchema)) query: WalletHistoryQueryInput,
+    @Req() request: RequestWithIdentity,
+  ): Promise<WalletHistoryPage> {
+    return this.getHistory.execute({
+      ownerId: currentUserId(request),
+      limit: query.limit,
+      cursor: query.cursor,
+    });
   }
 }

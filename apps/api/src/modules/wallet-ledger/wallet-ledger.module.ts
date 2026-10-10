@@ -8,6 +8,7 @@ import { SCHEMA } from './internal/adapter/out/persistence/schema';
 import { SqlModuleStatusReader } from './internal/adapter/out/persistence/sql-module-status-reader';
 import { SqlModuleStatusWriter } from './internal/adapter/out/persistence/sql-module-status-writer';
 import { SqlWalletRepository } from './internal/adapter/out/persistence/sql-wallet-repository';
+import { SqlWalletReader } from './internal/adapter/out/persistence/sql-wallet-reader';
 import { SqlTopUpIntentRepository } from './internal/adapter/out/persistence/sql-top-up-intent-repository';
 import { MockPaymentGateway } from './internal/adapter/out/payment/mock-payment-gateway';
 import { HmacWebhookSignatureVerifier } from './internal/adapter/out/payment/hmac-webhook-signature-verifier';
@@ -21,6 +22,9 @@ import { ReleaseCompletedClassUseCase } from './internal/application/release-com
 import { InitiateTopUpUseCase } from './internal/application/initiate-top-up.use-case';
 import { HandleTopUpCallbackUseCase } from './internal/application/handle-top-up-callback.use-case';
 import { GetWalletBalanceUseCase } from './internal/application/get-wallet-balance.use-case';
+import { GetWalletHistoryQueryHandler } from './internal/application/get-wallet-history.query';
+import { GET_WALLET_HISTORY } from './internal/application/port/in/get-wallet-history';
+import { WALLET_READER, type WalletReader } from './internal/application/port/out/wallet-reader';
 import { GET_MODULE_STATUS } from './internal/application/port/in/get-module-status';
 import { ADVANCE_STATUS } from './internal/application/port/in/advance-status';
 import { INITIATE_TOP_UP } from './internal/application/port/in/initiate-top-up';
@@ -166,6 +170,17 @@ export class WalletLedgerRegistrar implements OnModuleInit {
       provide: GET_WALLET_BALANCE,
       useFactory: (wallets: WalletRepository) => new GetWalletBalanceUseCase(wallets),
       inject: [WALLET_REPOSITORY],
+    },
+    {
+      provide: WALLET_READER,
+      useFactory: (registry: ModuleDataSourceRegistry): WalletReader =>
+        new SqlWalletReader(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
+      provide: GET_WALLET_HISTORY,
+      useFactory: (reader: WalletReader) => new GetWalletHistoryQueryHandler(reader),
+      inject: [WALLET_READER],
     },
     {
       provide: RELEASE_INCOME,
