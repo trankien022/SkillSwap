@@ -10,6 +10,8 @@ import {
   classCompletedSchema,
   classSchema,
   createClassSchema,
+  documentUploadRequestSchema,
+  documentUploadTargetSchema,
   eventEnvelopeSchema,
   identityHeadersSchema,
   loginSchema,
@@ -20,11 +22,16 @@ import {
   roomAccessRequestSchema,
   roomAccessResponseSchema,
   statusChangedSchema,
+  studentVerificationEventSchema,
+  studentVerificationSchema,
+  submitStudentVerificationSchema,
   tokenResponseSchema,
   topUpCallbackSchema,
   topUpIntentSchema,
   topUpRequestSchema,
   updateClassSchema,
+  verificationDecisionSchema,
+  verificationStatusSchema,
   walletBalanceSchema,
   walletHistoryItemSchema,
   walletHistoryPageSchema,
@@ -439,5 +446,109 @@ describe('top-up schemas (FR-008)', () => {
       availableCredits: 100,
       pendingCredits: 0,
     });
+  });
+});
+
+describe('student verification contracts', () => {
+  it('accepts a submission with or without a major', () => {
+    expect(
+      submitStudentVerificationSchema.parse({
+        schoolName: 'FPT University',
+        documentId: 'doc-1',
+      }),
+    ).toEqual({ schoolName: 'FPT University', documentId: 'doc-1' });
+    expect(
+      submitStudentVerificationSchema.parse({
+        schoolName: 'FPT University',
+        major: 'SE',
+        documentId: 'doc-1',
+      }).major,
+    ).toBe('SE');
+  });
+
+  it('rejects an empty school name or document id', () => {
+    expect(() =>
+      submitStudentVerificationSchema.parse({ schoolName: '', documentId: 'd' }),
+    ).toThrow();
+    expect(() =>
+      submitStudentVerificationSchema.parse({ schoolName: 'FPT', documentId: '' }),
+    ).toThrow();
+  });
+
+  it('validates the document upload request and target', () => {
+    expect(
+      documentUploadRequestSchema.parse({
+        fileName: 'transcript.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 1024,
+      }),
+    ).toEqual({ fileName: 'transcript.pdf', contentType: 'application/pdf', sizeBytes: 1024 });
+    expect(() =>
+      documentUploadRequestSchema.parse({ fileName: 'x.pdf', contentType: 'application/pdf', sizeBytes: 0 }),
+    ).toThrow();
+    const target = {
+      documentId: 'd1',
+      uploadUrl: 'https://s3.local/bucket/k?sig=x',
+      objectKey: 'a1/d1.pdf',
+      expiresAt: '2026-10-10T00:15:00.000Z',
+    };
+    expect(documentUploadTargetSchema.parse(target)).toEqual(target);
+  });
+
+  it('requires a reason to reject', () => {
+    expect(() => verificationDecisionSchema.parse({ decision: 'reject' })).toThrow();
+    expect(() => verificationDecisionSchema.parse({ decision: 'reject', reason: '  ' })).toThrow();
+    expect(
+      verificationDecisionSchema.parse({ decision: 'reject', reason: 'illegible' }),
+    ).toEqual({ decision: 'reject', reason: 'illegible' });
+  });
+
+  it('accepts an approval without a reason', () => {
+    expect(
+      verificationDecisionSchema.parse({ decision: 'approve', approvedMajor: 'SE' }),
+    ).toEqual({ decision: 'approve', approvedMajor: 'SE' });
+  });
+
+  it('round-trips the owner-scoped view', () => {
+    const view = {
+      id: 'v1',
+      status: 'rejected',
+      schoolName: 'FPT University',
+      major: null,
+      reviewerId: 'admin-1',
+      reason: 'illegible document',
+      decidedAt: '2026-10-10T00:00:00.000Z',
+      submittedAt: '2026-10-09T00:00:00.000Z',
+    };
+    expect(studentVerificationSchema.parse(view)).toEqual(view);
+  });
+
+  it('rejects the removed superseded status and drops expiry (dev decisions)', () => {
+    expect(verificationStatusSchema.safeParse('superseded').success).toBe(false);
+    const parsed = studentVerificationSchema.parse({
+      id: 'v1',
+      status: 'approved',
+      schoolName: 'FPT',
+      major: null,
+      reviewerId: 'admin',
+      reason: null,
+      decidedAt: '2026-10-10T00:00:00.000Z',
+      expiresAt: '2027-10-10T00:00:00.000Z',
+      submittedAt: '2026-10-09T00:00:00.000Z',
+    });
+    expect(parsed).not.toHaveProperty('expiresAt');
+  });
+
+  it('validates the emitted event payload', () => {
+    const event = {
+      verificationId: 'v1',
+      accountId: 'a1',
+      status: 'approved',
+      schoolName: 'FPT University',
+      reason: null,
+      occurredAt: '2026-10-10T00:00:00.000Z',
+    };
+    expect(studentVerificationEventSchema.parse(event)).toEqual(event);
+    expect(() => studentVerificationEventSchema.parse({ ...event, status: 'nope' })).toThrow();
   });
 });

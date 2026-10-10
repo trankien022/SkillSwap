@@ -3,6 +3,7 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ApiConfig } from '../shared/config/api-config';
 import { AppLogger } from '../shared/logger/app-logger';
 import { DomainErrorFilter } from '../shared/http/domain-error.filter';
+import { RolesGuard } from '../shared/http/roles.guard';
 import { TrustedIdentityGuard } from '../shared/http/trusted-identity.guard';
 import { SharedModule } from '../shared/shared.module';
 import { AdminOperationModule } from '../modules/admin-operation/admin-operation.module';
@@ -32,6 +33,8 @@ import { HealthController } from './health.controller';
       useFactory: (config: ApiConfig) => new TrustedIdentityGuard(config.authMode),
       inject: [ApiConfig],
     },
+    // FR-002: opt-in role enforcement; a no-op on routes without @Roles.
+    RolesGuard,
     {
       provide: APP_FILTER,
       useFactory: (logger: AppLogger) => new DomainErrorFilter(logger.child('http')),

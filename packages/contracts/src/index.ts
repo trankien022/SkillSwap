@@ -249,3 +249,64 @@ export const roomAccessResponseSchema = z.object({
   url: z.string().min(1),
 });
 export type RoomAccessResponse = z.infer<typeof roomAccessResponseSchema>;
+
+/** FR-002: student verification (ADR-023). At most one effective per account; no expiry. */
+export const verificationStatusSchema = z.enum(['pending', 'approved', 'rejected']);
+export type VerificationStatus = z.infer<typeof verificationStatusSchema>;
+
+export const submitStudentVerificationSchema = z.object({
+  schoolName: z.string().min(1).max(200),
+  major: z.string().min(1).max(120).optional(),
+  documentId: z.string().min(1).max(100),
+});
+export type SubmitStudentVerificationInput = z.infer<typeof submitStudentVerificationSchema>;
+
+/** FR-002 / ADR-023: request a pre-signed upload target for a document. */
+export const documentUploadRequestSchema = z.object({
+  fileName: z.string().min(1).max(255),
+  contentType: z.string().min(1).max(120),
+  sizeBytes: z.number().int().positive(),
+});
+export type DocumentUploadRequestInput = z.infer<typeof documentUploadRequestSchema>;
+
+export const documentUploadTargetSchema = z.object({
+  documentId: z.string().min(1),
+  uploadUrl: z.string().min(1),
+  objectKey: z.string().min(1),
+  expiresAt: z.string().datetime({ offset: true }),
+});
+export type DocumentUploadTargetView = z.infer<typeof documentUploadTargetSchema>;
+
+export const verificationDecisionSchema = z
+  .object({
+    decision: z.enum(['approve', 'reject']),
+    reason: z.string().min(1).max(500).optional(),
+    approvedMajor: z.string().min(1).max(120).optional(),
+  })
+  .refine((value) => value.decision !== 'reject' || (value.reason?.trim().length ?? 0) > 0, {
+    message: 'A rejection requires a reason',
+    path: ['reason'],
+  });
+export type VerificationDecisionInput = z.infer<typeof verificationDecisionSchema>;
+
+export const studentVerificationSchema = z.object({
+  id: z.string().min(1),
+  status: verificationStatusSchema,
+  schoolName: z.string().min(1),
+  major: z.string().min(1).nullable(),
+  reviewerId: z.string().min(1).nullable(),
+  reason: z.string().min(1).nullable(),
+  decidedAt: z.string().datetime({ offset: true }).nullable(),
+  submittedAt: z.string().datetime({ offset: true }),
+});
+export type StudentVerificationView = z.infer<typeof studentVerificationSchema>;
+
+export const studentVerificationEventSchema = z.object({
+  verificationId: z.string().min(1),
+  accountId: z.string().min(1),
+  status: verificationStatusSchema,
+  schoolName: z.string().min(1),
+  reason: z.string().min(1).nullable(),
+  occurredAt: z.string().datetime({ offset: true }),
+});
+export type StudentVerificationEvent = z.infer<typeof studentVerificationEventSchema>;

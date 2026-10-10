@@ -50,6 +50,17 @@ export class ApiConfig {
   readonly jitsiOpenMinutes: number;
   readonly logLevel: string;
 
+  // FR-002 / ADR-023: document storage (S3-compatible object storage).
+  readonly s3Endpoint: string;
+  readonly s3Region: string;
+  readonly s3Bucket: string;
+  readonly s3AccessKeyId: string;
+  readonly s3SecretAccessKey: string;
+  readonly s3ForcePathStyle: boolean;
+  readonly s3UploadTtlSeconds: number;
+  readonly s3MaxUploadBytes: number;
+  readonly s3AllowedContentTypes: string[];
+
   constructor() {
     this.databaseHost = readString('DATABASE_HOST', 'localhost');
     this.databasePort = readInt('DATABASE_PORT', 5432);
@@ -78,6 +89,22 @@ export class ApiConfig {
     this.jitsiDomain = readString('JITSI_DOMAIN', 'localhost:8443');
     this.jitsiTokenTtlSeconds = readInt('JITSI_TOKEN_TTL_SECONDS', 3600);
     this.jitsiOpenMinutes = readInt('JITSI_OPEN_MINUTES', 15);
+
+    this.s3Endpoint = readString('S3_ENDPOINT', 'http://localhost:9000');
+    this.s3Region = readString('S3_REGION', 'us-east-1');
+    this.s3Bucket = readString('S3_BUCKET', 'skillswap-documents');
+    this.s3AccessKeyId = readString('S3_ACCESS_KEY_ID', 'skillswap');
+    this.s3SecretAccessKey = readString('S3_SECRET_ACCESS_KEY', 'skillswap_dev_secret');
+    this.s3ForcePathStyle = readString('S3_FORCE_PATH_STYLE', 'true') !== 'false';
+    this.s3UploadTtlSeconds = readInt('S3_UPLOAD_TTL_SECONDS', 900);
+    this.s3MaxUploadBytes = readInt('S3_MAX_UPLOAD_BYTES', 10 * 1024 * 1024);
+    this.s3AllowedContentTypes = readString(
+      'S3_ALLOWED_CONTENT_TYPES',
+      'application/pdf,image/png,image/jpeg',
+    )
+      .split(',')
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
   }
 
   /** Per-schema credentials (ADR-007): DATABASE_<SCHEMA>_USER / _PASSWORD. */
