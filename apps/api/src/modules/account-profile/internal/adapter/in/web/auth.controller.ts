@@ -64,8 +64,8 @@ export class AuthController {
   }
 
   @Get('me')
-  @ApiOperation({ summary: 'Read the signed-in account (FR-001)' })
-  @ApiOkResponse({ description: 'The current account' })
+  @ApiOperation({ summary: 'Read the signed-in account and verification status (FR-001/FR-017)' })
+  @ApiOkResponse({ description: 'The current account with its projected student verification status' })
   me(@Req() request: RequestWithIdentity): Promise<MeResponse> {
     return this.getMe.execute(currentUserId(request));
   }

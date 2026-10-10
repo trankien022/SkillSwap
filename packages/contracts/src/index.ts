@@ -172,12 +172,24 @@ export const tokenResponseSchema = z.object({
 });
 export type TokenResponse = z.infer<typeof tokenResponseSchema>;
 
+/** FR-017 (ADR-024): the account's trust summary, projected from verification events. */
+export const accountVerificationStatusSchema = z.enum(['pending', 'approved', 'rejected']);
+export type AccountVerificationStatus = z.infer<typeof accountVerificationStatusSchema>;
+
+export const studentVerificationSummarySchema = z.object({
+  status: accountVerificationStatusSchema,
+  reason: z.string().min(1).nullable(),
+});
+export type StudentVerificationSummary = z.infer<typeof studentVerificationSummarySchema>;
+
 export const meResponseSchema = z.object({
   id: z.string().min(1),
   email: z.string().email(),
   displayName: z.string().min(1),
   role: accountRoleSchema,
   status: z.string().min(1),
+  // FR-017: null when the account never submitted a student verification.
+  studentVerification: studentVerificationSummarySchema.nullable(),
 });
 export type MeResponse = z.infer<typeof meResponseSchema>;
 

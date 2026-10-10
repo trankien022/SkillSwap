@@ -396,8 +396,34 @@ describe('auth schemas (ADR-016)', () => {
   });
 
   it('round-trips a me response', () => {
-    const me = { id: 'u1', email: 'a@b.co', displayName: 'An', role: 'learner', status: 'active' };
+    const me = {
+      id: 'u1',
+      email: 'a@b.co',
+      displayName: 'An',
+      role: 'learner',
+      status: 'active',
+      studentVerification: null,
+    };
     expect(meResponseSchema.parse(me)).toEqual(me);
+  });
+
+  it('round-trips a me response with a projected verification (FR-017)', () => {
+    const me = {
+      id: 'u1',
+      email: 'a@b.co',
+      displayName: 'An',
+      role: 'learner',
+      status: 'active',
+      studentVerification: { status: 'rejected', reason: 'Illegible document' },
+    };
+    expect(meResponseSchema.parse(me)).toEqual(me);
+    expect(
+      meResponseSchema.parse({ ...me, studentVerification: { status: 'approved', reason: null } })
+        .studentVerification?.status,
+    ).toBe('approved');
+    expect(() =>
+      meResponseSchema.parse({ ...me, studentVerification: { status: 'expired', reason: null } }),
+    ).toThrow();
   });
 
   it('requires a non-empty refresh token', () => {

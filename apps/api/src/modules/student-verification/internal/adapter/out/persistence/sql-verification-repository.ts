@@ -69,27 +69,42 @@ export class SqlVerificationRepository implements VerificationRepository {
   async create(request: CreateVerificationRequest): Promise<Verification> {
     const source = this.registry.get(this.moduleName);
     try {
-      const rows = returnedRows<VerificationRow>(
-        await source.query(
-          `INSERT INTO ${this.table}
-             ("id", "account_id", "school_name", "major", "document_ref", "status", "created_at")
-           VALUES ($1, $2, $3, $4, $5, 'pending', $6)
-           RETURNING ${SELECT_COLUMNS}`,
-          [
-            request.id,
-            request.accountId,
-            request.schoolName,
-            request.major,
-            request.documentRef,
-            request.submittedAt.toISOString(),
-          ],
-        ),
-      );
-      const row = rows[0];
-      if (row === undefined) {
-        throw new Error('Failed to insert student verification');
-      }
-      return toDomain(row);
+      return await source.transaction(async (manager) => {
+        const rows = returnedRows<VerificationRow>(
+          await manager.query(
+            `INSERT INTO ${this.table}
+               ("id", "account_id", "school_name", "major", "document_ref", "status", "created_at")
+             VALUES ($1, $2, $3, $4, $5, 'pending', $6)
+             RETURNING ${SELECT_COLUMNS}`,
+            [
+              request.id,
+              request.accountId,
+              request.schoolName,
+              request.major,
+              request.documentRef,
+              request.submittedAt.toISOString(),
+            ],
+          ),
+        );
+        const row = rows[0];
+        if (row === undefined) {
+          throw new Error('Failed to insert student verification');
+        }
+        // Emit in the same transaction as the state write (ADR-013/ADR-023 §7),
+        // so FR-017/FR-016/FR-019 can project the pending status.
+        await manager.query(insertOutboxStatement(this.schema), [
+          VERIFICATION_EVENTS.submitted,
+          {
+            verificationId: row.id,
+            accountId: row.account_id,
+            status: row.status,
+            schoolName: row.school_name,
+            reason: row.reason,
+            occurredAt: request.submittedAt.toISOString(),
+          },
+        ]);
+        return toDomain(row);
+      });
     } catch (error) {
       if (isUniqueViolation(error)) {
         throw new DuplicateActiveVerificationError(request.accountId);

@@ -1,5 +1,7 @@
-import { Injectable, Module, type OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Module, type OnModuleInit } from '@nestjs/common';
+import { studentVerificationEventSchema } from '@skillswap/contracts';
 import { ApiConfig } from '../../shared/config/api-config';
+import { EventHandlerRegistry, type BusMessage } from '../../shared/messaging/event-handler-registry';
 import { ModuleDataSourceRegistry } from '../../shared/messaging/module-registry';
 import { createModuleDataSource } from './internal/adapter/out/persistence/data-source';
 import { SCHEMA } from './internal/adapter/out/persistence/schema';
@@ -8,6 +10,7 @@ import { SqlModuleStatusWriter } from './internal/adapter/out/persistence/sql-mo
 import { SqlAccountRepository } from './internal/adapter/out/persistence/sql-account-repository';
 import { SqlCredentialRepository } from './internal/adapter/out/persistence/sql-credential-repository';
 import { SqlSessionRepository } from './internal/adapter/out/persistence/sql-session-repository';
+import { SqlVerificationStatusProjector } from './internal/adapter/out/persistence/sql-verification-status-projector';
 import { ScryptPasswordHasher } from './internal/adapter/out/crypto/scrypt-password-hasher';
 import { NodeTokenService } from './internal/adapter/out/crypto/node-token-service';
 import { SystemClock } from './internal/adapter/out/crypto/system-clock';
@@ -19,6 +22,7 @@ import { LoginUseCase } from './internal/application/login.use-case';
 import { RefreshSessionUseCase } from './internal/application/refresh-session.use-case';
 import { LogoutUseCase } from './internal/application/logout.use-case';
 import { GetMeUseCase } from './internal/application/get-me.use-case';
+import { ProjectVerificationStatusUseCase } from './internal/application/project-verification-status.use-case';
 import { GET_MODULE_STATUS } from './internal/application/port/in/get-module-status';
 import { ADVANCE_STATUS } from './internal/application/port/in/advance-status';
 import { REGISTER_ACCOUNT } from './internal/application/port/in/register-account';
@@ -34,23 +38,47 @@ import {
   type CredentialRepository,
 } from './internal/application/port/out/credential-repository';
 import { SESSION_REPOSITORY, type SessionRepository } from './internal/application/port/out/session-repository';
+import {
+  VERIFICATION_STATUS_READER,
+  VERIFICATION_STATUS_WRITER,
+  type VerificationStatusReader,
+  type VerificationStatusWriter,
+} from './internal/application/port/out/verification-status-projector';
 import { PASSWORD_HASHER, type PasswordHasher } from './internal/application/port/out/password-hasher';
 import { TOKEN_SERVICE, CLOCK, type Clock, type TokenService } from './internal/application/port/out/token-service';
 import { GetModuleStatusQueryHandler } from './internal/application/query/get-module-status.query';
 import { MODULE_NAME } from './internal/domain/module-status';
 
-/** Registers this module's DataSource pool on the shared registry (ARCHITECTURE.md §5). */
+/** Registers this module's DataSource pool and the FR-017 verification consumers. */
 @Injectable()
 export class AccountProfileRegistrar implements OnModuleInit {
   constructor(
     private readonly registry: ModuleDataSourceRegistry,
     private readonly config: ApiConfig,
+    private readonly handlers: EventHandlerRegistry,
+    @Inject(VERIFICATION_STATUS_WRITER) private readonly projector: VerificationStatusWriter,
   ) {}
 
   onModuleInit(): void {
     this.registry.register(MODULE_NAME, SCHEMA, (schema) =>
       createModuleDataSource(this.config, schema),
     );
+    const useCase = new ProjectVerificationStatusUseCase(this.projector);
+    for (const eventType of [
+      'student.verification.submitted',
+      'student.verification.approved',
+      'student.verification.rejected',
+    ]) {
+      this.handlers.register({
+        moduleName: MODULE_NAME,
+        eventType,
+        queue: `account-profile.${eventType.replace(/\./g, '-')}`,
+        handler: async (message: BusMessage): Promise<void> => {
+          const event = studentVerificationEventSchema.parse(message.payload);
+          await useCase.execute(event);
+        },
+      });
+    }
   }
 }
 
@@ -96,6 +124,18 @@ export class AccountProfileRegistrar implements OnModuleInit {
       provide: SESSION_REPOSITORY,
       useFactory: (registry: ModuleDataSourceRegistry): SessionRepository =>
         new SqlSessionRepository(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
+      provide: VERIFICATION_STATUS_READER,
+      useFactory: (registry: ModuleDataSourceRegistry): VerificationStatusReader =>
+        new SqlVerificationStatusProjector(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
+      provide: VERIFICATION_STATUS_WRITER,
+      useFactory: (registry: ModuleDataSourceRegistry): VerificationStatusWriter =>
+        new SqlVerificationStatusProjector(registry, MODULE_NAME),
       inject: [ModuleDataSourceRegistry],
     },
     { provide: PASSWORD_HASHER, useFactory: (): PasswordHasher => new ScryptPasswordHasher() },
@@ -149,8 +189,9 @@ export class AccountProfileRegistrar implements OnModuleInit {
     },
     {
       provide: GET_ME,
-      useFactory: (accounts: AccountRepository) => new GetMeUseCase(accounts),
-      inject: [ACCOUNT_REPOSITORY],
+      useFactory: (accounts: AccountRepository, verificationStatus: VerificationStatusReader) =>
+        new GetMeUseCase(accounts, verificationStatus),
+      inject: [ACCOUNT_REPOSITORY, VERIFICATION_STATUS_READER],
     },
     AccountProfileRegistrar,
   ],

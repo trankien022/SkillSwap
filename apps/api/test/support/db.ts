@@ -5,7 +5,10 @@ import type { Harness } from '../harness';
  * test so the suite is deterministic regardless of prior runs.
  */
 export async function resetDatabase(harness: Harness): Promise<void> {
-  await harness.query('account-profile', 'TRUNCATE accounts, account_credentials, sessions CASCADE');
+  await harness.query(
+    'account-profile',
+    'TRUNCATE accounts, account_credentials, sessions, account_verification_status CASCADE',
+  );
   await harness.query(
     'live-class',
     'TRUNCATE classes, class_skills, bookings, room_access_incidents CASCADE',
