@@ -26,6 +26,9 @@ import {
   topUpRequestSchema,
   updateClassSchema,
   walletBalanceSchema,
+  walletHistoryItemSchema,
+  walletHistoryPageSchema,
+  walletHistoryQuerySchema,
 } from './index';
 
 describe('advanceStatusSchema', () => {
@@ -271,6 +274,38 @@ describe('room access schemas (FR-011 / ADR-020)', () => {
       url: 'https://localhost:8443/skillswap-cls-1',
     };
     expect(roomAccessResponseSchema.parse(response)).toEqual(response);
+  });
+});
+
+describe('wallet history schemas (FR-010 / ADR-022)', () => {
+  it('coerces query params and defaults are optional', () => {
+    expect(walletHistoryQuerySchema.parse({})).toEqual({});
+    expect(walletHistoryQuerySchema.parse({ limit: '20', cursor: 'abc' })).toEqual({
+      limit: 20,
+      cursor: 'abc',
+    });
+    expect(() => walletHistoryQuerySchema.parse({ limit: 0 })).toThrow();
+    expect(() => walletHistoryQuerySchema.parse({ limit: 101 })).toThrow();
+  });
+
+  it('accepts only completed/reversed display statuses', () => {
+    const item = {
+      id: '1',
+      type: 'top_up',
+      direction: 'credit',
+      amountCredits: 100,
+      status: 'completed',
+      reference: null,
+      createdAt: '2026-10-12T10:00:00.000Z',
+    };
+    expect(walletHistoryItemSchema.parse(item)).toEqual(item);
+    expect(() => walletHistoryItemSchema.parse({ ...item, status: 'pending' })).toThrow();
+    expect(() => walletHistoryItemSchema.parse({ ...item, amountCredits: -5 })).toThrow();
+  });
+
+  it('round-trips a page with a next cursor', () => {
+    const page = { items: [], nextCursor: 'xyz' };
+    expect(walletHistoryPageSchema.parse(page)).toEqual(page);
   });
 });
 

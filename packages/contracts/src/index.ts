@@ -212,6 +212,30 @@ export const walletBalanceSchema = z.object({
 });
 export type WalletBalanceView = z.infer<typeof walletBalanceSchema>;
 
+/** FR-010: paginated wallet history (ADR-022). */
+export const walletHistoryQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+  cursor: z.string().min(1).optional(),
+});
+export type WalletHistoryQueryInput = z.infer<typeof walletHistoryQuerySchema>;
+
+export const walletHistoryItemSchema = z.object({
+  id: z.string().min(1),
+  type: z.string().min(1),
+  direction: z.enum(['credit', 'debit']),
+  amountCredits: z.number().int().positive(),
+  status: z.enum(['completed', 'reversed']),
+  reference: z.string().min(1).nullable(),
+  createdAt: z.string().datetime({ offset: true }),
+});
+export type WalletHistoryItemView = z.infer<typeof walletHistoryItemSchema>;
+
+export const walletHistoryPageSchema = z.object({
+  items: z.array(walletHistoryItemSchema),
+  nextCursor: z.string().min(1).nullable(),
+});
+export type WalletHistoryPage = z.infer<typeof walletHistoryPageSchema>;
+
 /** FR-011: join an online class room (ADR-020). */
 export const roomAccessRequestSchema = z.object({
   displayName: z.string().min(1).max(120).optional(),
