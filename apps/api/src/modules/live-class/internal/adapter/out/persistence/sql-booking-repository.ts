@@ -134,7 +134,6 @@ export class SqlBookingRepository implements BookingRepository {
   ): Promise<{ confirmed: boolean; booking: PersistedBooking | null }> {
     const source = this.registry.get(this.moduleName);
     const bookings = qualified(this.schema, BOOKINGS_TABLE);
-    const classes = qualified(this.schema, CLASSES_TABLE);
     return source.transaction(async (manager) => {
       // Lock the booking row, then only confirm if still pending (FR-009 / AC-005).
       const locked = (await manager.query(

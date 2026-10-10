@@ -3,7 +3,7 @@ import { ClassLockedError } from '../domain/class';
 import { NotClassOwnerError } from './cancel-class.use-case';
 import { ClassNotFoundError } from './book-class.use-case';
 import type { Clock } from './port/out/clock';
-import { InMemoryBookingRepository, InMemoryClassRepository, classView, makeBooking } from './testing/live-class-fakes';
+import { InMemoryBookingRepository, InMemoryClassRepository, makeBooking } from './testing/live-class-fakes';
 
 const NOW = new Date('2026-10-10T00:00:00.000Z');
 const clock: Clock = { now: () => NOW };
