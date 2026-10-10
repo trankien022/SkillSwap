@@ -35,3 +35,61 @@ jobs:
 
       - name: Architecture tests
         run: pnpm test:arch
+
+  e2e:
+    runs-on: ubuntu-latest
+    # Real Postgres + RabbitMQ (docker services); Jitsi is left out of CI, so the
+    # Jitsi spec self-skips. Runs the booking flow end to end against the DB.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: skillswap
+          POSTGRES_PASSWORD: skillswap_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d skillswap"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      rabbitmq:
+        image: rabbitmq:3.13-management
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      JITSI_APP_ID: skillswap
+      JITSI_APP_SECRET: skillswap_jitsi_dev_secret
+      # The Jitsi spec self-skips because no Jitsi container is published here.
+      JITSI_WEB_URL: http://localhost:8000
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install (locked)
+        run: pnpm install --frozen-lockfile
+
+      - name: Prepare local env + keys
+        run: |
+          cp .env.example .env
+          pnpm keys:gen
+
+      - name: Build contracts
+        run: pnpm --filter @skillswap/contracts build
+
+      - name: Build api (for the migration runner)
+        run: pnpm --filter @skillswap/api build
+
+      - name: Apply migrations
+        run: node scripts/migrate.mjs
+
+      - name: End-to-end tests (real Postgres + RabbitMQ)
+        run: pnpm test:e2e
+
