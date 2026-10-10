@@ -25,7 +25,6 @@ interface VerificationRow {
   reviewer_id: string | null;
   reason: string | null;
   decided_at: Date | string | null;
-  expires_at: Date | string | null;
   created_at: Date | string;
 }
 
@@ -45,14 +44,13 @@ function toDomain(row: VerificationRow): Verification {
     reviewerId: row.reviewer_id,
     reason: row.reason,
     decidedAt: toDate(row.decided_at),
-    expiresAt: toDate(row.expires_at),
     submittedAt: new Date(row.created_at),
   });
 }
 
 const SELECT_COLUMNS =
   '"id", "account_id", "school_name", "major", "document_ref", "status", ' +
-  '"reviewer_id", "reason", "decided_at", "expires_at", "created_at"';
+  '"reviewer_id", "reason", "decided_at", "created_at"';
 
 export class SqlVerificationRepository implements VerificationRepository {
   constructor(
@@ -139,7 +137,7 @@ export class SqlVerificationRepository implements VerificationRepository {
         await manager.query(
           `UPDATE ${this.table}
              SET "status" = $2, "reviewer_id" = $3, "reason" = $4, "major" = COALESCE($5, "major"),
-                 "decided_at" = $6, "expires_at" = $7, "updated_at" = now()
+                 "decided_at" = $6, "updated_at" = now()
            WHERE "id" = $1 AND "status" = 'pending'
            RETURNING ${SELECT_COLUMNS}`,
           [
@@ -149,7 +147,6 @@ export class SqlVerificationRepository implements VerificationRepository {
             request.reason,
             request.major,
             request.decidedAt.toISOString(),
-            request.expiresAt?.toISOString() ?? null,
           ],
         ),
       );

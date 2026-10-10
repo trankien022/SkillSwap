@@ -29,6 +29,7 @@ import {
   topUpRequestSchema,
   updateClassSchema,
   verificationDecisionSchema,
+  verificationStatusSchema,
   walletBalanceSchema,
   walletHistoryItemSchema,
   walletHistoryPageSchema,
@@ -495,10 +496,25 @@ describe('student verification contracts', () => {
       reviewerId: 'admin-1',
       reason: 'illegible document',
       decidedAt: '2026-10-10T00:00:00.000Z',
-      expiresAt: null,
       submittedAt: '2026-10-09T00:00:00.000Z',
     };
     expect(studentVerificationSchema.parse(view)).toEqual(view);
+  });
+
+  it('rejects the removed superseded status and drops expiry (dev decisions)', () => {
+    expect(verificationStatusSchema.safeParse('superseded').success).toBe(false);
+    const parsed = studentVerificationSchema.parse({
+      id: 'v1',
+      status: 'approved',
+      schoolName: 'FPT',
+      major: null,
+      reviewerId: 'admin',
+      reason: null,
+      decidedAt: '2026-10-10T00:00:00.000Z',
+      expiresAt: '2027-10-10T00:00:00.000Z',
+      submittedAt: '2026-10-09T00:00:00.000Z',
+    });
+    expect(parsed).not.toHaveProperty('expiresAt');
   });
 
   it('validates the emitted event payload', () => {

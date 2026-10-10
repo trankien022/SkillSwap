@@ -8,7 +8,8 @@ function table(name: string): string {
 /**
  * FR-002 (ADR-023): student verification submissions and decisions. The partial
  * unique index enforces at most one effective (pending|approved) verification
- * per account (SR-BR-011); `expires_at` records the 365-day approval validity.
+ * per account (SR-BR-011). No expiry column — the developer decided approvals do
+ * not expire in the MVP.
  */
 export class CreateStudentVerifications1791072000100 implements MigrationInterface {
   name = 'CreateStudentVerifications1791072000100';
@@ -21,11 +22,10 @@ export class CreateStudentVerifications1791072000100 implements MigrationInterfa
       "major" text,
       "document_ref" text NOT NULL,
       "status" text NOT NULL DEFAULT 'pending'
-        CHECK ("status" IN ('pending', 'approved', 'rejected', 'superseded')),
+        CHECK ("status" IN ('pending', 'approved', 'rejected')),
       "reviewer_id" text,
       "reason" text,
       "decided_at" timestamptz,
-      "expires_at" timestamptz,
       "created_at" timestamptz NOT NULL DEFAULT now(),
       "updated_at" timestamptz NOT NULL DEFAULT now()
     )`);

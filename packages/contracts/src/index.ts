@@ -250,8 +250,8 @@ export const roomAccessResponseSchema = z.object({
 });
 export type RoomAccessResponse = z.infer<typeof roomAccessResponseSchema>;
 
-/** FR-002: student verification (ADR-023). At most one effective per account. */
-export const verificationStatusSchema = z.enum(['pending', 'approved', 'rejected', 'superseded']);
+/** FR-002: student verification (ADR-023). At most one effective per account; no expiry. */
+export const verificationStatusSchema = z.enum(['pending', 'approved', 'rejected']);
 export type VerificationStatus = z.infer<typeof verificationStatusSchema>;
 
 export const submitStudentVerificationSchema = z.object({
@@ -281,7 +281,6 @@ export const studentVerificationSchema = z.object({
   reviewerId: z.string().min(1).nullable(),
   reason: z.string().min(1).nullable(),
   decidedAt: z.string().datetime({ offset: true }).nullable(),
-  expiresAt: z.string().datetime({ offset: true }).nullable(),
   submittedAt: z.string().datetime({ offset: true }),
 });
 export type StudentVerificationView = z.infer<typeof studentVerificationSchema>;

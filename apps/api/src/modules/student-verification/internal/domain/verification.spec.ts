@@ -7,10 +7,8 @@ import {
   ReasonRequiredError,
   VERIFICATION_EVENTS,
   VERIFICATION_STATUSES,
-  VERIFICATION_VALIDITY_DAYS,
   Verification,
   UnknownVerificationStatusError,
-  addDays,
   assertDecidable,
   assertVerificationStatus,
   canDecide,
@@ -23,7 +21,7 @@ describe('student verification domain', () => {
   const now = new Date('2026-10-10T00:00:00.000Z');
 
   it('declares stable statuses and event names', () => {
-    expect(VERIFICATION_STATUSES).toEqual(['pending', 'approved', 'rejected', 'superseded']);
+    expect(VERIFICATION_STATUSES).toEqual(['pending', 'approved', 'rejected']);
     expect(EFFECTIVE_STATUSES).toEqual(['pending', 'approved']);
     expect(INITIAL_VERIFICATION_STATUS).toBe('pending');
     expect(VERIFICATION_EVENTS).toEqual({
@@ -44,7 +42,6 @@ describe('student verification domain', () => {
     expect(isEffectiveStatus('pending')).toBe(true);
     expect(isEffectiveStatus('approved')).toBe(true);
     expect(isEffectiveStatus('rejected')).toBe(false);
-    expect(isEffectiveStatus('superseded')).toBe(false);
   });
 
   it('allows only pending to be decided', () => {
@@ -69,7 +66,6 @@ describe('student verification domain', () => {
     expect(v.major).toBe('SE');
     expect(v.reviewerId).toBeNull();
     expect(v.reason).toBeNull();
-    expect(v.expiresAt).toBeNull();
     expect(v.submittedAt).toBe(now);
     expect(v.isEffective).toBe(true);
   });
@@ -112,11 +108,10 @@ describe('student verification domain', () => {
       reason: 'illegible document',
       decidedAt: now,
       reviewerId: 'admin-1',
-      expiresAt: null,
     });
   });
 
-  it('stamps a 365-day validity period on approval (ADR-023)', () => {
+  it('approves without an expiry (ADR-023: no expiry in the MVP)', () => {
     const decision = decideVerification(
       'pending',
       { decision: 'approve', major: 'Software Engineering' },
@@ -124,8 +119,8 @@ describe('student verification domain', () => {
     );
     expect(decision.status).toBe('approved');
     expect(decision.reviewerId).toBe('admin-1');
-    expect(decision.expiresAt).toEqual(addDays(now, VERIFICATION_VALIDITY_DAYS));
-    expect(VERIFICATION_VALIDITY_DAYS).toBe(365);
+    expect(decision.major).toBe('Software Engineering');
+    expect(decision).not.toHaveProperty('expiresAt');
   });
 
   it('never decidable from a terminal status', () => {
@@ -134,7 +129,8 @@ describe('student verification domain', () => {
     ).toThrow(InvalidVerificationTransitionError);
   });
 
-  it('reports expiry only for an approved verification past its deadline', () => {
+  it('has no superseded status or expiry state (developer decisions)', () => {
+    expect(VERIFICATION_STATUSES).not.toContain('superseded');
     const approved = Verification.reconstitute({
       id: 'v1',
       accountId: 'a1',
@@ -145,11 +141,10 @@ describe('student verification domain', () => {
       reviewerId: 'admin',
       reason: null,
       decidedAt: now,
-      expiresAt: addDays(now, 1),
       submittedAt: now,
     });
-    expect(approved.isExpired(now)).toBe(false);
-    expect(approved.isExpired(addDays(now, 2))).toBe(true);
+    expect(approved.isEffective).toBe(true);
+    expect(approved).not.toHaveProperty('expiresAt');
   });
 
   it('exposes a duplicate-active error with the account id', () => {

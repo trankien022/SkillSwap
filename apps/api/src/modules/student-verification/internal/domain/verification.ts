@@ -1,13 +1,14 @@
 /**
  * FR-002 / ADR-023: the Student verification aggregate.
  *
- * A Learner submits a school name plus an opaque `documentRef`; an Administrator
- * approves or rejects with a reason. At most one verification is "effective"
- * (pending or approved) per account (SR-BR-011). Approval is time-boxed to a
- * fixed academic-year period. Framework-free: no NestJS, no TypeORM.
+ * A Learner submits a school name plus an uploaded document (`documentRef` = the
+ * object key); an Administrator approves or rejects with a reason. At most one
+ * verification is "effective" (pending or approved) per account (SR-BR-011).
+ * Approval does not expire in the MVP (developer decision). Framework-free: no
+ * NestJS, no TypeORM.
  */
 
-export const VERIFICATION_STATUSES = ['pending', 'approved', 'rejected', 'superseded'] as const;
+export const VERIFICATION_STATUSES = ['pending', 'approved', 'rejected'] as const;
 export type VerificationStatus = (typeof VERIFICATION_STATUSES)[number];
 
 /** Statuses that count as the account's current verification (SR-BR-011). */
@@ -15,9 +16,6 @@ export const EFFECTIVE_STATUSES = ['pending', 'approved'] as const;
 export type EffectiveStatus = (typeof EFFECTIVE_STATUSES)[number];
 
 export const INITIAL_VERIFICATION_STATUS: VerificationStatus = 'pending';
-
-/** ADR-023: a fixed one-academic-year validity period, in days. */
-export const VERIFICATION_VALIDITY_DAYS = 365;
 
 export const VERIFICATION_EVENTS = {
   submitted: 'student.verification.submitted',
@@ -75,10 +73,9 @@ export class InvalidDeciderError extends Error {
 }
 
 const TRANSITIONS: Readonly<Record<VerificationStatus, readonly VerificationStatus[]>> = {
-  pending: ['approved', 'rejected', 'superseded'],
+  pending: ['approved', 'rejected'],
   approved: [],
   rejected: [],
-  superseded: [],
 };
 
 export function canDecide(
@@ -100,7 +97,6 @@ export interface VerificationDecision {
   major?: string;
   decidedAt: Date;
   reviewerId: string;
-  expiresAt: Date | null;
 }
 
 export class Verification {
@@ -114,7 +110,6 @@ export class Verification {
     readonly reviewerId: string | null,
     readonly reason: string | null,
     readonly decidedAt: Date | null,
-    readonly expiresAt: Date | null,
     readonly submittedAt: Date,
   ) {}
 
@@ -143,7 +138,6 @@ export class Verification {
       null,
       null,
       null,
-      null,
       input.submittedAt,
     );
   }
@@ -159,7 +153,6 @@ export class Verification {
     reviewerId: string | null;
     reason: string | null;
     decidedAt: Date | null;
-    expiresAt: Date | null;
     submittedAt: Date;
   }): Verification {
     assertVerificationStatus(input.status);
@@ -173,7 +166,6 @@ export class Verification {
       input.reviewerId,
       input.reason,
       input.decidedAt,
-      input.expiresAt,
       input.submittedAt,
     );
   }
@@ -181,16 +173,11 @@ export class Verification {
   get isEffective(): boolean {
     return isEffectiveStatus(this.status);
   }
-
-  /** Whether the approval is past its validity period relative to `now`. */
-  isExpired(now: Date): boolean {
-    return this.status === 'approved' && this.expiresAt !== null && now.getTime() >= this.expiresAt.getTime();
-  }
 }
 
 /**
  * Applies an Administrator decision to a pending verification. Rejection
- * requires a reason (AC-012); approval stamps the validity period (ADR-023).
+ * requires a reason (AC-012). Approval does not expire in the MVP (ADR-023).
  */
 export function decideVerification(
   status: VerificationStatus,
@@ -217,7 +204,6 @@ export function decideVerification(
       reason,
       decidedAt: context.now,
       reviewerId: context.reviewerId,
-      expiresAt: null,
     };
   }
 
@@ -226,10 +212,5 @@ export function decideVerification(
     major: decision.major?.trim() || undefined,
     decidedAt: context.now,
     reviewerId: context.reviewerId,
-    expiresAt: addDays(context.now, VERIFICATION_VALIDITY_DAYS),
   };
-}
-
-export function addDays(from: Date, days: number): Date {
-  return new Date(from.getTime() + days * 24 * 60 * 60 * 1000);
 }

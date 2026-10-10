@@ -61,7 +61,6 @@ export class DecideStudentVerificationUseCase implements DecideStudentVerificati
       reason: decision.reason ?? null,
       major: decision.major ?? null,
       decidedAt: decision.decidedAt,
-      expiresAt: decision.expiresAt,
     });
 
     const updated = await this.verifications.findById(verification.id);

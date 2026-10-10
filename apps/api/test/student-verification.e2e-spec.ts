@@ -91,7 +91,7 @@ describe('E2E: student verification (FR-002)', () => {
     });
   });
 
-  it('approves a pending verification and stamps a 365-day expiry', async () => {
+  it('approves a pending verification (no expiry in the MVP)', async () => {
     const learnerId = await registerLearner('sv-approve@skillswap.test');
     api.actAs(learnerId, 'learner');
 
@@ -109,11 +109,7 @@ describe('E2E: student verification (FR-002)', () => {
     expect(decided.status).toBe(200);
     expect(decided.json.status).toBe('approved');
     expect(decided.json.major).toBe('Computer Science');
-    expect(decided.json.expiresAt).not.toBeNull();
-
-    const decidedAt = new Date(decided.json.decidedAt as string).getTime();
-    const expiresAt = new Date(decided.json.expiresAt as string).getTime();
-    expect(Math.round((expiresAt - decidedAt) / (24 * 60 * 60 * 1000))).toBe(365);
+    expect(decided.json.expiresAt).toBeUndefined();
 
     api.actAs(learnerId, 'learner');
     const mine = await api.get('/api/student-verifications/me');

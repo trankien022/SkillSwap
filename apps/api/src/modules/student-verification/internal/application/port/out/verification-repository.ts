@@ -20,7 +20,6 @@ export interface ApplyDecisionRequest {
   readonly reason: string | null;
   readonly major: string | null;
   readonly decidedAt: Date;
-  readonly expiresAt: Date | null;
 }
 
 export interface ApplyDecisionResult {

@@ -57,7 +57,6 @@ export class InMemoryVerificationRepository implements VerificationRepository {
       reviewerId: request.reviewerId,
       reason: request.reason,
       decidedAt: request.decidedAt,
-      expiresAt: request.expiresAt,
       submittedAt: current.submittedAt,
     });
     return { applied: true };

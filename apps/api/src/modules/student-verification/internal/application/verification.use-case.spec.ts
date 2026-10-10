@@ -53,7 +53,7 @@ describe('DecideStudentVerificationUseCase (FR-002 / AC-001, AC-012)', () => {
     return { ...context, id: view.id };
   }
 
-  it('approves a pending verification and stamps expiry', async () => {
+  it('approves a pending verification (no expiry in the MVP)', async () => {
     const { decide, id } = await submitted();
     const view = await decide.execute({
       verificationId: id,
@@ -66,7 +66,7 @@ describe('DecideStudentVerificationUseCase (FR-002 / AC-001, AC-012)', () => {
     expect(view.reviewerId).toBe('admin-1');
     expect(view.major).toBe('Software Engineering');
     expect(view.decidedAt).toBe(now.toISOString());
-    expect(view.expiresAt).toBe(new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString());
+    expect(view).not.toHaveProperty('expiresAt');
   });
 
   it('rejects with a reason (AC-012)', async () => {
@@ -80,7 +80,6 @@ describe('DecideStudentVerificationUseCase (FR-002 / AC-001, AC-012)', () => {
     });
     expect(view.status).toBe('rejected');
     expect(view.reason).toBe('Illegible document');
-    expect(view.expiresAt).toBeNull();
   });
 
   it('requires a reason to reject', async () => {

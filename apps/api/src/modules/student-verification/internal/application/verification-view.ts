@@ -11,7 +11,6 @@ export function toVerificationView(verification: Verification): StudentVerificat
     reviewerId: verification.reviewerId,
     reason: verification.reason,
     decidedAt: verification.decidedAt?.toISOString() ?? null,
-    expiresAt: verification.expiresAt?.toISOString() ?? null,
     submittedAt: verification.submittedAt.toISOString(),
   };
 }
