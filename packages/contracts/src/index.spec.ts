@@ -26,6 +26,7 @@ import {
   roomAccessResponseSchema,
   skillEvidenceEventSchema,
   skillEvidenceViewSchema,
+  skillEvidenceDecisionSchema,
   skillLevelSchema,
   skillSchema,
   statusChangedSchema,
@@ -41,6 +42,9 @@ import {
   verificationDecisionSchema,
   verificationRevocationSchema,
   verificationStatusSchema,
+  verifierSchema,
+  verifierStatusChangeSchema,
+  verifierStatusSchema,
   walletBalanceSchema,
   walletHistoryItemSchema,
   walletHistoryPageSchema,
@@ -600,7 +604,7 @@ describe('student verification contracts', () => {
     it('exposes the fixed ordered level scale and evidence enums', () => {
       expect(skillLevelSchema.options).toEqual(['beginner', 'intermediate', 'advanced', 'expert']);
       expect(evidenceTypeSchema.options).toEqual(['certificate', 'verifier_assessment']);
-      expect(evidenceStatusSchema.options).toEqual(['pending', 'approved', 'rejected', 'superseded']);
+      expect(evidenceStatusSchema.options).toEqual(['pending', 'claimed', 'approved', 'rejected', 'superseded']);
       expect(skillLevelSchema.safeParse('master').success).toBe(false);
     });
 
@@ -632,6 +636,9 @@ describe('student verification contracts', () => {
         id: 'ev-1',
         profileSkillId: 'ps-1',
         skillId: 'sk-1',
+        skillName: 'IELTS',
+        category: 'Languages',
+        ownerId: 'acc-1',
         version: 1,
         evidenceType: 'certificate',
         documentRef: 'docs/cert.pdf',
@@ -639,6 +646,8 @@ describe('student verification contracts', () => {
         requestedLevel: 'intermediate',
         approvedLevel: null,
         status: 'pending',
+        claimedBy: null,
+        claimedAt: null,
         reason: null,
         decidedAt: null,
         submittedAt: '2026-10-11T00:00:00.000Z',
@@ -659,6 +668,23 @@ describe('student verification contracts', () => {
       };
       expect(skillEvidenceEventSchema.parse(event)).toEqual(event);
       expect(() => skillEvidenceEventSchema.parse({ ...event, status: 'nope' })).toThrow();
+    });
+
+    it('validates a verifier, its status change and a decision (FR-004)', () => {
+      const verifier = { accountId: 'vf-1', status: 'active', expertise: ['sk-1', 'sk-2'] };
+      expect(verifierSchema.parse(verifier)).toEqual(verifier);
+      expect(verifierStatusSchema.options).toEqual(['active', 'suspended', 'revoked']);
+      expect(verifierStatusChangeSchema.parse({ status: 'suspended' })).toEqual({ status: 'suspended' });
+
+      expect(skillEvidenceDecisionSchema.parse({ decision: 'approve' })).toEqual({ decision: 'approve' });
+      expect(
+        skillEvidenceDecisionSchema.parse({ decision: 'approve', approvedLevel: 'advanced' }),
+      ).toEqual({ decision: 'approve', approvedLevel: 'advanced' });
+      // A rejection requires a reason; an approval does not.
+      expect(skillEvidenceDecisionSchema.safeParse({ decision: 'reject' }).success).toBe(false);
+      expect(
+        skillEvidenceDecisionSchema.safeParse({ decision: 'reject', reason: 'Illegible' }).success,
+      ).toBe(true);
     });
   });
 });

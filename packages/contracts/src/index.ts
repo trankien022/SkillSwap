@@ -336,7 +336,7 @@ export type SkillLevel = z.infer<typeof skillLevelSchema>;
 export const evidenceTypeSchema = z.enum(['certificate', 'verifier_assessment']);
 export type EvidenceType = z.infer<typeof evidenceTypeSchema>;
 
-export const evidenceStatusSchema = z.enum(['pending', 'approved', 'rejected', 'superseded']);
+export const evidenceStatusSchema = z.enum(['pending', 'claimed', 'approved', 'rejected', 'superseded']);
 export type EvidenceStatus = z.infer<typeof evidenceStatusSchema>;
 
 /** FR-003: a catalogue entry in the two-level `category → skill` tree (ADR-026 §1–2). */
@@ -372,6 +372,9 @@ export const skillEvidenceViewSchema = z.object({
   id: z.string().min(1),
   profileSkillId: z.string().min(1),
   skillId: z.string().min(1),
+  skillName: z.string().min(1).nullable(),
+  category: z.string().min(1).nullable(),
+  ownerId: z.string().min(1).nullable(),
   version: z.number().int().positive(),
   evidenceType: evidenceTypeSchema,
   documentRef: z.string().min(1).nullable(),
@@ -379,6 +382,8 @@ export const skillEvidenceViewSchema = z.object({
   requestedLevel: skillLevelSchema,
   approvedLevel: skillLevelSchema.nullable(),
   status: evidenceStatusSchema,
+  claimedBy: z.string().min(1).nullable(),
+  claimedAt: z.string().datetime({ offset: true }).nullable(),
   reason: z.string().min(1).nullable(),
   decidedAt: z.string().datetime({ offset: true }).nullable(),
   submittedAt: z.string().datetime({ offset: true }),
@@ -397,3 +402,33 @@ export const skillEvidenceEventSchema = z.object({
   occurredAt: z.string().datetime({ offset: true }),
 });
 export type SkillEvidenceEvent = z.infer<typeof skillEvidenceEventSchema>;
+
+/** FR-004 / ADR-027: a Verifier account with a seeded expertise set. */
+export const verifierStatusSchema = z.enum(['active', 'suspended', 'revoked']);
+export type VerifierStatus = z.infer<typeof verifierStatusSchema>;
+
+export const verifierSchema = z.object({
+  accountId: z.string().min(1),
+  status: verifierStatusSchema,
+  expertise: z.array(z.string().min(1)),
+});
+export type VerifierView = z.infer<typeof verifierSchema>;
+
+/** FR-004: an administrator changes a Verifier's lifecycle status. */
+export const verifierStatusChangeSchema = z.object({
+  status: z.enum(['active', 'suspended', 'revoked']),
+});
+export type VerifierStatusChangeInput = z.infer<typeof verifierStatusChangeSchema>;
+
+/** FR-004 / API-003: approve or reject a claimed evidence request. */
+export const skillEvidenceDecisionSchema = z
+  .object({
+    decision: z.enum(['approve', 'reject']),
+    approvedLevel: skillLevelSchema.optional(),
+    reason: z.string().min(1).max(500).optional(),
+  })
+  .refine((value) => value.decision !== 'reject' || (value.reason?.trim().length ?? 0) > 0, {
+    message: 'A rejection requires a reason',
+    path: ['reason'],
+  });
+export type SkillEvidenceDecisionInput = z.infer<typeof skillEvidenceDecisionSchema>;
