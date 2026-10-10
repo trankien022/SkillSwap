@@ -35,6 +35,12 @@ const NAME_TO_STATUS: Record<string, number> = {
   WeakPasswordError: 400,
   SessionExpiredError: 401,
   SessionRevokedError: 401,
+  // FR-007 lifecycle remainder (ADR-019).
+  ClassLockedError: 409,
+  NotClassOwnerError: 403,
+  ClassAlreadyCancelledError: 409,
+  BookingTransitionError: 409,
+  InvalidClassEditError: 400,
 };
 
 /** Maps domain errors and unexpected failures onto the apiErrorSchema shape. */

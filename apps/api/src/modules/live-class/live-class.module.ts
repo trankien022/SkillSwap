@@ -1,5 +1,6 @@
 import { Injectable, Module, type OnModuleInit } from '@nestjs/common';
 import { ApiConfig } from '../../shared/config/api-config';
+import { AppLogger } from '../../shared/logger/app-logger';
 import { ModuleDataSourceRegistry } from '../../shared/messaging/module-registry';
 import { createModuleDataSource } from './internal/adapter/out/persistence/data-source';
 import { SCHEMA } from './internal/adapter/out/persistence/schema';
@@ -13,12 +14,26 @@ import { AdvanceStatusUseCase } from './internal/application/advance-status.use-
 import { CreateClassUseCase } from './internal/application/create-class.use-case';
 import { BookClassUseCase } from './internal/application/book-class.use-case';
 import { ConfirmBookingUseCase } from './internal/application/confirm-booking.use-case';
+import { UpdateClassUseCase } from './internal/application/update-class.use-case';
+import { CancelClassUseCase } from './internal/application/cancel-class.use-case';
+import { MarkTeacherNoShowUseCase } from './internal/application/mark-teacher-no-show.use-case';
+import { ExpirePendingBookingsUseCase } from './internal/application/expire-pending-bookings.use-case';
+import { PendingHoldSweeper } from './internal/adapter/in/scheduler/pending-hold.sweeper';
 import { GET_MODULE_STATUS } from './internal/application/port/in/get-module-status';
 import { ADVANCE_STATUS } from './internal/application/port/in/advance-status';
 import { CREATE_CLASS, type CreateClassPort } from './internal/application/port/in/create-class';
+import { UPDATE_CLASS, type UpdateClassPort } from './internal/application/port/in/update-class';
 import { BOOK_CLASS, type BookClassPort } from './internal/application/port/in/book-class';
 import { CONFIRM_BOOKING, type ConfirmBookingPort } from './internal/application/port/in/confirm-booking';
-import { STATUS_READER, type ModuleStatusReader } from './internal/application/port/out/module-status-reader';
+import { CANCEL_CLASS, type CancelClassPort } from './internal/application/port/in/cancel-class';
+import {
+  MARK_TEACHER_NO_SHOW,
+  type MarkTeacherNoShowPort,
+} from './internal/application/port/in/mark-teacher-no-show';
+import {
+  EXPIRE_PENDING_BOOKINGS,
+  type ExpirePendingBookingsPort,
+} from './internal/application/port/in/expire-pending-bookings';import { STATUS_READER, type ModuleStatusReader } from './internal/application/port/out/module-status-reader';
 import { STATUS_WRITER, type ModuleStatusWriter } from './internal/application/port/out/module-status-writer';
 import { CLASS_REPOSITORY, type ClassRepository } from './internal/application/port/out/class-repository';
 import { BOOKING_REPOSITORY, type BookingRepository } from './internal/application/port/out/booking-repository';
@@ -103,6 +118,42 @@ const systemClock: Clock = { now: () => new Date() };
       useFactory: (bookings: BookingRepository): ConfirmBookingPort =>
         new ConfirmBookingUseCase(bookings),
       inject: [BOOKING_REPOSITORY],
+    },
+    {
+      provide: UPDATE_CLASS,
+      useFactory: (
+        classes: ClassRepository,
+        bookings: BookingRepository,
+        clock: Clock,
+      ): UpdateClassPort => new UpdateClassUseCase(classes, bookings, clock),
+      inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY, CLOCK],
+    },
+    {
+      provide: CANCEL_CLASS,
+      useFactory: (classes: ClassRepository, bookings: BookingRepository): CancelClassPort =>
+        new CancelClassUseCase(classes, bookings),
+      inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY],
+    },
+    {
+      provide: MARK_TEACHER_NO_SHOW,
+      useFactory: (
+        bookings: BookingRepository,
+        classes: ClassRepository,
+        clock: Clock,
+      ): MarkTeacherNoShowPort => new MarkTeacherNoShowUseCase(bookings, classes, clock),
+      inject: [BOOKING_REPOSITORY, CLASS_REPOSITORY, CLOCK],
+    },
+    {
+      provide: EXPIRE_PENDING_BOOKINGS,
+      useFactory: (bookings: BookingRepository, clock: Clock) =>
+        new ExpirePendingBookingsUseCase(bookings, clock),
+      inject: [BOOKING_REPOSITORY, CLOCK],
+    },
+    {
+      provide: PendingHoldSweeper,
+      useFactory: (expire: ExpirePendingBookingsPort, logger: AppLogger) =>
+        new PendingHoldSweeper(expire, logger),
+      inject: [EXPIRE_PENDING_BOOKINGS, AppLogger],
     },
     LiveClassRegistrar,
   ],

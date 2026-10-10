@@ -38,18 +38,22 @@ function setup(options: {
       persistedClass({ ...record, id: 'cls-new' }),
     ),
     findById: jest.fn(async () => classView),
+    update: jest.fn(async (_id: string, edit) =>
+      persistedClass({ ...edit, teacherId: 'teacher-1', state: 'published' }),
+    ),
+    markCancelled: jest.fn(async () => undefined),
   };
 
-  let created: PersistedBooking | null = null;
   const bookings: BookingRepository = {
     findByIdempotencyKey: jest.fn(async () => options.replay ?? null),
+    findById: jest.fn(async () => null),
     createWithSeatGuard: jest.fn(
       async (
         record: CreateBookingRecord,
         guard: (seatRows: readonly BookingSeatRow[]) => void,
       ) => {
         guard(options.seatRows ?? []);
-        created = {
+        const booking: PersistedBooking = {
           id: 'bkg-1',
           classId: record.classId,
           learnerId: record.learnerId,
@@ -57,11 +61,16 @@ function setup(options: {
           priceCredits: record.priceCredits,
           idempotencyKey: record.idempotencyKey,
           createdAt: NOW,
+          expiresAt: record.expiresAt,
         };
-        return { booking: created, created: true };
+        return { booking, created: true };
       },
     ),
     confirmAndEmit: jest.fn(async () => ({ confirmed: false, booking: null })),
+    cancelAndEmit: jest.fn(async () => ({ cancelled: false, booking: null })),
+    expirePendingHolds: jest.fn(async () => 0),
+    countByClassAndState: jest.fn(async () => 0),
+    findActiveByClass: jest.fn(async () => []),
   };
 
   const clock: Clock = { now: () => NOW };
@@ -97,6 +106,7 @@ describe('BookClassUseCase', () => {
       priceCredits: 100,
       idempotencyKey: 'key-1',
       createdAt: NOW,
+      expiresAt: new Date(NOW.getTime() + 15 * 60 * 1000),
     };
     const { useCase, bookings } = setup({ replay });
     const result = await useCase.execute({
