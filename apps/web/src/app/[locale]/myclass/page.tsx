@@ -69,7 +69,20 @@ export default function Page() {
           );
           if (mounted) setModuleStatuses(statuses);
         } catch (err: any) {
-          if (mounted) setApiProbeError(err?.message || String(err));
+          // API unreachable — fall back to a safe local mock list so the UI remains useful during dev.
+          try {
+            const fallbackModules = ['student-verification', 'live-class', 'wallet-ledger'];
+            const fallbackStatuses: Record<string, { ok: boolean; detail?: any; error?: string }> = {};
+            fallbackModules.forEach((m) => {
+              fallbackStatuses[m] = { ok: false, error: 'unreachable - using local mock' };
+            });
+            if (!mounted) return;
+            setApiModules(fallbackModules);
+            setModuleStatuses(fallbackStatuses);
+            setApiProbeError('Gateway/API unreachable — using mock module list.');
+          } catch (innerErr: any) {
+            if (mounted) setApiProbeError(err?.message || String(err));
+          }
         }
       })();
       return () => {
