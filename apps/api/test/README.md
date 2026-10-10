@@ -12,7 +12,7 @@ end to end against real infrastructure:
   **self-skips** when Jitsi is not reachable, so CI can run without it.
 - **S3/MinIO** (optional; `docker compose up -d minio minio-init`) — the S3 spec
   uploads to the real bucket via the API's pre-signed URL and **self-skips**
-  when no S3 endpoint is reachable.
+  when no S3 endpoint is reachable. Objects persist in the `minio-data` volume.
 - **Payment** is the mock gateway (per ADR-017).
 
 ## Running
