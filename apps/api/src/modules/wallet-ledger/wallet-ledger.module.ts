@@ -1,5 +1,5 @@
 import { Inject, Injectable, Module, type OnModuleInit } from '@nestjs/common';
-import { bookingConfirmedSchema } from '@skillswap/contracts';
+import { bookingCancelledSchema, bookingConfirmedSchema } from '@skillswap/contracts';
 import { ApiConfig } from '../../shared/config/api-config';
 import { EventHandlerRegistry, type BusMessage } from '../../shared/messaging/event-handler-registry';
 import { ModuleDataSourceRegistry } from '../../shared/messaging/module-registry';
@@ -15,6 +15,7 @@ import { StatusController } from './internal/adapter/in/web/status.controller';
 import { WalletController } from './internal/adapter/in/web/wallet.controller';
 import { AdvanceStatusUseCase } from './internal/application/advance-status.use-case';
 import { RecordBookingConfirmedUseCase } from './internal/application/record-booking-confirmed.use-case';
+import { RefundCancelledBookingUseCase } from './internal/application/refund-cancelled-booking.use-case';
 import { ReleaseIncomeUseCase } from './internal/application/release-income.use-case';
 import { InitiateTopUpUseCase } from './internal/application/initiate-top-up.use-case';
 import { HandleTopUpCallbackUseCase } from './internal/application/handle-top-up-callback.use-case';
@@ -29,6 +30,10 @@ import {
   type RecordBookingConfirmedPort,
 } from './internal/application/port/in/record-booking-confirmed';
 import { RELEASE_INCOME } from './internal/application/port/in/release-income';
+import {
+  REFUND_CANCELLED_BOOKING,
+  type RefundCancelledBookingPort,
+} from './internal/application/port/in/refund-cancelled-booking';
 import { WALLET_REPOSITORY, type WalletRepository } from './internal/application/port/out/wallet-repository';
 import {
   TOP_UP_INTENT_REPOSITORY,
@@ -52,6 +57,7 @@ export class WalletLedgerRegistrar implements OnModuleInit {
     private readonly config: ApiConfig,
     private readonly handlers: EventHandlerRegistry,
     @Inject(RECORD_BOOKING_CONFIRMED) private readonly recordBooking: RecordBookingConfirmedPort,
+    @Inject(REFUND_CANCELLED_BOOKING) private readonly refundBooking: RefundCancelledBookingPort,
   ) {}
 
   onModuleInit(): void {
@@ -65,6 +71,15 @@ export class WalletLedgerRegistrar implements OnModuleInit {
       handler: async (message: BusMessage): Promise<void> => {
         const event = bookingConfirmedSchema.parse(message.payload);
         await this.recordBooking.execute(event);
+      },
+    });
+    this.handlers.register({
+      moduleName: MODULE_NAME,
+      eventType: 'booking.cancelled',
+      queue: 'wallet-ledger.booking-cancelled',
+      handler: async (message: BusMessage): Promise<void> => {
+        const event = bookingCancelledSchema.parse(message.payload);
+        await this.refundBooking.execute(event);
       },
     });
   }
@@ -140,6 +155,11 @@ export class WalletLedgerRegistrar implements OnModuleInit {
     {
       provide: RELEASE_INCOME,
       useFactory: (wallets: WalletRepository) => new ReleaseIncomeUseCase(wallets),
+      inject: [WALLET_REPOSITORY],
+    },
+    {
+      provide: REFUND_CANCELLED_BOOKING,
+      useFactory: (wallets: WalletRepository) => new RefundCancelledBookingUseCase(wallets),
       inject: [WALLET_REPOSITORY],
     },
     WalletLedgerRegistrar,

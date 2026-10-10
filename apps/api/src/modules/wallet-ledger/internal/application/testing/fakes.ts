@@ -3,6 +3,8 @@ import type { WalletBalance, TopUpStatus } from '../../domain/wallet';
 import { InsufficientBalanceError } from '../../domain/wallet';
 import type {
   ApplyTopUpRequest,
+  RefundBookingRequest,
+  RefundBookingResult,
   ReleaseIncomeRequest,
   ReleaseIncomeResult,
   SettleBookingRequest,
@@ -22,6 +24,7 @@ export class FakeWalletRepository implements WalletRepository {
   readonly entries: Array<ApplyTopUpRequest & { direction: string }> = [];
   readonly settledBookings = new Set<string>();
   readonly releasedKeys = new Set<string>();
+  readonly refundedBookings = new Set<string>();
 
   async getBalance(ownerId: string): Promise<WalletBalance> {
     return {
@@ -63,6 +66,21 @@ export class FakeWalletRepository implements WalletRepository {
     this.releasedKeys.add(key);
     this.pending.set(request.teacherId, (this.pending.get(request.teacherId) ?? 0) - request.amountCredits);
     this.balances.set(request.teacherId, (this.balances.get(request.teacherId) ?? 0) + request.amountCredits);
+    return { applied: true };
+  }
+
+  async refundBooking(request: RefundBookingRequest): Promise<RefundBookingResult> {
+    if (!this.settledBookings.has(request.bookingId) || this.refundedBookings.has(request.bookingId)) {
+      return { applied: false };
+    }
+    this.refundedBookings.add(request.bookingId);
+    // Mirror splitSettlement: floor fee, remainder to the teacher.
+    const teacherShare = request.priceCredits - Math.floor((request.priceCredits * 1000) / 10_000);
+    this.balances.set(request.learnerId, (this.balances.get(request.learnerId) ?? 0) + request.priceCredits);
+    this.pending.set(
+      request.teacherId,
+      Math.max(0, (this.pending.get(request.teacherId) ?? 0) - teacherShare),
+    );
     return { applied: true };
   }
 }

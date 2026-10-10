@@ -1,9 +1,11 @@
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { qualified } from '../../../../../../shared/sql/ident';
 import type { WalletBalance } from '../../../domain/wallet';
-import { InsufficientBalanceError } from '../../../domain/wallet';
+import { InsufficientBalanceError, splitSettlement } from '../../../domain/wallet';
 import type {
   ApplyTopUpRequest,
+  RefundBookingRequest,
+  RefundBookingResult,
   ReleaseIncomeRequest,
   ReleaseIncomeResult,
   SettleBookingRequest,
@@ -173,6 +175,50 @@ export class SqlWalletRepository implements WalletRepository {
                "updated_at" = now()
          WHERE "owner_id" = $1`,
         [request.teacherId, request.amountCredits],
+      );
+      return { applied: true };
+    });
+  }
+
+  async refundBooking(request: RefundBookingRequest): Promise<RefundBookingResult> {
+    const source = this.registry.get(this.moduleName);
+    const { teacherCredits } = splitSettlement(request.priceCredits);
+    return source.transaction(async (manager) => {
+      // Only a settled booking can be refunded; one refund per booking.
+      const settled = (await manager.query(
+        `SELECT 1 FROM ${this.ledgerTable} WHERE "entry_type" = 'learner_debit' AND "reference_id" = $1 LIMIT 1`,
+        [request.bookingId],
+      )) as unknown[];
+      if (settled.length === 0) {
+        return { applied: false };
+      }
+      const already = (await manager.query(
+        `SELECT 1 FROM ${this.ledgerTable} WHERE "entry_type" = 'refund' AND "reference_id" = $1 LIMIT 1`,
+        [request.bookingId],
+      )) as unknown[];
+      if (already.length > 0) {
+        return { applied: false };
+      }
+
+      await manager.query(
+        `INSERT INTO ${this.ledgerTable}
+           ("booking_id", "teacher_id", "amount_credits", "direction", "entry_type", "owner_id", "reference_id", "trace_id")
+         VALUES (NULL, $1, $2, 'debit', 'refund', $1, $3, $4)`,
+        [request.learnerId, request.priceCredits, request.bookingId, request.traceId],
+      );
+      await manager.query(
+        `INSERT INTO ${this.table} ("owner_id", "available_credits", "updated_at")
+         VALUES ($1, $2, now())
+         ON CONFLICT ("owner_id") DO UPDATE
+           SET "available_credits" = ${this.table}."available_credits" + $2, "updated_at" = now()`,
+        [request.learnerId, request.priceCredits],
+      );
+      // Reverse the teacher's pending income (never below zero).
+      await manager.query(
+        `UPDATE ${this.table}
+           SET "pending_credits" = GREATEST(0, "pending_credits" - $2), "updated_at" = now()
+         WHERE "owner_id" = $1`,
+        [request.teacherId, teacherCredits],
       );
       return { applied: true };
     });
