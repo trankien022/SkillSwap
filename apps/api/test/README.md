@@ -10,12 +10,15 @@ end to end against real infrastructure:
 - **Jitsi** (optional; `docker compose up -d jitsi-web jitsi-prosody jitsi-jicofo jitsi-jvb`)
   — the Jitsi spec verifies the API issues Prosody-compatible JWTs. It
   **self-skips** when Jitsi is not reachable, so CI can run without it.
+- **S3/MinIO** (optional; `docker compose up -d minio minio-init`) — the S3 spec
+  uploads to the real bucket via the API's pre-signed URL and **self-skips**
+  when no S3 endpoint is reachable.
 - **Payment** is the mock gateway (per ADR-017).
 
 ## Running
 
 ```bash
-docker compose up -d postgres rabbitmq      # + jitsi-* for the Jitsi spec
+docker compose up -d postgres rabbitmq minio minio-init   # + jitsi-* for the Jitsi spec
 cp .env.example .env
 pnpm keys:gen
 pnpm --filter @skillswap/contracts build
@@ -46,6 +49,12 @@ this suite.
 - Jitsi advertises JWT auth (anonymous + auth domains).
 - The API issues a valid HS256 room token (correct `aud`/`iss`/`room`/
   `context.user.moderator`, signature verifiable with the shared secret).
+
+`s3-document.e2e-spec.ts`:
+
+- The API's pre-signed PUT (SigV4) is accepted by the real S3 service; the
+  object lands in the bucket and the document row is `attached` after submission.
+- Self-skips when no S3 endpoint is reachable (e.g. MinIO not started).
 
 ## Notes
 
