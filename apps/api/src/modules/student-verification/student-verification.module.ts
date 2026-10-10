@@ -14,12 +14,14 @@ import { AdvanceStatusUseCase } from './internal/application/advance-status.use-
 import { SubmitStudentVerificationUseCase } from './internal/application/submit-student-verification.use-case';
 import { RequestDocumentUploadUseCase } from './internal/application/request-document-upload.use-case';
 import { DecideStudentVerificationUseCase } from './internal/application/decide-student-verification.use-case';
+import { RevokeStudentVerificationUseCase } from './internal/application/revoke-student-verification.use-case';
 import { GetMyVerificationQueryHandler } from './internal/application/get-my-verification.query';
 import { GET_MODULE_STATUS } from './internal/application/port/in/get-module-status';
 import { ADVANCE_STATUS } from './internal/application/port/in/advance-status';
 import { SUBMIT_STUDENT_VERIFICATION } from './internal/application/port/in/submit-student-verification';
 import { REQUEST_DOCUMENT_UPLOAD } from './internal/application/port/in/request-document-upload';
 import { DECIDE_STUDENT_VERIFICATION } from './internal/application/port/in/decide-student-verification';
+import { REVOKE_STUDENT_VERIFICATION } from './internal/application/port/in/revoke-student-verification';
 import { GET_MY_VERIFICATION } from './internal/application/port/in/get-my-verification';
 import { STATUS_READER, type ModuleStatusReader } from './internal/application/port/out/module-status-reader';
 import { STATUS_WRITER, type ModuleStatusWriter } from './internal/application/port/out/module-status-writer';
@@ -127,6 +129,12 @@ export class StudentVerificationRegistrar implements OnModuleInit {
       provide: DECIDE_STUDENT_VERIFICATION,
       useFactory: (verifications: VerificationRepository, clock: Clock) =>
         new DecideStudentVerificationUseCase(verifications, clock),
+      inject: [VERIFICATION_REPOSITORY, CLOCK],
+    },
+    {
+      provide: REVOKE_STUDENT_VERIFICATION,
+      useFactory: (verifications: VerificationRepository, clock: Clock) =>
+        new RevokeStudentVerificationUseCase(verifications, clock),
       inject: [VERIFICATION_REPOSITORY, CLOCK],
     },
     {

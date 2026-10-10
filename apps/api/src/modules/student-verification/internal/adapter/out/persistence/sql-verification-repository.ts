@@ -12,6 +12,7 @@ import type {
   ApplyDecisionRequest,
   ApplyDecisionResult,
   CreateVerificationRequest,
+  RevokeVerificationRequest,
   VerificationRepository,
 } from '../../../application/port/out/verification-repository';
 
@@ -26,6 +27,8 @@ interface VerificationRow {
   reason: string | null;
   decided_at: Date | string | null;
   created_at: Date | string;
+  revoked_at: Date | string | null;
+  revocation_reason: string | null;
 }
 
 function toDate(value: Date | string | null): Date | null {
@@ -45,12 +48,14 @@ function toDomain(row: VerificationRow): Verification {
     reason: row.reason,
     decidedAt: toDate(row.decided_at),
     submittedAt: new Date(row.created_at),
+    revokedAt: toDate(row.revoked_at),
+    revocationReason: row.revocation_reason,
   });
 }
 
 const SELECT_COLUMNS =
   '"id", "account_id", "school_name", "major", "document_ref", "status", ' +
-  '"reviewer_id", "reason", "decided_at", "created_at"';
+  '"reviewer_id", "reason", "decided_at", "created_at", "revoked_at", "revocation_reason"';
 
 export class SqlVerificationRepository implements VerificationRepository {
   constructor(
@@ -182,6 +187,44 @@ export class SqlVerificationRepository implements VerificationRepository {
           schoolName: row.school_name,
           reason: row.reason,
           occurredAt: request.decidedAt.toISOString(),
+        },
+      ]);
+      return { applied: true };
+    });
+  }
+
+  async revoke(request: RevokeVerificationRequest): Promise<ApplyDecisionResult> {
+    const source = this.registry.get(this.moduleName);
+    return source.transaction(async (manager) => {
+      // Only an effective (pending|approved) verification can be revoked.
+      const rows = returnedRows<VerificationRow>(
+        await manager.query(
+          `UPDATE ${this.table}
+             SET "status" = 'revoked', "reviewer_id" = $2, "revocation_reason" = $3,
+                 "revoked_at" = $4, "updated_at" = now()
+           WHERE "id" = $1 AND "status" IN ('pending', 'approved')
+           RETURNING ${SELECT_COLUMNS}`,
+          [
+            request.verificationId,
+            request.reviewerId,
+            request.reason,
+            request.revokedAt.toISOString(),
+          ],
+        ),
+      );
+      const row = rows[0];
+      if (row === undefined) {
+        return { applied: false };
+      }
+      await manager.query(insertOutboxStatement(this.schema), [
+        VERIFICATION_EVENTS.revoked,
+        {
+          verificationId: row.id,
+          accountId: row.account_id,
+          status: row.status,
+          schoolName: row.school_name,
+          reason: row.revocation_reason,
+          occurredAt: request.revokedAt.toISOString(),
         },
       ]);
       return { applied: true };

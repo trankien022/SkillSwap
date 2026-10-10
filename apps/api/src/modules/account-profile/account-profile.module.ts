@@ -68,6 +68,7 @@ export class AccountProfileRegistrar implements OnModuleInit {
       'student.verification.submitted',
       'student.verification.approved',
       'student.verification.rejected',
+      'student.verification.revoked',
     ]) {
       this.handlers.register({
         moduleName: MODULE_NAME,
