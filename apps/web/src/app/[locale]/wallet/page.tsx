@@ -1,13 +1,40 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createTopUpIntent } from './actions';
+import { callApi } from '../../../lib/api-client';
+import type { WalletBalanceView, WalletHistoryItemView } from '@skillswap/contracts';
 
 export default function WalletPage() {
+  const [balance, setBalance] = useState<WalletBalanceView | null>(null);
+  const [history, setHistory] = useState<WalletHistoryItemView[]>([]);
+  
   const [amount, setAmount] = useState(100);
   const [bank, setBank] = useState('VCB');
   const [filter, setFilter] = useState('all');
   const [isPending, setIsPending] = useState(false);
+
+  useEffect(() => {
+    const fetchWallet = async () => {
+      try {
+        const balRes = await callApi('/wallet/balance');
+        if (balRes.ok) {
+          setBalance(await balRes.json());
+        } else {
+          console.warn('Wallet balance not found or error');
+        }
+
+        const histRes = await callApi('/wallet/history');
+        if (histRes.ok) {
+          const data = await histRes.json();
+          setHistory(data.items || []);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchWallet();
+  }, []);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value) || 0;
@@ -133,10 +160,10 @@ export default function WalletPage() {
                 </div>
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-slate-900 tracking-tight">150</span>
+                <span className="text-3xl font-bold text-slate-900 tracking-tight">{balance ? balance.availableCredits : 0}</span>
                 <span className="text-sm font-semibold text-emerald-600">Credit</span>
               </div>
-              <p className="text-xs text-slate-500 mt-1">≈ 150.000 VNĐ (Tỷ giá 1:1.000đ)</p>
+              <p className="text-xs text-slate-500 mt-1">≈ {(balance ? balance.availableCredits : 0) * 1000} VNĐ (Tỷ giá 1:1.000đ)</p>
             </div>
             <div className="mt-4 pt-3 border-t border-slate-100">
               <button onClick={scrollToDeposit} className="w-full py-2 px-3 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5">
@@ -156,10 +183,10 @@ export default function WalletPage() {
                 </div>
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-amber-700 tracking-tight">90</span>
+                <span className="text-3xl font-bold text-amber-700 tracking-tight">{balance ? balance.pendingCredits : 0}</span>
                 <span className="text-sm font-semibold text-amber-700">Credit</span>
               </div>
-              <p className="text-xs text-slate-500 mt-1">≈ 90.000 VNĐ đang khóa an toàn</p>
+              <p className="text-xs text-slate-500 mt-1">≈ {(balance ? balance.pendingCredits : 0) * 1000} VNĐ đang khóa an toàn</p>
             </div>
             <div className="mt-4 pt-3 border-t border-slate-100">
               <p className="text-[11px] leading-relaxed text-slate-600 flex items-start gap-1">
@@ -438,101 +465,51 @@ export default function WalletPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
-                {(filter === 'all' || filter === 'deposit') && (
-                  <tr className="hover:bg-slate-50 transition-colors">
+                {history.length > 0 ? history.map(item => (
+                  <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                     <td className="py-4 px-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
-                          <span className="material-symbols-outlined text-[18px]">add_card</span>
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${item.direction === 'credit' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
+                          <span className="material-symbols-outlined text-[18px]">
+                            {item.direction === 'credit' ? 'add_card' : 'payment'}
+                          </span>
                         </div>
                         <div>
-                          <p className="font-bold text-slate-900 text-sm">Nạp credit qua VietQR</p>
-                          <p className="text-[11px] text-slate-600">Vietcombank Napas247 • Tự động ghi có</p>
+                          <p className="font-bold text-slate-900 text-sm">Giao dịch {item.type}</p>
+                          <p className="text-[11px] text-slate-600">Ref: {item.reference || 'N/A'}</p>
                         </div>
                       </div>
                     </td>
                     <td className="py-4 px-3 text-slate-600 font-medium">
-                      <div>24/10/2025</div>
-                      <div className="text-[11px] text-slate-500">14:32:10</div>
+                      <div>{new Date(item.createdAt).toLocaleDateString('vi-VN')}</div>
+                      <div className="text-[11px] text-slate-500">{new Date(item.createdAt).toLocaleTimeString('vi-VN')}</div>
                     </td>
                     <td className="py-4 px-3">
-                      <span className="font-mono font-semibold text-slate-900 bg-slate-100 px-2 py-0.5 rounded text-[11px]">#TX-883109</span>
-                      <span className="block text-[11px] text-slate-500 mt-0.5">Cổng VietQR 24/7</span>
+                      <span className="font-mono font-semibold text-slate-900 bg-slate-100 px-2 py-0.5 rounded text-[11px]">#{item.id.slice(0, 8).toUpperCase()}</span>
+                      <span className="block text-[11px] text-slate-500 mt-0.5">Hệ thống ghi nhận</span>
                     </td>
                     <td className="py-4 px-3 text-center">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> Thành công
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${item.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}`}>
+                        {item.status === 'completed' ? (
+                          <><span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>Thành công</>
+                        ) : (
+                          <><span className="material-symbols-outlined text-[12px]">undo</span>Đã hoàn</>
+                        )}
                       </span>
                     </td>
                     <td className="py-4 px-3 text-right">
-                      <span className="text-sm font-bold text-emerald-600">+200 Credit</span>
-                      <span className="block text-[11px] text-slate-500 font-medium">+200.000 VNĐ</span>
+                      <span className={`text-sm font-bold ${item.direction === 'credit' ? 'text-emerald-600' : 'text-slate-900'}`}>
+                        {item.direction === 'credit' ? '+' : '-'}{item.amountCredits} Credit
+                      </span>
+                      <span className="block text-[11px] text-slate-500 font-medium">
+                        {item.direction === 'credit' ? '+' : '-'}{(item.amountCredits * 1000).toLocaleString('vi-VN')} VNĐ
+                      </span>
                     </td>
                   </tr>
-                )}
-                
-                {(filter === 'all' || filter === 'escrow') && (
-                  <tr className="hover:bg-slate-50 transition-colors">
-                    <td className="py-4 px-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
-                          <span className="material-symbols-outlined text-[18px]">lock</span>
-                        </div>
-                        <div>
-                          <p className="font-bold text-slate-900 text-sm">Tạm khóa Escrow cho lớp IELTS</p>
-                          <p className="text-[11px] text-slate-600">Lớp với ThS. Lan Anh • 1:1 Mock Interview</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-3 text-slate-600 font-medium">
-                      <div>24/10/2025</div>
-                      <div className="text-[11px] text-slate-500">09:15:42</div>
-                    </td>
-                    <td className="py-4 px-3">
-                      <span className="font-mono font-semibold text-slate-900 bg-slate-100 px-2 py-0.5 rounded text-[11px]">#TX-882901</span>
-                      <span className="block text-[11px] text-slate-500 mt-0.5">Escrow Smart Hold</span>
-                    </td>
-                    <td className="py-4 px-3 text-center">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span> Đang tạm giữ
-                      </span>
-                    </td>
-                    <td className="py-4 px-3 text-right">
-                      <span className="text-sm font-bold text-slate-900">-90 Credit</span>
-                      <span className="block text-[11px] text-slate-500 font-medium">-90.000 VNĐ (Escrow)</span>
-                    </td>
-                  </tr>
-                )}
-
-                {(filter === 'all' || filter === 'pay') && (
-                  <tr className="hover:bg-slate-50 transition-colors">
-                    <td className="py-4 px-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
-                          <span className="material-symbols-outlined text-[18px]">school</span>
-                        </div>
-                        <div>
-                          <p className="font-bold text-slate-900 text-sm">Thanh toán hoàn tất: Data Python</p>
-                          <p className="text-[11px] text-slate-600">Mentor: Trần Quang Huy • 90 phút</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-3 text-slate-600 font-medium">
-                      <div>22/10/2025</div>
-                      <div className="text-[11px] text-slate-500">20:45:00</div>
-                    </td>
-                    <td className="py-4 px-3">
-                      <span className="font-mono font-semibold text-slate-900 bg-slate-100 px-2 py-0.5 rounded text-[11px]">#TX-879412</span>
-                      <span className="block text-[11px] text-slate-500 mt-0.5">Giải ngân tự động</span>
-                    </td>
-                    <td className="py-4 px-3 text-center">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> Đã hoàn thành
-                      </span>
-                    </td>
-                    <td className="py-4 px-3 text-right">
-                      <span className="text-sm font-bold text-slate-900">-110 Credit</span>
-                      <span className="block text-[11px] text-slate-500 font-medium">-110.000 VNĐ</span>
+                )) : (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-slate-500">
+                      Chưa có giao dịch nào
                     </td>
                   </tr>
                 )}

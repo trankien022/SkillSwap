@@ -1,18 +1,52 @@
 'use client';
 
 import { useState } from 'react';
+import { callApi } from '../../../lib/api-client';
 
 export default function InstructorDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [skillSelect, setSkillSelect] = useState('IELTS Speaking');
   const [classTitle, setClassTitle] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const showToast = (message: string) => {
     setToastMessage(message);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 3000);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleJoinRoom = async (bookingId: string) => {
+    try {
+      setIsProcessing(true);
+      showToast(`Đang lấy key phòng Jitsi...`);
+      const res = await callApi(`/classes/bookings/${bookingId}/room-access`, {
+        method: 'POST',
+        body: JSON.stringify({ displayName: 'Giảng viên' })
+      });
+      if (!res.ok) throw new Error('Từ chối truy cập hoặc chưa đến giờ');
+      const data = await res.json();
+      window.open(data.url, '_blank');
+    } catch (e) {
+      showToast('Lỗi: ' + (e as Error).message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleCompleteClass = async (classId: string) => {
+    try {
+      setIsProcessing(true);
+      const res = await callApi(`/classes/${classId}/complete`, { method: 'POST' });
+      if (!res.ok) {
+        if (res.status === 409) throw new Error('Lớp này đã hoàn thành hoặc chưa đủ điều kiện');
+        throw new Error('Lỗi hệ thống');
+      }
+      showToast(`Đã hoàn thành lớp! Doanh thu đã được giải ngân vào ví.`);
+    } catch (e) {
+      showToast('Lỗi: ' + (e as Error).message);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const openNewSkillModal = () => {
@@ -329,12 +363,15 @@ export default function InstructorDashboard() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2.5 shrink-0 pt-2 lg:pt-0">
-                    <button onClick={() => openClassChat('CLS-8821')} type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 transition-all flex items-center gap-1.5">
+                    <button onClick={() => openClassChat('CLS-8821')} type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 transition-all flex items-center gap-1.5" disabled={isProcessing}>
                       <span className="material-symbols-outlined text-[16px] text-slate-500">chat</span> Chat với học viên
                     </button>
-                    <a href="#" className="px-4 py-2 rounded-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all flex items-center gap-1.5">
+                    <button onClick={() => handleJoinRoom('00000000-0000-0000-0000-000000000001')} type="button" className="px-4 py-2 rounded-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all flex items-center gap-1.5" disabled={isProcessing}>
                       <span className="material-symbols-outlined text-[16px]">video_call</span> Vào phòng Jitsi
-                    </a>
+                    </button>
+                    <button onClick={() => handleCompleteClass('00000000-0000-0000-0000-000000000002')} type="button" className="px-4 py-2 rounded-full text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all flex items-center gap-1.5" disabled={isProcessing}>
+                      <span className="material-symbols-outlined text-[16px]">check_circle</span> Hoàn thành
+                    </button>
                   </div>
                 </div>
               </div>
