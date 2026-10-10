@@ -69,6 +69,19 @@ const NAME_TO_STATUS: Record<string, number> = {
   UnknownEvidenceStatusError: 400,
   NotVerifiedStudentError: 403,
   EvidenceDocumentRequiredError: 400,
+  // FR-004 verifier authority and claim (ADR-027).
+  UnknownVerifierError: 404,
+  NotAVerifierError: 403,
+  UnknownVerifierStatusError: 400,
+  InvalidVerifierTransitionError: 409,
+  InactiveVerifierError: 403,
+  OutOfExpertiseError: 403,
+  SelfDecisionError: 403,
+  EvidenceNotFoundError: 404,
+  EvidenceNotClaimableError: 409,
+  EvidenceNotClaimedError: 409,
+  NotClaimOwnerError: 403,
+  EvidenceNotDecidableError: 409,
 };
 
 /** Maps domain errors and unexpected failures onto the apiErrorSchema shape. */
