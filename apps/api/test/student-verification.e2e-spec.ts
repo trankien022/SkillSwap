@@ -35,14 +35,27 @@ describe('E2E: student verification (FR-002)', () => {
     return accountIdFromToken(res.json.accessToken);
   }
 
-  it('submits, rejects with a reason, and the owner sees it', async () => {
+  /** Requests a pre-signed upload target and returns the document metadata id. */
+  async function requestDocumentUpload(): Promise<string> {
+    const target = await api.post('/api/student-verifications/documents', {
+      fileName: 'transcript.pdf',
+      contentType: 'application/pdf',
+      sizeBytes: 1024,
+    });
+    expect(target.status).toBe(201);
+    expect(target.json.uploadUrl).toContain('X-Amz-Signature');
+    return target.json.documentId as string;
+  }
+
+  it('submits (with an uploaded document), rejects with a reason, and the owner sees it', async () => {
     const learnerId = await registerLearner('sv-reject@skillswap.test');
     api.actAs(learnerId);
 
+    const documentId = await requestDocumentUpload();
     const submitted = await api.post('/api/student-verifications', {
       schoolName: 'FPT University',
       major: 'Software Engineering',
-      documentRef: 'doc-ref-reject',
+      documentId,
     });
     expect(submitted.status).toBe(201);
     expect(submitted.json.status).toBe('pending');
@@ -51,9 +64,17 @@ describe('E2E: student verification (FR-002)', () => {
     // A second submission is refused while one is effective (SR-BR-011).
     const duplicate = await api.post('/api/student-verifications', {
       schoolName: 'FPT University',
-      documentRef: 'doc-ref-2',
+      documentId,
     });
     expect(duplicate.status).toBe(409);
+
+    // An unsupported document type is rejected at the upload boundary (NFR-008).
+    const badUpload = await api.post('/api/student-verifications/documents', {
+      fileName: 'malware.exe',
+      contentType: 'application/x-msdownload',
+      sizeBytes: 10,
+    });
+    expect(badUpload.status).toBe(415);
 
     // A non-admin cannot decide (NFR-009).
     api.actAs(learnerId, 'learner');
@@ -95,9 +116,10 @@ describe('E2E: student verification (FR-002)', () => {
     const learnerId = await registerLearner('sv-approve@skillswap.test');
     api.actAs(learnerId, 'learner');
 
+    const documentId = await requestDocumentUpload();
     const submitted = await api.post('/api/student-verifications', {
       schoolName: 'HCMUS',
-      documentRef: 'doc-ref-approve',
+      documentId,
     });
     const verificationId = submitted.json.id as string;
 

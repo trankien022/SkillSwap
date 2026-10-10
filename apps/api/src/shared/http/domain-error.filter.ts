@@ -56,6 +56,11 @@ const NAME_TO_STATUS: Record<string, number> = {
   VerificationNotFoundError: 404,
   VerificationNotPendingError: 409,
   UnknownVerificationStatusError: 400,
+  // FR-002 documents (ADR-023).
+  DocumentNotFoundError: 404,
+  UnsupportedDocumentTypeError: 415,
+  DocumentTooLargeError: 413,
+  InvalidDocumentFileError: 400,
 };
 
 /** Maps domain errors and unexpected failures onto the apiErrorSchema shape. */

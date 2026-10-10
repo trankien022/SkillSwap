@@ -7,7 +7,8 @@ export interface SubmitStudentVerificationCommand {
   accountId: string;
   schoolName: string;
   major?: string;
-  documentRef: string;
+  /** The uploaded document's metadata id (from the pre-signed upload flow). */
+  documentId: string;
 }
 
 export interface SubmitStudentVerificationPort {

@@ -6,15 +6,19 @@ import { SCHEMA } from './internal/adapter/out/persistence/schema';
 import { SqlModuleStatusReader } from './internal/adapter/out/persistence/sql-module-status-reader';
 import { SqlModuleStatusWriter } from './internal/adapter/out/persistence/sql-module-status-writer';
 import { SqlVerificationRepository } from './internal/adapter/out/persistence/sql-verification-repository';
+import { SqlVerificationDocumentRepository } from './internal/adapter/out/persistence/sql-verification-document-repository';
+import { S3DocumentStore } from './internal/adapter/out/storage/s3-document-store';
 import { StatusController } from './internal/adapter/in/web/status.controller';
 import { StudentVerificationController } from './internal/adapter/in/web/student-verification.controller';
 import { AdvanceStatusUseCase } from './internal/application/advance-status.use-case';
 import { SubmitStudentVerificationUseCase } from './internal/application/submit-student-verification.use-case';
+import { RequestDocumentUploadUseCase } from './internal/application/request-document-upload.use-case';
 import { DecideStudentVerificationUseCase } from './internal/application/decide-student-verification.use-case';
 import { GetMyVerificationQueryHandler } from './internal/application/get-my-verification.query';
 import { GET_MODULE_STATUS } from './internal/application/port/in/get-module-status';
 import { ADVANCE_STATUS } from './internal/application/port/in/advance-status';
 import { SUBMIT_STUDENT_VERIFICATION } from './internal/application/port/in/submit-student-verification';
+import { REQUEST_DOCUMENT_UPLOAD } from './internal/application/port/in/request-document-upload';
 import { DECIDE_STUDENT_VERIFICATION } from './internal/application/port/in/decide-student-verification';
 import { GET_MY_VERIFICATION } from './internal/application/port/in/get-my-verification';
 import { STATUS_READER, type ModuleStatusReader } from './internal/application/port/out/module-status-reader';
@@ -23,6 +27,11 @@ import {
   VERIFICATION_REPOSITORY,
   type VerificationRepository,
 } from './internal/application/port/out/verification-repository';
+import {
+  VERIFICATION_DOCUMENT_REPOSITORY,
+  type VerificationDocumentRepository,
+} from './internal/application/port/out/verification-document-repository';
+import { DOCUMENT_STORE, type DocumentStore } from './internal/application/port/out/document-store';
 import { CLOCK, type Clock } from './internal/application/port/out/clock';
 import { GetModuleStatusQueryHandler } from './internal/application/query/get-module-status.query';
 import { MODULE_NAME } from './internal/domain/module-status';
@@ -76,10 +85,43 @@ export class StudentVerificationRegistrar implements OnModuleInit {
       inject: [ModuleDataSourceRegistry],
     },
     {
+      provide: VERIFICATION_DOCUMENT_REPOSITORY,
+      useFactory: (registry: ModuleDataSourceRegistry): VerificationDocumentRepository =>
+        new SqlVerificationDocumentRepository(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
+      provide: DOCUMENT_STORE,
+      useFactory: (config: ApiConfig): DocumentStore =>
+        new S3DocumentStore({
+          endpoint: config.s3Endpoint,
+          region: config.s3Region,
+          bucket: config.s3Bucket,
+          accessKeyId: config.s3AccessKeyId,
+          secretAccessKey: config.s3SecretAccessKey,
+          forcePathStyle: config.s3ForcePathStyle,
+        }),
+      inject: [ApiConfig],
+    },
+    {
+      provide: REQUEST_DOCUMENT_UPLOAD,
+      useFactory: (documents: VerificationDocumentRepository, store: DocumentStore, config: ApiConfig) =>
+        new RequestDocumentUploadUseCase(
+          documents,
+          store,
+          { allowedContentTypes: config.s3AllowedContentTypes, maxBytes: config.s3MaxUploadBytes },
+          config.s3UploadTtlSeconds,
+        ),
+      inject: [VERIFICATION_DOCUMENT_REPOSITORY, DOCUMENT_STORE, ApiConfig],
+    },
+    {
       provide: SUBMIT_STUDENT_VERIFICATION,
-      useFactory: (verifications: VerificationRepository, clock: Clock) =>
-        new SubmitStudentVerificationUseCase(verifications, clock),
-      inject: [VERIFICATION_REPOSITORY, CLOCK],
+      useFactory: (
+        verifications: VerificationRepository,
+        documents: VerificationDocumentRepository,
+        clock: Clock,
+      ) => new SubmitStudentVerificationUseCase(verifications, documents, clock),
+      inject: [VERIFICATION_REPOSITORY, VERIFICATION_DOCUMENT_REPOSITORY, CLOCK],
     },
     {
       provide: DECIDE_STUDENT_VERIFICATION,

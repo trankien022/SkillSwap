@@ -257,9 +257,25 @@ export type VerificationStatus = z.infer<typeof verificationStatusSchema>;
 export const submitStudentVerificationSchema = z.object({
   schoolName: z.string().min(1).max(200),
   major: z.string().min(1).max(120).optional(),
-  documentRef: z.string().min(1).max(500),
+  documentId: z.string().min(1).max(100),
 });
 export type SubmitStudentVerificationInput = z.infer<typeof submitStudentVerificationSchema>;
+
+/** FR-002 / ADR-023: request a pre-signed upload target for a document. */
+export const documentUploadRequestSchema = z.object({
+  fileName: z.string().min(1).max(255),
+  contentType: z.string().min(1).max(120),
+  sizeBytes: z.number().int().positive(),
+});
+export type DocumentUploadRequestInput = z.infer<typeof documentUploadRequestSchema>;
+
+export const documentUploadTargetSchema = z.object({
+  documentId: z.string().min(1),
+  uploadUrl: z.string().min(1),
+  objectKey: z.string().min(1),
+  expiresAt: z.string().datetime({ offset: true }),
+});
+export type DocumentUploadTargetView = z.infer<typeof documentUploadTargetSchema>;
 
 export const verificationDecisionSchema = z
   .object({

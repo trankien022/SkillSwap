@@ -55,7 +55,9 @@ explicitly out of scope here.
    pointer (`document_ref` = the object key). Uploads validate **extension/MIME/size** at the
    boundary, are stored outside executable paths, and their contents are **never logged**
    (NFR-004/008). The storage concern is isolated behind a `DocumentStore` port with an S3 adapter so
-   tests use a fake and the bucket/config is injectable.
+   tests use a fake and the bucket/config is injectable. The S3 adapter issues **pre-signed PUT URLs
+   (AWS SigV4, `node:crypto`)**, so bytes go client→S3 directly — no new dependency and nothing
+   sensitive passes through the API.
 
 6. **Retention — keep (decision 3).** A verification row is retained as an audit record (who, when,
    why) — the decision trail AC-001/AC-012 require. A later increment may add pruning; the MVP does

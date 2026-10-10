@@ -10,6 +10,8 @@ import {
   classCompletedSchema,
   classSchema,
   createClassSchema,
+  documentUploadRequestSchema,
+  documentUploadTargetSchema,
   eventEnvelopeSchema,
   identityHeadersSchema,
   loginSchema,
@@ -452,25 +454,45 @@ describe('student verification contracts', () => {
     expect(
       submitStudentVerificationSchema.parse({
         schoolName: 'FPT University',
-        documentRef: 'doc-ref-1',
+        documentId: 'doc-1',
       }),
-    ).toEqual({ schoolName: 'FPT University', documentRef: 'doc-ref-1' });
+    ).toEqual({ schoolName: 'FPT University', documentId: 'doc-1' });
     expect(
       submitStudentVerificationSchema.parse({
         schoolName: 'FPT University',
         major: 'SE',
-        documentRef: 'doc-ref-1',
+        documentId: 'doc-1',
       }).major,
     ).toBe('SE');
   });
 
-  it('rejects an empty school name or document ref', () => {
+  it('rejects an empty school name or document id', () => {
     expect(() =>
-      submitStudentVerificationSchema.parse({ schoolName: '', documentRef: 'd' }),
+      submitStudentVerificationSchema.parse({ schoolName: '', documentId: 'd' }),
     ).toThrow();
     expect(() =>
-      submitStudentVerificationSchema.parse({ schoolName: 'FPT', documentRef: '' }),
+      submitStudentVerificationSchema.parse({ schoolName: 'FPT', documentId: '' }),
     ).toThrow();
+  });
+
+  it('validates the document upload request and target', () => {
+    expect(
+      documentUploadRequestSchema.parse({
+        fileName: 'transcript.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 1024,
+      }),
+    ).toEqual({ fileName: 'transcript.pdf', contentType: 'application/pdf', sizeBytes: 1024 });
+    expect(() =>
+      documentUploadRequestSchema.parse({ fileName: 'x.pdf', contentType: 'application/pdf', sizeBytes: 0 }),
+    ).toThrow();
+    const target = {
+      documentId: 'd1',
+      uploadUrl: 'https://s3.local/bucket/k?sig=x',
+      objectKey: 'a1/d1.pdf',
+      expiresAt: '2026-10-10T00:15:00.000Z',
+    };
+    expect(documentUploadTargetSchema.parse(target)).toEqual(target);
   });
 
   it('requires a reason to reject', () => {

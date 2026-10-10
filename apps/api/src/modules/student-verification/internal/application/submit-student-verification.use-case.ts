@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { StudentVerificationView } from '@skillswap/contracts';
 import { DuplicateActiveVerificationError, Verification } from '../domain/verification';
 import type { VerificationRepository } from './port/out/verification-repository';
+import type { VerificationDocumentRepository } from './port/out/verification-document-repository';
 import type { Clock } from './port/out/clock';
 import type {
   SubmitStudentVerificationCommand,
@@ -9,14 +10,24 @@ import type {
 } from './port/in/submit-student-verification';
 import { toVerificationView } from './verification-view';
 
+export class DocumentNotFoundError extends Error {
+  constructor(documentId: string) {
+    super(`Verification document ${documentId} was not found for this account`);
+    this.name = 'DocumentNotFoundError';
+  }
+}
+
 /**
- * FR-002 / AC-001: a Learner submits a student verification. Blocked while an
- * effective (pending|approved) verification already exists (SR-BR-011); the
- * database's partial unique index is the race-safe backstop.
+ * FR-002 / AC-001: a Learner submits a student verification referencing an
+ * uploaded document. Blocked while an effective (pending|approved) verification
+ * already exists (SR-BR-011); the database's partial unique index is the
+ * race-safe backstop. The document must belong to the caller and be attachable
+ * (ADR-023).
  */
 export class SubmitStudentVerificationUseCase implements SubmitStudentVerificationPort {
   constructor(
     private readonly verifications: VerificationRepository,
+    private readonly documents: VerificationDocumentRepository,
     private readonly clock: Clock,
   ) {}
 
@@ -26,12 +37,17 @@ export class SubmitStudentVerificationUseCase implements SubmitStudentVerificati
       throw new DuplicateActiveVerificationError(command.accountId);
     }
 
+    const document = await this.documents.findById(command.documentId);
+    if (document === null || document.accountId !== command.accountId) {
+      throw new DocumentNotFoundError(command.documentId);
+    }
+
     const verification = Verification.submit({
       id: randomUUID(),
       accountId: command.accountId,
       schoolName: command.schoolName,
       major: command.major ?? null,
-      documentRef: command.documentRef,
+      documentRef: document.objectKey,
       submittedAt: this.clock.now(),
     });
 
@@ -43,6 +59,9 @@ export class SubmitStudentVerificationUseCase implements SubmitStudentVerificati
       documentRef: verification.documentRef,
       submittedAt: verification.submittedAt,
     });
+
+    await this.documents.attach(document.id, command.accountId);
+
     return toVerificationView(stored);
   }
 }

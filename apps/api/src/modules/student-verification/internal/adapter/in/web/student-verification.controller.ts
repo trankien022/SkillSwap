@@ -1,8 +1,11 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Param, Post, Req } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
+  documentUploadRequestSchema,
   submitStudentVerificationSchema,
   verificationDecisionSchema,
+  type DocumentUploadRequestInput,
+  type DocumentUploadTargetView,
   type StudentVerificationView,
   type SubmitStudentVerificationInput,
   type VerificationDecisionInput,
@@ -11,6 +14,10 @@ import {
   SUBMIT_STUDENT_VERIFICATION,
   type SubmitStudentVerificationPort,
 } from '../../../application/port/in/submit-student-verification';
+import {
+  REQUEST_DOCUMENT_UPLOAD,
+  type RequestDocumentUploadPort,
+} from '../../../application/port/in/request-document-upload';
 import {
   DECIDE_STUDENT_VERIFICATION,
   type DecideStudentVerificationPort,
@@ -28,9 +35,25 @@ import { ZodValidationPipe } from '../../../../../../shared/http/zod-validation.
 export class StudentVerificationController {
   constructor(
     @Inject(SUBMIT_STUDENT_VERIFICATION) private readonly submit: SubmitStudentVerificationPort,
+    @Inject(REQUEST_DOCUMENT_UPLOAD) private readonly requestUpload: RequestDocumentUploadPort,
     @Inject(DECIDE_STUDENT_VERIFICATION) private readonly decide: DecideStudentVerificationPort,
     @Inject(GET_MY_VERIFICATION) private readonly getMine: GetMyVerificationPort,
   ) {}
+
+  @Post('documents')
+  @ApiOperation({ summary: 'Request a pre-signed document upload target (FR-002)' })
+  @ApiOkResponse({ description: 'Pre-signed PUT URL plus the document id to submit' })
+  requestDocumentUpload(
+    @Body(new ZodValidationPipe(documentUploadRequestSchema)) body: DocumentUploadRequestInput,
+    @Req() request: RequestWithIdentity,
+  ): Promise<DocumentUploadTargetView> {
+    return this.requestUpload.execute({
+      accountId: currentUserId(request),
+      fileName: body.fileName,
+      contentType: body.contentType,
+      sizeBytes: body.sizeBytes,
+    });
+  }
 
   @Post()
   @ApiOperation({ summary: 'Submit a student verification (FR-002 / API-001)' })
@@ -43,7 +66,7 @@ export class StudentVerificationController {
       accountId: currentUserId(request),
       schoolName: body.schoolName,
       major: body.major,
-      documentRef: body.documentRef,
+      documentId: body.documentId,
     });
   }
 
