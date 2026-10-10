@@ -48,6 +48,14 @@ const NAME_TO_STATUS: Record<string, number> = {
   // FR-020 class lifecycle (ADR-021).
   ClassNotCompletableError: 409,
   InvalidCompletionBasisError: 400,
+  // FR-002 student verification (ADR-023).
+  DuplicateActiveVerificationError: 409,
+  InvalidVerificationTransitionError: 409,
+  ReasonRequiredError: 400,
+  InvalidDeciderError: 403,
+  VerificationNotFoundError: 404,
+  VerificationNotPendingError: 409,
+  UnknownVerificationStatusError: 400,
 };
 
 /** Maps domain errors and unexpected failures onto the apiErrorSchema shape. */
