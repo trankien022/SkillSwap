@@ -86,7 +86,7 @@ version: 0.2
 
 | ID | Decision required | Owner | Affects | Required by |
 |---|---|---|---|---|
-| OQ-001 | Cấu trúc taxonomy kỹ năng và cấp tìm kiếm. | Product Owner | FR-003, FR-005, FR-006 | Before implementation planning |
+| OQ-001 | Cấu trúc taxonomy kỹ năng và cấp tìm kiếm. | Product Owner | FR-003, FR-005, FR-006 | **Resolved (2026-10-11, phạm vi FR-003, ADR-026)** — (1) **danh mục quản lý (1a)**: kỹ năng nằm trong catalogue `skills` do admin seed, thuộc module `skill-verification`; evidence/lớp phải tham chiếu kỹ năng đã biết, không có tag tự do; (2) **cây hai cấp (B)**: `category → skill` (category cố định, đúng 2 cấp); (3) **thang level cố định có thứ tự (2a)**: `beginner < intermediate < advanced < expert` cho requested/approved level. Cấp tìm kiếm (index/ranking) vẫn mở cho FR-006 Phase 0. |
 | OQ-002 | Teacher tự đặt giá, dùng khung giá hay mô hình kết hợp. | Product Owner | FR-005, FR-007–FR-009 | Before implementation planning |
 | OQ-003 | Chính sách hủy, no-show, tranh chấp, hoàn tiền thủ công và workflow Administrator thực thi các quyết định này. | Product Owner + Administrator | FR-007, FR-009–FR-011, FR-013 | **Resolved (2026-10-08)** — xem AC-022–AC-027: hoàn tiền chỉ bằng credit ví nội bộ; không có chính sách hủy booking; Teacher no-show = không tham gia 15 phút đầu → hoàn credit, chưa phạt; Learner no-show không tự động; Pending giữ chỗ, hết hạn ~15 phút → auto-cancel; Confirmed→Cancelled hoàn credit. |
 | OQ-004 | Ngưỡng rating, số đánh giá tối thiểu và cách khôi phục hiển thị. | Product Owner | FR-006, FR-013 | Before implementation planning |
@@ -118,7 +118,7 @@ version: 0.2
 |---|---|---|---|---|---|
 | FR-001 | Functional | Hệ thống phải cho phép sinh viên tạo, đăng nhập và quản lý một tài khoản dùng cho Learner và đăng ký Teacher. | Must | `docs/intent.md` | Confirmed |
 | FR-002 | Functional | Hệ thống phải cho phép sinh viên khai báo tên trường và tải giấy tờ để Administrator phê duyệt hoặc từ chối kèm lý do. | Must | `docs/intent.md` | Confirmed; retention open |
-| FR-003 | Functional | Hệ thống phải cho phép ứng viên Teacher nộp kỹ năng, chứng chỉ hoặc bằng chứng năng lực; cơ chế nộp lại sau khi bị từ chối là đề xuất chờ duyệt. | Must | `docs/intent.md` + Proposed | Confirmed core; resubmission Proposed; taxonomy open |
+| FR-003 | Functional | Hệ thống phải cho phép ứng viên Teacher nộp kỹ năng, chứng chỉ hoặc bằng chứng năng lực; cơ chế nộp lại sau khi bị từ chối là đề xuất chờ duyệt. | Must | `docs/intent.md` + Proposed | Confirmed core; resubmission Proposed; taxonomy resolved (OQ-001, ADR-026) |
 | FR-004 | Functional | Hệ thống phải cho phép Administrator mời, gán chuyên môn, đình chỉ hoặc thu hồi Verifier; chỉ Verifier phù hợp mới được duyệt hồ sơ Teacher. | Must | `docs/intent.md` | Confirmed responsibility; lifecycle proposed |
 | FR-005 | Functional | Chỉ Teacher đã được xác minh được tạo và công bố lớp trực tuyến với kỹ năng, mô tả, lịch, thời lượng, giá và quy tắc sức chứa đã được duyệt. | Must | `docs/intent.md` | Confirmed; price/capacity open |
 | FR-006 | Functional | Learner phải có thể duyệt và tìm kiếm lớp đang mở theo thông tin lớp và hồ sơ Teacher. | Must | `docs/intent.md` | Confirmed; taxonomy open |
@@ -370,7 +370,7 @@ Ghi chú: OQ-008 có required-by là gate thiết kế storage/lifecycle (BRD §
 - **Gate 5 — GitHub Delivery Complete:** Not started for product features. No feature is `Done` until its code PR is merged and test/review evidence is recorded.
 - **Reviewers:** Product Owner, Engineering, QA, Security/Finance as applicable.
 - **Approval decision:** Pending.
-- **Unresolved questions:** OQ-001–OQ-012.
+- **Unresolved questions:** OQ-001 (search granularity only — taxonomy resolved ADR-026), OQ-002, OQ-004, OQ-005 (withdrawal), OQ-006 (resolved), OQ-008 (resolved for FR-002/FR-019), OQ-009, OQ-010, OQ-011 (resolved MVP), OQ-012 (resolved).
 
 ## GitHub Delivery Mapping
 

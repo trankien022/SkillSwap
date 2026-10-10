@@ -179,10 +179,10 @@ Priority follows MoSCoW from the PRD (`Must` / `Should`). Status preserves the P
 |---|---|---|---|---|
 | FR-001 | The system shall allow a student to create, sign in to, and manage one account used for the Learner role and Teacher registration. | Must | intent.md | Confirmed |
 | FR-002 | The system shall allow a student to declare a school name and upload documents for Administrator approval or rejection with a reason. | Must | intent.md | Confirmed; retention open (OQ-008) |
-| FR-003 | The system shall allow a Teacher candidate to submit skills, certificates or capability evidence, with resubmission after rejection. | Must | intent.md | Confirmed core; taxonomy open (OQ-001) |
+| FR-003 | The system shall allow a Teacher candidate to submit skills, certificates or capability evidence, with resubmission after rejection. | Must | intent.md | Confirmed; taxonomy resolved (OQ-001, ADR-026) |
 | FR-004 | The system shall allow an Administrator to invite, assign domains to, suspend or revoke Verifiers; only a matched Verifier may approve a Teacher's evidence. | Must | intent.md | Confirmed |
 | FR-005 | Only a verified Teacher shall be able to create and publish an online class with skill, description, schedule, duration, price and approved capacity rules. | Must | intent.md | Confirmed core; price open (OQ-002); capacity resolved (OQ-007, AC-028–AC-030) |
-| FR-006 | The system shall let a Learner browse and search open classes by class information and Teacher profile. | Must | intent.md | Confirmed core; taxonomy open (OQ-001) |
+| FR-006 | The system shall let a Learner browse and search open classes by class information and Teacher profile. | Must | intent.md | Confirmed core; taxonomy resolved (OQ-001, ADR-026); search granularity open (FR-006 Phase 0) |
 | FR-007 | The system shall only allow booking a class that has capacity, starts at least 24 hours from now, and lasts 30 minutes to 3 hours. | Must | intent.md | Confirmed core; capacity resolved (OQ-007, AC-028–AC-030); refund/cancellation resolved (OQ-003, AC-022–AC-027) |
 | FR-008 | The system shall allow top-up through a payment gateway at the applied rate, with exactly-once callback processing. | Must | intent.md | Confirmed core; gateway open (OQ-011) |
 | FR-009 | When a Learner buys a class, the system shall atomically debit the full price and allocate 90% to the Teacher and 10% platform fee. | Must | intent.md | Confirmed split; release timing open (OQ-006) |
@@ -487,7 +487,7 @@ Confirmed cores of these requirements appear in §3.2.1; the following **depende
 
 | OQ | Decision required | Owner | Affects | Excluded clause (not specified in this SRS) |
 |---|---|---|---|---|
-| OQ-001 | Skill taxonomy structure and search granularity. | Product Owner | FR-003, FR-005, FR-006 | Exact category tree, free-text/tag hybrid, search index behavior. |
+| OQ-001 | Skill taxonomy structure and search granularity. | Product Owner | FR-003, FR-005, FR-006 | **Resolved (2026-10-11, FR-003 scope, ADR-026):** (1) **managed catalogue (1a)** — skills live in an admin-seeded `skills` catalogue owned by `skill-verification`; evidence/classes must reference a known skill, no free tagging; (2) **two-level tree (B)** — `category → skill` (fixed categories, exact depth 2); (3) **fixed ordered level scale (2a)** — `beginner < intermediate < advanced < expert` for requested/approved level. Search granularity (index/ranking) remains open for FR-006 Phase 0. |
 | OQ-002 | Teacher self-pricing vs. price bands vs. hybrid with floor/cap. | Product Owner | FR-005, FR-007–FR-009 | Price rules, minimum/maximum price validation. |
 | OQ-003 | Cancellation, no-show, dispute, manual refund and Admin enforcement workflow. | Product Owner + Administrator | FR-007, FR-009–FR-011, FR-013 | **Resolved (2026-10-08):** refunds are app-wallet credits only (no real-money refund); no booking-cancellation policy; Teacher no-show = not joined within the first 15 minutes → credit refund, no penalty; Learner no-show has no automatic rule; Pending holds a seat and auto-cancels after ~15 minutes; Confirmed→Cancelled refunds credits. See AC-022–AC-027. |
 | OQ-004 | Rating threshold, minimum review count, visibility recovery. | Product Owner | FR-006, FR-013 | Down-ranking threshold mechanics (SR-BR-009 value). |
