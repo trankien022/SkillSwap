@@ -81,6 +81,13 @@ jobs:
           cp .env.example .env
           pnpm keys:gen
 
+      - name: Seed roles and schemas (ADR-007)
+        env:
+          PGPASSWORD: skillswap_dev
+        run: |
+          psql -h localhost -U postgres -d skillswap -f docker/postgres/init/01-roles.sql
+          psql -h localhost -U postgres -d skillswap -f docker/postgres/init/02-schemas.sql
+
       - name: Build contracts
         run: pnpm --filter @skillswap/contracts build
 
