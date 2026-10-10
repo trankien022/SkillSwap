@@ -3,9 +3,12 @@ import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   bookingRequestSchema,
   createClassSchema,
+  roomAccessRequestSchema,
   updateClassSchema,
   type BookingRequestInput,
   type CreateClassInput,
+  type RoomAccessRequestInput,
+  type RoomAccessResponse,
   type UpdateClassInput,
 } from '@skillswap/contracts';
 import {
@@ -37,6 +40,10 @@ import {
   type MarkTeacherNoShowPort,
   type MarkTeacherNoShowResult,
 } from '../../../application/port/in/mark-teacher-no-show';
+import {
+  REQUEST_ROOM_ACCESS,
+  type RequestRoomAccessPort,
+} from '../../../application/port/in/request-room-access';
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
 import { ZodValidationPipe } from '../../../../../../shared/http/zod-validation.pipe';
 
@@ -50,6 +57,7 @@ export class ClassesController {
     @Inject(CONFIRM_BOOKING) private readonly confirmBooking: ConfirmBookingPort,
     @Inject(CANCEL_CLASS) private readonly cancelClass: CancelClassPort,
     @Inject(MARK_TEACHER_NO_SHOW) private readonly markNoShow: MarkTeacherNoShowPort,
+    @Inject(REQUEST_ROOM_ACCESS) private readonly roomAccess: RequestRoomAccessPort,
   ) {}
 
   @Post()
@@ -125,5 +133,21 @@ export class ClassesController {
   noShow(@Param('bookingId') bookingId: string): Promise<MarkTeacherNoShowResult> {
     // Join evidence comes from FR-011 room access; until then a null join is assumed.
     return this.markNoShow.execute({ bookingId, teacherJoinedAt: null });
+  }
+
+  @Post('bookings/:bookingId/room-access')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request room access for a booking (FR-011 / API-008)' })
+  @ApiOkResponse({ description: 'Room name, short-lived token and join URL' })
+  roomAccessForBooking(
+    @Param('bookingId') bookingId: string,
+    @Body(new ZodValidationPipe(roomAccessRequestSchema)) body: RoomAccessRequestInput,
+    @Req() request: RequestWithIdentity,
+  ): Promise<RoomAccessResponse> {
+    return this.roomAccess.execute({
+      bookingId,
+      requesterId: currentUserId(request),
+      displayName: body.displayName,
+    });
   }
 }

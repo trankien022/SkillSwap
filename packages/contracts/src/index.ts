@@ -195,3 +195,17 @@ export const walletBalanceSchema = z.object({
   pendingCredits: z.number().int(),
 });
 export type WalletBalanceView = z.infer<typeof walletBalanceSchema>;
+
+/** FR-011: join an online class room (ADR-020). */
+export const roomAccessRequestSchema = z.object({
+  displayName: z.string().min(1).max(120).optional(),
+});
+export type RoomAccessRequestInput = z.infer<typeof roomAccessRequestSchema>;
+
+export const roomAccessResponseSchema = z.object({
+  room: z.string().min(1),
+  token: z.string().min(1),
+  expiresAt: z.string().datetime({ offset: true }),
+  url: z.string().min(1),
+});
+export type RoomAccessResponse = z.infer<typeof roomAccessResponseSchema>;

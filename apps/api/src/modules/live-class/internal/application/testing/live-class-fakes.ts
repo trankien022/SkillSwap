@@ -1,6 +1,13 @@
 import type { BookingState, CancelReason } from '../../domain/booking';
 import type { BookingRepository, PersistedBooking } from '../port/out/booking-repository';
 import type { ClassEdit, ClassRepository, PersistedClass } from '../port/out/class-repository';
+import type {
+  RoomToken,
+  RoomTokenInput,
+  RoomTokenIssuer,
+} from '../port/out/room-token-issuer';
+import { RoomProviderUnavailableError } from '../port/out/room-token-issuer';
+import type { RoomIncident, RoomIncidentRecorder } from '../port/out/room-incident-recorder';
 
 export function makeBooking(
   partial: Partial<PersistedBooking> & Pick<PersistedBooking, 'id'>,
@@ -135,5 +142,25 @@ export class InMemoryClassRepository implements ClassRepository {
     if (this.value !== null) {
       this.value = { ...this.value, state: 'cancelled' };
     }
+  }
+}
+
+export class FakeRoomTokenIssuer implements RoomTokenIssuer {
+  readonly issued: RoomTokenInput[] = [];
+  fail = false;
+
+  issue(input: RoomTokenInput): RoomToken {
+    if (this.fail) {
+      throw new RoomProviderUnavailableError('jitsi down');
+    }
+    this.issued.push(input);
+    return { token: `tok-${input.role}`, expiresAt: '2026-10-12T11:00:00.000Z' };
+  }
+}
+
+export class FakeRoomIncidentRecorder implements RoomIncidentRecorder {
+  readonly incidents: RoomIncident[] = [];
+  async record(incident: RoomIncident): Promise<void> {
+    this.incidents.push(incident);
   }
 }

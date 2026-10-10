@@ -16,6 +16,8 @@ import {
   moduleStatusSchema,
   refreshRequestSchema,
   registerSchema,
+  roomAccessRequestSchema,
+  roomAccessResponseSchema,
   statusChangedSchema,
   tokenResponseSchema,
   topUpCallbackSchema,
@@ -251,6 +253,23 @@ describe('bookingCancelledSchema (FR-007 / ADR-019)', () => {
     };
     expect(bookingCancelledSchema.parse(event)).toEqual(event);
     expect(() => bookingCancelledSchema.parse({ ...event, reason: 'oops' })).toThrow();
+  });
+});
+
+describe('room access schemas (FR-011 / ADR-020)', () => {
+  it('accepts an optional display name', () => {
+    expect(roomAccessRequestSchema.parse({})).toEqual({});
+    expect(roomAccessRequestSchema.parse({ displayName: 'An' })).toEqual({ displayName: 'An' });
+  });
+
+  it('round-trips a room access response', () => {
+    const response = {
+      room: 'skillswap-cls-1',
+      token: 'a.b.c',
+      expiresAt: '2026-10-12T10:00:00.000Z',
+      url: 'https://localhost:8443/skillswap-cls-1',
+    };
+    expect(roomAccessResponseSchema.parse(response)).toEqual(response);
   });
 });
 
