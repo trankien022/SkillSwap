@@ -20,11 +20,15 @@ import {
   roomAccessRequestSchema,
   roomAccessResponseSchema,
   statusChangedSchema,
+  studentVerificationEventSchema,
+  studentVerificationSchema,
+  submitStudentVerificationSchema,
   tokenResponseSchema,
   topUpCallbackSchema,
   topUpIntentSchema,
   topUpRequestSchema,
   updateClassSchema,
+  verificationDecisionSchema,
   walletBalanceSchema,
   walletHistoryItemSchema,
   walletHistoryPageSchema,
@@ -439,5 +443,74 @@ describe('top-up schemas (FR-008)', () => {
       availableCredits: 100,
       pendingCredits: 0,
     });
+  });
+});
+
+describe('student verification contracts', () => {
+  it('accepts a submission with or without a major', () => {
+    expect(
+      submitStudentVerificationSchema.parse({
+        schoolName: 'FPT University',
+        documentRef: 'doc-ref-1',
+      }),
+    ).toEqual({ schoolName: 'FPT University', documentRef: 'doc-ref-1' });
+    expect(
+      submitStudentVerificationSchema.parse({
+        schoolName: 'FPT University',
+        major: 'SE',
+        documentRef: 'doc-ref-1',
+      }).major,
+    ).toBe('SE');
+  });
+
+  it('rejects an empty school name or document ref', () => {
+    expect(() =>
+      submitStudentVerificationSchema.parse({ schoolName: '', documentRef: 'd' }),
+    ).toThrow();
+    expect(() =>
+      submitStudentVerificationSchema.parse({ schoolName: 'FPT', documentRef: '' }),
+    ).toThrow();
+  });
+
+  it('requires a reason to reject', () => {
+    expect(() => verificationDecisionSchema.parse({ decision: 'reject' })).toThrow();
+    expect(() => verificationDecisionSchema.parse({ decision: 'reject', reason: '  ' })).toThrow();
+    expect(
+      verificationDecisionSchema.parse({ decision: 'reject', reason: 'illegible' }),
+    ).toEqual({ decision: 'reject', reason: 'illegible' });
+  });
+
+  it('accepts an approval without a reason', () => {
+    expect(
+      verificationDecisionSchema.parse({ decision: 'approve', approvedMajor: 'SE' }),
+    ).toEqual({ decision: 'approve', approvedMajor: 'SE' });
+  });
+
+  it('round-trips the owner-scoped view', () => {
+    const view = {
+      id: 'v1',
+      status: 'rejected',
+      schoolName: 'FPT University',
+      major: null,
+      reviewerId: 'admin-1',
+      reason: 'illegible document',
+      decidedAt: '2026-10-10T00:00:00.000Z',
+      expiresAt: null,
+      submittedAt: '2026-10-09T00:00:00.000Z',
+    };
+    expect(studentVerificationSchema.parse(view)).toEqual(view);
+  });
+
+  it('validates the emitted event payload', () => {
+    const event = {
+      verificationId: 'v1',
+      accountId: 'a1',
+      status: 'approved',
+      schoolName: 'FPT University',
+      reason: null,
+      occurredAt: '2026-10-10T00:00:00.000Z',
+    };
+    expect(studentVerificationEventSchema.parse(event)).toEqual(event);
+    expect(() => studentVerificationEventSchema.parse({ ...event, status: 'nope' })).toThrow();
   });
 });
