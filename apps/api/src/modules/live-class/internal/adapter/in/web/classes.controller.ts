@@ -44,6 +44,16 @@ import {
   REQUEST_ROOM_ACCESS,
   type RequestRoomAccessPort,
 } from '../../../application/port/in/request-room-access';
+import {
+  START_CLASS,
+  type StartClassPort,
+  type StartClassResult,
+} from '../../../application/port/in/start-class';
+import {
+  COMPLETE_CLASS,
+  type CompleteClassPort,
+  type CompleteClassResult,
+} from '../../../application/port/in/complete-class';
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
 import { ZodValidationPipe } from '../../../../../../shared/http/zod-validation.pipe';
 
@@ -58,6 +68,8 @@ export class ClassesController {
     @Inject(CANCEL_CLASS) private readonly cancelClass: CancelClassPort,
     @Inject(MARK_TEACHER_NO_SHOW) private readonly markNoShow: MarkTeacherNoShowPort,
     @Inject(REQUEST_ROOM_ACCESS) private readonly roomAccess: RequestRoomAccessPort,
+    @Inject(START_CLASS) private readonly startClass: StartClassPort,
+    @Inject(COMPLETE_CLASS) private readonly completeClass: CompleteClassPort,
   ) {}
 
   @Post()
@@ -149,5 +161,24 @@ export class ClassesController {
       requesterId: currentUserId(request),
       displayName: body.displayName,
     });
+  }
+
+  @Post(':id/start')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Start a class the teacher is holding (FR-020 / ADR-021)' })
+  @ApiOkResponse({ description: 'Whether the class moved to in-progress' })
+  start(@Param('id') classId: string, @Req() request: RequestWithIdentity): Promise<StartClassResult> {
+    return this.startClass.execute({ classId, teacherId: currentUserId(request) });
+  }
+
+  @Post(':id/complete')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'End a class the teacher held (FR-020 / ADR-021)' })
+  @ApiOkResponse({ description: 'Whether the class completed and on what basis' })
+  complete(
+    @Param('id') classId: string,
+    @Req() request: RequestWithIdentity,
+  ): Promise<CompleteClassResult> {
+    return this.completeClass.execute({ classId, teacherId: currentUserId(request) });
   }
 }
