@@ -3,6 +3,7 @@ import {
   advanceStatusResultSchema,
   advanceStatusSchema,
   apiErrorSchema,
+  bookingCancelledSchema,
   bookingConfirmedSchema,
   bookingRequestSchema,
   bookingSchema,
@@ -20,6 +21,7 @@ import {
   topUpCallbackSchema,
   topUpIntentSchema,
   topUpRequestSchema,
+  updateClassSchema,
   walletBalanceSchema,
 } from './index';
 
@@ -222,6 +224,33 @@ describe('classSchema', () => {
       capacity: 2,
     };
     expect(classSchema.parse(view)).toEqual(view);
+  });
+});
+
+describe('updateClassSchema (FR-007 / AC-017)', () => {
+  it('accepts a partial edit', () => {
+    expect(updateClassSchema.parse({ capacity: 5 })).toEqual({ capacity: 5 });
+  });
+
+  it('rejects an empty edit and out-of-range values', () => {
+    expect(() => updateClassSchema.parse({})).toThrow();
+    expect(() => updateClassSchema.parse({ durationMinutes: 10 })).toThrow();
+    expect(() => updateClassSchema.parse({ priceCredits: 0 })).toThrow();
+  });
+});
+
+describe('bookingCancelledSchema (FR-007 / ADR-019)', () => {
+  it('accepts a cancellation event and rejects an unknown reason', () => {
+    const event = {
+      bookingId: 'b1',
+      classId: 'c1',
+      learnerId: 'l1',
+      teacherId: 't1',
+      priceCredits: 100,
+      reason: 'class_cancelled',
+    };
+    expect(bookingCancelledSchema.parse(event)).toEqual(event);
+    expect(() => bookingCancelledSchema.parse({ ...event, reason: 'oops' })).toThrow();
   });
 });
 
