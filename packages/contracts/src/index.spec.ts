@@ -7,6 +7,7 @@ import {
   bookingConfirmedSchema,
   bookingRequestSchema,
   bookingSchema,
+  classCompletedSchema,
   classSchema,
   createClassSchema,
   eventEnvelopeSchema,
@@ -270,6 +271,31 @@ describe('room access schemas (FR-011 / ADR-020)', () => {
       url: 'https://localhost:8443/skillswap-cls-1',
     };
     expect(roomAccessResponseSchema.parse(response)).toEqual(response);
+  });
+});
+
+describe('classCompletedSchema (FR-020 / ADR-021)', () => {
+  it('accepts a completion with its confirmed bookings', () => {
+    const event = {
+      classId: 'cls-1',
+      teacherId: 't1',
+      basis: 'scheduled_end',
+      completedAt: '2026-10-12T11:00:00.000Z',
+      bookings: [{ bookingId: 'b1', learnerId: 'l1', priceCredits: 100 }],
+    };
+    expect(classCompletedSchema.parse(event)).toEqual(event);
+  });
+
+  it('rejects an unknown basis', () => {
+    expect(() =>
+      classCompletedSchema.parse({
+        classId: 'cls-1',
+        teacherId: 't1',
+        basis: 'made_up',
+        completedAt: '2026-10-12T11:00:00.000Z',
+        bookings: [],
+      }),
+    ).toThrow();
   });
 });
 
