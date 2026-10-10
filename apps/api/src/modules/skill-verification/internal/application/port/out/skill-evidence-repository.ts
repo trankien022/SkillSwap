@@ -3,9 +3,20 @@ import type { ProfileSkill, SkillEvidence, SkillLevel } from '../../../domain/ev
 export const PROFILE_SKILL_REPOSITORY = Symbol('ProfileSkillRepository');
 export const SKILL_EVIDENCE_REPOSITORY = Symbol('SkillEvidenceRepository');
 
+/** FR-003: a profile-skill joined with its catalogue entry, for the owner view. */
+export interface ProfileSkillWithSkill {
+  readonly id: string;
+  readonly skillId: string;
+  readonly skillName: string;
+  readonly category: string;
+  readonly approvedLevel: SkillLevel | null;
+}
+
 export interface ProfileSkillRepository {
   /** The account's existing link to a skill, or null. */
   findByAccountAndSkill(accountId: string, skillId: string): Promise<ProfileSkill | null>;
+  /** All of the account's profile skills joined with their catalogue entries. */
+  listByAccount(accountId: string): Promise<ProfileSkillWithSkill[]>;
   /**
    * Returns the account↔skill link, creating it (level NULL) if the account has
    * never linked this skill (ADR-026 §5).

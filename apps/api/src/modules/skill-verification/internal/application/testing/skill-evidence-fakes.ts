@@ -9,6 +9,7 @@ import type { SkillRepository } from '../port/out/skill-repository';
 import type {
   CreateSkillEvidenceRequest,
   ProfileSkillRepository,
+  ProfileSkillWithSkill,
   SkillEvidenceRepository,
 } from '../port/out/skill-evidence-repository';
 import type { VerifiedStudentReader } from '../port/out/verified-student-reader';
@@ -35,6 +36,18 @@ export class InMemoryProfileSkillRepository implements ProfileSkillRepository {
     return (
       this.rows.find((row) => row.accountId === accountId && row.skillId === skillId) ?? null
     );
+  }
+
+  async listByAccount(accountId: string): Promise<ProfileSkillWithSkill[]> {
+    return this.rows
+      .filter((row) => row.accountId === accountId)
+      .map((row) => ({
+        id: row.id,
+        skillId: row.skillId,
+        skillName: row.skillId,
+        category: 'unknown',
+        approvedLevel: row.approvedLevel,
+      }));
   }
 
   async findOrCreate(accountId: string, skillId: string): Promise<ProfileSkill> {

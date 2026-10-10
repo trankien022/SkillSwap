@@ -3,7 +3,7 @@ import { qualified } from '../../../../../../shared/sql/ident';
 import { returnedRows } from '../../../../../../shared/sql/result';
 import { ProfileSkill, type Skill, type SkillLevel } from '../../../domain/evidence';
 import type { SkillRepository } from '../../../application/port/out/skill-repository';
-import type { ProfileSkillRepository } from '../../../application/port/out/skill-evidence-repository';
+import type { ProfileSkillRepository, ProfileSkillWithSkill } from '../../../application/port/out/skill-evidence-repository';
 
 interface SkillRow {
   id: string;
@@ -73,6 +73,10 @@ export class SqlProfileSkillRepository implements ProfileSkillRepository {
     return qualified(this.registry.getSchema(this.moduleName), 'profile_skills');
   }
 
+  private get skillsTable(): string {
+    return qualified(this.registry.getSchema(this.moduleName), 'skills');
+  }
+
   async findByAccountAndSkill(accountId: string, skillId: string): Promise<ProfileSkill | null> {
     const source = this.registry.get(this.moduleName);
     const rows = (await source.query(
@@ -81,6 +85,31 @@ export class SqlProfileSkillRepository implements ProfileSkillRepository {
       [accountId, skillId],
     )) as ProfileSkillRow[];
     return rows[0] === undefined ? null : toDomain(rows[0]);
+  }
+
+  async listByAccount(accountId: string): Promise<ProfileSkillWithSkill[]> {
+    const source = this.registry.get(this.moduleName);
+    const rows = (await source.query(
+      `SELECT ps."id", ps."skill_id", s."name" AS skill_name, s."category", ps."approved_level"
+         FROM ${this.table} ps
+         JOIN ${this.skillsTable} s ON s."id" = ps."skill_id"
+        WHERE ps."account_id" = $1
+        ORDER BY s."category", s."name"`,
+      [accountId],
+    )) as {
+      id: string;
+      skill_id: string;
+      skill_name: string;
+      category: string;
+      approved_level: string | null;
+    }[];
+    return rows.map((row) => ({
+      id: row.id,
+      skillId: row.skill_id,
+      skillName: row.skill_name,
+      category: row.category,
+      approvedLevel: row.approved_level as SkillLevel | null,
+    }));
   }
 
   async findOrCreate(accountId: string, skillId: string): Promise<ProfileSkill> {

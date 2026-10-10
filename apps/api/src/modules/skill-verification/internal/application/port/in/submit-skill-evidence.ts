@@ -1,5 +1,5 @@
 import type { SkillEvidenceView } from '@skillswap/contracts';
-import type { EvidenceType, SkillLevel } from '../../domain/evidence';
+import type { EvidenceType, SkillLevel } from '../../../domain/evidence';
 
 export const SUBMIT_SKILL_EVIDENCE = Symbol('SubmitSkillEvidence');
 
