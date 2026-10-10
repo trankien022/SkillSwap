@@ -9,42 +9,35 @@ import LoadingState from "../../../components/common/LoadingState";
 import ErrorState from "../../../components/common/ErrorState";
 import EmptyState from "../../../components/common/EmptyState";
 
-import { verificationSuccess } from "../../../lib/mocks/verification.mock";
+import { useEffect, useState } from "react";
+import { DEFAULT_API_BASE, fetchJson } from "../../../lib/status";
 import type { VerificationData } from "../../../types/verification";
 
-/**
- * Choose one of the exported mock states below to preview different UI states.
- * - verificationSuccess
- * - verificationLoading
- * - verificationError
- * - verificationEmpty
- */
-type MockState = VerificationData | { status: "loading" | "error" | "empty"; message?: string };
-
-const MOCK: MockState | null = verificationSuccess as unknown as MockState | null;
-// To preview other states replace the assignment above with one of the following:
-// const MOCK: MockState | null = verificationLoading as unknown as MockState;
-// const MOCK: MockState | null = verificationError as unknown as MockState;
-// const MOCK: MockState | null = verificationEmpty as unknown as MockState;
-
 export default function Page() {
-  if (!MOCK) return <EmptyState message="No verification data available." />;
+  const [data, setData] = useState<VerificationData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if ((MOCK as any).status === "loading") {
-    return <LoadingState message="Đang tải thông tin xác minh…" />;
-  }
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const resp = await fetchJson<VerificationData>(`${DEFAULT_API_BASE}/api/student-verification/status`);
+        if (mounted) setData(resp);
+      } catch (err: any) {
+        if (mounted) setError(err?.message || String(err));
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
-  if ((MOCK as any).status === "error") {
-    return (
-      <ErrorState
-        title="Lỗi khi tải dữ liệu"
-        description="Không thể tải thông tin xác minh. Vui lòng thử lại sau."
-      />
-    );
-  }
-
-  // At this point MOCK is a success payload
-  const data = MOCK as VerificationData;
+  if (loading) return <LoadingState message="Đang tải thông tin xác minh…" />;
+  if (error) return <ErrorState title="Lỗi khi tải dữ liệu" description={error} />;
+  if (!data) return <EmptyState message="No verification data available." />;
 
   return (
     <main className="w-full py-8 bg-[#f8f9ff]">

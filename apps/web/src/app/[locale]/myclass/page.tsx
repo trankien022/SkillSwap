@@ -35,25 +35,67 @@ export default function Page() {
     // ensure initial filled stars use font-variation
   }, []);
 
-  function addChipText(text: string) {
-    if (!comment.includes(text)) setComment((s) => (s ? s + '. ' + text : text));
-  }
+    const [apiModules, setApiModules] = useState<string[] | null>(null);
+    const [moduleStatuses, setModuleStatuses] = useState<Record<string, { ok: boolean; detail?: any; error?: string }>>({});
+    const [apiProbeError, setApiProbeError] = useState<string | null>(null);
 
-  function toggleSkillSwap(key: 'python' | 'saveContact') {
-    setSkillSwap((s) => ({ ...s, [key]: !s[key] }));
-  }
+    // Probe API health and each module's /status endpoint so the user can decide whether
+    // to wire additional endpoints into the UI. This does not modify any backend.
+    useEffect(() => {
+      let mounted = true;
+      (async () => {
+        try {
+          const { fetchApiHealth, DEFAULT_API_BASE } = await import("../../../lib/status");
+          const health = await fetchApiHealth();
+          if (!mounted) return;
+          setApiModules(health.modules || []);
 
-  function submitReview(e?: React.FormEvent) {
-    e?.preventDefault();
-    setSubmitting(true);
-    setTimeout(() => {
-      setToastVisible(true);
-      setSubmitting(false);
-    }, 700);
-  }
+          const statuses: Record<string, { ok: boolean; detail?: any; error?: string }> = {};
+          await Promise.all(
+            (health.modules || []).map(async (m) => {
+              try {
+                const detail = await fetch(`${DEFAULT_API_BASE}/api/${m}/status`);
+                if (!mounted) return;
+                if (detail.ok) {
+                  const json = await detail.json();
+                  statuses[m] = { ok: true, detail: json };
+                } else {
+                  statuses[m] = { ok: false, error: `HTTP ${detail.status}` };
+                }
+              } catch (err: any) {
+                statuses[m] = { ok: false, error: err?.message || String(err) };
+              }
+            }),
+          );
+          if (mounted) setModuleStatuses(statuses);
+        } catch (err: any) {
+          if (mounted) setApiProbeError(err?.message || String(err));
+        }
+      })();
+      return () => {
+        mounted = false;
+      };
+    }, []);
 
-  return (
-    <main className="w-full py-8 bg-[#f8f9ff]">
+    function addChipText(text: string) {
+      if (!comment.includes(text)) setComment((s) => (s ? s + '. ' + text : text));
+    }
+
+    function toggleSkillSwap(key: 'python' | 'saveContact') {
+      setSkillSwap((s) => ({ ...s, [key]: !s[key] }));
+    }
+
+    function submitReview(e?: React.FormEvent) {
+      e?.preventDefault();
+      setSubmitting(true);
+      setTimeout(() => {
+        setToastVisible(true);
+        setSubmitting(false);
+      }, 700);
+    }
+
+    return (
+      <main className="w-full py-8 bg-[#f8f9ff]">
       <div className="flex flex-col w-full">
         <div className="max-w-7xl mx-auto w-full px-6 space-y-6">
           {/* Milestone Progress Line */}
@@ -99,6 +141,28 @@ export default function Page() {
           </div>
 
           {/* Main Grid */}
+          {/* API discovery panel: lists modules returned by /api/health and probes each /api/{module}/status */}
+          <div className="max-w-7xl mx-auto w-full px-6">
+            {apiModules === null ? (
+              <div className="rounded-xl bg-white p-3 border border-gray-100 text-sm text-gray-600">Checking API modules…</div>
+            ) : (
+              <div className="rounded-2xl bg-white p-4 border border-gray-100 space-y-2">
+                <div className="text-sm font-semibold text-gray-700">Phát hiện API trên gateway</div>
+                {apiProbeError && <div className="text-xs text-red-600">Lỗi khi kiểm tra API: {apiProbeError}</div>}
+                <div className="flex flex-wrap gap-2">
+                  {apiModules.length === 0 && <div className="text-xs text-gray-500">Không tìm thấy module nào.</div>}
+                  {apiModules.map((m) => (
+                    <div key={m} className="px-3 py-1 rounded-lg border text-xs flex items-center gap-2">
+                      <span className={`h-2 w-2 rounded-full ${moduleStatuses[m]?.ok ? 'bg-emerald-500' : 'bg-gray-400'}`} />
+                      <span className="font-medium">{m}</span>
+                      <span className="text-xs text-gray-500"> {moduleStatuses[m]?.ok ? 'ok' : (moduleStatuses[m]?.error ?? 'unknown')}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="text-xs text-gray-500">Ghi chú: đây là kiểm tra chỉ đọc; không thay đổi API. Nếu thấy module cần tích hợp, cho tôi biết tên module.</div>
+              </div>
+            )}
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             {/* Left Column */}
             <div className="lg:col-span-5 space-y-5">
