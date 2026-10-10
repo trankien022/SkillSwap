@@ -301,6 +301,12 @@ export const verificationDecisionSchema = z
   });
 export type VerificationDecisionInput = z.infer<typeof verificationDecisionSchema>;
 
+/** FR-019 / ADR-025: revoke a verification (admin only, reason required). */
+export const verificationRevocationSchema = z.object({
+  reason: z.string().min(1).max(500),
+});
+export type VerificationRevocationInput = z.infer<typeof verificationRevocationSchema>;
+
 export const studentVerificationSchema = z.object({
   id: z.string().min(1),
   status: verificationStatusSchema,

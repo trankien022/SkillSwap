@@ -53,6 +53,7 @@ const NAME_TO_STATUS: Record<string, number> = {
   InvalidVerificationTransitionError: 409,
   ReasonRequiredError: 400,
   InvalidDeciderError: 403,
+  InvalidRevocationError: 409,
   VerificationNotFoundError: 404,
   VerificationNotPendingError: 409,
   UnknownVerificationStatusError: 400,

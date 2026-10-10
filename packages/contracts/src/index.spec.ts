@@ -31,6 +31,7 @@ import {
   topUpRequestSchema,
   updateClassSchema,
   verificationDecisionSchema,
+  verificationRevocationSchema,
   verificationStatusSchema,
   walletBalanceSchema,
   walletHistoryItemSchema,
@@ -535,6 +536,14 @@ describe('student verification contracts', () => {
     ).toEqual({ decision: 'approve', approvedMajor: 'SE' });
   });
 
+  it('validates the revocation request (FR-019)', () => {
+    expect(verificationRevocationSchema.parse({ reason: 'Fake document' })).toEqual({
+      reason: 'Fake document',
+    });
+    expect(() => verificationRevocationSchema.parse({ reason: '' })).toThrow();
+    expect(() => verificationRevocationSchema.parse({})).toThrow();
+  });
+
   it('round-trips the owner-scoped view', () => {
     const view = {
       id: 'v1',
@@ -551,6 +560,7 @@ describe('student verification contracts', () => {
 
   it('rejects the removed superseded status and drops expiry (dev decisions)', () => {
     expect(verificationStatusSchema.safeParse('superseded').success).toBe(false);
+    expect(verificationStatusSchema.parse('revoked')).toBe('revoked');
     const parsed = studentVerificationSchema.parse({
       id: 'v1',
       status: 'approved',

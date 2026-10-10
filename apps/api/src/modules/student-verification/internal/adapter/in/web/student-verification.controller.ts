@@ -4,11 +4,13 @@ import {
   documentUploadRequestSchema,
   submitStudentVerificationSchema,
   verificationDecisionSchema,
+  verificationRevocationSchema,
   type DocumentUploadRequestInput,
   type DocumentUploadTargetView,
   type StudentVerificationView,
   type SubmitStudentVerificationInput,
   type VerificationDecisionInput,
+  type VerificationRevocationInput,
 } from '@skillswap/contracts';
 import {
   SUBMIT_STUDENT_VERIFICATION,
@@ -22,6 +24,10 @@ import {
   DECIDE_STUDENT_VERIFICATION,
   type DecideStudentVerificationPort,
 } from '../../../application/port/in/decide-student-verification';
+import {
+  REVOKE_STUDENT_VERIFICATION,
+  type RevokeStudentVerificationPort,
+} from '../../../application/port/in/revoke-student-verification';
 import {
   GET_MY_VERIFICATION,
   type GetMyVerificationPort,
@@ -37,6 +43,7 @@ export class StudentVerificationController {
     @Inject(SUBMIT_STUDENT_VERIFICATION) private readonly submit: SubmitStudentVerificationPort,
     @Inject(REQUEST_DOCUMENT_UPLOAD) private readonly requestUpload: RequestDocumentUploadPort,
     @Inject(DECIDE_STUDENT_VERIFICATION) private readonly decide: DecideStudentVerificationPort,
+    @Inject(REVOKE_STUDENT_VERIFICATION) private readonly revoke: RevokeStudentVerificationPort,
     @Inject(GET_MY_VERIFICATION) private readonly getMine: GetMyVerificationPort,
   ) {}
 
@@ -87,6 +94,24 @@ export class StudentVerificationController {
       decision: body.decision,
       reason: body.reason,
       approvedMajor: body.approvedMajor,
+    });
+  }
+
+  @Post(':id/revocation')
+  @Roles('admin')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Revoke a verification (admin, FR-019 / ADR-025)' })
+  @ApiOkResponse({ description: 'The revoked verification' })
+  revokeVerification(
+    @Param('id') id: string,
+    @Req() request: RequestWithIdentity,
+    @Body(new ZodValidationPipe(verificationRevocationSchema)) body: VerificationRevocationInput,
+  ): Promise<StudentVerificationView> {
+    return this.revoke.execute({
+      verificationId: id,
+      reviewerId: currentUserId(request),
+      reviewerRole: request.user?.role,
+      reason: body.reason,
     });
   }
 
