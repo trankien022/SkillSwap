@@ -1,6 +1,15 @@
 import type { BookingState, CancelReason } from '../../domain/booking';
-import type { BookingRepository, PersistedBooking } from '../port/out/booking-repository';
-import type { ClassEdit, ClassRepository, PersistedClass } from '../port/out/class-repository';
+import type { ClassCancellationReason, CompletionBasis } from '../../domain/class';
+import type {
+  BookingRepository,
+  PersistedBooking,
+} from '../port/out/booking-repository';
+import type {
+  ClassEdit,
+  ClassRepository,
+  CompletableClass,
+  PersistedClass,
+} from '../port/out/class-repository';
 import type {
   RoomToken,
   RoomTokenInput,
@@ -27,6 +36,7 @@ export function makeBooking(
 export class InMemoryBookingRepository implements BookingRepository {
   readonly rows: PersistedBooking[] = [];
   readonly emitted: Array<{ event: string; bookingId: string; reason?: CancelReason }> = [];
+  private readonly cancelReasons = new Map<string, CancelReason>();
 
   constructor(rows: PersistedBooking[] = []) {
     this.rows = rows;
@@ -65,6 +75,7 @@ export class InMemoryBookingRepository implements BookingRepository {
       return { cancelled: false, booking: row ?? null };
     }
     row.state = 'cancelled';
+    this.cancelReasons.set(bookingId, reason);
     this.emitted.push({ event: 'booking.cancelled', bookingId, reason });
     return { cancelled: true, booking: row };
   }
@@ -94,6 +105,12 @@ export class InMemoryBookingRepository implements BookingRepository {
       (row) => row.classId === classId && (row.state === 'pending' || row.state === 'confirmed'),
     );
   }
+
+  async hasTeacherNoShow(classId: string): Promise<boolean> {
+    return this.rows.some(
+      (row) => row.classId === classId && this.cancelReasons.get(row.id) === 'teacher_no_show',
+    );
+  }
 }
 
 export function classView(partial: Partial<PersistedClass> = {}): PersistedClass {
@@ -114,6 +131,10 @@ export function classView(partial: Partial<PersistedClass> = {}): PersistedClass
 export class InMemoryClassRepository implements ClassRepository {
   cancelled: string[] = [];
   updated: ClassEdit | null = null;
+  awaiting: CompletableClass[] = [];
+  confirmedBookingIds: string[] = [];
+  completedBasis: CompletionBasis | null = null;
+  lastCancelReason: ClassCancellationReason | null = null;
 
   constructor(private value: PersistedClass | null = classView()) {}
 
@@ -142,6 +163,37 @@ export class InMemoryClassRepository implements ClassRepository {
     if (this.value !== null) {
       this.value = { ...this.value, state: 'cancelled' };
     }
+  }
+
+  async startAndEmit(id: string): Promise<{ started: boolean }> {
+    if (this.value === null || this.value.id !== id) return { started: false };
+    if (this.value.state !== 'published' && this.value.state !== 'full') return { started: false };
+    this.value = { ...this.value, state: 'in_progress' };
+    return { started: true };
+  }
+
+  async completeAndEmit(id: string, basis: CompletionBasis): Promise<{ completed: boolean; bookingIds: string[] }> {
+    if (this.value === null || this.value.id !== id) return { completed: false, bookingIds: [] };
+    if (!['published', 'full', 'in_progress'].includes(this.value.state)) {
+      return { completed: false, bookingIds: [] };
+    }
+    this.value = { ...this.value, state: 'completed' };
+    this.completedBasis = basis;
+    return { completed: true, bookingIds: this.confirmedBookingIds };
+  }
+
+  async cancelWithReason(id: string, reason: ClassCancellationReason): Promise<{ cancelled: boolean }> {
+    if (this.value === null || this.value.id !== id) return { cancelled: false };
+    if (this.value.state === 'completed' || this.value.state === 'cancelled') return { cancelled: false };
+    this.value = { ...this.value, state: 'cancelled' };
+    this.cancelled.push(id);
+    this.lastCancelReason = reason;
+    return { cancelled: true };
+  }
+
+  async findAwaitingCompletion(_now: Date): Promise<CompletableClass[]> {
+    if (this.value === null || this.awaiting.length === 0) return this.awaiting;
+    return this.awaiting;
   }
 }
 

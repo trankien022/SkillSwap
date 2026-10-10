@@ -129,6 +129,11 @@ class LockingInMemoryBookingRepository implements BookingRepository {
       (row) => row.classId === classId && (row.state === 'pending' || row.state === 'confirmed'),
     );
   }
+
+  async hasTeacherNoShow(classId: string): Promise<boolean> {
+    void classId;
+    return false;
+  }
 }
 
 function classRepo(view: PersistedClass): ClassRepository {
@@ -139,6 +144,10 @@ function classRepo(view: PersistedClass): ClassRepository {
       ({ ...view, ...edit }) as PersistedClass,
     ),
     markCancelled: jest.fn(async () => undefined),
+    startAndEmit: jest.fn(async () => ({ started: false })),
+    completeAndEmit: jest.fn(async () => ({ completed: false, bookingIds: [] })),
+    cancelWithReason: jest.fn(async () => ({ cancelled: false })),
+    findAwaitingCompletion: jest.fn(async () => []),
   };
 }
 
