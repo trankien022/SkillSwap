@@ -2,6 +2,7 @@ import { MODULE_STATUS_ID, MODULE_STATUS_TABLE } from '../../../../../../shared/
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { insertOutboxStatement } from '../../../../../../shared/messaging/outbox-statements';
 import { qualified } from '../../../../../../shared/sql/ident';
+import { returnedRows } from '../../../../../../shared/sql/result';
 import type {
   ModuleStatusTransition,
   ModuleStatusWriteInput,
@@ -20,10 +21,12 @@ export class SqlModuleStatusWriter implements ModuleStatusWriter {
     const schema = this.registry.getSchema(this.moduleName);
     const table = qualified(schema, MODULE_STATUS_TABLE);
     return source.transaction(async (manager) => {
-      const updated = (await manager.query(
-        `UPDATE ${table} SET "state" = $1, "updated_at" = now() WHERE "id" = $2 AND "state" = $3 RETURNING "updated_at"`,
-        [input.newState, MODULE_STATUS_ID, input.previousState],
-      )) as Array<{ updated_at: Date | string }>;
+      const updated = returnedRows<{ updated_at: Date | string }>(
+        await manager.query(
+          `UPDATE ${table} SET "state" = $1, "updated_at" = now() WHERE "id" = $2 AND "state" = $3 RETURNING "updated_at"`,
+          [input.newState, MODULE_STATUS_ID, input.previousState],
+        ),
+      );
       const row = updated[0];
       if (row === undefined) {
         throw new StatusConflictError(input.previousState, input.newState);

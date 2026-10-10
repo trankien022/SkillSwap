@@ -1,5 +1,6 @@
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { qualified } from '../../../../../../shared/sql/ident';
+import { returnedRows } from '../../../../../../shared/sql/result';
 import type { WalletBalance } from '../../../domain/wallet';
 import { InsufficientBalanceError, splitSettlement } from '../../../domain/wallet';
 import type {
@@ -106,13 +107,15 @@ export class SqlWalletRepository implements WalletRepository {
       }
 
       // Debit the Learner only if the balance covers the price (AC-005).
-      const debited = (await manager.query(
-        `UPDATE ${this.table}
-           SET "available_credits" = "available_credits" - $2, "updated_at" = now()
-         WHERE "owner_id" = $1 AND "available_credits" >= $2
-         RETURNING "available_credits"`,
-        [request.learnerId, request.priceCredits],
-      )) as Array<{ available_credits: number }>;
+      const debited = returnedRows<{ available_credits: number }>(
+        await manager.query(
+          `UPDATE ${this.table}
+             SET "available_credits" = "available_credits" - $2, "updated_at" = now()
+           WHERE "owner_id" = $1 AND "available_credits" >= $2
+           RETURNING "available_credits"`,
+          [request.learnerId, request.priceCredits],
+        ),
+      );
       if (debited.length === 0) {
         const current = (await manager.query(
           `SELECT "available_credits" FROM ${this.table} WHERE "owner_id" = $1`,
