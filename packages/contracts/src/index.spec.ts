@@ -13,17 +13,25 @@ import {
   documentUploadRequestSchema,
   documentUploadTargetSchema,
   eventEnvelopeSchema,
+  evidenceStatusSchema,
+  evidenceTypeSchema,
   identityHeadersSchema,
   loginSchema,
   meResponseSchema,
   moduleStatusSchema,
+  profileSkillSchema,
   refreshRequestSchema,
   registerSchema,
   roomAccessRequestSchema,
   roomAccessResponseSchema,
+  skillEvidenceEventSchema,
+  skillEvidenceViewSchema,
+  skillLevelSchema,
+  skillSchema,
   statusChangedSchema,
   studentVerificationEventSchema,
   studentVerificationSchema,
+  submitSkillEvidenceSchema,
   submitStudentVerificationSchema,
   tokenResponseSchema,
   topUpCallbackSchema,
@@ -586,5 +594,71 @@ describe('student verification contracts', () => {
     };
     expect(studentVerificationEventSchema.parse(event)).toEqual(event);
     expect(() => studentVerificationEventSchema.parse({ ...event, status: 'nope' })).toThrow();
+  });
+
+  describe('FR-003 skill evidence (ADR-026)', () => {
+    it('exposes the fixed ordered level scale and evidence enums', () => {
+      expect(skillLevelSchema.options).toEqual(['beginner', 'intermediate', 'advanced', 'expert']);
+      expect(evidenceTypeSchema.options).toEqual(['certificate', 'verifier_assessment']);
+      expect(evidenceStatusSchema.options).toEqual(['pending', 'approved', 'rejected', 'superseded']);
+      expect(skillLevelSchema.safeParse('master').success).toBe(false);
+    });
+
+    it('validates a taxonomy skill and the profile-skill level cache', () => {
+      const skill = { id: 'sk-1', name: 'IELTS', category: 'Languages' };
+      expect(skillSchema.parse(skill)).toEqual(skill);
+
+      const link = {
+        id: 'ps-1',
+        skillId: 'sk-1',
+        skillName: 'IELTS',
+        category: 'Languages',
+        approvedLevel: 'advanced',
+      };
+      expect(profileSkillSchema.parse(link)).toEqual(link);
+      expect(profileSkillSchema.parse({ ...link, approvedLevel: null }).approvedLevel).toBeNull();
+    });
+
+    it('validates a submit-evidence input and an evidence view', () => {
+      const input = {
+        skillId: 'sk-1',
+        requestedLevel: 'intermediate',
+        evidenceType: 'certificate',
+        documentRef: 'docs/cert.pdf',
+      };
+      expect(submitSkillEvidenceSchema.parse(input)).toEqual(input);
+
+      const view = {
+        id: 'ev-1',
+        profileSkillId: 'ps-1',
+        skillId: 'sk-1',
+        version: 1,
+        evidenceType: 'certificate',
+        documentRef: 'docs/cert.pdf',
+        description: null,
+        requestedLevel: 'intermediate',
+        approvedLevel: null,
+        status: 'pending',
+        reason: null,
+        decidedAt: null,
+        submittedAt: '2026-10-11T00:00:00.000Z',
+      };
+      expect(skillEvidenceViewSchema.parse(view)).toEqual(view);
+    });
+
+    it('validates the emitted evidence event payload', () => {
+      const event = {
+        evidenceId: 'ev-1',
+        profileSkillId: 'ps-1',
+        accountId: 'a1',
+        skillId: 'sk-1',
+        version: 1,
+        requestedLevel: 'intermediate',
+        status: 'pending',
+        occurredAt: '2026-10-11T00:00:00.000Z',
+      };
+      expect(skillEvidenceEventSchema.parse(event)).toEqual(event);
+      expect(() => skillEvidenceEventSchema.parse({ ...event, status: 'nope' })).toThrow();
+    });
   });
 });

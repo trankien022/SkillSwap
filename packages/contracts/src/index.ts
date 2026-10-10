@@ -328,3 +328,72 @@ export const studentVerificationEventSchema = z.object({
   occurredAt: z.string().datetime({ offset: true }),
 });
 export type StudentVerificationEvent = z.infer<typeof studentVerificationEventSchema>;
+
+/** FR-003 / ADR-026: skill taxonomy, evidence types and the fixed ordered level scale. */
+export const skillLevelSchema = z.enum(['beginner', 'intermediate', 'advanced', 'expert']);
+export type SkillLevel = z.infer<typeof skillLevelSchema>;
+
+export const evidenceTypeSchema = z.enum(['certificate', 'verifier_assessment']);
+export type EvidenceType = z.infer<typeof evidenceTypeSchema>;
+
+export const evidenceStatusSchema = z.enum(['pending', 'approved', 'rejected', 'superseded']);
+export type EvidenceStatus = z.infer<typeof evidenceStatusSchema>;
+
+/** FR-003: a catalogue entry in the two-level `category → skill` tree (ADR-026 §1–2). */
+export const skillSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  category: z.string().min(1),
+});
+export type SkillView = z.infer<typeof skillSchema>;
+
+/** FR-003 / ADR-026 §5: the effective approved level cache; null until approved. */
+export const profileSkillSchema = z.object({
+  id: z.string().min(1),
+  skillId: z.string().min(1),
+  skillName: z.string().min(1),
+  category: z.string().min(1),
+  approvedLevel: skillLevelSchema.nullable(),
+});
+export type ProfileSkillView = z.infer<typeof profileSkillSchema>;
+
+/** FR-003 / API-002: submit skill evidence for a known skill at a requested level. */
+export const submitSkillEvidenceSchema = z.object({
+  skillId: z.string().min(1),
+  requestedLevel: skillLevelSchema,
+  evidenceType: evidenceTypeSchema,
+  documentRef: z.string().min(1).max(500).optional(),
+  description: z.string().min(1).max(1000).optional(),
+});
+export type SubmitSkillEvidenceInput = z.infer<typeof submitSkillEvidenceSchema>;
+
+/** FR-003: the owner-facing view of one evidence version. */
+export const skillEvidenceViewSchema = z.object({
+  id: z.string().min(1),
+  profileSkillId: z.string().min(1),
+  skillId: z.string().min(1),
+  version: z.number().int().positive(),
+  evidenceType: evidenceTypeSchema,
+  documentRef: z.string().min(1).nullable(),
+  description: z.string().min(1).nullable(),
+  requestedLevel: skillLevelSchema,
+  approvedLevel: skillLevelSchema.nullable(),
+  status: evidenceStatusSchema,
+  reason: z.string().min(1).nullable(),
+  decidedAt: z.string().datetime({ offset: true }).nullable(),
+  submittedAt: z.string().datetime({ offset: true }),
+});
+export type SkillEvidenceView = z.infer<typeof skillEvidenceViewSchema>;
+
+/** FR-003 / ADR-013: emitted in the same transaction as the evidence write. */
+export const skillEvidenceEventSchema = z.object({
+  evidenceId: z.string().min(1),
+  profileSkillId: z.string().min(1),
+  accountId: z.string().min(1),
+  skillId: z.string().min(1),
+  version: z.number().int().positive(),
+  requestedLevel: skillLevelSchema,
+  status: evidenceStatusSchema,
+  occurredAt: z.string().datetime({ offset: true }),
+});
+export type SkillEvidenceEvent = z.infer<typeof skillEvidenceEventSchema>;
