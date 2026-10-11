@@ -48,6 +48,11 @@ import { PASSWORD_HASHER, type PasswordHasher } from './internal/application/por
 import { TOKEN_SERVICE, CLOCK, type Clock, type TokenService } from './internal/application/port/out/token-service';
 import { GetModuleStatusQueryHandler } from './internal/application/query/get-module-status.query';
 import { MODULE_NAME } from './internal/domain/module-status';
+import {
+  PUBLIC_PROFILE_READER,
+  type PublicProfileReader,
+} from './api/public-profile-reader';
+import { SqlPublicProfileReader } from './internal/adapter/out/persistence/sql-public-profile-reader';
 
 /** Registers this module's DataSource pool and the FR-017 verification consumers. */
 @Injectable()
@@ -194,7 +199,14 @@ export class AccountProfileRegistrar implements OnModuleInit {
         new GetMeUseCase(accounts, verificationStatus),
       inject: [ACCOUNT_REPOSITORY, VERIFICATION_STATUS_READER],
     },
+    {
+      provide: PUBLIC_PROFILE_READER,
+      useFactory: (registry: ModuleDataSourceRegistry): PublicProfileReader =>
+        new SqlPublicProfileReader(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
     AccountProfileRegistrar,
   ],
+  exports: [PUBLIC_PROFILE_READER],
 })
 export class AccountProfileModule {}
