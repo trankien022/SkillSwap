@@ -11,6 +11,9 @@
 
 import { SKILL_LEVEL_ORDER, type SkillLevel } from './skill-level';
 
+export type { SkillLevel } from './skill-level';
+export { SKILL_LEVELS, SKILL_LEVEL_ORDER, isSkillLevel } from './skill-level';
+
 export class UnverifiedTeacherError extends Error {
   constructor(teacherId: string) {
     super(`Teacher ${teacherId} is not a verified student`);
@@ -45,8 +48,8 @@ export class NoClassSkillsError extends Error {
 /** The Teacher's projected trust: verified-student flag and per-skill approved level. */
 export interface TeacherTrust {
   readonly verified: boolean;
-  /** Effective approved level per skill (absent / null = not approved for that skill). */
-  readonly approvedLevels: ReadonlyMap<string, SkillLevel | null>;
+  /** Effective approved level for a skill, or null when not approved. */
+  approvedLevel(skillId: string): SkillLevel | null;
 }
 
 /** A class skill plus the minimum level the class targets (defaults to beginner). */
@@ -81,7 +84,7 @@ export function assertPublishable(input: {
   }
   for (const skill of input.classSkills) {
     const required = skill.requiredLevel ?? DEFAULT_REQUIRED_LEVEL;
-    const approved = input.teacherTrust.approvedLevels.get(skill.skillId) ?? null;
+    const approved = input.teacherTrust.approvedLevel(skill.skillId);
     if (approved === null) {
       throw new SkillNotApprovedError(input.teacherId, skill.skillId);
     }

@@ -20,9 +20,10 @@ import {
 function trust(
   over: Partial<{ verified: boolean; levels: Record<string, SkillLevel | null> }> = {},
 ): TeacherTrust {
+  const levels = over.levels ?? { 'sk-1': 'advanced' };
   return {
     verified: over.verified ?? true,
-    approvedLevels: new Map(Object.entries(over.levels ?? { 'sk-1': 'advanced' })),
+    approvedLevel: (skillId: string): SkillLevel | null => levels[skillId] ?? null,
   };
 }
 
