@@ -25,6 +25,7 @@ export default function InstructorDashboard() {
   const [balance, setBalance] = useState<WalletBalanceView | null>(null);
   const [me, setMe] = useState<MeResponse | null>(null);
   const [newClasses, setNewClasses] = useState<CreatedClassItem[]>([]);
+  const [classFilter, setClassFilter] = useState<'all' | 'upcoming' | 'open' | 'completed'>('all');
 
   useEffect(() => {
     try {
@@ -464,16 +465,40 @@ export default function InstructorDashboard() {
                 <p className="text-xs text-slate-600">Các buổi học sắp diễn ra và danh sách lớp đã công bố</p>
               </div>
               <div className="inline-flex items-center p-1 bg-white border border-slate-200 rounded-xl text-xs font-semibold">
-                <button type="button" className="px-3 py-1.5 rounded-lg bg-slate-900 text-white shadow-sm">Tất cả (3)</button>
-                <button type="button" className="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-colors">Sắp diễn ra (1)</button>
-                <button type="button" className="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-colors">Đang mở (1)</button>
-                <button type="button" className="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-colors">Đã xong (1)</button>
+                <button
+                  type="button"
+                  onClick={() => setClassFilter('all')}
+                  className={`px-3 py-1.5 rounded-lg transition-colors ${classFilter === 'all' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                >
+                  Tất cả ({newClasses.length + 3})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setClassFilter('upcoming')}
+                  className={`px-3 py-1.5 rounded-lg transition-colors ${classFilter === 'upcoming' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                >
+                  Sắp diễn ra (1)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setClassFilter('open')}
+                  className={`px-3 py-1.5 rounded-lg transition-colors ${classFilter === 'open' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                >
+                  Đang mở ({newClasses.length + 1})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setClassFilter('completed')}
+                  className={`px-3 py-1.5 rounded-lg transition-colors ${classFilter === 'completed' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                >
+                  Đã xong (1)
+                </button>
               </div>
             </div>
             
             <div className="space-y-4">
               {/* Dynamic Newly Created Classes */}
-              {newClasses.map((item) => (
+              {(classFilter === 'all' || classFilter === 'open') && newClasses.map((item) => (
                 <div key={item.id} className="bg-white p-5 rounded-2xl border-2 border-emerald-400 shadow-sm transition-all hover:border-emerald-500">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div className="space-y-2">
@@ -510,111 +535,117 @@ export default function InstructorDashboard() {
                 </div>
               ))}
 
-              {/* Item 1 */}
-              <div className="bg-white p-5 rounded-2xl border border-emerald-200 shadow-sm hover:border-emerald-300 transition-all">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Sắp diễn ra
-                      </span>
-                      <span className="text-xs text-slate-500 font-medium">1:1 Session</span>
-                      <span className="text-xs text-slate-300">•</span>
-                      <span className="text-xs text-slate-600 font-medium">IELTS Speaking</span>
+              {/* Item 1: Sắp diễn ra */}
+              {(classFilter === 'all' || classFilter === 'upcoming') && (
+                <div className="bg-white p-5 rounded-2xl border border-emerald-200 shadow-sm hover:border-emerald-300 transition-all">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Sắp diễn ra
+                        </span>
+                        <span className="text-xs text-slate-500 font-medium">1:1 Session</span>
+                        <span className="text-xs text-slate-300">•</span>
+                        <span className="text-xs text-slate-600 font-medium">IELTS Speaking</span>
+                      </div>
+                      <h3 className="font-bold text-slate-900 text-base">Luyện Speaking IELTS 6.5+ (Mock Test &amp; Phản hồi chi tiết)</h3>
+                      <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-600">
+                        <span className="flex items-center gap-1 text-slate-900 font-medium">
+                          <span className="material-symbols-outlined text-[16px] text-emerald-600">calendar_today</span> 19:30 – 20:30 ngày mai (Thứ Năm, 24/10)
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[16px] text-slate-500">person</span> Học viên: Nguyễn Bảo Long (NEU)
+                        </span>
+                        <span className="flex items-center gap-1 text-slate-900 font-semibold">
+                          <span className="material-symbols-outlined text-[16px] text-emerald-600">payments</span> 90 Credit (Đã tạm giữ an toàn)
+                        </span>
+                      </div>
                     </div>
-                    <h3 className="font-bold text-slate-900 text-base">Luyện Speaking IELTS 6.5+ (Mock Test &amp; Phản hồi chi tiết)</h3>
-                    <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-600">
-                      <span className="flex items-center gap-1 text-slate-900 font-medium">
-                        <span className="material-symbols-outlined text-[16px] text-emerald-600">calendar_today</span> 19:30 – 20:30 ngày mai (Thứ Năm, 24/10)
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[16px] text-slate-500">person</span> Học viên: Nguyễn Bảo Long (NEU)
-                      </span>
-                      <span className="flex items-center gap-1 text-slate-900 font-semibold">
-                        <span className="material-symbols-outlined text-[16px] text-emerald-600">payments</span> 90 Credit (Đã tạm giữ an toàn)
-                      </span>
+                    <div className="flex items-center gap-2.5 shrink-0 pt-2 lg:pt-0">
+                      <button onClick={() => openClassChat('CLS-8821')} type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 transition-all flex items-center gap-1.5" disabled={isProcessing}>
+                        <span className="material-symbols-outlined text-[16px] text-slate-500">chat</span> Chat với học viên
+                      </button>
+                      <button onClick={() => handleJoinRoom('00000000-0000-0000-0000-000000000001')} type="button" className="px-4 py-2 rounded-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all flex items-center gap-1.5" disabled={isProcessing}>
+                        <span className="material-symbols-outlined text-[16px]">video_call</span> Vào phòng Jitsi
+                      </button>
+                      <button onClick={() => handleCompleteClass('00000000-0000-0000-0000-000000000002')} type="button" className="px-4 py-2 rounded-full text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all flex items-center gap-1.5" disabled={isProcessing}>
+                        <span className="material-symbols-outlined text-[16px]">check_circle</span> Hoàn thành
+                      </button>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2.5 shrink-0 pt-2 lg:pt-0">
-                    <button onClick={() => openClassChat('CLS-8821')} type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 transition-all flex items-center gap-1.5" disabled={isProcessing}>
-                      <span className="material-symbols-outlined text-[16px] text-slate-500">chat</span> Chat với học viên
-                    </button>
-                    <button onClick={() => handleJoinRoom('00000000-0000-0000-0000-000000000001')} type="button" className="px-4 py-2 rounded-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all flex items-center gap-1.5" disabled={isProcessing}>
-                      <span className="material-symbols-outlined text-[16px]">video_call</span> Vào phòng Jitsi
-                    </button>
-                    <button onClick={() => handleCompleteClass('00000000-0000-0000-0000-000000000002')} type="button" className="px-4 py-2 rounded-full text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all flex items-center gap-1.5" disabled={isProcessing}>
-                      <span className="material-symbols-outlined text-[16px]">check_circle</span> Hoàn thành
-                    </button>
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Item 2 */}
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm transition-all">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
-                        Đang mở đăng ký
-                      </span>
-                      <span className="text-xs text-slate-500 font-medium">Lớp nhóm (Max 5)</span>
-                      <span className="text-xs text-slate-300">•</span>
-                      <span className="text-xs text-slate-600 font-medium">Chiến lược IELTS</span>
+              {/* Item 2: Đang mở */}
+              {(classFilter === 'all' || classFilter === 'open') && (
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm transition-all">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
+                          Đang mở đăng ký
+                        </span>
+                        <span className="text-xs text-slate-500 font-medium">Lớp nhóm (Max 5)</span>
+                        <span className="text-xs text-slate-300">•</span>
+                        <span className="text-xs text-slate-600 font-medium">Chiến lược IELTS</span>
+                      </div>
+                      <h3 className="font-bold text-slate-900 text-base">Chiến lược làm bài Reading &amp; Listening 7.0+</h3>
+                      <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-600">
+                        <span className="flex items-center gap-1 text-slate-900 font-medium">
+                          <span className="material-symbols-outlined text-[16px] text-slate-600">calendar_today</span> 20:00 Thứ Sáu (25/10) • 90 phút
+                        </span>
+                        <span className="flex items-center gap-1 font-medium text-emerald-700">
+                          <span className="material-symbols-outlined text-[16px]">group</span> 4/5 học viên đã đăng ký (Còn 1 chỗ)
+                        </span>
+                        <span className="flex items-center gap-1 text-slate-900 font-semibold">
+                          <span className="material-symbols-outlined text-[16px] text-emerald-600">payments</span> 45 Credit / học viên
+                        </span>
+                      </div>
                     </div>
-                    <h3 className="font-bold text-slate-900 text-base">Chiến lược làm bài Reading &amp; Listening 7.0+</h3>
-                    <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-600">
-                      <span className="flex items-center gap-1 text-slate-900 font-medium">
-                        <span className="material-symbols-outlined text-[16px] text-slate-600">calendar_today</span> 20:00 Thứ Sáu (25/10) • 90 phút
-                      </span>
-                      <span className="flex items-center gap-1 font-medium text-emerald-700">
-                        <span className="material-symbols-outlined text-[16px]">group</span> 4/5 học viên đã đăng ký (Còn 1 chỗ)
-                      </span>
-                      <span className="flex items-center gap-1 text-slate-900 font-semibold">
-                        <span className="material-symbols-outlined text-[16px] text-emerald-600">payments</span> 45 Credit / học viên
-                      </span>
+                    <div className="flex items-center gap-2.5 shrink-0 pt-2 lg:pt-0">
+                      <button onClick={() => copyShareLink('CLS-9014')} type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 transition-all flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[16px] text-slate-500">share</span> Chia sẻ
+                      </button>
+                      <button onClick={() => showClassDetails('CLS-9014')} type="button" className="px-4 py-2 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all flex items-center gap-1.5">
+                        Quản lý lớp
+                      </button>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2.5 shrink-0 pt-2 lg:pt-0">
-                    <button onClick={() => copyShareLink('CLS-9014')} type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 transition-all flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-[16px] text-slate-500">share</span> Chia sẻ
-                    </button>
-                    <button onClick={() => showClassDetails('CLS-9014')} type="button" className="px-4 py-2 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all flex items-center gap-1.5">
-                      Quản lý lớp
-                    </button>
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Item 3 */}
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm opacity-90 hover:opacity-100 transition-all">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
-                        Đã hoàn thành
-                      </span>
-                      <span className="text-xs text-slate-500 font-medium">Phát âm &amp; Ngữ điệu</span>
+              {/* Item 3: Đã xong */}
+              {(classFilter === 'all' || classFilter === 'completed') && (
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm opacity-90 hover:opacity-100 transition-all">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
+                          Đã hoàn thành
+                        </span>
+                        <span className="text-xs text-slate-500 font-medium">Phát âm &amp; Ngữ điệu</span>
+                      </div>
+                      <h3 className="font-bold text-slate-900 text-base">Pronunciation Workshop: Intonation in British Accent</h3>
+                      <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-600">
+                        <span className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[16px] text-slate-400">check_circle</span> Hoàn tất tối qua (19:30 – 20:30)
+                        </span>
+                        <span className="flex items-center gap-1 text-emerald-700 font-semibold">
+                          <span className="material-symbols-outlined text-[16px]">payments</span> +81 Credit đã nhận vào ví
+                        </span>
+                        <span className="flex items-center gap-1 text-amber-600 font-medium">
+                          <span className="material-symbols-outlined text-[15px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span> 5.0 (Học viên đánh giá 5 sao)
+                        </span>
+                      </div>
                     </div>
-                    <h3 className="font-bold text-slate-900 text-base">Pronunciation Workshop: Intonation in British Accent</h3>
-                    <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-600">
-                      <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[16px] text-slate-400">check_circle</span> Hoàn tất tối qua (19:30 – 20:30)
-                      </span>
-                      <span className="flex items-center gap-1 text-emerald-700 font-semibold">
-                        <span className="material-symbols-outlined text-[16px]">payments</span> +81 Credit đã nhận vào ví
-                      </span>
-                      <span className="flex items-center gap-1 text-amber-600 font-medium">
-                        <span className="material-symbols-outlined text-[15px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span> 5.0 (Học viên đánh giá 5 sao)
-                      </span>
+                    <div className="flex items-center gap-2.5 shrink-0 pt-2 lg:pt-0">
+                      <button onClick={() => showClassReview('CLS-8742')} type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 transition-all">
+                        Xem đánh giá
+                      </button>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2.5 shrink-0 pt-2 lg:pt-0">
-                    <button onClick={() => showClassReview('CLS-8742')} type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 transition-all">
-                      Xem đánh giá
-                    </button>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
