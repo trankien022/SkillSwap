@@ -4,6 +4,16 @@ import { useState, useEffect } from 'react';
 import { callApi } from '../../../lib/api-client';
 import type { ProfileSkillView, WalletBalanceView, MeResponse } from '@skillswap/contracts';
 
+export interface CreatedClassItem {
+  id: string;
+  title: string;
+  skillName: string;
+  startsAt: string;
+  durationMinutes: number;
+  priceCredits: number;
+  capacity: number;
+}
+
 export default function InstructorDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -14,8 +24,16 @@ export default function InstructorDashboard() {
   const [skills, setSkills] = useState<ProfileSkillView[]>([]);
   const [balance, setBalance] = useState<WalletBalanceView | null>(null);
   const [me, setMe] = useState<MeResponse | null>(null);
+  const [newClasses, setNewClasses] = useState<CreatedClassItem[]>([]);
 
   useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('skillswap_created_classes') || '[]');
+      if (Array.isArray(stored)) setNewClasses(stored);
+    } catch (e) {
+      console.warn('Failed to load created classes from localStorage', e);
+    }
+
     const loadData = async () => {
       try {
         const [skillsRes, balRes, meRes] = await Promise.all([
@@ -142,6 +160,27 @@ export default function InstructorDashboard() {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message || 'Không thể tạo lớp học');
       }
+
+      const created = await res.json();
+      const newClassItem: CreatedClassItem = {
+        id: created.id,
+        title: classTitle,
+        skillName: skillSelect,
+        startsAt,
+        durationMinutes: duration,
+        priceCredits: price,
+        capacity,
+      };
+
+      setNewClasses(prev => {
+        const next = [newClassItem, ...prev];
+        try {
+          localStorage.setItem('skillswap_created_classes', JSON.stringify(next));
+        } catch (e) {
+          console.warn('Failed to save created class to localStorage', e);
+        }
+        return next;
+      });
 
       setIsModalOpen(false);
       showToast(`Đã xuất bản lớp học "${classTitle}" thành công lên hệ thống!`);
@@ -433,6 +472,44 @@ export default function InstructorDashboard() {
             </div>
             
             <div className="space-y-4">
+              {/* Dynamic Newly Created Classes */}
+              {newClasses.map((item) => (
+                <div key={item.id} className="bg-white p-5 rounded-2xl border-2 border-emerald-400 shadow-sm transition-all hover:border-emerald-500">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Đang mở đăng ký
+                        </span>
+                        <span className="text-xs text-slate-500 font-medium">Lớp mới tạo</span>
+                        <span className="text-xs text-slate-300">•</span>
+                        <span className="text-xs text-slate-600 font-medium">{item.skillName}</span>
+                      </div>
+                      <h3 className="font-bold text-slate-900 text-base">{item.title}</h3>
+                      <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-600">
+                        <span className="flex items-center gap-1 text-slate-900 font-medium">
+                          <span className="material-symbols-outlined text-[16px] text-emerald-600">calendar_today</span> {new Date(item.startsAt).toLocaleDateString('vi-VN')} {new Date(item.startsAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} • {item.durationMinutes} phút
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[16px] text-slate-500">group</span> Sức chứa: {item.capacity} học viên
+                        </span>
+                        <span className="flex items-center gap-1 text-slate-900 font-semibold">
+                          <span className="material-symbols-outlined text-[16px] text-emerald-600">payments</span> {item.priceCredits} Credit / học viên
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2.5 shrink-0 pt-2 lg:pt-0">
+                      <button onClick={() => copyShareLink(item.id.slice(0, 8))} type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 transition-all flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[16px] text-slate-500">share</span> Chia sẻ
+                      </button>
+                      <button onClick={() => handleCompleteClass(item.id)} type="button" className="px-4 py-2 rounded-full text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all flex items-center gap-1.5" disabled={isProcessing}>
+                        <span className="material-symbols-outlined text-[16px]">check_circle</span> Hoàn thành
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
               {/* Item 1 */}
               <div className="bg-white p-5 rounded-2xl border border-emerald-200 shadow-sm hover:border-emerald-300 transition-all">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
