@@ -1,16 +1,6 @@
 import { Body, Controller, HttpCode, HttpStatus, Inject, Param, Patch, Post, Req } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import {
-  bookingRequestSchema,
-  createClassSchema,
-  roomAccessRequestSchema,
-  updateClassSchema,
-  type BookingRequestInput,
-  type CreateClassInput,
-  type RoomAccessRequestInput,
-  type RoomAccessResponse,
-  type UpdateClassInput,
-} from '@skillswap/contracts';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import type { RoomAccessResponse } from '@skillswap/contracts';
 import {
   CREATE_CLASS,
   type ClassResource,
@@ -55,10 +45,18 @@ import {
   type CompleteClassResult,
 } from '../../../application/port/in/complete-class';
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
-import { ZodValidationPipe } from '../../../../../../shared/http/zod-validation.pipe';
+import {
+  BookingRequestDto,
+  ClassDto,
+  CreateClassDto,
+  RoomAccessRequestDto,
+  RoomAccessResponseDto,
+  UpdateClassDto,
+} from './dto/classes.dto';
 
 @Controller('classes')
 @ApiTags('classes')
+@ApiBearerAuth('bearer')
 export class ClassesController {
   constructor(
     @Inject(CREATE_CLASS) private readonly createClass: CreateClassPort,
@@ -74,9 +72,9 @@ export class ClassesController {
 
   @Post()
   @ApiOperation({ summary: 'Create and publish a class (FR-005 / API-004)' })
-  @ApiOkResponse({ description: 'The published class' })
+  @ApiOkResponse({ type: ClassDto, description: 'The published class' })
   create(
-    @Body(new ZodValidationPipe(createClassSchema)) body: CreateClassInput,
+    @Body() body: CreateClassDto,
     @Req() request: RequestWithIdentity,
   ): Promise<ClassResource> {
     return this.createClass.execute({
@@ -91,11 +89,12 @@ export class ClassesController {
   }
 
   @Post(':id/bookings')
+  @ApiParam({ name: 'id', description: 'The class id' })
   @ApiOperation({ summary: 'Book a class (FR-007 / API-005)' })
   @ApiOkResponse({ description: 'The pending booking that holds a seat' })
   book(
     @Param('id') classId: string,
-    @Body(new ZodValidationPipe(bookingRequestSchema)) body: BookingRequestInput,
+    @Body() body: BookingRequestDto,
     @Req() request: RequestWithIdentity,
   ): Promise<BookClassResult> {
     return this.bookClass.execute({
@@ -107,6 +106,7 @@ export class ClassesController {
 
   @Post('bookings/:bookingId/confirm')
   @HttpCode(HttpStatus.OK)
+  @ApiParam({ name: 'bookingId', description: 'The booking id' })
   @ApiOperation({ summary: 'Confirm a pending booking and settle payment (FR-009 / API-006)' })
   @ApiOkResponse({ description: 'Whether the booking was confirmed' })
   confirm(
@@ -117,11 +117,12 @@ export class ClassesController {
   }
 
   @Patch(':id')
+  @ApiParam({ name: 'id', description: 'The class id' })
   @ApiOperation({ summary: 'Edit a class before its first confirmed booking (FR-007 / AC-017)' })
-  @ApiOkResponse({ description: 'The updated class' })
+  @ApiOkResponse({ type: ClassDto, description: 'The updated class' })
   update(
     @Param('id') classId: string,
-    @Body(new ZodValidationPipe(updateClassSchema)) body: UpdateClassInput,
+    @Body() body: UpdateClassDto,
     @Req() request: RequestWithIdentity,
   ): Promise<ClassResource> {
     return this.updateClass.execute({ classId, teacherId: currentUserId(request), ...body });
@@ -129,6 +130,7 @@ export class ClassesController {
 
   @Post(':id/cancel')
   @HttpCode(HttpStatus.OK)
+  @ApiParam({ name: 'id', description: 'The class id' })
   @ApiOperation({ summary: 'Cancel a class and refund affected learners (FR-007 / AC-022)' })
   @ApiOkResponse({ description: 'Cancellation summary' })
   cancel(
@@ -140,6 +142,7 @@ export class ClassesController {
 
   @Post('bookings/:bookingId/no-show')
   @HttpCode(HttpStatus.OK)
+  @ApiParam({ name: 'bookingId', description: 'The booking id' })
   @ApiOperation({ summary: 'Mark a teacher no-show for a booking (FR-007 / AC-024)' })
   @ApiOkResponse({ description: 'Whether the booking was cancelled for no-show' })
   noShow(@Param('bookingId') bookingId: string): Promise<MarkTeacherNoShowResult> {
@@ -149,11 +152,12 @@ export class ClassesController {
 
   @Post('bookings/:bookingId/room-access')
   @HttpCode(HttpStatus.OK)
+  @ApiParam({ name: 'bookingId', description: 'The booking id' })
   @ApiOperation({ summary: 'Request room access for a booking (FR-011 / API-008)' })
-  @ApiOkResponse({ description: 'Room name, short-lived token and join URL' })
+  @ApiOkResponse({ type: RoomAccessResponseDto, description: 'Room name, short-lived token and join URL' })
   roomAccessForBooking(
     @Param('bookingId') bookingId: string,
-    @Body(new ZodValidationPipe(roomAccessRequestSchema)) body: RoomAccessRequestInput,
+    @Body() body: RoomAccessRequestDto,
     @Req() request: RequestWithIdentity,
   ): Promise<RoomAccessResponse> {
     return this.roomAccess.execute({
@@ -165,6 +169,7 @@ export class ClassesController {
 
   @Post(':id/start')
   @HttpCode(HttpStatus.OK)
+  @ApiParam({ name: 'id', description: 'The class id' })
   @ApiOperation({ summary: 'Start a class the teacher is holding (FR-020 / ADR-021)' })
   @ApiOkResponse({ description: 'Whether the class moved to in-progress' })
   start(@Param('id') classId: string, @Req() request: RequestWithIdentity): Promise<StartClassResult> {
@@ -173,6 +178,7 @@ export class ClassesController {
 
   @Post(':id/complete')
   @HttpCode(HttpStatus.OK)
+  @ApiParam({ name: 'id', description: 'The class id' })
   @ApiOperation({ summary: 'End a class the teacher held (FR-020 / ADR-021)' })
   @ApiOkResponse({ description: 'Whether the class completed and on what basis' })
   complete(
