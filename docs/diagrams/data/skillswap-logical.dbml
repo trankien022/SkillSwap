@@ -20,7 +20,7 @@ Table accounts {
   status varchar(24) [not null, default: 'active', note: 'active | suspended']
   created_at timestamptz [not null]
   updated_at timestamptz [not null]
-  Note: 'A single role per account (no role-grant table). Self-registration creates only learner/teacher; a verified learner may submit skill evidence and teach. Suspending an account is independent from a Verifier lifecycle status.'
+  Note: 'A single role per account (no role-grant table). Self-registration creates only learner/teacher; verifier/admin are operator-provisioned. Per BR-063 one account can both learn and teach — teaching is not a separate role but is gated on verified-student status and an approved skill. Suspending an account is independent from a Verifier lifecycle status.'
 }
 
 Table verifier_expertise {
@@ -60,7 +60,7 @@ Table school_majors {
 
 Table profiles {
   id uuid [pk]
-  user_id uuid [not null, unique, ref: - accounts.id]
+  account_id uuid [not null, unique, ref: - accounts.id]
   display_name varchar(160) [not null]
   bio text
   avatar_ref text

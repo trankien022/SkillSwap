@@ -192,7 +192,7 @@ Toàn văn 70 quy tắc nghiệp vụ (BR-001–BR-070) được quản lý tậ
 
 ### 6.1 Xác thực và tài khoản
 
-Đăng ký bằng email và mật khẩu hoặc OAuth. Một tài khoản có thể mang cả hai vai trò Learner và Teacher, với chế độ xem rõ ràng để chuyển đổi giữa hai vai trò. Khôi phục mật khẩu qua email theo luồng chuẩn.
+Đăng ký bằng email và mật khẩu hoặc OAuth. Một tài khoản có **một vai trò** nhưng theo BR-063 có thể **vừa học vừa dạy**: dạy không phải vai trò riêng mà phụ thuộc vào trạng thái đã xác minh sinh viên và skill được duyệt. (MVP chưa có nút "chuyển chế độ xem" Learner/Teacher.) Khôi phục mật khẩu qua email theo luồng chuẩn.
 
 ### 6.2 Xác minh sinh viên
 

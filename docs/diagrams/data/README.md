@@ -27,7 +27,7 @@ Nguồn: [skillswap-conceptual.dbml](skillswap-conceptual.dbml) · [SVG](skillsw
 
 ![Sơ đồ dữ liệu conceptual của SkillSwap](skillswap-conceptual.png)
 
-Một `Account` có **đúng một vai trò** (`learner | teacher | verifier | admin`) và một `Profile`; không có bảng role-grant. Đăng ký công khai chỉ tạo learner/teacher; tài khoản verifier/admin do vận hành cấp (ADR-029). Một learner đã xác minh có thể nộp bằng chứng kỹ năng và dạy (không có cơ chế "chuyển vai trò"). `Profile` liên kết trường, ngành, các yêu cầu xác minh sinh viên và nhiều kỹ năng qua `ProfileSkill`. Mỗi kỹ năng có nhiều phiên bản `SkillEvidence`; level được phép dạy đến từ evidence Approved còn hiệu lực. Trong MVP, một `Class` là một buổi học trực tuyến có một Teacher, một lịch và nhiều kỹ năng qua `ClassSkill`; không có bảng Session riêng.
+Một `Account` có **đúng một vai trò** (`learner | teacher | verifier | admin`) và một `Profile`; không có bảng role-grant. Đăng ký công khai chỉ tạo learner/teacher; tài khoản verifier/admin do vận hành cấp (ADR-029). Theo **BR-063**, một tài khoản có thể **vừa học vừa dạy**: dạy **không** phải một vai trò riêng — tài khoản nào đã xác minh sinh viên và có skill được duyệt thì được nộp bằng chứng và mở lớp (nút "chuyển vai trò" của PRD §6.1 là tiện ích UI, chưa làm trong MVP). `Profile` liên kết trường, ngành, các yêu cầu xác minh sinh viên và nhiều kỹ năng qua `ProfileSkill`. Mỗi kỹ năng có nhiều phiên bản `SkillEvidence`; level được phép dạy đến từ evidence Approved còn hiệu lực. Trong MVP, một `Class` là một buổi học trực tuyến có một Teacher, một lịch và nhiều kỹ năng qua `ClassSkill`; không có bảng Session riêng.
 
 ## Logical model
 

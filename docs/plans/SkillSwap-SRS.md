@@ -106,7 +106,7 @@ The software stack is fixed for the MVP: **Next.js (React)** web frontend, **Exp
 | Verifier (persona: Thầy Hùng, guest lecturer) | Expert in one domain; time-constrained | Reviews queue by domain; approve/reject with structured reasons. |
 | Administrator (persona: Chị Trang, operations) | Power user | Runs verification queues, manages Verifiers, resolves exceptions. |
 
-All roles share one account model with a **single `role`** per account (`learner`, `teacher`, `verifier`, `admin`). There is no separate role-grant table: self-registration creates only `learner`/`teacher`, while `verifier`/`admin` accounts are operator-provisioned (ADR-029). A verified learner may submit skill evidence and teach — the account does **not** switch between separate Learner/Teacher role views (the PRD §6.1 role-view switch is **not** implemented in the MVP; see OQ note in §3.7).
+All roles share one account model with a **single `role`** per account (`learner`, `teacher`, `verifier`, `admin`). There is no separate role-grant table: self-registration creates only `learner`/`teacher`, while `verifier`/`admin` accounts are operator-provisioned (ADR-029). Consistent with **BR-063**, one account may both learn and teach: teaching is **not** a separate role to hold — an account (of any role) that is a verified student and holds an approved skill may create/publish classes and submit evidence, so a single account satisfies "vừa học vừa dạy". The PRD §6.1 "switch between Learner and Teacher role views" is a UI convenience that is **not** implemented in the MVP (see §3.7).
 
 ### 2.4 Constraints
 
@@ -485,7 +485,7 @@ stateDiagram-v2
 
 Implementation of the clauses listed in Appendix A is blocked until the corresponding Open Question is approved (decision policy: **block until resolved**). Affected increments (increment definitions per PRD §14): Increment 2 (OQ-008), Increment 3 (OQ-002; OQ-001 resolved — ADR-026, ADR-027; OQ-007 resolved), Increment 4 (OQ-002, OQ-005, OQ-006, OQ-011, OQ-012; OQ-003 resolved), Increment 5 (OQ-004, OQ-009), Increment 6 (no additional OQ; inherits Increment 5 gates), storage/lifecycle design (OQ-008), pilot planning (OQ-010).
 
-**Known divergence (not implemented):** the PRD §6.1 "switch between Learner and Teacher role views" is **not** implemented — the account model uses a single `role` (ADR-029), and a verified learner simply gains teaching capability. This is a documentation/scope reconciliation, not an open question; a future increment may add explicit role views.
+**Note (BR-063 vs. UI):** BR-063 is satisfied — one account can both learn and teach, because teaching is gated on *verification + approved skill*, not on a separate role. The PRD §6.1 "switch between Learner and Teacher role views" is a UI convenience that is **not** implemented in the MVP; the underlying capability (study + teach from one account) **is** available. A future increment may add explicit role views.
 
 ---
 

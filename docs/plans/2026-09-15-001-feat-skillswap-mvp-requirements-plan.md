@@ -252,9 +252,8 @@ Bảng ngắn gọn theo SRS (namespace `SR-BR-*`). Quy tắc nghiệp vụ chu�
 
 | Entity | Key fields | Relationships | Lifecycle | Classification | Owner |
 |---|---|---|---|---|---|
-| User | id, email, roles, status | Has exactly one Profile, at most one user Wallet and role grants | Pending → Active → Suspended | PII | User/Administrator |
-| UserRole | user_id, role, status, assigned_by, assigned_at | One grant per User/role; role suspension is independent of account suspension | Active → Suspended/Revoked; reactivation audited | Internal authorization | Administrator |
-| Profile | id, user_id, display_name, bio, school_id, major_id | Belongs to User; has ProfileSkills and StudentVerifications | Created with User; school/major change requires re-verification | PII | User/Administrator |
+| Account | id, email, display_name, role, status, created_at | Exactly one role per account (`learner \| teacher \| verifier \| admin`); per BR-063 one account may both learn and teach (teaching gated on verification + approved skill, not a role). No role-grant table. | Active → Suspended | PII | User/Administrator |
+| Profile | id, account_id, display_name, bio, school_id, major_id | Belongs to Account; has ProfileSkills and StudentVerifications | Created with the account; school/major change requires re-verification | PII | User/Administrator |
 | School / Major / SchoolMajor | id/code/name; school_id + major_id | Managed school and major catalogs; SchoolMajor lists valid pairs | Active → Inactive | Reference data | Administrator |
 | Skill / ProfileSkill | id, name, category; profile_id, skill_id, level | Skill is a `category → skill` catalogue entry (ADR-026); Profile ↔ Skill is many-to-many; level caches effective approval (NULL until approved) | Skill Active/Inactive; valid SkillEvidence.approved_level governs teaching; pending upgrades preserve old approval | Public competency + internal authorization | User/Verifier/Administrator |
 | Verifier | account_id, expertise (skill ids), status | An account with a `verifier` role and a seeded expertise set (ADR-027); expertise scopes the queue and the decision authority | Active → Suspended/Revoked; expertise set seeded operationally, not admin-assigned | Internal authorization | Administrator (suspend/revoke) |
