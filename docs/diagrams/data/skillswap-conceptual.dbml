@@ -4,17 +4,11 @@ Project SkillSwap_Conceptual {
   Note: 'Business view of the MVP; attributes, keys, and storage choices are in the logical model.'
 }
 
-Table User {
+Table Account {
   id uuid [pk]
-  Note: 'One student account may act as Learner and Teacher. Verifier and Administrator are assigned roles.'
-}
-
-Table UserRole {
-  user_id uuid [not null]
-  role varchar [not null, note: 'Learner | Teacher | Verifier | Administrator']
-  status varchar [not null, note: 'active | suspended | revoked']
-  indexes { (user_id, role) [pk] }
-  Note: 'Role grants are retained and audited; a Verifier role and matching expertise must both be active to review skills. Verifier accounts and their expertise are provisioned operationally (seeded), not via an admin API (ADR-027).'
+  role varchar [not null, note: 'learner | teacher | verifier | admin — exactly one role per account (ADR-029)']
+  status varchar [not null, note: 'active | suspended']
+  Note: 'A single role per account. Self-registration creates only learner/teacher; verifier/admin accounts are operator-provisioned. A verified learner may submit skill evidence and teach (no separate role-view switch).'
 }
 
 Table Verifier {
