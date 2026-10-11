@@ -131,5 +131,110 @@
       "vi": "Vietnamese",
       "en": "English"
     }
+  },
+  "Marketplace": {
+    "nav": {
+      "explore": "Explore classes",
+      "booked": "My bookings",
+      "teaching": "Manage teaching",
+      "wallet": "Wallet"
+    },
+    "search": {
+      "keywordLabel": "Skill, subject or certificate",
+      "keywordPlaceholder": "IELTS, data structures, Figma...",
+      "universityLabel": "Teacher's school",
+      "universityAll": "All universities",
+      "universities": {
+        "bk": "Tech university (HCMUT/HUST)",
+        "ftu": "Foreign trade university (FTU)",
+        "ueh": "Economics university (UEH/NEU)",
+        "uit": "IT university (UIT)",
+        "kien-truc": "Architecture university",
+        "ussh": "Social sciences & humanities (VNU-USSH)"
+      },
+      "filterButton": "More filters",
+      "filterTitle": "Price & time",
+      "submitButton": "Search"
+    },
+    "categories": {
+      "all": "All",
+      "language": "IELTS & languages",
+      "programming": "Programming & IT",
+      "design": "UI/UX design",
+      "softSkills": "Soft skills",
+      "math": "Math & statistics"
+    },
+    "resultsBar": {
+      "title": "Explore classes",
+      "count": "{count} open classes",
+      "sortBy": "Sort by:",
+      "sort": {
+        "nearest": "Soonest first",
+        "rating": "Highest rated",
+        "priceLow": "Credits: low to high",
+        "popular": "Most learners enrolled"
+      }
+    },
+    "filters": {
+      "title": "Advanced filters",
+      "reset": "Reset",
+      "format": {
+        "title": "Class format",
+        "oneOnOne": "1-1 mentoring",
+        "group": "Small group (2 - 4 learners)"
+      },
+      "time": {
+        "title": "Start time",
+        "hint": "Bookings close 24 hours before class so teachers can prepare.",
+        "allValid": "All valid classes (over 24 hours)",
+        "next2448": "Starting in 24 - 48 hours",
+        "weekend": "This weekend (Sat - Sun)"
+      },
+      "price": {
+        "label": "SkillSwap credits",
+        "range": "{min} - {max} credits"
+      },
+      "rating": {
+        "title": "Minimum rating",
+        "48plus": "4.8+ stars",
+        "45plus": "4.5+ stars"
+      },
+      "verified": {
+        "title": "Verification badge",
+        "studentVerified": "Verified student ID"
+      }
+    },
+    "card": {
+      "format": {
+        "oneOnOne": "1-1 mentoring",
+        "group": "Group class 2-4"
+      },
+      "duration": "{minutes} min",
+      "rating": "{avg} ({count})",
+      "startsAt": "{when} • {time}",
+      "deadline": "Booking closes in {hours}h",
+      "seats": {
+        "format": "{taken}/{capacity} seats left"
+      },
+      "price": {
+        "credits": "{credits} cr",
+        "vnd": "~{vnd} VND"
+      },
+      "pricePerLearner": "~{vnd} VND / learner",
+      "viewClass": "View class",
+      "mockDataBadge": "Demo data"
+    },
+    "pagination": {
+      "showing": "Showing {from} - {to} of {total} open classes",
+      "prev": "Previous",
+      "next": "Next"
+    },
+    "banner": {
+      "title": "Payment protection",
+      "body": "Your credits are held safely in the ledger and only released to the teacher after a class is recorded as completed. If the teacher is absent or cancels before start, all credits are returned to your wallet automatically.",
+      "policyLink": "View policy",
+      "support": "Student support 24/7",
+      "badge": "MVP commitment"
+    }
   }
 }

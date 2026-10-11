@@ -131,5 +131,110 @@
       "vi": "Tiếng Việt",
       "en": "English"
     }
+  },
+  "Marketplace": {
+    "nav": {
+      "explore": "Khám phá lớp",
+      "booked": "Lớp đã đặt",
+      "teaching": "Quản lý lớp dạy",
+      "wallet": "Ví"
+    },
+    "search": {
+      "keywordLabel": "Kỹ năng, môn học hoặc chứng chỉ",
+      "keywordPlaceholder": "IELTS, Cấu trúc dữ liệu, Figma...",
+      "universityLabel": "Trường giảng viên",
+      "universityAll": "Tất cả các trường",
+      "universities": {
+        "bk": "ĐH Bách Khoa (HCMUT/HUST)",
+        "ftu": "ĐH Ngoại Thương (FTU)",
+        "ueh": "ĐH Kinh Tế (UEH/NEU)",
+        "uit": "ĐH CNTT (UIT)",
+        "kien-truc": "ĐH Kiến Trúc",
+        "ussh": "ĐH KHXH&NV (VNU-USSH)"
+      },
+      "filterButton": "Bộ lọc phụ",
+      "filterTitle": "Mức giá & Giờ",
+      "submitButton": "Tìm kiếm"
+    },
+    "categories": {
+      "all": "Tất cả",
+      "language": "IELTS & Ngoại ngữ",
+      "programming": "Lập trình & IT",
+      "design": "Thiết kế UI/UX",
+      "softSkills": "Kỹ năng mềm",
+      "math": "Toán & Xác suất"
+    },
+    "resultsBar": {
+      "title": "Khám phá lớp học",
+      "count": "{count} lớp đang mở",
+      "sortBy": "Sắp xếp theo:",
+      "sort": {
+        "nearest": "Thời gian diễn ra sớm nhất",
+        "rating": "Đánh giá cao nhất",
+        "priceLow": "Credits: Thấp đến cao",
+        "popular": "Lớp đông học viên nhất"
+      }
+    },
+    "filters": {
+      "title": "Bộ lọc chuyên sâu",
+      "reset": "Đặt lại",
+      "format": {
+        "title": "Hình thức lớp học",
+        "oneOnOne": "1-1 Mentoring chuyên sâu",
+        "group": "Lớp nhóm nhỏ (2 - 4 sinh viên)"
+      },
+      "time": {
+        "title": "Thời gian bắt đầu",
+        "hint": "Bắt buộc đặt trước tối thiểu 24 giờ để giảng viên chuẩn bị giáo trình.",
+        "allValid": "Tất cả lớp hợp lệ (trên 24 giờ)",
+        "next2448": "Sắp diễn ra trong 24 - 48 giờ",
+        "weekend": "Cuối tuần này (Thứ 7 - CN)"
+      },
+      "price": {
+        "label": "Mức phí SkillSwap",
+        "range": "{min} - {max} Credits"
+      },
+      "rating": {
+        "title": "Đánh giá tối thiểu",
+        "48plus": "4.8+ sao",
+        "45plus": "4.5+ sao"
+      },
+      "verified": {
+        "title": "Huy hiệu xác thực",
+        "studentVerified": "Đã duyệt thẻ sinh viên chính quy"
+      }
+    },
+    "card": {
+      "format": {
+        "oneOnOne": "1-1 Mentoring",
+        "group": "Lớp nhóm 2-4 SV"
+      },
+      "duration": "{minutes} phút",
+      "rating": "{avg} ({count})",
+      "startsAt": "{when} • {time}",
+      "deadline": "Hạn đặt: còn {hours}h",
+      "seats": {
+        "format": "Còn {taken}/{capacity} chỗ"
+      },
+      "price": {
+        "credits": "{credits} Cr",
+        "vnd": "~{vnd}đ"
+      },
+      "pricePerLearner": "~{vnd}đ / SV",
+      "viewClass": "Xem lớp",
+      "mockDataBadge": "Dữ liệu minh họa"
+    },
+    "pagination": {
+      "showing": "Hiển thị {from} - {to} trong tổng số {total} lớp học đang tuyển sinh",
+      "prev": "Trang trước",
+      "next": "Trang sau"
+    },
+    "banner": {
+      "title": "Bảo vệ quỹ thanh toán",
+      "body": "Credits của bạn được phong tỏa an toàn trong sổ cái và chỉ chuyển cho giảng viên sau khi buổi học hoàn tất. Nếu giảng viên vắng mặt hoặc huỷ trước giờ học, toàn bộ credits được tự động hoàn về ví.",
+      "policyLink": "Xem chính sách",
+      "support": "Hỗ trợ SV 24/7",
+      "badge": "Cam kết MVP"
+    }
   }
 }

@@ -63,6 +63,10 @@ describe('i18n messages', () => {
       { pattern: /hoàn tiền 100%|100% refund/i, reason: 'OQ-003 — refunds are wallet credits only' },
       { pattern: /12\.000|24\.000|36\.000|12,000|24,000|36,000/, reason: 'OQ-010 — pilot metrics not approved' },
       { pattern: /23:?59|đối soát vào|cuối ngày/i, reason: 'no scheduled reconciliation cadence defined' },
+      { pattern: /top 5%|top\s*5%|top5/i, reason: 'no "Top 5%" tier exists in the SRS' },
+      { pattern: /lh3\.googleusercontent\.com|aida-public|googleusercontent/i, reason: 'NFR-004 — do not load third-party CDN images' },
+      { pattern: /100%\s*refund|hoàn tiền 100%|hoàn trả 100%/i, reason: 'OQ-003 — refunds are wallet credits only, not 100% real-money refund' },
+      { pattern: /bảo chứng tri thức|tri thức.*100%/i, reason: 'avoid invented marketing claim; banner copy must match SRS intent' },
     ];
 
     for (const locale of [
