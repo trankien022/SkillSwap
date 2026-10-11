@@ -80,6 +80,23 @@ describe('ClassDetailCoordinator', () => {
     expect(key3).toBe(key1);
   });
 
+  it('rotates the reserve key after a hold expires and the server reports its cancellation', async () => {
+    const coordinator = new ClassDetailCoordinator({
+      gateway: mockGateway,
+      accountId: 'account-1',
+      classId: 'class-1',
+    });
+    const previousKey = coordinator.getStableIdempotencyKey();
+    mockGateway.getClassDetail.mockResolvedValueOnce({
+      ...sampleClassDetail,
+      ownBooking: { bookingId: 'old-booking', state: 'cancelled', expiresAt: null },
+    });
+
+    await coordinator.loadDetail();
+
+    expect(coordinator.getStableIdempotencyKey()).not.toBe(previousKey);
+  });
+
   it('synchronous busy guard prevents rapid concurrent double-booking clicks', async () => {
     let resolveBooking!: (val: BookClassResponse) => void;
     const slowBookingPromise = new Promise<BookClassResponse>((res) => {

@@ -121,6 +121,10 @@ export class ClassDetailCoordinator {
       const detail = await this.options.gateway.getClassDetail(this.options.classId);
       if (this.isStale(gen)) return;
 
+      if (detail.ownBooking?.state === 'cancelled') {
+        this.idempotencyKeyMap.delete(`${this.options.accountId}:${this.options.classId}`);
+      }
+
       let insufficient = false;
       let balanceCredits = this.state.userBalanceCredits;
 
