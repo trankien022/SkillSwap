@@ -9,8 +9,12 @@ import {
   bookingConfirmedSchema,
   bookingRequestSchema,
   bookingSchema,
+  bookClassResultSchema,
+  cancelClassResultSchema,
   classCompletedSchema,
   classSchema,
+  completeClassResultSchema,
+  confirmBookingResultSchema,
   createClassSchema,
   documentUploadRequestSchema,
   documentUploadTargetSchema,
@@ -19,6 +23,7 @@ import {
   evidenceTypeSchema,
   identityHeadersSchema,
   loginSchema,
+  markTeacherNoShowResultSchema,
   meResponseSchema,
   moduleStatusSchema,
   profileSkillSchema,
@@ -33,6 +38,7 @@ import {
   skillEvidenceDecisionSchema,
   skillLevelSchema,
   skillSchema,
+  startClassResultSchema,
   statusChangedSchema,
   studentVerificationEventSchema,
   studentVerificationSchema,
@@ -382,6 +388,55 @@ describe('bookingSchema', () => {
       createdAt: '2026-10-08T00:00:00.000Z',
     };
     expect(bookingSchema.parse(view)).toEqual(view);
+  });
+});
+
+describe('class lifecycle result schemas (FR-007 / FR-020)', () => {
+  const booking = {
+    bookingId: 'bkg-1',
+    classId: 'cls-1',
+    learnerId: 'learner-1',
+    state: 'pending',
+    priceCredits: 100,
+    createdAt: '2026-10-08T00:00:00.000Z',
+  };
+
+  it('bookClassResultSchema wraps a booking and its idempotency flag', () => {
+    expect(bookClassResultSchema.parse({ booking, created: true })).toEqual({
+      booking,
+      created: true,
+    });
+  });
+
+  it('confirmBookingResultSchema allows a null booking when nothing was pending', () => {
+    expect(confirmBookingResultSchema.parse({ confirmed: false, booking: null })).toEqual({
+      confirmed: false,
+      booking: null,
+    });
+  });
+
+  it('cancelClassResultSchema counts affected bookings', () => {
+    expect(cancelClassResultSchema.parse({ classCancelled: true, bookingsCancelled: 3 })).toEqual({
+      classCancelled: true,
+      bookingsCancelled: 3,
+    });
+    expect(() => cancelClassResultSchema.parse({ classCancelled: true, bookingsCancelled: -1 })).toThrow();
+  });
+
+  it('markTeacherNoShowResultSchema and startClassResultSchema carry a boolean', () => {
+    expect(markTeacherNoShowResultSchema.parse({ cancelled: true })).toEqual({ cancelled: true });
+    expect(startClassResultSchema.parse({ started: false })).toEqual({ started: false });
+  });
+
+  it('completeClassResultSchema allows a null basis when not completed', () => {
+    expect(completeClassResultSchema.parse({ completed: false, basis: null })).toEqual({
+      completed: false,
+      basis: null,
+    });
+    expect(completeClassResultSchema.parse({ completed: true, basis: 'scheduled_end' })).toEqual({
+      completed: true,
+      basis: 'scheduled_end',
+    });
   });
 });
 

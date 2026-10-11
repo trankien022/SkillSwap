@@ -46,11 +46,17 @@ import {
 } from '../../../application/port/in/complete-class';
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
 import {
+  BookClassResultDto,
   BookingRequestDto,
+  CancelClassResultDto,
   ClassDto,
+  CompleteClassResultDto,
+  ConfirmBookingResultDto,
   CreateClassDto,
+  MarkTeacherNoShowResultDto,
   RoomAccessRequestDto,
   RoomAccessResponseDto,
+  StartClassResultDto,
   UpdateClassDto,
 } from './dto/classes.dto';
 
@@ -91,7 +97,7 @@ export class ClassesController {
   @Post(':id/bookings')
   @ApiParam({ name: 'id', description: 'The class id' })
   @ApiOperation({ summary: 'Book a class (FR-007 / API-005)' })
-  @ApiOkResponse({ description: 'The pending booking that holds a seat' })
+  @ApiOkResponse({ type: BookClassResultDto, description: 'The pending booking that holds a seat' })
   book(
     @Param('id') classId: string,
     @Body() body: BookingRequestDto,
@@ -108,7 +114,7 @@ export class ClassesController {
   @HttpCode(HttpStatus.OK)
   @ApiParam({ name: 'bookingId', description: 'The booking id' })
   @ApiOperation({ summary: 'Confirm a pending booking and settle payment (FR-009 / API-006)' })
-  @ApiOkResponse({ description: 'Whether the booking was confirmed' })
+  @ApiOkResponse({ type: ConfirmBookingResultDto, description: 'Whether the booking was confirmed' })
   confirm(
     @Param('bookingId') bookingId: string,
     @Req() request: RequestWithIdentity,
@@ -132,7 +138,7 @@ export class ClassesController {
   @HttpCode(HttpStatus.OK)
   @ApiParam({ name: 'id', description: 'The class id' })
   @ApiOperation({ summary: 'Cancel a class and refund affected learners (FR-007 / AC-022)' })
-  @ApiOkResponse({ description: 'Cancellation summary' })
+  @ApiOkResponse({ type: CancelClassResultDto, description: 'Cancellation summary' })
   cancel(
     @Param('id') classId: string,
     @Req() request: RequestWithIdentity,
@@ -144,7 +150,7 @@ export class ClassesController {
   @HttpCode(HttpStatus.OK)
   @ApiParam({ name: 'bookingId', description: 'The booking id' })
   @ApiOperation({ summary: 'Mark a teacher no-show for a booking (FR-007 / AC-024)' })
-  @ApiOkResponse({ description: 'Whether the booking was cancelled for no-show' })
+  @ApiOkResponse({ type: MarkTeacherNoShowResultDto, description: 'Whether the booking was cancelled for no-show' })
   noShow(@Param('bookingId') bookingId: string): Promise<MarkTeacherNoShowResult> {
     // Join evidence comes from FR-011 room access; until then a null join is assumed.
     return this.markNoShow.execute({ bookingId, teacherJoinedAt: null });
@@ -171,7 +177,7 @@ export class ClassesController {
   @HttpCode(HttpStatus.OK)
   @ApiParam({ name: 'id', description: 'The class id' })
   @ApiOperation({ summary: 'Start a class the teacher is holding (FR-020 / ADR-021)' })
-  @ApiOkResponse({ description: 'Whether the class moved to in-progress' })
+  @ApiOkResponse({ type: StartClassResultDto, description: 'Whether the class moved to in-progress' })
   start(@Param('id') classId: string, @Req() request: RequestWithIdentity): Promise<StartClassResult> {
     return this.startClass.execute({ classId, teacherId: currentUserId(request) });
   }
@@ -180,7 +186,7 @@ export class ClassesController {
   @HttpCode(HttpStatus.OK)
   @ApiParam({ name: 'id', description: 'The class id' })
   @ApiOperation({ summary: 'End a class the teacher held (FR-020 / ADR-021)' })
-  @ApiOkResponse({ description: 'Whether the class completed and on what basis' })
+  @ApiOkResponse({ type: CompleteClassResultDto, description: 'Whether the class completed and on what basis' })
   complete(
     @Param('id') classId: string,
     @Req() request: RequestWithIdentity,

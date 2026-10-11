@@ -1,10 +1,17 @@
 import { createZodDto } from 'nestjs-zod';
 import {
+  bookClassResultSchema,
   bookingRequestSchema,
+  bookingSchema,
+  cancelClassResultSchema,
   classSchema,
+  completeClassResultSchema,
+  confirmBookingResultSchema,
   createClassSchema,
+  markTeacherNoShowResultSchema,
   roomAccessRequestSchema,
   roomAccessResponseSchema,
+  startClassResultSchema,
   updateClassSchema,
 } from '@skillswap/contracts';
 
@@ -19,6 +26,27 @@ export class BookingRequestDto extends createZodDto(bookingRequestSchema) {}
 
 /** FR-005: the published class projection. */
 export class ClassDto extends createZodDto(classSchema) {}
+
+/** FR-007: the booking projection returned by the booking endpoints. */
+export class BookingDto extends createZodDto(bookingSchema) {}
+
+/** FR-007 / API-005: result of booking a class. */
+export class BookClassResultDto extends createZodDto(bookClassResultSchema) {}
+
+/** FR-009 / API-006: result of confirming a pending booking. */
+export class ConfirmBookingResultDto extends createZodDto(confirmBookingResultSchema) {}
+
+/** FR-007 / AC-022: result of cancelling a class. */
+export class CancelClassResultDto extends createZodDto(cancelClassResultSchema) {}
+
+/** FR-007 / AC-024: result of marking a teacher no-show. */
+export class MarkTeacherNoShowResultDto extends createZodDto(markTeacherNoShowResultSchema) {}
+
+/** FR-020 / ADR-021: result of starting a class. */
+export class StartClassResultDto extends createZodDto(startClassResultSchema) {}
+
+/** FR-020 / ADR-021: result of completing a class. */
+export class CompleteClassResultDto extends createZodDto(completeClassResultSchema) {}
 
 /** FR-011: join an online class room. Body for POST /classes/bookings/:bookingId/room-access. */
 export class RoomAccessRequestDto extends createZodDto(roomAccessRequestSchema) {}
