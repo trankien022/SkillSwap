@@ -2,6 +2,8 @@ import {
   accountRoleSchema,
   advanceStatusResultSchema,
   advanceStatusSchema,
+  apiEnvelopeSchema,
+  apiErrorItemSchema,
   apiErrorSchema,
   auditActionSchema,
   auditEventSchema,
@@ -18,6 +20,7 @@ import {
   createClassSchema,
   documentUploadRequestSchema,
   documentUploadTargetSchema,
+  errorEnvelopeSchema,
   eventEnvelopeSchema,
   evidenceStatusSchema,
   evidenceTypeSchema,
@@ -26,6 +29,9 @@ import {
   markTeacherNoShowResultSchema,
   meResponseSchema,
   moduleStatusSchema,
+  pageMetaSchema,
+  pagedSchema,
+  paginationQuerySchema,
   profileSkillSchema,
   refreshRequestSchema,
   registerSchema,
@@ -44,6 +50,7 @@ import {
   studentVerificationSchema,
   submitSkillEvidenceSchema,
   submitStudentVerificationSchema,
+  successEnvelopeSchema,
   tokenResponseSchema,
   topUpCallbackSchema,
   topUpIntentSchema,
@@ -60,6 +67,7 @@ import {
   walletHistoryPageSchema,
   walletHistoryQuerySchema,
 } from './index';
+import { z } from 'zod';
 
 describe('advanceStatusSchema', () => {
   it('accepts a target state', () => {
@@ -181,7 +189,7 @@ describe('statusChangedSchema', () => {
   });
 });
 
-describe('apiErrorSchema', () => {
+describe('apiErrorSchema (legacy shape, retained for reference)', () => {
   it('accepts an error without the optional code', () => {
     expect(apiErrorSchema.parse({ statusCode: 409, message: 'conflict' })).toEqual({
       statusCode: 409,
@@ -193,6 +201,90 @@ describe('apiErrorSchema', () => {
     expect(apiErrorSchema.parse({ statusCode: 400, message: 'bad', error: 'Bad Request' }).error).toBe(
       'Bad Request',
     );
+  });
+});
+
+describe('response envelope (NFR-013)', () => {
+  it('accepts a success envelope with a null or object payload', () => {
+    const ok = {
+      success: true,
+      code: 'WALLET_HISTORY_OK',
+      message: 'Wallet history loaded',
+      data: { items: [] },
+      errors: [],
+    };
+    expect(apiEnvelopeSchema.parse(ok)).toEqual(ok);
+    expect(apiEnvelopeSchema.parse({ ...ok, data: null }).data).toBeNull();
+  });
+
+  it('accepts a failure envelope and requires at least one error entry', () => {
+    const bad = {
+      success: false,
+      code: 'ReasonRequiredError',
+      message: 'A rejection requires a reason',
+      data: null,
+      errors: [{ code: 'ReasonRequiredError', message: 'A rejection requires a reason' }],
+    };
+    expect(apiEnvelopeSchema.parse(bad)).toEqual(bad);
+    expect(() => apiEnvelopeSchema.parse({ ...bad, errors: [] })).not.toThrow();
+  });
+
+  it('rejects an error entry missing code or message', () => {
+    expect(() => apiErrorItemSchema.parse({ code: 'X' })).toThrow();
+    expect(() => apiErrorItemSchema.parse({ message: 'x' })).toThrow();
+  });
+
+  it('builds typed success and error envelopes', () => {
+    expect(
+      successEnvelopeSchema(z.array(z.string())).parse({
+        success: true,
+        code: 'PROFILE_SKILLS_OK',
+        message: 'ok',
+        data: ['a'],
+        errors: [],
+      }),
+    ).toMatchObject({ data: ['a'] });
+    expect(() =>
+      successEnvelopeSchema(z.array(z.string())).parse({
+        success: true,
+        code: 'X',
+        message: 'ok',
+        data: ['a'],
+        errors: [{ code: 'x', message: 'x' }],
+      }),
+    ).toThrow();
+    expect(
+      errorEnvelopeSchema().parse({
+        success: false,
+        code: 'INTERNAL_ERROR',
+        message: 'Internal server error',
+        data: null,
+        errors: [{ code: 'INTERNAL_ERROR', message: 'Internal server error' }],
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe('pagination contracts (NFR-014)', () => {
+  it('coerces limit and rejects out-of-range values', () => {
+    expect(paginationQuerySchema.parse({ limit: '20' })).toEqual({ limit: 20 });
+    expect(() => paginationQuerySchema.parse({ limit: 0 })).toThrow();
+    expect(() => paginationQuerySchema.parse({ limit: 101 })).toThrow();
+  });
+
+  it('models page metadata with a non-null total and a nullable cursor', () => {
+    const meta = { limit: 20, nextCursor: null, total: 0 };
+    expect(pageMetaSchema.parse(meta)).toEqual(meta);
+    expect(pageMetaSchema.parse({ limit: 20, nextCursor: 'abc', total: 137 }).total).toBe(137);
+  });
+
+  it('wraps an item schema into a paged collection', () => {
+    const page = pagedSchema(walletHistoryItemSchema).parse({
+      items: [],
+      page: { limit: 20, nextCursor: null, total: 0 },
+    });
+    expect(page.page.total).toBe(0);
+    expect(page.items).toEqual([]);
   });
 });
 

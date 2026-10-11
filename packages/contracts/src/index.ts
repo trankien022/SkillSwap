@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+export * from './envelope';
+export * from './pagination';
+
 export const identityHeadersSchema = z.object({
   'x-user-id': z.string().min(1).optional(),
   'x-user-email': z.string().email().optional(),
