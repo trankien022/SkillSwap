@@ -236,5 +236,92 @@
       "support": "Hỗ trợ SV 24/7",
       "badge": "Cam kết MVP"
     }
+  },
+  "ClassDetail": {
+    "breadcrumb": {
+      "home": "Trang chủ",
+      "explore": "Khám phá lớp học",
+      "category": "Chuyên mục",
+      "current": "Lớp học"
+    },
+    "backToList": "Quay lại danh sách lớp",
+    "hero": {
+      "format": {
+        "oneOnOne": "1-1 Mentoring",
+        "group": "Lớp nhóm 2-4"
+      },
+      "levelBadge": "Trình độ nâng cao",
+      "security": "Bảo mật E2EE",
+      "rating": "Đánh giá",
+      "reviewsCount": "{count} đánh giá thực từ sinh viên",
+      "completedLabel": "Đã hoàn thành {count} buổi dạy",
+      "profileLink": "Xem hồ sơ đầy đủ",
+      "mockBadge": "Dữ liệu minh họa"
+    },
+    "schedule": {
+      "title": "Lịch học & Quy chuẩn thời gian",
+      "policyBadge": "Quy tắc đặt trước tối thiểu 24 giờ",
+      "kickoff": "KHUNG GIỜ KHỞI CHẠY",
+      "deadlinePrefix": "Còn {hours} giờ tới buổi học",
+      "deadlinePolicy": "Thoả mãn quy tắc đặt trước tối thiểu 24 giờ",
+      "capacity": "QUY MÔ & HẠ TẦNG PHÒNG HỌC",
+      "oneOnOne": "Lớp 1-1 chuyên sâu",
+      "oneOnOneLimit": "Giới hạn 1 sinh viên",
+      "group": "Lớp nhóm 2-4 sinh viên",
+      "groupLimit": "Tối đa 4 sinh viên mỗi buổi",
+      "seatsLeft": "Còn {taken}/{capacity} chỗ khả dụng",
+      "room": "Phòng học mã hoá đầu cuối"
+    },
+    "syllabus": {
+      "title": "Mục tiêu & Giáo trình buổi học",
+      "target": "Chuẩn khung trình độ đã duyệt",
+      "stepN": "Bước {n}",
+      "minutes": "{n} phút"
+    },
+    "prerequisites": {
+      "title": "Yêu cầu chuẩn bị đối với học viên"
+    },
+    "dossier": {
+      "title": "Hồ sơ giảng viên & bằng chứng năng lực đã thẩm định",
+      "locked": "Hồ sơ đã khoá sổ",
+      "students": "{count} giờ dạy",
+      "response": "Tỉ lệ phản hồi {pct}%",
+      "credentialsHeading": "Chứng chỉ & thành tích học thuật đã duyệt",
+      "credentialEvidence": "Bằng chứng năng lực đã lưu trong hồ sơ",
+      "credentialBar": "Đã đạt chuẩn giảng dạy",
+      "verifiedBy": "Hội đồng thẩm định phê duyệt"
+    },
+    "reviews": {
+      "title": "Đánh giá gần đây từ học viên khác",
+      "all": "Tất cả {count} đánh giá",
+      "autoVerified": "Đánh giá tự động xác thực"
+    },
+    "escrow": {
+      "title": "Bảo chứng ký quỹ",
+      "body": "Credits được phong tỏa an toàn trong sổ cái cho tới khi buổi học kết thúc và hai bên xác nhận chất lượng. Hoàn về ví tự động nếu giảng viên vắng mặt. Tuyệt đối nghiêm cấm chia sẻ thông tin liên lạc cá nhân ngoài hệ thống nhằm bảo vệ quyền lợi khiếu nại học thuật."
+    },
+    "booking": {
+      "priceLabel": "MỨC PHÍ ĐỔI KỸ NĂNG",
+      "perSession": "/ buổi",
+      "vndRate": "~{vnd} VNĐ • Quy đổi cố định 1:1.000 VNĐ",
+      "table": {
+        "duration": "Thời lượng",
+        "durationValue": "{n} phút thực chiến",
+        "startTime": "Thời gian bắt đầu",
+        "refund": "Chính sách hoàn",
+        "refundValue": "Hoàn credits khi giảng viên vắng mặt",
+        "format": "Hình thức học",
+        "formatValue": "Phòng học mã hoá đầu cuối"
+      },
+      "ctaBook": "Tiến hành đặt lớp",
+      "ctaSave": "Lưu vào danh sách quan tâm",
+      "supportTitle": "Hỗ trợ sinh viên 24/7",
+      "supportSubtitle": "Hệ thống hỗ trợ trực tuyến"
+    },
+    "notFound": {
+      "title": "Không tìm thấy lớp học",
+      "body": "Lớp học này có thể đã bị huỷ hoặc đường dẫn không đúng.",
+      "back": "Quay lại danh sách lớp"
+    }
   }
 }

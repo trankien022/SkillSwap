@@ -74,6 +74,73 @@ export interface MarketplacePage {
   perPage: number;
 }
 
+/** One step in a class's syllabus timeline. */
+export interface SyllabusStep {
+  /** 1-based ordinal rendered in the circle badge. */
+  order: number;
+  title: string;
+  minutes: number;
+  body: string;
+}
+
+/** Icon hint for prerequisites — the icon component maps the string. */
+export type PrerequisiteIcon =
+  | 'devices'
+  | 'topic'
+  | 'conduct'
+  | 'language'
+  | 'book';
+
+/** A single prerequisite a learner should bring to the class. */
+export interface PrerequisiteItem {
+  icon: PrerequisiteIcon;
+  title: string;
+  body: string;
+}
+
+/** Mock teacher profile summary, no fabricated credentials. */
+export interface TeacherStats {
+  hoursTaught: number;
+  responseRatePct: number;
+  learnersHelped: number;
+}
+
+/** Mock credential line shown in the teacher dossier. */
+export interface TeacherCredential {
+  icon: 'description' | 'military_tech' | 'workspace_premium';
+  title: string;
+  body: string;
+  /** When non-null, a 'verified' badge with this label is shown. */
+  verifiedBy: string | null;
+}
+
+/** A single review the UI renders as a card. */
+export interface ReviewView {
+  id: string;
+  authorName: string;
+  schoolName: string;
+  rating: number;
+  body: string;
+  attendedOn: string; // ISO date
+}
+
+/**
+ * Extended class view for the detail page (FR-006 detail mock).
+ *
+ * Keeps the marketplace search fields on the same shape so a
+ * `MarketplaceClass` can be promoted to a `ClassDetailView` with the
+ * extra presentation fields below without breaking the list page.
+ */
+export interface ClassDetailView extends MarketplaceClass {
+  description: string;
+  syllabus: SyllabusStep[];
+  prerequisites: PrerequisiteItem[];
+  teacherBio: string;
+  teacherStats: TeacherStats;
+  teacherCredentials: TeacherCredential[];
+  reviews: ReviewView[];
+}
+
 /** Categories shown in the quick-pills row, mirrored by `Landing.categories`. */
 export const SKILL_CATEGORIES: ReadonlyArray<SkillCategory> = [
   'language',

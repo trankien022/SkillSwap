@@ -67,6 +67,10 @@ describe('i18n messages', () => {
       { pattern: /lh3\.googleusercontent\.com|aida-public|googleusercontent/i, reason: 'NFR-004 — do not load third-party CDN images' },
       { pattern: /100%\s*refund|hoàn tiền 100%|hoàn trả 100%/i, reason: 'OQ-003 — refunds are wallet credits only, not 100% real-money refund' },
       { pattern: /bảo chứng tri thức|tri thức.*100%/i, reason: 'avoid invented marketing claim; banner copy must match SRS intent' },
+      { pattern: /trần hoàng mai|nguyễn lê an|hoàng minh đức|vũ tuấn kiệt|đặng thảo linh|bùi minh đức|lê quốc khánh|nguyễn hà my/i, reason: 'mock data must not carry a recognisable real Vietnamese name (NFR-004 trust)' },
+      { pattern: /gpa\s*3\.\d{2}|ielts\s*8\.\d|speaking\s*8\.\d|listening\s*8\.\d|giải nhì|giải icpc|quán quân debate|backend lead|top product|học bổng/i, reason: 'mock data must not carry a fabricated credential or score' },
+      { pattern: /1900-8888|ext:.*\d{3,}|hotline.*\d{3,}/i, reason: 'invented phone numbers must not surface; support copy is generic' },
+      { pattern: /skill-?swap\s*escrow|ví trung gian thông minh|smart-?escrow/i, reason: 'no smart contract exists; use ledger payout_hold' },
     ];
 
     for (const locale of [

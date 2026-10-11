@@ -236,5 +236,92 @@
       "support": "Student support 24/7",
       "badge": "MVP commitment"
     }
+  },
+  "ClassDetail": {
+    "breadcrumb": {
+      "home": "Home",
+      "explore": "Explore classes",
+      "category": "Category",
+      "current": "Class"
+    },
+    "backToList": "Back to class list",
+    "hero": {
+      "format": {
+        "oneOnOne": "1-1 mentoring",
+        "group": "Group class 2-4"
+      },
+      "levelBadge": "Advanced level",
+      "security": "End-to-end encryption",
+      "rating": "Rating",
+      "reviewsCount": "{count} verified student reviews",
+      "completedLabel": "Completed {count} sessions",
+      "profileLink": "View full profile",
+      "mockBadge": "Demo data"
+    },
+    "schedule": {
+      "title": "Schedule & time policy",
+      "policyBadge": "Book at least 24 hours ahead",
+      "kickoff": "START WINDOW",
+      "deadlinePrefix": "{hours} hours until the session",
+      "deadlinePolicy": "Satisfied the 24-hour booking rule",
+      "capacity": "CAPACITY & ROOM INFRASTRUCTURE",
+      "oneOnOne": "1-1 deep-dive class",
+      "oneOnOneLimit": "One learner only",
+      "group": "Group class for 2-4 learners",
+      "groupLimit": "Up to 4 learners per session",
+      "seatsLeft": "{taken}/{capacity} seats available",
+      "room": "End-to-end encrypted room"
+    },
+    "syllabus": {
+      "title": "Goals & session outline",
+      "target": "Approved skill band",
+      "stepN": "Step {n}",
+      "minutes": "{n} min"
+    },
+    "prerequisites": {
+      "title": "What you need to bring"
+    },
+    "dossier": {
+      "title": "Teacher profile & verified evidence",
+      "locked": "Profile locked",
+      "students": "{count} hours taught",
+      "response": "{pct}% response rate",
+      "credentialsHeading": "Approved credentials & achievements",
+      "credentialEvidence": "Skill evidence on file",
+      "credentialBar": "Cleared the teaching bar",
+      "verifiedBy": "Verifier Council approved"
+    },
+    "reviews": {
+      "title": "Recent learner reviews",
+      "all": "All {count} reviews",
+      "autoVerified": "Auto-verified review"
+    },
+    "escrow": {
+      "title": "Ledger escrow protection",
+      "body": "Credits are held safely in the ledger until the session ends and both sides confirm completion. If the teacher is absent, the credits are returned to your wallet automatically. Sharing personal contact information outside the platform is strictly forbidden to protect your right to dispute."
+    },
+    "booking": {
+      "priceLabel": "SKILL EXCHANGE PRICE",
+      "perSession": "/ session",
+      "vndRate": "~{vnd} VND • Fixed 1:1,000 VND rate",
+      "table": {
+        "duration": "Duration",
+        "durationValue": "{n} minutes",
+        "startTime": "Start time",
+        "refund": "Refund policy",
+        "refundValue": "Credits returned if teacher is absent",
+        "format": "Format",
+        "formatValue": "End-to-end encrypted room"
+      },
+      "ctaBook": "Book this class",
+      "ctaSave": "Save to wishlist",
+      "supportTitle": "Student support 24/7",
+      "supportSubtitle": "Always-on helpdesk"
+    },
+    "notFound": {
+      "title": "Class not found",
+      "body": "This class may have been cancelled or the link is wrong.",
+      "back": "Back to class list"
+    }
   }
 }
