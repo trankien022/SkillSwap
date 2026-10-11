@@ -1,4 +1,6 @@
-import { getLocale, getTranslations } from 'next-intl/server';
+'use client';
+
+import { useLocale, useTranslations } from 'next-intl';
 import type {
   BookingState,
   LearnerBookingView,
@@ -14,26 +16,32 @@ import type {
  * no_show_reported) which all collapse into a small closed card.
  *
  * Action buttons are wired by the parent `DashboardShell` (client)
- * via the `onAction` callback so the server tree stays pure.
+ * via the `onAction` callback. The card itself is a client
+ * component because it's mounted from the client shell that owns
+ * the bookings state and the optimistic update reducer.
  */
-export async function SessionCard({
+export function SessionCard({
   booking,
   onAction,
 }: {
   booking: LearnerBookingView;
   onAction?: (action: SessionAction) => void;
 }) {
-  const tCard = await getTranslations('Dashboard.card');
-  const tFilters = await getTranslations('Dashboard.filters');
+  const tCard = useTranslations('Dashboard.card');
+  const tFilters = useTranslations('Dashboard.filters');
 
   switch (booking.state) {
     case 'pending_learner_confirmation':
-      return <PendingCard booking={booking} onAction={onAction} tCard={tCard} />;
+      return (
+        <PendingCard booking={booking} onAction={onAction} tCard={tCard} />
+      );
     case 'upcoming':
       return <UpcomingCard booking={booking} tCard={tCard} />;
     case 'completed':
     case 'released':
-      return <CompletedCard booking={booking} onAction={onAction} tCard={tCard} />;
+      return (
+        <CompletedCard booking={booking} onAction={onAction} tCard={tCard} />
+      );
     case 'cancelled':
     case 'refunded':
     case 'no_show_reported':
@@ -55,16 +63,19 @@ export type SessionAction =
   | { type: 'cancel'; bookingId: string }
   | { type: 'rebook'; bookingId: string };
 
+type CardTranslator = ReturnType<typeof useTranslations<'Dashboard.card'>>;
+type FiltersTranslator = ReturnType<typeof useTranslations<'Dashboard.filters'>>;
+
 /* --- Sub-cards by lifecycle state --- */
 
-async function PendingCard({
+function PendingCard({
   booking,
   onAction,
   tCard,
 }: {
   booking: LearnerBookingView;
   onAction?: (action: SessionAction) => void;
-  tCard: Awaited<ReturnType<typeof getTranslations>>;
+  tCard: CardTranslator;
 }) {
   const countdown = booking.autoReleaseCountdownSeconds ?? 0;
   const hours = Math.floor(countdown / 3600);
@@ -110,14 +121,14 @@ async function PendingCard({
   );
 }
 
-async function UpcomingCard({
+function UpcomingCard({
   booking,
   tCard,
 }: {
   booking: LearnerBookingView;
-  tCard: Awaited<ReturnType<typeof getTranslations>>;
+  tCard: CardTranslator;
 }) {
-  const locale = (await getLocale()) as 'vi' | 'en';
+  const locale = useLocale() as 'vi' | 'en';
   const start = new Date(booking.startsAt);
   const hoursLeft = Math.max(
     0,
@@ -201,16 +212,16 @@ async function UpcomingCard({
   );
 }
 
-async function CompletedCard({
+function CompletedCard({
   booking,
   onAction,
   tCard,
 }: {
   booking: LearnerBookingView;
   onAction?: (action: SessionAction) => void;
-  tCard: Awaited<ReturnType<typeof getTranslations>>;
+  tCard: CardTranslator;
 }) {
-  const locale = (await getLocale()) as 'vi' | 'en';
+  const locale = useLocale() as 'vi' | 'en';
   const completedOn = booking.reviewSubmitted
     ? new Date(booking.reviewSubmitted.submittedOn).toLocaleDateString(locale, {
         hour: '2-digit',
@@ -292,16 +303,16 @@ async function CompletedCard({
   );
 }
 
-async function ClosedCard({
+function ClosedCard({
   booking,
   tCard,
   tFilters,
 }: {
   booking: LearnerBookingView;
-  tCard: Awaited<ReturnType<typeof getTranslations>>;
-  tFilters: Awaited<ReturnType<typeof getTranslations>>;
+  tCard: CardTranslator;
+  tFilters: FiltersTranslator;
 }) {
-  const locale = 'vi' as 'vi' | 'en';
+  const locale = useLocale() as 'vi' | 'en';
   const reason = booking.state === 'no_show_reported'
     ? tCard('noShowBody')
     : tCard('cancelledBody');
@@ -336,7 +347,7 @@ function CardBody({
   startText,
 }: {
   booking: LearnerBookingView;
-  tCard: Awaited<ReturnType<typeof getTranslations>>;
+  tCard: CardTranslator;
   startText?: string;
 }) {
   return (
@@ -373,7 +384,7 @@ function CardBody({
   );
 }
 
-function RuleBox({ tCard }: { tCard: Awaited<ReturnType<typeof getTranslations>> }) {
+function RuleBox({ tCard }: { tCard: CardTranslator }) {
   return (
     <div className="flex items-start gap-2 rounded-xl border border-border bg-mist p-4 text-sm text-ink-soft">
       <ShieldIcon className="mt-0.5 h-5 w-5 shrink-0 text-ink" />
