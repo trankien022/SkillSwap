@@ -10,3 +10,8 @@ coverage/
 *.log
 .DS_Store
 tmp/
+
+# Local dev artefacts
+apps/web/dev.err
+# Source assets (work-in-progress logos) — only the curated copy under apps/web/public/ is committed
+logo/

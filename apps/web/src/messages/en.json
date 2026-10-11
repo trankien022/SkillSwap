@@ -41,5 +41,493 @@
       "invalid_duration": "This class has an invalid duration.",
       "unknown": "Something went wrong. Please try again."
     }
+  },
+  "Landing": {
+    "nav": {
+      "explore": "Explore classes",
+      "standard": "Verification standard",
+      "signIn": "Sign in"
+    },
+    "hero": {
+      "badge": "Academic verification • Peer-to-peer knowledge exchange",
+      "headline1": "An online skill marketplace",
+      "headline2": "vouched for by students",
+      "subline": "A peer-to-peer skill network that connects students with domain experts whose identity has been independently verified.",
+      "pills": {
+        "school": "University credential links",
+        "antiFake": "Identity fraud prevention",
+        "escrow": "Protected payment funds"
+      }
+    },
+    "trust": {
+      "eyebrow": "Independent assurance",
+      "heading": "Every Teacher is reviewed by a domain expert",
+      "pillars": [
+        {
+          "tag": "Review board",
+          "title": "Reviewed by domain experts",
+          "body": "Skill evidence and teaching plans are assessed by experts in the matching domain before a Teacher is allowed to publish a class.",
+          "proof": "1:1 hands-on skill check"
+        },
+        {
+          "tag": "Audit trail",
+          "title": "Decisions are recorded immutably",
+          "body": "Each evidence submission is timestamped and kept as-is, so every approval and rejection is traceable across versions.",
+          "proof": "Full history per version"
+        },
+        {
+          "tag": "Verified identity",
+          "title": "Manual student verification",
+          "body": "Student IDs and enrollment confirmations are reviewed by hand using a standardized list of rejection reasons.",
+          "proof": "Reviewed each term"
+        }
+      ]
+    },
+    "money": {
+      "eyebrow": "Transparent finance",
+      "intro": "No hidden fees, no volatile exchange rate. Money is recorded in an atomic ledger and reconciled automatically.",
+      "rate": {
+        "label": "Fixed exchange rate",
+        "value": "1 Credit",
+        "equals": "= 1,000 VND",
+        "body": "Direct 1:1 conversion with no hidden markup, no slippage on top-ups or withdrawals to your bank account."
+      },
+      "split": {
+        "label": "Revenue allocation",
+        "teacher": { "pct": "90%", "caption": "Teacher net payout" },
+        "platform": { "pct": "10%", "caption": "Platform & verification fee" },
+        "note": "Designed to respect the work of student teachers."
+      },
+      "escrow": {
+        "label": "Atomic ledger",
+        "title": "Held safely until completion",
+        "body": "The learner's payment is held in the platform ledger. It only moves into the Teacher's wallet when the class is recorded as completed.",
+        "proof": "Every transaction carries an end-to-end trace ID"
+      }
+    },
+    "cta": {
+      "eyebrow": "Ready to join the network",
+      "heading": "Start learning or teaching today",
+      "subline": "Join students across universities who learn together, mentor each other, and earn transparently.",
+      "learner": {
+        "title": "I want to learn",
+        "hint": "Browse classes & book a session with a verified Teacher"
+      },
+      "teacher": {
+        "title": "I want to teach",
+        "hint": "Submit your skill evidence & start accepting classes"
+      },
+      "trustNoCard": "No credit card required to sign up",
+      "trustSafety": "Every transaction is audit-tracked"
+    },
+    "footer": {
+      "tagline": "A peer-to-peer skill ecosystem for students.",
+      "links": {
+        "escrow": "Protection standard",
+        "terms": "Terms of service",
+        "transparency": "Transparency report"
+      },
+      "langLabel": "Language",
+      "vi": "Vietnamese",
+      "en": "English"
+    }
+  },
+  "Marketplace": {
+    "nav": {
+      "explore": "Explore classes",
+      "booked": "My bookings",
+      "teaching": "Manage teaching",
+      "wallet": "Wallet"
+    },
+    "search": {
+      "keywordLabel": "Skill, subject or certificate",
+      "keywordPlaceholder": "IELTS, data structures, Figma...",
+      "universityLabel": "Teacher's school",
+      "universityAll": "All universities",
+      "universities": {
+        "bk": "Tech university (HCMUT/HUST)",
+        "ftu": "Foreign trade university (FTU)",
+        "ueh": "Economics university (UEH/NEU)",
+        "uit": "IT university (UIT)",
+        "kien-truc": "Architecture university",
+        "ussh": "Social sciences & humanities (VNU-USSH)"
+      },
+      "filterButton": "More filters",
+      "filterTitle": "Price & time",
+      "submitButton": "Search"
+    },
+    "categories": {
+      "all": "All",
+      "language": "IELTS & languages",
+      "programming": "Programming & IT",
+      "design": "UI/UX design",
+      "softSkills": "Soft skills",
+      "math": "Math & statistics"
+    },
+    "resultsBar": {
+      "title": "Explore classes",
+      "count": "{count} open classes",
+      "sortBy": "Sort by:",
+      "sort": {
+        "nearest": "Soonest first",
+        "rating": "Highest rated",
+        "priceLow": "Credits: low to high",
+        "popular": "Most learners enrolled"
+      }
+    },
+    "filters": {
+      "title": "Advanced filters",
+      "reset": "Reset",
+      "format": {
+        "title": "Class format",
+        "oneOnOne": "1-1 mentoring",
+        "group": "Small group (2 - 4 learners)"
+      },
+      "time": {
+        "title": "Start time",
+        "hint": "Bookings close 24 hours before class so teachers can prepare.",
+        "allValid": "All valid classes (over 24 hours)",
+        "next2448": "Starting in 24 - 48 hours",
+        "weekend": "This weekend (Sat - Sun)"
+      },
+      "price": {
+        "label": "SkillSwap credits",
+        "range": "{min} - {max} credits"
+      },
+      "rating": {
+        "title": "Minimum rating",
+        "48plus": "4.8+ stars",
+        "45plus": "4.5+ stars"
+      },
+      "verified": {
+        "title": "Verification badge",
+        "studentVerified": "Verified student ID"
+      }
+    },
+    "card": {
+      "format": {
+        "oneOnOne": "1-1 mentoring",
+        "group": "Group class 2-4"
+      },
+      "duration": "{minutes} min",
+      "rating": "{avg} ({count})",
+      "startsAt": "{when} • {time}",
+      "deadline": "Booking closes in {hours}h",
+      "seats": {
+        "format": "{taken}/{capacity} seats left"
+      },
+      "price": {
+        "credits": "{credits} cr",
+        "vnd": "~{vnd} VND"
+      },
+      "pricePerLearner": "~{vnd} VND / learner",
+      "viewClass": "View class",
+      "mockDataBadge": "Demo data"
+    },
+    "pagination": {
+      "showing": "Showing {from} - {to} of {total} open classes",
+      "prev": "Previous",
+      "next": "Next"
+    },
+    "banner": {
+      "title": "Payment protection",
+      "body": "Your credits are held safely in the ledger and only released to the teacher after a class is recorded as completed. If the teacher is absent or cancels before start, all credits are returned to your wallet automatically.",
+      "policyLink": "View policy",
+      "support": "Student support 24/7",
+      "badge": "MVP commitment"
+    }
+  },
+  "ClassDetail": {
+    "breadcrumb": {
+      "home": "Home",
+      "explore": "Explore classes",
+      "category": "Category",
+      "current": "Class"
+    },
+    "backToList": "Back to class list",
+    "hero": {
+      "format": {
+        "oneOnOne": "1-1 mentoring",
+        "group": "Group class 2-4"
+      },
+      "levelBadge": "Advanced level",
+      "security": "End-to-end encryption",
+      "rating": "Rating",
+      "reviewsCount": "{count} verified student reviews",
+      "completedLabel": "Completed {count} sessions",
+      "profileLink": "View full profile",
+      "mockBadge": "Demo data"
+    },
+    "schedule": {
+      "title": "Schedule & time policy",
+      "policyBadge": "Book at least 24 hours ahead",
+      "kickoff": "START WINDOW",
+      "deadlinePrefix": "{hours} hours until the session",
+      "deadlinePolicy": "Satisfied the 24-hour booking rule",
+      "capacity": "CAPACITY & ROOM INFRASTRUCTURE",
+      "oneOnOne": "1-1 deep-dive class",
+      "oneOnOneLimit": "One learner only",
+      "group": "Group class for 2-4 learners",
+      "groupLimit": "Up to 4 learners per session",
+      "seatsLeft": "{taken}/{capacity} seats available",
+      "room": "End-to-end encrypted room"
+    },
+    "syllabus": {
+      "title": "Goals & session outline",
+      "target": "Approved skill band",
+      "stepN": "Step {n}",
+      "minutes": "{n} min"
+    },
+    "prerequisites": {
+      "title": "What you need to bring"
+    },
+    "dossier": {
+      "title": "Teacher profile & verified evidence",
+      "locked": "Profile locked",
+      "students": "{count} hours taught",
+      "response": "{pct}% response rate",
+      "credentialsHeading": "Approved credentials & achievements",
+      "credentialEvidence": "Skill evidence on file",
+      "credentialBar": "Cleared the teaching bar",
+      "verifiedBy": "Verifier Council approved"
+    },
+    "reviews": {
+      "title": "Recent learner reviews",
+      "all": "All {count} reviews",
+      "autoVerified": "Auto-verified review"
+    },
+    "escrow": {
+      "title": "Ledger escrow protection",
+      "body": "Credits are held safely in the ledger until the session ends and both sides confirm completion. If the teacher is absent, the credits are returned to your wallet automatically. Sharing personal contact information outside the platform is strictly forbidden to protect your right to dispute."
+    },
+    "booking": {
+      "priceLabel": "SKILL EXCHANGE PRICE",
+      "perSession": "/ session",
+      "vndRate": "~{vnd} VND • Fixed 1:1,000 VND rate",
+      "table": {
+        "duration": "Duration",
+        "durationValue": "{n} minutes",
+        "startTime": "Start time",
+        "refund": "Refund policy",
+        "refundValue": "Credits returned if teacher is absent",
+        "format": "Format",
+        "formatValue": "End-to-end encrypted room"
+      },
+      "ctaBook": "Book this class",
+      "ctaSave": "Save to wishlist",
+      "supportTitle": "Student support 24/7",
+      "supportSubtitle": "Always-on helpdesk"
+    },
+    "notFound": {
+      "title": "Class not found",
+      "body": "This class may have been cancelled or the link is wrong.",
+      "back": "Back to class list"
+    }
+  },
+  "Dashboard": {
+    "page": {
+      "roleChip": "Learner dashboard",
+      "termChip": "Current term",
+      "title": "My schedule and sessions",
+      "subtitle": "Track every booked session, monitor the held escrow, join the room, and approve the credit release when a class is done.",
+      "ctaCalendar": "Sync calendar",
+      "ctaExplore": "Find new classes",
+      "mockBadge": "Demo data"
+    },
+    "metrics": {
+      "upcoming": "Upcoming classes",
+      "upcomingHint": "Next: {when}",
+      "escrow": "Held in escrow",
+      "escrowHint": "Protecting {count} classes",
+      "hours": "Hours learned",
+      "hoursProgress": "{pct}% of monthly target",
+      "review": "Reviews pending",
+      "reviewHint": "Completed, review needed"
+    },
+    "live": {
+      "badge": "LIVE NOW",
+      "join": "Join the room",
+      "materials": "Session materials",
+      "chat": "In-app chat",
+      "progress": "Session progress",
+      "elapsed": "{elapsed}/{total} min",
+      "pct": "{pct}%"
+    },
+    "filters": {
+      "all": "All",
+      "upcoming": "Upcoming",
+      "actionRequired": "Action required",
+      "completed": "Completed",
+      "canceled": "Refunded",
+      "count": "{count}",
+      "searchPlaceholder": "Search subject or teacher..."
+    },
+    "card": {
+      "pending": "Waiting for your confirmation",
+      "autoRelease": "Auto-releases in {time}",
+      "confirmedSlot": "Slot confirmed",
+      "confirmedSlotHint": "{hours} hours until the session",
+      "bookingId": "Booking #{id}",
+      "escrowHeld": "Escrow: {credits} credits",
+      "completed": "Completed",
+      "completedReleased": "Credits released",
+      "completedOn": "Completed: {when}",
+      "reviewGiven": "Review submitted",
+      "reviewStars": "{rating} / 5",
+      "minutes": "Duration: {n} min",
+      "cost": "Cost: {credits} credits",
+      "confirm": "Confirm completion",
+      "confirmReview": "Confirm & send review",
+      "report": "Report an issue",
+      "noShow": "Teacher no-show",
+      "joinRoom": "Join the room",
+      "joinRoomSoon": "Room opens soon",
+      "materials": "Materials",
+      "chat": "Chat",
+      "receipt": "Receipt",
+      "receiptId": "Receipt #{id}",
+      "rebook": "Rebook with the same teacher",
+      "downloadNotes": "Download notes",
+      "ruleTitle": "Escrow protection",
+      "ruleBody": "Your credits are held safely in the ledger. When you confirm completion, the credits are transferred to the teacher. If the teacher is absent for more than 15 minutes, the credits are returned to your wallet.",
+      "noShowBody": "A no-show has been reported. The held credits will be returned to your wallet within 24 hours.",
+      "cancelledBody": "This class has been cancelled. The held credits have been returned to your wallet.",
+      "completedReview": "Your review",
+      "endedAt": "Ended at {when}",
+      "startsAt": "{when} • {duration} min"
+    },
+    "calendar": {
+      "title": "Month view",
+      "prev": "Previous month",
+      "next": "Next month",
+      "weekdays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      "legendLive": "Live today",
+      "legendBooked": "Booked",
+      "noMonth": "No events this month"
+    },
+    "wallet": {
+      "title": "Escrow wallet",
+      "available": "Available",
+      "held": "Held safely",
+      "total": "Estimated total",
+      "vndEstimate": "(~{vnd} VND)",
+      "noDirect": "The teacher only receives the credits after you confirm completion.",
+      "refundPolicy": "Credits are returned to your wallet automatically if the class is cancelled before the deadline.",
+      "details": "View escrow ledger",
+      "signInToView": "Sign in to see your wallet"
+    },
+    "charter": {
+      "title": "Learner rights",
+      "noShowRule": "15-minute teacher no-show rule",
+      "noShowBody": "If the teacher has not joined the room 15 minutes after the start time, the system automatically returns the held credits to your wallet.",
+      "contactRule": "Keep all contact inside the platform",
+      "contactBody": "Every message, file share and video call stays inside SkillSwap so the support team has a full record if a dispute is opened.",
+      "support": "Get academic help"
+    },
+    "empty": {
+      "title": "No sessions yet",
+      "body": "You have not booked a class yet. Browse the marketplace to get started.",
+      "cta": "Browse classes"
+    }
+  },
+  "Teacher": {
+    "nav": {
+      "explore": "Browse classes",
+      "myBookings": "My bookings",
+      "myClasses": "My classes",
+      "wallet": "Wallet"
+    },
+    "publish": {
+      "verifiedChip": "Verified student",
+      "step": "Create a teaching session",
+      "title": "Online class details",
+      "subjectChip": "Subject module",
+      "verificationBanner": {
+        "title": "Verified professional competency",
+        "body": "Your teaching profile meets the academic verification standard. The platform keeps every certificate and review transparent across faculties.",
+        "ruleTitle": "Immutable schedule",
+        "ruleBody": "Schedule and content lock as soon as the first learner books."
+      },
+      "skill": {
+        "label": "Approved professional skill",
+        "verifiedTag": "Verified",
+        "placeholder": "Select a verified skill",
+        "help": "Per the verification standard, you can only publish classes for skills that have passed the academic review board. Skills still pending are not available."
+      },
+      "general": {
+        "titleLabel": "Class title",
+        "titleCounter": "{count}/{max} characters",
+        "titlePlaceholder": "E.g. Practice basic graph algorithms",
+        "descriptionLabel": "Detailed description & prerequisites",
+        "descriptionPlaceholder": "Tell learners what to prepare, what homework to do before class…",
+        "durationLabel": "Class duration",
+        "durationStandard": "Standard academic format",
+        "platform": {
+          "name": "End-to-end encrypted online room",
+          "caption": "End-to-end encryption • auto-minted per-class room code",
+          "onlineOnly": "Online only"
+        }
+      },
+      "schedule": {
+        "title": "Schedule & class size",
+        "noConflict": "No conflicts",
+        "dateLabel": "Teaching date",
+        "timeLabel": "Start time",
+        "capacityLabel": "Maximum capacity",
+        "capacityBadge1to1": "1-on-1 mentoring model",
+        "capacityBadgeGroup": "Group class ({count} learners)",
+        "conflictHelp": "The conflict checker cross-references your three most recent 1-on-1 classes automatically."
+      },
+      "pricing": {
+        "title": "Pricing & settlement",
+        "rate": "1 credit = 1,000 VND",
+        "inputLabel": "Listed price (credits / learner)",
+        "inputUnit": "credits",
+        "tuition": "Listed price",
+        "fee": "Platform fee (10%)",
+        "net": "Teacher net",
+        "netHint": "Held in escrow and released when the class completes",
+        "vnd": "~{vnd} VND / learner",
+        "policy": "Funds are recorded as held in escrow in your wallet and are released to your available balance the moment the class moves to completed."
+      },
+      "preview": {
+        "label": "Live marketplace preview",
+        "live": "Real-time",
+        "categoryFallback": "Class category",
+        "defaultTitle": "Class title",
+        "date": "Date",
+        "time": "Time",
+        "minutes": "{count} min",
+        "teacher": "You (Teacher)",
+        "verifiedFaculty": "Verified student",
+        "price": "Price",
+        "priceUnit": "Cr"
+      },
+      "actions": {
+        "warning": "Teaching commitment: once the first learner registers, schedule and content edits lock automatically.",
+        "publish": "Publish class now",
+        "saveDraft": "Save draft",
+        "cancel": "Cancel"
+      },
+      "toast": {
+        "title": "Class published",
+        "body": "Your class is live on the marketplace. The platform stands ready to lock edits as soon as the first booking arrives."
+      },
+      "stepDuration": "{count} min",
+      "monthNames": [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December"
+      ]
+    }
   }
 }
