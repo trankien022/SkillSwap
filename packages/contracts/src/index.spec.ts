@@ -26,6 +26,7 @@ import {
   registerSchema,
   roomAccessRequestSchema,
   roomAccessResponseSchema,
+  selfRegistrationRoleSchema,
   skillEvidenceEventSchema,
   skillEvidenceHistorySchema,
   skillEvidenceViewSchema,
@@ -403,7 +404,22 @@ describe('auth schemas (ADR-016)', () => {
 
   it('accepts only the known account roles', () => {
     expect(accountRoleSchema.parse('teacher')).toBe('teacher');
+    expect(accountRoleSchema.parse('verifier')).toBe('verifier');
+    expect(accountRoleSchema.options).toEqual(['learner', 'teacher', 'verifier', 'admin']);
     expect(() => accountRoleSchema.parse('superuser')).toThrow();
+  });
+
+  it('restricts public registration to learner/teacher (ADR-029)', () => {
+    expect(selfRegistrationRoleSchema.options).toEqual(['learner', 'teacher']);
+    expect(registerSchema.parse({ email: 'a@b.co', displayName: 'A', password: 'password1' }).role).toBe(
+      'learner',
+    );
+    expect(() =>
+      registerSchema.parse({ email: 'a@b.co', displayName: 'A', password: 'password1', role: 'admin' }),
+    ).toThrow();
+    expect(() =>
+      registerSchema.parse({ email: 'a@b.co', displayName: 'A', password: 'password1', role: 'verifier' }),
+    ).toThrow();
   });
 
   it('round-trips a token response', () => {

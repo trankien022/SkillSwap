@@ -137,14 +137,21 @@ export const bookingSchema = z.object({
 export type BookingView = z.infer<typeof bookingSchema>;
 
 /** FR-001: local accounts, sign-in and session lifecycle (ADR-016). */
-export const accountRoleSchema = z.enum(['learner', 'teacher', 'admin']);
+export const accountRoleSchema = z.enum(['learner', 'teacher', 'verifier', 'admin']);
 export type AccountRole = z.infer<typeof accountRoleSchema>;
+
+/**
+ * FR-001 / ADR-029: the roles a public user may choose at registration. Verifier
+ * and Administrator accounts are provisioned out of band, never self-registered.
+ */
+export const selfRegistrationRoleSchema = z.enum(['learner', 'teacher']);
+export type SelfRegistrationRole = z.infer<typeof selfRegistrationRoleSchema>;
 
 export const registerSchema = z.object({
   email: z.string().email(),
   displayName: z.string().min(1).max(120),
   password: z.string().min(8).max(200),
-  role: accountRoleSchema.default('learner'),
+  role: selfRegistrationRoleSchema.default('learner'),
 });
 export type RegisterInput = z.infer<typeof registerSchema>;
 
