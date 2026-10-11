@@ -3,6 +3,8 @@ import {
   advanceStatusResultSchema,
   advanceStatusSchema,
   apiErrorSchema,
+  auditActionSchema,
+  auditEventSchema,
   bookingCancelledSchema,
   bookingConfirmedSchema,
   bookingRequestSchema,
@@ -25,6 +27,7 @@ import {
   roomAccessRequestSchema,
   roomAccessResponseSchema,
   skillEvidenceEventSchema,
+  skillEvidenceHistorySchema,
   skillEvidenceViewSchema,
   skillEvidenceDecisionSchema,
   skillLevelSchema,
@@ -685,6 +688,56 @@ describe('student verification contracts', () => {
       expect(
         skillEvidenceDecisionSchema.safeParse({ decision: 'reject', reason: 'Illegible' }).success,
       ).toBe(true);
+    });
+
+    it('validates the audit event and evidence history (FR-018)', () => {
+      expect(auditActionSchema.options).toEqual([
+        'submitted',
+        'claimed',
+        'approved',
+        'rejected',
+        'superseded',
+      ]);
+
+      const audit = {
+        id: 'a-1',
+        evidenceId: 'ev-1',
+        version: 1,
+        action: 'approved',
+        actorId: 'vf-1',
+        fromStatus: 'pending',
+        toStatus: 'approved',
+        reason: null,
+        snapshot: {
+          version: 1,
+          status: 'approved',
+          evidenceType: 'certificate',
+          requestedLevel: 'intermediate',
+          approvedLevel: 'intermediate',
+          reason: null,
+        },
+        occurredAt: '2026-10-11T00:00:00.000Z',
+        traceId: null,
+      };
+      expect(auditEventSchema.parse(audit)).toEqual(audit);
+      expect(() => auditEventSchema.parse({ ...audit, action: 'nope' })).toThrow();
+
+      const history = {
+        profileSkillId: 'ps-1',
+        skillId: 'sk-1',
+        versions: [
+          {
+            version: 1,
+            evidenceId: 'ev-1',
+            currentStatus: 'approved',
+            requestedLevel: 'intermediate',
+            approvedLevel: 'intermediate',
+            submittedAt: '2026-10-11T00:00:00.000Z',
+            entries: [audit],
+          },
+        ],
+      };
+      expect(skillEvidenceHistorySchema.parse(history)).toEqual(history);
     });
   });
 });
