@@ -1,5 +1,7 @@
 import { createZodDto } from 'nestjs-zod';
 import {
+  profileSkillListSchema,
+  profileSkillQuerySchema,
   profileSkillSchema,
   skillEvidenceDecisionSchema,
   skillEvidenceHistorySchema,
@@ -22,6 +24,12 @@ export class SkillEvidenceHistoryDto extends createZodDto(skillEvidenceHistorySc
 
 /** FR-003: one profile skill with its effective approved level. */
 export class ProfileSkillDto extends createZodDto(profileSkillSchema) {}
+
+/** FR-003 / NFR-014: query params for GET /profile-skills/me. */
+export class ProfileSkillQueryDto extends createZodDto(profileSkillQuerySchema) {}
+
+/** FR-003: the caller's profile skills (bounded by the catalogue). */
+export class ProfileSkillListDto extends createZodDto(profileSkillListSchema) {}
 
 /** FR-004 / ADR-027: a Verifier account with a seeded expertise set. */
 export class VerifierDto extends createZodDto(verifierSchema) {}

@@ -14,6 +14,7 @@ import type {
   ClaimedEvidence,
   CreateSkillEvidenceRequest,
   EvidenceAuditRepository,
+  ListProfileSkillsQuery,
   PendingQueuePage,
   PendingQueueQuery,
   ProfileSkillRepository,
@@ -85,9 +86,13 @@ export class InMemoryProfileSkillRepository implements ProfileSkillRepository {
     return this.rows.find((row) => row.id === profileSkillId) ?? null;
   }
 
-  async listByAccount(accountId: string): Promise<ProfileSkillWithSkill[]> {
-    return this.rows
+  async listByAccount(
+    accountId: string,
+    query: ListProfileSkillsQuery = {},
+  ): Promise<ProfileSkillWithSkill[]> {
+    const rows = this.rows
       .filter((row) => row.accountId === accountId)
+      .filter((row) => query.q === undefined || row.skillId.includes(query.q))
       .map((row) => ({
         id: row.id,
         skillId: row.skillId,
@@ -95,6 +100,10 @@ export class InMemoryProfileSkillRepository implements ProfileSkillRepository {
         category: 'unknown',
         approvedLevel: row.approvedLevel,
       }));
+    if (query.sort === '-approvedLevel') {
+      return rows.sort((a, b) => (b.approvedLevel ?? '').localeCompare(a.approvedLevel ?? ''));
+    }
+    return rows;
   }
 
   async findOrCreate(accountId: string, skillId: string): Promise<ProfileSkill> {

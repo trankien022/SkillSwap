@@ -14,13 +14,19 @@ export interface ProfileSkillWithSkill {
   readonly approvedLevel: SkillLevel | null;
 }
 
+/** FR-003 / NFR-014: optional filter/sort for the owner's profile-skill list. */
+export interface ListProfileSkillsQuery {
+  readonly q?: string;
+  readonly sort?: 'category' | 'name' | '-approvedLevel';
+}
+
 export interface ProfileSkillRepository {
   /** The account's existing link to a skill, or null. */
   findByAccountAndSkill(accountId: string, skillId: string): Promise<ProfileSkill | null>;
   /** The profile skill by its own id, or null. */
   findById(profileSkillId: string): Promise<ProfileSkill | null>;
-  /** All of the account's profile skills joined with their catalogue entries. */
-  listByAccount(accountId: string): Promise<ProfileSkillWithSkill[]>;
+  /** All of the account's profile skills joined with their catalogue entries (filtered/sorted). */
+  listByAccount(accountId: string, query?: ListProfileSkillsQuery): Promise<ProfileSkillWithSkill[]>;
   /**
    * Returns the account↔skill link, creating it (level NULL) if the account has
    * never linked this skill (ADR-026 §5).

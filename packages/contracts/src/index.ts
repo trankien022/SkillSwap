@@ -407,6 +407,24 @@ export const profileSkillSchema = z.object({
 });
 export type ProfileSkillView = z.infer<typeof profileSkillSchema>;
 
+/**
+ * FR-003 / NFR-014: query params for GET /profile-skills/me. The result is bounded by the
+ * managed skill catalogue, so there is no pagination (`page: null`); the caller may still
+ * search by skill name and choose the sort order.
+ */
+export const profileSkillQuerySchema = z.object({
+  q: z.string().min(1).optional(),
+  sort: z.enum(['category', 'name', '-approvedLevel']).optional(),
+});
+export type ProfileSkillQueryInput = z.infer<typeof profileSkillQuerySchema>;
+
+/** FR-003: the caller's profile skills (bounded by the catalogue → no page metadata). */
+export const profileSkillListSchema = z.object({
+  items: z.array(profileSkillSchema),
+  page: z.null(),
+});
+export type ProfileSkillList = z.infer<typeof profileSkillListSchema>;
+
 /** FR-003 / API-002: submit skill evidence for a known skill at a requested level. */
 export const submitSkillEvidenceSchema = z.object({
   skillId: z.string().min(1),
