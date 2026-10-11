@@ -1,10 +1,10 @@
 /** Account aggregate for FR-001 (ADR-016: local accounts owned by this module). */
 
-export const ACCOUNT_ROLES = ['learner', 'teacher', 'verifier', 'admin'] as const;
+export const ACCOUNT_ROLES = ['user', 'verifier', 'admin'] as const;
 export type AccountRole = (typeof ACCOUNT_ROLES)[number];
 
-/** FR-001 / ADR-029: roles a public user may choose at self-registration. */
-export const SELF_REGISTRATION_ROLES = ['learner', 'teacher'] as const;
+/** FR-001 / ADR-030: the only role a public user may create at self-registration. */
+export const SELF_REGISTRATION_ROLES = ['user'] as const;
 export type SelfRegistrationRole = (typeof SELF_REGISTRATION_ROLES)[number];
 
 export function isSelfRegistrationRole(value: string): value is SelfRegistrationRole {

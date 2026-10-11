@@ -18,7 +18,7 @@ export class RegisterAccountUseCase implements RegisterAccountPort {
 
   async execute(input: RegisterAccountInput): Promise<TokenResponse> {
     assertPasswordPolicy(input.password);
-    const role = input.role ?? 'learner';
+    const role = input.role ?? 'user';
     assertAccountRole(role);
 
     const existing = await this.accounts.findByEmail(input.email);
