@@ -323,5 +323,111 @@
       "body": "This class may have been cancelled or the link is wrong.",
       "back": "Back to class list"
     }
+  },
+  "Dashboard": {
+    "page": {
+      "roleChip": "Learner dashboard",
+      "termChip": "Current term",
+      "title": "My schedule and sessions",
+      "subtitle": "Track every booked session, monitor the held escrow, join the room, and approve the credit release when a class is done.",
+      "ctaCalendar": "Sync calendar",
+      "ctaExplore": "Find new classes",
+      "mockBadge": "Demo data"
+    },
+    "metrics": {
+      "upcoming": "Upcoming classes",
+      "upcomingHint": "Next: {when}",
+      "escrow": "Held in escrow",
+      "escrowHint": "Protecting {count} classes",
+      "hours": "Hours learned",
+      "hoursProgress": "{pct}% of monthly target",
+      "review": "Reviews pending",
+      "reviewHint": "Completed, review needed"
+    },
+    "live": {
+      "badge": "LIVE NOW",
+      "join": "Join the room",
+      "materials": "Session materials",
+      "chat": "In-app chat",
+      "progress": "Session progress",
+      "elapsed": "{elapsed}/{total} min",
+      "pct": "{pct}%"
+    },
+    "filters": {
+      "all": "All",
+      "upcoming": "Upcoming",
+      "actionRequired": "Action required",
+      "completed": "Completed",
+      "canceled": "Refunded",
+      "count": "{count}",
+      "searchPlaceholder": "Search subject or teacher..."
+    },
+    "card": {
+      "pending": "Waiting for your confirmation",
+      "autoRelease": "Auto-releases in {time}",
+      "confirmedSlot": "Slot confirmed",
+      "confirmedSlotHint": "{hours} hours until the session",
+      "bookingId": "Booking #{id}",
+      "escrowHeld": "Escrow: {credits} credits",
+      "completed": "Completed",
+      "completedReleased": "Credits released",
+      "completedOn": "Completed: {when}",
+      "reviewGiven": "Review submitted",
+      "reviewStars": "{rating} / 5",
+      "minutes": "Duration: {n} min",
+      "cost": "Cost: {credits} credits",
+      "confirm": "Confirm completion",
+      "confirmReview": "Confirm & send review",
+      "report": "Report an issue",
+      "noShow": "Teacher no-show",
+      "joinRoom": "Join the room",
+      "joinRoomSoon": "Room opens soon",
+      "materials": "Materials",
+      "chat": "Chat",
+      "receipt": "Receipt",
+      "receiptId": "Receipt #{id}",
+      "rebook": "Rebook with the same teacher",
+      "downloadNotes": "Download notes",
+      "ruleTitle": "Escrow protection",
+      "ruleBody": "Your credits are held safely in the ledger. When you confirm completion, the credits are transferred to the teacher. If the teacher is absent for more than 15 minutes, the credits are returned to your wallet.",
+      "noShowBody": "A no-show has been reported. The held credits will be returned to your wallet within 24 hours.",
+      "cancelledBody": "This class has been cancelled. The held credits have been returned to your wallet.",
+      "completedReview": "Your review",
+      "endedAt": "Ended at {when}",
+      "startsAt": "{when} • {duration} min"
+    },
+    "calendar": {
+      "title": "Month view",
+      "prev": "Previous month",
+      "next": "Next month",
+      "weekdays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      "legendLive": "Live today",
+      "legendBooked": "Booked",
+      "noMonth": "No events this month"
+    },
+    "wallet": {
+      "title": "Escrow wallet",
+      "available": "Available",
+      "held": "Held safely",
+      "total": "Estimated total",
+      "vndEstimate": "(~{vnd} VND)",
+      "noDirect": "The teacher only receives the credits after you confirm completion.",
+      "refundPolicy": "Credits are returned to your wallet automatically if the class is cancelled before the deadline.",
+      "details": "View escrow ledger",
+      "signInToView": "Sign in to see your wallet"
+    },
+    "charter": {
+      "title": "Learner rights",
+      "noShowRule": "15-minute teacher no-show rule",
+      "noShowBody": "If the teacher has not joined the room 15 minutes after the start time, the system automatically returns the held credits to your wallet.",
+      "contactRule": "Keep all contact inside the platform",
+      "contactBody": "Every message, file share and video call stays inside SkillSwap so the support team has a full record if a dispute is opened.",
+      "support": "Get academic help"
+    },
+    "empty": {
+      "title": "No sessions yet",
+      "body": "You have not booked a class yet. Browse the marketplace to get started.",
+      "cta": "Browse classes"
+    }
   }
 }

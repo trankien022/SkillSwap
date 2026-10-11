@@ -323,5 +323,111 @@
       "body": "Lớp học này có thể đã bị huỷ hoặc đường dẫn không đúng.",
       "back": "Quay lại danh sách lớp"
     }
+  },
+  "Dashboard": {
+    "page": {
+      "roleChip": "Bảng điều khiển học sinh",
+      "termChip": "Kỳ học hiện tại",
+      "title": "Lịch học & Phiên học của tôi",
+      "subtitle": "Theo dõi tiến độ các buổi học đã đặt, kiểm soát quy trình ký quỹ, truy cập phòng học và phê duyệt giải ngân credits sau mỗi ca học.",
+      "ctaCalendar": "Đồng bộ lịch",
+      "ctaExplore": "Khám phá lớp mới",
+      "mockBadge": "Dữ liệu minh họa"
+    },
+    "metrics": {
+      "upcoming": "Lớp sắp diễn ra",
+      "upcomingHint": "Buổi kế tiếp: {when}",
+      "escrow": "Ký quỹ đang giữ",
+      "escrowHint": "Đang bảo vệ {count} lớp",
+      "hours": "Thời gian tích luỹ",
+      "hoursProgress": "{pct}% mục tiêu tháng",
+      "review": "Đánh giá chờ gửi",
+      "reviewHint": "Đã hoàn tất, cần đánh giá"
+    },
+    "live": {
+      "badge": "ĐANG DIỄN RA",
+      "join": "Tham gia phòng học",
+      "materials": "Tài liệu buổi học",
+      "chat": "Chat nội bộ",
+      "progress": "Tiến độ ca học",
+      "elapsed": "{elapsed}/{total} phút",
+      "pct": "{pct}%"
+    },
+    "filters": {
+      "all": "Tất cả",
+      "upcoming": "Sắp diễn ra",
+      "actionRequired": "Chờ xác nhận",
+      "completed": "Đã hoàn tất",
+      "canceled": "Đã hoàn ký quỹ",
+      "count": "{count}",
+      "searchPlaceholder": "Tìm môn học, giảng viên..."
+    },
+    "card": {
+      "pending": "Chờ bạn xác nhận hoàn tất",
+      "autoRelease": "Tự động giải ngân sau {time}",
+      "confirmedSlot": "Đã chốt slot",
+      "confirmedSlotHint": "Còn {hours} giờ tới buổi học",
+      "bookingId": "Mã đặt: {id}",
+      "escrowHeld": "Ký quỹ: {credits} credits",
+      "completed": "Đã hoàn tất",
+      "completedReleased": "Đã giải ngân ký quỹ",
+      "completedOn": "Hoàn tất: {when}",
+      "reviewGiven": "Đã gửi đánh giá",
+      "reviewStars": "{rating} / 5",
+      "minutes": "Thời lượng: {n} phút",
+      "cost": "Chi phí: {credits} credits",
+      "confirm": "Xác nhận hoàn tất",
+      "confirmReview": "Xác nhận & gửi đánh giá",
+      "report": "Báo cáo sự cố",
+      "noShow": "Giảng viên vắng mặt",
+      "joinRoom": "Vào phòng học",
+      "joinRoomSoon": "Vào phòng học (sắp mở)",
+      "materials": "Tài liệu",
+      "chat": "Chat",
+      "receipt": "Biên lai giao dịch",
+      "receiptId": "Biên lai #{id}",
+      "rebook": "Đặt lại với cùng giảng viên",
+      "downloadNotes": "Tải ghi chú",
+      "ruleTitle": "Quy tắc bảo vệ",
+      "ruleBody": "Số credits đang được giữ an toàn trong sổ cái. Khi bạn xác nhận hoàn tất, số credits sẽ được chuyển sang ví giảng viên. Nếu giảng viên vắng mặt quá 15 phút hoặc vi phạm cam kết, bạn sẽ được hoàn về ví theo chính sách.",
+      "noShowBody": "Đã báo cáo sự cố vắng mặt. Hệ thống sẽ hoàn credits ký quỹ về ví của bạn trong vòng 24 giờ.",
+      "cancelledBody": "Lớp học đã được huỷ. Số credits ký quỹ đã hoàn về ví của bạn.",
+      "completedReview": "Đánh giá bạn đã gửi",
+      "endedAt": "Đã kết thúc lúc {when}",
+      "startsAt": "{when} • {duration} phút"
+    },
+    "calendar": {
+      "title": "Lịch theo tháng",
+      "prev": "Tháng trước",
+      "next": "Tháng sau",
+      "weekdays": ["T2", "T3", "T4", "T5", "T6", "T7", "CN"],
+      "legendLive": "Lớp đang diễn ra",
+      "legendBooked": "Lớp đã chốt slot",
+      "noMonth": "Chưa có lịch cho tháng này"
+    },
+    "wallet": {
+      "title": "Ví ký quỹ",
+      "available": "Số dư khả dụng",
+      "held": "Đang giữ an toàn",
+      "total": "Tổng tài sản ước tính",
+      "vndEstimate": "(~{vnd} VNĐ)",
+      "noDirect": "Giảng viên chưa nhận được credits cho tới khi bạn xác nhận hoàn tất.",
+      "refundPolicy": "Hoàn về ví tự động nếu buổi học bị huỷ trước giờ quy định.",
+      "details": "Chi tiết nhật ký ký quỹ",
+      "signInToView": "Đăng nhập để xem số dư ví"
+    },
+    "charter": {
+      "title": "Quyền lợi học sinh",
+      "noShowRule": "Quy tắc giảng viên vắng mặt 15 phút",
+      "noShowBody": "Nếu giảng viên không vào phòng sau 15 phút tính từ giờ bắt đầu, hệ thống tự động hoàn credits ký quỹ về ví của bạn.",
+      "contactRule": "Liên lạc an toàn qua nền tảng",
+      "contactBody": "Mọi trao đổi, gửi mã nguồn và cuộc gọi video đều diễn ra nội bộ trong SkillSwap để bảo đảm căn cứ giải quyết tranh chấp học thuật.",
+      "support": "Cần trợ giúp học vụ"
+    },
+    "empty": {
+      "title": "Chưa có buổi học nào",
+      "body": "Bạn chưa đặt lớp nào. Hãy khám phá các lớp hiện có.",
+      "cta": "Khám phá lớp"
+    }
   }
 }

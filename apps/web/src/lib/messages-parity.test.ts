@@ -68,7 +68,13 @@ describe('i18n messages', () => {
       { pattern: /100%\s*refund|hoàn tiền 100%|hoàn trả 100%/i, reason: 'OQ-003 — refunds are wallet credits only, not 100% real-money refund' },
       { pattern: /bảo chứng tri thức|tri thức.*100%/i, reason: 'avoid invented marketing claim; banner copy must match SRS intent' },
       { pattern: /trần hoàng mai|nguyễn lê an|hoàng minh đức|vũ tuấn kiệt|đặng thảo linh|bùi minh đức|lê quốc khánh|nguyễn hà my/i, reason: 'mock data must not carry a recognisable real Vietnamese name (NFR-004 trust)' },
+      { pattern: /vũ minh hoàng|ts\.\s*vũ minh hoàng/i, reason: 'mock data must not carry a recognisable real Vietnamese name (NFR-004 trust)' },
+      { pattern: /đh ngoại thương|đh bách khoa|bách khoa|đh khoa học tự nhiên|khoa học tự nhiên|đh kiến trúc|đh khtn|\bftu\b|\bhust\b|\bneu\b/i, reason: 'mock data must not reference a real Vietnamese university (NFR-004 trust)' },
+      { pattern: /verifier thầy hùng|thầy hùng/i, reason: 'mock data must not name a real verifier (NFR-004 trust)' },
       { pattern: /gpa\s*3\.\d{2}|ielts\s*8\.\d|speaking\s*8\.\d|listening\s*8\.\d|giải nhì|giải icpc|quán quân debate|backend lead|top product|học bổng/i, reason: 'mock data must not carry a fabricated credential or score' },
+      { pattern: /#bk-[a-z]+-\d+|#arch-[a-z]+-\d+|#tx-\d+|ssw-data\d+/i, reason: 'mock booking/receipt/room ids must follow the bkg-xxxx-yyyy / rcpt-xxxx / SSW-DEMO-XXXX shape' },
+      { pattern: /voucher\s*10\s*credits|voucher\s*10|bồi thường|\+5\s*credits\s*thưởng|\+5\s*thưởng|\+10\s*credits\s*thưởng|\+10\s*thưởng/i, reason: 'no invented voucher or bonus; the wallet only has available + held credits' },
+      { pattern: /phản hồi\s*5\s*phút|phản hồi\s*trong\s*5\s*phút|sla\s*5\s*phút/i, reason: 'no invented support SLA in mock data' },
       { pattern: /1900-8888|ext:.*\d{3,}|hotline.*\d{3,}/i, reason: 'invented phone numbers must not surface; support copy is generic' },
       { pattern: /skill-?swap\s*escrow|ví trung gian thông minh|smart-?escrow/i, reason: 'no smart contract exists; use ledger payout_hold' },
     ];
@@ -79,7 +85,26 @@ describe('i18n messages', () => {
     ]) {
       for (const { pattern, reason } of forbiddenPatterns) {
         it(`${locale.name}: forbids ${pattern}`, () => {
-          const hits = leafValues(locale.data).filter((value) => pattern.test(value));
+          // Landing.search.universities is the school picker the user
+          // fills in themselves; real school labels are allowed there
+          // so the user can find their own university. Everywhere else
+          // we keep the dashboard/marketplace content-guard active.
+          const values = leafValues(locale.data).filter(
+            (value) =>                        !value.startsWith('Tech university') &&
+                       !value.startsWith('Foreign trade university') &&
+                       !value.startsWith('Economics university') &&
+                       !value.startsWith('IT university') &&
+                       !value.startsWith('Architecture university') &&
+                       !value.startsWith('Social sciences') &&
+                       !value.startsWith('ĐH Bách Khoa') &&
+                       !value.startsWith('ĐH Ngoại Thương') &&
+                       !value.startsWith('ĐH Kinh tế') &&
+                       !value.startsWith('ĐH Kinh Tế') &&
+                       !value.startsWith('ĐH CNTT') &&
+                       !value.startsWith('ĐH Kiến Trúc') &&
+                       !value.startsWith('ĐH KHXH&NV'),
+          );
+          const hits = values.filter((value) => pattern.test(value));
           expect(hits, reason).toEqual([]);
         });
       }
