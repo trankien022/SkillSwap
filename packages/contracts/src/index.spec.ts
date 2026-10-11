@@ -425,8 +425,8 @@ describe('wallet history schemas (FR-010 / ADR-022)', () => {
     expect(() => walletHistoryItemSchema.parse({ ...item, amountCredits: -5 })).toThrow();
   });
 
-  it('round-trips a page with a next cursor', () => {
-    const page = { items: [], nextCursor: 'xyz' };
+  it('round-trips a paged result with metadata (NFR-014)', () => {
+    const page = { items: [], page: { limit: 20, nextCursor: 'xyz', total: 3 } };
     expect(walletHistoryPageSchema.parse(page)).toEqual(page);
   });
 });

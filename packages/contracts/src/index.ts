@@ -3,6 +3,8 @@ import { z } from 'zod';
 export * from './envelope';
 export * from './pagination';
 
+import { pagedSchema } from './pagination';
+
 export const identityHeadersSchema = z.object({
   'x-user-id': z.string().min(1).optional(),
   'x-user-email': z.string().email().optional(),
@@ -292,10 +294,8 @@ export const walletHistoryItemSchema = z.object({
 });
 export type WalletHistoryItemView = z.infer<typeof walletHistoryItemSchema>;
 
-export const walletHistoryPageSchema = z.object({
-  items: z.array(walletHistoryItemSchema),
-  nextCursor: z.string().min(1).nullable(),
-});
+/** FR-010 / NFR-014 (ADR-022): a page of wallet history with page metadata. */
+export const walletHistoryPageSchema = pagedSchema(walletHistoryItemSchema);
 export type WalletHistoryPage = z.infer<typeof walletHistoryPageSchema>;
 
 /** FR-011: join an online class room (ADR-020). */
