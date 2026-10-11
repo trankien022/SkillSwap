@@ -65,6 +65,29 @@ export async function seedVerifier(
   }
 }
 
+/**
+ * FR-001/FR-004 / ADR-029: provisions a real verifier account (role `verifier`) in
+ * `account-profile` plus its expertise, and returns the account id.
+ */
+export async function seedVerifierAccount(
+  harness: Harness,
+  input: { email: string; expertise: string[]; displayName?: string },
+): Promise<string> {
+  const rows = await harness.query<{ id: string }>(
+    'account-profile',
+    `INSERT INTO accounts ("email", "display_name", "role", "status")
+     VALUES (lower($1), $2, 'verifier', 'active')
+     RETURNING "id"`,
+    [input.email, input.displayName ?? 'Provisioned Verifier'],
+  );
+  const accountId = rows[0]?.id;
+  if (accountId === undefined) {
+    throw new Error('Failed to seed verifier account');
+  }
+  await seedVerifier(harness, { accountId, expertise: input.expertise });
+  return accountId;
+}
+
 /** Reads a wallet balance straight from Postgres. */
 export async function walletRow(
   harness: Harness,
