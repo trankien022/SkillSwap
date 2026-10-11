@@ -1,4 +1,5 @@
 import type { ProfileSkill, SkillEvidence, SkillLevel } from '../../../domain/evidence';
+import type { EvidenceAuditEntry } from '../../../domain/history';
 
 export const PROFILE_SKILL_REPOSITORY = Symbol('ProfileSkillRepository');
 export const SKILL_EVIDENCE_REPOSITORY = Symbol('SkillEvidenceRepository');
@@ -129,4 +130,16 @@ export interface VerifierRepository {
   findById(accountId: string): Promise<VerifierRecord | null>;
   /** FR-004: an Administrator sets a Verifier's lifecycle status. */
   setStatus(accountId: string, status: 'active' | 'suspended' | 'revoked'): Promise<VerifierRecord | null>;
+}
+
+export const EVIDENCE_AUDIT_REPOSITORY = Symbol('EvidenceAuditRepository');
+
+/**
+ * FR-018 / ADR-028: append-only evidence history. The writer is called by the
+ * repositories that already own the transaction (submit/claim/decide) so the audit
+ * row commits with the state change; the reader serves the history endpoint.
+ */
+export interface EvidenceAuditRepository {
+  /** The audit entries for a profile-skill, newest version then newest time first. */
+  listByProfileSkill(profileSkillId: string): Promise<EvidenceAuditEntry[]>;
 }

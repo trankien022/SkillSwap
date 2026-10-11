@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { insertOutboxStatement } from '../../../../../../shared/messaging/outbox-statements';
 import { qualified } from '../../../../../../shared/sql/ident';
@@ -10,6 +11,8 @@ import {
   type EvidenceType,
   type SkillLevel,
 } from '../../../domain/evidence';
+import type { EvidenceAuditSnapshot } from '../../../domain/history';
+import { appendEvidenceAudit } from './sql-evidence-audit-repository';
 import type {
   ApplyEvidenceDecisionRequest,
   ApplyEvidenceDecisionResult,
@@ -67,6 +70,18 @@ const SELECT_COLUMNS =
   '"id", "profile_skill_id", "evidence_type", "document_ref", "description", "version", ' +
   '"requested_level", "approved_level", "status", "claimed_by", "claimed_at", ' +
   '"reviewer_id", "reason", "decided_at", "submitted_at"';
+
+/** FR-018 / ADR-028: the whitelisted decision-relevant snapshot (never contents). */
+function snapshotOf(row: EvidenceRow): EvidenceAuditSnapshot {
+  return {
+    version: row.version,
+    status: row.status as EvidenceStatus,
+    evidenceType: row.evidence_type as EvidenceType,
+    requestedLevel: row.requested_level as SkillLevel,
+    approvedLevel: row.approved_level as SkillLevel | null,
+    reason: row.reason,
+  };
+}
 
 /** FR-003 / ADR-013: evidence versions; the submit write and the event share a transaction. */
 export class SqlSkillEvidenceRepository implements SkillEvidenceRepository {
@@ -132,6 +147,20 @@ export class SqlSkillEvidenceRepository implements SkillEvidenceRepository {
           occurredAt: request.submittedAt.toISOString(),
         },
       ]);
+      await appendEvidenceAudit(manager, this.schema, {
+        id: randomUUID(),
+        evidenceId: row.id,
+        profileSkillId: row.profile_skill_id,
+        version: row.version,
+        action: 'submitted',
+        actorId: request.accountId,
+        fromStatus: null,
+        toStatus: 'pending',
+        reason: null,
+        snapshot: snapshotOf(row),
+        occurredAt: request.submittedAt,
+        traceId: null,
+      });
       return toDomain(row);
     });
   }
@@ -217,6 +246,20 @@ export class SqlSkillEvidenceRepository implements SkillEvidenceRepository {
           occurredAt: request.claimedAt.toISOString(),
         },
       ]);
+      await appendEvidenceAudit(manager, this.schema, {
+        id: randomUUID(),
+        evidenceId: row.id,
+        profileSkillId: row.profile_skill_id,
+        version: row.version,
+        action: 'claimed',
+        actorId: request.verifierId,
+        fromStatus: 'pending',
+        toStatus: 'claimed',
+        reason: null,
+        snapshot: snapshotOf(row),
+        occurredAt: request.claimedAt,
+        traceId: null,
+      });
       return { evidence: toDomain(row), skillId: request.skillId, ownerId: request.ownerId };
     });
   }
@@ -249,12 +292,32 @@ export class SqlSkillEvidenceRepository implements SkillEvidenceRepository {
       if (request.status === 'approved') {
         // AC-016: supersede the previous approval in the same transaction. The
         // profile-skill level cache is written by the use case (applyApprovedLevel).
-        await manager.query(
-          `UPDATE ${this.table}
-             SET "status" = 'superseded'
-           WHERE "profile_skill_id" = $1 AND "status" = 'approved' AND "id" <> $2`,
-          [row.profile_skill_id, row.id],
+        const superseded = returnedRows<EvidenceRow>(
+          await manager.query(
+            `UPDATE ${this.table}
+               SET "status" = 'superseded'
+             WHERE "profile_skill_id" = $1 AND "status" = 'approved' AND "id" <> $2
+             RETURNING ${SELECT_COLUMNS}`,
+            [row.profile_skill_id, row.id],
+          ),
         );
+        // FR-018: record why each previously-effective version stopped being effective.
+        for (const previous of superseded) {
+          await appendEvidenceAudit(manager, this.schema, {
+            id: randomUUID(),
+            evidenceId: previous.id,
+            profileSkillId: previous.profile_skill_id,
+            version: previous.version,
+            action: 'superseded',
+            actorId: request.reviewerId,
+            fromStatus: 'approved',
+            toStatus: 'superseded',
+            reason: request.reason,
+            snapshot: snapshotOf(previous),
+            occurredAt: request.decidedAt,
+            traceId: null,
+          });
+        }
       }
       await manager.query(insertOutboxStatement(this.schema), [
         request.status === 'approved' ? SKILL_EVIDENCE_EVENTS.approved : SKILL_EVIDENCE_EVENTS.rejected,
@@ -271,6 +334,20 @@ export class SqlSkillEvidenceRepository implements SkillEvidenceRepository {
           occurredAt: request.decidedAt.toISOString(),
         },
       ]);
+      await appendEvidenceAudit(manager, this.schema, {
+        id: randomUUID(),
+        evidenceId: row.id,
+        profileSkillId: row.profile_skill_id,
+        version: row.version,
+        action: request.status === 'approved' ? 'approved' : 'rejected',
+        actorId: request.reviewerId,
+        fromStatus: 'claimed',
+        toStatus: request.status,
+        reason: row.reason,
+        snapshot: snapshotOf(row),
+        occurredAt: request.decidedAt,
+        traceId: null,
+      });
       return { applied: true };
     });
   }
