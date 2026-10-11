@@ -53,10 +53,10 @@ describe('E2E: student verification document upload (real S3/MinIO)', () => {
       email: 's3-learner@skillswap.test',
       displayName: 'S3 Learner',
       password: 'learner-password',
-      role: 'learner',
+      role: 'user',
     });
     const learnerId = accountIdFromToken(registered.json.accessToken);
-    api.actAs(learnerId, 'learner');
+    api.actAs(learnerId, 'user');
 
     const body = 'hello skillswap';
     const presign = await api.post('/api/student-verifications/documents', {

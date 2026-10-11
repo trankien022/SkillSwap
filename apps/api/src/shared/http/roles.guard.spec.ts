@@ -30,7 +30,7 @@ describe('RolesGuard (FR-002 / NFR-009)', () => {
   });
 
   it('forbids an identity with a different role', () => {
-    expect(() => guardWith(['admin']).canActivate(contextFor({ id: 'u1', role: 'learner' }))).toThrow(
+    expect(() => guardWith(['admin']).canActivate(contextFor({ id: 'u1', role: 'user' }))).toThrow(
       ForbiddenException,
     );
   });

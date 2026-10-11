@@ -66,7 +66,7 @@ describe('RevokeStudentVerificationUseCase (FR-019 / ADR-025)', () => {
       context.revoke.execute({
         verificationId: id,
         reviewerId: 'u1',
-        reviewerRole: 'learner',
+        reviewerRole: 'user',
         reason: 'x',
       }),
     ).rejects.toBeInstanceOf(InvalidDeciderError);

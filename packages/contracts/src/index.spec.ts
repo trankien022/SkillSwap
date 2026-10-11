@@ -386,13 +386,13 @@ describe('bookingSchema', () => {
 });
 
 describe('auth schemas (ADR-016)', () => {
-  it('accepts a valid registration and defaults the role to learner', () => {
+  it('accepts a valid registration and defaults the role to user', () => {
     const parsed = registerSchema.parse({
       email: 'a@b.co',
       displayName: 'An',
       password: 'secret-password',
     });
-    expect(parsed.role).toBe('learner');
+    expect(parsed.role).toBe('user');
   });
 
   it('rejects a short password and a bad email', () => {
@@ -403,16 +403,18 @@ describe('auth schemas (ADR-016)', () => {
   });
 
   it('accepts only the known account roles', () => {
-    expect(accountRoleSchema.parse('teacher')).toBe('teacher');
+    expect(accountRoleSchema.parse('user')).toBe('user');
     expect(accountRoleSchema.parse('verifier')).toBe('verifier');
-    expect(accountRoleSchema.options).toEqual(['learner', 'teacher', 'verifier', 'admin']);
+    expect(accountRoleSchema.options).toEqual(['user', 'verifier', 'admin']);
     expect(() => accountRoleSchema.parse('superuser')).toThrow();
+    expect(() => accountRoleSchema.parse('learner')).toThrow();
+    expect(() => accountRoleSchema.parse('teacher')).toThrow();
   });
 
-  it('restricts public registration to learner/teacher (ADR-029)', () => {
-    expect(selfRegistrationRoleSchema.options).toEqual(['learner', 'teacher']);
+  it('restricts public registration to the ordinary user role (ADR-030)', () => {
+    expect(selfRegistrationRoleSchema.options).toEqual(['user']);
     expect(registerSchema.parse({ email: 'a@b.co', displayName: 'A', password: 'password1' }).role).toBe(
-      'learner',
+      'user',
     );
     expect(() =>
       registerSchema.parse({ email: 'a@b.co', displayName: 'A', password: 'password1', role: 'admin' }),
@@ -432,7 +434,7 @@ describe('auth schemas (ADR-016)', () => {
       id: 'u1',
       email: 'a@b.co',
       displayName: 'An',
-      role: 'learner',
+      role: 'user',
       status: 'active',
       studentVerification: null,
     };
@@ -444,7 +446,7 @@ describe('auth schemas (ADR-016)', () => {
       id: 'u1',
       email: 'a@b.co',
       displayName: 'An',
-      role: 'learner',
+      role: 'user',
       status: 'active',
       studentVerification: { status: 'rejected', reason: 'Illegible document' },
     };

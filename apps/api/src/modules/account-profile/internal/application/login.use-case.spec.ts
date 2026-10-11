@@ -45,7 +45,7 @@ describe('LoginUseCase', () => {
     const suspended = await accounts.create({
       email: 'susp@b.co',
       displayName: 'S',
-      role: 'learner',
+      role: 'user',
       status: 'suspended',
     });
     await credentials.save(suspended.id, {
