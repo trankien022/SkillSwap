@@ -45,6 +45,7 @@ Tham chiếu: [plan](plan.md). Đang triển khai; T01 đã review contracts/own
   - Verify: mock signed callback thực + đối soát ledger/wallet.
   - Depends: T03,T05. Files: wallet service/adapter/screens/harness. Scope: M.
 - [ ] T09. Booking + confirmation nối flow có sẵn.
+  - Prerequisite: tasks/payment-boundary-review.md phases A-D; replay ownership, expired holds and confirmation-before-settlement must be corrected before acceptance.
   - AC: giữ idempotency key retry; Pending/Confirmed/insufficient credit đúng; không có learner cancel.
   - Verify: 24h/full/self-book/duplicate/retry tests + phone booking.
   - Depends: T07,T08. Files: booking service/gateway/UI. Scope: M.

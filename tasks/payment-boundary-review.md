@@ -1,0 +1,16 @@
+# T09 prerequisite: confirmation and payment review
+
+Observed source issues during independent review, 12 October 2026. These are acceptance blockers, not proven production incidents. The mobile demo has not been accepted as a paid-booking flow.
+
+1. BookClassUseCase and createWithSeatGuard replay globally unique idempotency keys without verifying the original learner/class. A reused key must never return another caller's booking or silently select another class.
+2. SqlBookingRepository.confirmAndEmit changes pending to confirmed before wallet-ledger consumes booking.confirmed. Settlement can reject insufficient credits while the booking remains confirmed. This conflicts with ADR-018's stated consequence that confirmation follows successful settlement and AC-005's prohibition on partial financial success.
+3. The confirmation update has no expiration predicate. Expired pending holds must not be confirmed merely because the expiry worker has not run yet.
+
+Implementation phases (each separate meaningful commit):
+
+- A. Enforce replay learner/class ownership in application and persistence race path, and reject expired pending confirmation under the database clock. Focused unit/persistence tests plus strict Gateway two-account replay and expired-hold probes. Preserve contracts and existing HTTP409 domain reason; no schema/event changes.
+- B. Clarify the existing event-driven ADR-018 settlement boundary in an append-only ADR before changing the saga. Keep seven schemas, per-module transactions and outbox/idempotent consumers; never introduce cross-schema transaction code. Specify pending confirmation request, successful wallet settlement outcome, final booking confirmation, expiry/cancel/late-settlement compensation and replay/restart behavior. Document the literal single-transaction wording in SRS as a consistency discrepancy rather than silently claiming it is met.
+- C. Implement the agreed outbox outcome contract using the already approved wallet.transaction.completed event family (ADR-031) with required booking correlation. Wallet write and outcome event must share one transaction. Confirm only after successful outcome; handle duplicate and late outcomes and insufficient funds without a partial success state. No new event names invented. Extend focused tests and persisted broker/ledger probes, including forced insufficient-credit and concurrent cancel/expiry cases.
+- D. Mobile confirmation displays processing/reconciliation until authoritative settled evidence. Balance checks are user feedback only, never payment authority. Network/401 retries retain operation identity. Update inbox/reminder consumers so no booking-confirmed notification or room access is granted before successful settlement. Full pnpm verify and real native integration before T09 closes.
+
+Existing happy-path payment E2E evidence proves successful deduction/split/refund for funded accounts. It does not prove the failed-settlement booking state is correct. Preserve that evidence boundary.
