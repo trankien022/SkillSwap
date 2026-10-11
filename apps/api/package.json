@@ -9,7 +9,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:e2e": "jest --config jest.e2e.config.cjs --runInBand"
+    "test:e2e": "jest --config jest.e2e.config.cjs --runInBand --forceExit"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
