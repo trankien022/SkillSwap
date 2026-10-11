@@ -161,10 +161,15 @@ export function Navbar({
                 <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center ring-2 ring-emerald-50 text-emerald-800 font-semibold text-xs shrink-0">
                   {initials}
                 </div>
-                <div className="hidden sm:flex flex-col text-left shrink-0">
-                  <span className="text-xs font-semibold text-slate-900 leading-tight whitespace-nowrap">{displayName}</span>
+                <div className="hidden sm:flex flex-col text-left min-w-0">
+                  <span
+                    className="text-xs font-semibold text-slate-900 leading-tight truncate max-w-[120px] sm:max-w-[140px] block"
+                    title={displayName}
+                  >
+                    {displayName}
+                  </span>
                   <span className="text-[11px] text-slate-500 whitespace-nowrap">
-                    {isVerified ? 'SV đã xác minh' : (locale === 'vi' ? 'Học viên' : 'Learner')}
+                    {isVerified ? (locale === 'vi' ? 'SV đã xác minh' : 'Verified Student') : (locale === 'vi' ? 'Học viên' : 'Learner')}
                   </span>
                 </div>
               </a>
