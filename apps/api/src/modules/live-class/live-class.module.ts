@@ -13,6 +13,27 @@ import { SqlBookingRepository } from './internal/adapter/out/persistence/sql-boo
 import { SqlTeacherTrustProjector } from './internal/adapter/out/persistence/sql-teacher-trust-projector';
 import { StatusController } from './internal/adapter/in/web/status.controller';
 import { ClassesController } from './internal/adapter/in/web/classes.controller';
+import {
+  AccountProfileModule,
+  PUBLIC_PROFILE_READER,
+  type PublicProfileReader,
+} from '../account-profile/api';
+import { SqlClassListReader } from './internal/adapter/out/persistence/sql-class-list-reader';
+import { AccountProfilePublicTeacherReader } from './internal/adapter/out/account-profile/account-profile-public-teacher-reader';
+import { ClassListController } from './internal/adapter/in/web/class-list.controller';
+import { ListClassesQueryHandler } from './internal/application/query/list-classes.query';
+import {
+  LIST_CLASSES,
+  type ListClassesPort,
+} from './internal/application/port/in/list-classes';
+import {
+  CLASS_LIST_READER,
+  type ClassListReader,
+} from './internal/application/port/out/class-list-reader';
+import {
+  PUBLIC_TEACHER_READER,
+  type PublicTeacherReader,
+} from './internal/application/port/out/public-teacher-reader';
 import { AdvanceStatusUseCase } from './internal/application/advance-status.use-case';
 import { CreateClassUseCase } from './internal/application/create-class.use-case';
 import { ProjectTeacherTrustUseCase } from './internal/application/project-teacher-trust.use-case';
@@ -130,7 +151,8 @@ export class LiveClassRegistrar implements OnModuleInit {
 const systemClock: Clock = { now: () => new Date() };
 
 @Module({
-  controllers: [StatusController, ClassesController],
+  imports: [AccountProfileModule],
+  controllers: [StatusController, ClassesController, ClassListController],
   providers: [
     {
       provide: STATUS_READER,
@@ -305,6 +327,28 @@ const systemClock: Clock = { now: () => new Date() };
       useFactory: (complete: CompleteElapsedClassesPort, logger: AppLogger) =>
         new ClassCompletionSweeper(complete, logger),
       inject: [COMPLETE_ELAPSED_CLASSES, AppLogger],
+    },
+    {
+      provide: CLASS_LIST_READER,
+      useFactory: (registry: ModuleDataSourceRegistry): ClassListReader =>
+        new SqlClassListReader(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
+      provide: PUBLIC_TEACHER_READER,
+      useFactory: (reader: PublicProfileReader): PublicTeacherReader =>
+        new AccountProfilePublicTeacherReader(reader),
+      inject: [PUBLIC_PROFILE_READER],
+    },
+    {
+      provide: LIST_CLASSES,
+      useFactory: (
+        classListReader: ClassListReader,
+        publicTeacherReader: PublicTeacherReader,
+        clock: Clock,
+      ): ListClassesPort =>
+        new ListClassesQueryHandler(classListReader, publicTeacherReader, clock),
+      inject: [CLASS_LIST_READER, PUBLIC_TEACHER_READER, CLOCK],
     },
     LiveClassRegistrar,
   ],

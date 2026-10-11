@@ -493,3 +493,5 @@ export const skillEvidenceHistorySchema = z.object({
 export type SkillEvidenceHistoryView = z.infer<typeof skillEvidenceHistorySchema>;
 
 export * from './mobile-catalogue';
+export * from './mobile-classes';
+
