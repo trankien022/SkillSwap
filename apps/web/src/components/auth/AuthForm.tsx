@@ -221,35 +221,43 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
       <div className="lg:col-span-7">
         <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10 lg:max-w-none">
           {/* Chuyển Tab */}
-          <div className="mb-7 flex border-b border-slate-200">
-            <button
-              type="button"
-              onClick={() => {
-                setTab('register');
-                setErrorMessage('');
-              }}
-              className={`-mb-[1px] px-5 pb-3 text-sm font-semibold transition-all ${
-                tab === 'register'
-                  ? 'border-b-2 border-emerald-600 text-emerald-700'
-                  : 'border-b-2 border-transparent text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              {t('tabRegister')}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setTab('login');
-                setErrorMessage('');
-              }}
-              className={`-mb-[1px] px-5 pb-3 text-sm font-semibold transition-all ${
-                tab === 'login'
-                  ? 'border-b-2 border-emerald-600 text-emerald-700'
-                  : 'border-b-2 border-transparent text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              {t('tabLogin')}
-            </button>
+          <div className="mb-7 border-b border-slate-200">
+            <div className="-mb-px flex gap-8">
+              <button
+                type="button"
+                onClick={() => {
+                  setTab('register');
+                  setErrorMessage('');
+                }}
+                className={`relative pb-3.5 text-sm font-semibold transition-colors ${
+                  tab === 'register'
+                    ? 'text-emerald-700'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <span>{t('tabRegister')}</span>
+                {tab === 'register' && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-emerald-600" />
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTab('login');
+                  setErrorMessage('');
+                }}
+                className={`relative pb-3.5 text-sm font-semibold transition-colors ${
+                  tab === 'login'
+                    ? 'text-emerald-700'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <span>{t('tabLogin')}</span>
+                {tab === 'login' && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-emerald-600" />
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Nút liên kết tài khoản (Disabled kèm chú thích) */}
