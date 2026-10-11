@@ -136,6 +136,46 @@ export const bookingSchema = z.object({
 });
 export type BookingView = z.infer<typeof bookingSchema>;
 
+/** FR-007 / API-005: book a class. `created` is false on an idempotent replay. */
+export const bookClassResultSchema = z.object({
+  booking: bookingSchema,
+  created: z.boolean(),
+});
+export type BookClassResultView = z.infer<typeof bookClassResultSchema>;
+
+/** FR-009 / API-006: confirm a pending booking. `booking` is null when nothing was pending. */
+export const confirmBookingResultSchema = z.object({
+  confirmed: z.boolean(),
+  booking: bookingSchema.nullable(),
+});
+export type ConfirmBookingResultView = z.infer<typeof confirmBookingResultSchema>;
+
+/** FR-007 / AC-022: cancel a class and refund affected learners. */
+export const cancelClassResultSchema = z.object({
+  classCancelled: z.boolean(),
+  bookingsCancelled: z.number().int().min(0),
+});
+export type CancelClassResultView = z.infer<typeof cancelClassResultSchema>;
+
+/** FR-007 / AC-024: mark a teacher no-show for a booking. */
+export const markTeacherNoShowResultSchema = z.object({
+  cancelled: z.boolean(),
+});
+export type MarkTeacherNoShowResultView = z.infer<typeof markTeacherNoShowResultSchema>;
+
+/** FR-020 / ADR-021: start a class the teacher is holding. */
+export const startClassResultSchema = z.object({
+  started: z.boolean(),
+});
+export type StartClassResultView = z.infer<typeof startClassResultSchema>;
+
+/** FR-020 / ADR-021: complete a class; `basis` is the completion reason, null when not completed. */
+export const completeClassResultSchema = z.object({
+  completed: z.boolean(),
+  basis: z.string().min(1).nullable(),
+});
+export type CompleteClassResultView = z.infer<typeof completeClassResultSchema>;
+
 /** FR-001 / ADR-030: an account has exactly one access role. Learner/Teacher are capabilities, not roles. */
 export const accountRoleSchema = z.enum(['user', 'verifier', 'admin']);
 export type AccountRole = z.infer<typeof accountRoleSchema>;

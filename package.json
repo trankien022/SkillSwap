@@ -22,6 +22,8 @@
     "db:down": "docker compose down",
     "db:migrate": "pnpm build && node scripts/migrate.mjs",
     "db:seed-verifier": "pnpm build && node scripts/seed-verifiers.mjs",
+    "db:demo": "node scripts/db-demo.mjs",
+    "docs:api": "pnpm build && node scripts/gen-api-docs.cjs",
     "keys:gen": "node scripts/generate-dev-keys.mjs"
   },
   "devDependencies": {
