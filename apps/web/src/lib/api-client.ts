@@ -173,54 +173,19 @@ export async function callApi(path: string, init: RequestInit = {}, retry = true
   return res;
 }
 
-/** One structured entry of a failure envelope's `errors` array. */
-export interface ApiErrorItem {
-  code: string;
-  message: string;
-}
-
-/** NFR-013: the uniform response envelope every domain endpoint returns. */
-export interface ApiEnvelope<T> {
-  success: boolean;
-  code: string;
-  message: string;
-  data: T;
-  errors: ApiErrorItem[];
-}
-
-/** Raised when a domain response reports `success: false`. */
-export class ApiError extends Error {
-  constructor(
-    readonly code: string,
-    message: string,
-    readonly errors: ApiErrorItem[],
-  ) {
-    super(message);
-    this.name = 'ApiError';
-  }
-}
+import { unwrapEnvelope, type ApiEnvelope } from '@skillswap/contracts';
 
 /**
- * Reads a domain response body and returns its `data`, throwing an `ApiError`
- * (carrying the stable `code`) when the envelope reports a failure. Health
- * probes are the only raw responses and are never read through this helper.
+ * NFR-013: the envelope runtime layer is shared from `@skillswap/contracts` so web, mobile and any
+ * other client parse responses identically. Re-exported here so existing imports keep working;
+ * transport concerns (base URL, auth, retry) stay in this file.
  *
- * Branch on `error.code` / `error.errors[].code`, never on the human message.
+ * `ApiError` is kept as a local alias of the shared `ApiResponseError` for call sites/tests that
+ * import it from here (the `contracts` package already uses `ApiError` for the legacy
+ * `apiErrorSchema` type, so the class is named `ApiResponseError` at the source).
  */
-export async function unwrapEnvelope<T>(res: Response): Promise<T> {
-  const body = (await res.json().catch(() => null)) as ApiEnvelope<T> | null;
-  if (body === null || typeof body !== 'object' || !('success' in body)) {
-    if (!res.ok) {
-      throw new ApiError(`HTTP_${res.status}`, `Request failed (${res.status})`, []);
-    }
-    // Fallback for a legacy/raw body (defensive; domain endpoints are enveloped).
-    return body as unknown as T;
-  }
-  if (!body.success) {
-    throw new ApiError(body.code, body.message, body.errors ?? []);
-  }
-  return body.data;
-}
+export { unwrapEnvelope, type ApiEnvelope, type ApiErrorItem } from '@skillswap/contracts';
+export { ApiResponseError as ApiError, ApiResponseError } from '@skillswap/contracts';
 
 export async function authenticate(
   mode: 'login' | 'register',

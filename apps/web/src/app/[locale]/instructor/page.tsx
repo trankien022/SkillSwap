@@ -158,11 +158,7 @@ export default function InstructorDashboard() {
         }),
       });
 
-      if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { message?: string };
-        throw new Error(err.message || 'Không thể tạo lớp học');
-      }
-
+      // NFR-013: unwrapEnvelope throws an ApiError (with the domain `code`) on failure.
       const created = await unwrapEnvelope<{ id: string }>(res);
       const newClassItem: CreatedClassItem = {
         id: created.id,

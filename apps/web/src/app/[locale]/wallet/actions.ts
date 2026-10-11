@@ -1,5 +1,6 @@
 'use server';
 
+import { unwrapEnvelope } from '@skillswap/contracts';
 import { DEFAULT_API_BASE } from '../../../lib/status';
 
 interface TopUpIntent {
@@ -17,11 +18,7 @@ export async function createTopUpIntent(amountVnd: number): Promise<TopUpIntent>
     cache: 'no-store',
   });
   
-  if (!res.ok) {
-    throw new Error(`Top-up API failed with status ${res.status}`);
-  }
-  
-  // NFR-013: unwrap the uniform envelope; the payload is under `data`.
-  const body = (await res.json()) as { success: boolean; data: TopUpIntent };
-  return body.data;
+  // NFR-013: the shared contracts layer validates the envelope and returns `data`,
+  // throwing an ApiResponseError (with the stable `code`) on failure.
+  return unwrapEnvelope<TopUpIntent>(res);
 }
