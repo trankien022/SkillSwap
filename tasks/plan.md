@@ -59,6 +59,20 @@ Skill evidence dùng dạng capability recognition + description đã được c
 
 ## 5. Ngân sách 30 APIs
 
+### Trạng thái triển khai đối chiếu source (12/10/2026)
+
+Ma trận bên dưới là phạm vi đích, không tự nó chứng minh hoàn tất. Kiểm kê controller cho thấy 26/30 method+route đã có handler trong API; thiếu route rating và ba route notifications/device subscriptions. Kiểm kê mobile UI cho thấy các luồng auth, marketplace/catalogue/detail, booking/confirm, my bookings, wallet đang được gọi; các route còn lại cần adapter/UI hoặc chưa có API. Chỉ tăng số “app integrated” khi có caller thực trong UI, contract validation và kiểm thử tương ứng.
+
+Kế hoạch triển khai tiếp tục theo các phase dọc, mỗi phase có commit riêng theo AGENTS.md:
+
+1. **API foundation** — hoàn thiện rating + inbox + device subscription trong module sở hữu, contracts, phân quyền và tests; giữ nguyên 7 schemas/outbox rules.
+2. **Student/skill flows** — nối 6 route đã có vào form/trạng thái/lịch sử trong app; upload bytes qua document-store URL, không giả báo thành công.
+3. **Teaching flows** — nối create/edit/cancel/start/complete lớp và room access; thêm dashboard dạy có dữ liệu thật.
+4. **Learning completion** — nối rating và reconcile wallet/booking; kiểm chứng số route thực app gọi đạt 30.
+5. **Notifications + acceptance** — nối inbox/device lifecycle/push; chạy gates, simulator checks, `graphify update .`, cập nhật ma trận và giới hạn bằng chứng thiết bị.
+
+Acceptance mỗi API: (a) method+route được đối chiếu ở Gateway/API; (b) mobile adapter parse contract; (c) caller UI trong luồng nghiệp vụ; (d) focused tests cho contract/ownership/error; (e) status matrix cập nhật. Push thiết bị thật là acceptance riêng, không được tính là đạt qua mock.
+
 Tất cả đường dẫn dưới đây có prefix `/api`; “Có” nghĩa là đã thấy controller, **không có nghĩa app đã tích hợp/endpoint đã nghiệm thu runtime**. “Mới” là route đề xuất, tên/body sẽ chốt bằng contract ở phase 0.
 
 | # | Method + path | App dùng để | Source | FR |
