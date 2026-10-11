@@ -61,7 +61,7 @@ MVP chủ đích không theo đuổi tăng trưởng đa quốc gia hay đa ngô
 | Nhóm | Nội dung |
 |---|---|
 | Nền tảng | Web responsive, mobile-first (hỗ trợ các trình duyệt hiện hành trên di động và desktop) và ứng dụng mobile native Expo/React Native cho iOS/Android (ADR-015). |
-| Vai trò người dùng | Learner, Teacher, Verifier, Administrator. |
+| Vai trò người dùng | **Vai trò tài khoản: `user`, `verifier`, `admin`** (ADR-030). Learner/Teacher là **năng lực**, không phải vai trò: một `user` học, và dạy khi đã xác minh sinh viên + có skill được duyệt. |
 | Xác minh | Xác minh sinh viên thủ công (tên trường và giấy tờ); xác minh năng lực Teacher thủ công theo từng kỹ năng, bởi Verifier đúng chuyên môn. |
 | Marketplace | Tạo/công bố lớp, tìm kiếm/duyệt lớp, đặt lớp theo sức chứa. |
 | Tài chính | Ví credit nội bộ, nạp tiền qua gateway, trừ tiền khi booking, phân bổ 90/10, rút tiền cho Teacher. |
@@ -201,7 +201,7 @@ Teacher yêu cầu rút số dư khả dụng và xác thực bổ sung. Hệ th
 | BR-060 | Withdrawal | Withdrawal có Pending, Processing, Completed, Failed và Reversed cho reversal hợp lệ. Timeout/kết quả chưa rõ giữ Pending/Processing và giữ tiền đến khi có kết quả/đối soát; chỉ xác nhận không chuyển tiền mới Failed và nhả hold. |
 | BR-061 | Withdrawal | Số tiền, tỷ giá và đích nhận bị khóa từ khi giữ tiền. Payout Completed không sửa/xóa dữ liệu tài chính; chỉ điều chỉnh bằng giao dịch mới liên kết, audit và policy reversal. Payout thành công và nhả hold do thất bại loại trừ nhau. |
 | BR-062 | Withdrawal | Trước khi launch, Product phải định nghĩa minimum withdrawal, maximum withdrawal nếu có, withdrawal fee nếu có, processing time và failed payout handling. |
-| BR-063 | Roles & Permissions | Learner và Teacher không nhất thiết là hai account tách biệt; một verified student có thể vừa học ở class này vừa dạy một skill đã được verify ở class khác. |
+| BR-063 | Roles & Permissions | Learner và Teacher **không** phải vai trò tài khoản mà là năng lực: một `user` có thể vừa học ở class này vừa dạy một skill đã được verify ở class khác. Vai trò tài khoản chỉ gồm `user`, `verifier`, `admin` (ADR-030). |
 | BR-064 | Roles & Permissions | Admin chịu trách nhiệm student verification và các chức năng quản trị được cấp; Verifier chịu trách nhiệm skill/certificate verification và không mặc định có quyền Admin. |
 | BR-065 | Roles & Permissions | Quyền tạo class giới hạn cho Teacher có xác minh hợp lệ theo mọi skill/level. Quyền quyết định skill chỉ dành cho Verifier active có chuyên môn phù hợp và không phải chủ hồ sơ; vai trò Administrator không tự cấp quyền review. |
 | BR-066 | Roles & Permissions | Mỗi quyết định xác minh, thay đổi quyền, hoàn tất lớp và chuyển trạng thái tài chính lưu actor hoặc nguồn hệ thống, thời gian, trạng thái trước/sau, lý do theo hành động và trace ID liên quan trong audit chỉ append, cùng transaction. |

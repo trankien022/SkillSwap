@@ -6,9 +6,9 @@ Project SkillSwap_Conceptual {
 
 Table Account {
   id uuid [pk]
-  role varchar [not null, note: 'learner | teacher | verifier | admin — exactly one role per account (ADR-029)']
+  role varchar [not null, note: 'user | verifier | admin — exactly one role per account (ADR-030)']
   status varchar [not null, note: 'active | suspended']
-  Note: 'A single role per account. Self-registration creates only learner/teacher; verifier/admin accounts are operator-provisioned. Per BR-063 one account can both learn and teach — teaching is not a separate role but is gated on verified-student status and an approved skill.'
+  Note: 'A single role per account. Self-registration creates only an ordinary user; verifier/admin accounts are operator-provisioned. Per BR-063 one account can both learn and teach — Learner/Teacher are capabilities, not roles; teaching is gated on verified-student status and an approved skill.'
 }
 
 Table Verifier {

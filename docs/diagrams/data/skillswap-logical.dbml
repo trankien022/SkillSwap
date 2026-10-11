@@ -6,8 +6,7 @@ Project SkillSwap_Logical {
 }
 
 Enum account_role {
-  learner
-  teacher
+  user
   verifier
   admin
 }
@@ -16,7 +15,7 @@ Table accounts {
   id uuid [pk]
   email varchar(320) [not null, unique]
   display_name varchar(160) [not null]
-  role account_role [not null, note: 'Exactly one role per account; verifier/admin are operator-provisioned (ADR-029)']
+  role account_role [not null, note: 'Exactly one role per account: user | verifier | admin (ADR-030); verifier/admin are operator-provisioned']
   status varchar(24) [not null, default: 'active', note: 'active | suspended']
   created_at timestamptz [not null]
   updated_at timestamptz [not null]

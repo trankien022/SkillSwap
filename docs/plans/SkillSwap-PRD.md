@@ -90,7 +90,7 @@ Thầy Hùng (Verifier, tài khoản và chuyên môn được cấp sẵn) th�
 
 | ID | Type | Requirement | Priority | Source | Status |
 |---|---|---|---|---|---|
-| FR-001 | Functional | Hệ thống phải cho phép sinh viên tạo, đăng nhập và quản lý một tài khoản dùng cho Learner và đăng ký Teacher. | Must | `docs/intent.md` | Confirmed |
+| FR-001 | Functional | Hệ thống phải cho phép sinh viên tạo, đăng nhập và quản lý một tài khoản (`user`); đăng ký công khai chỉ tạo `user`, các vai trò `verifier`/`admin` do vận hành cấp (ADR-029/ADR-030). Learner/Teacher là năng lực, không phải vai trò. | Must | `docs/intent.md` | Confirmed; role model resolved (ADR-030) |
 | FR-002 | Functional | Hệ thống phải cho phép sinh viên khai báo tên trường và tải giấy tờ để Administrator phê duyệt hoặc từ chối kèm lý do. | Must | `docs/intent.md` | Confirmed; retention open |
 | FR-003 | Functional | Hệ thống phải cho phép ứng viên Teacher nộp kỹ năng, chứng chỉ hoặc bằng chứng năng lực, với cơ chế nộp lại sau khi bị từ chối. | Must | `docs/intent.md` | Confirmed core; taxonomy open |
 | FR-004 | Functional | Hệ thống phải cho Verifier xét duyệt hồ sơ năng lực theo chuyên môn: chỉ thấy yêu cầu thuộc chuyên môn của mình, claim một yêu cầu (khóa vĩnh viễn cho Verifier đó, không nhả), rồi approve/reject; chỉ Verifier active, đúng chuyên môn, khác chủ hồ sơ được quyết định; Administrator chỉ đình chỉ/thu hồi Verifier (tài khoản Verifier và chuyên môn được seed ngoài ứng dụng). | Must | `docs/intent.md` | Confirmed core; expertise seeded (ADR-027) |
@@ -192,7 +192,7 @@ Toàn văn 70 quy tắc nghiệp vụ (BR-001–BR-070) được quản lý tậ
 
 ### 6.1 Xác thực và tài khoản
 
-Đăng ký bằng email và mật khẩu hoặc OAuth. Một tài khoản có **một vai trò** nhưng theo BR-063 có thể **vừa học vừa dạy**: dạy không phải vai trò riêng mà phụ thuộc vào trạng thái đã xác minh sinh viên và skill được duyệt. (MVP chưa có nút "chuyển chế độ xem" Learner/Teacher.) Khôi phục mật khẩu qua email theo luồng chuẩn.
+Đăng ký bằng email và mật khẩu hoặc OAuth **chỉ tạo tài khoản `user`** (ADR-030). Vai trò tài khoản chỉ có `user`, `verifier`, `admin`; Learner/Teacher là năng lực — một `user` vừa học vừa dạy khi đã xác minh sinh viên và có skill được duyệt (BR-063). Không có "chuyển chế độ xem vai trò". Khôi phục mật khẩu qua email theo luồng chuẩn.
 
 ### 6.2 Xác minh sinh viên
 
@@ -255,7 +255,7 @@ Các màn hình chính của MVP gồm: đăng ký/đăng nhập, trang chủ Le
 
 | Entity | Key fields | Relationships | Lifecycle | Classification | Owner |
 |---|---|---|---|---|---|
-| Account | id, email, display_name, role, status, created_at | Exactly one role per account (`learner \| teacher \| verifier \| admin`); a Verifier also has seeded expertise (ADR-027). No separate role-grant table. | Active → Suspended | PII | User/Administrator |
+| Account | id, email, display_name, role, status, created_at | Exactly one role per account (`user \| verifier \| admin`, ADR-030); a `verifier` also has seeded expertise (ADR-027). Learner/Teacher are capabilities, not roles. No role-grant table. | Active → Suspended | PII | User/Administrator |
 | Profile | id, account_id, display_name, bio, school_id, major_id | Belongs to Account; has ProfileSkills and StudentVerifications | Created with the account; school/major change requires re-verification | PII | User/Administrator |
 | School / Major / SchoolMajor | id/code/name; school_id + major_id | Managed school and major catalogs; SchoolMajor lists valid pairs | Active → Inactive | Reference data | Administrator |
 | Skill / ProfileSkill | id, name, category; profile_id, skill_id, level | Skill is a `category → skill` catalogue entry (ADR-026); Profile ↔ Skill is many-to-many; level caches effective approval (NULL until approved) | Skill Active/Inactive; valid SkillEvidence.approved_level governs teaching; pending upgrades preserve old approval | Public competency + internal authorization | User/Verifier/Administrator |
