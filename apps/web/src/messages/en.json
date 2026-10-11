@@ -429,5 +429,105 @@
       "body": "You have not booked a class yet. Browse the marketplace to get started.",
       "cta": "Browse classes"
     }
+  },
+  "Teacher": {
+    "nav": {
+      "explore": "Browse classes",
+      "myBookings": "My bookings",
+      "myClasses": "My classes",
+      "wallet": "Wallet"
+    },
+    "publish": {
+      "verifiedChip": "Verified student",
+      "step": "Create a teaching session",
+      "title": "Online class details",
+      "subjectChip": "Subject module",
+      "verificationBanner": {
+        "title": "Verified professional competency",
+        "body": "Your teaching profile meets the academic verification standard. The platform keeps every certificate and review transparent across faculties.",
+        "ruleTitle": "Immutable schedule",
+        "ruleBody": "Schedule and content lock as soon as the first learner books."
+      },
+      "skill": {
+        "label": "Approved professional skill",
+        "verifiedTag": "Verified",
+        "placeholder": "Select a verified skill",
+        "help": "Per the verification standard, you can only publish classes for skills that have passed the academic review board. Skills still pending are not available."
+      },
+      "general": {
+        "titleLabel": "Class title",
+        "titleCounter": "{count}/{max} characters",
+        "titlePlaceholder": "E.g. Practice basic graph algorithms",
+        "descriptionLabel": "Detailed description & prerequisites",
+        "descriptionPlaceholder": "Tell learners what to prepare, what homework to do before class…",
+        "durationLabel": "Class duration",
+        "durationStandard": "Standard academic format",
+        "platform": {
+          "name": "End-to-end encrypted online room",
+          "caption": "End-to-end encryption • auto-minted per-class room code",
+          "onlineOnly": "Online only"
+        }
+      },
+      "schedule": {
+        "title": "Schedule & class size",
+        "noConflict": "No conflicts",
+        "dateLabel": "Teaching date",
+        "timeLabel": "Start time",
+        "capacityLabel": "Maximum capacity",
+        "capacityBadge1to1": "1-on-1 mentoring model",
+        "capacityBadgeGroup": "Group class ({count} learners)",
+        "conflictHelp": "The conflict checker cross-references your three most recent 1-on-1 classes automatically."
+      },
+      "pricing": {
+        "title": "Pricing & settlement",
+        "rate": "1 credit = 1,000 VND",
+        "inputLabel": "Listed price (credits / learner)",
+        "inputUnit": "credits",
+        "tuition": "Listed price",
+        "fee": "Platform fee (10%)",
+        "net": "Teacher net",
+        "netHint": "Held in escrow and released when the class completes",
+        "vnd": "~{vnd} VND / learner",
+        "policy": "Funds are recorded as held in escrow in your wallet and are released to your available balance the moment the class moves to completed."
+      },
+      "preview": {
+        "label": "Live marketplace preview",
+        "live": "Real-time",
+        "categoryFallback": "Class category",
+        "defaultTitle": "Class title",
+        "date": "Date",
+        "time": "Time",
+        "minutes": "{count} min",
+        "teacher": "You (Teacher)",
+        "verifiedFaculty": "Verified student",
+        "price": "Price",
+        "priceUnit": "Cr"
+      },
+      "actions": {
+        "warning": "Teaching commitment: once the first learner registers, schedule and content edits lock automatically.",
+        "publish": "Publish class now",
+        "saveDraft": "Save draft",
+        "cancel": "Cancel"
+      },
+      "toast": {
+        "title": "Class published",
+        "body": "Your class is live on the marketplace. The platform stands ready to lock edits as soon as the first booking arrives."
+      },
+      "stepDuration": "{count} min",
+      "monthNames": [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December"
+      ]
+    }
   }
 }

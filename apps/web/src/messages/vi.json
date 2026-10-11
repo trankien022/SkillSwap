@@ -429,5 +429,105 @@
       "body": "Bạn chưa đặt lớp nào. Hãy khám phá các lớp hiện có.",
       "cta": "Khám phá lớp"
     }
+  },
+  "Teacher": {
+    "nav": {
+      "explore": "Khám phá lớp học",
+      "myBookings": "Lớp đã đặt",
+      "myClasses": "Quản lý lớp dạy",
+      "wallet": "Ví"
+    },
+    "publish": {
+      "verifiedChip": "Đã xác minh sinh viên",
+      "step": "Tạo phiên giảng dạy",
+      "title": "Thông tin lớp học trực tuyến",
+      "subjectChip": "Học phần chuyên đề",
+      "verificationBanner": {
+        "title": "Giảng viên chuyên môn thẩm định",
+        "body": "Hồ sơ sư phạm đáp ứng chuẩn kiểm định. Hệ thống đảm bảo tính minh bạch và giá trị chứng chỉ tương đương giữa các khoa viện.",
+        "ruleTitle": "Quy ước bất biến",
+        "ruleBody": "Khóa sửa lịch & nội dung sau khi có lượt đặt đầu tiên"
+      },
+      "skill": {
+        "label": "Kỹ năng chuyên môn áp dụng",
+        "verifiedTag": "Đã thẩm duyệt",
+        "placeholder": "Chọn một kỹ năng đã thẩm duyệt",
+        "help": "Theo quy chuẩn kiểm định, giảng viên chỉ được mở lớp cho kỹ năng đã vượt qua hội đồng kiểm định chất lượng. Các kỹ năng đang chờ duyệt không khả dụng để xuất bản."
+      },
+      "general": {
+        "titleLabel": "Tiêu đề lớp học",
+        "titleCounter": "{count}/{max} ký tự",
+        "titlePlaceholder": "VD: Luyện giải thuật toán đồ thị cơ bản",
+        "descriptionLabel": "Mô tả chi tiết & Yêu cầu đầu vào",
+        "descriptionPlaceholder": "Hướng dẫn học viên chuẩn bị tài liệu, bài tập trước buổi học…",
+        "durationLabel": "Thời lượng lớp học",
+        "durationStandard": "Định dạng tiêu chuẩn sư phạm",
+        "platform": {
+          "name": "Phòng học trực tuyến mã hóa đầu cuối",
+          "caption": "Mã hóa đầu cuối • Cấp phát mã phòng tự động theo từng lớp",
+          "onlineOnly": "Chỉ trực tuyến"
+        }
+      },
+      "schedule": {
+        "title": "Lịch học & Quy mô người học",
+        "noConflict": "Không trùng lịch",
+        "dateLabel": "Ngày giảng dạy",
+        "timeLabel": "Khung giờ bắt đầu",
+        "capacityLabel": "Sức chứa tối đa",
+        "capacityBadge1to1": "Mô hình kèm cá nhân 1-1",
+        "capacityBadgeGroup": "Lớp học nhóm ({count} học viên)",
+        "conflictHelp": "Thuật toán đối soát tự động kiểm tra xung đột thời gian với 3 lớp kèm cá nhân đã tạo trước đó."
+      },
+      "pricing": {
+        "title": "Biểu phí & Quyết toán",
+        "rate": "1 Credit = 1.000 VNĐ",
+        "inputLabel": "Học phí niêm yết (Credits/học viên)",
+        "inputUnit": "Credits",
+        "tuition": "Học phí công bố",
+        "fee": "Phí vận hành hạ tầng (10%)",
+        "net": "Thực nhận giảng viên",
+        "netHint": "Tạm giữ & giải ngân sau khi hoàn tất lớp",
+        "vnd": "~{vnd} VNĐ / học viên",
+        "policy": "Tiền sẽ ghi nhận ở trạng thái tạm giữ trong ví và tự động giải ngân vào số dư khả dụng ngay khi buổi học chuyển sang trạng thái hoàn tất."
+      },
+      "preview": {
+        "label": "Xem trước thẻ lớp học (Marketplace)",
+        "live": "Thời gian thực",
+        "categoryFallback": "Danh mục lớp học",
+        "defaultTitle": "Tiêu đề lớp học",
+        "date": "Ngày",
+        "time": "Giờ",
+        "minutes": "{count} phút",
+        "teacher": "Bạn (Giảng viên)",
+        "verifiedFaculty": "Đã chứng thực sinh viên",
+        "price": "Học phí",
+        "priceUnit": "Cr"
+      },
+      "actions": {
+        "warning": "Cam kết sư phạm: Sau khi có học viên đầu tiên đăng ký, lớp sẽ tự động khóa toàn bộ thao tác sửa đổi giờ học và nội dung.",
+        "publish": "Công bố lớp ngay",
+        "saveDraft": "Lưu bản nháp",
+        "cancel": "Hủy"
+      },
+      "toast": {
+        "title": "Xuất bản lớp học thành công",
+        "body": "Lớp của bạn đã sẵn sàng trên Marketplace. Hệ thống sẵn sàng kích hoạt khóa nội dung khi nhận lượt book đầu tiên."
+      },
+      "stepDuration": "{count} phút",
+      "monthNames": [
+        "Tháng 1",
+        "Tháng 2",
+        "Tháng 3",
+        "Tháng 4",
+        "Tháng 5",
+        "Tháng 6",
+        "Tháng 7",
+        "Tháng 8",
+        "Tháng 9",
+        "Tháng 10",
+        "Tháng 11",
+        "Tháng 12"
+      ]
+    }
   }
 }
