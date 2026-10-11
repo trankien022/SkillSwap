@@ -1,6 +1,6 @@
 # Mobile rubric — task checklist
 
-Tham chiếu: [plan](plan.md). Đang triển khai; T01 đã được Codex review contracts/ownership. Baseline pnpm verify xanh, API 360 tests và architecture gate xanh. Device acceptance vẫn pending. Mỗi task là một slice có thể verify; file paths là vùng dự kiến, phải thu hẹp khi thực hiện. Không tạo toàn bộ backend rồi mới nối UI.
+Tham chiếu: [plan](plan.md). Đang triển khai; T01 đã review contracts/ownership. Checkpoint hiện tại: app shell/session/dashboard đã commit, iOS Simulator cài/chạy/đăng nhập/khôi phục phiên/đăng xuất có bằng chứng tự động; pnpm verify xanh (648 tests). GET skills, GET classes và public profile facade đã review qua Gateway thật. T04/T05 còn kiểm tra thao tác/360px; T06 còn UI; T03 đã chứng minh storage/payment backend, còn phone/Jitsi hai thiết bị. Push thiết bị thật vẫn pending. Xem tasks/evidence/. Mỗi task chỉ đánh dấu hoàn tất khi đủ AC; paths được thu hẹp khi thực hiện.
 
 ## Phase 0 — contract/risk
 

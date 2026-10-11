@@ -52,7 +52,7 @@ Skill evidence dùng dạng capability recognition + description đã được c
 - Chọn thư viện query/cache và native dependencies tương thích Expo đang khóa trong repo ở phase nền tảng; không nâng SDK chỉ để theo ví dụ mới.
 - Luôn gọi Gateway; phone dùng hostname/IP reachable hoặc HTTPS staging, không dùng localhost của máy dev. Jitsi dùng hostname/TLS được phone tin cậy.
 - Đã chốt ADR-031 và `tasks/mobile-contracts.md`: device subscriptions/inbox/push worker thuộc `account-profile`; lịch nhắc (offset 30 phút) thuộc `schedule`; đánh giá (rating) thuộc `live-class`; danh mục kỹ năng thuộc `skill-verification`. Giữ nguyên 7 schemas, không thêm notification schema/module. Broker access chỉ tại shared/messaging, TypeORM tại persistence adapters, không join SQL chéo schema.
-- Thêm event schemas cần thiết (`class.rated`, `class.reminder.due`, `wallet.transaction.completed`, `classId` trong `booking.confirmed`) đã được chốt chi tiết tại ADR-031.
+- Thêm event schemas cần thiết (`class.reminder.due`, `wallet.transaction.completed`, `classId` trong `booking.confirmed`) đã được chốt chi tiết tại ADR-031.
 - Tabs: **Trang chủ / Khám phá / Lịch của tôi / Ví / Hồ sơ**; chuông mở inbox. Khu Dạy học từ Trang chủ/Hồ sơ theo capability. Đây là lựa chọn UI trong plan, không phải role switch.
 - Khoảng 15–18 màn: auth, dashboard, marketplace, class detail, booking confirmation, lịch/detail booking, room entry, wallet/history/top-up, student verification/status, skill submission/history, teaching list/create/edit, rating, inbox/settings.
 - Theo DESIGN.md: slate + Campus Emerald, CTA pill, status text + màu, tap target ≥44 px, 360 px không tràn ngang, vi/en đồng bộ và không trộn trên một màn. Loading/empty/error/retry ở mọi màn dữ liệu.
