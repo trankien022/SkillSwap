@@ -1,0 +1,50 @@
+@startuml
+title Current checkpoint | Implemented backend actor goals
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam ArrowColor #475569
+skinparam sequenceParticipantBackgroundColor #F1F5F9
+skinparam sequenceParticipantBorderColor #475569
+skinparam activityBackgroundColor #F1F5F9
+skinparam activityBorderColor #475569
+skinparam stateBackgroundColor #F1F5F9
+skinparam stateBorderColor #475569
+left to right direction
+actor "User as Learner\n(account role=user)" as L
+actor "User as Teacher\n(account role=user)" as T
+actor "Verifier\n(provisioned role=verifier)" as V
+actor "Administrator\n(provisioned role=admin)" as A
+rectangle "SkillSwap backend through Gateway (API access)" {
+ usecase "Register / login / refresh / account\nFR-001/017" as AUTH
+ usecase "Upload / submit / view student verification\nFR-002" as STUDENT
+ usecase "Decide / revoke student verification\nFR-002/019" as REVIEW
+ usecase "Submit skill evidence / view history\nFR-003/018" as EVIDENCE
+ usecase "Expertise queue / claim / decision\nFR-004" as SKILL
+ usecase "Create / edit / cancel / start / complete class\nFR-005/007/020" as CLASS
+ usecase "Book / confirm class\nFR-007/009" as BOOK
+ usecase "Mock top-up / wallet balance / history\nFR-008/010" as WALLET
+ usecase "Authorized room-token access\nFR-011" as ROOM
+ usecase "Suspend / revoke Verifier\nFR-004" as VERIFIER
+}
+L --> AUTH
+T --> AUTH
+L --> STUDENT
+T --> STUDENT
+A --> REVIEW
+T --> EVIDENCE
+V --> SKILL
+T --> CLASS
+L --> BOOK
+L --> WALLET
+T --> WALLET
+L --> ROOM
+T --> ROOM
+A --> VERIFIER
+note bottom of BOOK: Web/mobile booking uses mocks; backend flow accessed via API.
+note bottom of AUTH: Public registration accepts only user; privileged roles are provisioned.
+note bottom of WALLET: No implemented payout endpoint is claimed.
+note left of T: Learner and Teacher are capabilities of the same user account.
+note right of CLASS: Chat, ratings, dashboard and push are not shown as implemented goals.
+@enduml

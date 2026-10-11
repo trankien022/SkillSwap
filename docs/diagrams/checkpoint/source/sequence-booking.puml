@@ -1,0 +1,49 @@
+@startuml
+title Current backend | Booking and asynchronous settlement | FR-007/009
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam ArrowColor #475569
+skinparam sequenceParticipantBackgroundColor #F1F5F9
+skinparam sequenceParticipantBorderColor #475569
+skinparam activityBackgroundColor #F1F5F9
+skinparam activityBorderColor #475569
+skinparam stateBackgroundColor #F1F5F9
+skinparam stateBorderColor #475569
+actor "API caller" as U
+participant Gateway as G
+participant "Live Class use cases" as C
+database "live_class schema" as D
+participant "Shared outbox relay" as E
+queue RabbitMQ as Q
+participant "Wallet consumer / use case" as W
+database "wallet_ledger schema" as WD
+U -> G: POST /api/classes/:id/bookings\nJWT + idempotencyKey
+G -> C: Validated JWT; trusted identity; HTTP proxy
+C -> D: Replay lookup; class read; seat guard under row lock
+alt ineligible / duplicate / full
+ C --> U: Reject; no wallet debit
+else eligible
+ C -> D: Pending booking; price snapshot; 15-minute expiry
+ C --> U: Pending booking
+end
+U -> G: POST /api/classes/bookings/:bookingId/confirm
+G -> C: ConfirmBookingUseCase
+C -> D: Own transaction: Confirmed\n+ booking.confirmed outbox
+C --> U: Confirmation response BEFORE wallet settlement
+E -> D: Poll committed outbox
+E -> Q: booking.confirmed
+Q -> W: Idempotent consumer
+W -> WD: Own transaction: debit Learner available\nTeacher pending + platform fee floor(credits * 1000/10000)
+alt insufficient balance / consumer error
+ W --> Q: Retry; eventual DLQ
+ note over C,WD
+ Current code has no compensating confirmation acknowledgement here.
+ AC-005 no-partial-paid-booking guarantee is not demonstrated.
+ end note
+else settled
+ W --> Q: Acknowledge; duplicate settlement is no-op
+end
+note over U,G: Web/mobile booking screens currently use local mocks.\nThis diagram describes the backend API, not integrated client behavior.
+@enduml

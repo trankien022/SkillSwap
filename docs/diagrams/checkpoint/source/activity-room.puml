@@ -1,0 +1,36 @@
+@startuml
+title Current backend | Room authorization | FR-011
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam ArrowColor #475569
+skinparam sequenceParticipantBackgroundColor #F1F5F9
+skinparam sequenceParticipantBorderColor #475569
+skinparam activityBackgroundColor #F1F5F9
+skinparam activityBorderColor #475569
+skinparam stateBackgroundColor #F1F5F9
+skinparam stateBorderColor #475569
+start
+:Receive bookingId + trusted account identity;
+:Read booking and class;
+if (Requester is booking party?) then (yes)
+else (no)
+ :Deny access;
+ stop
+endif
+if (Booking confirmed and within access window?) then (yes)
+else (no)
+ :Deny access;
+ stop
+endif
+:Sign short-lived scoped JWT;
+if (Issuer succeeds?) then (yes)
+ :Return room + token + expiresAt + URL;
+else (no)
+ :Persist incident; return 503;
+ stop
+endif
+:Caller may join self-hosted Jitsi;
+stop
+@enduml

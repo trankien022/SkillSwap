@@ -1,0 +1,50 @@
+@startuml
+title Current backend | Publish/edit gate | FR-005 / ADR-024/030
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam ArrowColor #475569
+skinparam sequenceParticipantBackgroundColor #F1F5F9
+skinparam sequenceParticipantBorderColor #475569
+skinparam activityBackgroundColor #F1F5F9
+skinparam activityBorderColor #475569
+skinparam stateBackgroundColor #F1F5F9
+skinparam stateBorderColor #475569
+actor "User acting as Teacher\naccount role=user" as U
+participant Gateway as G
+participant "Create / Update Class use case" as C
+participant "assertPublishable policy" as P
+database "live_class schema" as D
+queue RabbitMQ as Q
+participant "Shared consumer / ProjectTeacherTrustUseCase" as E
+Q -> E: student.verification.* / skill.evidence.*
+E -> D: Own-schema UPSERT teacher_verified / teacher_skill_approval\nApply only newer occurred_at; message deduplication
+note over E,D: verified = status approved; missing rows deny publish.\nSkill approved event sets approvedLevel; other subscribed statuses clear it.\nProjection is eventually consistent; no cross-schema SELECT.
+U -> G: POST /api/classes\nskillIds + schedule + price + capacity
+G -> C: Authenticated user; trusted identity (not role=teacher)
+C -> C: Validate duration, capacity, integer price and future start
+C -> D: SqlTeacherTrustProjector.read(accountId)\nRead teacher_verified and teacher_skill_approval only
+C -> P: assertPublishable(trust, skillIds)\nCurrent endpoint uses default requiredLevel=beginner
+alt no skills / unverified / missing approval / level insufficient
+ P --> C: Typed publish-gate error
+ C --> U: Error mapped by domain-error filter; no class created
+else every skill approved and student verified
+ P --> C: Allowed
+ C -> D: Persist Published class and class_skills
+ C --> U: Class resource
+end
+opt PATCH /api/classes/:id
+ U -> G: Class edit request
+ G -> C: Current identity + changed fields
+ C -> D: Read class; current Confirmed booking count
+ C -> C: Check owner, nonterminal state, edit lock and future start
+ opt skillIds supplied
+  C -> D: Read current own-schema trust
+  C -> P: Re-check every resulting skill
+ end
+ C -> D: Update class and skills
+ C --> U: Updated class
+end
+note over U,C: Learner and Teacher are capabilities, not separate account roles.\nPublic registration creates user only; verifier/admin are provisioned.
+@enduml

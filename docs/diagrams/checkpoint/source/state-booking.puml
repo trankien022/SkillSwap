@@ -1,0 +1,35 @@
+@startuml
+title Current implementation | Booking
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam ArrowColor #475569
+skinparam sequenceParticipantBackgroundColor #F1F5F9
+skinparam sequenceParticipantBorderColor #475569
+skinparam activityBackgroundColor #F1F5F9
+skinparam activityBorderColor #475569
+skinparam stateBackgroundColor #F1F5F9
+skinparam stateBorderColor #475569
+[*] --> pending : bookClass; hold seat 15 min
+pending --> confirmed : confirmAndEmit; outbox in same transaction
+pending --> cancelled : expiry / class cancellation
+confirmed --> cancelled : Teacher cancellation / no-show
+note right of confirmed
+ Confirmation precedes asynchronous wallet settlement.
+ No Learner self-cancellation endpoint.
+end note
+note bottom of cancelled
+ Confirmed cancellation emits refund trigger.
+ Pending cancellation releases seat without refund.
+end note
+state "Declared domain states" as Declared {
+ state completed
+ state disputed
+}
+note right of Declared
+ Declared in BOOKING_STATES.
+ No transition handler to these states is claimed here.
+ Class completion is a separate lifecycle.
+end note
+@enduml

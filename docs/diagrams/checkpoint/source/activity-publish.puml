@@ -1,0 +1,49 @@
+@startuml
+title Current backend | Publish decisions | FR-005 / ADR-024/030
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam ArrowColor #475569
+skinparam sequenceParticipantBackgroundColor #F1F5F9
+skinparam sequenceParticipantBorderColor #475569
+skinparam activityBackgroundColor #F1F5F9
+skinparam activityBorderColor #475569
+skinparam stateBackgroundColor #F1F5F9
+skinparam stateBorderColor #475569
+start
+:POST /api/classes from authenticated user;
+:Validate future start, 30-180 minutes,\npositive integer price and capacity;
+:Read own teacher_verified and teacher_skill_approval;
+if (At least one skill supplied?) then (yes)
+else (no)
+ :Reject NoClassSkillsError;
+ stop
+endif
+if (Projected student verification approved?) then (yes)
+else (no)
+ :Reject UnverifiedTeacherError;
+ stop
+endif
+while (More class skill IDs?) is (yes)
+ :Read projected approval for next skill;
+ if (Skill has an approved level?) then (yes)
+ else (no)
+  :Reject SkillNotApprovedError;
+  stop
+ endif
+ if (Approval covers beginner?) then (yes)
+ else (no)
+  :Reject SkillLevelInsufficientError;
+  stop
+ endif
+endwhile (no)
+:Persist Published class + class_skills;
+:Return created class;
+note right
+ Current create contract contains skill IDs only.
+ Domain required level defaults to beginner.
+ Higher target levels are not supplied by this endpoint.
+end note
+stop
+@enduml

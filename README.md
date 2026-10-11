@@ -70,6 +70,7 @@ docs/           intent, plans (SRS/PRD/BRD), ADRs, C4 diagrams
 - [docs/intent.md](docs/intent.md) — problem, outcome, users
 - [docs/plans/SkillSwap-SRS.md](docs/plans/SkillSwap-SRS.md) — requirements with stable IDs (`FR`/`BR`/`NFR`/`OQ`/`AC`/`ST`)
 - [docs/adr/](docs/adr/) — ADR-013 (RabbitMQ), ADR-014 (TypeORM), ADR-015 (mobile app + doc sync)
+- [Bộ diagram checkpoint hiện tại (Structurizr + PlantUML)](docs/diagrams/checkpoint/README.md)
 - [Conceptual và logical data model (DBML, SVG, PNG)](docs/diagrams/data/README.md)
 - [SkillSwap MVP Software Development Blueprint](docs/plans/2026-09-15-001-feat-skillswap-mvp-requirements-plan.md)
 - [GitHub Project: SkillSwap MVP Requirements](https://github.com/users/trankien022/projects/1)
