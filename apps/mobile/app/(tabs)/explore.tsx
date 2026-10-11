@@ -1,6 +1,6 @@
 import React from 'react';
-import { PlaceholderView } from '@/ui/placeholder-view';
+import { MarketplaceView } from '@/ui/marketplace-view';
 
 export default function ExploreTab() {
-  return <PlaceholderView type="explore" />;
+  return <MarketplaceView />;
 }
