@@ -416,6 +416,8 @@ stateDiagram-v2
 |---|---|---|---|
 | NFR-011 | Search results shall be returned promptly at MVP data scale. | Basic load test (target latency to be fixed by Product Owner — OQ-010 excluded, see Appendix A). | Should |
 | NFR-012 | Uptime appropriate to the pilot stage shall be maintained. | Uptime monitoring. | Should |
+| NFR-013 | Every domain JSON response (success and error) shall use the uniform envelope `{ success, code, message, data, errors }`; health probes are exempt. | Contract tests assert the envelope on every endpoint; `docs/api/RESPONSE-CONVENTIONS.md`. | Should |
+| NFR-014 | Every collection read shall be bounded (`limit` ≤ 100) and return `page` metadata (`limit`, `nextCursor`, `total`). | Repository/contract tests assert a bounded result and page metadata for each list endpoint. | Should |
 | NFR-003 | Concurrent or retried financial requests shall produce exactly one balanced financial outcome and never a negative balance. | Idempotency, concurrency and reconciliation tests. | Must |
 | NFR-006 | Validation/gateway/Jitsi failures shall preserve recoverable user input and show actionable errors. | Negative-path tests for forms, gateway and Jitsi. | Should |
 
