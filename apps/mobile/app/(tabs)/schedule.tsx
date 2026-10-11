@@ -1,6 +1,6 @@
 import React from 'react';
-import { PlaceholderView } from '@/ui/placeholder-view';
+import { MyBookingsView } from '@/ui/my-bookings-view';
 
 export default function ScheduleTab() {
-  return <PlaceholderView type="schedule" />;
+  return <MyBookingsView />;
 }

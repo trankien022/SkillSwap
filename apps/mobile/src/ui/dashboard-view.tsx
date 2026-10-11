@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import type { WalletBalanceView } from '@skillswap/contracts';
 import { colors, radius, spacing, typography } from '@/design/tokens';
 import { useSession } from './session-context';
+import { UpcomingBookingsSummary } from './upcoming-bookings-summary';
 import { WalletService } from './wallet-service';
 
 export function DashboardView() {
@@ -23,6 +24,7 @@ export function DashboardView() {
   const [isLoadingBalance, setIsLoadingBalance] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [summaryReloadTrigger, setSummaryReloadTrigger] = useState<number>(0);
 
   const fetchDashboardData = useCallback(async () => {
     setErrorMessage(null);
@@ -47,6 +49,7 @@ export function DashboardView() {
 
   const onRefresh = () => {
     setIsRefreshing(true);
+    setSummaryReloadTrigger((prev) => prev + 1);
     void fetchDashboardData();
   };
 
@@ -135,6 +138,9 @@ export function DashboardView() {
           </View>
         )}
       </View>
+
+      {/* 2.5. Upcoming Schedule Summary Card */}
+      <UpcomingBookingsSummary reloadTrigger={summaryReloadTrigger} />
 
       {/* 3. Student Verification Trust Card */}
       <View style={styles.card}>
