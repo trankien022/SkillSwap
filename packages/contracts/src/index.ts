@@ -494,4 +494,5 @@ export type SkillEvidenceHistoryView = z.infer<typeof skillEvidenceHistorySchema
 
 export * from './mobile-catalogue';
 export * from './mobile-classes';
+export * from './mobile-class-detail';
 

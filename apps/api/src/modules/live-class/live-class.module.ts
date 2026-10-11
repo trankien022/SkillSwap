@@ -19,17 +19,28 @@ import {
   type PublicProfileReader,
 } from '../account-profile/api';
 import { SqlClassListReader } from './internal/adapter/out/persistence/sql-class-list-reader';
+import { SqlClassDetailReader } from './internal/adapter/out/persistence/sql-class-detail-reader';
 import { AccountProfilePublicTeacherReader } from './internal/adapter/out/account-profile/account-profile-public-teacher-reader';
 import { ClassListController } from './internal/adapter/in/web/class-list.controller';
+import { ClassDetailController } from './internal/adapter/in/web/class-detail.controller';
 import { ListClassesQueryHandler } from './internal/application/query/list-classes.query';
+import { GetClassDetailQueryHandler } from './internal/application/query/get-class-detail.query';
 import {
   LIST_CLASSES,
   type ListClassesPort,
 } from './internal/application/port/in/list-classes';
 import {
+  GET_CLASS_DETAIL,
+  type GetClassDetailPort,
+} from './internal/application/port/in/get-class-detail';
+import {
   CLASS_LIST_READER,
   type ClassListReader,
 } from './internal/application/port/out/class-list-reader';
+import {
+  CLASS_DETAIL_READER,
+  type ClassDetailReader,
+} from './internal/application/port/out/class-detail-reader';
 import {
   PUBLIC_TEACHER_READER,
   type PublicTeacherReader,
@@ -152,7 +163,12 @@ const systemClock: Clock = { now: () => new Date() };
 
 @Module({
   imports: [AccountProfileModule],
-  controllers: [StatusController, ClassesController, ClassListController],
+  controllers: [
+    StatusController,
+    ClassesController,
+    ClassListController,
+    ClassDetailController,
+  ],
   providers: [
     {
       provide: STATUS_READER,
@@ -349,6 +365,22 @@ const systemClock: Clock = { now: () => new Date() };
       ): ListClassesPort =>
         new ListClassesQueryHandler(classListReader, publicTeacherReader, clock),
       inject: [CLASS_LIST_READER, PUBLIC_TEACHER_READER, CLOCK],
+    },
+    {
+      provide: CLASS_DETAIL_READER,
+      useFactory: (registry: ModuleDataSourceRegistry): ClassDetailReader =>
+        new SqlClassDetailReader(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
+      provide: GET_CLASS_DETAIL,
+      useFactory: (
+        classDetailReader: ClassDetailReader,
+        publicTeacherReader: PublicTeacherReader,
+        clock: Clock,
+      ): GetClassDetailPort =>
+        new GetClassDetailQueryHandler(classDetailReader, publicTeacherReader, clock),
+      inject: [CLASS_DETAIL_READER, PUBLIC_TEACHER_READER, CLOCK],
     },
     LiveClassRegistrar,
   ],
