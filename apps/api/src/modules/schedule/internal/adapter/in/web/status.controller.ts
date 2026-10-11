@@ -11,6 +11,10 @@ import {
 } from '../../../application/port/in/get-module-status';
 import type { ModuleStatusView } from '../../../application/port/out/module-status-reader';
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
+import {
+  ResponseCode,
+  ResponseMessage,
+} from '../../../../../../shared/http/response-code.decorator';
 import { AdvanceStatusDto, AdvanceStatusResultDto, ModuleStatusDto } from './dto/status.dto';
 
 @Controller('schedule')
@@ -22,6 +26,8 @@ export class StatusController {
   ) {}
 
   @Get('status')
+  @ResponseCode('SCHEDULE_STATUS_OK')
+  @ResponseMessage('Schedule module status loaded')
   @ApiOperation({ summary: 'Read Schedule module status' })
   @ApiOkResponse({ type: ModuleStatusDto, description: 'Current module status' })
   readStatus(): Promise<ModuleStatusView> {
