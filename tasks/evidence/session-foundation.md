@@ -10,4 +10,4 @@
 
 - Slice B adds authenticated tabs, real auth/wallet dashboard, localized forms/errors, guarded deep links, development-only mock demo, wallet history/top-up pending state. Production coordinated token provider is tested directly for implicit/explicit refresh, invalidation, transient outage preservation and stale generation/unmount fencing.
 - Final mobile slice checks: 10 suites / 87 tests passed; typecheck and scoped lint passed with zero warnings. Raw profile GET uses SessionService's single retry; business GET requests use GatewayClient directly, never nested retries.
-- Full phase pnpm verify and remaining rubric flows are still pending, so the rubric is not declared complete.
+- Full pnpm verify now passed for this checkpoint (648 tests across apps/contracts, architecture zero violations; see class-list-read.md). Remaining mobile flows and manual device acceptance are pending, so the rubric is not declared complete.
