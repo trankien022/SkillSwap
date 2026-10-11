@@ -558,6 +558,53 @@ describe('SessionService', () => {
       expect(store.currentStored).toBeNull();
     });
 
+    it('clears a saved session when refresh reports that its account no longer exists (404)', async () => {
+      const expiredSession: ActiveSession = {
+        tokens: {
+          accessToken: 'old-access',
+          refreshToken: 'orphaned-refresh',
+          expiresAt: currentTime - 1000,
+          tokenType: 'Bearer',
+        },
+      };
+      store.currentStored = expiredSession;
+      authApi.refreshErrorToThrow = {
+        statusCode: 404,
+        message: 'Account not found: session',
+      };
+
+      const service = new SessionService(authApi, store, clock);
+      const result = await service.restoreSession();
+
+      expect(result).toBeNull();
+      expect(service.getActiveSession()).toBeNull();
+      expect(store.currentStored).toBeNull();
+    });
+
+    it('does not clear credentials for unrelated 404 responses', async () => {
+      const expiredSession: ActiveSession = {
+        tokens: {
+          accessToken: 'old-access',
+          refreshToken: 'valid-refresh',
+          expiresAt: currentTime - 1000,
+          tokenType: 'Bearer',
+        },
+      };
+      store.currentStored = expiredSession;
+      authApi.refreshErrorToThrow = {
+        statusCode: 404,
+        message: 'Cannot POST /api/auth/refresh',
+      };
+
+      const service = new SessionService(authApi, store, clock);
+
+      await expect(service.restoreSession()).rejects.toMatchObject({
+        statusCode: 404,
+        message: 'Cannot POST /api/auth/refresh',
+      });
+      expect(store.currentStored).toEqual(expiredSession);
+    });
+
     it('surfaces storage failures during corrupt restore cleanup rather than swallowing', async () => {
       store.shouldThrowCorruptOnLoad = true;
       store.shouldFailClear = true;

@@ -12,6 +12,24 @@ import {
   type SessionUser,
 } from './port/session-types';
 
+function isInvalidRefreshSession(error: unknown): boolean {
+  if (
+    error instanceof AuthenticationError ||
+    error instanceof SessionExpiredError
+  ) {
+    return true;
+  }
+  if (error === null || typeof error !== 'object') return false;
+
+  const responseError = error as { statusCode?: unknown; message?: unknown };
+  return (
+    responseError.statusCode === 401 ||
+    (responseError.statusCode === 404 &&
+      typeof responseError.message === 'string' &&
+      /account not found/i.test(responseError.message))
+  );
+}
+
 export interface AuthenticatedCallOptions {
   readonly method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 }
@@ -140,13 +158,7 @@ export class SessionService {
         }
         return refreshed;
       } catch (refreshErr) {
-        const isAuthRejection =
-          refreshErr instanceof AuthenticationError ||
-          refreshErr instanceof SessionExpiredError ||
-          (refreshErr !== null &&
-            typeof refreshErr === 'object' &&
-            'statusCode' in refreshErr &&
-            (refreshErr as { statusCode?: number }).statusCode === 401);
+        const isAuthRejection = isInvalidRefreshSession(refreshErr);
 
         if (isAuthRejection) {
           if (this.generation === opGen) {
