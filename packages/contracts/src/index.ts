@@ -406,6 +406,9 @@ export const skillEvidenceEventSchema = z.object({
   version: z.number().int().positive(),
   requestedLevel: skillLevelSchema,
   status: evidenceStatusSchema,
+  // Set on a decision: the effective level granted (null unless approved) and the reason on rejection.
+  approvedLevel: skillLevelSchema.nullable().optional(),
+  reason: z.string().min(1).nullable().optional(),
   occurredAt: z.string().datetime({ offset: true }),
 });
 export type SkillEvidenceEvent = z.infer<typeof skillEvidenceEventSchema>;

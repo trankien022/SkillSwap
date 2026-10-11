@@ -53,3 +53,29 @@ and reason. Architecture tests stay green.
 
 **Related:** ADR-013 (outbox + idempotent consumers), ADR-014 (per-module schema), ADR-023 (student
 verification model).
+
+---
+
+## Extension (2026-10-11, FR-005): the `live-class` publish-rights projection
+
+**Context.** FR-005's publish gate needs `live-class` to know, without a cross-schema read, whether a
+Teacher is (1) a **verified student** and (2) **approved for every class skill at the required
+level**. The same event-fed mechanism this ADR established applies.
+
+**Decision (developer, 2026-10-11).** `live-class` owns a local projection in its own schema:
+
+1. **`teacher_trust`** — keyed by `teacher_id`, holding the verified-student flag; and
+   **`teacher_skill_approval`** — keyed by `(teacher_id, skill_id)`, holding the effective
+   `approved_level` (the cached effective approval, ADR-026/ADR-027).
+2. Fed by consumers of the skill-verification events: `student.verification.submitted|approved|
+   rejected|revoked` (verified flag) and `skill.evidence.approved|rejected|claimed|submitted`
+   (per-skill level). Idempotent (dedupe on `messageId`; last-writer-wins by `occurredAt`), ADR-013.
+3. The gate reads only this projection. A **revocation** (`student.verification.revoked`, FR-019)
+   clears the verified flag, demoting publish rights — no grandfather (consistent with ADR-025),
+   which is what the acceptance criteria require.
+
+**Consequence.** Eventual consistency: a class publish that races an approval/revocation may be
+briefly stale; acceptable for the MVP (the standard retry/DLQ path applies to failures).
+
+**Related (extension):** FR-005, ADR-025 (revocation cascade), ADR-026 (levels), ADR-027 (verifier
+authority).
