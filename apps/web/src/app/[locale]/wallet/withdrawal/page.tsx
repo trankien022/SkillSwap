@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { callApi } from '../../../../lib/api-client';
+import { callApi, unwrapEnvelope } from '../../../../lib/api-client';
 import { Navbar } from '../../../../components/navbar';
 import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
 
@@ -17,8 +17,8 @@ export default function WithdrawalPage() {
           callApi('/wallet/balance'),
           callApi('/auth/me'),
         ]);
-        if (balRes.ok) setBalance(await balRes.json());
-        if (meRes.ok) setMe(await meRes.json());
+        if (balRes.ok) setBalance(await unwrapEnvelope(balRes));
+        if (meRes.ok) setMe(await unwrapEnvelope(meRes));
       } catch (e) {
         console.error(e);
       }

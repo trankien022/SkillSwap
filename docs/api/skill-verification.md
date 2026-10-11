@@ -10,12 +10,17 @@ Proving a specific skill at a level (FR-003/FR-004/FR-018, ADR-026/ADR-027/ADR-0
 
 ### `GET /api/profile-skills/me`
 
-**List the caller's skills and approved levels (FR-003)**
+**List the caller's skills and approved levels (FR-003 / NFR-014)**
 
 List the caller's skills and their effective approved levels (FR-003).
 
 - Auth: 🔒 Bearer token required
-- Response: `ProfileSkillDto[]`
+- Response: `ProfileSkillListDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `q` | query | string | no |  |
+| `sort` | query | string | no |  |
 
 ### `POST /api/skill-evidence`
 
@@ -98,9 +103,18 @@ Admin suspends, revokes or reactivates a Verifier (FR-004, ADR-027).
 
 ### `GET /api/verifiers/me/queue`
 
-**The Verifier's expertise-scoped pending queue (FR-004)**
+**The Verifier's expertise-scoped pending queue (FR-004 / NFR-014)**
 
 A Verifier's pending queue, scoped to their expertise (FR-004).
 
 - Auth: 🔒 Bearer token required
-- Response: `SkillEvidenceDto[]`
+- Response: `VerifierQueuePageDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `limit` | query | integer | no |  |
+| `cursor` | query | string | no |  |
+| `level` | query | string | no |  |
+| `type` | query | string | no |  |
+| `q` | query | string | no |  |
+| `sort` | query | string | no |  |

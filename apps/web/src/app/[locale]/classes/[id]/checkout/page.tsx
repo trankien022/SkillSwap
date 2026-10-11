@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect } from 'react';
 import { Navbar } from '../../../../../components/navbar';
-import { callApi } from '../../../../../lib/api-client';
+import { callApi, unwrapEnvelope } from '../../../../../lib/api-client';
 import type { WalletBalanceView } from '@skillswap/contracts';
 
 interface PageProps {
@@ -25,7 +25,7 @@ export default function BookingCheckoutPage({ params }: PageProps) {
       try {
         const res = await callApi('/wallet/balance');
         if (res.ok) {
-          setBalance(await res.json());
+          setBalance(await unwrapEnvelope(res));
         }
       } catch (e) {
         console.warn('Failed to load wallet balance for checkout', e);

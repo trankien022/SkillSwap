@@ -2,7 +2,11 @@
 
 import { DEFAULT_API_BASE } from '../../../lib/status';
 
-export async function createTopUpIntent(amountVnd: number) {
+interface TopUpIntent {
+  paymentUrl: string;
+}
+
+export async function createTopUpIntent(amountVnd: number): Promise<TopUpIntent> {
   const url = `${DEFAULT_API_BASE}/api/wallet/top-ups`;
   
   const res = await fetch(url, {
@@ -17,5 +21,7 @@ export async function createTopUpIntent(amountVnd: number) {
     throw new Error(`Top-up API failed with status ${res.status}`);
   }
   
-  return res.json();
+  // NFR-013: unwrap the uniform envelope; the payload is under `data`.
+  const body = (await res.json()) as { success: boolean; data: TopUpIntent };
+  return body.data;
 }

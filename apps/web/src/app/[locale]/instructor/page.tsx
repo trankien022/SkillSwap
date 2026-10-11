@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { callApi } from '../../../lib/api-client';
+import { callApi, unwrapEnvelope } from '../../../lib/api-client';
 import { Navbar } from '../../../components/navbar';
 import type { ProfileSkillView, WalletBalanceView, MeResponse } from '@skillswap/contracts';
 
@@ -45,16 +45,16 @@ export default function InstructorDashboard() {
         ]);
 
         if (skillsRes.ok) {
-          const data = await skillsRes.json();
-          if (Array.isArray(data)) setSkills(data);
+          const data = await unwrapEnvelope<{ items: typeof skills }>(skillsRes);
+          if (Array.isArray(data.items)) setSkills(data.items);
         }
 
         if (balRes.ok) {
-          setBalance(await balRes.json());
+          setBalance(await unwrapEnvelope(balRes));
         }
 
         if (meRes.ok) {
-          setMe(await meRes.json());
+          setMe(await unwrapEnvelope(meRes));
         }
       } catch (err) {
         console.error('Failed to load instructor data:', err);
@@ -77,7 +77,7 @@ export default function InstructorDashboard() {
         body: JSON.stringify({ displayName: me?.displayName || 'Giảng viên' })
       });
       if (!res.ok) throw new Error('Từ chối truy cập hoặc chưa đến giờ');
-      const data = await res.json();
+      const data = await unwrapEnvelope<{ url: string }>(res);
       window.open(data.url, '_blank');
     } catch (e) {
       showToast('Lỗi: ' + (e as Error).message);
@@ -97,7 +97,7 @@ export default function InstructorDashboard() {
       showToast(`Đã hoàn thành lớp! Doanh thu đã được giải ngân vào ví.`);
       // Refresh balance
       const balRes = await callApi('/wallet/balance');
-      if (balRes.ok) setBalance(await balRes.json());
+      if (balRes.ok) setBalance(await unwrapEnvelope(balRes));
     } catch (e) {
       showToast('Lỗi: ' + (e as Error).message);
     } finally {
@@ -159,11 +159,11 @@ export default function InstructorDashboard() {
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
+        const err = (await res.json().catch(() => ({}))) as { message?: string };
         throw new Error(err.message || 'Không thể tạo lớp học');
       }
 
-      const created = await res.json();
+      const created = await unwrapEnvelope<{ id: string }>(res);
       const newClassItem: CreatedClassItem = {
         id: created.id,
         title: classTitle,

@@ -136,7 +136,7 @@ export async function refreshSession(): Promise<TokenPair | null> {
         throw new Error('Session expired');
       }
 
-      const data = await res.json();
+      const data = await unwrapEnvelope<{ accessToken: string; refreshToken: string }>(res);
       const remembered = readSession()?.remembered ?? false;
       saveTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken }, remembered);
       return { accessToken: data.accessToken, refreshToken: data.refreshToken };
@@ -173,6 +173,55 @@ export async function callApi(path: string, init: RequestInit = {}, retry = true
   return res;
 }
 
+/** One structured entry of a failure envelope's `errors` array. */
+export interface ApiErrorItem {
+  code: string;
+  message: string;
+}
+
+/** NFR-013: the uniform response envelope every domain endpoint returns. */
+export interface ApiEnvelope<T> {
+  success: boolean;
+  code: string;
+  message: string;
+  data: T;
+  errors: ApiErrorItem[];
+}
+
+/** Raised when a domain response reports `success: false`. */
+export class ApiError extends Error {
+  constructor(
+    readonly code: string,
+    message: string,
+    readonly errors: ApiErrorItem[],
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
+/**
+ * Reads a domain response body and returns its `data`, throwing an `ApiError`
+ * (carrying the stable `code`) when the envelope reports a failure. Health
+ * probes are the only raw responses and are never read through this helper.
+ *
+ * Branch on `error.code` / `error.errors[].code`, never on the human message.
+ */
+export async function unwrapEnvelope<T>(res: Response): Promise<T> {
+  const body = (await res.json().catch(() => null)) as ApiEnvelope<T> | null;
+  if (body === null || typeof body !== 'object' || !('success' in body)) {
+    if (!res.ok) {
+      throw new ApiError(`HTTP_${res.status}`, `Request failed (${res.status})`, []);
+    }
+    // Fallback for a legacy/raw body (defensive; domain endpoints are enveloped).
+    return body as unknown as T;
+  }
+  if (!body.success) {
+    throw new ApiError(body.code, body.message, body.errors ?? []);
+  }
+  return body.data;
+}
+
 export async function authenticate(
   mode: 'login' | 'register',
   payload: {
@@ -203,12 +252,15 @@ export async function authenticate(
   });
 
   if (!res.ok) {
-    const errorBody = await res.json().catch(() => null);
-    const msg = errorBody?.message || errorBody?.error || (mode === 'register' ? 'Đăng ký thất bại' : 'Đăng nhập thất bại');
-    throw new Error(Array.isArray(msg) ? msg.join(', ') : String(msg));
+    const errorBody = (await res.json().catch(() => null)) as ApiEnvelope<unknown> | null;
+    const msg =
+      errorBody?.message ||
+      errorBody?.errors?.[0]?.message ||
+      (mode === 'register' ? 'Đăng ký thất bại' : 'Đăng nhập thất bại');
+    throw new Error(msg);
   }
 
-  const data = await res.json();
+  const data = await unwrapEnvelope<{ accessToken: string; refreshToken: string }>(res);
   saveTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken }, remember);
 
   // Immediately try to fetch user info from /auth/me or store payload
@@ -220,7 +272,13 @@ export async function authenticate(
       },
     });
     if (meRes.ok) {
-      const meData = await meRes.json();
+      const meData = await unwrapEnvelope<{
+        id?: string;
+        email: string;
+        displayName?: string;
+        role?: string;
+        studentVerification?: { status?: string } | null;
+      }>(meRes);
       saveStoredUser({
         id: meData.id,
         email: meData.email,
@@ -267,5 +325,5 @@ export async function logout(): Promise<void> {
 export async function getMe(): Promise<UserProfile | null> {
   const res = await callApi('/auth/me');
   if (!res.ok) return null;
-  return res.json();
+  return unwrapEnvelope<UserProfile>(res);
 }
