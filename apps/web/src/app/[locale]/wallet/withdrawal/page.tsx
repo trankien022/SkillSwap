@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { callApi } from '../../../../lib/api-client';
+import { Navbar } from '../../../../components/navbar';
 import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
 
 export default function WithdrawalPage() {
@@ -41,46 +42,7 @@ export default function WithdrawalPage() {
   return (
     <div className="flex flex-col w-full min-h-screen bg-slate-50">
       {/* Header */}
-      <header className="sticky top-0 bg-white border-b border-slate-200 z-50 h-16 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <a href="#" className="flex items-center gap-2.5 group">
-              <div className="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold text-lg transition-colors">
-                S
-              </div>
-              <span className="font-bold text-xl text-slate-900 tracking-tight">SkillSwap</span>
-            </a>
-            <nav className="hidden md:flex items-center gap-1.5">
-              <a href="#" className="px-3.5 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors">Khám phá</a>
-              <a href="#" className="px-3.5 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors">Lớp học của tôi</a>
-              <a href="/vi/instructor" className="px-3.5 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors">Studio Giảng dạy</a>
-              <a href="/vi/wallet" className="text-emerald-700 bg-emerald-50 font-semibold px-3.5 py-1.5 rounded-lg text-sm transition-colors">Ví &amp; Tín dụng</a>
-              <a href="#" className="px-3.5 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors">Xác minh</a>
-            </nav>
-          </div>
-          <div className="flex items-center gap-3.5">
-            <div className="flex items-center gap-2 pl-2.5 pr-1.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-xs font-semibold text-slate-900">
-              <span className="material-symbols-outlined text-[17px] text-emerald-600">monetization_on</span>
-              <span>{balance ? balance.availableCredits.toLocaleString('vi-VN') : '0'} Credits</span>
-              <a href="/vi/wallet" className="w-5 h-5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors text-xs font-bold leading-none">+</a>
-            </div>
-            <button type="button" className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors relative">
-              <span className="material-symbols-outlined text-[20px]">notifications</span>
-              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-600 ring-2 ring-white"></span>
-            </button>
-            <div className="h-5 w-px bg-slate-200 hidden sm:block"></div>
-            <div className="flex items-center gap-2.5 cursor-pointer">
-              <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center ring-2 ring-slate-100">
-                <span className="material-symbols-outlined text-[18px] text-slate-600">person</span>
-              </div>
-              <div className="hidden sm:flex flex-col text-left">
-                <span className="text-xs font-semibold text-slate-900 leading-tight">{me?.displayName || 'Minh Nguyễn'}</span>
-                <span className="text-[11px] text-slate-500">{me?.studentVerification?.status === 'approved' ? 'SV đã xác minh' : 'Thành viên'}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Navbar currentTab="wallet" balance={balance} me={me} />
 
       {/* Main Content */}
       <main className="w-full pt-16 flex-1">
