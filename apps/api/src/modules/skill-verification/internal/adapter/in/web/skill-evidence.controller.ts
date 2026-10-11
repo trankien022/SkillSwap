@@ -58,8 +58,14 @@ export class SkillEvidenceController {
   }
 
   @Get(':id/history')
+  @ResponseCode('SKILL_EVIDENCE_HISTORY_OK')
+  @ResponseMessage('Skill evidence history loaded')
   @ApiParam({ name: 'id', description: 'The evidence id' })
-  @ApiOperation({ summary: 'Decision history for each evidence version (FR-018)' })
+  @ApiOperation({
+    summary: 'Decision history for each evidence version (FR-018)',
+    description:
+      'Complete by design: returns every version of the profile-skill with its audit trail (bounded by the number of submissions), so it is not paginated.',
+  })
   @ApiOkResponse({ type: SkillEvidenceHistoryDto, description: 'All versions of the profile-skill with their audit trail' })
   history(
     @Param('id') id: string,
