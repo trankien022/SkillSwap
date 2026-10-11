@@ -142,7 +142,8 @@ async function upsertAccount(ds, identity) {
 async function resetDemo(ctx) {
   // Scoped deletes over the demo-owned rows. Accounts cascade to credentials and
   // sessions; evidence/audit cascade from profile_skills; the rest are keyed by
-  // the demo account ids.
+  // the demo account ids. Classes/bookings/verifications have no natural key, so
+  // the seed always clears its own rows before re-inserting.
   await ctx.classDs.query(`DELETE FROM "live_class"."bookings"`);
   await ctx.classDs.query(`DELETE FROM "live_class"."classes"`);
   await ctx.classDs.query(`DELETE FROM "live_class"."teacher_skill_approval"`);
@@ -160,6 +161,7 @@ async function resetDemo(ctx) {
   await ctx.skillDs.query(`DELETE FROM "skill_verification"."verified_students"`);
   await ctx.skillDs.query(`DELETE FROM "skill_verification"."skills"`);
   await ctx.accountDs.query(`DELETE FROM "account_profile"."account_verification_status"`);
+  await ctx.accountDs.query(`DELETE FROM "account_profile"."sessions"`);
   await ctx.accountDs.query(
     `DELETE FROM "account_profile"."accounts" WHERE lower("email") LIKE $1`,
     [`%@${DEMO_DOMAIN}`],
@@ -321,6 +323,63 @@ async function upsertEvidence(ctx, { profileSkillId, accountId, skillId, version
   return evidenceId;
 }
 
+/** Upserts a class + its skill links and returns its id. */
+async function insertClass(ctx, { teacherId, state, startsAt, durationMinutes, priceCredits, capacity, description, skillIds }) {
+  const rows = await ctx.classDs.query(
+    `INSERT INTO "live_class"."classes"
+       ("teacher_id", "state", "starts_at", "duration_minutes", "price_credits", "capacity", "description")
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING "id"`,
+    [teacherId, state, startsAt, durationMinutes, priceCredits, capacity, description],
+  );
+  const classId = rows[0].id;
+  for (const skillId of skillIds) {
+    await ctx.classDs.query(
+      `INSERT INTO "live_class"."class_skills" ("class_id", "skill_id") VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      [classId, skillId],
+    );
+  }
+  return classId;
+}
+
+/** Upserts a booking on a class (natural key: idempotency_key). */
+async function insertBooking(ctx, { classId, learnerId, state, priceCredits, idempotencyKey, expiresAt, confirmedAt, cancelledAt, cancelReason }) {
+  await ctx.classDs.query(
+    `INSERT INTO "live_class"."bookings"
+       ("class_id", "learner_id", "state", "price_credits", "idempotency_key", "expires_at", "confirmed_at", "cancelled_at", "cancel_reason")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+     ON CONFLICT ("idempotency_key") DO UPDATE
+       SET "state" = EXCLUDED."state", "confirmed_at" = EXCLUDED."confirmed_at", "updated_at" = now()`,
+    [classId, learnerId, state, priceCredits, idempotencyKey, expiresAt ?? null, confirmedAt ?? null, cancelledAt ?? null, cancelReason ?? null],
+  );
+}
+
+/** Upserts a wallet balance. */
+async function upsertWallet(ctx, ownerId, availableCredits, pendingCredits = 0) {
+  await ctx.walletDs.query(
+    `INSERT INTO "wallet_ledger"."wallets" ("owner_id", "available_credits", "pending_credits", "updated_at")
+     VALUES ($1, $2, $3, now())
+     ON CONFLICT ("owner_id") DO UPDATE
+       SET "available_credits" = EXCLUDED."available_credits",
+           "pending_credits" = EXCLUDED."pending_credits", "updated_at" = now()`,
+    [ownerId, availableCredits, pendingCredits],
+  );
+}
+
+/** Upserts a ledger entry keyed by (owner_id, reference_id, entry_type). */
+async function insertLedgerEntry(ctx, { ownerId, entryType, direction, amountCredits, referenceId, bookingId }) {
+  await ctx.walletDs.query(
+    `INSERT INTO "wallet_ledger"."ledger_entries"
+       ("owner_id", "entry_type", "direction", "amount_credits", "reference_id", "booking_id", "teacher_id", "trace_id")
+     SELECT $1, $2, $3, $4, $5, $6, $1, $5
+     WHERE NOT EXISTS (
+       SELECT 1 FROM "wallet_ledger"."ledger_entries"
+       WHERE "owner_id" = $1 AND "reference_id" = $5 AND "entry_type" = $2
+     )`,
+    [ownerId, entryType, direction, amountCredits, referenceId, bookingId ?? null],
+  );
+}
+
 // ── Main ───────────────────────────────────────────────────────────────────
 const accountDs = await loadDataSource('account-profile');
 const skillDs = await loadDataSource('skill-verification');
@@ -331,10 +390,11 @@ const ctx = { accountDs, skillDs, studentDs, classDs, walletDs };
 const ids = {};
 
 try {
-  if (RESET) {
-    await resetDemo(ctx);
-    console.log('reset: removed previous demo rows');
-  }
+  // Always start from a clean demo slate: classes/bookings/verifications have no
+  // natural key, so a re-run clears the demo-owned rows first. --reset is accepted
+  // as an explicit acknowledgement of the same behaviour.
+  await resetDemo(ctx);
+  console.log(RESET ? 'reset: cleared previous demo rows' : 'cleared any previous demo rows');
 
   for (const identity of ALL_IDENTITIES) {
     ids[identity.email] = await upsertAccount(accountDs, identity);
@@ -425,6 +485,108 @@ try {
     });
   }
   console.log('skill evidence: 6 teachers approved, 3 in the verifier queue');
+
+  // ── FR-005/FR-007: classes + bookings ────────────────────────────────────
+  // Teachers are users 0–5. Class states cover the lifecycle; only classes whose
+  // scheduled end is in the future stay open (the completion sweeper closes the
+  // rest on boot). Prices are integer VND credits.
+  const HOUR = 3600 * 1000;
+  const now = Date.now();
+  const iso = (ms) => new Date(ms).toISOString();
+
+  const TEACHER_SKILLS = TEACHING.map((t) => ({
+    teacherId: userIdByIndex[t.user],
+    skillIds: t.skills.map((name) => skillIdByName[name]),
+    teacher: t.user,
+  }));
+
+  const CLASS_SPECS = [
+    { teacher: 0, skill: 'IELTS', state: 'published', startInH: 48, duration: 60, price: 120, capacity: 8 },
+    { teacher: 0, skill: 'English Conversation', state: 'published', startInH: 72, duration: 45, price: 90, capacity: 6 },
+    { teacher: 1, skill: 'Python', state: 'published', startInH: 24, duration: 90, price: 200, capacity: 10 },
+    { teacher: 2, skill: 'React', state: 'published', startInH: 36, duration: 120, price: 260, capacity: 12 },
+    { teacher: 2, skill: 'TypeScript', state: 'full', startInH: 12, duration: 90, price: 220, capacity: 2 },
+    { teacher: 3, skill: 'Japanese', state: 'in_progress', startInH: -1, duration: 120, price: 150, capacity: 8 },
+    { teacher: 4, skill: 'Guitar', state: 'published', startInH: 96, duration: 60, price: 130, capacity: 6 },
+    { teacher: 5, skill: 'Calculus', state: 'completed', startInH: -72, duration: 90, price: 180, capacity: 10 },
+  ];
+
+  const classIds = [];
+  for (let i = 0; i < CLASS_SPECS.length; i += 1) {
+    const spec = CLASS_SPECS[i];
+    const teacher = TEACHER_SKILLS.find((t) => t.teacher === spec.teacher);
+    const classId = await insertClass(ctx, {
+      teacherId: teacher.teacherId,
+      state: spec.state,
+      startsAt: iso(now + spec.startInH * HOUR),
+      durationMinutes: spec.duration,
+      priceCredits: spec.price,
+      capacity: spec.capacity,
+      description: `Demo ${spec.skill} class #${i + 1} by Demo User ${spec.teacher + 1}`,
+      skillIds: [skillIdByName[spec.skill]],
+    });
+    classIds.push({ classId, spec });
+  }
+
+  // Learners: users 6–9 (the non-teachers). Spread bookings across open classes.
+  const learnerIds = userIdByIndex.slice(6);
+  let bookingCount = 0;
+  for (let ci = 0; ci < classIds.length; ci += 1) {
+    const { classId, spec } = classIds[ci];
+    const seats = spec.state === 'full' ? 2 : Math.min(spec.capacity, 2 + (ci % 3));
+    const open = spec.startInH > 0 && spec.state !== 'completed';
+    for (let s = 0; s < seats; s += 1) {
+      const learnerId = learnerIds[(ci + s) % learnerIds.length];
+      const state = spec.state === 'completed' ? 'completed' : !open ? 'cancelled' : s % 3 === 0 ? 'pending' : 'confirmed';
+      await insertBooking(ctx, {
+        classId,
+        learnerId,
+        state,
+        priceCredits: spec.price,
+        idempotencyKey: `demo-cls${ci}-seat${s}`,
+        expiresAt: state === 'pending' ? iso(now + 30 * 60 * 1000) : null,
+        confirmedAt: state === 'confirmed' || state === 'completed' ? iso(now - 2 * HOUR) : null,
+        cancelledAt: state === 'cancelled' ? iso(now - HOUR) : null,
+        cancelReason: state === 'cancelled' ? 'class_cancelled' : null,
+      });
+      bookingCount += 1;
+    }
+  }
+  console.log(`classes: ${classIds.length}, bookings: ${bookingCount}`);
+
+  // ── FR-008/FR-010: wallets + ledger ──────────────────────────────────────
+  // Every user gets a funded wallet; learners also get a top-up and a few
+  // booking-related debit entries so history is non-trivial.
+  for (let i = 0; i < USERS.length; i += 1) {
+    const ownerId = userIdByIndex[i];
+    const credits = 500 + i * 250;
+    await upsertWallet(ctx, ownerId, credits);
+    await insertLedgerEntry(ctx, {
+      ownerId, entryType: 'top_up', direction: 'credit', amountCredits: credits,
+      referenceId: `demo-topup-user${i + 1}`,
+    });
+  }
+  // A settled top-up intent for the first learner (FR-008).
+  const learner0 = learnerIds[0];
+  await ctx.walletDs.query(
+    `INSERT INTO "wallet_ledger"."top_up_intents"
+       ("owner_id", "provider", "provider_ref", "amount_vnd", "amount_credits", "status")
+     VALUES ($1, 'demo', $2, $3, $4, 'settled')
+     ON CONFLICT ("provider", "provider_ref") DO NOTHING`,
+    [learner0, `demo-topup-user7`, 500_000, 500],
+  );
+  // Teachers earn credits from their completed classes (FR-020 release).
+  await insertLedgerEntry(ctx, {
+    ownerId: TEACHER_SKILLS[5].teacherId, entryType: 'teacher_credit', direction: 'credit',
+    amountCredits: 162, referenceId: 'demo-class-8-credit', bookingId: 'demo-booking-teacher5',
+  });
+  await upsertWallet(ctx, TEACHER_SKILLS[5].teacherId, 162);
+  // A refunded learner entry to show a reversed record (ADR-022).
+  await insertLedgerEntry(ctx, {
+    ownerId: learner0, entryType: 'refund', direction: 'credit', amountCredits: 260,
+    referenceId: 'demo-refund-1',
+  });
+  console.log(`wallets: ${USERS.length} funded (+1 top-up intent, teacher credit, refund)`);
 
   console.log('\nDemo credentials (password for every account: ' + DEMO_PASSWORD + ')');
   console.log(`  admin     ${ADMIN.email}`);
