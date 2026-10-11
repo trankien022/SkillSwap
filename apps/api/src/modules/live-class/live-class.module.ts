@@ -20,11 +20,18 @@ import {
 } from '../account-profile/api';
 import { SqlClassListReader } from './internal/adapter/out/persistence/sql-class-list-reader';
 import { SqlClassDetailReader } from './internal/adapter/out/persistence/sql-class-detail-reader';
+import { SqlMyBookingsReader } from './internal/adapter/out/persistence/sql-my-bookings-reader';
 import { AccountProfilePublicTeacherReader } from './internal/adapter/out/account-profile/account-profile-public-teacher-reader';
 import { ClassListController } from './internal/adapter/in/web/class-list.controller';
 import { ClassDetailController } from './internal/adapter/in/web/class-detail.controller';
+import { MyBookingsController } from './internal/adapter/in/web/my-bookings.controller';
 import { ListClassesQueryHandler } from './internal/application/query/list-classes.query';
 import { GetClassDetailQueryHandler } from './internal/application/query/get-class-detail.query';
+import { ListMyBookingsQueryHandler } from './internal/application/query/list-my-bookings.query';
+import {
+  LIST_MY_BOOKINGS,
+  type ListMyBookingsPort,
+} from './internal/application/port/in/list-my-bookings';
 import {
   LIST_CLASSES,
   type ListClassesPort,
@@ -41,6 +48,10 @@ import {
   CLASS_DETAIL_READER,
   type ClassDetailReader,
 } from './internal/application/port/out/class-detail-reader';
+import {
+  MY_BOOKINGS_READER,
+  type MyBookingsReader,
+} from './internal/application/port/out/my-bookings-reader';
 import {
   PUBLIC_TEACHER_READER,
   type PublicTeacherReader,
@@ -167,6 +178,7 @@ const systemClock: Clock = { now: () => new Date() };
     StatusController,
     ClassesController,
     ClassListController,
+    MyBookingsController,
     ClassDetailController,
   ],
   providers: [
@@ -381,6 +393,28 @@ const systemClock: Clock = { now: () => new Date() };
       ): GetClassDetailPort =>
         new GetClassDetailQueryHandler(classDetailReader, publicTeacherReader, clock),
       inject: [CLASS_DETAIL_READER, PUBLIC_TEACHER_READER, CLOCK],
+    },
+    {
+      provide: MY_BOOKINGS_READER,
+      useFactory: (registry: ModuleDataSourceRegistry): MyBookingsReader =>
+        new SqlMyBookingsReader(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
+      provide: LIST_MY_BOOKINGS,
+      useFactory: (
+        myBookingsReader: MyBookingsReader,
+        publicTeacherReader: PublicTeacherReader,
+        clock: Clock,
+        config: ApiConfig,
+      ): ListMyBookingsPort =>
+        new ListMyBookingsQueryHandler(
+          myBookingsReader,
+          publicTeacherReader,
+          clock,
+          config.jitsiOpenMinutes,
+        ),
+      inject: [MY_BOOKINGS_READER, PUBLIC_TEACHER_READER, CLOCK, ApiConfig],
     },
     LiveClassRegistrar,
   ],
