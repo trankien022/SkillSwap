@@ -3,6 +3,7 @@ import type { ModuleDataSourceRegistry } from '../../../../../../shared/messagin
 import { insertOutboxStatement } from '../../../../../../shared/messaging/outbox-statements';
 import { qualified } from '../../../../../../shared/sql/ident';
 import { returnedRows } from '../../../../../../shared/sql/result';
+import { decodeCursor, toKeysetPage } from '../../../../../../shared/http/keyset-cursor';
 import {
   EvidenceNotClaimableError,
   SKILL_EVIDENCE_EVENTS,
@@ -20,6 +21,8 @@ import type {
   ClaimedEvidence,
   CreateSkillEvidenceRequest,
   PendingEvidenceForVerifier,
+  PendingQueuePage,
+  PendingQueueQuery,
   SkillEvidenceRepository,
 } from '../../../application/port/out/skill-evidence-repository';
 
@@ -44,6 +47,10 @@ interface EvidenceRow {
 function toDate(value: Date | string | null): Date | null {
   if (value === null) return null;
   return value instanceof Date ? value : new Date(value);
+}
+
+function toIso(value: Date | string): string {
+  return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
 }
 
 function toDomain(row: EvidenceRow): SkillEvidence {
@@ -184,28 +191,97 @@ export class SqlSkillEvidenceRepository implements SkillEvidenceRepository {
     return rows[0] === undefined ? null : toDomain(rows[0]);
   }
 
-  async listPendingForExpertise(expertise: readonly string[]): Promise<PendingEvidenceForVerifier[]> {
-    if (expertise.length === 0) {
-      return [];
+  async listPendingForExpertise(query: PendingQueueQuery): Promise<PendingQueuePage> {
+    if (query.expertise.length === 0) {
+      return { items: [], nextCursor: null, total: 0 };
     }
     const source = this.registry.get(this.moduleName);
-    const rows = (await source.query(
-      `SELECT e.${SELECT_COLUMNS.split(', ').join(', e.')},
-              ps."account_id" AS owner_id, s."id" AS skill_id, s."name" AS skill_name,
-              s."category" AS category
-         FROM ${this.table} e
-         JOIN ${qualified(this.schema, 'profile_skills')} ps ON ps."id" = e."profile_skill_id"
-         JOIN ${qualified(this.schema, 'skills')} s ON s."id" = ps."skill_id"
-        WHERE e."status" = 'pending' AND s."id" = ANY($1::uuid[])
-        ORDER BY e."submitted_at" ASC`,
-      [expertise],
-    )) as (EvidenceRow & {
+
+    return source.transaction(async (manager) => {
+      const params: unknown[] = [query.expertise];
+      // Shared filtered WHERE (filters only; the cursor is added for the page query only).
+      let where = `e."status" = 'pending' AND s."id" = ANY($1::uuid[])`;
+      if (query.level !== undefined) {
+        params.push(query.level);
+        where += ` AND e."requested_level" = $${params.length}`;
+      }
+      if (query.type !== undefined) {
+        params.push(query.type);
+        where += ` AND e."evidence_type" = $${params.length}`;
+      }
+      if (query.q !== undefined) {
+        params.push(`%${query.q}%`);
+        where += ` AND s."name" ILIKE $${params.length}`;
+      }
+      const countParams = [...params];
+
+      // Keyset window + stable tiebreaker, ordered newest/oldest first.
+      const desc = query.sort === 'submittedAtDesc';
+      const comparison = desc ? '<' : '>';
+      const order = desc ? 'DESC' : 'ASC';
+      let pageWhere = where;
+      const pageParams = [...params];
+      const decoded = decodeCursor(query.cursor);
+      if (decoded !== null) {
+        pageParams.push(decoded[0], decoded[1]);
+        pageWhere += ` AND (e."submitted_at", e."id") ${comparison} ($${pageParams.length - 1}::timestamptz, $${pageParams.length}::uuid)`;
+      }
+      pageParams.push(query.limit + 1);
+      const limitParam = pageParams.length;
+
+      const [rows, countRows] = await Promise.all([
+        manager.query(
+          `SELECT e.${SELECT_COLUMNS.split(', ').join(', e.')},
+                  ps."account_id" AS owner_id, s."id" AS skill_id, s."name" AS skill_name,
+                  s."category" AS category
+             FROM ${this.table} e
+             JOIN ${qualified(this.schema, 'profile_skills')} ps ON ps."id" = e."profile_skill_id"
+             JOIN ${qualified(this.schema, 'skills')} s ON s."id" = ps."skill_id"
+            WHERE ${pageWhere}
+            ORDER BY e."submitted_at" ${order}, e."id" ${order}
+            LIMIT $${limitParam}`,
+          pageParams,
+        ) as Promise<
+          (EvidenceRow & {
+            owner_id: string;
+            skill_id: string;
+            skill_name: string;
+            category: string;
+          })[]
+        >,
+        manager.query(
+          `SELECT COUNT(*)::int AS "total"
+             FROM ${this.table} e
+             JOIN ${qualified(this.schema, 'profile_skills')} ps ON ps."id" = e."profile_skill_id"
+             JOIN ${qualified(this.schema, 'skills')} s ON s."id" = ps."skill_id"
+            WHERE ${where}`,
+          countParams,
+        ) as Promise<Array<{ total: number }>>,
+      ]);
+
+      const { items: pageRows, nextCursor } = toKeysetPage(
+        rows,
+        query.limit,
+        (row) => [toIso(row.submitted_at), row.id],
+      );
+
+      return {
+        items: pageRows.map((row) => this.toPending(row)),
+        nextCursor,
+        total: countRows[0]?.total ?? 0,
+      };
+    });
+  }
+
+  private toPending(
+    row: EvidenceRow & {
       owner_id: string;
       skill_id: string;
       skill_name: string;
       category: string;
-    })[];
-    return rows.map((row) => ({
+    },
+  ): PendingEvidenceForVerifier {
+    return {
       id: row.id,
       profileSkillId: row.profile_skill_id,
       skillId: row.skill_id,
@@ -213,7 +289,7 @@ export class SqlSkillEvidenceRepository implements SkillEvidenceRepository {
       category: row.category,
       ownerId: row.owner_id,
       evidence: toDomain(row),
-    }));
+    };
   }
 
   async claim(request: ClaimRequest): Promise<ClaimedEvidence> {

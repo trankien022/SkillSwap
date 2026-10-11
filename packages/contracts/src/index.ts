@@ -3,7 +3,7 @@ import { z } from 'zod';
 export * from './envelope';
 export * from './pagination';
 
-import { pagedSchema } from './pagination';
+import { pagedSchema, paginationQuerySchema } from './pagination';
 
 export const identityHeadersSchema = z.object({
   'x-user-id': z.string().min(1).optional(),
@@ -459,6 +459,21 @@ export type SkillEvidenceEvent = z.infer<typeof skillEvidenceEventSchema>;
 /** FR-004 / ADR-027: a Verifier account with a seeded expertise set. */
 export const verifierStatusSchema = z.enum(['active', 'suspended', 'revoked']);
 export type VerifierStatus = z.infer<typeof verifierStatusSchema>;
+
+/** FR-004 / NFR-014: query params for GET /verifiers/me/queue. */
+export const verifierQueueQuerySchema = paginationQuerySchema.extend({
+  level: skillLevelSchema.optional(),
+  type: evidenceTypeSchema.optional(),
+  // Skill-name free-text search.
+  q: z.string().min(1).optional(),
+  // 'submittedAt' (oldest first, FIFO) or '-submittedAt' (newest first).
+  sort: z.enum(['submittedAt', '-submittedAt']).optional(),
+});
+export type VerifierQueueQueryInput = z.infer<typeof verifierQueueQuerySchema>;
+
+/** FR-004 / NFR-014: a page of the Verifier's expertise-scoped pending queue. */
+export const verifierQueuePageSchema = pagedSchema(skillEvidenceViewSchema);
+export type VerifierQueuePage = z.infer<typeof verifierQueuePageSchema>;
 
 export const verifierSchema = z.object({
   accountId: z.string().min(1),

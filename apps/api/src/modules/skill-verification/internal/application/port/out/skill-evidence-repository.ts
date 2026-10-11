@@ -1,4 +1,4 @@
-import type { ProfileSkill, SkillEvidence, SkillLevel } from '../../../domain/evidence';
+import type { EvidenceType, ProfileSkill, SkillEvidence, SkillLevel } from '../../../domain/evidence';
 import type { EvidenceAuditEntry } from '../../../domain/history';
 
 export const PROFILE_SKILL_REPOSITORY = Symbol('ProfileSkillRepository');
@@ -57,6 +57,27 @@ export interface PendingEvidenceForVerifier {
   readonly evidence: SkillEvidence;
 }
 
+/** FR-004 / NFR-014: filters, sort and keyset window for the verifier queue. */
+export interface PendingQueueQuery {
+  readonly expertise: readonly string[];
+  readonly limit: number;
+  /** Opaque cursor from a previous page. */
+  readonly cursor?: string;
+  readonly level?: SkillLevel;
+  readonly type?: EvidenceType;
+  /** Free-text search over the skill name. */
+  readonly q?: string;
+  /** 'submittedAt' (oldest first, default) or 'submittedAtDesc'. */
+  readonly sort?: 'submittedAt' | 'submittedAtDesc';
+}
+
+/** FR-004 / NFR-014: one page of the verifier queue plus the filtered total. */
+export interface PendingQueuePage {
+  readonly items: PendingEvidenceForVerifier[];
+  readonly nextCursor: string | null;
+  readonly total: number;
+}
+
 export interface ClaimRequest {
   readonly evidenceId: string;
   readonly verifierId: string;
@@ -101,10 +122,11 @@ export interface SkillEvidenceRepository {
   /** The evidence by id, or null. */
   findById(evidenceId: string): Promise<SkillEvidence | null>;
   /**
-   * FR-004: the pending requests for skills in the Verifier's expertise set, oldest
-   * first. Only `pending` (unclaimed) requests appear.
+   * FR-004 / NFR-014: a bounded, filtered, keyset-paged page of the pending requests
+   * for skills in the Verifier's expertise set. Only `pending` (unclaimed) requests
+   * appear. `total` counts the filtered set (ignoring limit/cursor).
    */
-  listPendingForExpertise(expertise: readonly string[]): Promise<PendingEvidenceForVerifier[]>;
+  listPendingForExpertise(query: PendingQueueQuery): Promise<PendingQueuePage>;
   /**
    * FR-004 / BR-071: atomically claims a `pending` request for a Verifier (locks it,
    * no other Verifier may claim or decide). Emits `skill.evidence.claimed`.

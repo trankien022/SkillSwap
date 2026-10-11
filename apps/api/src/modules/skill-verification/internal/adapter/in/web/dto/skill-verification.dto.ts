@@ -5,6 +5,8 @@ import {
   skillEvidenceHistorySchema,
   skillEvidenceViewSchema,
   submitSkillEvidenceSchema,
+  verifierQueuePageSchema,
+  verifierQueueQuerySchema,
   verifierSchema,
   verifierStatusChangeSchema,
 } from '@skillswap/contracts';
@@ -29,3 +31,9 @@ export class VerifierStatusChangeDto extends createZodDto(verifierStatusChangeSc
 
 /** FR-004 / API-003: approve or reject a claimed evidence request. */
 export class SkillEvidenceDecisionDto extends createZodDto(skillEvidenceDecisionSchema) {}
+
+/** FR-004 / NFR-014: query params for GET /verifiers/me/queue. */
+export class VerifierQueueQueryDto extends createZodDto(verifierQueueQuerySchema) {}
+
+/** FR-004 / NFR-014: a page of the Verifier's expertise-scoped pending queue. */
+export class VerifierQueuePageDto extends createZodDto(verifierQueuePageSchema) {}

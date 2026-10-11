@@ -14,7 +14,8 @@ import type {
   ClaimedEvidence,
   CreateSkillEvidenceRequest,
   EvidenceAuditRepository,
-  PendingEvidenceForVerifier,
+  PendingQueuePage,
+  PendingQueueQuery,
   ProfileSkillRepository,
   ProfileSkillWithSkill,
   SkillEvidenceRepository,
@@ -171,14 +172,31 @@ export class InMemorySkillEvidenceRepository implements SkillEvidenceRepository 
     return this.rows.find((row) => row.id === evidenceId) ?? null;
   }
 
-  async listPendingForExpertise(expertise: readonly string[]): Promise<PendingEvidenceForVerifier[]> {
-    return this.rows
+  async listPendingForExpertise(query: PendingQueueQuery): Promise<PendingQueuePage> {
+    const matched = this.rows
       .filter((row) => row.status === 'pending')
       .filter((row) => {
         const ctx = this.profileSkillContext.get(row.profileSkillId);
-        return ctx !== undefined && expertise.includes(ctx.skillId);
+        return ctx !== undefined && query.expertise.includes(ctx.skillId);
       })
-      .map((row) => {
+      .filter((row) => query.level === undefined || row.requestedLevel === query.level)
+      .filter((row) => query.type === undefined || row.evidenceType === query.type);
+
+    const total = matched.length;
+    const desc = query.sort === 'submittedAtDesc';
+    const sorted = [...matched].sort((a, b) => {
+      const byTime = a.submittedAt.getTime() - b.submittedAt.getTime();
+      const byId = a.id.localeCompare(b.id);
+      const cmp = byTime !== 0 ? byTime : byId;
+      return desc ? -cmp : cmp;
+    });
+
+    const start = query.cursor === undefined ? 0 : Number.parseInt(query.cursor, 10);
+    const slice = sorted.slice(start, start + query.limit);
+    const next = start + query.limit < sorted.length ? String(start + query.limit) : null;
+
+    return {
+      items: slice.map((row) => {
         const ctx = this.profileSkillContext.get(row.profileSkillId)!;
         return {
           id: row.id,
@@ -189,7 +207,10 @@ export class InMemorySkillEvidenceRepository implements SkillEvidenceRepository 
           ownerId: ctx.ownerId,
           evidence: row,
         };
-      });
+      }),
+      nextCursor: next,
+      total,
+    };
   }
 
   async claim(request: ClaimRequest): Promise<ClaimedEvidence> {
