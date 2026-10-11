@@ -88,6 +88,20 @@ const USERS = Array.from({ length: 10 }, (_, i) => ({
   role: 'user',
 }));
 
+/** Managed skill catalogue (ADR-026 §1–2): `category → name`. */
+const SKILLS = [
+  { category: 'Languages', name: 'IELTS' },
+  { category: 'Languages', name: 'Japanese' },
+  { category: 'Languages', name: 'English Conversation' },
+  { category: 'Programming', name: 'Python' },
+  { category: 'Programming', name: 'React' },
+  { category: 'Programming', name: 'TypeScript' },
+  { category: 'Music', name: 'Guitar' },
+  { category: 'Music', name: 'Piano' },
+  { category: 'Math', name: 'Calculus' },
+  { category: 'Design', name: 'UI/UX' },
+];
+
 const ALL_IDENTITIES = [ADMIN, ...VERIFIERS, ...USERS];
 
 async function upsertAccount(ds, identity) {
@@ -133,8 +147,41 @@ async function resetDemo(accountDs) {
   );
 }
 
+/** Upserts a taxonomy skill and returns its id (natural key: name + category). */
+async function upsertSkill(ds, { name, category }) {
+  const rows = await ds.query(
+    `INSERT INTO "skill_verification"."skills" ("name", "category")
+     VALUES ($1, $2)
+     ON CONFLICT ("name", "category") DO UPDATE SET "updated_at" = now()
+     RETURNING "id"`,
+    [name, category],
+  );
+  return rows[0].id;
+}
+
+/** Creates/refreshes a verifier row and its expertise set; returns nothing. */
+async function upsertVerifier(ds, accountId, skillIds, status = 'active') {
+  await ds.query(
+    `INSERT INTO "skill_verification"."verifiers" ("account_id", "status")
+     VALUES ($1, $2)
+     ON CONFLICT ("account_id") DO UPDATE SET "status" = EXCLUDED."status", "updated_at" = now()`,
+    [accountId, status],
+  );
+  await ds.query(`DELETE FROM "skill_verification"."verifier_expertise" WHERE "account_id" = $1`, [
+    accountId,
+  ]);
+  for (const skillId of skillIds) {
+    await ds.query(
+      `INSERT INTO "skill_verification"."verifier_expertise" ("account_id", "skill_id")
+       VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      [accountId, skillId],
+    );
+  }
+}
+
 // ── Main ───────────────────────────────────────────────────────────────────
 const accountDs = await loadDataSource('account-profile');
+const skillDs = await loadDataSource('skill-verification');
 const ids = {};
 
 try {
@@ -148,10 +195,28 @@ try {
   }
   console.log(`accounts: ${ALL_IDENTITIES.length} (1 admin, ${VERIFIERS.length} verifier, ${USERS.length} user)`);
 
+  const skillIdByName = {};
+  for (const skill of SKILLS) {
+    skillIdByName[skill.name] = await upsertSkill(skillDs, skill);
+  }
+  console.log(`skills: ${SKILLS.length}`);
+
+  for (const verifier of VERIFIERS) {
+    const accountId = ids[verifier.email];
+    const skillIds = verifier.expertise.map((name) => {
+      const id = skillIdByName[name];
+      if (id === undefined) throw new Error(`Verifier ${verifier.email} references unknown skill "${name}"`);
+      return id;
+    });
+    await upsertVerifier(skillDs, accountId, skillIds);
+  }
+  console.log(`verifiers: ${VERIFIERS.length} with expertise`);
+
   console.log('\nDemo credentials (password for every account: ' + DEMO_PASSWORD + ')');
   console.log(`  admin     ${ADMIN.email}`);
   for (const v of VERIFIERS) console.log(`  verifier  ${v.email}`);
   console.log(`  user      ${USERS[0].email} … ${USERS[USERS.length - 1].email}`);
 } finally {
+  if (skillDs.isInitialized) await skillDs.destroy();
   if (accountDs.isInitialized) await accountDs.destroy();
 }
