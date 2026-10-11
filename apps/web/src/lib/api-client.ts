@@ -1,36 +1,271 @@
 // Use empty string on client side so it hits Next.js rewrites, avoiding CORS
 export const API = typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000');
 
-let accessToken: string | null = null;
-let refreshToken: string | null = null;
+export const TOKEN_STORAGE_KEY = 'skillswap-api-tokens';
+export const USER_STORAGE_KEY = 'skillswap-api-user';
+const REMEMBER_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+export interface TokenPair {
+  accessToken: string;
+  refreshToken: string;
+  rememberUntil?: number;
+}
+
+export interface UserProfile {
+  id?: string;
+  email: string;
+  displayName: string;
+  role?: string;
+  studentVerificationStatus?: string;
+}
+
+export interface SessionInfo {
+  tokens: TokenPair;
+  remembered: boolean;
+}
+
+let refreshInFlight: Promise<TokenPair | null> | null = null;
+
+export function readSession(): SessionInfo | null {
+  if (typeof window === 'undefined') return null;
+
+  for (const storage of [window.sessionStorage, window.localStorage]) {
+    const raw = storage.getItem(TOKEN_STORAGE_KEY);
+    if (!raw) continue;
+
+    try {
+      const value: TokenPair = JSON.parse(raw);
+      if (!value?.accessToken || !value?.refreshToken) {
+        storage.removeItem(TOKEN_STORAGE_KEY);
+        continue;
+      }
+      if (value.rememberUntil && Date.now() >= value.rememberUntil) {
+        storage.removeItem(TOKEN_STORAGE_KEY);
+        continue;
+      }
+      return {
+        tokens: value,
+        remembered: storage === window.localStorage,
+      };
+    } catch {
+      storage.removeItem(TOKEN_STORAGE_KEY);
+    }
+  }
+  return null;
+}
+
+export function getTokens(): TokenPair | null {
+  return readSession()?.tokens ?? null;
+}
+
+export function clearSession(): void {
+  if (typeof window === 'undefined') return;
+  window.sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+  window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+  window.sessionStorage.removeItem(USER_STORAGE_KEY);
+  window.localStorage.removeItem(USER_STORAGE_KEY);
+}
+
+export function saveTokens(pair: { accessToken: string; refreshToken: string }, remembered = false): void {
+  if (!pair?.accessToken || !pair?.refreshToken) {
+    throw new Error('Tokens received from backend are invalid.');
+  }
+
+  const value: TokenPair = {
+    accessToken: pair.accessToken,
+    refreshToken: pair.refreshToken,
+    ...(remembered ? { rememberUntil: Date.now() + REMEMBER_MS } : {}),
+  };
+
+  if (typeof window === 'undefined') return;
+
+  const target = remembered ? window.localStorage : window.sessionStorage;
+  const other = remembered ? window.sessionStorage : window.localStorage;
+
+  other.removeItem(TOKEN_STORAGE_KEY);
+  target.setItem(TOKEN_STORAGE_KEY, JSON.stringify(value));
+}
+
+export function getStoredUser(): UserProfile | null {
+  if (typeof window === 'undefined') return null;
+
+  for (const storage of [window.sessionStorage, window.localStorage]) {
+    const raw = storage.getItem(USER_STORAGE_KEY);
+    if (!raw) continue;
+
+    try {
+      return JSON.parse(raw);
+    } catch {
+      storage.removeItem(USER_STORAGE_KEY);
+    }
+  }
+  return null;
+}
+
+export function saveStoredUser(user: Partial<UserProfile>, remembered = false): void {
+  if (typeof window === 'undefined') return;
+
+  const target = remembered ? window.localStorage : window.sessionStorage;
+  const other = remembered ? window.sessionStorage : window.localStorage;
+
+  other.removeItem(USER_STORAGE_KEY);
+  target.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+}
+
+export async function refreshSession(): Promise<TokenPair | null> {
+  const current = getTokens();
+  if (!current?.refreshToken) {
+    clearSession();
+    throw new Error('No refresh token available');
+  }
+
+  if (refreshInFlight) {
+    return refreshInFlight;
+  }
+
+  refreshInFlight = (async () => {
+    try {
+      const res = await fetch(`${API}/api/auth/refresh`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ refreshToken: current.refreshToken }),
+      });
+
+      if (!res.ok) {
+        clearSession();
+        throw new Error('Session expired');
+      }
+
+      const data = await res.json();
+      const remembered = readSession()?.remembered ?? false;
+      saveTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken }, remembered);
+      return { accessToken: data.accessToken, refreshToken: data.refreshToken };
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+
+  return refreshInFlight;
+}
 
 export async function callApi(path: string, init: RequestInit = {}, retry = true): Promise<Response> {
+  const session = getTokens();
+  const token = session?.accessToken;
+
   const res = await fetch(`${API}/api${path}`, {
     ...init,
     headers: {
       'content-type': 'application/json',
-      ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}),
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
       ...(init.headers ?? {}),
     },
   });
-  if (res.status === 401 && retry && refreshToken) {
-    await refreshSession();
-    return callApi(path, init, false);
+
+  if (res.status === 401 && retry && session?.refreshToken) {
+    try {
+      await refreshSession();
+      return callApi(path, init, false);
+    } catch {
+      return res;
+    }
   }
+
   return res;
 }
 
-export async function refreshSession() {
-  const res = await fetch(`${API}/api/auth/refresh`, {
-    method: 'POST', 
+export async function authenticate(
+  mode: 'login' | 'register',
+  payload: {
+    email: string;
+    password: string;
+    displayName?: string;
+    role?: 'user';
+  },
+  remember = false,
+): Promise<{ tokens: TokenPair }> {
+  const endpoint = mode === 'register' ? '/api/auth/register' : '/api/auth/login';
+  const bodyPayload = mode === 'register'
+    ? {
+        email: payload.email,
+        password: payload.password,
+        displayName: payload.displayName ?? payload.email.split('@')[0],
+        role: payload.role ?? 'user',
+      }
+    : {
+        email: payload.email,
+        password: payload.password,
+      };
+
+  const res = await fetch(`${API}${endpoint}`, {
+    method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ refreshToken }),
+    body: JSON.stringify(bodyPayload),
   });
-  if (!res.ok) { 
-    accessToken = refreshToken = null; 
-    throw new Error('session expired'); 
+
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => null);
+    const msg = errorBody?.message || errorBody?.error || (mode === 'register' ? 'Đăng ký thất bại' : 'Đăng nhập thất bại');
+    throw new Error(Array.isArray(msg) ? msg.join(', ') : String(msg));
   }
+
   const data = await res.json();
-  accessToken = data.accessToken;
-  refreshToken = data.refreshToken;
+  saveTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken }, remember);
+
+  // Immediately try to fetch user info from /auth/me or store payload
+  try {
+    const meRes = await fetch(`${API}/api/auth/me`, {
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${data.accessToken}`,
+      },
+    });
+    if (meRes.ok) {
+      const meData = await meRes.json();
+      saveStoredUser({
+        id: meData.id,
+        email: meData.email,
+        displayName: meData.displayName || payload.displayName || payload.email.split('@')[0],
+        role: meData.role,
+        studentVerificationStatus: meData.studentVerification?.status,
+      }, remember);
+    } else {
+      saveStoredUser({
+        email: payload.email,
+        displayName: payload.displayName || payload.email.split('@')[0],
+        role: 'user',
+      }, remember);
+    }
+  } catch {
+    saveStoredUser({
+      email: payload.email,
+      displayName: payload.displayName || payload.email.split('@')[0],
+      role: 'user',
+    }, remember);
+  }
+
+  return {
+    tokens: { accessToken: data.accessToken, refreshToken: data.refreshToken },
+  };
+}
+
+export async function logout(): Promise<void> {
+  const session = getTokens();
+  if (session?.refreshToken) {
+    try {
+      await fetch(`${API}/api/auth/logout`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ refreshToken: session.refreshToken }),
+      });
+    } catch {
+      // Ignore network errors on logout
+    }
+  }
+  clearSession();
+}
+
+export async function getMe(): Promise<UserProfile | null> {
+  const res = await callApi('/auth/me');
+  if (!res.ok) return null;
+  return res.json();
 }
