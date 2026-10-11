@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
-import { callApi } from '../lib/api-client';
+import { callApi, getTokens, logout } from '../lib/api-client';
 
 export type NavbarTab = 'explore' | 'classes' | 'instructor' | 'wallet' | 'verification' | 'notifications';
 
@@ -21,8 +21,10 @@ export function Navbar({
 }: NavbarProps) {
   const [internalBalance, setInternalBalance] = useState<WalletBalanceView | null>(null);
   const [internalMe, setInternalMe] = useState<MeResponse | null>(null);
+  const [hasTokens, setHasTokens] = useState<boolean>(false);
 
   useEffect(() => {
+    setHasTokens(Boolean(getTokens()));
     // Only fetch if not supplied via props
     if (propBalance === undefined || propMe === undefined) {
       const load = async () => {
@@ -109,7 +111,7 @@ export function Navbar({
             <span className="material-symbols-outlined text-[17px] text-emerald-600">toll</span>
             <span>{availableCredits.toLocaleString('vi-VN')} Credits</span>
             <a
-              href="/vi/wallet"
+              href={`/${locale}/wallet`}
               title="Nạp thêm Credits"
               className="w-5 h-5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors text-xs font-bold leading-none"
             >
@@ -119,7 +121,7 @@ export function Navbar({
 
           {/* Notification Center Bell Link */}
           <a
-            href="/vi/notifications"
+            href={`/${locale}/notifications`}
             title="Trung tâm Thông báo"
             className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors relative ${
               currentTab === 'notifications'
@@ -135,22 +137,48 @@ export function Navbar({
 
           <div className="h-5 w-px bg-slate-200 hidden sm:block"></div>
 
-          {/* User profile */}
-          <a
-            href="/vi/status"
-            className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
-            title="Hồ sơ & Trạng thái xác minh"
-          >
-            <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center ring-2 ring-slate-100 text-slate-600 font-semibold text-xs">
-              {displayName.slice(0, 2).toUpperCase()}
+          {/* User profile or Sign In */}
+          {hasTokens || me ? (
+            <div className="flex items-center gap-2">
+              <a
+                href={`/${locale}/status`}
+                className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
+                title="Hồ sơ & Trạng thái xác minh"
+              >
+                <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center ring-2 ring-emerald-50 text-emerald-800 font-semibold text-xs">
+                  {displayName.slice(0, 2).toUpperCase()}
+                </div>
+                <div className="hidden sm:flex flex-col text-left">
+                  <span className="text-xs font-semibold text-slate-900 leading-tight">{displayName}</span>
+                  <span className="text-[11px] text-slate-500">
+                    {isVerified ? 'SV đã xác minh' : (locale === 'vi' ? 'Học viên' : 'Learner')}
+                  </span>
+                </div>
+              </a>
+              <button
+                type="button"
+                onClick={async () => {
+                  await logout();
+                  window.location.href = `/${locale}/auth?tab=login`;
+                }}
+                title={locale === 'vi' ? 'Đăng xuất' : 'Sign Out'}
+                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+              </button>
             </div>
-            <div className="hidden sm:flex flex-col text-left">
-              <span className="text-xs font-semibold text-slate-900 leading-tight">{displayName}</span>
-              <span className="text-[11px] text-slate-500">
-                {isVerified ? 'SV đã xác minh' : 'RMIT · K21'}
-              </span>
-            </div>
-          </a>
+          ) : (
+            <a
+              href={`/${locale}/auth?tab=login`}
+              className="rounded-full bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"
+            >
+              {locale === 'vi' ? 'Đăng nhập' : 'Sign In'}
+            </a>
+          )}
         </div>
       </div>
     </header>
