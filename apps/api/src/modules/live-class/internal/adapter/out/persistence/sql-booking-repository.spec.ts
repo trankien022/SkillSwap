@@ -270,13 +270,15 @@ describe('SqlBookingRepository', () => {
       expect(recordedQueries[1].sql).toContain(
         'WHERE "id" = $1 AND "state" = ' + "'pending' AND (" + '"expires_at" IS NULL OR "expires_at" > now())',
       );
+      expect(recordedQueries[1].sql).not.toContain('confirmed_at');
+      expect(recordedQueries[1].sql).not.toContain('state' + " = 'confirmed'");
       expect(recordedQueries[1].params).toEqual(['bkg-1']);
     });
 
-    it('confirms valid pending hold, writes to outbox, and returns confirmed booking', async () => {
+    it('emits durable confirmation request with settled=false and returns pending booking without setting confirmed state (ADR-032 C3a)', async () => {
       const { registry, recordedQueries } = createQueueRegistry([
         [samplePendingRow], // 1. Locked row is pending
-        [sampleConfirmedRow], // 2. UPDATE returns confirmed row
+        [samplePendingRow], // 2. Atomic guard UPDATE returns pending row with updated_at refreshed
         [{ teacher_id: 'teacher-1' }], // 3. SELECT teacher_id
         [{ id: 'outbox-1' }], // 4. INSERT outbox
       ]);
@@ -284,32 +286,42 @@ describe('SqlBookingRepository', () => {
       const repo = new SqlBookingRepository(registry, 'live-class');
       const outcome = await repo.confirmAndEmit('bkg-1', 'learner-1');
 
-      expect(outcome.confirmed).toBe(true);
+      expect(outcome.confirmed).toBe(false);
       expect(outcome.booking?.id).toBe('bkg-1');
-      expect(outcome.booking?.state).toBe('confirmed');
+      expect(outcome.booking?.state).toBe('pending');
 
       expect(recordedQueries).toHaveLength(4);
+      expect(recordedQueries[1].sql).toContain('UPDATE "live_class"."bookings" SET "updated_at" = now()');
+      expect(recordedQueries[1].sql).toContain(
+        'WHERE "id" = $1 AND "state" = ' + "'pending' AND (" + '"expires_at" IS NULL OR "expires_at" > now())',
+      );
+      expect(recordedQueries[1].sql).not.toContain('state' + " = 'confirmed'");
+      expect(recordedQueries[1].sql).not.toContain('confirmed_at');
+      expect(recordedQueries[1].params).toEqual(['bkg-1']);
       expect(recordedQueries[2].sql).toContain('SELECT "teacher_id" FROM "live_class"."classes" WHERE "id" = $1');
       expect(recordedQueries[2].params).toEqual(['cls-1']);
       expect(recordedQueries[3].sql).toContain('INSERT INTO "live_class"."outbox_messages"');
       expect(recordedQueries[3].params?.[0]).toBe('booking.confirmed');
-      expect(recordedQueries[3].params?.[1]).toMatchObject({
+      expect(recordedQueries[3].params?.[1]).toEqual({
         bookingId: 'bkg-1',
         classId: 'cls-1',
+        studentId: 'learner-1',
         learnerId: 'learner-1',
         teacherId: 'teacher-1',
+        amountCredits: 100,
         priceCredits: 100,
+        settled: false,
       });
     });
 
-    it('confirms legacy pending hold where expires_at is null', async () => {
+    it('emits confirmation request for legacy pending hold where expires_at is null with settled=false', async () => {
       const legacyPendingRow = {
         ...samplePendingRow,
         expires_at: null,
       };
       const { registry, recordedQueries } = createQueueRegistry([
         [legacyPendingRow],
-        [sampleConfirmedRow],
+        [legacyPendingRow],
         [{ teacher_id: 'teacher-1' }],
         [{ id: 'outbox-1' }],
       ]);
@@ -317,8 +329,65 @@ describe('SqlBookingRepository', () => {
       const repo = new SqlBookingRepository(registry, 'live-class');
       const outcome = await repo.confirmAndEmit('bkg-1', 'learner-1');
 
-      expect(outcome.confirmed).toBe(true);
-      expect(outcome.booking?.state).toBe('confirmed');
+      expect(outcome.confirmed).toBe(false);
+      expect(outcome.booking?.state).toBe('pending');
+      expect(recordedQueries).toHaveLength(4);
+      expect(recordedQueries[1].sql).not.toContain('confirmed_at');
+      expect(recordedQueries[1].sql).not.toContain('state' + " = 'confirmed'");
+      expect(recordedQueries[3].params?.[1]).toMatchObject({ settled: false });
+    });
+
+    it('emits distinct durable request events across multiple valid confirm calls while pending (retry support)', async () => {
+      const { registry, recordedQueries } = createQueueRegistry([
+        // First confirm call
+        [samplePendingRow],
+        [samplePendingRow],
+        [{ teacher_id: 'teacher-1' }],
+        [{ id: 'outbox-1' }],
+        // Second confirm call (e.g. retry after user topped up credits)
+        [samplePendingRow],
+        [samplePendingRow],
+        [{ teacher_id: 'teacher-1' }],
+        [{ id: 'outbox-2' }],
+      ]);
+
+      const repo = new SqlBookingRepository(registry, 'live-class');
+      const outcome1 = await repo.confirmAndEmit('bkg-1', 'learner-1');
+      const outcome2 = await repo.confirmAndEmit('bkg-1', 'learner-1');
+
+      expect(outcome1.confirmed).toBe(false);
+      expect(outcome1.booking?.state).toBe('pending');
+      expect(outcome2.confirmed).toBe(false);
+      expect(outcome2.booking?.state).toBe('pending');
+
+      expect(recordedQueries).toHaveLength(8);
+      // First request emission
+      expect(recordedQueries[3].sql).toContain('INSERT INTO "live_class"."outbox_messages"');
+      expect(recordedQueries[3].params?.[0]).toBe('booking.confirmed');
+      expect(recordedQueries[3].params?.[1]).toMatchObject({
+        bookingId: 'bkg-1',
+        settled: false,
+      });
+      // Second request emission (fresh outbox event)
+      expect(recordedQueries[7].sql).toContain('INSERT INTO "live_class"."outbox_messages"');
+      expect(recordedQueries[7].params?.[0]).toBe('booking.confirmed');
+      expect(recordedQueries[7].params?.[1]).toMatchObject({
+        bookingId: 'bkg-1',
+        settled: false,
+      });
+    });
+
+    it('propagates outbox failure and aborts transaction without claiming success', async () => {
+      const outboxError = new Error('outbox storage failed');
+      const { registry, recordedQueries } = createQueueRegistry([
+        [samplePendingRow],
+        [samplePendingRow],
+        [{ teacher_id: 'teacher-1' }],
+        outboxError,
+      ]);
+
+      const repo = new SqlBookingRepository(registry, 'live-class');
+      await expect(repo.confirmAndEmit('bkg-1', 'learner-1')).rejects.toThrow('outbox storage failed');
       expect(recordedQueries).toHaveLength(4);
     });
   });

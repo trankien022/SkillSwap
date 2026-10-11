@@ -49,10 +49,15 @@ export interface BookingRepository {
   findByIdempotencyKey(idempotencyKey: string): Promise<PersistedBooking | null>;
   findById(bookingId: string): Promise<PersistedBooking | null>;
   /**
-   * FR-009 (ADR-018): atomically flips a `pending` booking to `confirmed` and
-   * writes a `booking.confirmed` row to the outbox in the SAME transaction, so
-   * the wallet-ledger settlement can never diverge from the booking state.
-   * Returns `{ confirmed: false }` when the booking is not `pending` (replay).
+   * FR-009 / ADR-018 / ADR-032 (Phase C3a): initiates the confirmation request
+   * boundary for an eligible pending booking whose hold has not expired under the
+   * database clock. Emits a durable `booking.confirmed` request event (`settled: false`)
+   * to the outbox in the same transaction.
+   *
+   * Does NOT mark the booking as confirmed or set `confirmed_at`; the booking
+   * remains pending until authoritative settlement outcome is consumed (Phase C3b).
+   * Returns `{ confirmed: false, booking }` with the pending resource upon emitting
+   * the request, or `{ confirmed: false, booking }` on non-pending or missing replay.
    */
   confirmAndEmit(
     bookingId: string,
