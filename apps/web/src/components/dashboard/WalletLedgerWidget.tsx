@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getTranslations, getLocale } from 'next-intl/server';
 import type { WalletSnapshot } from '../../lib/dashboard/types';
 
@@ -91,14 +92,13 @@ export async function WalletLedgerWidget({
           </span>
         </div>
       </div>
-      <button
-        type="button"
-        aria-disabled="true"
-        className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-mist py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-surface"
+      <Link
+        href={`/${locale}/wallet`}
+        className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 py-2.5 text-sm font-semibold text-emerald-800 transition-colors hover:bg-emerald-100"
       >
-        <AccountBalanceWalletIcon className="h-4 w-4" />
+        <AccountBalanceWalletIcon className="h-4 w-4 text-emerald-700" />
         <span>{t('details')}</span>
-      </button>
+      </Link>
     </article>
   );
 }
