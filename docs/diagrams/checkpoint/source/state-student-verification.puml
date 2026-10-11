@@ -1,0 +1,29 @@
+@startuml
+title Current implementation | StudentVerification | ADR-023/025
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam ArrowColor #475569
+skinparam sequenceParticipantBackgroundColor #F1F5F9
+skinparam sequenceParticipantBorderColor #475569
+skinparam activityBackgroundColor #F1F5F9
+skinparam activityBorderColor #475569
+skinparam stateBackgroundColor #F1F5F9
+skinparam stateBorderColor #475569
+[*] --> pending : new submission
+pending --> approved : Administrator approves
+pending --> rejected : Administrator rejects with reason
+pending --> revoked : Administrator revokes with reason
+approved --> revoked : Administrator revokes with reason
+rejected --> [*]
+revoked --> [*]
+note right of approved
+ No expiry; no deletion or supersede.
+ Pending/Approved blocks duplicate submission.
+end note
+note right of revoked
+ Revocation events update trust projections.
+ Re-verification creates a NEW record in pending.
+end note
+@enduml

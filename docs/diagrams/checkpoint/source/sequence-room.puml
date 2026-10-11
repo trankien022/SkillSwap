@@ -1,0 +1,38 @@
+@startuml
+title Current backend | Authorized Jitsi room access | FR-011
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam ArrowColor #475569
+skinparam sequenceParticipantBackgroundColor #F1F5F9
+skinparam sequenceParticipantBorderColor #475569
+skinparam activityBackgroundColor #F1F5F9
+skinparam activityBorderColor #475569
+skinparam stateBackgroundColor #F1F5F9
+skinparam stateBorderColor #475569
+actor "Booking party / API caller" as U
+participant Gateway as G
+participant "RequestRoomAccessUseCase" as C
+database "live_class schema" as D
+participant "JitsiRoomTokenIssuer" as I
+participant "Self-hosted Jitsi" as J
+U -> G: POST /api/classes/bookings/:bookingId/room-access
+G -> C: Trusted identity; validated request
+C -> D: Read booking + class
+C -> C: Check party, confirmed state and access window
+alt access denied
+ C --> U: Forbidden / invalid access
+else authorized
+ C -> I: Issue room-scoped short-lived HS256 JWT locally
+ alt issuer fails
+  C -> D: Record room-access incident
+  C --> U: 503 + trace
+ else token issued
+  I --> C: room, token, expiresAt, url
+  C --> U: Room access response
+  U -> J: Join with room URL + JWT (HTTPS/WebRTC)
+ end
+end
+note over I,J: Token signing is local.\nNo REST call to create a Jitsi room is implied.
+@enduml

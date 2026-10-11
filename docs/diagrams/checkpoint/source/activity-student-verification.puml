@@ -1,0 +1,36 @@
+@startuml
+title Current backend | Manual student verification | FR-002/019
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam ArrowColor #475569
+skinparam sequenceParticipantBackgroundColor #F1F5F9
+skinparam sequenceParticipantBorderColor #475569
+skinparam activityBackgroundColor #F1F5F9
+skinparam activityBorderColor #475569
+skinparam stateBackgroundColor #F1F5F9
+skinparam stateBorderColor #475569
+start
+:Create owned document metadata and presigned URL;
+:Caller uploads bytes to private MinIO;
+:Submit verification referencing document;
+if (Effective Pending/Approved already exists?) then (yes)
+ :Reject duplicate;
+ stop
+endif
+if (Document metadata belongs to caller?) then (yes)
+ :Create Pending; attach document metadata;
+else (no)
+ :Reject missing / foreign document;
+ stop
+endif
+:Administrator reviews;
+if (Approve?) then (yes)
+ :Commit Approved + decision outbox;
+else (no)
+ :Require reason; commit Rejected + outbox;
+endif
+:Relay events; update own module projections;
+stop
+@enduml

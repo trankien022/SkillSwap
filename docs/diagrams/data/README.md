@@ -180,10 +180,4 @@ SVG có thể phóng to mà không mất nét; PNG dành cho xem nhanh trong Mar
 
 [check-erd.py](check-erd.py) kiểm tra số bảng/quan hệ, 16 FK nullable, ký hiệu vòng tròn thực sự có trong SVG, các trường hợp 1–1, full reversal, nét định danh, nhãn khóa, chú thích trạng thái và độ bao phủ của bốn hình theo nhóm. Đây là kiểm tra tài liệu; không chạy migration hoặc kiểm thử ứng dụng. Sau khi thay đổi schema có chủ ý, cập nhật các kỳ vọng trong script và kiểm tra lại hình bằng mắt.
 
-Nguồn Mermaid của các lifecycle đã sửa được lưu cạnh PNG ở `docs/diagrams/srs-state-*.mmd` và phải khớp block tương ứng trong SRS §3.2.6. Xuất lại bằng Mermaid CLI:
-
-```bash
-for state_name in student-verification skill-evidence class withdrawal-request; do
-  npx --yes @mermaid-js/mermaid-cli -i "docs/diagrams/srs-state-${state_name}.mmd" -o "docs/diagrams/srs-state-${state_name}.png" -b white -s 2
-done
-```
+Các lifecycle phản ánh code hiện tại được quản lý trong [bộ checkpoint PlantUML](../checkpoint/README.md). Mô hình trạng thái yêu cầu vẫn nằm trực tiếp trong SRS §3.2.6; các bản Mermaid/PNG riêng trùng lặp đã được loại bỏ.

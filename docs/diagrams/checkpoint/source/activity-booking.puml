@@ -1,0 +1,42 @@
+@startuml
+title Current backend | Booking decisions | FR-007/009
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam ArrowColor #475569
+skinparam sequenceParticipantBackgroundColor #F1F5F9
+skinparam sequenceParticipantBorderColor #475569
+skinparam activityBackgroundColor #F1F5F9
+skinparam activityBorderColor #475569
+skinparam stateBackgroundColor #F1F5F9
+skinparam stateBorderColor #475569
+start
+:Authenticated backend booking request;
+if (Existing idempotency key?) then (yes)
+ :Return stored booking;
+ stop
+endif
+:Read class and lock seat allocation;
+if (Published, not self, >=24h lead,\n30-180 min, unique active booking, capacity?) then (yes)
+ :Persist Pending + price snapshot + 15-minute expiry;
+else (no)
+ :Reject with typed reason; no debit;
+ stop
+endif
+:Return Pending;
+if (Learner confirms while state is Pending?) then (yes)
+ :Commit Confirmed\nand booking.confirmed outbox;
+ :Return confirmation;
+note right: Current confirm repository checks Pending state, not expiry timestamp.
+ :Shared relay / RabbitMQ dispatch;
+ if (Wallet can settle?) then (yes)
+  :Atomic wallet debit + Teacher pending + platform fee;
+ else (no)
+  :Consumer retry / DLQ;\nno confirmation compensation shown in current code;
+ endif
+else (no)
+ :Expiry sweep cancels Pending and releases seat;
+endif
+stop
+@enduml
