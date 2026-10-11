@@ -11,7 +11,7 @@ export async function resetDatabase(harness: Harness): Promise<void> {
   );
   await harness.query(
     'live-class',
-    'TRUNCATE classes, class_skills, bookings, room_access_incidents CASCADE',
+    'TRUNCATE classes, class_skills, bookings, room_access_incidents, teacher_verified, teacher_skill_approval CASCADE',
   );
   await harness.query(
     'wallet-ledger',
