@@ -109,6 +109,7 @@
     "learningAndTeaching": "Learning and teaching",
     "studentVerification": "Student verification",
     "skillEvidence": "Teaching skills",
+    "teachingClasses": "My classes",
     "emailLabel": "Email",
     "roleLabel": "Role",
     "statusLabel": "Status",
@@ -144,6 +145,9 @@
     "historyError": "Could not load evidence history.",
     "level_beginner": "Beginner", "level_intermediate": "Intermediate", "level_advanced": "Advanced", "level_expert": "Expert",
     "state_pending": "Pending", "state_claimed": "In review", "state_approved": "Approved", "state_rejected": "Rejected", "state_superseded": "Superseded"
+  },
+  "Teaching": {
+    "title": "Teaching", "createTitle": "Create a class", "description": "Class description", "startsAt": "Start time (ISO 8601)", "duration": "Minutes", "price": "Credits", "capacity": "Seats", "publish": "Publish class", "myClasses": "Classes I created", "empty": "You have no classes yet.", "editPrice": "Raise price by 1 credit", "cancel": "Cancel class", "start": "Start", "complete": "Complete", "loadError": "Could not load class data.", "actionError": "Action failed. Reload to check the current state."
   },
   "Placeholder": {
     "exploreTitle": "Explore Classes",

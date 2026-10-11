@@ -92,6 +92,7 @@ export default function TabsLayout() {
       />
       <Tabs.Screen name="verification" options={{ href: null }} />
       <Tabs.Screen name="skills" options={{ href: null }} />
+      <Tabs.Screen name="teaching" options={{ href: null }} />
     </Tabs>
   );
 }

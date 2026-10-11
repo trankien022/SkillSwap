@@ -94,6 +94,9 @@ export function ProfileView() {
         <Pressable style={styles.linkButton} onPress={() => router.push('/(tabs)/skills')} accessibilityRole="button">
           <Text style={styles.linkButtonText}>{t('Profile.skillEvidence')}</Text>
         </Pressable>
+        <Pressable style={styles.linkButton} onPress={() => router.push('/(tabs)/teaching')} accessibilityRole="button">
+          <Text style={styles.linkButtonText}>{t('Profile.teachingClasses')}</Text>
+        </Pressable>
       </View>
 
       {/* 2. Language Selection Card */}

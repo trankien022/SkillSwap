@@ -109,6 +109,7 @@
     "learningAndTeaching": "Học tập và giảng dạy",
     "studentVerification": "Xác minh sinh viên",
     "skillEvidence": "Kỹ năng giảng dạy",
+    "teachingClasses": "Lớp tôi dạy",
     "emailLabel": "Email",
     "roleLabel": "Vai trò",
     "statusLabel": "Trạng thái",
@@ -144,6 +145,9 @@
     "historyError": "Không tải được lịch sử bằng chứng.",
     "level_beginner": "Cơ bản", "level_intermediate": "Trung cấp", "level_advanced": "Nâng cao", "level_expert": "Chuyên gia",
     "state_pending": "Chờ duyệt", "state_claimed": "Đang được xem xét", "state_approved": "Đã duyệt", "state_rejected": "Bị từ chối", "state_superseded": "Đã thay thế"
+  },
+  "Teaching": {
+    "title": "Khu vực giảng dạy", "createTitle": "Tạo lớp học", "description": "Mô tả lớp học", "startsAt": "Thời gian bắt đầu (ISO 8601)", "duration": "Phút", "price": "Credit", "capacity": "Số chỗ", "publish": "Đăng lớp", "myClasses": "Lớp do tôi tạo", "empty": "Bạn chưa có lớp học.", "editPrice": "Tăng giá 1 credit", "cancel": "Hủy lớp", "start": "Bắt đầu", "complete": "Hoàn thành", "loadError": "Không tải được dữ liệu lớp học.", "actionError": "Thao tác thất bại. Tải lại dữ liệu để kiểm tra trạng thái."
   },
   "Placeholder": {
     "exploreTitle": "Khám phá lớp học",
