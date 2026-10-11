@@ -689,6 +689,15 @@ describe('student verification contracts', () => {
       };
       expect(skillEvidenceEventSchema.parse(event)).toEqual(event);
       expect(() => skillEvidenceEventSchema.parse({ ...event, status: 'nope' })).toThrow();
+
+      // A decision event carries the effective approved level (FR-005 gate consumes it).
+      const approved = {
+        ...event,
+        status: 'approved',
+        approvedLevel: 'advanced',
+        reason: null,
+      };
+      expect(skillEvidenceEventSchema.parse(approved)).toEqual(approved);
     });
 
     it('validates a verifier, its status change and a decision (FR-004)', () => {

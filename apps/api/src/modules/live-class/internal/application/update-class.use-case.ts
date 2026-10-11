@@ -1,9 +1,11 @@
 import { InvalidStartTimeError, assertClassEditable } from '../domain/class';
+import { assertPublishable, type RequiredClassSkill } from '../domain/publish-policy';
 import type { ClassResource } from './port/in/create-class';
 import type { UpdateClassCommand, UpdateClassPort } from './port/in/update-class';
 import type { ClassRepository, PersistedClass } from './port/out/class-repository';
 import type { BookingRepository } from './port/out/booking-repository';
 import type { Clock } from './port/out/clock';
+import type { TeacherTrustReader } from './port/out/teacher-trust';
 import { ClassNotFoundError } from './book-class.use-case';
 import { NotClassOwnerError } from './cancel-class.use-case';
 
@@ -17,13 +19,16 @@ export class InvalidClassEditError extends Error {
 /**
  * FR-007 / AC-017 (ADR-019): edits a class only while it has no confirmed
  * booking; once one is confirmed, `assertClassEditable` raises `ClassLockedError`
- * and the change is refused. Reuses the publish validation for edited facts.
+ * and the change is refused. An edit that changes the skill set **re-checks the
+ * publish gate** (FR-005): the Teacher must still be verified and approved for every
+ * resulting class skill.
  */
 export class UpdateClassUseCase implements UpdateClassPort {
   constructor(
     private readonly classes: ClassRepository,
     private readonly bookings: BookingRepository,
     private readonly clock: Clock,
+    private readonly teacherTrust: TeacherTrustReader,
   ) {}
 
   async execute(command: UpdateClassCommand): Promise<ClassResource> {
@@ -46,8 +51,16 @@ export class UpdateClassUseCase implements UpdateClassPort {
       throw new InvalidStartTimeError('Class must start in the future');
     }
 
+    // FR-005: an edit that changes the skills must still be publishable.
+    const skillIds = command.skillIds ?? current.skillIds;
+    if (command.skillIds !== undefined) {
+      const trust = await this.teacherTrust.read(command.teacherId);
+      const classSkills: RequiredClassSkill[] = skillIds.map((skillId) => ({ skillId }));
+      assertPublishable({ teacherId: command.teacherId, teacherTrust: trust, classSkills });
+    }
+
     const updated = await this.classes.update(command.classId, {
-      skillIds: command.skillIds ?? current.skillIds,
+      skillIds,
       description: command.description ?? current.description,
       startsAt,
       durationMinutes: command.durationMinutes ?? current.durationMinutes,

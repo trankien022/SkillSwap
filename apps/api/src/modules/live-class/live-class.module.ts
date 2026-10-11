@@ -1,6 +1,8 @@
-import { Injectable, Module, type OnModuleInit } from '@nestjs/common';
+import { Injectable, Inject, Module, type OnModuleInit } from '@nestjs/common';
+import { skillEvidenceEventSchema, studentVerificationEventSchema } from '@skillswap/contracts';
 import { ApiConfig } from '../../shared/config/api-config';
 import { AppLogger } from '../../shared/logger/app-logger';
+import { EventHandlerRegistry, type BusMessage } from '../../shared/messaging/event-handler-registry';
 import { ModuleDataSourceRegistry } from '../../shared/messaging/module-registry';
 import { createModuleDataSource } from './internal/adapter/out/persistence/data-source';
 import { SCHEMA } from './internal/adapter/out/persistence/schema';
@@ -8,10 +10,12 @@ import { SqlModuleStatusReader } from './internal/adapter/out/persistence/sql-mo
 import { SqlModuleStatusWriter } from './internal/adapter/out/persistence/sql-module-status-writer';
 import { SqlClassRepository } from './internal/adapter/out/persistence/sql-class-repository';
 import { SqlBookingRepository } from './internal/adapter/out/persistence/sql-booking-repository';
+import { SqlTeacherTrustProjector } from './internal/adapter/out/persistence/sql-teacher-trust-projector';
 import { StatusController } from './internal/adapter/in/web/status.controller';
 import { ClassesController } from './internal/adapter/in/web/classes.controller';
 import { AdvanceStatusUseCase } from './internal/application/advance-status.use-case';
 import { CreateClassUseCase } from './internal/application/create-class.use-case';
+import { ProjectTeacherTrustUseCase } from './internal/application/project-teacher-trust.use-case';
 import { BookClassUseCase } from './internal/application/book-class.use-case';
 import { ConfirmBookingUseCase } from './internal/application/confirm-booking.use-case';
 import { UpdateClassUseCase } from './internal/application/update-class.use-case';
@@ -63,21 +67,62 @@ import { STATUS_WRITER, type ModuleStatusWriter } from './internal/application/p
 import { CLASS_REPOSITORY, type ClassRepository } from './internal/application/port/out/class-repository';
 import { BOOKING_REPOSITORY, type BookingRepository } from './internal/application/port/out/booking-repository';
 import { CLOCK, type Clock } from './internal/application/port/out/clock';
+import {
+  TEACHER_TRUST_READER,
+  TEACHER_TRUST_WRITER,
+  type TeacherTrustReader,
+  type TeacherTrustWriter,
+} from './internal/application/port/out/teacher-trust';
 import { GetModuleStatusQueryHandler } from './internal/application/query/get-module-status.query';
 import { MODULE_NAME } from './internal/domain/module-status';
 
-/** Registers this module's DataSource pool on the shared registry (ARCHITECTURE.md §5). */
+/** Registers this module's DataSource pool and the FR-005 trust consumers. */
 @Injectable()
 export class LiveClassRegistrar implements OnModuleInit {
   constructor(
     private readonly registry: ModuleDataSourceRegistry,
     private readonly config: ApiConfig,
+    private readonly handlers: EventHandlerRegistry,
+    @Inject(TEACHER_TRUST_WRITER) private readonly trust: SqlTeacherTrustProjector,
   ) {}
 
   onModuleInit(): void {
     this.registry.register(MODULE_NAME, SCHEMA, (schema) =>
       createModuleDataSource(this.config, schema),
     );
+    // FR-005 / ADR-024: keep a local projection of publish rights so the gate never
+    // reads another module's schema.
+    const project = new ProjectTeacherTrustUseCase(this.trust);
+    for (const eventType of [
+      'student.verification.submitted',
+      'student.verification.approved',
+      'student.verification.rejected',
+      'student.verification.revoked',
+    ]) {
+      this.handlers.register({
+        moduleName: MODULE_NAME,
+        eventType,
+        queue: `live-class.${eventType.replace(/\./g, '-')}`,
+        handler: async (message: BusMessage): Promise<void> => {
+          await project.onVerification(studentVerificationEventSchema.parse(message.payload));
+        },
+      });
+    }
+    for (const eventType of [
+      'skill.evidence.submitted',
+      'skill.evidence.claimed',
+      'skill.evidence.approved',
+      'skill.evidence.rejected',
+    ]) {
+      this.handlers.register({
+        moduleName: MODULE_NAME,
+        eventType,
+        queue: `live-class.${eventType.replace(/\./g, '-')}`,
+        handler: async (message: BusMessage): Promise<void> => {
+          await project.onSkillEvidence(skillEvidenceEventSchema.parse(message.payload));
+        },
+      });
+    }
   }
 }
 
@@ -113,6 +158,18 @@ const systemClock: Clock = { now: () => new Date() };
     },
     { provide: CLOCK, useValue: systemClock },
     {
+      provide: TEACHER_TRUST_READER,
+      useFactory: (registry: ModuleDataSourceRegistry): TeacherTrustReader =>
+        new SqlTeacherTrustProjector(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
+      provide: TEACHER_TRUST_WRITER,
+      useFactory: (registry: ModuleDataSourceRegistry): TeacherTrustWriter =>
+        new SqlTeacherTrustProjector(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
       provide: ADVANCE_STATUS,
       useFactory: (reader: ModuleStatusReader, writer: ModuleStatusWriter) =>
         new AdvanceStatusUseCase(reader, writer),
@@ -125,9 +182,12 @@ const systemClock: Clock = { now: () => new Date() };
     },
     {
       provide: CREATE_CLASS,
-      useFactory: (classes: ClassRepository, clock: Clock): CreateClassPort =>
-        new CreateClassUseCase(classes, clock),
-      inject: [CLASS_REPOSITORY, CLOCK],
+      useFactory: (
+        classes: ClassRepository,
+        clock: Clock,
+        trust: TeacherTrustReader,
+      ): CreateClassPort => new CreateClassUseCase(classes, clock, trust),
+      inject: [CLASS_REPOSITORY, CLOCK, TEACHER_TRUST_READER],
     },
     {
       provide: BOOK_CLASS,
@@ -150,8 +210,9 @@ const systemClock: Clock = { now: () => new Date() };
         classes: ClassRepository,
         bookings: BookingRepository,
         clock: Clock,
-      ): UpdateClassPort => new UpdateClassUseCase(classes, bookings, clock),
-      inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY, CLOCK],
+        trust: TeacherTrustReader,
+      ): UpdateClassPort => new UpdateClassUseCase(classes, bookings, clock, trust),
+      inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY, CLOCK, TEACHER_TRUST_READER],
     },
     {
       provide: CANCEL_CLASS,
