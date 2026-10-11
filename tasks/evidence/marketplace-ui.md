@@ -6,3 +6,5 @@
 - Independent mobile11 suites96 tests, typecheck and scoped lint passed. Full pnpm verify green: gateway27 + contracts132 + web22 + API469 + mobile96 =746 tests; architecture578 modules1715 dependencies no violations. Log /tmp/skillswap-mobile-marketplace-bookings-verify.log.
 - iPhone17Pro simulator integration invoked actual native handlers against strict Gateway with disposable persisted class. Rendered actual teacher/description/time/price/seats; unmatched keyword showed localized empty state, clear filters restored class. Token rotation completed and list remained visible. Screenshot /tmp/skillswap-mobile-ios-marketplace.png.
 - This verifies native handler/API integration. Manual touch/keyboard/360px/physical-device acceptance and T07 detail/booking route remain pending; do not interpret T06 as complete end-to-end learner flow.
+
+- Corrected unpublished phase history after workers stopped: moved the detail export from the earlier list phase to the detail phase. Final committed tree hash is identical, and each replayed phase export resolves to existing source. Backup branch codex/mobile-rubric-before-phase-export-fix preserves the prior history.
