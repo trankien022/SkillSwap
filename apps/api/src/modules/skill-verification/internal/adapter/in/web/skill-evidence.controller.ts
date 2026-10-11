@@ -1,11 +1,9 @@
 import { Body, Controller, Get, Inject, Param, Post, Req } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import {
-  submitSkillEvidenceSchema,
-  type ProfileSkillView,
-  type SkillEvidenceHistoryView,
-  type SkillEvidenceView,
-  type SubmitSkillEvidenceInput,
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import type {
+  ProfileSkillView,
+  SkillEvidenceHistoryView,
+  SkillEvidenceView,
 } from '@skillswap/contracts';
 import {
   SUBMIT_SKILL_EVIDENCE,
@@ -20,10 +18,16 @@ import {
   type GetSkillEvidenceHistoryPort,
 } from '../../../application/port/in/get-skill-evidence-history';
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
-import { ZodValidationPipe } from '../../../../../../shared/http/zod-validation.pipe';
+import {
+  ProfileSkillDto,
+  SkillEvidenceDto,
+  SkillEvidenceHistoryDto,
+  SubmitSkillEvidenceDto,
+} from './dto/skill-verification.dto';
 
 @Controller('skill-evidence')
 @ApiTags('skill-verification')
+@ApiBearerAuth('bearer')
 export class SkillEvidenceController {
   constructor(
     @Inject(SUBMIT_SKILL_EVIDENCE) private readonly submit: SubmitSkillEvidencePort,
@@ -33,9 +37,9 @@ export class SkillEvidenceController {
 
   @Post()
   @ApiOperation({ summary: 'Submit skill evidence for a known skill (FR-003 / API-002)' })
-  @ApiOkResponse({ description: 'The new pending evidence version' })
+  @ApiOkResponse({ type: SkillEvidenceDto, description: 'The new pending evidence version' })
   create(
-    @Body(new ZodValidationPipe(submitSkillEvidenceSchema)) body: SubmitSkillEvidenceInput,
+    @Body() body: SubmitSkillEvidenceDto,
     @Req() request: RequestWithIdentity,
   ): Promise<SkillEvidenceView> {
     return this.submit.execute({
@@ -49,8 +53,9 @@ export class SkillEvidenceController {
   }
 
   @Get(':id/history')
+  @ApiParam({ name: 'id', description: 'The evidence id' })
   @ApiOperation({ summary: 'Decision history for each evidence version (FR-018)' })
-  @ApiOkResponse({ description: 'All versions of the profile-skill with their audit trail' })
+  @ApiOkResponse({ type: SkillEvidenceHistoryDto, description: 'All versions of the profile-skill with their audit trail' })
   history(
     @Param('id') id: string,
     @Req() request: RequestWithIdentity,
@@ -65,6 +70,7 @@ export class SkillEvidenceController {
 
 @Controller('profile-skills')
 @ApiTags('skill-verification')
+@ApiBearerAuth('bearer')
 export class ProfileSkillController {
   constructor(
     @Inject(GET_MY_PROFILE_SKILLS) private readonly getMine: GetMyProfileSkillsPort,
@@ -72,7 +78,7 @@ export class ProfileSkillController {
 
   @Get('me')
   @ApiOperation({ summary: "List the caller's skills and approved levels (FR-003)" })
-  @ApiOkResponse({ description: 'The caller\'s profile skills with effective levels' })
+  @ApiOkResponse({ type: ProfileSkillDto, isArray: true, description: 'The caller\'s profile skills with effective levels' })
   mine(@Req() request: RequestWithIdentity): Promise<ProfileSkillView[]> {
     return this.getMine.execute(currentUserId(request));
   }

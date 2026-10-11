@@ -15,9 +15,19 @@ A peer-to-peer skill marketplace: learners top up real money into credits (1 cre
 ```bash
 pnpm install
 pnpm keys:gen          # dev JWT/signing keys
+pnpm db:demo           # postgres + rabbitmq, build, migrate, seed demo data
+pnpm dev               # gateway :4000, api :4001, web :3000
+```
+
+`pnpm db:demo` is the one-command demo bootstrap: it brings the stack up, applies migrations,
+and seeds a full dataset (1 admin, 3 verifiers, 10 users, plus skills, verifications, classes,
+bookings and wallets). It prints the demo credentials at the end. Re-running it clears and
+re-seeds the demo rows, so it is always safe to run again. To step through manually instead:
+
+```bash
 pnpm db:up             # postgres + rabbitmq (docker compose)
 pnpm db:migrate        # build + apply migrations per module schema
-pnpm dev               # gateway :4000, api :4001, web :3000
+pnpm db:seed-verifier  # (optional) provision one verifier + its expertise
 ```
 
 Full gate before claiming anything done:
@@ -29,8 +39,11 @@ pnpm verify            # lint && build && typecheck && test && test:arch
 | Task | Command |
 |---|---|
 | Lint / build / typecheck / tests / arch rules | `pnpm lint` · `pnpm build` · `pnpm typecheck` · `pnpm test` · `pnpm test:arch` |
+| One-command demo (up + migrate + seed) | `pnpm db:demo` |
 | Dev stack | `pnpm db:up` / `pnpm db:down` |
 | Migrations | `pnpm db:migrate` |
+| Seed a verifier | `pnpm db:seed-verifier -- …` |
+| Regenerate API reference docs | `pnpm docs:api` |
 | Dev keys | `pnpm keys:gen` |
 | One app | `pnpm --filter @skillswap/api …` (`api`, `gateway`, `web`, `mobile`, `contracts`) |
 
