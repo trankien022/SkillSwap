@@ -10,7 +10,7 @@ Theo `ARCHITECTURE.md` (ADR-005, ADR-007, ADR-014), toàn bộ hệ thống duy 
 
 | Module | Database Schema | Phụ trách trong phạm vi Mobile |
 |---|---|---|
-| `account-profile` | `account_profile` | Auth session, hồ sơ cá nhân, **thiết bị push (`notification_devices`)**, **hộp thư (`inbox_notifications`)**, durable push dispatch worker. |
+| `account-profile` | `account_profile` | Auth session, hồ sơ cá nhân, thiết bị push (`notification_devices`), hộp thư (`inbox_notifications`), push-delivery queue. |
 | `student-verification` | `student_verification` | Tải lên giấy tờ, nộp đơn xác minh sinh viên, trạng thái/lý do từ chối. |
 | `skill-verification` | `skill_verification` | **Danh mục kỹ năng (`GET /skills`)**, nộp bằng chứng mô tả năng lực, kiểm tra quyền dạy/cấp độ (`profile-skills/me`). |
 | `live-class` | `live_class` | Tạo/sửa/hủy/bắt đầu/kết thúc lớp, **tìm kiếm marketplace (`GET /classes`)**, **chi tiết lớp (`GET /classes/:id`)**, **lịch học của tôi (`GET /classes/bookings/me`)**, **đánh giá sau buổi học (`POST /classes/bookings/:bookingId/rating`)**. |
@@ -385,6 +385,8 @@ Tuyệt đối không đếm độ dài mảng trang đầu tiên trên Client (
 ---
 
 ## 5. Luồng Thông báo Bền vững & Idempotent (Durable Notification Pipeline)
+
+**Implementation status (12/10/2026):** `GET /notifications`, `POST /notification-devices`, `DELETE /notification-devices/:id`, inbox/device persistence, ownership filters, and idempotent inbox creation for verification/booking/wallet events are implemented. The push-delivery table is created with migration `1791072000006-CreateNotificationStorage`; it currently has no sender/receipt worker. Therefore the diagram below documents the accepted target pipeline, not completed behavior. Reminder producer, Expo dispatch, receipt polling and invalid-token deactivation remain open; don't claim remote push sent or received.
 
 Pipeline đảm bảo thông báo không bị mất khi broker gián đoạn và không bị nhân bản khi consumer retry:
 
