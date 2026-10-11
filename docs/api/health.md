@@ -8,8 +8,19 @@ Liveness/readiness for the load balancer and CI.
 
 1 endpoint.
 
+`GET /api/health` is **raw** (no envelope) for load balancers and CI — see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the exemption.
+
 ### `GET /api/health`
 
 **Liveness and readiness of the module data sources**
 
 - Auth: Public
+
+**Response — `HTTP 200`**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `status` | enum | yes | one of `ok`, `degraded` |
+| `database` | enum | yes | one of `up`, `down` |
+| `modules` | string[] | yes |  |
+| `uptimeSeconds` | integer | yes | ≥ 0 |

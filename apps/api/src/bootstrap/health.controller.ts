@@ -20,7 +20,21 @@ export class HealthController {
   @Get()
   @RawResponse()
   @ApiOperation({ summary: 'Liveness and readiness of the module data sources' })
-  @ApiOkResponse({ description: 'Always HTTP 200; check status/database fields' })
+  @ApiOkResponse({
+    description: 'Always HTTP 200; check status/database fields',
+    // NFR-013 exemption: /health is the one raw (unenveloped) response. Declared
+    // inline so the API reference shows the fields instead of nothing.
+    schema: {
+      type: 'object',
+      required: ['status', 'database', 'modules', 'uptimeSeconds'],
+      properties: {
+        status: { type: 'string', enum: ['ok', 'degraded'] },
+        database: { type: 'string', enum: ['up', 'down'] },
+        modules: { type: 'array', items: { type: 'string' } },
+        uptimeSeconds: { type: 'integer', minimum: 0 },
+      },
+    },
+  })
   getHealth(): HealthReport {
     const database = this.registry.isReady() ? 'up' : 'down';
     return {
