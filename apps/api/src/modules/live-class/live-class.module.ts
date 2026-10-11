@@ -1,15 +1,21 @@
 import { Injectable, Inject, Module, type OnModuleInit } from '@nestjs/common';
-import { skillEvidenceEventSchema, studentVerificationEventSchema } from '@skillswap/contracts';
+import {
+  skillEvidenceEventSchema,
+  studentVerificationEventSchema,
+  walletTransactionCompletedEventSchema,
+} from '@skillswap/contracts';
 import { ApiConfig } from '../../shared/config/api-config';
 import { AppLogger } from '../../shared/logger/app-logger';
 import { EventHandlerRegistry, type BusMessage } from '../../shared/messaging/event-handler-registry';
 import { ModuleDataSourceRegistry } from '../../shared/messaging/module-registry';
+import { PermanentHandlerError } from '../../shared/errors';
 import { createModuleDataSource } from './internal/adapter/out/persistence/data-source';
 import { SCHEMA } from './internal/adapter/out/persistence/schema';
 import { SqlModuleStatusReader } from './internal/adapter/out/persistence/sql-module-status-reader';
 import { SqlModuleStatusWriter } from './internal/adapter/out/persistence/sql-module-status-writer';
 import { SqlClassRepository } from './internal/adapter/out/persistence/sql-class-repository';
 import { SqlBookingRepository } from './internal/adapter/out/persistence/sql-booking-repository';
+import { SqlBookingPaymentRepository } from './internal/adapter/out/persistence/sql-booking-payment-repository';
 import { SqlTeacherTrustProjector } from './internal/adapter/out/persistence/sql-teacher-trust-projector';
 import { StatusController } from './internal/adapter/in/web/status.controller';
 import { ClassesController } from './internal/adapter/in/web/classes.controller';
@@ -61,6 +67,9 @@ import { CreateClassUseCase } from './internal/application/create-class.use-case
 import { ProjectTeacherTrustUseCase } from './internal/application/project-teacher-trust.use-case';
 import { BookClassUseCase } from './internal/application/book-class.use-case';
 import { ConfirmBookingUseCase } from './internal/application/confirm-booking.use-case';
+import { RecordBookingPaymentUseCase } from './internal/application/record-booking-payment.use-case';
+import { BookingPaymentMismatchError, RECORD_BOOKING_PAYMENT, type RecordBookingPaymentPort } from './internal/application/port/in/record-booking-payment';
+import { BOOKING_PAYMENT_REPOSITORY, type BookingPaymentRepository } from './internal/application/port/out/booking-payment-repository';
 import { UpdateClassUseCase } from './internal/application/update-class.use-case';
 import { CancelClassUseCase } from './internal/application/cancel-class.use-case';
 import { MarkTeacherNoShowUseCase } from './internal/application/mark-teacher-no-show.use-case';
@@ -127,6 +136,7 @@ export class LiveClassRegistrar implements OnModuleInit {
     private readonly config: ApiConfig,
     private readonly handlers: EventHandlerRegistry,
     @Inject(TEACHER_TRUST_WRITER) private readonly trust: SqlTeacherTrustProjector,
+    @Inject(RECORD_BOOKING_PAYMENT) private readonly recordBookingPayment: RecordBookingPaymentPort,
   ) {}
 
   onModuleInit(): void {
@@ -166,6 +176,31 @@ export class LiveClassRegistrar implements OnModuleInit {
         },
       });
     }
+    this.handlers.register({
+      moduleName: MODULE_NAME,
+      eventType: 'wallet.transaction.completed',
+      queue: 'live-class.wallet-transaction-completed',
+      handler: async (message: BusMessage): Promise<void> => {
+        const event = walletTransactionCompletedEventSchema.parse(message.payload);
+        if (event.type !== 'booking_payment' || event.direction !== 'debit') {
+          return;
+        }
+        try {
+          await this.recordBookingPayment.execute({
+            transactionId: event.transactionId,
+            bookingId: event.bookingId!,
+            accountId: event.accountId,
+            amountCredits: event.amountCredits,
+            occurredAt: event.occurredAt,
+          });
+        } catch (error) {
+          if (error instanceof BookingPaymentMismatchError) {
+            throw new PermanentHandlerError(error.message, { cause: error });
+          }
+          throw error;
+        }
+      },
+    });
   }
 }
 
@@ -205,6 +240,18 @@ const systemClock: Clock = { now: () => new Date() };
       useFactory: (registry: ModuleDataSourceRegistry) =>
         new SqlBookingRepository(registry, MODULE_NAME),
       inject: [ModuleDataSourceRegistry],
+    },
+    {
+      provide: BOOKING_PAYMENT_REPOSITORY,
+      useFactory: (registry: ModuleDataSourceRegistry): BookingPaymentRepository =>
+        new SqlBookingPaymentRepository(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
+      provide: RECORD_BOOKING_PAYMENT,
+      useFactory: (bookings: BookingPaymentRepository): RecordBookingPaymentPort =>
+        new RecordBookingPaymentUseCase(bookings),
+      inject: [BOOKING_PAYMENT_REPOSITORY],
     },
     { provide: CLOCK, useValue: systemClock },
     {

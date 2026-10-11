@@ -7,23 +7,23 @@ import type { Harness } from '../harness';
 export async function resetDatabase(harness: Harness): Promise<void> {
   await harness.query(
     'account-profile',
-    'TRUNCATE accounts, account_credentials, sessions, account_verification_status CASCADE',
+    'TRUNCATE accounts, account_credentials, sessions, account_verification_status, outbox_messages, processed_events CASCADE',
   );
   await harness.query(
     'live-class',
-    'TRUNCATE classes, class_skills, bookings, room_access_incidents, teacher_verified, teacher_skill_approval CASCADE',
+    'TRUNCATE classes, class_skills, bookings, room_access_incidents, teacher_verified, teacher_skill_approval, outbox_messages, processed_events CASCADE',
   );
   await harness.query(
     'wallet-ledger',
-    'TRUNCATE wallets, ledger_entries, top_up_intents CASCADE',
+    'TRUNCATE wallets, ledger_entries, top_up_intents, outbox_messages, processed_events CASCADE',
   );
   await harness.query(
     'student-verification',
-    'TRUNCATE student_verifications, verification_documents CASCADE',
+    'TRUNCATE student_verifications, verification_documents, outbox_messages, processed_events CASCADE',
   );
   await harness.query(
     'skill-verification',
-    'TRUNCATE skill_evidence, skill_evidence_audit, profile_skills, skills, verified_students, verifier_expertise, verifiers CASCADE',
+    'TRUNCATE skill_evidence, skill_evidence_audit, profile_skills, skills, verified_students, verifier_expertise, verifiers, outbox_messages, processed_events CASCADE',
   );
 }
 

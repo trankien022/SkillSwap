@@ -135,6 +135,14 @@ describeJitsi('E2E: Jitsi room access (real host)', () => {
       const learner = await walletRow(harness, learnerId);
       return learner && learner.availableCredits === 0 ? learner : null;
     });
+    await waitFor(async () => {
+      const rows = await harness.query<{ state: string }>(
+        'live-class',
+        'SELECT "state" FROM bookings WHERE "id" = $1',
+        [bookingId],
+      );
+      return rows[0]?.state === 'confirmed' ? rows[0] : null;
+    });
 
     // Open the room window by pulling the start time to now.
     await harness.query('live-class', 'UPDATE classes SET "starts_at" = $1 WHERE "id" = $2', [

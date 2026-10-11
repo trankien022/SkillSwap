@@ -2,6 +2,8 @@
 
 Observed source issues during independent review, 12 October 2026. These are acceptance blockers, not proven production incidents. The mobile demo has not been accepted as a paid-booking flow.
 
+Status at 12 October 2026: phases A and B are implemented in prior commits. Phase C2 wallet settlement/outbox and C3b booking outcome consumer are now implemented; C3c persisted E2E covers funded settlement, insufficient-funds Pending state, funded retry, expiry, and no-show refund. `pnpm verify` passes. The complete E2E suite reported 10/10 suites and 29/29 tests passing but Jest did not exit after its summary because of an open handle. T09 remains open for concurrency/restart/late-cancellation probes and final native acceptance. The simulator has no production push credentials; no phone push claim is made.
+
 1. BookClassUseCase and createWithSeatGuard replay globally unique idempotency keys without verifying the original learner/class. A reused key must never return another caller's booking or silently select another class.
 2. SqlBookingRepository.confirmAndEmit changes pending to confirmed before wallet-ledger consumes booking.confirmed. Settlement can reject insufficient credits while the booking remains confirmed. This conflicts with ADR-018's stated consequence that confirmation follows successful settlement and AC-005's prohibition on partial financial success.
 3. The confirmation update has no expiration predicate. Expired pending holds must not be confirmed merely because the expiry worker has not run yet.
