@@ -48,12 +48,15 @@ export function Navbar({
   const balance = propBalance !== undefined ? propBalance : internalBalance;
   const me = propMe !== undefined ? propMe : internalMe;
 
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  const locale = pathname.startsWith('/en') ? 'en' : 'vi';
+
   const navLinks: { id: NavbarTab; label: string; href: string }[] = [
-    { id: 'explore', label: 'Khám phá', href: '/vi' },
-    { id: 'classes', label: 'Lớp học của tôi', href: '/vi/instructor#classes' },
-    { id: 'instructor', label: 'Studio Giảng dạy', href: '/vi/instructor' },
-    { id: 'wallet', label: 'Ví & Tín dụng', href: '/vi/wallet' },
-    { id: 'verification', label: 'Quản trị & Xác minh', href: '/vi/status' },
+    { id: 'explore', label: locale === 'vi' ? 'Khám phá' : 'Explore', href: `/${locale}/classes` },
+    { id: 'classes', label: locale === 'vi' ? 'Lớp học của tôi' : 'My Bookings', href: `/${locale}/bookings` },
+    { id: 'instructor', label: locale === 'vi' ? 'Studio Giảng dạy' : 'Teaching Studio', href: `/${locale}/instructor` },
+    { id: 'wallet', label: locale === 'vi' ? 'Ví & Tín dụng' : 'Wallet & Credits', href: `/${locale}/wallet` },
+    { id: 'verification', label: locale === 'vi' ? 'Quản trị & Xác minh' : 'Verification', href: `/${locale}/status` },
   ];
 
   const availableCredits = balance ? balance.availableCredits : 150;
@@ -65,7 +68,7 @@ export function Navbar({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
         {/* Brand Logo & Main Nav */}
         <div className="flex items-center gap-8">
-          <a href="/vi" className="flex items-center gap-2.5 group">
+          <a href={`/${locale}/classes`} className="flex items-center gap-2.5 group">
             <div className="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold text-lg transition-transform group-hover:scale-105">
               S
             </div>

@@ -37,7 +37,7 @@ export default async function PublishClassPage({ params }: PageProps) {
 
   return (
     <div className="flex min-h-dvh flex-col bg-mist text-ink">
-      <MarketplaceHeader />
+      <MarketplaceHeader currentTab="instructor" />
       <main className="flex-1">
         <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 lg:px-8">
           <VerificationBanner />
