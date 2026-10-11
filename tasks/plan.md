@@ -61,7 +61,16 @@ Skill evidence dùng dạng capability recognition + description đã được c
 
 ### Trạng thái triển khai đối chiếu source (12/10/2026)
 
-Ma trận bên dưới là phạm vi đích, không tự nó chứng minh hoàn tất. Kiểm kê controller cho thấy 26/30 method+route đã có handler trong API; thiếu route rating và ba route notifications/device subscriptions. Kiểm kê mobile UI cho thấy các luồng auth, marketplace/catalogue/detail, booking/confirm, my bookings, wallet đang được gọi; các route còn lại cần adapter/UI hoặc chưa có API. Chỉ tăng số “app integrated” khi có caller thực trong UI, contract validation và kiểm thử tương ứng.
+Ma trận bên dưới là phạm vi đích, không tự nó chứng minh hoàn tất. Tại checkpoint 12/10/2026, mobile có caller UI + adapter cho **26/30 method+route duy nhất**: auth (5), student verification (3), skills/evidence/catalogue (4), class marketplace/detail + teaching lifecycle (7), booking reserve/confirm/my schedule/room access (4), wallet (3). Gateway contracts validated; focused tests cover changed adapters. Chưa có backend route cho rating và ba route inbox/device subscriptions, nên **30 APIs chưa hoàn tất**.
+
+| API chưa hoàn tất | Backend | Mobile | Trạng thái |
+|---|---|---|---|
+| POST `/classes/bookings/:bookingId/rating` | Chưa có route/use-case/persistence | Chưa có form/caller | Mở; cần FR-013 transactional/unique constraint |
+| GET `/notifications` | Chưa có inbox persistence/query/controller | Chưa có inbox UI | Mở; cần durable inbox + cursor |
+| POST `/notification-devices` | Chưa có device subscription/controller | Expo token lifecycle chưa gọi API | Mở; cần account ownership/rotation |
+| DELETE `/notification-devices/:id` | Chưa có device subscription/controller | Logout chưa gọi API | Mở; cần owner check và unlink |
+
+Các route có caller nhưng chưa chứng minh phone/runtime acceptance riêng: document-storage thật, classroom/Jitsi trên iPhone, dashboard dạy trên seed data; các tiêu chí này vẫn nằm trong checklist nghiệm thu thiết bị.
 
 Kế hoạch triển khai tiếp tục theo các phase dọc, mỗi phase có commit riêng theo AGENTS.md:
 
