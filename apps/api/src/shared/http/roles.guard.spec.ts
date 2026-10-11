@@ -40,4 +40,14 @@ describe('RolesGuard (FR-002 / NFR-009)', () => {
       UnauthorizedException,
     );
   });
+
+  it('accepts the verifier role for a verifier route (ADR-029)', () => {
+    expect(guardWith(['verifier']).canActivate(contextFor({ id: 'v1', role: 'verifier' }))).toBe(true);
+  });
+
+  it('rejects an unknown role value', () => {
+    expect(() => guardWith(['verifier']).canActivate(contextFor({ id: 'u1', role: 'superuser' }))).toThrow(
+      UnauthorizedException,
+    );
+  });
 });
