@@ -1,5 +1,31 @@
 @import "tailwindcss";
 
+/* SkillSwap design tokens — see DESIGN.md §2 (Colors) and §3 (Typography).
+ * Tailwind v4 exposes these as utility classes (`bg-mist`, `text-ink-soft`, ...).
+ * Fonts intentionally use the system stack only — see DESIGN.md §3
+ * "The Tight-Head Rule" + AGENTS.md §"Design comes from DESIGN.md".
+ */
+@theme {
+  --color-campus-emerald: #059669;
+  --color-campus-emerald-deep: #047857;
+
+  --color-ink: #0f172a;
+  --color-ink-soft: #475569;
+  --color-ink-muted: #64748b;
+  --color-mist: #f8fafc;
+  --color-surface: #ffffff;
+  --color-border: #e2e8f0;
+
+  --color-success-tint: #d1fae5;
+  --color-success-ink: #047857;
+  --color-warning-tint: #fef3c7;
+  --color-warning-ink: #b45309;
+  --color-danger-tint: #fee2e2;
+  --color-danger-ink: #b91c1c;
+  --color-neutral-tint: #f1f5f9;
+  --color-neutral-ink: #475569;
+}
+
 :root {
   color-scheme: light;
 }

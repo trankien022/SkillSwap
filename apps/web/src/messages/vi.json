@@ -41,5 +41,95 @@
       "invalid_duration": "Lớp này có thời lượng không hợp lệ.",
       "unknown": "Đã xảy ra lỗi. Vui lòng thử lại."
     }
+  },
+  "Landing": {
+    "nav": {
+      "explore": "Khám phá lớp",
+      "standard": "Quy chuẩn xác minh",
+      "signIn": "Đăng nhập"
+    },
+    "hero": {
+      "badge": "Học thuật xác minh • Trao đổi tri thức peer-to-peer",
+      "headline1": "Nền tảng học kỹ năng trực tuyến",
+      "headline2": "bảo chứng cho sinh viên",
+      "subline": "Mạng lưới trao đổi kỹ năng ngang hàng kết nối sinh viên với cố vấn học thuật đã xác minh danh tính.",
+      "pills": {
+        "school": "Liên kết hệ thống trường đại học",
+        "antiFake": "Chống giả mạo danh tính",
+        "escrow": "Bảo vệ quỹ thanh toán"
+      }
+    },
+    "trust": {
+      "eyebrow": "Cơ chế bảo chứng độc lập",
+      "heading": "Mọi Teacher đã xác minh bởi chuyên gia",
+      "pillars": [
+        {
+          "tag": "Hội đồng duyệt",
+          "title": "Thẩm định bởi chuyên gia chuyên môn",
+          "body": "Hồ sơ năng lực và đề cương giảng dạy được đánh giá bởi chuyên gia có chuyên môn phù hợp trước khi cấp quyền mở lớp.",
+          "proof": "Khảo sát kỹ năng thực tế 1:1"
+        },
+        {
+          "tag": "Audit Trail",
+          "title": "Lưu vết quyết định không thể chỉnh sửa",
+          "body": "Mỗi phiên bản bằng chứng năng lực được gắn dấu thời gian và giữ nguyên, đảm bảo truy vết được từng quyết định duyệt hoặc từ chối.",
+          "proof": "Mỗi phiên bản đều có lịch sử đầy đủ"
+        },
+        {
+          "tag": "Chính quy",
+          "title": "Xác minh sinh viên thủ công",
+          "body": "Giấy tờ tùy thân sinh viên được Administrator xem xét thủ công theo danh sách lý do từ chối chuẩn hóa.",
+          "proof": "Rà soát lại mỗi học kỳ"
+        }
+      ]
+    },
+    "money": {
+      "eyebrow": "Minh bạch tài chính",
+      "intro": "Không thuật toán ẩn giấu phí, không tỷ giá biến động ảo. Dòng tiền được ghi vào sổ cái nguyên tử và đối soát tự động.",
+      "rate": {
+        "label": "Tỷ giá bất biến",
+        "value": "1 Credit",
+        "equals": "= 1.000 VNĐ",
+        "body": "Quy đổi trực tiếp 1:1 không hoa hồng ngầm, không trượt giá khi nạp hoặc rút về tài khoản."
+      },
+      "split": {
+        "label": "Phân bổ dòng tiền",
+        "teacher": { "pct": "90%", "caption": "Teacher nhận thực lãnh" },
+        "platform": { "pct": "10%", "caption": "Phí vận hành & kiểm định" },
+        "note": "Tôn trọng công sức giảng dạy của người dạy."
+      },
+      "escrow": {
+        "label": "Sổ cái nguyên tử",
+        "title": "Phong tỏa an toàn tới khi hoàn tất",
+        "body": "Khoản thanh toán của người học được phong tỏa trong hệ thống ledger. Chỉ giải phóng vào ví Teacher khi buổi học được ghi nhận hoàn tất.",
+        "proof": "Mỗi giao dịch đều có trace ID xuyên suốt"
+      }
+    },
+    "cta": {
+      "eyebrow": "Sẵn sàng tham gia mạng lưới",
+      "heading": "Bắt đầu học hoặc dạy ngay hôm nay",
+      "subline": "Cùng sinh viên các trường đại học kết nối, học tập và tạo thu nhập minh bạch.",
+      "learner": {
+        "title": "Tôi muốn học",
+        "hint": "Khám phá lớp & đặt buổi học với Teacher đã xác minh"
+      },
+      "teacher": {
+        "title": "Tôi muốn dạy",
+        "hint": "Nộp hồ sơ năng lực & bắt đầu nhận lớp"
+      },
+      "trustNoCard": "Không yêu cầu thẻ tín dụng để đăng ký",
+      "trustSafety": "Mọi giao dịch có audit trail"
+    },
+    "footer": {
+      "tagline": "Hệ sinh thái trao đổi kỹ năng cho sinh viên.",
+      "links": {
+        "escrow": "Quy chuẩn bảo vệ",
+        "terms": "Điều khoản giao dịch",
+        "transparency": "Báo cáo minh bạch"
+      },
+      "langLabel": "Ngôn ngữ",
+      "vi": "Tiếng Việt",
+      "en": "English"
+    }
   }
 }

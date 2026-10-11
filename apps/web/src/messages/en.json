@@ -41,5 +41,95 @@
       "invalid_duration": "This class has an invalid duration.",
       "unknown": "Something went wrong. Please try again."
     }
+  },
+  "Landing": {
+    "nav": {
+      "explore": "Explore classes",
+      "standard": "Verification standard",
+      "signIn": "Sign in"
+    },
+    "hero": {
+      "badge": "Academic verification • Peer-to-peer knowledge exchange",
+      "headline1": "An online skill marketplace",
+      "headline2": "vouched for by students",
+      "subline": "A peer-to-peer skill network that connects students with domain experts whose identity has been independently verified.",
+      "pills": {
+        "school": "University credential links",
+        "antiFake": "Identity fraud prevention",
+        "escrow": "Protected payment funds"
+      }
+    },
+    "trust": {
+      "eyebrow": "Independent assurance",
+      "heading": "Every Teacher is reviewed by a domain expert",
+      "pillars": [
+        {
+          "tag": "Review board",
+          "title": "Reviewed by domain experts",
+          "body": "Skill evidence and teaching plans are assessed by experts in the matching domain before a Teacher is allowed to publish a class.",
+          "proof": "1:1 hands-on skill check"
+        },
+        {
+          "tag": "Audit trail",
+          "title": "Decisions are recorded immutably",
+          "body": "Each evidence submission is timestamped and kept as-is, so every approval and rejection is traceable across versions.",
+          "proof": "Full history per version"
+        },
+        {
+          "tag": "Verified identity",
+          "title": "Manual student verification",
+          "body": "Student IDs and enrollment confirmations are reviewed by hand using a standardized list of rejection reasons.",
+          "proof": "Reviewed each term"
+        }
+      ]
+    },
+    "money": {
+      "eyebrow": "Transparent finance",
+      "intro": "No hidden fees, no volatile exchange rate. Money is recorded in an atomic ledger and reconciled automatically.",
+      "rate": {
+        "label": "Fixed exchange rate",
+        "value": "1 Credit",
+        "equals": "= 1,000 VND",
+        "body": "Direct 1:1 conversion with no hidden markup, no slippage on top-ups or withdrawals to your bank account."
+      },
+      "split": {
+        "label": "Revenue allocation",
+        "teacher": { "pct": "90%", "caption": "Teacher net payout" },
+        "platform": { "pct": "10%", "caption": "Platform & verification fee" },
+        "note": "Designed to respect the work of student teachers."
+      },
+      "escrow": {
+        "label": "Atomic ledger",
+        "title": "Held safely until completion",
+        "body": "The learner's payment is held in the platform ledger. It only moves into the Teacher's wallet when the class is recorded as completed.",
+        "proof": "Every transaction carries an end-to-end trace ID"
+      }
+    },
+    "cta": {
+      "eyebrow": "Ready to join the network",
+      "heading": "Start learning or teaching today",
+      "subline": "Join students across universities who learn together, mentor each other, and earn transparently.",
+      "learner": {
+        "title": "I want to learn",
+        "hint": "Browse classes & book a session with a verified Teacher"
+      },
+      "teacher": {
+        "title": "I want to teach",
+        "hint": "Submit your skill evidence & start accepting classes"
+      },
+      "trustNoCard": "No credit card required to sign up",
+      "trustSafety": "Every transaction is audit-tracked"
+    },
+    "footer": {
+      "tagline": "A peer-to-peer skill ecosystem for students.",
+      "links": {
+        "escrow": "Protection standard",
+        "terms": "Terms of service",
+        "transparency": "Transparency report"
+      },
+      "langLabel": "Language",
+      "vi": "Vietnamese",
+      "en": "English"
+    }
   }
 }
