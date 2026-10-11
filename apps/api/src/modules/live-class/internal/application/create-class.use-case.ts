@@ -1,4 +1,5 @@
 import { publishClass } from '../domain/class';
+import { assertPublishable, type RequiredClassSkill } from '../domain/publish-policy';
 import type {
   ClassResource,
   CreateClassCommand,
@@ -7,18 +8,22 @@ import type {
 } from './port/in/create-class';
 import type { ClassRepository } from './port/out/class-repository';
 import type { Clock } from './port/out/clock';
+import type { TeacherTrustReader } from './port/out/teacher-trust';
 
 /**
- * Publishes a class (FR-005 / API-004).
+ * Publishes a class (FR-005 / API-004 / AC-002).
  *
- * TODO(FR-005): enforce that the Teacher is verified and approved for every
- * class skill. Verification lives in other modules and is out of scope for
- * FR-007, so the check is intentionally deferred.
+ * The **publish gate**: the Teacher must be a verified student and approved (at the
+ * required level) for **every** class skill (SR-BR-002/BR-008), read from this module's
+ * local trust projection (ADR-024) — never a cross-schema read. Publishing is not gated
+ * on a role (ADR-030). Pricing is pure self-price (OQ-002); `publishClass` validates
+ * duration/capacity/price/start.
  */
 export class CreateClassUseCase implements CreateClassPort {
   constructor(
     private readonly classes: ClassRepository,
     private readonly clock: Clock,
+    private readonly teacherTrust: TeacherTrustReader,
   ) {}
 
   async execute(command: CreateClassCommand): Promise<CreateClassResult> {
@@ -32,6 +37,10 @@ export class CreateClassUseCase implements CreateClassPort {
       },
       this.clock.now(),
     );
+
+    const trust = await this.teacherTrust.read(command.teacherId);
+    const classSkills: RequiredClassSkill[] = command.skillIds.map((skillId) => ({ skillId }));
+    assertPublishable({ teacherId: command.teacherId, teacherTrust: trust, classSkills });
 
     const stored = await this.classes.insert({
       teacherId: published.teacherId,
