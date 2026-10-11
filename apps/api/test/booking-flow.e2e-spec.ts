@@ -128,7 +128,7 @@ describe('E2E: book → settle → room → complete → release', () => {
     });
     // The class is 48h out, so the access window is not open yet.
     expect(callWindow.status).toBe(403);
-    expect(callWindow.json.message).toMatch(/opens shortly before/i);
+    expect(callWindow.envelope.message).toMatch(/opens shortly before/i);
 
     // Move the class into the room window by starting it, then it can be joined.
     api.actAs(teacherId);

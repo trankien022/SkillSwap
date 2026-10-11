@@ -35,8 +35,9 @@ describe('GetWalletHistoryQueryHandler (FR-010 / ADR-022)', () => {
     const handler = new GetWalletHistoryQueryHandler(reader);
     const first = await handler.execute({ ownerId: 'u1', limit: 2 });
     expect(first.items.map((i) => i.id)).toEqual(['5', '4']);
-    expect(first.nextCursor).toBe('2');
-    const second = await handler.execute({ ownerId: 'u1', limit: 2, cursor: first.nextCursor! });
+    expect(first.page.nextCursor).toBe('2');
+    expect(first.page.total).toBe(5);
+    const second = await handler.execute({ ownerId: 'u1', limit: 2, cursor: first.page.nextCursor! });
     expect(second.items.map((i) => i.id)).toEqual(['3', '2']);
   });
 

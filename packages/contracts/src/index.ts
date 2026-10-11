@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+export * from './envelope';
+export * from './pagination';
+
+import { pagedSchema, paginationQuerySchema } from './pagination';
+
 export const identityHeadersSchema = z.object({
   'x-user-id': z.string().min(1).optional(),
   'x-user-email': z.string().email().optional(),
@@ -289,10 +294,8 @@ export const walletHistoryItemSchema = z.object({
 });
 export type WalletHistoryItemView = z.infer<typeof walletHistoryItemSchema>;
 
-export const walletHistoryPageSchema = z.object({
-  items: z.array(walletHistoryItemSchema),
-  nextCursor: z.string().min(1).nullable(),
-});
+/** FR-010 / NFR-014 (ADR-022): a page of wallet history with page metadata. */
+export const walletHistoryPageSchema = pagedSchema(walletHistoryItemSchema);
 export type WalletHistoryPage = z.infer<typeof walletHistoryPageSchema>;
 
 /** FR-011: join an online class room (ADR-020). */
@@ -404,6 +407,24 @@ export const profileSkillSchema = z.object({
 });
 export type ProfileSkillView = z.infer<typeof profileSkillSchema>;
 
+/**
+ * FR-003 / NFR-014: query params for GET /profile-skills/me. The result is bounded by the
+ * managed skill catalogue, so there is no pagination (`page: null`); the caller may still
+ * search by skill name and choose the sort order.
+ */
+export const profileSkillQuerySchema = z.object({
+  q: z.string().min(1).optional(),
+  sort: z.enum(['category', 'name', '-approvedLevel']).optional(),
+});
+export type ProfileSkillQueryInput = z.infer<typeof profileSkillQuerySchema>;
+
+/** FR-003: the caller's profile skills (bounded by the catalogue → no page metadata). */
+export const profileSkillListSchema = z.object({
+  items: z.array(profileSkillSchema),
+  page: z.null(),
+});
+export type ProfileSkillList = z.infer<typeof profileSkillListSchema>;
+
 /** FR-003 / API-002: submit skill evidence for a known skill at a requested level. */
 export const submitSkillEvidenceSchema = z.object({
   skillId: z.string().min(1),
@@ -456,6 +477,21 @@ export type SkillEvidenceEvent = z.infer<typeof skillEvidenceEventSchema>;
 /** FR-004 / ADR-027: a Verifier account with a seeded expertise set. */
 export const verifierStatusSchema = z.enum(['active', 'suspended', 'revoked']);
 export type VerifierStatus = z.infer<typeof verifierStatusSchema>;
+
+/** FR-004 / NFR-014: query params for GET /verifiers/me/queue. */
+export const verifierQueueQuerySchema = paginationQuerySchema.extend({
+  level: skillLevelSchema.optional(),
+  type: evidenceTypeSchema.optional(),
+  // Skill-name free-text search.
+  q: z.string().min(1).optional(),
+  // 'submittedAt' (oldest first, FIFO) or '-submittedAt' (newest first).
+  sort: z.enum(['submittedAt', '-submittedAt']).optional(),
+});
+export type VerifierQueueQueryInput = z.infer<typeof verifierQueueQuerySchema>;
+
+/** FR-004 / NFR-014: a page of the Verifier's expertise-scoped pending queue. */
+export const verifierQueuePageSchema = pagedSchema(skillEvidenceViewSchema);
+export type VerifierQueuePage = z.infer<typeof verifierQueuePageSchema>;
 
 export const verifierSchema = z.object({
   accountId: z.string().min(1),

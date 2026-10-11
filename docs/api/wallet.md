@@ -8,6 +8,8 @@ Money in and out (FR-008/FR-010, ADR-017/ADR-022). Credits are integer VND, 1 cr
 
 4 endpoints.
 
+Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
+
 ### `GET /api/wallet/balance`
 
 **Read the wallet balance (FR-008/FR-010)**
@@ -16,6 +18,13 @@ Read available + pending credits. Use to show the wallet balance and to pre-chec
 
 - Auth: 🔒 Bearer token required
 - Response: `WalletBalanceDto`
+
+**Response — `WalletBalanceDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `availableCredits` | integer | yes |  |
+| `pendingCredits` | integer | yes |  |
 
 ### `GET /api/wallet/history`
 
@@ -31,6 +40,33 @@ Paginated ledger entries (newest first). Use on the wallet activity screen; foll
 | `limit` | query | integer | no |  |
 | `cursor` | query | string | no |  |
 
+**Response — `WalletHistoryPageDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `items` | object[] | yes |  |
+| `page` | object | yes |  |
+
+**`items`[]** — WalletHistoryPageDto.items fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `type` | string | yes | min 1 chars |
+| `direction` | enum | yes | one of `credit`, `debit` |
+| `amountCredits` | integer | yes | > 0 |
+| `status` | enum | yes | one of `completed`, `reversed` |
+| `reference` | string | yes | min 1 chars; nullable |
+| `createdAt` | string | yes | date-time |
+
+**`page`** — WalletHistoryPageDto.page fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `limit` | integer | yes | ≥ 1; ≤ 100 |
+| `nextCursor` | string | yes | min 1 chars; nullable |
+| `total` | integer | yes | ≥ 0 |
+
 ### `POST /api/wallet/top-ups`
 
 **Start a wallet top-up (FR-008 / API-006)**
@@ -40,6 +76,25 @@ Start a top-up and get a payment URL to redirect the learner to. Use from the "A
 - Auth: 🔒 Bearer token required
 - Request body: `TopUpRequestDto`
 - Response: `TopUpIntentDto`
+
+**Request body — `TopUpRequestDto`**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `amountVnd` | integer | yes | > 0; ≤ 100000000 |
+
+**Response — `TopUpIntentDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `ownerId` | string | yes | min 1 chars |
+| `provider` | string | yes | min 1 chars |
+| `providerRef` | string | yes | min 1 chars |
+| `amountVnd` | integer | yes | > 0 |
+| `amountCredits` | integer | yes | > 0 |
+| `status` | string | yes | min 1 chars |
+| `paymentUrl` | string | no | min 1 chars |
 
 ### `POST /api/wallet/top-ups/callback`
 
@@ -55,3 +110,11 @@ Provider → server webhook that settles/fails a top-up. Not called by the front
 | Header | Required | Description |
 |---|---|---|
 | `x-signature` | no | HMAC signature of the raw body (ADR-017) |
+
+**Request body — `TopUpCallbackDto`**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `providerRef` | string | yes | min 1 chars |
+| `amountVnd` | integer | yes | > 0 |
+| `status` | enum | yes | one of `settled`, `failed`, `reversed` |

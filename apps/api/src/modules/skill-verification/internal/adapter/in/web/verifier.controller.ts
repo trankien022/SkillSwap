@@ -1,6 +1,6 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Param, Post, Query, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
-import type { SkillEvidenceView, VerifierView } from '@skillswap/contracts';
+import type { SkillEvidenceView, VerifierQueuePage, VerifierView } from '@skillswap/contracts';
 import {
   CHANGE_VERIFIER_STATUS,
   type ChangeVerifierStatusPort,
@@ -20,9 +20,15 @@ import {
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
 import { Roles } from '../../../../../../shared/http/roles.decorator';
 import {
+  ResponseCode,
+  ResponseMessage,
+} from '../../../../../../shared/http/response-code.decorator';
+import {
   SkillEvidenceDecisionDto,
   SkillEvidenceDto,
   VerifierDto,
+  VerifierQueuePageDto,
+  VerifierQueueQueryDto,
   VerifierStatusChangeDto,
 } from './dto/skill-verification.dto';
 
@@ -50,10 +56,26 @@ export class VerifierController {
 
   @Get('me/queue')
   @Roles('verifier')
-  @ApiOperation({ summary: "The Verifier's expertise-scoped pending queue (FR-004)" })
-  @ApiOkResponse({ type: SkillEvidenceDto, isArray: true, description: 'Pending evidence requests matching the caller’s expertise' })
-  myQueue(@Req() request: RequestWithIdentity): Promise<SkillEvidenceView[]> {
-    return this.queue.execute(currentUserId(request));
+  @ResponseCode('VERIFIER_QUEUE_OK')
+  @ResponseMessage('Verifier queue loaded')
+  @ApiOperation({ summary: "The Verifier's expertise-scoped pending queue (FR-004 / NFR-014)" })
+  @ApiOkResponse({
+    type: VerifierQueuePageDto,
+    description: 'A page of pending evidence requests matching the caller’s expertise',
+  })
+  myQueue(
+    @Query() query: VerifierQueueQueryDto,
+    @Req() request: RequestWithIdentity,
+  ): Promise<VerifierQueuePage> {
+    return this.queue.execute({
+      verifierId: currentUserId(request),
+      limit: query.limit,
+      cursor: query.cursor,
+      level: query.level,
+      type: query.type,
+      q: query.q,
+      sort: query.sort,
+    });
   }
 }
 

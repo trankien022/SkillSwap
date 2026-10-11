@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createTopUpIntent } from './actions';
-import { callApi } from '../../../lib/api-client';
+import { callApi, unwrapEnvelope } from '../../../lib/api-client';
 import { Navbar } from '../../../components/navbar';
 import type { WalletBalanceView, WalletHistoryItemView, MeResponse } from '@skillswap/contracts';
 
@@ -26,18 +26,18 @@ export default function WalletPage() {
         ]);
 
         if (balRes.ok) {
-          setBalance(await balRes.json());
+          setBalance(await unwrapEnvelope(balRes));
         } else {
           console.warn('Wallet balance not found or error');
         }
 
         if (histRes.ok) {
-          const data = await histRes.json();
+          const data = await unwrapEnvelope<{ items: WalletHistoryItemView[] }>(histRes);
           setHistory(data.items || []);
         }
 
         if (meRes.ok) {
-          setMe(await meRes.json());
+          setMe(await unwrapEnvelope(meRes));
         }
       } catch (e) {
         console.error(e);

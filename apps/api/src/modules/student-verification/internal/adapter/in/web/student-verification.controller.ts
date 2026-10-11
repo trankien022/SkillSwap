@@ -33,6 +33,10 @@ import {
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
 import { Roles } from '../../../../../../shared/http/roles.decorator';
 import {
+  ResponseCode,
+  ResponseMessage,
+} from '../../../../../../shared/http/response-code.decorator';
+import {
   DocumentUploadRequestDto,
   DocumentUploadTargetDto,
   StudentVerificationDto,
@@ -124,6 +128,8 @@ export class StudentVerificationController {
   }
 
   @Get('me')
+  @ResponseCode('STUDENT_VERIFICATION_ME_OK')
+  @ResponseMessage('Your verification loaded')
   @ApiOperation({ summary: "Read the caller's own verification (FR-017)" })
   @ApiOkResponse({ type: StudentVerificationDto, description: 'The latest verification for the caller, or null' })
   mine(@Req() request: RequestWithIdentity): Promise<StudentVerificationView | null> {

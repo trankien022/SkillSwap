@@ -8,12 +8,22 @@ Proving a learner is a real student (FR-002/FR-019, ADR-023/ADR-025). A submissi
 
 7 endpoints.
 
+Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
+
 ### `GET /api/student-verification/status`
 
 **Read Student verification module status**
 
 - Auth: Public
 - Response: `ModuleStatusDto`
+
+**Response — `ModuleStatusDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `module` | string | yes | min 1 chars |
+| `state` | string | yes | min 1 chars |
+| `updatedAt` | string | yes | date-time; nullable |
 
 ### `POST /api/student-verification/status/advance`
 
@@ -22,6 +32,19 @@ Proving a learner is a real student (FR-002/FR-019, ADR-023/ADR-025). A submissi
 - Auth: Public
 - Request body: `AdvanceStatusDto`
 - Response: `AdvanceStatusResultDto`
+
+**Request body — `AdvanceStatusDto`**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `toState` | string | yes | min 1 chars |
+
+**Response — `AdvanceStatusResultDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `previousState` | string | yes | min 1 chars |
+| `newState` | string | yes | min 1 chars |
 
 ### `POST /api/student-verifications`
 
@@ -32,6 +55,27 @@ Submit a verification with the uploaded document (API-001). Only one effective (
 - Auth: 🔒 Bearer token required
 - Request body: `SubmitStudentVerificationDto`
 - Response: `StudentVerificationDto`
+
+**Request body — `SubmitStudentVerificationDto`**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `schoolName` | string | yes | min 1 chars; max 200 chars |
+| `major` | string | no | min 1 chars; max 120 chars |
+| `documentId` | string | yes | min 1 chars; max 100 chars |
+
+**Response — `StudentVerificationDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `status` | enum | yes | one of `pending`, `approved`, `rejected`, `revoked` |
+| `schoolName` | string | yes | min 1 chars |
+| `major` | string | yes | min 1 chars; nullable |
+| `reviewerId` | string | yes | min 1 chars; nullable |
+| `reason` | string | yes | min 1 chars; nullable |
+| `decidedAt` | string | yes | date-time; nullable |
+| `submittedAt` | string | yes | date-time |
 
 ### `POST /api/student-verifications/{id}/decision`
 
@@ -47,6 +91,27 @@ Admin approves or rejects a pending verification (FR-002).
 |---|---|---|---|---|
 | `id` | path | string | yes | The verification id |
 
+**Request body — `VerificationDecisionDto`**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `decision` | enum | yes | one of `approve`, `reject` |
+| `reason` | string | no | min 1 chars; max 500 chars |
+| `approvedMajor` | string | no | min 1 chars; max 120 chars |
+
+**Response — `StudentVerificationDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `status` | enum | yes | one of `pending`, `approved`, `rejected`, `revoked` |
+| `schoolName` | string | yes | min 1 chars |
+| `major` | string | yes | min 1 chars; nullable |
+| `reviewerId` | string | yes | min 1 chars; nullable |
+| `reason` | string | yes | min 1 chars; nullable |
+| `decidedAt` | string | yes | date-time; nullable |
+| `submittedAt` | string | yes | date-time |
+
 ### `POST /api/student-verifications/{id}/revocation`
 
 **Revoke a verification (admin, FR-019 / ADR-025)**
@@ -61,6 +126,25 @@ Admin revokes an approved verification (FR-019); the publish gate demotes the ac
 |---|---|---|---|---|
 | `id` | path | string | yes | The verification id |
 
+**Request body — `VerificationRevocationDto`**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `reason` | string | yes | min 1 chars; max 500 chars |
+
+**Response — `StudentVerificationDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `status` | enum | yes | one of `pending`, `approved`, `rejected`, `revoked` |
+| `schoolName` | string | yes | min 1 chars |
+| `major` | string | yes | min 1 chars; nullable |
+| `reviewerId` | string | yes | min 1 chars; nullable |
+| `reason` | string | yes | min 1 chars; nullable |
+| `decidedAt` | string | yes | date-time; nullable |
+| `submittedAt` | string | yes | date-time |
+
 ### `POST /api/student-verifications/documents`
 
 **Request a pre-signed document upload target (FR-002)**
@@ -71,6 +155,23 @@ Request a pre-signed S3 upload target (FR-002). Upload the file to uploadUrl, th
 - Request body: `DocumentUploadRequestDto`
 - Response: `DocumentUploadTargetDto`
 
+**Request body — `DocumentUploadRequestDto`**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `fileName` | string | yes | min 1 chars; max 255 chars |
+| `contentType` | string | yes | min 1 chars; max 120 chars |
+| `sizeBytes` | integer | yes | > 0 |
+
+**Response — `DocumentUploadTargetDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `documentId` | string | yes | min 1 chars |
+| `uploadUrl` | string | yes | min 1 chars |
+| `objectKey` | string | yes | min 1 chars |
+| `expiresAt` | string | yes | date-time |
+
 ### `GET /api/student-verifications/me`
 
 **Read the caller's own verification (FR-017)**
@@ -79,3 +180,16 @@ Read the caller's own verification and its status (FR-017).
 
 - Auth: 🔒 Bearer token required
 - Response: `StudentVerificationDto`
+
+**Response — `StudentVerificationDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `status` | enum | yes | one of `pending`, `approved`, `rejected`, `revoked` |
+| `schoolName` | string | yes | min 1 chars |
+| `major` | string | yes | min 1 chars; nullable |
+| `reviewerId` | string | yes | min 1 chars; nullable |
+| `reason` | string | yes | min 1 chars; nullable |
+| `decidedAt` | string | yes | date-time; nullable |
+| `submittedAt` | string | yes | date-time |

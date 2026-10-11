@@ -8,14 +8,38 @@ Proving a specific skill at a level (FR-003/FR-004/FR-018, ADR-026/ADR-027/ADR-0
 
 9 endpoints.
 
+Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
+
 ### `GET /api/profile-skills/me`
 
-**List the caller's skills and approved levels (FR-003)**
+**List the caller's skills and approved levels (FR-003 / NFR-014)**
 
 List the caller's skills and their effective approved levels (FR-003).
 
 - Auth: 🔒 Bearer token required
-- Response: `ProfileSkillDto[]`
+- Response: `ProfileSkillListDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `q` | query | string | no |  |
+| `sort` | query | string | no |  |
+
+**Response — `ProfileSkillListDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `items` | object[] | yes |  |
+| `page` | object | yes | `null` for a bounded list (no pagination) |
+
+**`items`[]** — ProfileSkillListDto.items fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `skillId` | string | yes | min 1 chars |
+| `skillName` | string | yes | min 1 chars |
+| `category` | string | yes | min 1 chars |
+| `approvedLevel` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert`; nullable |
 
 ### `POST /api/skill-evidence`
 
@@ -26,6 +50,39 @@ Submit evidence for a known skill at a requested level (API-002). Requires being
 - Auth: 🔒 Bearer token required
 - Request body: `SubmitSkillEvidenceDto`
 - Response: `SkillEvidenceDto`
+
+**Request body — `SubmitSkillEvidenceDto`**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `skillId` | string | yes | min 1 chars |
+| `requestedLevel` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert` |
+| `evidenceType` | enum | yes | one of `certificate`, `verifier_assessment` |
+| `documentRef` | string | no | min 1 chars; max 500 chars |
+| `description` | string | no | min 1 chars; max 1000 chars |
+
+**Response — `SkillEvidenceDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `profileSkillId` | string | yes | min 1 chars |
+| `skillId` | string | yes | min 1 chars |
+| `skillName` | string | yes | min 1 chars; nullable |
+| `category` | string | yes | min 1 chars; nullable |
+| `ownerId` | string | yes | min 1 chars; nullable |
+| `version` | integer | yes | > 0 |
+| `evidenceType` | enum | yes | one of `certificate`, `verifier_assessment` |
+| `documentRef` | string | yes | min 1 chars; nullable |
+| `description` | string | yes | min 1 chars; nullable |
+| `requestedLevel` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert` |
+| `approvedLevel` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert`; nullable |
+| `status` | enum | yes | one of `pending`, `claimed`, `approved`, `rejected`, `superseded` |
+| `claimedBy` | string | yes | min 1 chars; nullable |
+| `claimedAt` | string | yes | date-time; nullable |
+| `reason` | string | yes | min 1 chars; nullable |
+| `decidedAt` | string | yes | date-time; nullable |
+| `submittedAt` | string | yes | date-time |
 
 ### `POST /api/skill-evidence/{id}/claim`
 
@@ -39,6 +96,29 @@ Verifier claims a pending request, locking it to them (BR-071).
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
 | `id` | path | string | yes | The evidence id |
+
+**Response — `SkillEvidenceDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `profileSkillId` | string | yes | min 1 chars |
+| `skillId` | string | yes | min 1 chars |
+| `skillName` | string | yes | min 1 chars; nullable |
+| `category` | string | yes | min 1 chars; nullable |
+| `ownerId` | string | yes | min 1 chars; nullable |
+| `version` | integer | yes | > 0 |
+| `evidenceType` | enum | yes | one of `certificate`, `verifier_assessment` |
+| `documentRef` | string | yes | min 1 chars; nullable |
+| `description` | string | yes | min 1 chars; nullable |
+| `requestedLevel` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert` |
+| `approvedLevel` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert`; nullable |
+| `status` | enum | yes | one of `pending`, `claimed`, `approved`, `rejected`, `superseded` |
+| `claimedBy` | string | yes | min 1 chars; nullable |
+| `claimedAt` | string | yes | date-time; nullable |
+| `reason` | string | yes | min 1 chars; nullable |
+| `decidedAt` | string | yes | date-time; nullable |
+| `submittedAt` | string | yes | date-time |
 
 ### `POST /api/skill-evidence/{id}/decision`
 
@@ -54,6 +134,37 @@ Verifier approves or rejects a claimed request (API-003).
 |---|---|---|---|---|
 | `id` | path | string | yes | The evidence id |
 
+**Request body — `SkillEvidenceDecisionDto`**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `decision` | enum | yes | one of `approve`, `reject` |
+| `approvedLevel` | enum | no | one of `beginner`, `intermediate`, `advanced`, `expert` |
+| `reason` | string | no | min 1 chars; max 500 chars |
+
+**Response — `SkillEvidenceDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `profileSkillId` | string | yes | min 1 chars |
+| `skillId` | string | yes | min 1 chars |
+| `skillName` | string | yes | min 1 chars; nullable |
+| `category` | string | yes | min 1 chars; nullable |
+| `ownerId` | string | yes | min 1 chars; nullable |
+| `version` | integer | yes | > 0 |
+| `evidenceType` | enum | yes | one of `certificate`, `verifier_assessment` |
+| `documentRef` | string | yes | min 1 chars; nullable |
+| `description` | string | yes | min 1 chars; nullable |
+| `requestedLevel` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert` |
+| `approvedLevel` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert`; nullable |
+| `status` | enum | yes | one of `pending`, `claimed`, `approved`, `rejected`, `superseded` |
+| `claimedBy` | string | yes | min 1 chars; nullable |
+| `claimedAt` | string | yes | date-time; nullable |
+| `reason` | string | yes | min 1 chars; nullable |
+| `decidedAt` | string | yes | date-time; nullable |
+| `submittedAt` | string | yes | date-time |
+
 ### `GET /api/skill-evidence/{id}/history`
 
 **Decision history for each evidence version (FR-018)**
@@ -67,12 +178,67 @@ Read every version and its audit trail (FR-018).
 |---|---|---|---|---|
 | `id` | path | string | yes | The evidence id |
 
+**Response — `SkillEvidenceHistoryDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `profileSkillId` | string | yes | min 1 chars |
+| `skillId` | string | yes | min 1 chars |
+| `versions` | object[] | yes |  |
+
+**`versions`[]** — SkillEvidenceHistoryDto.versions fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `version` | integer | yes | > 0 |
+| `evidenceId` | string | yes | min 1 chars |
+| `currentStatus` | enum | yes | one of `pending`, `claimed`, `approved`, `rejected`, `superseded` |
+| `requestedLevel` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert` |
+| `approvedLevel` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert`; nullable |
+| `submittedAt` | string | yes | date-time |
+| `entries` | object[] | yes |  |
+
+**`entries`[]** — SkillEvidenceHistoryDto.versions.entries fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `evidenceId` | string | yes | min 1 chars |
+| `version` | integer | yes | > 0 |
+| `action` | enum | yes | one of `submitted`, `claimed`, `approved`, `rejected`, `superseded` |
+| `actorId` | string | yes | min 1 chars; nullable |
+| `fromStatus` | enum | yes | one of `pending`, `claimed`, `approved`, `rejected`, `superseded`; nullable |
+| `toStatus` | enum | yes | one of `pending`, `claimed`, `approved`, `rejected`, `superseded` |
+| `reason` | string | yes | min 1 chars; nullable |
+| `snapshot` | object | yes |  |
+| `occurredAt` | string | yes | date-time |
+| `traceId` | string | yes | min 1 chars; nullable |
+
+**`snapshot`** — SkillEvidenceHistoryDto.versions.entries.snapshot fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `version` | integer | yes | > 0 |
+| `status` | enum | yes | one of `pending`, `claimed`, `approved`, `rejected`, `superseded` |
+| `evidenceType` | enum | yes | one of `certificate`, `verifier_assessment` |
+| `requestedLevel` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert` |
+| `approvedLevel` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert`; nullable |
+| `reason` | string | yes | min 1 chars; nullable |
+
 ### `GET /api/skill-verification/status`
 
 **Read Skill verification module status**
 
 - Auth: Public
 - Response: `ModuleStatusDto`
+
+**Response — `ModuleStatusDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `module` | string | yes | min 1 chars |
+| `state` | string | yes | min 1 chars |
+| `updatedAt` | string | yes | date-time; nullable |
 
 ### `POST /api/skill-verification/status/advance`
 
@@ -81,6 +247,19 @@ Read every version and its audit trail (FR-018).
 - Auth: Public
 - Request body: `AdvanceStatusDto`
 - Response: `AdvanceStatusResultDto`
+
+**Request body — `AdvanceStatusDto`**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `toState` | string | yes | min 1 chars |
+
+**Response — `AdvanceStatusResultDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `previousState` | string | yes | min 1 chars |
+| `newState` | string | yes | min 1 chars |
 
 ### `POST /api/verifiers/{accountId}/status`
 
@@ -96,11 +275,72 @@ Admin suspends, revokes or reactivates a Verifier (FR-004, ADR-027).
 |---|---|---|---|---|
 | `accountId` | path | string | yes | The verifier account id |
 
+**Request body — `VerifierStatusChangeDto`**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `status` | enum | yes | one of `active`, `suspended`, `revoked` |
+
+**Response — `VerifierDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `accountId` | string | yes | min 1 chars |
+| `status` | enum | yes | one of `active`, `suspended`, `revoked` |
+| `expertise` | string[] | yes |  |
+
 ### `GET /api/verifiers/me/queue`
 
-**The Verifier's expertise-scoped pending queue (FR-004)**
+**The Verifier's expertise-scoped pending queue (FR-004 / NFR-014)**
 
 A Verifier's pending queue, scoped to their expertise (FR-004).
 
 - Auth: 🔒 Bearer token required
-- Response: `SkillEvidenceDto[]`
+- Response: `VerifierQueuePageDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `limit` | query | integer | no |  |
+| `cursor` | query | string | no |  |
+| `level` | query | string | no |  |
+| `type` | query | string | no |  |
+| `q` | query | string | no |  |
+| `sort` | query | string | no |  |
+
+**Response — `VerifierQueuePageDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `items` | object[] | yes |  |
+| `page` | object | yes |  |
+
+**`items`[]** — VerifierQueuePageDto.items fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `profileSkillId` | string | yes | min 1 chars |
+| `skillId` | string | yes | min 1 chars |
+| `skillName` | string | yes | min 1 chars; nullable |
+| `category` | string | yes | min 1 chars; nullable |
+| `ownerId` | string | yes | min 1 chars; nullable |
+| `version` | integer | yes | > 0 |
+| `evidenceType` | enum | yes | one of `certificate`, `verifier_assessment` |
+| `documentRef` | string | yes | min 1 chars; nullable |
+| `description` | string | yes | min 1 chars; nullable |
+| `requestedLevel` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert` |
+| `approvedLevel` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert`; nullable |
+| `status` | enum | yes | one of `pending`, `claimed`, `approved`, `rejected`, `superseded` |
+| `claimedBy` | string | yes | min 1 chars; nullable |
+| `claimedAt` | string | yes | date-time; nullable |
+| `reason` | string | yes | min 1 chars; nullable |
+| `decidedAt` | string | yes | date-time; nullable |
+| `submittedAt` | string | yes | date-time |
+
+**`page`** — VerifierQueuePageDto.page fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `limit` | integer | yes | ≥ 1; ≤ 100 |
+| `nextCursor` | string | yes | min 1 chars; nullable |
+| `total` | integer | yes | ≥ 0 |

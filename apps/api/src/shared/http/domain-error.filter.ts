@@ -1,4 +1,5 @@
 import { ArgumentsHost, Catch, HttpException, type ExceptionFilter } from '@nestjs/common';
+import { INTERNAL_ERROR_CODE, VALIDATION_FAILED_CODE } from '@skillswap/contracts';
 import type { AppLogger } from '../logger/app-logger';
 
 /** Local structural view of Express's Response (the app never imports express). */
@@ -7,10 +8,19 @@ export interface HttpResponseLike {
   json(body: unknown): unknown;
 }
 
-interface ErrorResponseBody {
-  statusCode: number;
+/** One entry of the envelope `errors` array. */
+export interface ErrorItem {
+  code: string;
   message: string;
-  error?: string;
+}
+
+/** NFR-013: the uniform failure envelope. */
+export interface ErrorEnvelope {
+  success: false;
+  code: string;
+  message: string;
+  data: null;
+  errors: ErrorItem[];
 }
 
 const NAME_TO_STATUS: Record<string, number> = {
@@ -92,7 +102,7 @@ const NAME_TO_STATUS: Record<string, number> = {
   InvalidSkillLevelError: 400,
 };
 
-/** Maps domain errors and unexpected failures onto the apiErrorSchema shape. */
+/** Maps domain errors and unexpected failures onto the failure envelope (NFR-013). */
 @Catch()
 export class DomainErrorFilter implements ExceptionFilter {
   constructor(private readonly logger: AppLogger) {}
@@ -110,18 +120,11 @@ export class DomainErrorFilter implements ExceptionFilter {
     response.status(statusCode).json(body);
   }
 
-  private toResponse(exception: unknown): { statusCode: number; body: ErrorResponseBody } {
+  private toResponse(exception: unknown): { statusCode: number; body: ErrorEnvelope } {
     if (exception instanceof HttpException) {
       const statusCode = exception.getStatus();
       const payload = exception.getResponse();
-      if (typeof payload === 'string') {
-        return { statusCode, body: { statusCode, message: payload } };
-      }
-      const body = payload as Record<string, unknown>;
-      return {
-        statusCode,
-        body: { ...(body as unknown as ErrorResponseBody), statusCode },
-      };
+      return { statusCode, body: this.fromHttpException(statusCode, payload) };
     }
 
     const name =
@@ -129,12 +132,54 @@ export class DomainErrorFilter implements ExceptionFilter {
     if (name !== undefined && name in NAME_TO_STATUS) {
       const statusCode = NAME_TO_STATUS[name];
       const message = exception instanceof Error ? exception.message : name;
-      return { statusCode, body: { statusCode, message, error: name } };
+      return { statusCode, body: this.failure(name, message) };
     }
 
     return {
       statusCode: 500,
-      body: { statusCode: 500, message: 'Internal server error' },
+      body: this.failure(INTERNAL_ERROR_CODE, 'Internal server error'),
+    };
+  }
+
+  private fromHttpException(statusCode: number, payload: string | object): ErrorEnvelope {
+    // nestjs-zod / ZodValidationPipe raise a 400 whose payload carries `message` as a
+    // string (field issues joined by '; ') — surface it as a structured validation error.
+    if (typeof payload === 'string') {
+      const code = statusCode === 400 ? VALIDATION_FAILED_CODE : `HTTP_${statusCode}`;
+      return this.failure(code, payload);
+    }
+
+    const body = payload as Record<string, unknown>;
+    const rawMessage = body.message;
+    const message =
+      typeof rawMessage === 'string'
+        ? rawMessage
+        : Array.isArray(rawMessage)
+          ? rawMessage.map((entry) => String(entry)).join('; ')
+          : `HTTP ${statusCode}`;
+    const code = statusCode === 400 ? VALIDATION_FAILED_CODE : `HTTP_${statusCode}`;
+
+    // Class-validator-style field errors arrive as `message: string[]`.
+    if (statusCode === 400 && Array.isArray(rawMessage)) {
+      return {
+        success: false,
+        code,
+        message,
+        data: null,
+        errors: rawMessage.map((entry) => ({ code, message: String(entry) })),
+      };
+    }
+
+    return this.failure(code, message);
+  }
+
+  private failure(code: string, message: string): ErrorEnvelope {
+    return {
+      success: false,
+      code,
+      message,
+      data: null,
+      errors: [{ code, message }],
     };
   }
 }

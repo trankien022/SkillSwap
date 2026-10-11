@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
-import { callApi, getTokens, getStoredUser, logout, type UserProfile } from '../lib/api-client';
+import { callApi, getTokens, getStoredUser, logout, unwrapEnvelope, type UserProfile } from '../lib/api-client';
 
 export type NavbarTab = 'explore' | 'classes' | 'instructor' | 'wallet' | 'verification' | 'notifications';
 
@@ -36,12 +36,18 @@ export function Navbar({
             propMe === undefined ? callApi('/auth/me') : Promise.resolve(null),
           ]);
           if (balRes && balRes.ok) {
-            setInternalBalance(await balRes.json());
+            setInternalBalance(await unwrapEnvelope(balRes));
           }
           if (meRes && meRes.ok) {
-            const meData = await meRes.json();
+            const meData = await unwrapEnvelope<MeResponse>(meRes);
             setInternalMe(meData);
-            setStoredUser(meData);
+            setStoredUser({
+              id: meData.id,
+              email: meData.email,
+              displayName: meData.displayName,
+              role: meData.role,
+              studentVerificationStatus: meData.studentVerification?.status,
+            });
           }
         } catch (e) {
           console.warn('Navbar failed to load auth/wallet summary', e);

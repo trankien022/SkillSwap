@@ -1,7 +1,7 @@
-import { Body, Controller, Get, Inject, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Post, Query, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import type {
-  ProfileSkillView,
+  ProfileSkillList,
   SkillEvidenceHistoryView,
   SkillEvidenceView,
 } from '@skillswap/contracts';
@@ -19,7 +19,12 @@ import {
 } from '../../../application/port/in/get-skill-evidence-history';
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
 import {
-  ProfileSkillDto,
+  ResponseCode,
+  ResponseMessage,
+} from '../../../../../../shared/http/response-code.decorator';
+import {
+  ProfileSkillListDto,
+  ProfileSkillQueryDto,
   SkillEvidenceDto,
   SkillEvidenceHistoryDto,
   SubmitSkillEvidenceDto,
@@ -53,8 +58,14 @@ export class SkillEvidenceController {
   }
 
   @Get(':id/history')
+  @ResponseCode('SKILL_EVIDENCE_HISTORY_OK')
+  @ResponseMessage('Skill evidence history loaded')
   @ApiParam({ name: 'id', description: 'The evidence id' })
-  @ApiOperation({ summary: 'Decision history for each evidence version (FR-018)' })
+  @ApiOperation({
+    summary: 'Decision history for each evidence version (FR-018)',
+    description:
+      'Complete by design: returns every version of the profile-skill with its audit trail (bounded by the number of submissions), so it is not paginated.',
+  })
   @ApiOkResponse({ type: SkillEvidenceHistoryDto, description: 'All versions of the profile-skill with their audit trail' })
   history(
     @Param('id') id: string,
@@ -77,9 +88,22 @@ export class ProfileSkillController {
   ) {}
 
   @Get('me')
-  @ApiOperation({ summary: "List the caller's skills and approved levels (FR-003)" })
-  @ApiOkResponse({ type: ProfileSkillDto, isArray: true, description: 'The caller\'s profile skills with effective levels' })
-  mine(@Req() request: RequestWithIdentity): Promise<ProfileSkillView[]> {
-    return this.getMine.execute(currentUserId(request));
+  @ResponseCode('PROFILE_SKILLS_OK')
+  @ResponseMessage('Profile skills loaded')
+  @ApiOperation({
+    summary: "List the caller's skills and approved levels (FR-003 / NFR-014)",
+    description:
+      'Bounded by the managed skill catalogue (at most one row per catalogue skill), so it is not paginated and returns `page: null`. Supports a skill-name search (`q`) and a sort order.',
+  })
+  @ApiOkResponse({ type: ProfileSkillListDto, description: "The caller's profile skills with effective levels" })
+  mine(
+    @Query() query: ProfileSkillQueryDto,
+    @Req() request: RequestWithIdentity,
+  ): Promise<ProfileSkillList> {
+    return this.getMine.execute({
+      accountId: currentUserId(request),
+      q: query.q,
+      sort: query.sort,
+    });
   }
 }
