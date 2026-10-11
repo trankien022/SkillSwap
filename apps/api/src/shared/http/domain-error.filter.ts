@@ -82,6 +82,8 @@ const NAME_TO_STATUS: Record<string, number> = {
   EvidenceNotClaimedError: 409,
   NotClaimOwnerError: 403,
   EvidenceNotDecidableError: 409,
+  // FR-018 evidence history (ADR-028).
+  AccessDeniedError: 403,
 };
 
 /** Maps domain errors and unexpected failures onto the apiErrorSchema shape. */
