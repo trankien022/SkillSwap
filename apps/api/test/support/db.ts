@@ -88,6 +88,39 @@ export async function seedVerifierAccount(
   return accountId;
 }
 
+/**
+ * FR-005 / ADR-024: seed the `live-class` publish-rights projection directly so a test
+ * can publish a class without driving the whole verification/evidence event flow.
+ * `verified` marks the teacher a verified student; `approvedLevels` grants per-skill levels.
+ */
+export async function seedTeacherTrust(
+  harness: Harness,
+  input: {
+    teacherId: string;
+    verified?: boolean;
+    approvedLevels?: Record<string, 'beginner' | 'intermediate' | 'advanced' | 'expert'>;
+  },
+): Promise<void> {
+  const now = new Date().toISOString();
+  await harness.query(
+    'live-class',
+    `INSERT INTO teacher_verified ("account_id", "verified", "occurred_at")
+       VALUES ($1, $2, $3)
+       ON CONFLICT ("account_id") DO UPDATE SET "verified" = EXCLUDED."verified", "occurred_at" = EXCLUDED."occurred_at"`,
+    [input.teacherId, input.verified ?? true, now],
+  );
+  for (const [skillId, level] of Object.entries(input.approvedLevels ?? {})) {
+    await harness.query(
+      'live-class',
+      `INSERT INTO teacher_skill_approval ("account_id", "skill_id", "approved_level", "occurred_at")
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT ("account_id", "skill_id") DO UPDATE
+           SET "approved_level" = EXCLUDED."approved_level", "occurred_at" = EXCLUDED."occurred_at"`,
+      [input.teacherId, skillId, level, now],
+    );
+  }
+}
+
 /** Reads a wallet balance straight from Postgres. */
 export async function walletRow(
   harness: Harness,
