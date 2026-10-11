@@ -5,6 +5,7 @@ import {
   apiEnvelopeSchema,
   apiErrorItemSchema,
   apiErrorSchema,
+  ApiResponseError,
   auditActionSchema,
   auditEventSchema,
   bookingCancelledSchema,
@@ -21,10 +22,14 @@ import {
   documentUploadRequestSchema,
   documentUploadTargetSchema,
   errorEnvelopeSchema,
+  envelopeErr,
+  envelopeOk,
+  EnvelopeResponseLike,
   eventEnvelopeSchema,
   evidenceStatusSchema,
   evidenceTypeSchema,
   identityHeadersSchema,
+  httpStatusCode,
   loginSchema,
   markTeacherNoShowResultSchema,
   meResponseSchema,
@@ -32,6 +37,7 @@ import {
   pageMetaSchema,
   pagedSchema,
   paginationQuerySchema,
+  parseEnvelope,
   profileSkillSchema,
   refreshRequestSchema,
   registerSchema,
@@ -56,6 +62,7 @@ import {
   topUpIntentSchema,
   topUpRequestSchema,
   updateClassSchema,
+  unwrapEnvelope,
   verificationDecisionSchema,
   verificationRevocationSchema,
   verificationStatusSchema,
@@ -262,6 +269,71 @@ describe('response envelope (NFR-013)', () => {
         errors: [{ code: 'INTERNAL_ERROR', message: 'Internal server error' }],
       }).success,
     ).toBe(false);
+  });
+});
+
+describe('envelope runtime helpers (NFR-013, shared client layer)', () => {
+  const okBody = { success: true, code: 'ME_OK', message: 'ok', data: { id: 'u1' }, errors: [] };
+  const errBody = {
+    success: false,
+    code: 'ReasonRequiredError',
+    message: 'A rejection requires a reason',
+    data: null,
+    errors: [{ code: 'ReasonRequiredError', message: 'A rejection requires a reason' }],
+  };
+
+  function res(body: unknown, status = 200): EnvelopeResponseLike {
+    return { status, json: async () => body };
+  }
+
+  it('parses a success envelope and returns it', () => {
+    expect(parseEnvelope<{ id: string }>(okBody).data).toEqual({ id: 'u1' });
+  });
+
+  it('throws an ApiError carrying the stable code on a failure envelope', () => {
+    let caught: unknown;
+    try {
+      parseEnvelope(errBody, 409);
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toBeInstanceOf(ApiResponseError);
+    expect((caught as ApiResponseError).code).toBe('ReasonRequiredError');
+    expect((caught as ApiResponseError).errors).toHaveLength(1);
+  });
+
+  it('throws HTTP_<status> when the body is not an envelope at all', () => {
+    expect(() => parseEnvelope({ not: 'an envelope' }, 500)).toThrow(ApiResponseError);
+    try {
+      parseEnvelope('boom', 500);
+    } catch (error) {
+      expect((error as ApiResponseError).code).toBe('HTTP_500');
+    }
+  });
+
+  it('unwrapEnvelope returns data on success and throws on failure', async () => {
+    await expect(unwrapEnvelope<{ id: string }>(res(okBody))).resolves.toEqual({ id: 'u1' });
+    await expect(unwrapEnvelope(res(errBody, 409))).rejects.toBeInstanceOf(ApiResponseError);
+  });
+
+  it('envelopeOk/envelopeErr build canonical envelopes', () => {
+    expect(envelopeOk(['a'], { code: 'X_OK', message: 'loaded' })).toEqual({
+      success: true,
+      code: 'X_OK',
+      message: 'loaded',
+      data: ['a'],
+      errors: [],
+    });
+    expect(envelopeErr('Boom', 'it broke')).toMatchObject({
+      success: false,
+      code: 'Boom',
+      data: null,
+      errors: [{ code: 'Boom', message: 'it broke' }],
+    });
+  });
+
+  it('httpStatusCode is the stable HTTP_<status> form', () => {
+    expect(httpStatusCode(401)).toBe('HTTP_401');
   });
 });
 
