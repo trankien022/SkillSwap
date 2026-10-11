@@ -114,6 +114,19 @@ export async function StickyBookingCard({
         {/* Booking panel (FR-007 reuse) */}
         <BookingPanel classId={item.id} messages={messages} />
 
+        <div className="mt-3">
+          <a
+            href={`/${locale}/classes/${item.id}/checkout`}
+            className="flex w-full items-center justify-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
+          >
+            <span>{locale === 'vi' ? 'Xem xét & Khóa ký quỹ (90 Credit)' : 'Review & Lock Escrow (90 Credits)'}</span>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
+          </a>
+        </div>
+
         {/* Trust signals */}
         <div className="mt-4 flex flex-col gap-1 text-[11px] text-ink-soft">
           <div className="flex items-center gap-1.5">

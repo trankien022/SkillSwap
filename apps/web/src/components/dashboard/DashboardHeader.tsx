@@ -47,7 +47,7 @@ export async function DashboardHeader() {
         </button>
         <a
           href={`/${locale}/classes`}
-          className="inline-flex items-center gap-2 rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-surface shadow-md transition-all hover:bg-ink-soft active:scale-95"
+          className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95"
         >
           <SearchIcon className="h-4 w-4" />
           <span>{t('ctaExplore')}</span>

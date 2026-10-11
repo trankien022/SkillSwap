@@ -57,13 +57,12 @@ export async function SiteHeader() {
 
         {/* Right side: sign-in placeholder + avatar */}
         <div className="flex items-center gap-3">
-          <a
-            href="#"
-            aria-disabled="true"
-            className="hidden rounded-md px-3 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-neutral-tint hover:text-ink sm:inline-flex"
+          <Link
+            href="/status"
+            className="hidden rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900 sm:inline-flex"
           >
             {t('signIn')}
-          </a>
+          </Link>
           <span
             aria-hidden="true"
             className="flex h-8 w-8 items-center justify-center rounded-full bg-ink"
