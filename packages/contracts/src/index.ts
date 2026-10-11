@@ -432,3 +432,52 @@ export const skillEvidenceDecisionSchema = z
     path: ['reason'],
   });
 export type SkillEvidenceDecisionInput = z.infer<typeof skillEvidenceDecisionSchema>;
+
+/**
+ * FR-018 / ADR-028: the reusable audit event contract (matches SRS `AuditEvent`).
+ * Append-only; snapshots are whitelisted and never carry document contents (NFR-005).
+ */
+export const auditActionSchema = z.enum(['submitted', 'claimed', 'approved', 'rejected', 'superseded']);
+export type AuditAction = z.infer<typeof auditActionSchema>;
+
+export const auditEventSchema = z.object({
+  id: z.string().min(1),
+  evidenceId: z.string().min(1),
+  version: z.number().int().positive(),
+  action: auditActionSchema,
+  actorId: z.string().min(1).nullable(),
+  fromStatus: evidenceStatusSchema.nullable(),
+  toStatus: evidenceStatusSchema,
+  reason: z.string().min(1).nullable(),
+  snapshot: z.object({
+    version: z.number().int().positive(),
+    status: evidenceStatusSchema,
+    evidenceType: evidenceTypeSchema,
+    requestedLevel: skillLevelSchema,
+    approvedLevel: skillLevelSchema.nullable(),
+    reason: z.string().min(1).nullable(),
+  }),
+  occurredAt: z.string().datetime({ offset: true }),
+  traceId: z.string().min(1).nullable(),
+});
+export type AuditEventView = z.infer<typeof auditEventSchema>;
+
+/** FR-018: one evidence version and its ordered audit entries. */
+export const evidenceVersionHistorySchema = z.object({
+  version: z.number().int().positive(),
+  evidenceId: z.string().min(1),
+  currentStatus: evidenceStatusSchema,
+  requestedLevel: skillLevelSchema,
+  approvedLevel: skillLevelSchema.nullable(),
+  submittedAt: z.string().datetime({ offset: true }),
+  entries: z.array(auditEventSchema),
+});
+export type EvidenceVersionHistoryView = z.infer<typeof evidenceVersionHistorySchema>;
+
+/** FR-018 / API: the full decision history of a profile-skill's evidence. */
+export const skillEvidenceHistorySchema = z.object({
+  profileSkillId: z.string().min(1),
+  skillId: z.string().min(1),
+  versions: z.array(evidenceVersionHistorySchema),
+});
+export type SkillEvidenceHistoryView = z.infer<typeof skillEvidenceHistorySchema>;

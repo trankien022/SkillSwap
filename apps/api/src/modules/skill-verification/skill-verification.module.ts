@@ -10,6 +10,7 @@ import { SqlModuleStatusWriter } from './internal/adapter/out/persistence/sql-mo
 import { SqlSkillRepository, SqlProfileSkillRepository } from './internal/adapter/out/persistence/sql-skill-repository';
 import { SqlSkillEvidenceRepository } from './internal/adapter/out/persistence/sql-skill-evidence-repository';
 import { SqlVerifierRepository } from './internal/adapter/out/persistence/sql-verifier-repository';
+import { SqlEvidenceAuditRepository } from './internal/adapter/out/persistence/sql-evidence-audit-repository';
 import { SqlVerifiedStudentProjector } from './internal/adapter/out/persistence/sql-verified-student-projector';
 import { SystemClock } from './internal/adapter/out/crypto/system-clock';
 import { StatusController } from './internal/adapter/in/web/status.controller';
@@ -24,6 +25,7 @@ import { ChangeVerifierStatusUseCase } from './internal/application/change-verif
 import { ClaimSkillEvidenceUseCase } from './internal/application/claim-skill-evidence.use-case';
 import { DecideSkillEvidenceUseCase } from './internal/application/decide-skill-evidence.use-case';
 import { ListVerifierQueueQueryHandler } from './internal/application/list-verifier-queue.query';
+import { GetSkillEvidenceHistoryUseCase } from './internal/application/get-skill-evidence-history.use-case';
 import { VerifierAuthority } from './internal/application/verifier-authority';
 import { GetMyProfileSkillsQueryHandler } from './internal/application/query/get-my-profile-skills.query';
 import { GET_MODULE_STATUS } from './internal/application/port/in/get-module-status';
@@ -49,6 +51,10 @@ import {
   LIST_VERIFIER_QUEUE,
   type ListVerifierQueuePort,
 } from './internal/application/port/in/list-verifier-queue';
+import {
+  GET_SKILL_EVIDENCE_HISTORY,
+  type GetSkillEvidenceHistoryPort,
+} from './internal/application/port/in/get-skill-evidence-history';
 import { STATUS_READER, type ModuleStatusReader } from './internal/application/port/out/module-status-reader';
 import { STATUS_WRITER, type ModuleStatusWriter } from './internal/application/port/out/module-status-writer';
 import { CLOCK, type Clock } from './internal/application/port/out/clock';
@@ -57,9 +63,11 @@ import {
   PROFILE_SKILL_REPOSITORY,
   SKILL_EVIDENCE_REPOSITORY,
   VERIFIER_REPOSITORY,
+  EVIDENCE_AUDIT_REPOSITORY,
   type ProfileSkillRepository,
   type SkillEvidenceRepository,
   type VerifierRepository,
+  type EvidenceAuditRepository,
 } from './internal/application/port/out/skill-evidence-repository';
 import {
   VERIFIED_STUDENT_READER,
@@ -156,6 +164,12 @@ export class SkillVerificationRegistrar implements OnModuleInit {
       inject: [ModuleDataSourceRegistry],
     },
     {
+      provide: EVIDENCE_AUDIT_REPOSITORY,
+      useFactory: (registry: ModuleDataSourceRegistry): EvidenceAuditRepository =>
+        new SqlEvidenceAuditRepository(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
       provide: VerifierAuthority,
       useFactory: (verifiers: VerifierRepository) => new VerifierAuthority(verifiers),
       inject: [VERIFIER_REPOSITORY],
@@ -202,6 +216,20 @@ export class SkillVerificationRegistrar implements OnModuleInit {
         verifiers: VerifierRepository,
       ): ListVerifierQueuePort => new ListVerifierQueueQueryHandler(evidence, verifiers),
       inject: [SKILL_EVIDENCE_REPOSITORY, VERIFIER_REPOSITORY],
+    },
+    {
+      provide: GET_SKILL_EVIDENCE_HISTORY,
+      useFactory: (
+        evidence: SkillEvidenceRepository,
+        profileSkills: ProfileSkillRepository,
+        audit: EvidenceAuditRepository,
+      ): GetSkillEvidenceHistoryPort =>
+        new GetSkillEvidenceHistoryUseCase(evidence, profileSkills, audit),
+      inject: [
+        SKILL_EVIDENCE_REPOSITORY,
+        PROFILE_SKILL_REPOSITORY,
+        EVIDENCE_AUDIT_REPOSITORY,
+      ],
     },
     {
       provide: CLAIM_SKILL_EVIDENCE,

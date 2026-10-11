@@ -23,7 +23,7 @@ export async function resetDatabase(harness: Harness): Promise<void> {
   );
   await harness.query(
     'skill-verification',
-    'TRUNCATE skill_evidence, profile_skills, skills, verified_students, verifier_expertise, verifiers CASCADE',
+    'TRUNCATE skill_evidence, skill_evidence_audit, profile_skills, skills, verified_students, verifier_expertise, verifiers CASCADE',
   );
 }
 
