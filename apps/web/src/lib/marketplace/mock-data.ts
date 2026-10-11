@@ -206,11 +206,20 @@ export function formatStartsAt(startsAt: string, locale: 'vi' | 'en'): string {
   return `${weekdays[weekday]}, ${day}/${month}`;
 }
 
-/** "Còn X/Y chỗ" for groups, "Còn X/X chỗ" for 1-1. Mirrors AC-029. */
+/** "Còn X/Y chỗ" for groups, "Còn X/X chỗ" for 1-1. Mirrors AC-029.
+ *
+ * For 1-1: one seat is open, capacity is 1.
+ * For groups: the mock seeds 2 of 4 taken so users see realistic scarcity.
+ * When a real seat counter exists (API-004 booking count) replace
+ * this with the live value from the gateway.
+ */
 export function formatSeats(
   format: 'one-on-one' | 'group-2-4',
   capacity: number,
 ): string {
-  const taken = format === 'one-on-one' ? capacity - 1 : Math.max(0, capacity - 2);
-  return `${taken + 1}/${capacity}`;
+  if (format === 'one-on-one') {
+    return `1/${capacity}`;
+  }
+  const taken = Math.max(0, capacity - 2);
+  return `${taken}/${capacity}`;
 }

@@ -38,7 +38,7 @@ export function CategoryPills({
       {SKILL_CATEGORIES.map((code) => (
         <Pill
           key={code}
-          label={t(code)}
+          label={t(categoryI18nKey(code))}
           icon={<CategoryIcon category={code} />}
           active={active === code}
           onClick={() => onChange(code)}
@@ -46,6 +46,22 @@ export function CategoryPills({
       ))}
     </div>
   );
+}
+
+/** Map the kebab enum value to the camelCase i18n key. */
+function categoryI18nKey(category: SkillCategory): 'language' | 'programming' | 'design' | 'softSkills' | 'math' {
+  switch (category) {
+    case 'language':
+      return 'language';
+    case 'programming':
+      return 'programming';
+    case 'design':
+      return 'design';
+    case 'soft-skills':
+      return 'softSkills';
+    case 'math':
+      return 'math';
+  }
 }
 
 function Pill({

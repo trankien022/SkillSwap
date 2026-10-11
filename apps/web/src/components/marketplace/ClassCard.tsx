@@ -1,6 +1,8 @@
-import { getTranslations, getLocale } from 'next-intl/server';
-import { Link } from '../../i18n/routing';
+'use client';
+
+import { useLocale, useTranslations } from 'next-intl';
 import {
+  formatSeats,
   formatStartsAt,
   hoursUntilBookingDeadline,
 } from '../../lib/marketplace/mock-data';
@@ -9,23 +11,15 @@ import type { MarketplaceClass } from '../../lib/marketplace/types';
 /**
  * One marketplace class card (FR-006).
  *
- * Layout (DESIGN.md §5 Cards, §3 Tight-Head Rule):
- *  - Cover area 192px (h-48): slate-to-mist gradient placeholder. No real
- *    images — NFR-004 forbids third-party CDN assets; production will
- *    use admin-uploaded thumbnails (BR-XXX still open).
- *  - Top-left chips: format badge (1-1 / group-2-4) + duration.
- *  - Top-right rating pill: star icon + "4.95 (42)".
- *  - Body: schedule row (weekday + date + booking-deadline countdown),
- *    title, teacher card (initial avatar + name + verified glyph +
- *    school name + skill chip), footer (seats indicator + price + CTA).
- *  - 'Dữ liệu minh họa' badge in the corner when not production.
+ * Client component so it can be rendered inside the `MarketplaceClient`
+ * shell without breaking the server/client boundary. The cover area is
+ * a slate-to-mist gradient placeholder; no third-party CDN images.
  *
- * 'View class' link points to `/classes/[id]` (the existing route) so
- * the navigation chain is honest.
+ * The 'Dữ liệu minh họa' badge renders only outside production builds.
  */
-export async function ClassCard({ item }: { item: MarketplaceClass }) {
-  const t = await getTranslations('Marketplace.card');
-  const locale = (await getLocale()) as 'vi' | 'en';
+export function ClassCard({ item }: { item: MarketplaceClass }) {
+  const t = useTranslations('Marketplace.card');
+  const locale = useLocale() as 'vi' | 'en';
   const isDev = process.env.NODE_ENV !== 'production';
 
   const weekday = formatStartsAt(item.startsAt, locale);
@@ -35,6 +29,9 @@ export async function ClassCard({ item }: { item: MarketplaceClass }) {
   });
   const hoursLeft = hoursUntilBookingDeadline(item.startsAt);
   const vnd = (item.priceCredits * 1000).toLocaleString(locale);
+  const [taken, capacity] = formatSeats(item.format, item.capacity)
+    .split('/')
+    .map((n) => Number(n));
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-campus-emerald/40 hover:shadow-md">
@@ -129,7 +126,9 @@ export async function ClassCard({ item }: { item: MarketplaceClass }) {
           <div className="flex flex-col">
             <div className="flex items-center gap-1 text-[11px] font-semibold text-success-ink">
               <GroupIcon className="h-3.5 w-3.5" />
-              <span>{t('seats.format', { taken: item.format === 'one-on-one' ? 1 : 2, capacity: item.capacity })}</span>
+              <span>
+                {t('seats.format', { taken, capacity })}
+              </span>
             </div>
             <div className="mt-0.5 flex items-baseline gap-1">
               <span className="text-base font-bold text-ink">
@@ -137,18 +136,23 @@ export async function ClassCard({ item }: { item: MarketplaceClass }) {
               </span>
               <span className="text-[11px] text-ink-soft">
                 {item.format === 'group-2-4'
-                  ? t('pricePerLearner', { vnd: (item.priceCredits * 1000 / item.capacity).toLocaleString(locale) })
+                  ? t('pricePerLearner', {
+                      vnd: (
+                        (item.priceCredits * 1000) /
+                        item.capacity
+                      ).toLocaleString(locale),
+                    })
                   : t('price.vnd', { vnd })}
               </span>
             </div>
           </div>
-          <Link
-            href={`/classes/${item.id}`}
+          <a
+            href={`/${locale}/classes/${item.id}`}
             className="flex items-center gap-1 rounded-lg bg-ink px-3 py-2 text-xs font-semibold text-surface transition-colors hover:bg-ink-soft"
           >
             <span>{t('viewClass')}</span>
             <ArrowForwardIcon className="h-4 w-4" />
-          </Link>
+          </a>
         </div>
       </div>
     </article>
