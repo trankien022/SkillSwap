@@ -10,21 +10,41 @@ import {
   classCompletedSchema,
   classSchema,
   createClassSchema,
+  documentUploadRequestSchema,
+  documentUploadTargetSchema,
   eventEnvelopeSchema,
+  evidenceStatusSchema,
+  evidenceTypeSchema,
   identityHeadersSchema,
   loginSchema,
   meResponseSchema,
   moduleStatusSchema,
+  profileSkillSchema,
   refreshRequestSchema,
   registerSchema,
   roomAccessRequestSchema,
   roomAccessResponseSchema,
+  skillEvidenceEventSchema,
+  skillEvidenceViewSchema,
+  skillEvidenceDecisionSchema,
+  skillLevelSchema,
+  skillSchema,
   statusChangedSchema,
+  studentVerificationEventSchema,
+  studentVerificationSchema,
+  submitSkillEvidenceSchema,
+  submitStudentVerificationSchema,
   tokenResponseSchema,
   topUpCallbackSchema,
   topUpIntentSchema,
   topUpRequestSchema,
   updateClassSchema,
+  verificationDecisionSchema,
+  verificationRevocationSchema,
+  verificationStatusSchema,
+  verifierSchema,
+  verifierStatusChangeSchema,
+  verifierStatusSchema,
   walletBalanceSchema,
   walletHistoryItemSchema,
   walletHistoryPageSchema,
@@ -389,8 +409,34 @@ describe('auth schemas (ADR-016)', () => {
   });
 
   it('round-trips a me response', () => {
-    const me = { id: 'u1', email: 'a@b.co', displayName: 'An', role: 'learner', status: 'active' };
+    const me = {
+      id: 'u1',
+      email: 'a@b.co',
+      displayName: 'An',
+      role: 'learner',
+      status: 'active',
+      studentVerification: null,
+    };
     expect(meResponseSchema.parse(me)).toEqual(me);
+  });
+
+  it('round-trips a me response with a projected verification (FR-017)', () => {
+    const me = {
+      id: 'u1',
+      email: 'a@b.co',
+      displayName: 'An',
+      role: 'learner',
+      status: 'active',
+      studentVerification: { status: 'rejected', reason: 'Illegible document' },
+    };
+    expect(meResponseSchema.parse(me)).toEqual(me);
+    expect(
+      meResponseSchema.parse({ ...me, studentVerification: { status: 'approved', reason: null } })
+        .studentVerification?.status,
+    ).toBe('approved');
+    expect(() =>
+      meResponseSchema.parse({ ...me, studentVerification: { status: 'expired', reason: null } }),
+    ).toThrow();
   });
 
   it('requires a non-empty refresh token', () => {
@@ -438,6 +484,207 @@ describe('top-up schemas (FR-008)', () => {
     expect(walletBalanceSchema.parse({ availableCredits: 100, pendingCredits: 0 })).toEqual({
       availableCredits: 100,
       pendingCredits: 0,
+    });
+  });
+});
+
+describe('student verification contracts', () => {
+  it('accepts a submission with or without a major', () => {
+    expect(
+      submitStudentVerificationSchema.parse({
+        schoolName: 'FPT University',
+        documentId: 'doc-1',
+      }),
+    ).toEqual({ schoolName: 'FPT University', documentId: 'doc-1' });
+    expect(
+      submitStudentVerificationSchema.parse({
+        schoolName: 'FPT University',
+        major: 'SE',
+        documentId: 'doc-1',
+      }).major,
+    ).toBe('SE');
+  });
+
+  it('rejects an empty school name or document id', () => {
+    expect(() =>
+      submitStudentVerificationSchema.parse({ schoolName: '', documentId: 'd' }),
+    ).toThrow();
+    expect(() =>
+      submitStudentVerificationSchema.parse({ schoolName: 'FPT', documentId: '' }),
+    ).toThrow();
+  });
+
+  it('validates the document upload request and target', () => {
+    expect(
+      documentUploadRequestSchema.parse({
+        fileName: 'transcript.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 1024,
+      }),
+    ).toEqual({ fileName: 'transcript.pdf', contentType: 'application/pdf', sizeBytes: 1024 });
+    expect(() =>
+      documentUploadRequestSchema.parse({ fileName: 'x.pdf', contentType: 'application/pdf', sizeBytes: 0 }),
+    ).toThrow();
+    const target = {
+      documentId: 'd1',
+      uploadUrl: 'https://s3.local/bucket/k?sig=x',
+      objectKey: 'a1/d1.pdf',
+      expiresAt: '2026-10-10T00:15:00.000Z',
+    };
+    expect(documentUploadTargetSchema.parse(target)).toEqual(target);
+  });
+
+  it('requires a reason to reject', () => {
+    expect(() => verificationDecisionSchema.parse({ decision: 'reject' })).toThrow();
+    expect(() => verificationDecisionSchema.parse({ decision: 'reject', reason: '  ' })).toThrow();
+    expect(
+      verificationDecisionSchema.parse({ decision: 'reject', reason: 'illegible' }),
+    ).toEqual({ decision: 'reject', reason: 'illegible' });
+  });
+
+  it('accepts an approval without a reason', () => {
+    expect(
+      verificationDecisionSchema.parse({ decision: 'approve', approvedMajor: 'SE' }),
+    ).toEqual({ decision: 'approve', approvedMajor: 'SE' });
+  });
+
+  it('validates the revocation request (FR-019)', () => {
+    expect(verificationRevocationSchema.parse({ reason: 'Fake document' })).toEqual({
+      reason: 'Fake document',
+    });
+    expect(() => verificationRevocationSchema.parse({ reason: '' })).toThrow();
+    expect(() => verificationRevocationSchema.parse({})).toThrow();
+  });
+
+  it('round-trips the owner-scoped view', () => {
+    const view = {
+      id: 'v1',
+      status: 'rejected',
+      schoolName: 'FPT University',
+      major: null,
+      reviewerId: 'admin-1',
+      reason: 'illegible document',
+      decidedAt: '2026-10-10T00:00:00.000Z',
+      submittedAt: '2026-10-09T00:00:00.000Z',
+    };
+    expect(studentVerificationSchema.parse(view)).toEqual(view);
+  });
+
+  it('rejects the removed superseded status and drops expiry (dev decisions)', () => {
+    expect(verificationStatusSchema.safeParse('superseded').success).toBe(false);
+    expect(verificationStatusSchema.parse('revoked')).toBe('revoked');
+    const parsed = studentVerificationSchema.parse({
+      id: 'v1',
+      status: 'approved',
+      schoolName: 'FPT',
+      major: null,
+      reviewerId: 'admin',
+      reason: null,
+      decidedAt: '2026-10-10T00:00:00.000Z',
+      expiresAt: '2027-10-10T00:00:00.000Z',
+      submittedAt: '2026-10-09T00:00:00.000Z',
+    });
+    expect(parsed).not.toHaveProperty('expiresAt');
+  });
+
+  it('validates the emitted event payload', () => {
+    const event = {
+      verificationId: 'v1',
+      accountId: 'a1',
+      status: 'approved',
+      schoolName: 'FPT University',
+      reason: null,
+      occurredAt: '2026-10-10T00:00:00.000Z',
+    };
+    expect(studentVerificationEventSchema.parse(event)).toEqual(event);
+    expect(() => studentVerificationEventSchema.parse({ ...event, status: 'nope' })).toThrow();
+  });
+
+  describe('FR-003 skill evidence (ADR-026)', () => {
+    it('exposes the fixed ordered level scale and evidence enums', () => {
+      expect(skillLevelSchema.options).toEqual(['beginner', 'intermediate', 'advanced', 'expert']);
+      expect(evidenceTypeSchema.options).toEqual(['certificate', 'verifier_assessment']);
+      expect(evidenceStatusSchema.options).toEqual(['pending', 'claimed', 'approved', 'rejected', 'superseded']);
+      expect(skillLevelSchema.safeParse('master').success).toBe(false);
+    });
+
+    it('validates a taxonomy skill and the profile-skill level cache', () => {
+      const skill = { id: 'sk-1', name: 'IELTS', category: 'Languages' };
+      expect(skillSchema.parse(skill)).toEqual(skill);
+
+      const link = {
+        id: 'ps-1',
+        skillId: 'sk-1',
+        skillName: 'IELTS',
+        category: 'Languages',
+        approvedLevel: 'advanced',
+      };
+      expect(profileSkillSchema.parse(link)).toEqual(link);
+      expect(profileSkillSchema.parse({ ...link, approvedLevel: null }).approvedLevel).toBeNull();
+    });
+
+    it('validates a submit-evidence input and an evidence view', () => {
+      const input = {
+        skillId: 'sk-1',
+        requestedLevel: 'intermediate',
+        evidenceType: 'certificate',
+        documentRef: 'docs/cert.pdf',
+      };
+      expect(submitSkillEvidenceSchema.parse(input)).toEqual(input);
+
+      const view = {
+        id: 'ev-1',
+        profileSkillId: 'ps-1',
+        skillId: 'sk-1',
+        skillName: 'IELTS',
+        category: 'Languages',
+        ownerId: 'acc-1',
+        version: 1,
+        evidenceType: 'certificate',
+        documentRef: 'docs/cert.pdf',
+        description: null,
+        requestedLevel: 'intermediate',
+        approvedLevel: null,
+        status: 'pending',
+        claimedBy: null,
+        claimedAt: null,
+        reason: null,
+        decidedAt: null,
+        submittedAt: '2026-10-11T00:00:00.000Z',
+      };
+      expect(skillEvidenceViewSchema.parse(view)).toEqual(view);
+    });
+
+    it('validates the emitted evidence event payload', () => {
+      const event = {
+        evidenceId: 'ev-1',
+        profileSkillId: 'ps-1',
+        accountId: 'a1',
+        skillId: 'sk-1',
+        version: 1,
+        requestedLevel: 'intermediate',
+        status: 'pending',
+        occurredAt: '2026-10-11T00:00:00.000Z',
+      };
+      expect(skillEvidenceEventSchema.parse(event)).toEqual(event);
+      expect(() => skillEvidenceEventSchema.parse({ ...event, status: 'nope' })).toThrow();
+    });
+
+    it('validates a verifier, its status change and a decision (FR-004)', () => {
+      const verifier = { accountId: 'vf-1', status: 'active', expertise: ['sk-1', 'sk-2'] };
+      expect(verifierSchema.parse(verifier)).toEqual(verifier);
+      expect(verifierStatusSchema.options).toEqual(['active', 'suspended', 'revoked']);
+      expect(verifierStatusChangeSchema.parse({ status: 'suspended' })).toEqual({ status: 'suspended' });
+
+      expect(skillEvidenceDecisionSchema.parse({ decision: 'approve' })).toEqual({ decision: 'approve' });
+      expect(
+        skillEvidenceDecisionSchema.parse({ decision: 'approve', approvedLevel: 'advanced' }),
+      ).toEqual({ decision: 'approve', approvedLevel: 'advanced' });
+      // A rejection requires a reason; an approval does not.
+      expect(skillEvidenceDecisionSchema.safeParse({ decision: 'reject' }).success).toBe(false);
+      expect(
+        skillEvidenceDecisionSchema.safeParse({ decision: 'reject', reason: 'Illegible' }).success,
+      ).toBe(true);
     });
   });
 });

@@ -67,24 +67,25 @@ Việc chuẩn hóa danh mục không tạo tích hợp với cơ sở dữ li�
 
 | Level | Ý nghĩa tương đối |
 |---|---|
-| `begin` | Nắm kiến thức nền tảng, thực hiện được nhiệm vụ cơ bản theo hướng dẫn. |
-| `mid` | Tự thực hiện nhiệm vụ phổ biến, giải thích cách làm và xử lý vấn đề thường gặp. |
-| `senior` | Xử lý vấn đề phức tạp, đánh giá giải pháp và hướng dẫn người khác. |
+| `beginner` | Nắm kiến thức nền tảng, thực hiện được nhiệm vụ cơ bản theo hướng dẫn. |
+| `intermediate` | Tự thực hiện nhiệm vụ phổ biến, giải thích cách làm và xử lý vấn đề thường gặp. |
+| `advanced` | Xử lý vấn đề phức tạp, đánh giá giải pháp. |
+| `expert` | Thành thạo chuyên sâu, dẫn dắt và hướng dẫn người khác. |
 
-Level thuộc **kỹ năng của từng hồ sơ**, không thuộc năm học, ngành học hoặc toàn bộ tài khoản. Một Teacher có thể ở `senior` với Python và `begin` với thiết kế. Mô tả trên là định hướng; tiêu chí đánh giá cụ thể theo từng skill cần được thống nhất trong taxonomy OQ-001. `class_skills.target_level` là level lớp hướng tới; Teacher phải được duyệt ở level bằng hoặc cao hơn theo thứ tự `begin < mid < senior`.
+Level thuộc **kỹ năng của từng hồ sơ**, không thuộc năm học, ngành học hoặc toàn bộ tài khoản. Một Teacher có thể ở `expert` với Python và `beginner` với thiết kế. Thang level cố định có thứ tự `beginner < intermediate < advanced < expert` (OQ-001 resolved, ADR-026); taxonomy là cây hai cấp `category → skill` do admin seed. `class_skills.target_level` là level lớp hướng tới; Teacher phải được duyệt ở level bằng hoặc cao hơn.
 
 `skill_evidence.evidence_type` có hai giá trị:
 
 - `certificate`: nộp tài liệu chứng chỉ, có thể kèm đơn vị cấp, số chứng chỉ và ngày hết hạn. Chứng chỉ được người có thẩm quyền kiểm tra trước khi Approved.
-- `verifier_recognition`: Verifier công nhận năng lực qua phần mô tả minh chứng hoặc kết quả đánh giá được lưu; không bắt buộc phải có chứng chỉ.
+- `verifier_assessment`: Verifier công nhận năng lực qua phần mô tả minh chứng hoặc kết quả đánh giá được lưu; không bắt buộc phải có chứng chỉ.
 
 `requested_level` lưu level của từng phiên bản khi nộp; `approved_level` lưu level được Verifier công nhận. **Evidence Approved còn hiệu lực là nguồn xác định quyền dạy**: `approved_level` phải bằng hoặc cao hơn `class_skills.target_level`, đồng thời chưa hết hạn xác minh hoặc chứng chỉ. `profile_skills.level` chỉ là cache của level đã duyệt, NULL trước lần duyệt đầu tiên hoặc khi không còn approval hiệu lực; người dùng không tự chỉnh trường này để cấp quyền.
 
-Khi Teacher đang ở `mid` và xin `senior`, bản mới giữ `requested_level = senior` trong lúc bản cũ vẫn cấp quyền `mid` nếu còn hiệu lực. Từ chối bản mới giữ quyền cũ. Duyệt bản mới phải khóa ProfileSkill rồi atomically supersede bản cũ, cập nhật cache bằng `approved_level` thực tế và ghi audit. Nếu xin `senior` nhưng được duyệt `mid`, cache và quyền đều ở `mid`; không yêu cầu level được duyệt phải bằng level đã xin. Cache có thể bị trễ tác vụ expiry, nên kiểm tra quyền luôn đọc trạng thái/thời hạn của evidence.
+Khi Teacher đang ở `intermediate` và xin `advanced`, bản mới giữ `requested_level = advanced` trong lúc bản cũ vẫn cấp quyền `intermediate` nếu còn hiệu lực. Từ chối bản mới giữ quyền cũ. Duyệt bản mới phải khóa ProfileSkill rồi atomically supersede bản cũ, cập nhật cache bằng `approved_level` thực tế và ghi audit. Nếu xin `advanced` nhưng được duyệt `intermediate`, cache và quyền đều ở `intermediate`; không yêu cầu level được duyệt phải bằng level đã xin. Cache có thể bị trễ tác vụ expiry, nên kiểm tra quyền luôn đọc trạng thái/thời hạn của evidence.
 
-Không có bảng `VerifierAssignment` hoặc bảng quyết định riêng. Verifier cập nhật `status`, `reviewer_id`, `decided_at`, `approved_level`, `decision_reason` trên evidence trong cùng transaction với `audit_events`. Chỉ một quyết định hợp lệ được thắng khi hai người duyệt đồng thời. Tài liệu đã nộp không được chỉnh sửa; nộp lại tạo version mới. Chỉ tối đa một evidence Approved trên mỗi ProfileSkill; duyệt phiên bản thay thế đồng thời chuyển bản cũ sang Superseded. Từ chối bản mới không tự hủy bản cũ còn hiệu lực.
+Không có bảng `VerifierAssignment` hoặc bảng quyết định riêng. Một hành động **claim** riêng (lưu `claimed_by`/`claimed_at` trên evidence) **khóa** yêu cầu cho một Verifier và không nhả trong MVP (kể cả khi Verifier bị suspend/revoke — ADR-027); claim là trạng thái trên chính evidence, không phải bảng phân công. Sau khi claim, Verifier cập nhật `status`, `reviewer_id`, `decided_at`, `approved_level`, `decision_reason` trên evidence trong cùng transaction với `audit_events`. Chỉ một quyết định hợp lệ được thắng khi hai người duyệt đồng thời. Tài liệu đã nộp không được chỉnh sửa; nộp lại tạo version mới. Chỉ tối đa một evidence Approved trên mỗi ProfileSkill; duyệt phiên bản thay thế đồng thời chuyển bản cũ sang Superseded. Từ chối bản mới không tự hủy bản cũ còn hiệu lực.
 
-Chuyên môn Verifier được Administrator công nhận qua `profile_skills.verifier_expertise_status`, `expertise_approved_by`, `expertise_approved_at`; quyền review đòi hỏi cả `user_roles.status = active` cho vai trò Verifier và chuyên môn đúng skill đang active. Teacher không tự chọn người duyệt, Verifier không tự duyệt kỹ năng của mình (BR-011–BR-013). Vai trò Administrator tự nó không cấp quyền duyệt kỹ năng; Administrator chỉ có thể review nếu được cấp riêng vai trò Verifier cùng chuyên môn hợp lệ. FR-018 yêu cầu lịch sử quyết định, không phải quyền override.
+Chuyên môn Verifier là **tập skill được seed** (`verifier_expertise`) cùng tài khoản Verifier; **không** có bước Administrator gán chuyên môn qua API và không có self-service (ADR-027). Quyền review đòi hỏi cả vai trò Verifier đang `active` và skill của evidence nằm trong tập chuyên môn. Hàng đợi Verifier chỉ hiển thị yêu cầu thuộc chuyên môn của mình. Teacher không tự chọn người duyệt, Verifier không tự duyệt kỹ năng của mình (BR-011–BR-013, BR-071). Vai trò Administrator tự nó không cấp quyền duyệt kỹ năng; Administrator chỉ quản lý vòng đời Verifier (suspend/revoke). FR-018 yêu cầu lịch sử quyết định, không phải quyền override.
 
 ### Lớp nhiều kỹ năng
 
@@ -162,7 +163,7 @@ Không lọc approval bằng `now()` trong partial index; kiểm tra thời hạ
 
 Các điều kiện nhiều dòng/bảng phải có service/trigger tại điểm commit: tổng bút toán bằng 0 và đúng đối tượng/tỷ lệ theo kind; giới hạn release theo booking; đúng request/hold và một kết quả payout; kiểm tra quyền và expiry; chống trùng lịch và tranh chỗ; khóa nội dung đã bán; bất biến header/postings và audit. Các handler dùng thứ tự khóa thống nhất, transaction ngắn và không gọi gateway khi đang giữ khóa. Index phục vụ hàng đợi review, lịch sử booking/withdrawal và tin nhắn đã được thêm vào logical model.
 
-Giữ các ràng buộc hiện có: thời lượng 30–180 phút (BR-017); đặt trước ít nhất 24 giờ, đủ chỗ và không tự đặt lớp (BR-021, BR-025, BR-068); không có hai booking hợp lệ của cùng Learner cho cùng lớp (BR-024). Các chính sách chưa chốt: taxonomy/tiêu chí skill (OQ-001), giá (OQ-002), rating (OQ-004), rút tiền (OQ-005), hoàn tất session/giải phóng thu nhập/reversal (OQ-006), thời hạn xác minh/lưu giấy tờ (OQ-008), thông tin liên hệ trong chat (OQ-009), gateway (OQ-011), làm tròn commission (OQ-012). Hủy/hoàn tiền (OQ-003) đã resolved — xem AC-022–AC-027; sức chứa (OQ-007) đã resolved — xem AC-028–AC-030.
+Giữ các ràng buộc hiện có: thời lượng 30–180 phút (BR-017); đặt trước ít nhất 24 giờ, đủ chỗ và không tự đặt lớp (BR-021, BR-025, BR-068); không có hai booking hợp lệ của cùng Learner cho cùng lớp (BR-024). Các chính sách chưa chốt: giá (OQ-002), rating (OQ-004), rút tiền (OQ-005), hoàn tất session/giải phóng thu nhập/reversal (OQ-006), thời hạn xác minh/lưu giấy tờ (OQ-008), thông tin liên hệ trong chat (OQ-009), gateway (OQ-011), làm tròn commission (OQ-012). Taxonomy/level (OQ-001) đã resolved — xem ADR-026; hủy/hoàn tiền (OQ-003) đã resolved — xem AC-022–AC-027; sức chứa (OQ-007) đã resolved — xem AC-028–AC-030.
 
 ## Regenerate images
 

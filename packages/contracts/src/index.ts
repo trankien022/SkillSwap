@@ -172,12 +172,24 @@ export const tokenResponseSchema = z.object({
 });
 export type TokenResponse = z.infer<typeof tokenResponseSchema>;
 
+/** FR-017 (ADR-024): the account's trust summary, projected from verification events. */
+export const accountVerificationStatusSchema = z.enum(['pending', 'approved', 'rejected', 'revoked']);
+export type AccountVerificationStatus = z.infer<typeof accountVerificationStatusSchema>;
+
+export const studentVerificationSummarySchema = z.object({
+  status: accountVerificationStatusSchema,
+  reason: z.string().min(1).nullable(),
+});
+export type StudentVerificationSummary = z.infer<typeof studentVerificationSummarySchema>;
+
 export const meResponseSchema = z.object({
   id: z.string().min(1),
   email: z.string().email(),
   displayName: z.string().min(1),
   role: accountRoleSchema,
   status: z.string().min(1),
+  // FR-017: null when the account never submitted a student verification.
+  studentVerification: studentVerificationSummarySchema.nullable(),
 });
 export type MeResponse = z.infer<typeof meResponseSchema>;
 
@@ -249,3 +261,174 @@ export const roomAccessResponseSchema = z.object({
   url: z.string().min(1),
 });
 export type RoomAccessResponse = z.infer<typeof roomAccessResponseSchema>;
+
+/** FR-002: student verification (ADR-023). At most one effective per account; no expiry. */
+export const verificationStatusSchema = z.enum(['pending', 'approved', 'rejected', 'revoked']);
+export type VerificationStatus = z.infer<typeof verificationStatusSchema>;
+
+export const submitStudentVerificationSchema = z.object({
+  schoolName: z.string().min(1).max(200),
+  major: z.string().min(1).max(120).optional(),
+  documentId: z.string().min(1).max(100),
+});
+export type SubmitStudentVerificationInput = z.infer<typeof submitStudentVerificationSchema>;
+
+/** FR-002 / ADR-023: request a pre-signed upload target for a document. */
+export const documentUploadRequestSchema = z.object({
+  fileName: z.string().min(1).max(255),
+  contentType: z.string().min(1).max(120),
+  sizeBytes: z.number().int().positive(),
+});
+export type DocumentUploadRequestInput = z.infer<typeof documentUploadRequestSchema>;
+
+export const documentUploadTargetSchema = z.object({
+  documentId: z.string().min(1),
+  uploadUrl: z.string().min(1),
+  objectKey: z.string().min(1),
+  expiresAt: z.string().datetime({ offset: true }),
+});
+export type DocumentUploadTargetView = z.infer<typeof documentUploadTargetSchema>;
+
+export const verificationDecisionSchema = z
+  .object({
+    decision: z.enum(['approve', 'reject']),
+    reason: z.string().min(1).max(500).optional(),
+    approvedMajor: z.string().min(1).max(120).optional(),
+  })
+  .refine((value) => value.decision !== 'reject' || (value.reason?.trim().length ?? 0) > 0, {
+    message: 'A rejection requires a reason',
+    path: ['reason'],
+  });
+export type VerificationDecisionInput = z.infer<typeof verificationDecisionSchema>;
+
+/** FR-019 / ADR-025: revoke a verification (admin only, reason required). */
+export const verificationRevocationSchema = z.object({
+  reason: z.string().min(1).max(500),
+});
+export type VerificationRevocationInput = z.infer<typeof verificationRevocationSchema>;
+
+export const studentVerificationSchema = z.object({
+  id: z.string().min(1),
+  status: verificationStatusSchema,
+  schoolName: z.string().min(1),
+  major: z.string().min(1).nullable(),
+  reviewerId: z.string().min(1).nullable(),
+  reason: z.string().min(1).nullable(),
+  decidedAt: z.string().datetime({ offset: true }).nullable(),
+  submittedAt: z.string().datetime({ offset: true }),
+});
+export type StudentVerificationView = z.infer<typeof studentVerificationSchema>;
+
+export const studentVerificationEventSchema = z.object({
+  verificationId: z.string().min(1),
+  accountId: z.string().min(1),
+  status: verificationStatusSchema,
+  schoolName: z.string().min(1),
+  reason: z.string().min(1).nullable(),
+  occurredAt: z.string().datetime({ offset: true }),
+});
+export type StudentVerificationEvent = z.infer<typeof studentVerificationEventSchema>;
+
+/** FR-003 / ADR-026: skill taxonomy, evidence types and the fixed ordered level scale. */
+export const skillLevelSchema = z.enum(['beginner', 'intermediate', 'advanced', 'expert']);
+export type SkillLevel = z.infer<typeof skillLevelSchema>;
+
+export const evidenceTypeSchema = z.enum(['certificate', 'verifier_assessment']);
+export type EvidenceType = z.infer<typeof evidenceTypeSchema>;
+
+export const evidenceStatusSchema = z.enum(['pending', 'claimed', 'approved', 'rejected', 'superseded']);
+export type EvidenceStatus = z.infer<typeof evidenceStatusSchema>;
+
+/** FR-003: a catalogue entry in the two-level `category → skill` tree (ADR-026 §1–2). */
+export const skillSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  category: z.string().min(1),
+});
+export type SkillView = z.infer<typeof skillSchema>;
+
+/** FR-003 / ADR-026 §5: the effective approved level cache; null until approved. */
+export const profileSkillSchema = z.object({
+  id: z.string().min(1),
+  skillId: z.string().min(1),
+  skillName: z.string().min(1),
+  category: z.string().min(1),
+  approvedLevel: skillLevelSchema.nullable(),
+});
+export type ProfileSkillView = z.infer<typeof profileSkillSchema>;
+
+/** FR-003 / API-002: submit skill evidence for a known skill at a requested level. */
+export const submitSkillEvidenceSchema = z.object({
+  skillId: z.string().min(1),
+  requestedLevel: skillLevelSchema,
+  evidenceType: evidenceTypeSchema,
+  documentRef: z.string().min(1).max(500).optional(),
+  description: z.string().min(1).max(1000).optional(),
+});
+export type SubmitSkillEvidenceInput = z.infer<typeof submitSkillEvidenceSchema>;
+
+/** FR-003: the owner-facing view of one evidence version. */
+export const skillEvidenceViewSchema = z.object({
+  id: z.string().min(1),
+  profileSkillId: z.string().min(1),
+  skillId: z.string().min(1),
+  skillName: z.string().min(1).nullable(),
+  category: z.string().min(1).nullable(),
+  ownerId: z.string().min(1).nullable(),
+  version: z.number().int().positive(),
+  evidenceType: evidenceTypeSchema,
+  documentRef: z.string().min(1).nullable(),
+  description: z.string().min(1).nullable(),
+  requestedLevel: skillLevelSchema,
+  approvedLevel: skillLevelSchema.nullable(),
+  status: evidenceStatusSchema,
+  claimedBy: z.string().min(1).nullable(),
+  claimedAt: z.string().datetime({ offset: true }).nullable(),
+  reason: z.string().min(1).nullable(),
+  decidedAt: z.string().datetime({ offset: true }).nullable(),
+  submittedAt: z.string().datetime({ offset: true }),
+});
+export type SkillEvidenceView = z.infer<typeof skillEvidenceViewSchema>;
+
+/** FR-003 / ADR-013: emitted in the same transaction as the evidence write. */
+export const skillEvidenceEventSchema = z.object({
+  evidenceId: z.string().min(1),
+  profileSkillId: z.string().min(1),
+  accountId: z.string().min(1),
+  skillId: z.string().min(1),
+  version: z.number().int().positive(),
+  requestedLevel: skillLevelSchema,
+  status: evidenceStatusSchema,
+  occurredAt: z.string().datetime({ offset: true }),
+});
+export type SkillEvidenceEvent = z.infer<typeof skillEvidenceEventSchema>;
+
+/** FR-004 / ADR-027: a Verifier account with a seeded expertise set. */
+export const verifierStatusSchema = z.enum(['active', 'suspended', 'revoked']);
+export type VerifierStatus = z.infer<typeof verifierStatusSchema>;
+
+export const verifierSchema = z.object({
+  accountId: z.string().min(1),
+  status: verifierStatusSchema,
+  expertise: z.array(z.string().min(1)),
+});
+export type VerifierView = z.infer<typeof verifierSchema>;
+
+/** FR-004: an administrator changes a Verifier's lifecycle status. */
+export const verifierStatusChangeSchema = z.object({
+  status: z.enum(['active', 'suspended', 'revoked']),
+});
+export type VerifierStatusChangeInput = z.infer<typeof verifierStatusChangeSchema>;
+
+/** FR-004 / API-003: approve or reject a claimed evidence request. */
+export const skillEvidenceDecisionSchema = z
+  .object({
+    decision: z.enum(['approve', 'reject']),
+    approvedLevel: skillLevelSchema.optional(),
+    reason: z.string().min(1).max(500).optional(),
+  })
+  .refine((value) => value.decision !== 'reject' || (value.reason?.trim().length ?? 0) > 0, {
+    message: 'A rejection requires a reason',
+    path: ['reason'],
+  });
+export type SkillEvidenceDecisionInput = z.infer<typeof skillEvidenceDecisionSchema>;

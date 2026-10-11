@@ -48,6 +48,40 @@ const NAME_TO_STATUS: Record<string, number> = {
   // FR-020 class lifecycle (ADR-021).
   ClassNotCompletableError: 409,
   InvalidCompletionBasisError: 400,
+  // FR-002 student verification (ADR-023).
+  DuplicateActiveVerificationError: 409,
+  InvalidVerificationTransitionError: 409,
+  ReasonRequiredError: 400,
+  InvalidDeciderError: 403,
+  InvalidRevocationError: 409,
+  VerificationNotFoundError: 404,
+  VerificationNotPendingError: 409,
+  UnknownVerificationStatusError: 400,
+  // FR-002 documents (ADR-023).
+  DocumentNotFoundError: 404,
+  UnsupportedDocumentTypeError: 415,
+  DocumentTooLargeError: 413,
+  InvalidDocumentFileError: 400,
+  // FR-003 skill evidence (ADR-026).
+  UnknownSkillError: 404,
+  InvalidLevelError: 400,
+  InvalidEvidenceTypeError: 400,
+  UnknownEvidenceStatusError: 400,
+  NotVerifiedStudentError: 403,
+  EvidenceDocumentRequiredError: 400,
+  // FR-004 verifier authority and claim (ADR-027).
+  UnknownVerifierError: 404,
+  NotAVerifierError: 403,
+  UnknownVerifierStatusError: 400,
+  InvalidVerifierTransitionError: 409,
+  InactiveVerifierError: 403,
+  OutOfExpertiseError: 403,
+  SelfDecisionError: 403,
+  EvidenceNotFoundError: 404,
+  EvidenceNotClaimableError: 409,
+  EvidenceNotClaimedError: 409,
+  NotClaimOwnerError: 403,
+  EvidenceNotDecidableError: 409,
 };
 
 /** Maps domain errors and unexpected failures onto the apiErrorSchema shape. */
