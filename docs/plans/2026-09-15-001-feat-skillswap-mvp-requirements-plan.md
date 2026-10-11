@@ -117,7 +117,7 @@ version: 0.2
 
 | ID | Type | Requirement | Priority | Source | Status |
 |---|---|---|---|---|---|
-| FR-001 | Functional | Hệ thống phải cho phép sinh viên tạo, đăng nhập và quản lý một tài khoản dùng cho Learner và đăng ký Teacher. | Must | `docs/intent.md` | Confirmed |
+| FR-001 | Functional | Hệ thống phải cho phép sinh viên tạo, đăng nhập và quản lý một tài khoản dùng cho Learner và đăng ký Teacher. Đăng ký công khai chỉ tạo Learner/Teacher; Verifier/Administrator do vận hành cấp (ADR-029). | Must | `docs/intent.md` | Confirmed; role provisioning resolved (ADR-029) |
 | FR-002 | Functional | Hệ thống phải cho phép sinh viên khai báo tên trường và tải giấy tờ để Administrator phê duyệt hoặc từ chối kèm lý do. | Must | `docs/intent.md` | Confirmed; retention open |
 | FR-003 | Functional | Hệ thống phải cho phép ứng viên Teacher nộp kỹ năng, chứng chỉ hoặc bằng chứng năng lực; cơ chế nộp lại sau khi bị từ chối là đề xuất chờ duyệt. | Must | `docs/intent.md` + Proposed | Confirmed core; resubmission Proposed; taxonomy resolved (OQ-001, ADR-026) |
 | FR-004 | Functional | Hệ thống phải cho Verifier xét duyệt hồ sơ năng lực theo chuyên môn: chỉ thấy yêu cầu thuộc chuyên môn của mình, claim một yêu cầu (khóa vĩnh viễn cho Verifier đó, không nhả), rồi approve/reject; chỉ Verifier active, đúng chuyên môn, khác chủ hồ sơ được quyết định; Administrator chỉ đình chỉ/thu hồi Verifier (tài khoản Verifier và chuyên môn được seed ngoài ứng dụng). | Must | `docs/intent.md` | Confirmed core; expertise seeded (ADR-027) |

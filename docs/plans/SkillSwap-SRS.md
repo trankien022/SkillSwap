@@ -177,7 +177,7 @@ Priority follows MoSCoW from the PRD (`Must` / `Should`). Status preserves the P
 
 | ID | Requirement (shall) | Priority | Source | Status |
 |---|---|---|---|---|
-| FR-001 | The system shall allow a student to create, sign in to, and manage one account used for the Learner role and Teacher registration. | Must | intent.md | Confirmed |
+| FR-001 | The system shall allow a student to create, sign in to, and manage one account used for the Learner role and Teacher registration. Self-registration may create only Learner or Teacher accounts; Verifier and Administrator accounts are provisioned out of band. | Must | intent.md | Confirmed; role provisioning resolved (ADR-029) |
 | FR-002 | The system shall allow a student to declare a school name and upload documents for Administrator approval or rejection with a reason. | Must | intent.md | Confirmed; retention open (OQ-008) |
 | FR-003 | The system shall allow a Teacher candidate to submit skills, certificates or capability evidence, with resubmission after rejection. | Must | intent.md | Confirmed; taxonomy resolved (OQ-001, ADR-026) |
 | FR-004 | The system shall let a Verifier review skill evidence requests whose skill is within their expertise: they shall see only matching pending requests, claim one (which locks it to them permanently), and approve or reject it; only such an active, expertise-matched, non-owner Verifier may decide, and an Administrator may suspend or revoke a Verifier. | Must | intent.md | Confirmed core; expertise seeded (ADR-027) |
