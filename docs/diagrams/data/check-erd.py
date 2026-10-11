@@ -8,20 +8,21 @@ NS = {"svg": "http://www.w3.org/2000/svg"}
 
 # Expected optional FKs from the reviewed model, independent of renderer logic.
 OPTIONAL = {
-    "profiles.school_id, major_id", "user_roles.assigned_by",
+    "profiles.school_id, major_id",
     "profiles.school_id", "profiles.major_id", "student_verifications.reviewer_id",
-    "profile_skills.expertise_approved_by", "skill_evidence.reviewer_id", "classes.completed_by",
+    "skill_evidence.claimed_by", "skill_evidence.reviewer_id", "classes.completed_by",
     "wallets.owner_user_id", "ledger_transactions.booking_id", "ledger_transactions.withdrawal_request_id",
     "ledger_transactions.initiated_by_user_id", "ledger_transactions.reverses_transaction_id",
     "ledger_postings.user_id", "ledger_postings.class_id", "audit_events.actor_id",
 }
 UNIQUE_FKS = {
-    "profiles.user_id", "wallets.owner_user_id", "ratings.booking_id",
+    "profiles.account_id", "wallets.owner_user_id", "ratings.booking_id",
     "ledger_transactions.reverses_transaction_id",
 }
-REQUIRED_CHILD = {"profiles.user_id", "ledger_transactions.withdrawal_request_id"}
+REQUIRED_CHILD = {"profiles.account_id", "ledger_transactions.withdrawal_request_id"}
 IDENTIFYING = {
-    "user_roles.user_id", "school_majors.school_id", "school_majors.major_id",
+    "verifier_expertise.account_id", "verifier_expertise.skill_id",
+    "school_majors.school_id", "school_majors.major_id",
     "class_skills.class_id", "class_skills.skill_id",
 }
 
@@ -47,7 +48,7 @@ def load_view(stem, table_count, relation_count):
     return root, relations
 
 
-logical, relations = load_view("skillswap-logical", 22, 40)
+logical, relations = load_view("skillswap-logical", 22, 39)
 assert OPTIONAL <= {foreign for foreign, _ in relations}, "Reviewed optional relations missing"
 for (foreign, parent), (values, solid) in relations.items():
     expected_child = f"{1 if foreign in REQUIRED_CHILD else 0}..{'1' if foreign in UNIQUE_FKS else 'N'}"
@@ -55,22 +56,22 @@ for (foreign, parent), (values, solid) in relations.items():
     assert values == (expected_child, expected_parent), (foreign, parent, values)
     assert solid == (foreign in IDENTIFYING), foreign
 
-conceptual, concept_relations = load_view("skillswap-conceptual", 19, 31)
+conceptual, concept_relations = load_view("skillswap-conceptual", 20, 30)
 cases = {
-    ("User.id", "Profile.user_id"): ("1..1", "1..1"),
-    ("User.id", "Wallet.owner_id"): ("0..1", "0..1"),
+    ("Account.id", "Profile.account_id"): ("1..1", "1..1"),
+    ("Account.id", "Wallet.owner_id"): ("0..1", "0..1"),
     ("Booking.id", "Rating.booking_id"): ("1..1", "0..1"),
     ("LedgerTransaction.reverses_transaction_id", "LedgerTransaction.id"): ("0..1", "0..1"),
     ("WithdrawalRequest.id", "LedgerTransaction.withdrawal_request_id"): ("0..1", "1..N"),
     ("Class.id", "ClassSkill.class_id"): ("1..1", "0..N"),
     ("LedgerTransaction.id", "LedgerPosting.transaction_id"): ("1..1", "0..N"),
-    ("User.id", "SkillEvidence.reviewer_id"): ("0..1", "0..N"),
+    ("Account.id", "SkillEvidence.reviewer_id"): ("0..1", "0..N"),
 }
 for key, expected in cases.items():
     assert concept_relations[key][0] == expected, (key, expected)
 
 covered = {}
-for domain, tables, count in [("identity", 9, 15), ("skills", 5, 6), ("learning", 7, 9), ("finance", 8, 15)]:
+for domain, tables, count in [("identity", 8, 13), ("skills", 6, 7), ("learning", 7, 9), ("finance", 8, 15)]:
     _, focused = load_view(f"skillswap-logical-{domain}", tables, count)
     for key, value in focused.items():
         assert relations[key] == value, (domain, key)
@@ -87,6 +88,6 @@ for link in re.findall(r"\]\(([^)]+)\)", (ROOT / "README.md").read_text()):
     if not link.startswith(("https:", "http:", "#")):
         assert (ROOT / link.split("#")[0]).exists(), link
 
-print("PASS: 6 SVGs; 40 logical and 31 conceptual relationships; all 16 nullable FKs")
+print("PASS: 6 SVGs; 39 logical and 30 conceptual relationships; all 15 nullable FKs")
 print("PASS: actual optional circles, identifying styles, key labels and state annotations")
 print("PASS: focused-view coverage and README links")

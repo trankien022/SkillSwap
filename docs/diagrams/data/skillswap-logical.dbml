@@ -100,7 +100,10 @@ Table skills {
   name varchar(160) [not null]
   category varchar(160) [not null]
   active boolean [not null, default: true]
-  indexes { (name, category) [unique] (category) }
+  indexes {
+    (name, category) [unique]
+    (category)
+  }
   Note: 'Managed, admin-seeded catalogue; a two-level category → skill tree (ADR-026). Evidence must reference a known, active skill.'
 }
 
