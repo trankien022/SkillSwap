@@ -57,6 +57,9 @@ function matches(item: MarketplaceClass, query: MarketplaceQuery): boolean {
   if (query.priceMax !== undefined && item.priceCredits > query.priceMax) {
     return false;
   }
+  if (query.verifiedOnly === true && !item.verified) {
+    return false;
+  }
   if (!matchesTimeFilter(item, query.timeFilter)) {
     return false;
   }

@@ -61,6 +61,7 @@ export interface MarketplaceQuery {
   minRating?: number;
   priceMin?: number;
   priceMax?: number;
+  verifiedOnly?: boolean;
   sort: SortOrder;
   page: number;
   perPage: number;
