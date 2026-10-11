@@ -272,7 +272,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                 <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" />
               </svg>
               <span>{t('providerGoogle')}</span>
-              <span className="rounded bg-slate-200 px-1 py-0.5 text-[10px] text-slate-600">Sắp có</span>
+              <span className="rounded bg-slate-200 px-1 py-0.5 text-[10px] text-slate-600">{t('providerBadge')}</span>
             </button>
 
             <button
@@ -285,7 +285,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                 <path d="M11.4 24H0V12.6h11.4V24zM24 24H12.6V12.6H24V24zM11.4 11.4H0V0h11.4v11.4zm12.6 0H12.6V0H24v11.4z" />
               </svg>
               <span>{t('providerMicrosoft')}</span>
-              <span className="rounded bg-slate-200 px-1 py-0.5 text-[10px] text-slate-600">Sắp có</span>
+              <span className="rounded bg-slate-200 px-1 py-0.5 text-[10px] text-slate-600">{t('providerBadge')}</span>
             </button>
           </div>
 
@@ -347,7 +347,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                       <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
-                      Email sinh viên
+                      {locale === 'vi' ? 'Email sinh viên' : 'Student email'}
                     </span>
                   )}
                 </div>
@@ -379,7 +379,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                   <button
                     type="button"
                     onClick={() => setShowRegPassword(!showRegPassword)}
-                    aria-label={showRegPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                    aria-label={showRegPassword ? (locale === 'vi' ? 'Ẩn mật khẩu' : 'Hide password') : (locale === 'vi' ? 'Hiện mật khẩu' : 'Show password')}
                     className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600"
                   >
                     {showRegPassword ? (
@@ -406,7 +406,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                       <div className={`h-1.5 rounded-full ${pwdStrength >= 4 ? 'bg-emerald-500' : 'bg-slate-200'}`} />
                     </div>
                     <p className="text-[11px] text-slate-500">
-                      Độ mạnh:{' '}
+                      {locale === 'vi' ? 'Độ mạnh: ' : 'Strength: '}
                       <span className="font-semibold text-slate-700">
                         {pwdStrength <= 1
                           ? t('passwordStrengthWeak')
@@ -473,7 +473,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                   </label>
                   <button
                     type="button"
-                    onClick={() => alert('Vui lòng liên hệ quản trị viên để đặt lại mật khẩu.')}
+                    onClick={() => alert(locale === 'vi' ? 'Vui lòng liên hệ quản trị viên để đặt lại mật khẩu.' : 'Please contact the administrator to reset your password.')}
                     className="text-xs font-medium text-emerald-700 hover:text-emerald-800"
                   >
                     {t('forgotPassword')}
@@ -491,7 +491,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                   <button
                     type="button"
                     onClick={() => setShowLoginPassword(!showLoginPassword)}
-                    aria-label={showLoginPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                    aria-label={showLoginPassword ? (locale === 'vi' ? 'Ẩn mật khẩu' : 'Hide password') : (locale === 'vi' ? 'Hiện mật khẩu' : 'Show password')}
                     className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600"
                   >
                     {showLoginPassword ? (

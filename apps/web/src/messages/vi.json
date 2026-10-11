@@ -549,6 +549,8 @@
     "providerGoogle": "Tài khoản Google",
     "providerMicrosoft": "Tài khoản Microsoft",
     "providerComingSoon": "Chức năng đăng nhập này chưa được hỗ trợ",
+    "ssoComingSoon": "Chức năng đăng nhập này chưa được hỗ trợ",
+    "providerBadge": "Sắp có",
     "orDivider": "Hoặc tiếp tục với email",
     "fullName": "Họ và tên",
     "fullNamePlaceholder": "Ví dụ: Nguyễn Văn A",

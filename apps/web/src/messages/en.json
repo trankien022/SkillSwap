@@ -549,6 +549,8 @@
     "providerGoogle": "Google Account",
     "providerMicrosoft": "Microsoft Account",
     "providerComingSoon": "This login provider is not yet supported",
+    "ssoComingSoon": "This login provider is not yet supported",
+    "providerBadge": "Coming soon",
     "orDivider": "Or continue with email",
     "fullName": "Full Name",
     "fullNamePlaceholder": "e.g. Alex Nguyen",
