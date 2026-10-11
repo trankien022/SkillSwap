@@ -7,7 +7,7 @@ import { ConfigErrorView } from '@/ui/config-error-view';
 import { SessionProvider, useSession } from '@/ui/session-context';
 
 function RootNavigation() {
-  const { configError, bootError, retryBoot } = useSession();
+  const { configError, bootError, retryBoot, t } = useSession();
 
   if (configError) {
     return <ConfigErrorView error={configError} />;
@@ -30,7 +30,7 @@ function RootNavigation() {
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="classes/[id]" options={{ headerShown: true, title: 'SkillSwap' }} />
+        <Stack.Screen name="classes/[id]" options={{ headerShown: true, title: 'SkillSwap', headerBackTitle: t('Common.back') }} />
       </Stack>
     </>
   );
