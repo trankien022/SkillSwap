@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Param, Post, Req, Res } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   documentUploadRequestSchema,
@@ -118,7 +118,11 @@ export class StudentVerificationController {
   @Get('me')
   @ApiOperation({ summary: "Read the caller's own verification (FR-017)" })
   @ApiOkResponse({ description: 'The latest verification for the caller, or null' })
-  mine(@Req() request: RequestWithIdentity): Promise<StudentVerificationView | null> {
-    return this.getMine.execute(currentUserId(request));
+  async mine(
+    @Req() request: RequestWithIdentity,
+    @Res() response: { json(body: StudentVerificationView | null): unknown },
+  ): Promise<void> {
+    const verification = await this.getMine.execute(currentUserId(request));
+    response.json(verification);
   }
 }
