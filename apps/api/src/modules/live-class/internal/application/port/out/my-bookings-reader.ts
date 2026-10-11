@@ -22,6 +22,7 @@ export interface LearnerBookingRecord {
   readonly priceCredits: number;
   readonly createdAt: Date;
   readonly expiresAt: Date | null;
+  readonly hasRated?: boolean;
   readonly class: LearnerBookingClassRecord;
 }
 

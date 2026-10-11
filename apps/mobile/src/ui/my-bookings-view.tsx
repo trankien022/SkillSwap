@@ -4,7 +4,9 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
+  StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -13,6 +15,7 @@ import type { BookingState, ClassLifecycleState } from '@skillswap/contracts';
 import { colors } from '@/design/tokens';
 import { MyBookingsGateway } from '@/infrastructure/http/my-bookings-gateway';
 import { RoomAccessGateway } from '@/infrastructure/http/room-access-gateway';
+import { RatingGateway } from '@/infrastructure/http/rating-gateway';
 import {
   MyBookingsCoordinator,
   type BookingFilter,
@@ -42,6 +45,10 @@ export function MyBookingsView() {
   const accountId = user?.id ?? '';
   const [openingBookingId, setOpeningBookingId] = useState<string | null>(null);
   const [roomError, setRoomError] = useState(false);
+  const [ratingBookingId, setRatingBookingId] = useState<string | null>(null);
+  const [ratingStars, setRatingStars] = useState(5);
+  const [ratingComment, setRatingComment] = useState('');
+  const [ratingError, setRatingError] = useState(false);
 
   const isMountedRef = useRef(true);
   const [coordinatorState, setCoordinatorState] = useState<MyBookingsState>({
@@ -222,6 +229,15 @@ export function MyBookingsView() {
       await Linking.openURL(access.url);
     } catch { setRoomError(true); }
     finally { setOpeningBookingId(null); }
+  };
+
+  const submitRating = async (bookingId: string) => {
+    if (!gatewayClient || !ratingComment.trim()) return;
+    setRatingBookingId(bookingId); setRatingError(false);
+    try {
+      await new RatingGateway(gatewayClient).submit(bookingId, { stars: ratingStars, comment: ratingComment.trim() });
+      setRatingComment(''); setRatingBookingId(null); await coordinator?.reload();
+    } catch { setRatingError(true); setRatingBookingId(null); }
   };
 
   return (
@@ -439,6 +455,13 @@ export function MyBookingsView() {
                 </Pressable> : null}
               </View>
               {roomError && openingBookingId === null ? <Text style={styles.errorText}>{t('MyBookings.roomError')}</Text> : null}
+              {item.ratingEligible && !item.hasRated ? <View style={ratingStyles.form}>
+                <Text style={styles.metaLabel}>{t('MyBookings.rateClass')}</Text>
+                <View style={ratingStyles.stars}>{[1,2,3,4,5].map((value) => <Pressable key={value} onPress={() => setRatingStars(value)} style={ratingStyles.star} accessibilityRole="radio" accessibilityState={{ checked: ratingStars === value }} accessibilityLabel={t('MyBookings.starsLabel', { count: value })}><Text style={ratingStyles.starText}>{value <= ratingStars ? '★' : '☆'}</Text></Pressable>)}</View>
+                <TextInput value={ratingComment} onChangeText={setRatingComment} maxLength={1000} placeholder={t('MyBookings.ratingComment')} style={ratingStyles.comment} accessibilityLabel={t('MyBookings.ratingComment')} />
+                {ratingError && <Text style={styles.errorText}>{t('MyBookings.ratingError')}</Text>}
+                <Pressable style={styles.loadMoreButton} disabled={!ratingComment.trim() || ratingBookingId !== null} onPress={() => void submitRating(item.bookingId)} accessibilityRole="button"><Text style={styles.loadMoreText}>{ratingBookingId === item.bookingId ? t('Common.loading') : t('MyBookings.submitRating')}</Text></Pressable>
+              </View> : item.hasRated ? <Text style={styles.metaLabel}>{t('MyBookings.alreadyRated')}</Text> : null}
             </Pressable>
           );
         })
@@ -476,3 +499,11 @@ export function MyBookingsView() {
     </ScrollView>
   );
 }
+
+const ratingStyles = StyleSheet.create({
+  form: { gap: 8, paddingTop: 12 },
+  stars: { flexDirection: 'row', gap: 8 },
+  star: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  starText: { color: colors.campusEmerald, fontSize: 24 },
+  comment: { minHeight: 48, borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, color: colors.ink },
+});

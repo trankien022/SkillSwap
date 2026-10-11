@@ -15,6 +15,7 @@ import type {
 const CLASSES_TABLE = 'classes';
 const CLASS_SKILLS_TABLE = 'class_skills';
 const BOOKINGS_TABLE = 'bookings';
+const RATINGS_TABLE = 'ratings';
 
 interface RawMyBookingRow {
   booking_id: string;
@@ -29,6 +30,7 @@ interface RawMyBookingRow {
   class_teacher_id: string;
   class_state: string;
   skill_ids: string[] | null;
+  has_rated: boolean;
 }
 
 function toDate(value: Date | string): Date {
@@ -56,6 +58,7 @@ export class SqlMyBookingsReader implements MyBookingsReader {
     const classes = qualified(this.schema, CLASSES_TABLE);
     const skills = qualified(this.schema, CLASS_SKILLS_TABLE);
     const bookings = qualified(this.schema, BOOKINGS_TABLE);
+    const ratings = qualified(this.schema, RATINGS_TABLE);
 
     const conditions: string[] = [];
     const queryParams: unknown[] = [];
@@ -111,6 +114,7 @@ export class SqlMyBookingsReader implements MyBookingsReader {
         c."duration_minutes" AS "class_duration_minutes",
         c."teacher_id" AS "class_teacher_id",
         c."state" AS "class_state",
+        EXISTS (SELECT 1 FROM ${ratings} r WHERE r."booking_id" = b."id") AS "has_rated",
         COALESCE((
           SELECT array_agg(s."skill_id" ORDER BY s."skill_id" ASC)
             FROM ${skills} s
@@ -135,6 +139,7 @@ export class SqlMyBookingsReader implements MyBookingsReader {
       priceCredits: Number(r.price_credits),
       createdAt: toDate(r.booking_created_at),
       expiresAt: r.booking_expires_at ? toDate(r.booking_expires_at) : null,
+      hasRated: r.has_rated,
       class: {
         description: r.class_description,
         skillIds: r.skill_ids ?? [],

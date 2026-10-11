@@ -82,7 +82,7 @@ export class ListMyBookingsQueryHandler implements ListMyBookingsPort {
 
       const ratingEligible =
         record.state === 'confirmed' && record.class.classState === 'completed';
-      const hasRated = false; // provisional until T16 rating table
+      const hasRated = record.hasRated ?? false;
 
       return {
         bookingId: record.bookingId,

@@ -502,4 +502,5 @@ export * from './mobile-catalogue';
 export * from './mobile-classes';
 export * from './mobile-class-detail';
 export * from './mobile-my-bookings';
+export * from './mobile-ratings';
 

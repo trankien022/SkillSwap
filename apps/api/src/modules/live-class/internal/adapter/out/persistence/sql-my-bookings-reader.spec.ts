@@ -42,7 +42,7 @@ describe('SqlMyBookingsReader', () => {
       expect(sql).not.toContain('student_verification');
       expect(sql).not.toContain('skill_verification');
       expect(sql).not.toContain('wallet_ledger');
-      expect(sql).not.toContain('ratings');
+      expect(sql).toContain('"live_class"."ratings"');
 
       expect(sql).toContain('b."learner_id" = $1');
       expect(params[0]).toBe('learner-1');

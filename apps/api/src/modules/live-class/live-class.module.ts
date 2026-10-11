@@ -31,6 +31,11 @@ import { AccountProfilePublicTeacherReader } from './internal/adapter/out/accoun
 import { ClassListController } from './internal/adapter/in/web/class-list.controller';
 import { ClassDetailController } from './internal/adapter/in/web/class-detail.controller';
 import { MyBookingsController } from './internal/adapter/in/web/my-bookings.controller';
+import { RatingsController } from './internal/adapter/in/web/ratings.controller';
+import { SqlRatingRepository } from './internal/adapter/out/persistence/sql-rating-repository';
+import { RATING_REPOSITORY, type RatingRepository } from './internal/application/port/out/rating-repository';
+import { SUBMIT_RATING, type SubmitRatingPort } from './internal/application/port/in/submit-rating';
+import { SubmitRatingUseCase } from './internal/application/submit-rating.use-case';
 import { ListClassesQueryHandler } from './internal/application/query/list-classes.query';
 import { GetClassDetailQueryHandler } from './internal/application/query/get-class-detail.query';
 import { ListMyBookingsQueryHandler } from './internal/application/query/list-my-bookings.query';
@@ -214,6 +219,7 @@ const systemClock: Clock = { now: () => new Date() };
     ClassesController,
     ClassListController,
     MyBookingsController,
+    RatingsController,
     ClassDetailController,
   ],
   providers: [
@@ -240,6 +246,16 @@ const systemClock: Clock = { now: () => new Date() };
       useFactory: (registry: ModuleDataSourceRegistry) =>
         new SqlBookingRepository(registry, MODULE_NAME),
       inject: [ModuleDataSourceRegistry],
+    },
+    {
+      provide: RATING_REPOSITORY,
+      useFactory: (registry: ModuleDataSourceRegistry): RatingRepository => new SqlRatingRepository(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
+      provide: SUBMIT_RATING,
+      useFactory: (ratings: RatingRepository): SubmitRatingPort => new SubmitRatingUseCase(ratings),
+      inject: [RATING_REPOSITORY],
     },
     {
       provide: BOOKING_PAYMENT_REPOSITORY,
