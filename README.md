@@ -43,6 +43,7 @@ pnpm verify            # lint && build && typecheck && test && test:arch
 | Dev stack | `pnpm db:up` / `pnpm db:down` |
 | Migrations | `pnpm db:migrate` |
 | Seed a verifier | `pnpm db:seed-verifier -- …` |
+| Regenerate API reference docs | `pnpm docs:api` |
 | Dev keys | `pnpm keys:gen` |
 | One app | `pnpm --filter @skillswap/api …` (`api`, `gateway`, `web`, `mobile`, `contracts`) |
 
