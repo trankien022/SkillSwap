@@ -34,13 +34,7 @@ export type EventEnvelope<TPayload = unknown> = z.infer<typeof eventEnvelopeSche
   payload: TPayload;
 };
 
-export const bookingConfirmedSchema = z.object({
-  bookingId: z.string().min(1),
-  studentId: z.string().min(1),
-  teacherId: z.string().min(1),
-  amountCredits: z.number().int().positive(),
-});
-export type BookingConfirmed = z.infer<typeof bookingConfirmedSchema>;
+export * from './booking-payment-events';
 
 /** FR-007 / ADR-019: a cancelled booking that the wallet may need to refund. */
 export const bookingCancelledSchema = z.object({
