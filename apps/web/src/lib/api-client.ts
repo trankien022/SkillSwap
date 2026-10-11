@@ -2,6 +2,7 @@
 export const API = typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000');
 
 export const TOKEN_STORAGE_KEY = 'skillswap-api-tokens';
+export const USER_STORAGE_KEY = 'skillswap-api-user';
 const REMEMBER_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 export interface TokenPair {
@@ -11,10 +12,10 @@ export interface TokenPair {
 }
 
 export interface UserProfile {
-  id: string;
+  id?: string;
   email: string;
   displayName: string;
-  role: string;
+  role?: string;
   studentVerificationStatus?: string;
 }
 
@@ -61,6 +62,8 @@ export function clearSession(): void {
   if (typeof window === 'undefined') return;
   window.sessionStorage.removeItem(TOKEN_STORAGE_KEY);
   window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+  window.sessionStorage.removeItem(USER_STORAGE_KEY);
+  window.localStorage.removeItem(USER_STORAGE_KEY);
 }
 
 export function saveTokens(pair: { accessToken: string; refreshToken: string }, remembered = false): void {
@@ -81,6 +84,32 @@ export function saveTokens(pair: { accessToken: string; refreshToken: string }, 
 
   other.removeItem(TOKEN_STORAGE_KEY);
   target.setItem(TOKEN_STORAGE_KEY, JSON.stringify(value));
+}
+
+export function getStoredUser(): UserProfile | null {
+  if (typeof window === 'undefined') return null;
+
+  for (const storage of [window.sessionStorage, window.localStorage]) {
+    const raw = storage.getItem(USER_STORAGE_KEY);
+    if (!raw) continue;
+
+    try {
+      return JSON.parse(raw);
+    } catch {
+      storage.removeItem(USER_STORAGE_KEY);
+    }
+  }
+  return null;
+}
+
+export function saveStoredUser(user: Partial<UserProfile>, remembered = false): void {
+  if (typeof window === 'undefined') return;
+
+  const target = remembered ? window.localStorage : window.sessionStorage;
+  const other = remembered ? window.sessionStorage : window.localStorage;
+
+  other.removeItem(USER_STORAGE_KEY);
+  target.setItem(USER_STORAGE_KEY, JSON.stringify(user));
 }
 
 export async function refreshSession(): Promise<TokenPair | null> {
@@ -181,6 +210,38 @@ export async function authenticate(
 
   const data = await res.json();
   saveTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken }, remember);
+
+  // Immediately try to fetch user info from /auth/me or store payload
+  try {
+    const meRes = await fetch(`${API}/api/auth/me`, {
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${data.accessToken}`,
+      },
+    });
+    if (meRes.ok) {
+      const meData = await meRes.json();
+      saveStoredUser({
+        id: meData.id,
+        email: meData.email,
+        displayName: meData.displayName || payload.displayName || payload.email.split('@')[0],
+        role: meData.role,
+        studentVerificationStatus: meData.studentVerification?.status,
+      }, remember);
+    } else {
+      saveStoredUser({
+        email: payload.email,
+        displayName: payload.displayName || payload.email.split('@')[0],
+        role: 'user',
+      }, remember);
+    }
+  } catch {
+    saveStoredUser({
+      email: payload.email,
+      displayName: payload.displayName || payload.email.split('@')[0],
+      role: 'user',
+    }, remember);
+  }
 
   return {
     tokens: { accessToken: data.accessToken, refreshToken: data.refreshToken },

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
-import { callApi, getTokens, logout } from '../lib/api-client';
+import { callApi, getTokens, getStoredUser, logout, type UserProfile } from '../lib/api-client';
 
 export type NavbarTab = 'explore' | 'classes' | 'instructor' | 'wallet' | 'verification' | 'notifications';
 
@@ -22,9 +22,11 @@ export function Navbar({
   const [internalBalance, setInternalBalance] = useState<WalletBalanceView | null>(null);
   const [internalMe, setInternalMe] = useState<MeResponse | null>(null);
   const [hasTokens, setHasTokens] = useState<boolean>(false);
+  const [storedUser, setStoredUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     setHasTokens(Boolean(getTokens()));
+    setStoredUser(getStoredUser());
     // Only fetch if not supplied via props
     if (propBalance === undefined || propMe === undefined) {
       const load = async () => {
@@ -37,7 +39,9 @@ export function Navbar({
             setInternalBalance(await balRes.json());
           }
           if (meRes && meRes.ok) {
-            setInternalMe(await meRes.json());
+            const meData = await meRes.json();
+            setInternalMe(meData);
+            setStoredUser(meData);
           }
         } catch (e) {
           console.warn('Navbar failed to load auth/wallet summary', e);
@@ -61,9 +65,18 @@ export function Navbar({
     { id: 'verification', label: locale === 'vi' ? 'Quản trị & Xác minh' : 'Verification', href: `/${locale}/status` },
   ];
 
-  const availableCredits = balance ? balance.availableCredits : 150;
-  const displayName = me?.displayName || 'Minh Nguyễn';
-  const isVerified = me?.studentVerification?.status === 'approved';
+  const availableCredits = balance ? balance.availableCredits : 0;
+  const displayName = me?.displayName || storedUser?.displayName || (storedUser?.email ? storedUser.email.split('@')[0] : (hasTokens ? (locale === 'vi' ? 'Học viên' : 'Learner') : ''));
+  const initials = displayName
+    ? displayName
+        .split(' ')
+        .filter(Boolean)
+        .slice(-2)
+        .map((w) => w[0])
+        .join('')
+        .toUpperCase()
+    : 'SS';
+  const isVerified = me?.studentVerification?.status === 'approved' || storedUser?.studentVerificationStatus === 'approved';
 
   return (
     <header className="sticky top-0 bg-white border-b border-slate-200 z-50 h-16 shadow-sm">
@@ -146,7 +159,7 @@ export function Navbar({
                 title="Hồ sơ & Trạng thái xác minh"
               >
                 <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center ring-2 ring-emerald-50 text-emerald-800 font-semibold text-xs shrink-0">
-                  {displayName.slice(0, 2).toUpperCase()}
+                  {initials}
                 </div>
                 <div className="hidden sm:flex flex-col text-left shrink-0">
                   <span className="text-xs font-semibold text-slate-900 leading-tight whitespace-nowrap">{displayName}</span>
