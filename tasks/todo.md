@@ -1,6 +1,6 @@
 # Mobile rubric — task checklist
 
-Tham chiếu: [plan](plan.md). Đang triển khai; T01 đã review contracts/ownership. Checkpoint hiện tại: app shell/session/dashboard đã commit, iOS Simulator cài/chạy/đăng nhập/khôi phục phiên/đăng xuất có bằng chứng tự động; pnpm verify xanh (746 tests). GET skills/classes/detail/bookings-me và public profile facade đã review qua Gateway thật; marketplace có bằng chứng native search/empty/list. T04/T05/T06 còn kiểm tra thao tác/360px; T07/T09 đang nối UI thật; T10 còn calendar/dashboard; T03 đã chứng minh storage/payment backend, còn phone/Jitsi hai thiết bị. Push thiết bị thật vẫn pending. Xem tasks/evidence/. Mỗi task chỉ đánh dấu hoàn tất khi đủ AC; paths được thu hẹp khi thực hiện.
+Tham chiếu: [plan](plan.md). Đang triển khai; T01 đã review contracts/ownership. Checkpoint hiện tại: app shell/session/dashboard đã commit, iOS Simulator cài/chạy/đăng nhập/khôi phục phiên/đăng xuất có bằng chứng tự động; pnpm verify xanh (746 tests). GET skills/classes/detail/bookings-me và public profile facade đã review qua Gateway thật; marketplace có bằng chứng native search/empty/list. T04/T05/T06 còn kiểm tra thao tác/360px; T07 đã nối UI giữ chỗ thật trên Simulator (còn manual/360px); T09 đang sửa booking/ví theo ADR-032; T10 còn calendar/dashboard; T03 đã chứng minh storage/payment backend, còn phone/Jitsi hai thiết bị. Push thiết bị thật vẫn pending. Xem tasks/evidence/. Mỗi task chỉ đánh dấu hoàn tất khi đủ AC; paths được thu hẹp khi thực hiện.
 
 ## Phase 0 — contract/risk
 
