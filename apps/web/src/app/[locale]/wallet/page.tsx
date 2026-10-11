@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { createTopUpIntent } from './actions';
 import { callApi } from '../../../lib/api-client';
-import type { WalletBalanceView, WalletHistoryItemView } from '@skillswap/contracts';
+import type { WalletBalanceView, WalletHistoryItemView, MeResponse } from '@skillswap/contracts';
 
 export default function WalletPage() {
   const [balance, setBalance] = useState<WalletBalanceView | null>(null);
   const [history, setHistory] = useState<WalletHistoryItemView[]>([]);
+  const [me, setMe] = useState<MeResponse | null>(null);
   
   const [amount, setAmount] = useState(100);
   const [bank, setBank] = useState('VCB');
@@ -17,17 +18,25 @@ export default function WalletPage() {
   useEffect(() => {
     const fetchWallet = async () => {
       try {
-        const balRes = await callApi('/wallet/balance');
+        const [balRes, histRes, meRes] = await Promise.all([
+          callApi('/wallet/balance'),
+          callApi('/wallet/history'),
+          callApi('/auth/me'),
+        ]);
+
         if (balRes.ok) {
           setBalance(await balRes.json());
         } else {
           console.warn('Wallet balance not found or error');
         }
 
-        const histRes = await callApi('/wallet/history');
         if (histRes.ok) {
           const data = await histRes.json();
           setHistory(data.items || []);
+        }
+
+        if (meRes.ok) {
+          setMe(await meRes.json());
         }
       } catch (e) {
         console.error(e);
@@ -100,7 +109,7 @@ export default function WalletPage() {
           <div className="flex items-center gap-3.5">
             <div className="flex items-center gap-2 pl-2.5 pr-1.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-xs font-semibold text-slate-900">
               <span className="material-symbols-outlined text-[17px] text-emerald-600">monetization_on</span>
-              <span>150 Credits</span>
+              <span>{balance ? balance.availableCredits.toLocaleString('vi-VN') : '0'} Credits</span>
               <button onClick={scrollToDeposit} className="w-5 h-5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors text-xs font-bold leading-none">+</button>
             </div>
             <button type="button" className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors relative">
@@ -113,8 +122,8 @@ export default function WalletPage() {
                 <span className="material-symbols-outlined text-[18px] text-slate-600">person</span>
               </div>
               <div className="hidden sm:flex flex-col text-left">
-                <span className="text-xs font-semibold text-slate-900 leading-tight">Minh Nguyễn</span>
-                <span className="text-[11px] text-slate-500">RMIT</span>
+                <span className="text-xs font-semibold text-slate-900 leading-tight">{me?.displayName || 'Minh Nguyễn'}</span>
+                <span className="text-[11px] text-slate-500">{me?.studentVerification?.status === 'approved' ? 'SV đã xác minh' : 'Thành viên'}</span>
               </div>
             </div>
           </div>
@@ -232,12 +241,18 @@ export default function WalletPage() {
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse"></span>
                 <span className="text-base font-bold text-emerald-700">Hoạt động an toàn</span>
               </div>
-              <span className="inline-block text-[11px] text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded mt-1.5">Sinh viên RMIT Đã xác minh</span>
+              <span className={`inline-block text-[11px] font-medium px-2 py-0.5 rounded mt-1.5 ${me?.studentVerification?.status === 'approved' ? 'text-emerald-700 bg-emerald-50' : (me?.studentVerification?.status === 'pending' ? 'text-amber-700 bg-amber-50' : 'text-slate-600 bg-slate-100')}`}>
+                {me?.studentVerification?.status === 'approved'
+                  ? 'Sinh viên đã xác minh'
+                  : me?.studentVerification?.status === 'pending'
+                  ? 'Đang chờ duyệt xác minh'
+                  : 'Chưa xác minh sinh viên'}
+              </span>
             </div>
             <div className="mt-4 pt-3 border-t border-slate-100">
               <p className="text-[11px] leading-relaxed text-slate-600 flex items-start gap-1">
                 <span className="material-symbols-outlined text-[14px] text-emerald-700 shrink-0 mt-0.5">check_circle</span>
-                <span>Bảo đảm 100% hoàn tín dụng nếu có sự cố.</span>
+                <span>{me?.studentVerification?.status === 'approved' ? 'Bảo đảm 100% hoàn tín dụng nếu có sự cố.' : 'Xác minh thẻ sinh viên để mở khóa đầy đủ tính năng.'}</span>
               </p>
             </div>
           </div>

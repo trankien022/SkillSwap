@@ -1,17 +1,40 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { callApi } from '../../../../lib/api-client';
+import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
 
 export default function WithdrawalPage() {
-  const [amount, setAmount] = useState(1000);
+  const [balance, setBalance] = useState<WalletBalanceView | null>(null);
+  const [me, setMe] = useState<MeResponse | null>(null);
+  const [amount, setAmount] = useState(100);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [balRes, meRes] = await Promise.all([
+          callApi('/wallet/balance'),
+          callApi('/auth/me'),
+        ]);
+        if (balRes.ok) setBalance(await balRes.json());
+        if (meRes.ok) setMe(await meRes.json());
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    loadData();
+  }, []);
+
+  const maxCredits = balance ? balance.availableCredits : 1260;
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = parseInt(e.target.value) || 0;
-    if (val > 1260) val = 1260;
+    if (val > maxCredits) val = maxCredits;
     setAmount(val);
   };
 
   const setQuickAmount = (val: number) => {
+    if (val > maxCredits) val = maxCredits;
     setAmount(val);
   };
 
@@ -38,8 +61,8 @@ export default function WithdrawalPage() {
           <div className="flex items-center gap-3.5">
             <div className="flex items-center gap-2 pl-2.5 pr-1.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-xs font-semibold text-slate-900">
               <span className="material-symbols-outlined text-[17px] text-emerald-600">monetization_on</span>
-              <span>150 Credits</span>
-              <button type="button" className="w-5 h-5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors text-xs font-bold leading-none">+</button>
+              <span>{balance ? balance.availableCredits.toLocaleString('vi-VN') : '0'} Credits</span>
+              <a href="/vi/wallet" className="w-5 h-5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors text-xs font-bold leading-none">+</a>
             </div>
             <button type="button" className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors relative">
               <span className="material-symbols-outlined text-[20px]">notifications</span>
@@ -51,8 +74,8 @@ export default function WithdrawalPage() {
                 <span className="material-symbols-outlined text-[18px] text-slate-600">person</span>
               </div>
               <div className="hidden sm:flex flex-col text-left">
-                <span className="text-xs font-semibold text-slate-900 leading-tight">Minh Nguyễn</span>
-                <span className="text-[11px] text-slate-500">RMIT</span>
+                <span className="text-xs font-semibold text-slate-900 leading-tight">{me?.displayName || 'Minh Nguyễn'}</span>
+                <span className="text-[11px] text-slate-500">{me?.studentVerification?.status === 'approved' ? 'SV đã xác minh' : 'Thành viên'}</span>
               </div>
             </div>
           </div>
@@ -65,12 +88,12 @@ export default function WithdrawalPage() {
           
           {/* Breadcrumb */}
           <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-600 mb-2">
-            <a href="#" className="hover:text-emerald-600 transition-colors flex items-center gap-1">
+            <a href="/vi/instructor" className="hover:text-emerald-600 transition-colors flex items-center gap-1">
               <span className="material-symbols-outlined text-[15px]">school</span>
               Studio Giảng dạy
             </a>
             <span className="text-slate-300">/</span>
-            <a href="#" className="hover:text-emerald-600 transition-colors">Ví giảng viên</a>
+            <a href="/vi/wallet" className="hover:text-emerald-600 transition-colors">Ví giảng viên</a>
             <span className="text-slate-300">/</span>
             <span aria-current="page" className="text-slate-900 font-semibold">Yêu cầu rút tiền</span>
           </nav>
@@ -90,14 +113,14 @@ export default function WithdrawalPage() {
             {/* Instructor Quick Info Snapshot */}
             <div className="flex items-center gap-3 px-4 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm">
               <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-900 text-base font-bold">
-                LA
+                {(me?.displayName || 'LA').slice(0, 2).toUpperCase()}
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-base font-semibold text-slate-900">ThS. Lan Anh</span>
+                  <span className="text-base font-semibold text-slate-900">{me?.displayName || 'ThS. Lan Anh'}</span>
                   <span className="material-symbols-outlined text-[16px] text-emerald-600">check_circle</span>
                 </div>
-                <span className="text-xs text-slate-600">Kinh tế số · RMIT K20</span>
+                <span className="text-xs text-slate-600">{me?.studentVerification?.status === 'approved' ? 'Giảng viên đã xác minh' : 'Thành viên SkillSwap'}</span>
               </div>
             </div>
           </div>
@@ -121,12 +144,16 @@ export default function WithdrawalPage() {
                 {/* Academic Skill Ledger Mini Visualizer */}
                 <div className="mb-4">
                   <div className="flex justify-between items-center mb-1.5 text-xs">
-                    <span className="text-slate-600">Cơ cấu tín dụng tổng cộng: <strong className="text-slate-900">1.530 Credits</strong></span>
-                    <span className="text-emerald-600 font-semibold">Khả dụng: 82.3%</span>
+                    <span className="text-slate-600">Cơ cấu tín dụng tổng cộng: <strong className="text-slate-900">{(balance ? balance.availableCredits + balance.pendingCredits : 0).toLocaleString('vi-VN')} Credits</strong></span>
+                    <span className="text-emerald-600 font-semibold">
+                      Khả dụng: {balance && (balance.availableCredits + balance.pendingCredits > 0)
+                        ? `${Math.round((balance.availableCredits / (balance.availableCredits + balance.pendingCredits)) * 100)}%`
+                        : '100%'}
+                    </span>
                   </div>
                   <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden flex">
-                    <div className="bg-emerald-600 h-full rounded-l-full" style={{ width: '82.35%' }} title="Khả dụng (1.260)"></div>
-                    <div className="bg-amber-400 h-full" style={{ width: '17.65%' }} title="Tạm giữ (270)"></div>
+                    <div className="bg-emerald-600 h-full rounded-l-full" style={{ width: `${balance && (balance.availableCredits + balance.pendingCredits > 0) ? (balance.availableCredits / (balance.availableCredits + balance.pendingCredits)) * 100 : 100}%` }} title="Khả dụng"></div>
+                    <div className="bg-amber-400 h-full" style={{ width: `${balance && (balance.availableCredits + balance.pendingCredits > 0) ? (balance.pendingCredits / (balance.availableCredits + balance.pendingCredits)) * 100 : 0}%` }} title="Tạm giữ"></div>
                   </div>
                   <div className="flex items-center gap-4 mt-2 text-[11px] text-slate-600">
                     <span className="flex items-center gap-1.5">
@@ -148,8 +175,8 @@ export default function WithdrawalPage() {
                       <span className="material-symbols-outlined text-[16px]">lock_open</span>
                     </div>
                     <div>
-                      <p className="text-xl text-slate-900 font-bold leading-tight">1.260 <span className="text-xs font-normal text-slate-600">CR</span></p>
-                      <p className="text-[11px] text-slate-600 mt-0.5">~ 1.260.000 VNĐ</p>
+                      <p className="text-xl text-slate-900 font-bold leading-tight">{balance ? balance.availableCredits.toLocaleString('vi-VN') : '0'} <span className="text-xs font-normal text-slate-600">CR</span></p>
+                      <p className="text-[11px] text-slate-600 mt-0.5">~ {(balance ? balance.availableCredits * 1000 : 0).toLocaleString('vi-VN')} VNĐ</p>
                     </div>
                   </div>
                   <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 flex flex-col justify-between">
@@ -158,7 +185,7 @@ export default function WithdrawalPage() {
                       <span className="material-symbols-outlined text-[16px]">lock_clock</span>
                     </div>
                     <div>
-                      <p className="text-xl text-slate-900 font-bold leading-tight">270 <span className="text-xs font-normal text-slate-600">CR</span></p>
+                      <p className="text-xl text-slate-900 font-bold leading-tight">{balance ? balance.pendingCredits.toLocaleString('vi-VN') : '0'} <span className="text-xs font-normal text-slate-600">CR</span></p>
                       <p className="text-[11px] text-slate-600 mt-0.5">Đang trong lớp học</p>
                     </div>
                   </div>

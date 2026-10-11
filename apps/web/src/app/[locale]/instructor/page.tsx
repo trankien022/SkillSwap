@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { callApi } from '../../../lib/api-client';
+import type { ProfileSkillView, WalletBalanceView, MeResponse } from '@skillswap/contracts';
 
 export default function InstructorDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -9,6 +10,38 @@ export default function InstructorDashboard() {
   const [skillSelect, setSkillSelect] = useState('IELTS Speaking');
   const [classTitle, setClassTitle] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const [skills, setSkills] = useState<ProfileSkillView[]>([]);
+  const [balance, setBalance] = useState<WalletBalanceView | null>(null);
+  const [me, setMe] = useState<MeResponse | null>(null);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [skillsRes, balRes, meRes] = await Promise.all([
+          callApi('/profile-skills/me'),
+          callApi('/wallet/balance'),
+          callApi('/auth/me'),
+        ]);
+
+        if (skillsRes.ok) {
+          const data = await skillsRes.json();
+          if (Array.isArray(data)) setSkills(data);
+        }
+
+        if (balRes.ok) {
+          setBalance(await balRes.json());
+        }
+
+        if (meRes.ok) {
+          setMe(await meRes.json());
+        }
+      } catch (err) {
+        console.error('Failed to load instructor data:', err);
+      }
+    };
+    loadData();
+  }, []);
 
   const showToast = (message: string) => {
     setToastMessage(message);
@@ -21,7 +54,7 @@ export default function InstructorDashboard() {
       showToast(`Đang lấy key phòng Jitsi...`);
       const res = await callApi(`/classes/bookings/${bookingId}/room-access`, {
         method: 'POST',
-        body: JSON.stringify({ displayName: 'Giảng viên' })
+        body: JSON.stringify({ displayName: me?.displayName || 'Giảng viên' })
       });
       if (!res.ok) throw new Error('Từ chối truy cập hoặc chưa đến giờ');
       const data = await res.json();
@@ -42,6 +75,9 @@ export default function InstructorDashboard() {
         throw new Error('Lỗi hệ thống');
       }
       showToast(`Đã hoàn thành lớp! Doanh thu đã được giải ngân vào ví.`);
+      // Refresh balance
+      const balRes = await callApi('/wallet/balance');
+      if (balRes.ok) setBalance(await balRes.json());
     } catch (e) {
       showToast('Lỗi: ' + (e as Error).message);
     } finally {
@@ -76,11 +112,45 @@ export default function InstructorDashboard() {
     setIsModalOpen(true);
   };
 
-  const handleCreateClassSubmit = (e: React.FormEvent) => {
+  const handleCreateClassSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsModalOpen(false);
-    showToast(`Đã xuất bản lớp học "${classTitle}" thành công!`);
-    setClassTitle('');
+    try {
+      setIsProcessing(true);
+      const form = e.currentTarget;
+      const duration = parseInt((form.elements.namedItem('class-duration') as HTMLInputElement)?.value || '60', 10);
+      const capacity = parseInt((form.elements.namedItem('class-capacity') as HTMLInputElement)?.value || '1', 10);
+      const price = parseInt((form.elements.namedItem('class-price') as HTMLInputElement)?.value || '90', 10);
+      const datetime = (form.elements.namedItem('class-datetime') as HTMLInputElement)?.value;
+
+      const selectedSkill = skills.find(s => s.skillName === skillSelect);
+      const skillId = selectedSkill ? selectedSkill.skillId : '00000000-0000-0000-0000-000000000001';
+      const startsAt = datetime ? new Date(datetime).toISOString() : new Date(Date.now() + 86400000).toISOString();
+
+      const res = await callApi('/classes', {
+        method: 'POST',
+        body: JSON.stringify({
+          skillIds: [skillId],
+          description: classTitle,
+          startsAt,
+          durationMinutes: duration,
+          priceCredits: price,
+          capacity,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Không thể tạo lớp học');
+      }
+
+      setIsModalOpen(false);
+      showToast(`Đã xuất bản lớp học "${classTitle}" thành công lên hệ thống!`);
+      setClassTitle('');
+    } catch (err) {
+      showToast('Lỗi: ' + (err as Error).message);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -106,7 +176,7 @@ export default function InstructorDashboard() {
           <div className="flex items-center gap-3.5">
             <div className="flex items-center gap-2 pl-2.5 pr-1.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-xs font-semibold text-slate-900">
               <span className="material-symbols-outlined text-[17px] text-emerald-600">monetization_on</span>
-              <span>1.260 Credits</span>
+              <span>{balance ? balance.availableCredits.toLocaleString('vi-VN') : '0'} Credits</span>
               <a href="/vi/wallet" className="w-5 h-5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors text-xs font-bold leading-none">+</a>
             </div>
             <button type="button" className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors relative">
@@ -119,8 +189,8 @@ export default function InstructorDashboard() {
                 <span className="material-symbols-outlined text-[18px] text-slate-600">person</span>
               </div>
               <div className="hidden sm:flex flex-col text-left">
-                <span className="text-xs font-semibold text-slate-900 leading-tight">Lan Anh</span>
-                <span className="text-[11px] text-slate-500">RMIT Mentor</span>
+                <span className="text-xs font-semibold text-slate-900 leading-tight">{me?.displayName || 'Lan Anh'}</span>
+                <span className="text-[11px] text-slate-500">{me?.studentVerification?.status === 'approved' ? 'Đã xác minh SV' : 'Thành viên'}</span>
               </div>
             </div>
           </div>
@@ -136,7 +206,7 @@ export default function InstructorDashboard() {
             <div className="flex items-center gap-4">
               <div className="relative">
                 <div className="w-16 h-16 rounded-2xl bg-slate-200 shadow-sm ring-1 ring-slate-200 flex items-center justify-center text-slate-600 font-bold text-2xl">
-                  LA
+                  {(me?.displayName || 'LA').slice(0, 2).toUpperCase()}
                 </div>
                 <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center ring-2 ring-white">
                   <span className="material-symbols-outlined text-[12px]">verified</span>
@@ -144,13 +214,13 @@ export default function InstructorDashboard() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="font-bold text-2xl text-slate-900 tracking-tight">Lan Anh</h1>
+                  <h1 className="font-bold text-2xl text-slate-900 tracking-tight">{me?.displayName || 'Lan Anh'}</h1>
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Giảng viên đã xác minh
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> {me?.studentVerification?.status === 'approved' ? 'Giảng viên đã xác minh' : (me?.studentVerification?.status === 'pending' ? 'Đang xét duyệt' : 'Chưa xác minh sinh viên')}
                   </span>
                 </div>
                 <p className="text-sm text-slate-600 mt-0.5 font-normal">
-                  Khoa Ngôn Ngữ Anh • Đại học Quốc Gia Hà Nội • Mã SV: <span className="font-semibold text-slate-900">VNU-2021-0988</span>
+                  {me?.email ? `${me.email} • ` : ''}Khoa Ngôn Ngữ Anh • Đại học Quốc Gia Hà Nội • Mã SV: <span className="font-semibold text-slate-900">VNU-2021-0988</span>
                 </p>
               </div>
             </div>
@@ -177,10 +247,10 @@ export default function InstructorDashboard() {
                   <span className="material-symbols-outlined text-slate-400 text-[18px]">account_balance_wallet</span>
                 </div>
                 <div className="flex items-baseline gap-1.5">
-                  <span className="font-bold text-2xl text-slate-900">1.260</span>
+                  <span className="font-bold text-2xl text-slate-900">{balance ? balance.availableCredits.toLocaleString('vi-VN') : '0'}</span>
                   <span className="text-xs font-semibold text-slate-600">Credit</span>
                 </div>
-                <span className="text-xs text-slate-500 font-normal">≈ 1.260.000 VNĐ</span>
+                <span className="text-xs text-slate-500 font-normal">≈ {(balance ? balance.availableCredits * 1000 : 0).toLocaleString('vi-VN')} VNĐ</span>
               </div>
               <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
                 <a href="/vi/wallet/withdrawal" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 inline-flex items-center gap-1">
@@ -197,10 +267,10 @@ export default function InstructorDashboard() {
                   <span className="material-symbols-outlined text-slate-400 text-[18px]">lock_clock</span>
                 </div>
                 <div className="flex items-baseline gap-1.5">
-                  <span className="font-bold text-2xl text-slate-900">270</span>
+                  <span className="font-bold text-2xl text-slate-900">{balance ? balance.pendingCredits.toLocaleString('vi-VN') : '0'}</span>
                   <span className="text-xs font-semibold text-slate-600">Credit</span>
                 </div>
-                <span className="text-xs text-slate-500 font-normal">Từ 3 booking đang diễn ra</span>
+                <span className="text-xs text-slate-500 font-normal">Doanh thu Escrow chờ kết thúc lớp</span>
               </div>
               <div className="mt-4 pt-3 border-t border-slate-100">
                 <span className="text-xs text-slate-600 flex items-center gap-1.5">
@@ -261,63 +331,89 @@ export default function InstructorDashboard() {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Skill 1 */}
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                      <span className="material-symbols-outlined text-[12px]">verified</span> Đã duyệt
-                    </span>
-                    <span className="text-[11px] font-medium text-slate-500">C1 Advanced</span>
+              {skills.length > 0 ? (
+                skills.map((s) => (
+                  <div key={s.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md ${s.approvedLevel ? 'text-emerald-700 bg-emerald-50' : 'text-amber-700 bg-amber-50'}`}>
+                          <span className="material-symbols-outlined text-[12px]">{s.approvedLevel ? 'verified' : 'schedule'}</span>
+                          {s.approvedLevel ? 'Đã duyệt' : 'Đang xét duyệt'}
+                        </span>
+                        <span className="text-[11px] font-medium text-slate-500 capitalize">{s.approvedLevel || 'Chờ duyệt'}</span>
+                      </div>
+                      <h3 className="font-bold text-slate-900 text-sm mb-1">{s.skillName}</h3>
+                      <p className="text-xs text-slate-600 line-clamp-2 mb-3">Danh mục: {s.category}</p>
+                    </div>
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                      <span className="text-[11px] text-slate-500">Mã: {s.skillId.slice(0, 8)}</span>
+                      <button onClick={() => prefillCreateClass(s.skillName)} type="button" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700">
+                        Mở lớp →
+                      </button>
+                    </div>
                   </div>
-                  <h3 className="font-bold text-slate-900 text-sm mb-1">IELTS Speaking</h3>
-                  <p className="text-xs text-slate-600 line-clamp-2 mb-3">Phát âm IPA, phản xạ Part 1-3 và mở rộng từ vựng chủ đề học thuật.</p>
-                </div>
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-500">Được duyệt bởi Thầy Hùng (8.5)</span>
-                  <button onClick={() => prefillCreateClass('IELTS Speaking')} type="button" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700">
-                    Mở lớp →
-                  </button>
-                </div>
-              </div>
-              
-              {/* Skill 2 */}
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                      <span className="material-symbols-outlined text-[12px]">verified</span> Đã duyệt
-                    </span>
-                    <span className="text-[11px] font-medium text-slate-500">Intermediate</span>
+                ))
+              ) : (
+                <>
+                  {/* Demo Skill 1 */}
+                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                          <span className="material-symbols-outlined text-[12px]">verified</span> Đã duyệt
+                        </span>
+                        <span className="text-[11px] font-medium text-slate-500">C1 Advanced</span>
+                      </div>
+                      <h3 className="font-bold text-slate-900 text-sm mb-1">IELTS Speaking</h3>
+                      <p className="text-xs text-slate-600 line-clamp-2 mb-3">Phát âm IPA, phản xạ Part 1-3 và mở rộng từ vựng chủ đề học thuật.</p>
+                    </div>
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                      <span className="text-[11px] text-slate-500">Được duyệt bởi Thầy Hùng (8.5)</span>
+                      <button onClick={() => prefillCreateClass('IELTS Speaking')} type="button" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700">
+                        Mở lớp →
+                      </button>
+                    </div>
                   </div>
-                  <h3 className="font-bold text-slate-900 text-sm mb-1">Tiếng Anh Giao Tiếp Doanh Nghiệp</h3>
-                  <p className="text-xs text-slate-600 line-clamp-2 mb-3">Soạn email chuyên nghiệp, thuyết trình số liệu và giao tiếp văn phòng.</p>
-                </div>
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-500">Chứng chỉ TOEIC 920</span>
-                  <button onClick={() => prefillCreateClass('Tiếng Anh Giao Tiếp Doanh Nghiệp')} type="button" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700">
-                    Mở lớp →
-                  </button>
-                </div>
-              </div>
-              
-              {/* Skill 3 */}
-              <div className="bg-slate-50 p-4 rounded-2xl border border-dashed border-slate-300 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">
-                      <span className="material-symbols-outlined text-[12px]">schedule</span> Đang xét duyệt
-                    </span>
-                    <span className="text-[11px] font-medium text-slate-500">Professional</span>
+                  
+                  {/* Demo Skill 2 */}
+                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                          <span className="material-symbols-outlined text-[12px]">verified</span> Đã duyệt
+                        </span>
+                        <span className="text-[11px] font-medium text-slate-500">Intermediate</span>
+                      </div>
+                      <h3 className="font-bold text-slate-900 text-sm mb-1">Tiếng Anh Giao Tiếp Doanh Nghiệp</h3>
+                      <p className="text-xs text-slate-600 line-clamp-2 mb-3">Soạn email chuyên nghiệp, thuyết trình số liệu và giao tiếp văn phòng.</p>
+                    </div>
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                      <span className="text-[11px] text-slate-500">Chứng chỉ TOEIC 920</span>
+                      <button onClick={() => prefillCreateClass('Tiếng Anh Giao Tiếp Doanh Nghiệp')} type="button" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700">
+                        Mở lớp →
+                      </button>
+                    </div>
                   </div>
-                  <h3 className="font-bold text-slate-900 text-sm mb-1">Dịch thuật Anh – Việt</h3>
-                  <p className="text-xs text-slate-600 line-clamp-2 mb-3">Biên dịch văn bản tài chính &amp; thương mại, đối chiếu ngữ nghĩa.</p>
-                </div>
-                <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-500">Đã nộp hôm qua • Kết quả trong 24h</span>
-                  <span className="text-xs text-slate-500 italic">Chờ duyệt</span>
-                </div>
-              </div>
+                  
+                  {/* Demo Skill 3 */}
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-dashed border-slate-300 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">
+                          <span className="material-symbols-outlined text-[12px]">schedule</span> Đang xét duyệt
+                        </span>
+                        <span className="text-[11px] font-medium text-slate-500">Professional</span>
+                      </div>
+                      <h3 className="font-bold text-slate-900 text-sm mb-1">Dịch thuật Anh – Việt</h3>
+                      <p className="text-xs text-slate-600 line-clamp-2 mb-3">Biên dịch văn bản tài chính &amp; thương mại, đối chiếu ngữ nghĩa.</p>
+                    </div>
+                    <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
+                      <span className="text-[11px] text-slate-500">Đã nộp hồ sơ • Đang chờ duyệt</span>
+                      <span className="text-xs text-slate-500 italic">Chờ duyệt</span>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -484,8 +580,18 @@ export default function InstructorDashboard() {
                   value={skillSelect}
                   onChange={(e) => setSkillSelect(e.target.value)}
                   className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600" required>
-                  <option value="IELTS Speaking">IELTS Speaking (Đã xác minh • C1 Advanced)</option>
-                  <option value="Tiếng Anh Giao Tiếp Doanh Nghiệp">Tiếng Anh Giao Tiếp Doanh Nghiệp (Đã xác minh)</option>
+                  {skills.length > 0 ? (
+                    skills.map((s) => (
+                      <option key={s.id} value={s.skillName}>
+                        {s.skillName} ({s.approvedLevel ? `Đã duyệt • ${s.approvedLevel.toUpperCase()}` : 'Chờ duyệt'})
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="IELTS Speaking">IELTS Speaking (Đã xác minh • C1 Advanced)</option>
+                      <option value="Tiếng Anh Giao Tiếp Doanh Nghiệp">Tiếng Anh Giao Tiếp Doanh Nghiệp (Đã xác minh)</option>
+                    </>
+                  )}
                 </select>
               </div>
               <div>
