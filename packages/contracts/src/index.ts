@@ -136,6 +136,18 @@ export const bookingSchema = z.object({
 });
 export type BookingView = z.infer<typeof bookingSchema>;
 
+/** Existing API-005/API-006 HTTP envelopes; confirmation is distinct from wallet settlement. */
+export const bookClassResponseSchema = z.object({
+  booking: bookingSchema,
+  created: z.boolean(),
+});
+export type BookClassResponse = z.infer<typeof bookClassResponseSchema>;
+export const confirmBookingResponseSchema = z.object({
+  confirmed: z.boolean(),
+  booking: bookingSchema.nullable(),
+});
+export type ConfirmBookingResponse = z.infer<typeof confirmBookingResponseSchema>;
+
 /** FR-001 / ADR-030: an account has exactly one access role. Learner/Teacher are capabilities, not roles. */
 export const accountRoleSchema = z.enum(['user', 'verifier', 'admin']);
 export type AccountRole = z.infer<typeof accountRoleSchema>;
