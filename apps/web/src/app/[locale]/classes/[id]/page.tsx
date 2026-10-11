@@ -430,28 +430,34 @@ export default function ClassDetailPage({ params }: PageProps) {
 
               {/* CTAs */}
               <div className="space-y-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={handleOpenModal}
-                  disabled={isBooked}
-                  className={`w-full h-12 rounded-xl font-semibold text-sm transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer ${
-                    isBooked
-                      ? 'bg-emerald-600 text-white cursor-default'
-                      : 'bg-emerald-600 hover:bg-emerald-700 text-white active:scale-[0.99]'
-                  }`}
-                >
-                  {isBooked ? (
-                    <>
-                      <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                      <span>Đã đặt lớp thành công</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Đặt lớp ngay (90 Credit)</span>
+                {isBooked ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full h-12 rounded-xl bg-emerald-600 text-white font-semibold text-sm transition-all shadow-sm flex items-center justify-center gap-2 cursor-default"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                    <span>Đã đặt lớp thành công</span>
+                  </button>
+                ) : (
+                  <>
+                    <a
+                      href={`/vi/classes/${id}/checkout`}
+                      className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                    >
+                      <span>Xem xét &amp; Khóa ký quỹ (90 Credit)</span>
                       <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-                    </>
-                  )}
-                </button>
+                    </a>
+                    <button
+                      type="button"
+                      onClick={handleOpenModal}
+                      className="w-full h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">bolt</span>
+                      <span>Đặt nhanh qua Popup</span>
+                    </button>
+                  </>
+                )}
 
                 <button
                   type="button"
