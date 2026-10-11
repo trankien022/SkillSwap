@@ -10,3 +10,7 @@ coverage/
 *.log
 .DS_Store
 tmp/
+
+# Expo native projects are regenerated from apps/mobile/app.json.
+apps/mobile/ios/
+apps/mobile/android/

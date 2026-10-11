@@ -218,6 +218,7 @@ module.exports = {
         'docs/',
         'scripts/',
         'tests/',
+        '^apps/mobile/(ios|android)/',
       ],
     },
     tsConfig: { fileName: 'tsconfig.base.json' },
