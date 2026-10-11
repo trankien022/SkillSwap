@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   Pressable,
@@ -11,6 +12,7 @@ import { colors, radius, spacing, typography } from '@/design/tokens';
 import { useSession } from './session-context';
 
 export function ProfileView() {
+  const router = useRouter();
   const { t, user, locale, setLocale, logout } = useSession();
   const [isSigningOut, setIsSigningOut] = useState<boolean>(false);
 
@@ -82,6 +84,16 @@ export function ProfileView() {
             </Text>
           </View>
         </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>{t('Profile.learningAndTeaching')}</Text>
+        <Pressable style={styles.linkButton} onPress={() => router.push('/(tabs)/verification')} accessibilityRole="button">
+          <Text style={styles.linkButtonText}>{t('Profile.studentVerification')}</Text>
+        </Pressable>
+        <Pressable style={styles.linkButton} onPress={() => router.push('/(tabs)/skills')} accessibilityRole="button">
+          <Text style={styles.linkButtonText}>{t('Profile.skillEvidence')}</Text>
+        </Pressable>
       </View>
 
       {/* 2. Language Selection Card */}
@@ -284,4 +296,6 @@ const styles = StyleSheet.create({
     fontSize: typography.body.fontSize,
     fontWeight: '600',
   },
+  linkButton: { minHeight: 48, justifyContent: 'center', paddingHorizontal: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: radius.control },
+  linkButtonText: { color: colors.campusEmerald, fontSize: typography.body.fontSize, fontWeight: '600' },
 });

@@ -106,6 +106,9 @@
   "Profile": {
     "title": "My Profile",
     "accountDetails": "Account Information",
+    "learningAndTeaching": "Learning and teaching",
+    "studentVerification": "Student verification",
+    "skillEvidence": "Teaching skills",
     "emailLabel": "Email",
     "roleLabel": "Role",
     "statusLabel": "Status",
@@ -114,6 +117,33 @@
     "languageEn": "English",
     "signOutButton": "Sign Out",
     "signingOut": "Signing out…"
+  },
+  "Verification": {
+    "title": "Student verification",
+    "description": "Submit a document for an administrator to verify your student status.",
+    "status": "Status",
+    "school": "School name",
+    "major": "Major (optional)",
+    "chooseFile": "Choose image or PDF",
+    "submit": "Submit verification",
+    "loadError": "Could not load verification status. Try again.",
+    "submitError": "Verification submission failed. Check your connection and retry."
+  },
+  "Skills": {
+    "title": "My skills",
+    "approved": "Approved skills",
+    "noneApproved": "No approved skills yet.",
+    "pending": "Pending review",
+    "submitTitle": "Submit skill evidence",
+    "description": "Describe your experience or ability (up to 1000 characters)",
+    "submit": "Submit evidence",
+    "history": "View decision history",
+    "noHistory": "No decision history yet.",
+    "loadError": "Could not load the catalogue or your skills.",
+    "submitError": "Evidence submission failed. Try again.",
+    "historyError": "Could not load evidence history.",
+    "level_beginner": "Beginner", "level_intermediate": "Intermediate", "level_advanced": "Advanced", "level_expert": "Expert",
+    "state_pending": "Pending", "state_claimed": "In review", "state_approved": "Approved", "state_rejected": "Rejected", "state_superseded": "Superseded"
   },
   "Placeholder": {
     "exploreTitle": "Explore Classes",

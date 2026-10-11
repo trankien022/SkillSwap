@@ -90,6 +90,8 @@ export default function TabsLayout() {
           tabBarLabel: t('Nav.profile'),
         }}
       />
+      <Tabs.Screen name="verification" options={{ href: null }} />
+      <Tabs.Screen name="skills" options={{ href: null }} />
     </Tabs>
   );
 }

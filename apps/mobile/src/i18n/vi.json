@@ -106,6 +106,9 @@
   "Profile": {
     "title": "Hồ sơ cá nhân",
     "accountDetails": "Thông tin tài khoản",
+    "learningAndTeaching": "Học tập và giảng dạy",
+    "studentVerification": "Xác minh sinh viên",
+    "skillEvidence": "Kỹ năng giảng dạy",
     "emailLabel": "Email",
     "roleLabel": "Vai trò",
     "statusLabel": "Trạng thái",
@@ -114,6 +117,33 @@
     "languageEn": "English",
     "signOutButton": "Đăng xuất",
     "signingOut": "Đang đăng xuất…"
+  },
+  "Verification": {
+    "title": "Xác minh sinh viên",
+    "description": "Gửi giấy tờ để quản trị viên xác minh trạng thái sinh viên của bạn.",
+    "status": "Trạng thái",
+    "school": "Tên trường",
+    "major": "Ngành học (không bắt buộc)",
+    "chooseFile": "Chọn ảnh hoặc PDF",
+    "submit": "Gửi xác minh",
+    "loadError": "Không tải được trạng thái xác minh. Hãy thử lại.",
+    "submitError": "Gửi xác minh thất bại. Kiểm tra kết nối và thử lại."
+  },
+  "Skills": {
+    "title": "Kỹ năng của tôi",
+    "approved": "Kỹ năng đã được duyệt",
+    "noneApproved": "Chưa có kỹ năng được duyệt.",
+    "pending": "Đang chờ duyệt",
+    "submitTitle": "Gửi bằng chứng năng lực",
+    "description": "Mô tả kinh nghiệm hoặc năng lực (tối đa 1000 ký tự)",
+    "submit": "Gửi bằng chứng",
+    "history": "Xem lịch sử quyết định",
+    "noHistory": "Chưa có lịch sử quyết định.",
+    "loadError": "Không tải được danh mục hoặc kỹ năng của bạn.",
+    "submitError": "Gửi bằng chứng thất bại. Hãy thử lại.",
+    "historyError": "Không tải được lịch sử bằng chứng.",
+    "level_beginner": "Cơ bản", "level_intermediate": "Trung cấp", "level_advanced": "Nâng cao", "level_expert": "Chuyên gia",
+    "state_pending": "Chờ duyệt", "state_claimed": "Đang được xem xét", "state_approved": "Đã duyệt", "state_rejected": "Bị từ chối", "state_superseded": "Đã thay thế"
   },
   "Placeholder": {
     "exploreTitle": "Khám phá lớp học",
