@@ -267,7 +267,35 @@ export class SqlSkillEvidenceRepository implements SkillEvidenceRepository {
   async decide(request: ApplyEvidenceDecisionRequest): Promise<ApplyEvidenceDecisionResult> {
     const source = this.registry.get(this.moduleName);
     return source.transaction(async (manager) => {
-      // Only a request claimed by this Verifier can be decided (BR-013/BR-071).
+      // Lock the claimed request (only a request claimed by this Verifier can be decided).
+      const claimed = returnedRows<EvidenceRow>(
+        await manager.query(
+          `SELECT ${SELECT_COLUMNS} FROM ${this.table}
+            WHERE "id" = $1 AND "status" = 'claimed' AND "claimed_by" = $2
+            FOR UPDATE`,
+          [request.evidenceId, request.reviewerId],
+        ),
+      );
+      const target = claimed[0];
+      if (target === undefined) {
+        return { applied: false };
+      }
+
+      let superseded: EvidenceRow[] = [];
+      if (request.status === 'approved') {
+        // AC-016: supersede the previous approval **before** approving this version, so
+        // the partial unique index (one approved per profile-skill) is never violated.
+        superseded = returnedRows<EvidenceRow>(
+          await manager.query(
+            `UPDATE ${this.table}
+               SET "status" = 'superseded'
+             WHERE "profile_skill_id" = $1 AND "status" = 'approved' AND "id" <> $2
+             RETURNING ${SELECT_COLUMNS}`,
+            [target.profile_skill_id, target.id],
+          ),
+        );
+      }
+
       const rows = returnedRows<EvidenceRow>(
         await manager.query(
           `UPDATE ${this.table}
@@ -289,35 +317,22 @@ export class SqlSkillEvidenceRepository implements SkillEvidenceRepository {
       if (row === undefined) {
         return { applied: false };
       }
-      if (request.status === 'approved') {
-        // AC-016: supersede the previous approval in the same transaction. The
-        // profile-skill level cache is written by the use case (applyApprovedLevel).
-        const superseded = returnedRows<EvidenceRow>(
-          await manager.query(
-            `UPDATE ${this.table}
-               SET "status" = 'superseded'
-             WHERE "profile_skill_id" = $1 AND "status" = 'approved' AND "id" <> $2
-             RETURNING ${SELECT_COLUMNS}`,
-            [row.profile_skill_id, row.id],
-          ),
-        );
-        // FR-018: record why each previously-effective version stopped being effective.
-        for (const previous of superseded) {
-          await appendEvidenceAudit(manager, this.schema, {
-            id: randomUUID(),
-            evidenceId: previous.id,
-            profileSkillId: previous.profile_skill_id,
-            version: previous.version,
-            action: 'superseded',
-            actorId: request.reviewerId,
-            fromStatus: 'approved',
-            toStatus: 'superseded',
-            reason: request.reason,
-            snapshot: snapshotOf(previous),
-            occurredAt: request.decidedAt,
-            traceId: null,
-          });
-        }
+      // FR-018: record why each previously-effective version stopped being effective.
+      for (const previous of superseded) {
+        await appendEvidenceAudit(manager, this.schema, {
+          id: randomUUID(),
+          evidenceId: previous.id,
+          profileSkillId: previous.profile_skill_id,
+          version: previous.version,
+          action: 'superseded',
+          actorId: request.reviewerId,
+          fromStatus: 'approved',
+          toStatus: 'superseded',
+          reason: request.reason,
+          snapshot: snapshotOf(previous),
+          occurredAt: request.decidedAt,
+          traceId: null,
+        });
       }
       await manager.query(insertOutboxStatement(this.schema), [
         request.status === 'approved' ? SKILL_EVIDENCE_EVENTS.approved : SKILL_EVIDENCE_EVENTS.rejected,

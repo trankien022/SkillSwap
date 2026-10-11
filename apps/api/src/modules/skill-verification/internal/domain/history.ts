@@ -6,7 +6,7 @@
  * changes after submission; corrections are new versions. Framework-free.
  */
 
-import type { EvidenceStatus, SkillLevel } from './evidence';
+import type { EvidenceStatus, EvidenceType, SkillLevel } from './evidence';
 
 /** Actions that append an audit entry for an evidence version. */
 export const EVIDENCE_AUDIT_ACTIONS = [
@@ -26,7 +26,7 @@ export function isEvidenceAuditAction(value: string): value is EvidenceAuditActi
 export interface EvidenceAuditSnapshot {
   readonly version: number;
   readonly status: EvidenceStatus;
-  readonly evidenceType: string;
+  readonly evidenceType: EvidenceType;
   readonly requestedLevel: SkillLevel;
   readonly approvedLevel: SkillLevel | null;
   readonly reason: string | null;
