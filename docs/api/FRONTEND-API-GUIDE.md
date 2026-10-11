@@ -63,7 +63,7 @@ Common status codes: `400` invalid body, `401` missing/expired token or bad cred
 | POST | `/api/auth/logout` | none | `{ refreshToken }` | `204` |
 | GET | `/api/auth/me` | **yes** | — | `200` account |
 
-`role` ∈ `learner | teacher | admin`, default `learner`. `password` ≥ 8 chars.
+`role` ∈ `user` only (default `user`); `verifier`/`admin` are provisioned out of band (ADR-030). `password` ≥ 8 chars. Account roles are `user | verifier | admin`; Learner/Teacher are capabilities, not roles.
 
 **Token pair** (`tokenResponseSchema`):
 ```json
@@ -72,7 +72,7 @@ Common status codes: `400` invalid body, `401` missing/expired token or bad cred
 
 **`me`** (`meResponseSchema`):
 ```json
-{ "id": "uuid", "email": "a@b.co", "displayName": "An", "role": "learner", "status": "active" }
+{ "id": "uuid", "email": "a@b.co", "displayName": "An", "role": "user", "status": "active" }
 ```
 
 Register example:
@@ -80,7 +80,8 @@ Register example:
 const res = await fetch(`${API}/api/auth/register`, {
   method: 'POST',
   headers: { 'content-type': 'application/json' },
-  body: JSON.stringify({ email: 'an@b.co', displayName: 'An', password: 'secret-password', role: 'learner' }),
+  // role is optional; only 'user' is accepted (ADR-030). Verifier/admin are provisioned out of band.
+  body: JSON.stringify({ email: 'an@b.co', displayName: 'An', password: 'secret-password' }),
 });
 const { accessToken, refreshToken } = await res.json(); // store these
 ```
@@ -216,8 +217,8 @@ Teacher                         Backend                              Learner
   │                                        (Teacher pending 90% → available)
 ```
 
-1. **Teacher** registers (`role: teacher`), publishes a class (`POST /api/classes`).
-2. **Learner** registers (`role: learner`).
+1. **Teacher** registers (`role: user`), publishes a class (`POST /api/classes`).
+2. **Learner** registers (`role: user`).
 3. **Learner** funds the wallet: `POST /api/wallet/top-ups` → pay → `GET /api/wallet/balance`.
 4. **Learner** books: `POST /api/classes/:id/bookings` with an idempotency key → `pending`.
 5. **Learner** confirms: `POST /api/classes/bookings/:bookingId/confirm` → settles.

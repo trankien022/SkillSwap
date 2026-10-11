@@ -27,14 +27,14 @@ describe('NodeTokenService', () => {
     const { token, expiresInSeconds } = service.issueAccessToken({
       accountId: 'acct-1',
       email: 'a@b.co',
-      role: 'teacher',
+      role: 'user',
     });
     expect(token.split('.')).toHaveLength(3);
     expect(expiresInSeconds).toBe(900);
     const payload = decodePayload(token);
     const issuedAt = Math.floor(Date.parse('2026-10-09T00:00:00.000Z') / 1000);
     expect(payload.sub).toBe('acct-1');
-    expect(payload.role).toBe('teacher');
+    expect(payload.role).toBe('user');
     expect(payload.iat).toBe(issuedAt);
     expect(payload.exp).toBe(issuedAt + 900);
   });

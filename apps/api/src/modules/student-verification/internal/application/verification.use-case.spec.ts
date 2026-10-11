@@ -179,7 +179,7 @@ describe('DecideStudentVerificationUseCase (FR-002 / AC-001, AC-012)', () => {
       decide.execute({
         verificationId: id,
         reviewerId: 'u1',
-        reviewerRole: 'learner',
+        reviewerRole: 'user',
         decision: 'approve',
       }),
     ).rejects.toBeInstanceOf(InvalidDeciderError);

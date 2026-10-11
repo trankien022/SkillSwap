@@ -104,7 +104,7 @@ describe('student verification domain', () => {
 
   it('requires the decider to be an Administrator', () => {
     expect(() =>
-      decideVerification('pending', { decision: 'approve' }, { reviewerRole: 'learner', reviewerId: 'u1', now }),
+      decideVerification('pending', { decision: 'approve' }, { reviewerRole: 'user', reviewerId: 'u1', now }),
     ).toThrow(InvalidDeciderError);
   });
 
@@ -194,7 +194,7 @@ describe('student verification domain', () => {
 
     it('requires the admin role', () => {
       expect(() =>
-        revokeVerification('approved', { reason: 'x' }, { ...context, reviewerRole: 'learner' }),
+        revokeVerification('approved', { reason: 'x' }, { ...context, reviewerRole: 'user' }),
       ).toThrow(InvalidDeciderError);
     });
 

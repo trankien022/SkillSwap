@@ -39,13 +39,13 @@ describe('E2E: book → settle → room → complete → release', () => {
       email: 'learner@skillswap.test',
       displayName: 'Learner',
       password: 'learner-password',
-      role: 'learner',
+      role: 'user',
     });
     const teacher = await api.post('/api/auth/register', {
       email: 'teacher@skillswap.test',
       displayName: 'Teacher',
       password: 'teacher-password',
-      role: 'teacher',
+      role: 'user',
     });
     expect(learner.status).toBe(201);
     expect(teacher.status).toBe(201);

@@ -30,13 +30,13 @@ describe('E2E: evidence decision history (FR-018)', () => {
       email,
       displayName: 'History Learner',
       password: 'learner-password',
-      role: 'learner',
+      role: 'user',
     });
     return accountIdFromToken(res.json.accessToken);
   }
 
   async function verifyStudent(learnerId: string, adminId: string): Promise<void> {
-    api.actAs(learnerId, 'learner');
+    api.actAs(learnerId, 'user');
     const target = await api.post('/api/student-verifications/documents', {
       fileName: 'transcript.pdf',
       contentType: 'application/pdf',
@@ -52,7 +52,7 @@ describe('E2E: evidence decision history (FR-018)', () => {
 
   async function waitVerified(learnerId: string): Promise<void> {
     await waitFor(async () => {
-      api.actAs(learnerId, 'learner');
+      api.actAs(learnerId, 'user');
       const me = await api.get('/api/auth/me');
       return me.json?.studentVerification?.status === 'approved' ? me : null;
     });
@@ -66,7 +66,7 @@ describe('E2E: evidence decision history (FR-018)', () => {
     await seedVerifier(harness, { accountId: 'vf-rust', expertise: [skillId] });
 
     // v1: submit → reject.
-    api.actAs(learnerId, 'learner');
+    api.actAs(learnerId, 'user');
     const v1 = await api.post('/api/skill-evidence', {
       skillId,
       requestedLevel: 'intermediate',
@@ -83,7 +83,7 @@ describe('E2E: evidence decision history (FR-018)', () => {
     expect(rejected.json.status).toBe('rejected');
 
     // v2: submit → approve (supersedes nothing yet; v1 stays rejected).
-    api.actAs(learnerId, 'learner');
+    api.actAs(learnerId, 'user');
     const v2 = await api.post('/api/skill-evidence', {
       skillId,
       requestedLevel: 'advanced',
@@ -100,7 +100,7 @@ describe('E2E: evidence decision history (FR-018)', () => {
     expect(approved.json.status).toBe('approved');
 
     // The owner reads the full history from either version id.
-    api.actAs(learnerId, 'learner');
+    api.actAs(learnerId, 'user');
     const history = await api.get(`/api/skill-evidence/${v2.json.id}/history`);
     expect(history.status).toBe(200);
     expect(history.json.skillId).toBe(skillId);
@@ -132,7 +132,7 @@ describe('E2E: evidence decision history (FR-018)', () => {
     await seedVerifier(harness, { accountId: 'vf-go', expertise: [skillId] });
 
     // v1 approved at intermediate.
-    api.actAs(learnerId, 'learner');
+    api.actAs(learnerId, 'user');
     const v1 = await api.post('/api/skill-evidence', {
       skillId,
       requestedLevel: 'intermediate',
@@ -144,7 +144,7 @@ describe('E2E: evidence decision history (FR-018)', () => {
     await api.post(`/api/skill-evidence/${v1.json.id}/decision`, { decision: 'approve' });
 
     // v2 approved at advanced — v1 is superseded.
-    api.actAs(learnerId, 'learner');
+    api.actAs(learnerId, 'user');
     const v2 = await api.post('/api/skill-evidence', {
       skillId,
       requestedLevel: 'advanced',
@@ -159,7 +159,7 @@ describe('E2E: evidence decision history (FR-018)', () => {
     });
     expect(approve2.status).toBe(200);
 
-    api.actAs(learnerId, 'learner');
+    api.actAs(learnerId, 'user');
     const history = await api.get(`/api/skill-evidence/${v2.json.id}/history`);
     const [v2h, v1h] = history.json.versions;
     expect(v2h.currentStatus).toBe('approved');
@@ -173,7 +173,7 @@ describe('E2E: evidence decision history (FR-018)', () => {
     await verifyStudent(learnerId, 'admin-fr18-3');
     await waitVerified(learnerId);
 
-    api.actAs(learnerId, 'learner');
+    api.actAs(learnerId, 'user');
     const submitted = await api.post('/api/skill-evidence', {
       skillId,
       requestedLevel: 'beginner',
@@ -181,7 +181,7 @@ describe('E2E: evidence decision history (FR-018)', () => {
       documentRef: 'docs/swift.pdf',
     });
 
-    api.actAs('nosy-user', 'learner');
+    api.actAs('nosy-user', 'user');
     const denied = await api.get(`/api/skill-evidence/${submitted.json.id}/history`);
     expect(denied.status).toBe(403);
     expect(denied.json.error).toBe('AccessDeniedError');

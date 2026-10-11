@@ -30,7 +30,7 @@ describe('E2E: student verification (FR-002)', () => {
       email,
       displayName: 'Verify Learner',
       password: 'learner-password',
-      role: 'learner',
+      role: 'user',
     });
     return accountIdFromToken(res.json.accessToken);
   }
@@ -77,7 +77,7 @@ describe('E2E: student verification (FR-002)', () => {
     expect(badUpload.status).toBe(415);
 
     // A non-admin cannot decide (NFR-009).
-    api.actAs(learnerId, 'learner');
+    api.actAs(learnerId, 'user');
     const forbidden = await api.post(`/api/student-verifications/${verificationId}/decision`, {
       decision: 'reject',
       reason: 'nope',
@@ -96,7 +96,7 @@ describe('E2E: student verification (FR-002)', () => {
     expect(decided.json.reviewerId).toBe('admin-1');
 
     // The owner-scoped read (FR-017) reflects status + reason.
-    api.actAs(learnerId, 'learner');
+    api.actAs(learnerId, 'user');
     const mine = await api.get('/api/student-verifications/me');
     expect(mine.status).toBe(200);
     expect(mine.json.status).toBe('rejected');
@@ -114,7 +114,7 @@ describe('E2E: student verification (FR-002)', () => {
 
   it('approves a pending verification (no expiry in the MVP)', async () => {
     const learnerId = await registerLearner('sv-approve@skillswap.test');
-    api.actAs(learnerId, 'learner');
+    api.actAs(learnerId, 'user');
 
     const documentId = await requestDocumentUpload();
     const submitted = await api.post('/api/student-verifications', {
@@ -133,7 +133,7 @@ describe('E2E: student verification (FR-002)', () => {
     expect(decided.json.major).toBe('Computer Science');
     expect(decided.json.expiresAt).toBeUndefined();
 
-    api.actAs(learnerId, 'learner');
+    api.actAs(learnerId, 'user');
     const mine = await api.get('/api/student-verifications/me');
     expect(mine.json.status).toBe('approved');
   });

@@ -47,10 +47,11 @@ SkillSwap MVP ships two clients — a responsive, mobile-first **web application
 
 | Term | Definition |
 |---|---|
-| Learner | A verified student who searches, books and attends classes. |
-| Teacher | A student approved for at least one skill who publishes and teaches classes. |
-| Verifier | An expertise-matched reviewer of Teacher skill evidence; accounts are operator-provisioned with seeded expertise (ADR-027). |
-| Administrator | Platform operator who approves student verifications, manages Verifiers and handles exceptions. |
+| Learner | A **persona/capability**: a verified student who searches, books and attends classes. Not an account role. |
+| Teacher | A **persona/capability**: a user approved for at least one skill who publishes and teaches classes. Not an account role (ADR-030). |
+| Verifier | An expertise-matched reviewer of skill evidence; an account with the `verifier` role, operator-provisioned with seeded expertise (ADR-027/ADR-029). |
+| Administrator | Platform operator (the `admin` role) who approves student verifications, manages Verifiers and handles exceptions. |
+| Account role | One of `user`, `verifier`, `admin` — the access classes the system branches on (ADR-030). Learner/Teacher are capabilities, not roles. |
 | Credit | Internal currency unit; initial rate 1 credit = 1,000 VND (SR-BR-005). |
 | Wallet | Per-user ledger-backed available, pending income and reserved payout_hold credit; only available is spendable. |
 | Booking | A Learner's reservation of a seat in a Class, settled atomically against the wallet ledger. |
@@ -106,7 +107,7 @@ The software stack is fixed for the MVP: **Next.js (React)** web frontend, **Exp
 | Verifier (persona: Thầy Hùng, guest lecturer) | Expert in one domain; time-constrained | Reviews queue by domain; approve/reject with structured reasons. |
 | Administrator (persona: Chị Trang, operations) | Power user | Runs verification queues, manages Verifiers, resolves exceptions. |
 
-All four roles share one account model: a single account may hold both Learner and Teacher roles with an explicit role view (PRD §6.1).
+All accounts share one model with a **single `role`** per account from `user`, `verifier`, `admin` (ADR-030). Learner and Teacher are **capabilities, not roles**: any `user` learns, and a `user` who is a verified student with an approved skill may submit evidence and teach (BR-063/BR-065, enforced by FR-005). Self-registration creates only `user`; `verifier`/`admin` accounts are operator-provisioned (ADR-029). The PRD §6.1 "role view switch" is therefore obsolete.
 
 ### 2.4 Constraints
 
@@ -177,7 +178,7 @@ Priority follows MoSCoW from the PRD (`Must` / `Should`). Status preserves the P
 
 | ID | Requirement (shall) | Priority | Source | Status |
 |---|---|---|---|---|
-| FR-001 | The system shall allow a student to create, sign in to, and manage one account used for the Learner role and Teacher registration. | Must | intent.md | Confirmed |
+| FR-001 | The system shall allow a student to create, sign in to, and manage one account. Self-registration creates only an ordinary `user` account; `verifier` and `admin` accounts are provisioned out of band (ADR-029/ADR-030). Roles are access classes (`user`, `verifier`, `admin`); Learner/Teacher are capabilities, not roles (BR-063). | Must | intent.md | Confirmed; role model resolved (ADR-030) |
 | FR-002 | The system shall allow a student to declare a school name and upload documents for Administrator approval or rejection with a reason. | Must | intent.md | Confirmed; retention open (OQ-008) |
 | FR-003 | The system shall allow a Teacher candidate to submit skills, certificates or capability evidence, with resubmission after rejection. | Must | intent.md | Confirmed; taxonomy resolved (OQ-001, ADR-026) |
 | FR-004 | The system shall let a Verifier review skill evidence requests whose skill is within their expertise: they shall see only matching pending requests, claim one (which locks it to them permanently), and approve or reject it; only such an active, expertise-matched, non-owner Verifier may decide, and an Administrator may suspend or revoke a Verifier. | Must | intent.md | Confirmed core; expertise seeded (ADR-027) |
@@ -283,7 +284,7 @@ The use case model is leveled into a single **level-0** overview of actors × su
 
 ![Use case level 1 — Operations](../diagrams/usecase/srs-use-case-operations.png)
 
-*Reading: every diagram shows the SkillSwap MVP boundary. The four human actors are stick figures outside it; Payment Gateway and Jitsi appear as `«actor»` boxes because they are external systems. Lines are unlabeled actor–use case associations — there are no include/extend dependencies, because each use case is a standalone user goal and authentication is captured as a Precondition instead of an included Log In use case (§3.2.5). Register Account (UC-006) and Log In (UC-007) are linked to all four user roles. Every use case carries the identical code and name on its level-1 diagram, in the Use Case List (§3.2.5) and in the traceability matrix (Appendix C.2).*
+*Reading: every diagram shows the SkillSwap MVP boundary. The four human actors are stick figures outside it; Payment Gateway and Jitsi appear as `«actor»` boxes because they are external systems. Lines are unlabeled actor–use case associations — there are no include/extend dependencies, because each use case is a standalone user goal and authentication is captured as a Precondition instead of an included Log In use case (§3.2.5). Register Account (UC-006) is a self-registration that creates only an ordinary `user` account; Verifier and Administrator accounts are provisioned out of band (ADR-029/ADR-030), so those actors appear on Log In (UC-007) only. Every use case carries the identical code and name on its level-1 diagram, in the Use Case List (§3.2.5) and in the traceability matrix (Appendix C.2).*
 
 #### 3.2.5 Use Case List
 
@@ -291,9 +292,9 @@ One row per use case appearing on the diagrams, ordered by subsystem then code. 
 
 | UC ID | Use Case Name | Primary Actor | Secondary Actor(s) | Subsystem | Description | Precondition | Relationships | Priority |
 |---|---|---|---|---|---|---|---|---|
-| UC-006 | Register Account | Learner, Teacher, Verifier, Administrator | — | Accounts | A prospective user creates an account (FR-001); it starts Pending and becomes Active after verification where applicable. | No account exists yet. | — | Must |
-| UC-007 | Log In | Learner, Teacher, Verifier, Administrator | — | Accounts | An existing user authenticates and obtains the session required by every other use case. | Account registered (UC-006). | — | Must |
-| UC-008 | Manage account | Learner, Teacher | — | Accounts | View and edit the profile, switch the active role view (FR-017), and read account status and rejection reason (FR-001). | Logged in. | — | Must |
+| UC-006 | Register Account | Prospective user | — | Accounts | A prospective user self-registers an ordinary `user` account (FR-001, ADR-030); `verifier`/`admin` accounts are provisioned out of band (ADR-029). | No account exists yet. | — | Must |
+| UC-007 | Log In | User, Verifier, Administrator | — | Accounts | An existing user authenticates and obtains the session required by every other use case. | Account registered or provisioned (UC-006). | — | Must |
+| UC-008 | Manage account | User | — | Accounts | View and edit the profile and read account status and rejection reason (FR-001, FR-017). | Logged in. | — | Must |
 | UC-001 | Verify a student | Learner | Administrator | Verification | Submit student-status evidence; an Administrator approves or rejects it, activating the account on approval (FR-002). | Logged in; verification not yet Approved. | — | Must |
 | UC-002 | Verify a Teacher skill | Teacher | Verifier | Verification | Submit skill evidence; an active Verifier sees only requests matching their expertise, claims one (locking it to them), and approves or rejects it, preserving version/decision history and enabling publication at the approved level (FR-003, FR-004, FR-018). | Logged in as a verified student; initial or replacement evidence submitted; Verifier has seeded expertise for the skill. | — | Must |
 | UC-009 | Supervise verifiers | Administrator | — | Verification | Suspend or revoke a Verifier's access (FR-004). Verifier accounts and their expertise are provisioned outside the app (seeded); there is no invite/assign-domain step (ADR-027). | Logged in as Administrator. | — | Must |
@@ -485,6 +486,8 @@ stateDiagram-v2
 
 Implementation of the clauses listed in Appendix A is blocked until the corresponding Open Question is approved (decision policy: **block until resolved**). Affected increments (increment definitions per PRD §14): Increment 2 (OQ-008), Increment 3 (OQ-002; OQ-001 resolved — ADR-026, ADR-027; OQ-007 resolved), Increment 4 (OQ-002, OQ-005, OQ-006, OQ-011, OQ-012; OQ-003 resolved), Increment 5 (OQ-004, OQ-009), Increment 6 (no additional OQ; inherits Increment 5 gates), storage/lifecycle design (OQ-008), pilot planning (OQ-010).
 
+**Note (BR-063 vs. UI):** BR-063 is satisfied — one account can both learn and teach, because teaching is gated on *verification + approved skill*, not on a separate role. The PRD §6.1 "switch between Learner and Teacher role views" is a UI convenience that is **not** implemented in the MVP; the underlying capability (study + teach from one account) **is** available. A future increment may add explicit role views.
+
 ---
 
 ## Appendix A — Excluded open-question-governed clauses
@@ -512,9 +515,8 @@ Derived from PRD §9. Access is server-authorized by role and ownership; sensiti
 
 | Entity | Key fields | Relationships | Lifecycle | Classification | Owner |
 |---|---|---|---|---|---|
-| User | id, email, roles, status | Has exactly one Profile, at most one user Wallet and role grants | Pending → Active → Suspended | PII | User/Administrator |
-| UserRole | user_id, role, status, assigned_by, assigned_at | One grant per User/role; role suspension is independent of account suspension | Active → Suspended/Revoked; reactivation audited | Internal authorization | Administrator |
-| Profile | id, user_id, display_name, bio, school_id, major_id | Belongs to User; has ProfileSkills and StudentVerifications | Created with User; school/major change requires re-verification | PII | User/Administrator |
+| Account | id, email, display_name, role, status, created_at | Exactly one role per account (`user \| verifier \| admin`, ADR-030); a `verifier` account also has seeded expertise (ADR-027). Learner/Teacher are capabilities, not roles. No separate role-grant table. | Active → Suspended | PII | User/Administrator |
+| Profile | id, account_id, display_name, bio, school_id, major_id | Belongs to Account; has ProfileSkills and StudentVerifications | Created with the account; school/major change requires re-verification | PII | User/Administrator |
 | School / Major / SchoolMajor | id/code/name; school_id + major_id | Managed school and major catalogs; SchoolMajor lists valid pairs | Active → Inactive | Reference data | Administrator |
 | Skill / ProfileSkill | id, name, category; profile_id, skill_id, level | Skill is a `category → skill` catalogue entry (ADR-026); Profile ↔ Skill is many-to-many; level caches effective approval (NULL until approved) | Skill Active/Inactive; valid SkillEvidence.approved_level governs teaching; pending upgrades preserve old approval | Public competency + internal authorization | User/Verifier/Administrator |
 | Verifier | account_id, expertise (skill ids), status | An account with a `verifier` role and a seeded expertise set of skills (ADR-027); expertise scopes the queue and the authority | Active → Suspended/Revoked; expertise set operationally seeded, not admin-assigned | Internal authorization | Administrator (suspend/revoke) |

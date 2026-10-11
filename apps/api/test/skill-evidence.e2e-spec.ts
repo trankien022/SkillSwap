@@ -32,14 +32,14 @@ describe('E2E: skill evidence submission (FR-003)', () => {
       email,
       displayName: 'Evidence Learner',
       password: 'learner-password',
-      role: 'learner',
+      role: 'user',
     });
     return accountIdFromToken(res.json.accessToken);
   }
 
   /** Drives the FR-002 flow to approval so the account becomes a verified student. */
   async function verifyStudent(learnerId: string, adminId: string): Promise<void> {
-    api.actAs(learnerId, 'learner');
+    api.actAs(learnerId, 'user');
     const target = await api.post('/api/student-verifications/documents', {
       fileName: 'transcript.pdf',
       contentType: 'application/pdf',
@@ -58,7 +58,7 @@ describe('E2E: skill evidence submission (FR-003)', () => {
   /** Waits until the approved status has propagated to the event-fed projections. */
   async function waitVerified(learnerId: string): Promise<void> {
     await waitFor(async () => {
-      api.actAs(learnerId, 'learner');
+      api.actAs(learnerId, 'user');
       const me = await api.get('/api/auth/me');
       return me.json?.studentVerification?.status === 'approved' ? me : null;
     });
@@ -67,7 +67,7 @@ describe('E2E: skill evidence submission (FR-003)', () => {
   /** Submits evidence once the account is a projected verified student. */
   async function submitEvidence(learnerId: string, body: unknown) {
     await waitVerified(learnerId);
-    api.actAs(learnerId, 'learner');
+    api.actAs(learnerId, 'user');
     return api.post('/api/skill-evidence', body);
   }
 
@@ -76,7 +76,7 @@ describe('E2E: skill evidence submission (FR-003)', () => {
     const skillId = await seedSkill(harness, { name: 'React', category: 'Programming' });
 
     // Unverified → 403 (the projection has no approved row yet).
-    api.actAs(learnerId, 'learner');
+    api.actAs(learnerId, 'user');
     const denied = await api.post('/api/skill-evidence', {
       skillId,
       requestedLevel: 'intermediate',
@@ -127,7 +127,7 @@ describe('E2E: skill evidence submission (FR-003)', () => {
     });
     expect(first.status).toBe(201);
 
-    api.actAs(learnerId, 'learner');
+    api.actAs(learnerId, 'user');
     const second = await api.post('/api/skill-evidence', {
       skillId,
       requestedLevel: 'advanced',

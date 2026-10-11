@@ -95,7 +95,7 @@ async function seed() {
 describe('GetSkillEvidenceHistoryUseCase (FR-018)', () => {
   it('returns every version newest-first with its ordered audit entries', async () => {
     const { useCase, link } = await seed();
-    const view = await useCase.execute({ evidenceId: 'ev-1', viewerId: 'owner-1', viewerRole: 'learner' });
+    const view = await useCase.execute({ evidenceId: 'ev-1', viewerId: 'owner-1', viewerRole: 'user' });
 
     expect(view.profileSkillId).toBe(link.id);
     expect(view.skillId).toBe('sk-1');
@@ -118,14 +118,14 @@ describe('GetSkillEvidenceHistoryUseCase (FR-018)', () => {
   it('refuses an unrelated account', async () => {
     const { useCase } = await seed();
     await expect(
-      useCase.execute({ evidenceId: 'ev-1', viewerId: 'nosy', viewerRole: 'learner' }),
+      useCase.execute({ evidenceId: 'ev-1', viewerId: 'nosy', viewerRole: 'user' }),
     ).rejects.toBeInstanceOf(AccessDeniedError);
   });
 
   it('raises a not-found error for unknown evidence', async () => {
     const { useCase } = await seed();
     await expect(
-      useCase.execute({ evidenceId: 'nope', viewerId: 'owner-1', viewerRole: 'learner' }),
+      useCase.execute({ evidenceId: 'nope', viewerId: 'owner-1', viewerRole: 'user' }),
     ).rejects.toBeInstanceOf(EvidenceNotFoundError);
   });
 });

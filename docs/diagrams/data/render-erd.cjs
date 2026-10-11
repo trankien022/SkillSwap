@@ -12,25 +12,25 @@ const viz = require(path.join(vizRoot, 'dist/render_sync.cjs'));
 const domains = {
   identity: {
     label: '01 · Identity & student verification', color: '#1D4ED8',
-    tables: ['users', 'user_roles', 'schools', 'majors', 'school_majors',
+    tables: ['accounts', 'schools', 'majors', 'school_majors',
       'profiles', 'student_verifications', 'audit_events', 'notifications'],
   },
   skills: {
     label: '02 · Skills & evidence', color: '#7C3AED',
-    tables: ['users', 'profiles', 'skills', 'profile_skills', 'skill_evidence'],
+    tables: ['accounts', 'verifier_expertise', 'profiles', 'skills', 'profile_skills', 'skill_evidence'],
   },
   learning: {
     label: '03 · Classes, bookings & interaction', color: '#047857',
-    tables: ['users', 'skills', 'classes', 'class_skills', 'bookings', 'messages', 'ratings'],
+    tables: ['accounts', 'skills', 'classes', 'class_skills', 'bookings', 'messages', 'ratings'],
   },
   finance: {
     label: '04 · Wallets, ledger & withdrawal', color: '#B45309',
-    tables: ['users', 'classes', 'bookings', 'wallets', 'ledger_transactions',
+    tables: ['accounts', 'classes', 'bookings', 'wallets', 'ledger_transactions',
       'ledger_postings', 'withdrawal_requests', 'gateway_events'],
   },
 };
 const canonicalNames = {
-  User: 'users', UserRole: 'user_roles', School: 'schools', Major: 'majors',
+  User: 'accounts', Account: 'accounts', UserRole: 'verifier_expertise', School: 'schools', Major: 'majors',
   SchoolMajor: 'school_majors', Profile: 'profiles', StudentVerification: 'student_verifications',
   Skill: 'skills', ProfileSkill: 'profile_skills', SkillEvidence: 'skill_evidence',
   Class: 'classes', ClassSkill: 'class_skills', Booking: 'bookings', Message: 'messages',
@@ -83,7 +83,7 @@ function relationship(ref) {
   }
   // Minimum children cannot be inferred from FK NOT NULL. Most parents may have none.
   // These two minima come from the existing atomic-creation business rules.
-  const childMinimum = (canonical(parent.actual.name) === 'users' && canonical(child.actual.name) === 'profiles')
+  const childMinimum = (canonical(parent.actual.name) === 'accounts' && canonical(child.actual.name) === 'profiles')
     || (canonical(parent.actual.name) === 'withdrawal_requests' && canonical(child.actual.name) === 'ledger_transactions') ? 1 : 0;
   const cardinalities = {};
   cardinalities[parentSide] = { min: required(child, foreignColumns) ? 1 : 0, max: '1' };

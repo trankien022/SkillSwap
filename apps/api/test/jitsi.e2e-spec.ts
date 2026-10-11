@@ -58,13 +58,13 @@ describe('E2E: Jitsi room access (real host)', () => {
       email: 'jit-learner@skillswap.test',
       displayName: 'Jit Learner',
       password: 'learner-password',
-      role: 'learner',
+      role: 'user',
     });
     const teacher = await api.post('/api/auth/register', {
       email: 'jit-teacher@skillswap.test',
       displayName: 'Jit Teacher',
       password: 'teacher-password',
-      role: 'teacher',
+      role: 'user',
     });
     const learnerId = accountIdFromToken(learner.json.accessToken);
     const teacherId = accountIdFromToken(teacher.json.accessToken);
