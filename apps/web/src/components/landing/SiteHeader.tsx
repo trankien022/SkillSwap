@@ -1,4 +1,5 @@
 import { getTranslations } from 'next-intl/server';
+import Image from 'next/image';
 import { Link } from '../../i18n/routing';
 
 /**
@@ -25,9 +26,14 @@ export async function SiteHeader() {
           aria-label="SkillSwap"
           className="flex items-center gap-2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-campus-emerald/40"
         >
-          <span className="font-headline text-xl font-bold tracking-tight text-ink">
-            SkillSwap
-          </span>
+            <Image
+              src="/logo-skillswap-header.png"
+              alt="SkillSwap"
+              width={180}
+              height={32}
+              priority
+              className="header-logo"
+            />
         </Link>
 
         {/* Primary nav (md+) */}

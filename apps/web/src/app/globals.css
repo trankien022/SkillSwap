@@ -44,3 +44,13 @@ body {
     Arial,
     sans-serif;
 }
+
+/* Header brand logo — transparent-background PNG, height locked to 36px,
+ * width scales to preserve aspect ratio. Used by SiteHeader (landing) and
+ * MarketplaceHeader (post-auth). */
+.header-logo {
+  width: auto;
+  height: 36px;
+  object-fit: contain;
+  background: transparent;
+}

@@ -1,4 +1,5 @@
 import { getTranslations } from 'next-intl/server';
+import Image from 'next/image';
 import { Link } from '../../i18n/routing';
 
 /**
@@ -32,12 +33,16 @@ export async function MarketplaceHeader() {
           <Link
             href="/"
             aria-label="SkillSwap"
-            className="flex items-center gap-2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-campus-emerald/40"
+            className="flex shrink-0 items-center gap-2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-campus-emerald/40"
           >
-            <SchoolIcon className="text-ink" />
-            <span className="text-xl font-bold tracking-tight text-ink">
-              SkillSwap
-            </span>
+            <Image
+              src="/logo-skillswap-header.png"
+              alt="SkillSwap"
+              width={180}
+              height={32}
+              priority
+              className="header-logo"
+            />
           </Link>
           {currentUser && (
             <span className="inline-flex items-center gap-1 rounded-full border border-success-tint bg-success-tint px-2 py-1 text-xs font-semibold text-success-ink">
@@ -163,26 +168,6 @@ function AvatarPlaceholder({ name }: { name: string }) {
 }
 
 /* --- Inline SVG glyphs (DESIGN.md §6 don't: no icon CDN) --- */
-
-function SchoolIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="28"
-      height="28"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className={className}
-    >
-      <path d="M3 9l9-5 9 5-9 5-9-5z" />
-      <path d="M7 11v5c2 1.5 4 1.5 5 1.5s3 0 5-1.5v-5" />
-    </svg>
-  );
-}
 
 function WalletIcon({ className = '' }: { className?: string }) {
   return (
