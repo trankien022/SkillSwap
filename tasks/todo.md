@@ -1,15 +1,15 @@
 # Mobile rubric — task checklist
 
-Tham chiếu: [plan](plan.md). Chưa triển khai. Mỗi task là một slice có thể verify; file paths là vùng dự kiến, phải thu hẹp khi thực hiện. Không tạo toàn bộ backend rồi mới nối UI.
+Tham chiếu: [plan](plan.md). Đang triển khai; T01 đã được Codex review contracts/ownership. Baseline pnpm verify xanh, API 360 tests và architecture gate xanh. Device acceptance vẫn pending. Mỗi task là một slice có thể verify; file paths là vùng dự kiến, phải thu hẹp khi thực hiện. Không tạo toàn bộ backend rồi mới nối UI.
 
 ## Phase 0 — contract/risk
 
-- [ ] T01. Chốt 30 API/resource matrix và notification ownership ADR/SRS scope.
+- [x] T01. Chốt 30 API/resource matrix và notification ownership ADR/SRS scope.
   - AC: 30 method+route duy nhất; FR Confirmed cho mỗi slice; ownership giữ 7 schemas và shared event contracts.
   - Verify: đối chiếu controllers/contracts/ADR; docs diff check.
-  - Depends: none. Files: tasks/plan.md, SRS, một ADR mới phù hợp. Scope: M.
-- [ ] T02. Spike push trên Android development build.
-  - AC: máy nhận remote push và deep link có auth; biết credentials/native config còn thiếu.
+  - Depends: none. Files: docs/adr/ADR-031-mobile-delivery-contracts.md, tasks/mobile-contracts.md, tasks/plan.md. Scope: M.
+- [ ] T02. Spike push trên iPhone / Android development build.
+  - AC: máy nhận remote push và deep link có auth; biết credentials/native config còn thiếu (ưu tiên iPhone iOS, duy trì Android; thiếu APNs/FCM thì ghi nhận incomplete, không mock-only).
   - Verify: device recording, không chỉ ticket status.
   - Depends: T01. Files: mobile app config, dependency config, push adapter PoC. Scope: M.
 - [ ] T03. Spike Jitsi và server-only top-up/upload harness.
@@ -113,7 +113,7 @@ Tham chiếu: [plan](plan.md). Chưa triển khai. Mỗi task là một slice c�
   - Verify: relevant API+mobile focused tests, manual 360px/vi/en/accessibility; final pnpm verify.
   - Depends: T20,T16. Files: affected service tests + justified bug fixes only. Scope: split each found issue S/M.
 - [ ] T22. Installable build + evidence rubric.
-  - AC: Android APK cài được; 30 APIs app actually invokes; ≥5 resources persisted; dashboard + five flows + push video.
+  - AC: Build cài được (ưu tiên iPhone/iOS TestFlight/development client, Android APK); 30 APIs app actually invokes; ≥5 resources persisted; dashboard + five flows + push video.
   - Verify: clean install against staging/dev HTTPS; git diff --check; graphify update . sau code.
   - Depends: T21. Files: build config + docs acceptance matrix/demo guide. Scope: M.
 - [ ] Checkpoint final: full gate green, device evidence đủ, limitations mock payment/remaining SRS FR ghi rõ.

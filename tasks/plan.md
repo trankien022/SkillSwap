@@ -8,18 +8,18 @@ Xây dựng app Expo/React Native tại `apps/mobile`, dùng backend hiện có 
 
 Giả định resources là đối tượng nghiệp vụ có dữ liệu/API/màn hình; API được đếm theo cặp HTTP method + route template. Đây là cách diễn giải rubric được cung cấp, chưa phải xác nhận của giảng viên. Không coi 5 resources đồng nghĩa 5 bộ CRUD: booking và ledger phải giữ state machine/immutability.
 
-Android là nền tảng nghiệm thu đầu tiên; duy trì khả năng chạy iOS, chưa bao gồm phát hành store. Nếu môn yêu cầu cả Android/iOS hoặc CRUD đủ cho mỗi resource, cần điều chỉnh trước triển khai. Ước lượng 4–6 tuần với 2 người có thời gian làm đều, backend chạy được và credentials push có sẵn; đây là ước lượng, chưa có deadline/team allocation từ người dùng.
+iPhone (iOS) là nền tảng nghiệm thu ưu tiên hàng đầu theo chỉ đạo của người dùng; duy trì khả năng chạy và kiểm thử trên Android, chưa bao gồm phát hành store. Bằng chứng push/video trên simulator/device thật vẫn được ghi nhận là incomplete cho đến khi có kiểm thử thực tế. Ước lượng 4–6 tuần với 2 người có thời gian làm đều, backend chạy được và credentials push có sẵn; đây là ước lượng, chưa có deadline/team allocation từ người dùng.
 
 ## 2. Căn cứ hiện tại
 
-Đã đối chiếu ARCHITECTURE.md, PRODUCT.md, DESIGN.md, SRS, ADR-013/014/015/017/019/020/021/030 và controller hiện tại.
+Đã đối chiếu ARCHITECTURE.md, PRODUCT.md, DESIGN.md, SRS, ADR-013/014/015/017/019/020/021/030, ADR-031 và controller hiện tại.
 
 - Mobile đã scaffold Expo + Expo Router, domain/application/infrastructure/ui, i18n vi/en, tokens và mock booking. `app/index.tsx` hiện redirect sang lớp demo; chưa có app đầy đủ hoặc HTTP integration.
 - Controller có auth, student verification, skill evidence/history/profile-skills, tạo/sửa/hủy/bắt đầu/kết thúc lớp, booking/confirm/room access, top-up/balance/history.
 - Chưa thấy controller đọc marketplace/class detail/my bookings, skill catalogue, rating hoặc notification trong phạm vi kiểm tra. Dashboard chưa có dữ liệu tích hợp.
 - Top-up dùng mock provider (ADR-017); có callback HMAC nhưng URL mock chưa chứng minh checkout thật. Luồng demo cần mock-provider harness phía server, tuyệt đối không đưa HMAC secret vào app.
 - Jitsi có quyết định self-hosted JWT (ADR-020); endpoint room access tồn tại không chứng minh cuộc gọi trên điện thoại hoạt động. Cần spike mạng/TLS/mic/camera sớm.
-- FR-016 Confirmed yêu cầu các thông báo nghiệp vụ, nhưng SRS §3.1 hiện chỉ bắt buộc in-app, push optional. Yêu cầu rubric của người dùng bổ sung push: cần ghi rõ mobile scope và ADR về delivery/ownership trước code.
+- FR-016 Confirmed yêu cầu các thông báo nghiệp vụ; kênh phân phối mobile hiện bao gồm cả push từ xa (remote push) theo yêu cầu rõ ràng của người dùng, cùng lưu trữ inbox bền vững. Đã chuẩn hóa qua ADR-031 và `tasks/mobile-contracts.md`.
 - Role là `user | verifier | admin` (ADR-030). Cùng một `user` học và dạy; khả năng dạy phụ thuộc xác minh và approved skills. Không tạo role teacher/learner.
 
 Các nhận định trên là kiểm tra source, chưa chạy backend/devices hoặc `pnpm verify` trong bước lập plan.
@@ -51,8 +51,8 @@ Skill evidence dùng dạng capability recognition + description đã được c
 - HTTP adapter triển khai application ports; session lưu qua secure storage, refresh token rotation có single-flight; idempotency key giữ nguyên khi retry booking. Không replay thao tác tiền một cách mù quáng.
 - Chọn thư viện query/cache và native dependencies tương thích Expo đang khóa trong repo ở phase nền tảng; không nâng SDK chỉ để theo ví dụ mới.
 - Luôn gọi Gateway; phone dùng hostname/IP reachable hoặc HTTPS staging, không dùng localhost của máy dev. Jitsi dùng hostname/TLS được phone tin cậy.
-- Đề xuất ADR: device subscriptions/inbox/dispatch thuộc account-profile; lịch nhắc thuộc schedule. Xác nhận boundary bằng ports public + read projection/event contracts trước triển khai; giữ 7 schemas, không thêm notification schema/module tùy tiện. Broker access chỉ tại shared/messaging, TypeORM tại persistence adapters, không join SQL qua schema.
-- Chỉ thêm/sửa event schemas sau khi đối chiếu contract hiện có và ghi quyết định được duyệt; không tự phát minh event để đủ rubric.
+- Đã chốt ADR-031 và `tasks/mobile-contracts.md`: device subscriptions/inbox/push worker thuộc `account-profile`; lịch nhắc (offset 30 phút) thuộc `schedule`; đánh giá (rating) thuộc `live-class`; danh mục kỹ năng thuộc `skill-verification`. Giữ nguyên 7 schemas, không thêm notification schema/module. Broker access chỉ tại shared/messaging, TypeORM tại persistence adapters, không join SQL chéo schema.
+- Thêm event schemas cần thiết (`class.rated`, `class.reminder.due`, `wallet.transaction.completed`, `classId` trong `booking.confirmed`) đã được chốt chi tiết tại ADR-031.
 - Tabs: **Trang chủ / Khám phá / Lịch của tôi / Ví / Hồ sơ**; chuông mở inbox. Khu Dạy học từ Trang chủ/Hồ sơ theo capability. Đây là lựa chọn UI trong plan, không phải role switch.
 - Khoảng 15–18 màn: auth, dashboard, marketplace, class detail, booking confirmation, lịch/detail booking, room entry, wallet/history/top-up, student verification/status, skill submission/history, teaching list/create/edit, rating, inbox/settings.
 - Theo DESIGN.md: slate + Campus Emerald, CTA pill, status text + màu, tap target ≥44 px, 360 px không tràn ngang, vi/en đồng bộ và không trộn trên một màn. Loading/empty/error/retry ở mọi màn dữ liệu.
@@ -96,12 +96,14 @@ Tất cả đường dẫn dưới đây có prefix `/api`; “Có” nghĩa là
 
 **22 routes có controller + 8 routes mới = 30.** Không đếm health/status, payment webhook, URL PUT của storage, admin/verifier routes, hoặc 2 query của cùng route thành 2 API. Dashboard tổng hợp các API trên, không bắt buộc thêm `/dashboard` chỉ để tăng count.
 
-Read contracts cần bổ sung:
-- GET classes: keyword đơn giản, skill, thời gian, cursor; teacherId=me trả lớp mình dạy có kiểm tra owner; marketplace chỉ trả lớp được phép công khai. Search granularity FR-006 đang mở: chốt bộ filter này ở phase 0.
-- GET class detail: metadata, available seats, Teacher public summary, rating summary/list được phân trang phù hợp. Không lộ giấy tờ cá nhân.
-- GET bookings/me: chỉ dữ liệu learner là caller, lọc trạng thái/time window và cursor; embed class summary + room/rating eligibility + pending/confirmed/cancelled. Không gửi toàn bộ lịch sử để tính dashboard.
-- Các query thống kê dùng projection/aggregate phía owner, count chính xác ngoài trang đầu; danh sách lớp tôi dạy kèm count doanh thu/lớp relevant qua data owners. Client ghép dữ liệu, không tự gọi DB và không suy số tổng từ một page.
-- Notification list chưa có read/unread mutation trong base 30. Nếu cần badge unread, thêm contract và đổi phạm vi công khai; không âm thầm gọi API thứ 31.
+Read contracts đã chốt tại ADR-031 và `tasks/mobile-contracts.md`:
+- GET /skills: category, keyword, cursor; trả về danh mục chuẩn hóa.
+- GET /classes: keyword tìm kiếm mô tả, skillId, khoảng thời gian (startDate/endDate), cursor; teacherId=me trả lớp mình dạy có kiểm tra owner; marketplace chỉ trả lớp published và trước giờ học ≥24h.
+- GET /classes/:id: metadata, available seats, Teacher public summary, rating summary/list được phân trang phù hợp. Không lộ giấy tờ cá nhân.
+- GET /classes/bookings/me: chỉ dữ liệu learner là caller, lọc trạng thái/upcoming và cursor; embed class summary + room/rating eligibility. Total upcoming count tính chính xác tại database.
+- POST /classes/bookings/:bookingId/rating: đúng 1 lần cho booking confirmed của lớp completed, stars 1-5, comment.
+- GET /notifications: inbox bền vững theo owner/cursor, unread count chính xác.
+- POST /notification-devices và DELETE /notification-devices/:id: gắn và gỡ token theo account, hỗ trợ luồng đổi tài khoản trên thiết bị.
 - Có test static routes `/classes/bookings/me` trước `/:id`, auth/ownership và pagination.
 
 ## 6. Dashboard và luồng nghiệm thu
@@ -120,10 +122,10 @@ Ví dụ đối soát: nạp 100.000 VND → 100 credit; lớp 100 credit → de
 
 ## 7. Push notification
 
-Chọn Expo Notifications + Expo Push Service để dùng cùng stack hiện có. Development build là yêu cầu cho remote push; nghiệm thu trên Android thật. FCM credentials cần sẵn; iOS APNs/signing nếu iOS nằm trong phạm vi. Căn cứ: [Expo setup](https://docs.expo.dev/push-notifications/push-notifications-setup/) và [Expo notification concepts](https://docs.expo.dev/push-notifications/what-you-need-to-know/).
+Chọn Expo Notifications + Expo Push Service để dùng cùng stack hiện có. Development build là yêu cầu cho remote push; nghiệm thu ưu tiên hàng đầu trên iPhone (iOS), đồng thời duy trì trên Android. FCM/APNs credentials cần sẵn; nếu chưa có credentials hoặc thiết bị thật, ghi nhận là incomplete ngoại vi, không thay bằng mock-only. Căn cứ: [Expo setup](https://docs.expo.dev/push-notifications/push-notifications-setup/) và [Expo notification concepts](https://docs.expo.dev/push-notifications/what-you-need-to-know/).
 
 - Xin permission có ngữ cảnh; từ chối vẫn dùng app và inbox được. Register token theo account + installation, token rotation/upsert; logout hủy association để máy chung không nhận thông báo của user cũ.
-- Nghiệp vụ tạo inbox record trước dispatch; source transaction + outbox/durable handoff, consumer dedup theo event/user; reminder dedup class/user/time offset. Offset đề xuất 30 phút, chỉ triển khai sau khi chốt policy ở phase 0.
+- Nghiệp vụ tạo inbox record trước dispatch; source transaction + outbox/durable handoff, consumer dedup theo event/user; reminder dedup class/user/time offset. Offset đã chốt chính xác 30 phút theo ADR-031.
 - Base scope: verification outcome, confirmed/cancelled booking, starting soon, completed wallet transaction. Withdrawal outcome chỉ thêm khi FR-014 triển khai.
 - Sender async có retry/backoff, ticket/receipt tracking và vô hiệu token `DeviceNotRegistered`. Broker truy cập qua shared/messaging; Expo/vendor SDK ở adapter. [Expo sending/receipts](https://docs.expo.dev/push-notifications/sending-notifications/).
 - Payload tối thiểu notificationId + loại target + id; không chứa giấy tờ, token room hay thông tin tài chính nhạy cảm trên lock screen. App mở deep link sau auth và fetch lại quyền/trạng thái.
@@ -136,13 +138,13 @@ Mỗi phase là một meaningful commit có body giải thích vì sao; chỉ co
 
 | Phase | Thời lượng ước lượng | Kết quả | Commit đề xuất |
 |---|---|---|---|
-| 0. Chốt contract/rủi ro | 2–3 ngày | Resource/API matrix, notification ADR/SRS scope, search filters, rating eligibility, push+Jitsi spike | docs(mobile): define rubric delivery scope |
+| 0. Chốt contract/rủi ro | 2–3 ngày | Resource/API matrix, ADR-031 mobile delivery contracts, search filters, rating eligibility, push+Jitsi spike | docs(mobile): define rubric delivery scope |
 | 1. Session + app shell | 3–4 ngày | Auth thật, secure storage, tabs, refresh, dashboard account/wallet ban đầu | feat(mobile): integrate authenticated app shell |
 | 2. Marketplace + booking + ví | 5–7 ngày | Read APIs, tìm lớp, đặt/confirm, top-up harness, lịch, lịch sử/đối soát | feat(mobile): deliver learner booking flow |
 | 3. Verification + dạy học | 4–6 ngày | Upload sinh viên, evidence description/history/catalogue, publish/edit/cancel, dashboard dạy | feat(mobile): deliver verified teaching flow |
 | 4. Jitsi + completion + rating | 3–5 ngày | Vào lớp, start/complete, ledger release, rating thật | feat(mobile): deliver classroom and rating flow |
 | 5. Inbox + push | 3–5 ngày | Device APIs, inbox, sender/events/reminders, deep links và device evidence | feat(mobile): deliver business push notifications |
-| 6. Nghiệm thu/build | 2–3 ngày | 30 API evidence, ≥5 resources, regression, Android installable build, demo | test(mobile): verify rubric acceptance flows |
+| 6. Nghiệm thu/build | 2–3 ngày | 30 API evidence, ≥5 resources, regression, iPhone/Android installable build, demo | test(mobile): verify rubric acceptance flows |
 
 Tổng khoảng 22–33 ngày làm việc theo luồng tuần tự; 4–6 tuần là mục tiêu khi chia việc hợp lý và có sẵn môi trường. Không hứa thời gian này khi chỉ một người hoặc chưa có hạ tầng.
 
