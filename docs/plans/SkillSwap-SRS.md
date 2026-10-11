@@ -194,7 +194,7 @@ Priority follows MoSCoW from the PRD (`Must` / `Should`). Status preserves the P
 | FR-015 | The system shall provide an Administrator dashboard aggregating the student-verification queue, Verifier queue by domain, dispute/account-lock lists, and an audit log filterable by actor, time and action type. | Must | intent.md | Confirmed |
 | FR-016 | The system shall notify users on verification outcomes, booking confirmed/cancelled, class starting soon, completed wallet transactions and withdrawal outcomes. | Should | intent.md | Confirmed |
 | FR-017 | The system shall show the Learner their account status and any rejection reason on the main screen. | Must | intent.md | Confirmed |
-| FR-018 | The system shall show a Teacher the complete decision history for each immutable submitted evidence version, retaining old/new decisions when superseded, revoked or expired. | Must | intent.md | Confirmed |
+| FR-018 | The system shall show a Teacher the complete decision history for each immutable submitted evidence version, retaining old/new decisions when superseded, revoked or expired. | Must | intent.md | Confirmed; audit contract ADR-028; retention keep (OQ-008) |
 | FR-019 | The system shall support student re-verification and invalidate rights requiring VERIFIED when approval expires or is revoked; treatment of existing commitments follows the approved cascade policy. | Must | BRD BR-006 | Confirmed core; cascade/validity policy open (OQ-008) |
 | FR-020 | The system shall treat each Class as one scheduled online session, record its completion time and audited source/rule, and gate rating and income release on their eligibility conditions. | Must | BRD BR-042–BR-043 | Confirmed core; completion/release rule open (OQ-006) |
 
