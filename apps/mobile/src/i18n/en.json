@@ -277,6 +277,8 @@
     "classStateCompleted": "Completed",
     "classStateCancelled": "Cancelled",
     "viewClass": "View class details",
+    "joinRoom": "Join class room",
+    "roomError": "Room access is unavailable. Check the booking and time window, then retry.",
     "loadMore": "Load more",
     "loading": "Loading bookings…",
     "errorMessage": "Unable to load bookings. Please check your connection and try again.",

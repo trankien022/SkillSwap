@@ -8,9 +8,11 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { Linking } from 'react-native';
 import type { BookingState, ClassLifecycleState } from '@skillswap/contracts';
 import { colors } from '@/design/tokens';
 import { MyBookingsGateway } from '@/infrastructure/http/my-bookings-gateway';
+import { RoomAccessGateway } from '@/infrastructure/http/room-access-gateway';
 import {
   MyBookingsCoordinator,
   type BookingFilter,
@@ -38,6 +40,8 @@ export function MyBookingsView() {
   const router = useRouter();
   const { t, locale, user, gatewayClient } = useSession();
   const accountId = user?.id ?? '';
+  const [openingBookingId, setOpeningBookingId] = useState<string | null>(null);
+  const [roomError, setRoomError] = useState(false);
 
   const isMountedRef = useRef(true);
   const [coordinatorState, setCoordinatorState] = useState<MyBookingsState>({
@@ -208,6 +212,16 @@ export function MyBookingsView() {
       pathname: '/classes/[id]',
       params: { id: classId },
     });
+  };
+
+  const openRoom = async (bookingId: string) => {
+    if (!gatewayClient || openingBookingId) return;
+    setOpeningBookingId(bookingId); setRoomError(false);
+    try {
+      const access = await new RoomAccessGateway(gatewayClient).request(bookingId, user?.displayName ?? 'SkillSwap user');
+      await Linking.openURL(access.url);
+    } catch { setRoomError(true); }
+    finally { setOpeningBookingId(null); }
   };
 
   return (
@@ -420,7 +434,11 @@ export function MyBookingsView() {
                 <Text style={styles.viewDetailText}>
                   {t('MyBookings.viewClass')} →
                 </Text>
+                {item.roomAccessEligible ? <Pressable style={styles.loadMoreButton} disabled={openingBookingId !== null} onPress={() => void openRoom(item.bookingId)} accessibilityRole="button">
+                  {openingBookingId === item.bookingId ? <ActivityIndicator size="small" color={colors.campusEmerald} /> : <Text style={styles.loadMoreText}>{t('MyBookings.joinRoom')}</Text>}
+                </Pressable> : null}
               </View>
+              {roomError && openingBookingId === null ? <Text style={styles.errorText}>{t('MyBookings.roomError')}</Text> : null}
             </Pressable>
           );
         })
