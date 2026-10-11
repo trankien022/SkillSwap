@@ -110,6 +110,7 @@
     "studentVerification": "Student verification",
     "skillEvidence": "Teaching skills",
     "teachingClasses": "My classes",
+    "notifications": "Notifications and push",
     "emailLabel": "Email",
     "roleLabel": "Role",
     "statusLabel": "Status",
@@ -148,6 +149,11 @@
   },
   "Teaching": {
     "title": "Teaching", "createTitle": "Create a class", "description": "Class description", "startsAt": "Start time (ISO 8601)", "duration": "Minutes", "price": "Credits", "capacity": "Seats", "publish": "Publish class", "myClasses": "Classes I created", "empty": "You have no classes yet.", "editPrice": "Raise price by 1 credit", "cancel": "Cancel class", "start": "Start", "complete": "Complete", "loadError": "Could not load class data.", "actionError": "Action failed. Reload to check the current state."
+  },
+  "Notifications": {
+    "title":"Notifications", "unread":"{count} unread notifications", "enablePush":"Enable push notifications on this device", "disablePush":"Disable push notifications on this device", "empty":"No notifications yet.", "loadMore":"Load more", "loadError":"Could not load your inbox.", "pushError":"Could not register this device. Check notification permission and retry.",
+    "type_verification_outcome":"Verification update", "type_booking_confirmed":"Booking confirmed", "type_booking_cancelled":"Class cancelled", "type_class_starting_soon":"Class starting soon", "type_wallet_transaction":"Wallet transaction completed", "type_withdrawal_outcome":"Withdrawal update",
+    "body_verification_outcome":"Your student verification status changed.", "body_booking_confirmed":"Your booking was paid and confirmed.", "body_booking_cancelled":"The booking was cancelled; check your wallet balance.", "body_class_starting_soon":"The class is starting soon. Open your schedule to join.", "body_wallet_transaction":"Your wallet balance changed.", "body_withdrawal_outcome":"Your withdrawal request status changed."
   },
   "Placeholder": {
     "exploreTitle": "Explore Classes",

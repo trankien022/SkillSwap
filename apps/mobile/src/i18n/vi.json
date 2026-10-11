@@ -110,6 +110,7 @@
     "studentVerification": "Xác minh sinh viên",
     "skillEvidence": "Kỹ năng giảng dạy",
     "teachingClasses": "Lớp tôi dạy",
+    "notifications": "Thông báo và push",
     "emailLabel": "Email",
     "roleLabel": "Vai trò",
     "statusLabel": "Trạng thái",
@@ -148,6 +149,11 @@
   },
   "Teaching": {
     "title": "Khu vực giảng dạy", "createTitle": "Tạo lớp học", "description": "Mô tả lớp học", "startsAt": "Thời gian bắt đầu (ISO 8601)", "duration": "Phút", "price": "Credit", "capacity": "Số chỗ", "publish": "Đăng lớp", "myClasses": "Lớp do tôi tạo", "empty": "Bạn chưa có lớp học.", "editPrice": "Tăng giá 1 credit", "cancel": "Hủy lớp", "start": "Bắt đầu", "complete": "Hoàn thành", "loadError": "Không tải được dữ liệu lớp học.", "actionError": "Thao tác thất bại. Tải lại dữ liệu để kiểm tra trạng thái."
+  },
+  "Notifications": {
+    "title":"Thông báo", "unread":"{count} thông báo chưa đọc", "enablePush":"Bật thông báo đẩy trên thiết bị này", "disablePush":"Tắt thông báo đẩy trên thiết bị này", "empty":"Chưa có thông báo.", "loadMore":"Xem thêm", "loadError":"Không tải được hộp thư thông báo.", "pushError":"Không thể đăng ký thiết bị. Kiểm tra quyền thông báo và thử lại.",
+    "type_verification_outcome":"Kết quả xác minh", "type_booking_confirmed":"Đặt chỗ đã xác nhận", "type_booking_cancelled":"Lớp học đã hủy", "type_class_starting_soon":"Lớp học sắp bắt đầu", "type_wallet_transaction":"Giao dịch ví hoàn tất", "type_withdrawal_outcome":"Kết quả rút tiền",
+    "body_verification_outcome":"Trạng thái xác minh của bạn đã được cập nhật.", "body_booking_confirmed":"Đặt chỗ đã được thanh toán và xác nhận.", "body_booking_cancelled":"Đặt chỗ đã bị hủy; hãy kiểm tra số dư ví.", "body_class_starting_soon":"Lớp học sắp bắt đầu. Mở lịch để vào phòng.", "body_wallet_transaction":"Số dư ví của bạn đã thay đổi.", "body_withdrawal_outcome":"Trạng thái yêu cầu rút tiền đã thay đổi."
   },
   "Placeholder": {
     "exploreTitle": "Khám phá lớp học",
