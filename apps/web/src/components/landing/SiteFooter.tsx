@@ -1,4 +1,5 @@
 import { getTranslations } from 'next-intl/server';
+import { LocaleSwitcher } from './LocaleSwitcher';
 
 /**
  * Minimalist footer (DESIGN.md §5 Navigation mobile + footer pattern).
@@ -57,38 +58,8 @@ export async function SiteFooter() {
           </a>
         </nav>
 
-        {/* Locale switcher placeholder (Phase 3 replaces this) */}
-        <div
-          aria-label={t('langLabel')}
-          role="group"
-          className="inline-flex items-center gap-1 rounded-full bg-neutral-tint p-1 text-xs font-semibold"
-        >
-          <span
-            aria-pressed="true"
-            className="inline-flex items-center gap-1 rounded-full bg-ink px-3 py-1 text-surface"
-          >
-            <span>{t('vi')}</span>
-            <svg
-              viewBox="0 0 24 24"
-              width="12"
-              height="12"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          </span>
-          <span
-            aria-pressed="false"
-            className="rounded-full px-3 py-1 text-ink-soft"
-          >
-            {t('en')}
-          </span>
-        </div>
+        {/* Locale switcher — real next-intl navigation swap */}
+        <LocaleSwitcher />
       </div>
       <div className="mx-auto max-w-7xl px-4 pb-6 text-center text-xs text-ink-muted lg:px-8">
         © {new Date().getFullYear()} SkillSwap MVP
