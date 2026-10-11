@@ -1,4 +1,4 @@
-import { assertBookable, computeHoldExpiry } from '../domain/booking';
+import { assertBookable, computeHoldExpiry, BookingNotAllowedError } from '../domain/booking';
 import type {
   BookClassCommand,
   BookClassPort,
@@ -20,6 +20,12 @@ export class BookClassUseCase implements BookClassPort {
   async execute(command: BookClassCommand): Promise<BookClassResult> {
     const replay = await this.bookings.findByIdempotencyKey(command.idempotencyKey);
     if (replay !== null) {
+      if (replay.learnerId !== command.learnerId || replay.classId !== command.classId) {
+        throw new BookingNotAllowedError(
+          'duplicate_booking',
+          'Idempotency key already in use for a different booking request',
+        );
+      }
       return { booking: toResource(replay), created: false };
     }
 

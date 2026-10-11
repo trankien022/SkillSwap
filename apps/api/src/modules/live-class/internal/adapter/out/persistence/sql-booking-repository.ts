@@ -8,7 +8,11 @@ import type {
   CreateBookingRecord,
   PersistedBooking,
 } from '../../../application/port/out/booking-repository';
-import type { BookingState, CancelReason } from '../../../domain/booking';
+import {
+  BookingNotAllowedError,
+  type BookingState,
+  type CancelReason,
+} from '../../../domain/booking';
 
 const BOOKINGS_TABLE = 'bookings';
 const CLASSES_TABLE = 'classes';
@@ -45,6 +49,19 @@ function toPersisted(row: BookingRow): PersistedBooking {
     createdAt: toDate(row.created_at),
     expiresAt: toNullableDate(row.expires_at),
   };
+}
+
+function assertSameReplayOwner(
+  row: BookingRow,
+  expectedLearnerId: string,
+  expectedClassId: string,
+): void {
+  if (row.learner_id !== expectedLearnerId || row.class_id !== expectedClassId) {
+    throw new BookingNotAllowedError(
+      'duplicate_booking',
+      'Idempotency key already in use for a different booking request',
+    );
+  }
 }
 
 const BOOKING_COLUMNS =
@@ -97,6 +114,7 @@ export class SqlBookingRepository implements BookingRepository {
         [record.idempotencyKey],
       )) as BookingRow[];
       if (existing[0] !== undefined) {
+        assertSameReplayOwner(existing[0], record.learnerId, record.classId);
         return { booking: toPersisted(existing[0]), created: false };
       }
 
@@ -108,21 +126,31 @@ export class SqlBookingRepository implements BookingRepository {
 
       guard(seatRows.map((row) => ({ learnerId: row.learner_id, state: row.state as BookingState })));
 
-      const inserted = (await manager.query(
-        `INSERT INTO ${bookings} ("class_id", "learner_id", "state", "price_credits", "idempotency_key", "expires_at")
-         VALUES ($1, $2, $3, $4, $5, $6)
-         RETURNING ${BOOKING_COLUMNS}`,
-        [
-          record.classId,
-          record.learnerId,
-          record.state,
-          record.priceCredits,
-          record.idempotencyKey,
-          record.expiresAt.toISOString(),
-        ],
-      )) as BookingRow[];
-      const created = inserted[0];
+      const inserted = await manager.query(
+          `INSERT INTO ${bookings} ("class_id", "learner_id", "state", "price_credits", "idempotency_key", "expires_at")
+           VALUES ($1, $2, $3, $4, $5, $6)
+           ON CONFLICT ("idempotency_key") DO NOTHING
+           RETURNING ${BOOKING_COLUMNS}`,
+          [
+            record.classId,
+            record.learnerId,
+            record.state,
+            record.priceCredits,
+            record.idempotencyKey,
+            record.expiresAt.toISOString(),
+          ],
+        );
+      const created = returnedRows<BookingRow>(inserted)[0];
       if (created === undefined) {
+        const race = (await manager.query(
+          `SELECT ${BOOKING_COLUMNS} FROM ${bookings} WHERE "idempotency_key" = $1`,
+          [record.idempotencyKey],
+        )) as BookingRow[];
+        const conflictRow = race[0];
+        if (conflictRow !== undefined) {
+          assertSameReplayOwner(conflictRow, record.learnerId, record.classId);
+          return { booking: toPersisted(conflictRow), created: false };
+        }
         throw new Error('Booking insert returned no row');
       }
       return { booking: toPersisted(created), created: true };
@@ -146,13 +174,19 @@ export class SqlBookingRepository implements BookingRepository {
         return { confirmed: false, booking: current === undefined ? null : toPersisted(current) };
       }
 
-      const confirmedRows = (await manager.query(
-        `UPDATE ${bookings} SET "state" = 'confirmed', "confirmed_at" = now(), "updated_at" = now()
-           WHERE "id" = $1
-           RETURNING ${BOOKING_COLUMNS}`,
-        [bookingId],
-      )) as BookingRow[];
-      const booking = toPersisted(returnedRows<BookingRow>(confirmedRows)[0]);
+      const confirmedRows = returnedRows<BookingRow>(
+        await manager.query(
+          `UPDATE ${bookings} SET "state" = 'confirmed', "confirmed_at" = now(), "updated_at" = now()
+             WHERE "id" = $1 AND "state" = 'pending' AND ("expires_at" IS NULL OR "expires_at" > now())
+             RETURNING ${BOOKING_COLUMNS}`,
+          [bookingId],
+        ),
+      );
+      const confirmedRow = confirmedRows[0];
+      if (confirmedRow === undefined) {
+        return { confirmed: false, booking: toPersisted(current) };
+      }
+      const booking = toPersisted(confirmedRow);
       await this.emitBookingEvent(manager, BOOKING_CONFIRMED_EVENT, booking, null);
       return { confirmed: true, booking };
     });
