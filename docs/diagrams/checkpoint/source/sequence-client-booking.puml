@@ -1,0 +1,31 @@
+@startuml
+title Current web/mobile | Mock booking screen | FR-007
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam ArrowColor #475569
+skinparam sequenceParticipantBackgroundColor #F1F5F9
+skinparam sequenceParticipantBorderColor #475569
+skinparam activityBackgroundColor #F1F5F9
+skinparam activityBorderColor #475569
+skinparam stateBackgroundColor #F1F5F9
+skinparam stateBorderColor #475569
+actor Learner as L
+participant "Web BookingPanel / Mobile BookingScreen" as UI
+participant "Booking application service" as S
+participant "Local MockBookingGateway" as M
+L -> UI: Open demo class
+UI -> S: Load class
+S -> M: Read demo fixture
+M --> UI: Class view
+L -> UI: Book class
+UI -> S: Book request
+S -> M: Check mock eligibility and create local Pending booking
+alt rejected
+ M --> UI: Typed rejection / recoverable error
+else accepted
+ M --> UI: Pending booking + status hint
+end
+note over UI,M: No HTTP request, PostgreSQL write, wallet settlement,\npush notification or live Jitsi join is made by this booking flow.
+@enduml

@@ -1,0 +1,41 @@
+@startuml
+title Current backend | Mock top-up callback | FR-008
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam ArrowColor #475569
+skinparam sequenceParticipantBackgroundColor #F1F5F9
+skinparam sequenceParticipantBorderColor #475569
+skinparam activityBackgroundColor #F1F5F9
+skinparam activityBorderColor #475569
+skinparam stateBackgroundColor #F1F5F9
+skinparam stateBorderColor #475569
+actor "API caller" as U
+participant Gateway as G
+participant "Wallet use cases" as W
+participant "MockPaymentGateway" as P
+database "wallet_ledger schema" as D
+U -> G: POST /api/wallet/top-ups
+G -> W: Authenticated owner + integer amount
+W -> P: Create mock checkout
+P --> W: Provider reference + mock checkout URL
+W -> D: Persist top_up_intent
+W --> U: Checkout result
+U -> G: POST /api/wallet/top-ups/callback\nTest/provider simulation
+G -> W: Public callback; signature validation adapter
+W -> D: Find intent by provider reference
+alt unknown / replay / status cannot advance
+ W --> U: Acknowledge; applied=false
+else settled
+ W -> D: applyTopUp: wallet credit + ledger idempotently
+ W -> D: update intent status (separate repository operation)
+ W --> U: applied=true
+else reversed
+ W -> D: applyTopUp: offsetting debit idempotently
+ W -> D: update intent status
+ W --> U: applied=true
+end
+note over W,D: Wallet posting and intent status are separate calls in current use case.\nNo transaction spanning both is asserted.
+note over U,P: Mock adapter only; this is not a real-money checkout integration.
+@enduml

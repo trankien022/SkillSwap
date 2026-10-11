@@ -252,43 +252,17 @@ Detailed use cases UC-001–UC-005 are specified in the PRD §11 and restated he
 - Alternate flow: definite nonpayment posts hold release and Failed; timeout/unknown result retains hold in Pending/Processing until callback or reconciliation. Dispatch/retry never creates a second payout; terminal outcomes serialize on request/wallet locks.
 - Postconditions: payout status and trace ID visible in wallet history (AC-008).
 
-#### 3.2.4 Use case diagrams (level 0 and level 1)
+#### 3.2.4 Use case diagram — current implementation
 
-The use case model is leveled into a single **level-0** overview of actors × subsystems and one **level-1** diagram per subsystem. Notation is classic UML: stick-figure actors, elliptical use cases labeled with the immutable code before the name, and unlabeled plain associations connecting actors to use cases only.
+The current backend actor goals are maintained in one [checkpoint use case diagram](../diagrams/checkpoint/source/use-cases.puml). Learner and Teacher are capabilities of the same `user` account; Verifier and Administrator are provisioned account roles (ADR-029/ADR-030).
 
-**Level 0 — actors × subsystems**
+![Current implementation use cases](../diagrams/checkpoint/generated/use-cases.png)
 
-![Use case level 0 — actors and subsystems](../diagrams/usecase/srs-use-case-l0.png)
-
-**Level 1 — Accounts (UC-006–UC-008)**
-
-![Use case level 1 — Accounts](../diagrams/usecase/srs-use-case-accounts.png)
-
-**Level 1 — Verification (UC-001, UC-002, UC-009)**
-
-![Use case level 1 — Verification](../diagrams/usecase/srs-use-case-verification.png)
-
-**Level 1 — Marketplace (UC-003, UC-010, UC-011)**
-
-![Use case level 1 — Marketplace](../diagrams/usecase/srs-use-case-marketplace.png)
-
-**Level 1 — Finance (UC-005, UC-012, UC-013)**
-
-![Use case level 1 — Finance](../diagrams/usecase/srs-use-case-finance.png)
-
-**Level 1 — Learning (UC-004)**
-
-![Use case level 1 — Learning](../diagrams/usecase/srs-use-case-learning.png)
-
-**Level 1 — Operations (UC-014)**
-
-![Use case level 1 — Operations](../diagrams/usecase/srs-use-case-operations.png)
-
-*Reading: every diagram shows the SkillSwap MVP boundary. The four human actors are stick figures outside it; Payment Gateway and Jitsi appear as `«actor»` boxes because they are external systems. Lines are unlabeled actor–use case associations — there are no include/extend dependencies, because each use case is a standalone user goal and authentication is captured as a Precondition instead of an included Log In use case (§3.2.5). Register Account (UC-006) is a self-registration that creates only an ordinary `user` account; Verifier and Administrator accounts are provisioned out of band (ADR-029/ADR-030), so those actors appear on Log In (UC-007) only. Every use case carries the identical code and name on its level-1 diagram, in the Use Case List (§3.2.5) and in the traceability matrix (Appendix C.2).*
+The full required use cases remain in §3.2.5. This diagram shows implemented API goals and explicitly marks mocks and unimplemented functionality; it does not replace or narrow the confirmed requirements. See [checkpoint traceability and gaps](../diagrams/checkpoint/README.md).
 
 #### 3.2.5 Use Case List
 
-One row per use case appearing on the diagrams, ordered by subsystem then code. Codes are immutable and names match the diagrams exactly.
+One row per required use case, ordered by subsystem then code. Codes and names are stable; the current implementation diagram groups related goals and does not claim every required flow is implemented.
 
 | UC ID | Use Case Name | Primary Actor | Secondary Actor(s) | Subsystem | Description | Precondition | Relationships | Priority |
 |---|---|---|---|---|---|---|---|---|
@@ -583,23 +557,19 @@ ERD chi tiết và các ràng buộc triển khai: [data model](../diagrams/data
 
 ### C.3 Diagrams index
 
-Use case diagrams are authored in PlantUML (`docs/diagrams/usecase/srs-use-case-*.puml`) and referenced as PNGs, because GitHub does not render PlantUML natively; state diagrams and the C4 context embed Mermaid/PNG as noted.
+The maintained diagram set is [Week 6 checkpoint](../diagrams/checkpoint/README.md): Structurizr DSL for C4, exported C4-PlantUML, and hand-authored PlantUML for use cases, sequence, activity and state views. SVG and PNG exports are kept beside the sources. Older duplicate use case and lifecycle exports have been removed.
 
-| Diagram | Section | Syntax | Rendered PNG |
-|---|---|---|---|
-| Use case level 0 (actors × subsystems) | §3.2.4 | PlantUML `usecase`/`rectangle` (straight links) | `docs/diagrams/usecase/srs-use-case-l0.png` |
-| Use case level 1 — Accounts (UC-006–UC-008) | §3.2.4 | PlantUML `usecase` (straight links) | `docs/diagrams/usecase/srs-use-case-accounts.png` |
-| Use case level 1 — Verification (UC-001, UC-002, UC-009) | §3.2.4 | PlantUML `usecase` (straight links) | `docs/diagrams/usecase/srs-use-case-verification.png` |
-| Use case level 1 — Marketplace (UC-003, UC-010, UC-011) | §3.2.4 | PlantUML `usecase` (straight links) | `docs/diagrams/usecase/srs-use-case-marketplace.png` |
-| Use case level 1 — Finance (UC-005, UC-012, UC-013) | §3.2.4 | PlantUML `usecase` (straight links) | `docs/diagrams/usecase/srs-use-case-finance.png` |
-| Use case level 1 — Learning (UC-004) | §3.2.4 | PlantUML `usecase` (straight links) | `docs/diagrams/usecase/srs-use-case-learning.png` |
-| Use case level 1 — Operations (UC-014) | §3.2.4 | PlantUML `usecase` (straight links) | `docs/diagrams/usecase/srs-use-case-operations.png` |
-| StudentVerification state machine | §3.2.6 | Mermaid `stateDiagram-v2` | [source](../diagrams/srs-state-student-verification.mmd) · [PNG](../diagrams/srs-state-student-verification.png) |
-| SkillEvidence state machine | §3.2.6 | Mermaid `stateDiagram-v2` | [source](../diagrams/srs-state-skill-evidence.mmd) · [PNG](../diagrams/srs-state-skill-evidence.png) |
-| Class state machine | §3.2.6 | Mermaid `stateDiagram-v2` | [source](../diagrams/srs-state-class.mmd) · [PNG](../diagrams/srs-state-class.png) |
-| Booking state machine | §3.2.6 | Mermaid `stateDiagram-v2` | [source](../diagrams/srs-state-booking.mmd) · [PNG](../diagrams/srs-state-booking.png) |
-| WithdrawalRequest state machine | §3.2.6 | Mermaid `stateDiagram-v2` | [source](../diagrams/srs-state-withdrawal-request.mmd) · [PNG](../diagrams/srs-state-withdrawal-request.png) |
-| System context (C4 L1) | §2.1 | Embedded PNG from `docs/diagrams/c4/generated/` | `docs/diagrams/c4/generated/structurizr-SystemContext.png` |
+| Current implementation diagram | Source | Preview |
+|---|---|---|
+| System context (checkpoint C0) | [Structurizr DSL](../diagrams/c4/source/workspace.dsl) | [PNG](../diagrams/c4/generated/structurizr-SystemContext.png) |
+| Containers (checkpoint C1) | [C4-PlantUML](../diagrams/c4/source/structurizr-Containers.puml) | [PNG](../diagrams/c4/generated/structurizr-Containers.png) |
+| Backend use cases | [PlantUML](../diagrams/checkpoint/source/use-cases.puml) | [PNG](../diagrams/checkpoint/generated/use-cases.png) |
+| StudentVerification lifecycle | [PlantUML](../diagrams/checkpoint/source/state-student-verification.puml) | [PNG](../diagrams/checkpoint/generated/state-student-verification.png) |
+| Class lifecycle | [PlantUML](../diagrams/checkpoint/source/state-class.puml) | [PNG](../diagrams/checkpoint/generated/state-class.png) |
+| Booking lifecycle | [PlantUML](../diagrams/checkpoint/source/state-booking.puml) | [PNG](../diagrams/checkpoint/generated/state-booking.png) |
+| Sequence, activity and additional architecture views | [Complete checkpoint index](../diagrams/checkpoint/README.md) | SVG and PNG linked in index |
+
+The inline state models in §3.2.6 remain requirement models; current-code diagrams record implementation differences separately. No WithdrawalRequest endpoint is claimed as implemented.
 
 ### C.4 FR-007 implementation traceability
 

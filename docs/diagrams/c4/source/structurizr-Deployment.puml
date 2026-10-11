@@ -1,5 +1,5 @@
 @startuml
-title <size:24>Deployment View: SkillSwap System - Production</size>\n<size:24>Production deployment architecture</size>
+title <size:24>Deployment View: SkillSwap System - Development</size>\n<size:24>Local development topology; not a proven production deployment</size>
 
 set separator none
 left to right direction
@@ -15,32 +15,30 @@ left to right direction
 !include <C4/C4_Context>
 !include <C4/C4_Container>
 !include <C4/C4_Deployment>
-!include C:/Users/LENOVO/.agents/skills/plantuml-skill/assets/premium-theme.puml
-skinparam backgroundcolor #ffffff
-skinparam linetype polyline
 
-Deployment_Node(Production.CloudProvider, "Cloud Provider", $type="Cloud", $descr="AWS/Azure/GCP", $tags="", $link="") {
-  Deployment_Node(Production.CloudProvider.ApplicationTier, "Application Tier", $type="Kubernetes/ECS", $descr="Container orchestration", $tags="", $link="") {
-    Container(Production.CloudProvider.ApplicationTier.WebApplication_1, "Web Application", $techn="Next.js (React)", $descr="Frontend for learners, teachers, verifiers, and administrators", $tags="", $link="")
-    Container(Production.CloudProvider.ApplicationTier.Gateway_1, "Gateway", $techn="NestJS (Node.js)", $descr="Public REST entry point: auth, rate limiting, route to RPC", $tags="", $link="")
-    Container(Production.CloudProvider.ApplicationTier.BackendAPI_1, "Backend API", $techn="NestJS (Node.js)", $descr="REST API handling business logic, authentication, and data access", $tags="", $link="")
+Deployment_Node(Development.Developermachine, "Developer machine", $type="Docker / host processes", $descr="Local development; docker-compose.yml", $tags="", $link="") {
+  Deployment_Node(Development.Developermachine.ApplicationTier, "Application Tier", $type="pnpm dev", $descr="Host processes", $tags="", $link="") {
+    Container(Development.Developermachine.ApplicationTier.WebApplication_1, "Web Application", $techn="Next.js (React)", $descr="Web scaffold; HTTP health/status UI; booking UI uses local mock", $tags="", $link="")
+    Container(Development.Developermachine.ApplicationTier.Gateway_1, "Gateway", $techn="NestJS (Node.js)", $descr="Public REST entry point: JWT, trusted identity, rate limiting, HTTP proxy :4000", $tags="", $link="")
+    Container(Development.Developermachine.ApplicationTier.BackendAPI_1, "Backend API", $techn="NestJS (Node.js)", $descr="Private NestJS modular monolith :4001; seven contexts; payment adapter is in-process mock", $tags="", $link="")
   }
 
-  Deployment_Node(Production.CloudProvider.MessagingTier, "Messaging Tier", $type="RabbitMQ 3.13", $descr="Message broker (ADR-013)", $tags="", $link="") {
-    Container(Production.CloudProvider.MessagingTier.MessageBroker_1, "Message Broker", $techn="RabbitMQ", $descr="Topic exchange skillswap.events: outbox relay, idempotent consumers, DLQ", $tags="Queue", $link="")
+  Deployment_Node(Development.Developermachine.MessagingTier, "Messaging Tier", $type="RabbitMQ", $descr="Message broker", $tags="", $link="") {
+    ContainerQueue(Development.Developermachine.MessagingTier.MessageBroker_1, "Message Broker", $techn="RabbitMQ", $descr="Topic exchange skillswap.events: transactional outbox relay, idempotent consumers, DLQ (ADR-013)", $tags="", $link="")
   }
 
-  Deployment_Node(Production.CloudProvider.DataTier, "Data Tier", $type="RDS/Cloud SQL", $descr="Managed database", $tags="", $link="") {
-    ContainerDb(Production.CloudProvider.DataTier.Database_1, "Database", $techn="PostgreSQL", $descr="Stores user accounts, classes, bookings, credits, reviews, and messages", $tags="", $link="")
+  Deployment_Node(Development.Developermachine.MinIOstorage, "MinIO storage", $type="Docker MinIO", $descr="Private document bucket; S3-compatible", $tags="", $link="")
+  Deployment_Node(Development.Developermachine.Jitsivideostack, "Jitsi video stack", $type="Docker Jitsi", $descr="JWT-authenticated web, prosody, jicofo, jvb", $tags="", $link="")
+  Deployment_Node(Development.Developermachine.DataTier, "Data Tier", $type="PostgreSQL", $descr="Docker database", $tags="", $link="") {
+    ContainerDb(Development.Developermachine.DataTier.Database_1, "Database", $techn="PostgreSQL", $descr="One skillswap database; seven module schemas, per-module credentials; no cross-schema joins/FKs", $tags="", $link="")
   }
 
 }
 
-Rel(Production.CloudProvider.ApplicationTier.WebApplication_1, Production.CloudProvider.ApplicationTier.Gateway_1, "Makes API calls to", $techn="HTTPS", $tags="", $link="")
-Rel(Production.CloudProvider.ApplicationTier.Gateway_1, Production.CloudProvider.ApplicationTier.BackendAPI_1, "Forwards requests to", $techn="REST/JSON", $tags="", $link="")
-Rel(Production.CloudProvider.ApplicationTier.BackendAPI_1, Production.CloudProvider.DataTier.Database_1, "Reads/writes to", $techn="TypeORM", $tags="", $link="")
-Rel(Production.CloudProvider.ApplicationTier.BackendAPI_1, Production.CloudProvider.MessagingTier.MessageBroker_1, "Publishes integration events via outbox", $techn="AMQP", $tags="", $link="")
-
+Rel(Development.Developermachine.ApplicationTier.WebApplication_1, Development.Developermachine.ApplicationTier.Gateway_1, "Health/status HTTP calls only; booking uses local mock", $techn="HTTPS/REST", $tags="", $link="")
+Rel(Development.Developermachine.ApplicationTier.Gateway_1, Development.Developermachine.ApplicationTier.BackendAPI_1, "Forwards requests to", $techn="HTTP/JSON", $tags="", $link="")
+Rel(Development.Developermachine.ApplicationTier.BackendAPI_1, Development.Developermachine.MessagingTier.MessageBroker_1, "Publishes integration events via outbox", $techn="AMQP", $tags="", $link="")
+Rel(Development.Developermachine.ApplicationTier.BackendAPI_1, Development.Developermachine.DataTier.Database_1, "Reads from and writes to", $techn="TypeORM", $tags="", $link="")
 
 SHOW_LEGEND(true)
 hide stereotypes
