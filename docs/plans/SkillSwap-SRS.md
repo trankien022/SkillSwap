@@ -49,7 +49,7 @@ SkillSwap MVP ships two clients — a responsive, mobile-first **web application
 |---|---|
 | Learner | A verified student who searches, books and attends classes. |
 | Teacher | A student approved for at least one skill who publishes and teaches classes. |
-| Verifier | An invited domain expert who reviews Teacher skill evidence. |
+| Verifier | An expertise-matched reviewer of Teacher skill evidence; accounts are operator-provisioned with seeded expertise (ADR-027). |
 | Administrator | Platform operator who approves student verifications, manages Verifiers and handles exceptions. |
 | Credit | Internal currency unit; initial rate 1 credit = 1,000 VND (SR-BR-005). |
 | Wallet | Per-user ledger-backed available, pending income and reserved payout_hold credit; only available is spendable. |
@@ -180,7 +180,7 @@ Priority follows MoSCoW from the PRD (`Must` / `Should`). Status preserves the P
 | FR-001 | The system shall allow a student to create, sign in to, and manage one account used for the Learner role and Teacher registration. | Must | intent.md | Confirmed |
 | FR-002 | The system shall allow a student to declare a school name and upload documents for Administrator approval or rejection with a reason. | Must | intent.md | Confirmed; retention open (OQ-008) |
 | FR-003 | The system shall allow a Teacher candidate to submit skills, certificates or capability evidence, with resubmission after rejection. | Must | intent.md | Confirmed; taxonomy resolved (OQ-001, ADR-026) |
-| FR-004 | The system shall allow an Administrator to invite, assign domains to, suspend or revoke Verifiers; only a matched Verifier may approve a Teacher's evidence. | Must | intent.md | Confirmed |
+| FR-004 | The system shall let a Verifier review skill evidence requests whose skill is within their expertise: they shall see only matching pending requests, claim one (which locks it to them permanently), and approve or reject it; only such an active, expertise-matched, non-owner Verifier may decide, and an Administrator may suspend or revoke a Verifier. | Must | intent.md | Confirmed core; expertise seeded (ADR-027) |
 | FR-005 | Only a verified Teacher shall be able to create and publish an online class with skill, description, schedule, duration, price and approved capacity rules. | Must | intent.md | Confirmed core; price open (OQ-002); capacity resolved (OQ-007, AC-028–AC-030) |
 | FR-006 | The system shall let a Learner browse and search open classes by class information and Teacher profile. | Must | intent.md | Confirmed core; taxonomy resolved (OQ-001, ADR-026); search granularity open (FR-006 Phase 0) |
 | FR-007 | The system shall only allow booking a class that has capacity, starts at least 24 hours from now, and lasts 30 minutes to 3 hours. | Must | intent.md | Confirmed core; capacity resolved (OQ-007, AC-028–AC-030); refund/cancellation resolved (OQ-003, AC-022–AC-027) |
@@ -229,7 +229,7 @@ Detailed use cases UC-001–UC-005 are specified in the PRD §11 and restated he
 
 **UC-002 — Verify a Teacher skill**
 - Actors: Teacher candidate, Verifier, Administrator. Trigger: verified student registers to teach a skill.
-- Main flow: submit evidence → routed to domain-matched Verifier → review → skill Approved → class publication allowed for that skill.
+- Main flow: submit evidence → an expertise-matched Verifier sees it in their queue → claims it (locks) → reviews → skill Approved → class publication allowed for that skill.
 - Alternate flow: incomplete data, wrong domain, or Reject with reason → Teacher views reason → submits a new version. Existing valid approval remains usable while the replacement is Pending/Rejected; only approval of the replacement supersedes it and updates the cached level atomically. Administrator role alone cannot decide skill evidence.
 - Postconditions: only Approved skills may publish classes; full decision history retained (FR-018).
 
@@ -295,8 +295,8 @@ One row per use case appearing on the diagrams, ordered by subsystem then code. 
 | UC-007 | Log In | Learner, Teacher, Verifier, Administrator | — | Accounts | An existing user authenticates and obtains the session required by every other use case. | Account registered (UC-006). | — | Must |
 | UC-008 | Manage account | Learner, Teacher | — | Accounts | View and edit the profile, switch the active role view (FR-017), and read account status and rejection reason (FR-001). | Logged in. | — | Must |
 | UC-001 | Verify a student | Learner | Administrator | Verification | Submit student-status evidence; an Administrator approves or rejects it, activating the account on approval (FR-002). | Logged in; verification not yet Approved. | — | Must |
-| UC-002 | Verify a Teacher skill | Teacher | Verifier | Verification | Submit skill evidence; only an active domain-matched Verifier decides, preserving version/decision history and enabling publication at the approved level (FR-003, FR-018). | Logged in as a verified student; initial or replacement evidence submitted. | — | Must |
-| UC-009 | Manage verifiers | Administrator | — | Verification | Invite Verifiers, assign review domains, and suspend or revoke their access (FR-004). | Logged in as Administrator. | — | Must |
+| UC-002 | Verify a Teacher skill | Teacher | Verifier | Verification | Submit skill evidence; an active Verifier sees only requests matching their expertise, claims one (locking it to them), and approves or rejects it, preserving version/decision history and enabling publication at the approved level (FR-003, FR-004, FR-018). | Logged in as a verified student; initial or replacement evidence submitted; Verifier has seeded expertise for the skill. | — | Must |
+| UC-009 | Supervise verifiers | Administrator | — | Verification | Suspend or revoke a Verifier's access (FR-004). Verifier accounts and their expertise are provisioned outside the app (seeded); there is no invite/assign-domain step (ADR-027). | Logged in as Administrator. | — | Must |
 | UC-003 | Book and pay for a class | Learner | Teacher | Marketplace | Book an open class and pay from the wallet; booking and ledger entries commit atomically (FR-007, FR-009). | Logged in; class Published with a free seat and sufficient balance. | — | Must |
 | UC-010 | Publish class | Teacher | — | Marketplace | Create and publish a class listing for an Approved skill so Learners can discover and book it (FR-005). | Logged in as Teacher; at least one skill Approved. | — | Must |
 | UC-011 | Search classes | Learner | — | Marketplace | Discover classes by skill, schedule, price and rating (FR-006). | Registered account. | — | Must |
@@ -341,8 +341,9 @@ stateDiagram-v2
 stateDiagram-v2
   [*] --> Draft
   Draft --> Pending : submit immutable evidence version N
-  Pending --> Approved : active domain-matched Verifier approves
-  Pending --> Rejected : active domain-matched Verifier rejects
+  Pending --> Claimed : expertise-matched Verifier claims (locks to that Verifier)
+  Claimed --> Approved : the claiming Verifier approves (sets approved level)
+  Claimed --> Rejected : the claiming Verifier rejects with reason
   Approved --> Superseded : replacement approved atomically
   Approved --> Revoked : authorized Verifier revokes with reason
   Approved --> Expired : verification or certificate validity ends
@@ -350,6 +351,11 @@ stateDiagram-v2
   Superseded --> [*]
   Revoked --> [*]
   Expired --> [*]
+  note right of Claimed
+    A claim locks the evidence to one Verifier
+    No other Verifier may claim or decide it
+    No release in the MVP (not even on suspend/revoke)
+  end note
   note right of Approved
     Valid approved level controls teaching
     Pending upgrade retains old valid permission
@@ -477,7 +483,7 @@ stateDiagram-v2
 
 ### 3.7 Open items blocking implementation
 
-Implementation of the clauses listed in Appendix A is blocked until the corresponding Open Question is approved (decision policy: **block until resolved**). Affected increments (increment definitions per PRD §14): Increment 2 (OQ-008), Increment 3 (OQ-001, OQ-002; OQ-007 resolved), Increment 4 (OQ-002, OQ-005, OQ-006, OQ-011, OQ-012; OQ-003 resolved), Increment 5 (OQ-004, OQ-009), Increment 6 (no additional OQ; inherits Increment 5 gates), storage/lifecycle design (OQ-008), pilot planning (OQ-010).
+Implementation of the clauses listed in Appendix A is blocked until the corresponding Open Question is approved (decision policy: **block until resolved**). Affected increments (increment definitions per PRD §14): Increment 2 (OQ-008), Increment 3 (OQ-002; OQ-001 resolved — ADR-026, ADR-027; OQ-007 resolved), Increment 4 (OQ-002, OQ-005, OQ-006, OQ-011, OQ-012; OQ-003 resolved), Increment 5 (OQ-004, OQ-009), Increment 6 (no additional OQ; inherits Increment 5 gates), storage/lifecycle design (OQ-008), pilot planning (OQ-010).
 
 ---
 
@@ -510,9 +516,10 @@ Derived from PRD §9. Access is server-authorized by role and ownership; sensiti
 | UserRole | user_id, role, status, assigned_by, assigned_at | One grant per User/role; role suspension is independent of account suspension | Active → Suspended/Revoked; reactivation audited | Internal authorization | Administrator |
 | Profile | id, user_id, display_name, bio, school_id, major_id | Belongs to User; has ProfileSkills and StudentVerifications | Created with User; school/major change requires re-verification | PII | User/Administrator |
 | School / Major / SchoolMajor | id/code/name; school_id + major_id | Managed school and major catalogs; SchoolMajor lists valid pairs | Active → Inactive | Reference data | Administrator |
-| Skill / ProfileSkill | id, name; profile_id, skill_id, level, verifier_expertise_status | Profile ↔ Skill is many-to-many; level caches effective approval (NULL until approved); active Verifier role plus authorized expertise required | Skill Active/Inactive; valid SkillEvidence.approved_level governs teaching; pending upgrades preserve old approval | Public competency + internal authorization | User/Verifier/Administrator |
+| Skill / ProfileSkill | id, name, category; profile_id, skill_id, level | Skill is a `category → skill` catalogue entry (ADR-026); Profile ↔ Skill is many-to-many; level caches effective approval (NULL until approved) | Skill Active/Inactive; valid SkillEvidence.approved_level governs teaching; pending upgrades preserve old approval | Public competency + internal authorization | User/Verifier/Administrator |
+| Verifier | account_id, expertise (skill ids), status | An account with a `verifier` role and a seeded expertise set of skills (ADR-027); expertise scopes the queue and the authority | Active → Suspended/Revoked; expertise set operationally seeded, not admin-assigned | Internal authorization | Administrator (suspend/revoke) |
 | StudentVerification | id, profile_id, school_id, major_id, document_ref, status, reviewer_id, reason, expires_at | Belongs to Profile; immutable submission snapshots; resubmission creates a new row | Draft → Pending → Approved/Rejected; Approved → Superseded/Revoked/Expired | Sensitive identity document | Administrator |
-| SkillEvidence | id, profile_skill_id, evidence_type, document_ref/description, version, requested_level, approved_level, status, reviewer_id, decided_at | Belongs to ProfileSkill; certificate or Verifier recognition; reviewer updates status with audit, no assignment entity | Draft → Pending → Approved/Rejected; Approved → Superseded/Revoked/Expired | Sensitive credential | Teacher/Verifier |
+| SkillEvidence | id, profile_skill_id, evidence_type, document_ref/description, version, requested_level, approved_level, status, reviewer_id, claimed_by, claimed_at, decided_at | Belongs to ProfileSkill; certificate or Verifier recognition; reviewer updates status directly, no assignment table (claim locks the row, ADR-027) | Draft → Pending → Claimed → Approved/Rejected; claim locks permanently (no release) | Sensitive credential | Teacher/Verifier |
 | Class | id, teacher_id, starts_at, duration_minutes, price_credits, capacity, status, commitments_locked_at, completed_at/completed_by | One scheduled online session per Class; has Bookings/ClassSkills; Teacher/content/schedule/skills freeze at first confirmed Booking | Draft → Published/Full → In progress → Completed; cancellation by policy | Public marketplace data | Teacher |
 | ClassSkill | class_id, skill_id, target_level | Class ↔ Skill is many-to-many; Teacher approved level must cover target level | Managed with Class | Public marketplace data | Teacher |
 | Booking | id, class_id, learner_id, status, price_credits, idempotency_key | Links Class/Learner/ledger; price snapshot; at most one valid booking per Learner/Class and one full release operation | Pending → Confirmed → Completed/Cancelled/Disputed | Private transaction data | Learner/Teacher |
@@ -547,7 +554,7 @@ ERD chi tiết và các ràng buộc triển khai: [data model](../diagrams/data
 - **AC-015 / FR-009:** Given hai booking A/B tạo pending 90 mỗi booking và A đã release, when retry release A bằng key khác, then không release thêm; pending của B vẫn 90, available từ A vẫn 90.
 - **AC-016 / FR-003–FR-005:** Given evidence mid còn hiệu lực và yêu cầu mới xin senior, then pending/rejected replacement vẫn giữ quyền mid; nếu Verifier duyệt bản mới ở mid, cache level và quyền đều mid, bản cũ Superseded cùng transaction/audit.
 - **AC-017 / FR-005, FR-007:** Given booking Confirmed đầu tiên, when sửa Teacher/nội dung/kỹ năng/lịch/thời lượng hoặc hủy hết booking rồi sửa, then cam kết vẫn bị khóa; sửa lớp đồng thời với booking không bán nội dung ngoài cam kết.
-- **AC-018 / FR-004:** Given chỉ có vai trò Administrator, hoặc Verifier suspended/sai chuyên môn/tự duyệt, when quyết định skill evidence, then bị từ chối; chỉ Verifier active đúng chuyên môn và khác chủ hồ sơ được quyết định.
+- **AC-018 / FR-004:** Given chỉ có vai trò Administrator, hoặc Verifier suspended/sai chuyên môn/tự duyệt, when quyết định skill evidence, then bị từ chối; chỉ Verifier active đúng chuyên môn và khác chủ hồ sơ được quyết định. Verifier chỉ thấy yêu cầu thuộc chuyên môn của mình; khi một Verifier đã claim một yêu cầu, Verifier khác không thể claim hay quyết định yêu cầu đó (claim khóa vĩnh viễn, không nhả — ADR-027).
 - **AC-019 / FR-009, FR-010:** Given policy hoàn toàn bộ đã được duyệt và booking đã release nhưng Teacher còn đủ available, when hoàn tiền, then đảo release và booking nguyên tử, không tạo pending âm; sau payout/thiếu nguồn bù không tự post refund trái OQ-003/OQ-006.
 - **AC-020 / OQ-007:** Sau khi OQ-007 được duyệt, acceptance suite phải bao gồm hai yêu cầu đồng thời cho chỗ cuối và việc tự động nhả capacity hold hết hạn.
 - **AC-021 / OQ-008:** Sau khi OQ-008 được duyệt, acceptance suite phải kiểm tra cả hai hướng quyết định cascade và grandfather đối với lớp, booking, room access, thu nhập pending và payout.

@@ -9,6 +9,7 @@ import { SqlModuleStatusReader } from './internal/adapter/out/persistence/sql-mo
 import { SqlModuleStatusWriter } from './internal/adapter/out/persistence/sql-module-status-writer';
 import { SqlSkillRepository, SqlProfileSkillRepository } from './internal/adapter/out/persistence/sql-skill-repository';
 import { SqlSkillEvidenceRepository } from './internal/adapter/out/persistence/sql-skill-evidence-repository';
+import { SqlVerifierRepository } from './internal/adapter/out/persistence/sql-verifier-repository';
 import { SqlVerifiedStudentProjector } from './internal/adapter/out/persistence/sql-verified-student-projector';
 import { SystemClock } from './internal/adapter/out/crypto/system-clock';
 import { StatusController } from './internal/adapter/in/web/status.controller';
@@ -16,8 +17,14 @@ import {
   ProfileSkillController,
   SkillEvidenceController,
 } from './internal/adapter/in/web/skill-evidence.controller';
+import { VerifierController, SkillEvidenceDecisionController } from './internal/adapter/in/web/verifier.controller';
 import { AdvanceStatusUseCase } from './internal/application/advance-status.use-case';
 import { SubmitSkillEvidenceUseCase } from './internal/application/submit-skill-evidence.use-case';
+import { ChangeVerifierStatusUseCase } from './internal/application/change-verifier-status.use-case';
+import { ClaimSkillEvidenceUseCase } from './internal/application/claim-skill-evidence.use-case';
+import { DecideSkillEvidenceUseCase } from './internal/application/decide-skill-evidence.use-case';
+import { ListVerifierQueueQueryHandler } from './internal/application/list-verifier-queue.query';
+import { VerifierAuthority } from './internal/application/verifier-authority';
 import { GetMyProfileSkillsQueryHandler } from './internal/application/query/get-my-profile-skills.query';
 import { GET_MODULE_STATUS } from './internal/application/port/in/get-module-status';
 import { ADVANCE_STATUS } from './internal/application/port/in/advance-status';
@@ -26,6 +33,22 @@ import {
   GET_MY_PROFILE_SKILLS,
   type GetMyProfileSkillsPort,
 } from './internal/application/port/in/get-my-profile-skills';
+import {
+  CHANGE_VERIFIER_STATUS,
+  type ChangeVerifierStatusPort,
+} from './internal/application/port/in/change-verifier-status';
+import {
+  CLAIM_SKILL_EVIDENCE,
+  type ClaimSkillEvidencePort,
+} from './internal/application/port/in/claim-skill-evidence';
+import {
+  DECIDE_SKILL_EVIDENCE,
+  type DecideSkillEvidencePort,
+} from './internal/application/port/in/decide-skill-evidence';
+import {
+  LIST_VERIFIER_QUEUE,
+  type ListVerifierQueuePort,
+} from './internal/application/port/in/list-verifier-queue';
 import { STATUS_READER, type ModuleStatusReader } from './internal/application/port/out/module-status-reader';
 import { STATUS_WRITER, type ModuleStatusWriter } from './internal/application/port/out/module-status-writer';
 import { CLOCK, type Clock } from './internal/application/port/out/clock';
@@ -33,8 +56,10 @@ import { SKILL_REPOSITORY, type SkillRepository } from './internal/application/p
 import {
   PROFILE_SKILL_REPOSITORY,
   SKILL_EVIDENCE_REPOSITORY,
+  VERIFIER_REPOSITORY,
   type ProfileSkillRepository,
   type SkillEvidenceRepository,
+  type VerifierRepository,
 } from './internal/application/port/out/skill-evidence-repository';
 import {
   VERIFIED_STUDENT_READER,
@@ -79,7 +104,13 @@ export class SkillVerificationRegistrar implements OnModuleInit {
 }
 
 @Module({
-  controllers: [StatusController, SkillEvidenceController, ProfileSkillController],
+  controllers: [
+    StatusController,
+    SkillEvidenceController,
+    ProfileSkillController,
+    VerifierController,
+    SkillEvidenceDecisionController,
+  ],
   providers: [
     {
       provide: STATUS_READER,
@@ -119,6 +150,17 @@ export class SkillVerificationRegistrar implements OnModuleInit {
       inject: [ModuleDataSourceRegistry],
     },
     {
+      provide: VERIFIER_REPOSITORY,
+      useFactory: (registry: ModuleDataSourceRegistry): VerifierRepository =>
+        new SqlVerifierRepository(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
+      provide: VerifierAuthority,
+      useFactory: (verifiers: VerifierRepository) => new VerifierAuthority(verifiers),
+      inject: [VERIFIER_REPOSITORY],
+    },
+    {
       provide: ADVANCE_STATUS,
       useFactory: (reader: ModuleStatusReader, writer: ModuleStatusWriter) =>
         new AdvanceStatusUseCase(reader, writer),
@@ -146,6 +188,56 @@ export class SkillVerificationRegistrar implements OnModuleInit {
       useFactory: (profileSkills: ProfileSkillRepository): GetMyProfileSkillsPort =>
         new GetMyProfileSkillsQueryHandler(profileSkills),
       inject: [PROFILE_SKILL_REPOSITORY],
+    },
+    {
+      provide: CHANGE_VERIFIER_STATUS,
+      useFactory: (verifiers: VerifierRepository): ChangeVerifierStatusPort =>
+        new ChangeVerifierStatusUseCase(verifiers),
+      inject: [VERIFIER_REPOSITORY],
+    },
+    {
+      provide: LIST_VERIFIER_QUEUE,
+      useFactory: (
+        evidence: SkillEvidenceRepository,
+        verifiers: VerifierRepository,
+      ): ListVerifierQueuePort => new ListVerifierQueueQueryHandler(evidence, verifiers),
+      inject: [SKILL_EVIDENCE_REPOSITORY, VERIFIER_REPOSITORY],
+    },
+    {
+      provide: CLAIM_SKILL_EVIDENCE,
+      useFactory: (
+        evidence: SkillEvidenceRepository,
+        profileSkills: ProfileSkillRepository,
+        skills: SkillRepository,
+        authority: VerifierAuthority,
+        clock: Clock,
+      ): ClaimSkillEvidencePort =>
+        new ClaimSkillEvidenceUseCase(evidence, profileSkills, skills, authority, clock),
+      inject: [
+        SKILL_EVIDENCE_REPOSITORY,
+        PROFILE_SKILL_REPOSITORY,
+        SKILL_REPOSITORY,
+        VerifierAuthority,
+        CLOCK,
+      ],
+    },
+    {
+      provide: DECIDE_SKILL_EVIDENCE,
+      useFactory: (
+        evidence: SkillEvidenceRepository,
+        profileSkills: ProfileSkillRepository,
+        skills: SkillRepository,
+        authority: VerifierAuthority,
+        clock: Clock,
+      ): DecideSkillEvidencePort =>
+        new DecideSkillEvidenceUseCase(evidence, profileSkills, skills, authority, clock),
+      inject: [
+        SKILL_EVIDENCE_REPOSITORY,
+        PROFILE_SKILL_REPOSITORY,
+        SKILL_REPOSITORY,
+        VerifierAuthority,
+        CLOCK,
+      ],
     },
     {
       provide: GET_MODULE_STATUS,

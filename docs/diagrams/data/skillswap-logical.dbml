@@ -28,13 +28,21 @@ Table user_roles {
   assigned_at timestamptz [not null]
   updated_at timestamptz [not null]
   indexes { (user_id, role) [pk] }
-  Note: 'Retain grants when suspended/revoked; every transition is audited. Suspending a Verifier role does not suspend the User or their Learner/Teacher roles. Skill review requires this role AND matching expertise to be active.'
+  Note: 'Retain grants when suspended/revoked; every transition is audited. Suspending a Verifier role does not suspend the User or their Learner/Teacher roles. Skill review requires this role AND matching expertise to be active. Verifier accounts and expertise are seeded operationally, not assigned via an admin API (ADR-027).'
+}
+
+Table verifier_expertise {
+  account_id uuid [not null]
+  skill_id uuid [not null, ref: > skills.id]
+  indexes { (account_id, skill_id) [pk] }
+  Note: 'Skills a Verifier is competent to review; seeded (ADR-027). A Verifier may hold several skills. Scopes the pending queue and the decision authority; no assignment table for requests.'
 }
 
 Enum skill_level {
-  begin
-  mid
-  senior
+  beginner
+  intermediate
+  advanced
+  expert
 }
 
 Table schools {
@@ -98,9 +106,11 @@ Ref: student_verifications.(school_id, major_id) > school_majors.(school_id, maj
 
 Table skills {
   id uuid [pk]
-  name varchar(160) [not null, unique]
+  name varchar(160) [not null]
+  category varchar(160) [not null]
   active boolean [not null, default: true]
-  Note: 'Only the skill itself is modeled; category hierarchy and tags await OQ-001.'
+  indexes { (name, category) [unique] (category) }
+  Note: 'Managed, admin-seeded catalogue; a two-level category → skill tree (ADR-026). Evidence must reference a known, active skill.'
 }
 
 Table profile_skills {
@@ -108,16 +118,12 @@ Table profile_skills {
   profile_id uuid [not null, ref: > profiles.id]
   skill_id uuid [not null, ref: > skills.id]
   level skill_level [note: 'Cached effective approved level; NULL before approval or when no effective approval remains. Not self-editable.']
-  verifier_expertise_status varchar(24) [not null, default: 'none', note: 'none | active | suspended | revoked; managed only by Administrator for invited Verifiers']
-  expertise_approved_by uuid [ref: > users.id]
-  expertise_approved_at timestamptz
   created_at timestamptz [not null]
   updated_at timestamptz [not null]
   indexes {
     (profile_id, skill_id) [unique]
-    (skill_id, verifier_expertise_status)
   }
-  Note: 'Valid approved SkillEvidence.approved_level is the authority for teaching permission; level is only a cache. A new requested level belongs to the new evidence, leaving the old valid approval usable while pending or rejected. Approval atomically supersedes the previous evidence and updates this cache, including approval below the requested level. Expiry/revocation invalidates the cache; authorization always checks live evidence and certificate expiry. Active Verifier expertise requires an active Verifier role and Administrator approval.'
+  Note: 'Valid approved SkillEvidence.approved_level is the authority for teaching permission; level is only a cache. A new requested level belongs to the new evidence, leaving the old valid approval usable while pending or rejected. Approval atomically supersedes the previous evidence and updates this cache, including approval below the requested level. Expiry/revocation invalidates the cache; authorization always checks live evidence and certificate expiry.'
 }
 
 Table skill_evidence {
@@ -132,7 +138,9 @@ Table skill_evidence {
   certificate_expires_at timestamptz
   requested_level skill_level [not null]
   approved_level skill_level
-  status varchar(24) [not null, note: 'draft | pending | approved | rejected | superseded | revoked | expired']
+  status varchar(24) [not null, note: 'pending | claimed | approved | rejected | superseded']
+  claimed_by uuid [ref: > users.id, note: 'Verifier who locked this request; NULL until claimed']
+  claimed_at timestamptz
   reviewer_id uuid [ref: > users.id]
   decision_reason text
   submitted_at timestamptz
@@ -142,7 +150,7 @@ Table skill_evidence {
     (profile_skill_id, version) [unique]
     (status, submitted_at)
   }
-  Note: 'No assignment table. Only an active, domain-matched Verifier may decide; Administrator role alone never grants skill-review permission. Reviewer cannot be the owner (BR-011..BR-013). Approval requires reviewer, time and approved level; rejection/revocation requires reason. Certificates are reviewed, never auto-approved. Submitted proof and requested level are immutable; resubmission creates a new version. Partial unique index on profile_skill_id WHERE status = approved. Replacement approval, old evidence supersession, profile_skills.level update and structured audit commit atomically under a ProfileSkill lock. Pending/rejected replacements preserve old valid permission. Every transition retains old/new decision data in audit_events (FR-018).'
+  Note: 'No assignment table. Only an active, expertise-matched Verifier (not Admin, not the owner) may decide. A distinct claim (claimed_by/claimed_at) locks the request to one Verifier permanently — no release in the MVP, not even on suspend/revoke (ADR-027). Approval requires reviewer, time and approved level; rejection requires reason. Submitted proof and requested level are immutable; resubmission creates a new version. Partial unique index on profile_skill_id WHERE status = approved. Replacement approval, old evidence supersession and profile_skills.level update commit atomically under a ProfileSkill lock. Pending/rejected replacements preserve old valid permission. Every transition retains old/new decision data in audit_events (FR-018).'
 }
 
 Table classes {

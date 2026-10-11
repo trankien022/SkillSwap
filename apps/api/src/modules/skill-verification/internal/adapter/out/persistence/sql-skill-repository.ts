@@ -87,6 +87,24 @@ export class SqlProfileSkillRepository implements ProfileSkillRepository {
     return rows[0] === undefined ? null : toDomain(rows[0]);
   }
 
+  async findById(profileSkillId: string): Promise<ProfileSkill | null> {
+    const source = this.registry.get(this.moduleName);
+    const rows = (await source.query(
+      `SELECT "id", "account_id", "skill_id", "approved_level", "created_at", "updated_at"
+         FROM ${this.table} WHERE "id" = $1`,
+      [profileSkillId],
+    )) as ProfileSkillRow[];
+    return rows[0] === undefined ? null : toDomain(rows[0]);
+  }
+
+  async applyApprovedLevel(profileSkillId: string, level: SkillLevel | null): Promise<void> {
+    const source = this.registry.get(this.moduleName);
+    await source.query(
+      `UPDATE ${this.table} SET "approved_level" = $2, "updated_at" = now() WHERE "id" = $1`,
+      [profileSkillId, level],
+    );
+  }
+
   async listByAccount(accountId: string): Promise<ProfileSkillWithSkill[]> {
     const source = this.registry.get(this.moduleName);
     const rows = (await source.query(

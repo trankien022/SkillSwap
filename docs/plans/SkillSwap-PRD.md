@@ -61,7 +61,7 @@ Lan đã có tài khoản Learner Active, chọn trở thành Teacher, chọn k�
 
 ### 3.3 Thầy Hùng duyệt hồ sơ Verifier
 
-Thầy Hùng nhận thông báo có hồ sơ mới trong chuyên môn của mình, mở hàng đợi được sắp theo thời gian nộp, xem portfolio và mô tả kinh nghiệm, rồi chọn duyệt hoặc từ chối kèm lý do rõ ràng để Teacher có thể tự sửa và nộp lại.
+Thầy Hùng (Verifier, tài khoản và chuyên môn được cấp sẵn) thấy trong hàng đợi của mình chỉ những hồ sơ thuộc chuyên môn, sắp theo thời gian nộp; thầy mở một hồ sơ và **claim** nó (khóa cho riêng mình), xem portfolio và mô tả kinh nghiệm, rồi duyệt hoặc từ chối kèm lý do rõ ràng để Teacher có thể tự sửa và nộp lại.
 
 ## 4. Feature List
 
@@ -93,7 +93,7 @@ Thầy Hùng nhận thông báo có hồ sơ mới trong chuyên môn của mìn
 | FR-001 | Functional | Hệ thống phải cho phép sinh viên tạo, đăng nhập và quản lý một tài khoản dùng cho Learner và đăng ký Teacher. | Must | `docs/intent.md` | Confirmed |
 | FR-002 | Functional | Hệ thống phải cho phép sinh viên khai báo tên trường và tải giấy tờ để Administrator phê duyệt hoặc từ chối kèm lý do. | Must | `docs/intent.md` | Confirmed; retention open |
 | FR-003 | Functional | Hệ thống phải cho phép ứng viên Teacher nộp kỹ năng, chứng chỉ hoặc bằng chứng năng lực, với cơ chế nộp lại sau khi bị từ chối. | Must | `docs/intent.md` | Confirmed core; taxonomy open |
-| FR-004 | Functional | Hệ thống phải cho phép Administrator mời, gán chuyên môn, đình chỉ hoặc thu hồi Verifier; chỉ Verifier phù hợp mới được duyệt hồ sơ Teacher. | Must | `docs/intent.md` | Confirmed |
+| FR-004 | Functional | Hệ thống phải cho Verifier xét duyệt hồ sơ năng lực theo chuyên môn: chỉ thấy yêu cầu thuộc chuyên môn của mình, claim một yêu cầu (khóa vĩnh viễn cho Verifier đó, không nhả), rồi approve/reject; chỉ Verifier active, đúng chuyên môn, khác chủ hồ sơ được quyết định; Administrator chỉ đình chỉ/thu hồi Verifier (tài khoản Verifier và chuyên môn được seed ngoài ứng dụng). | Must | `docs/intent.md` | Confirmed core; expertise seeded (ADR-027) |
 | FR-005 | Functional | Chỉ Teacher đã được xác minh được tạo và công bố lớp trực tuyến với kỹ năng còn hiệu lực (chưa bị thu hồi/hết hạn), mô tả, lịch không trùng lịch, thời lượng 30–180 phút, giá và quy tắc sức chứa đã được duyệt. | Must | `docs/intent.md` | Confirmed; price/capacity open |
 | FR-006 | Functional | Learner phải có thể duyệt và tìm kiếm lớp đang mở theo thông tin lớp và hồ sơ Teacher. | Must | `docs/intent.md` | Confirmed; taxonomy open |
 | FR-007 | Functional | Learner chỉ có thể đặt lớp còn khả năng nhận booking, bắt đầu sau ít nhất 24 giờ và kéo dài từ 30 phút đến 3 giờ. | Must | `docs/intent.md` | Confirmed core; capacity resolved (OQ-007, AC-028–AC-030); refund/cancellation resolved (OQ-003, AC-022–AC-027) |
@@ -127,7 +127,7 @@ Toàn văn 70 quy tắc nghiệp vụ (BR-001–BR-070) được quản lý tậ
 | BR-008 | Chỉ publish lớp cho skill đã được Verifier chấp thuận. | FR-005 |
 | BR-009 | Xác minh Teacher quản lý theo từng skill, không phải trạng thái chung. | FR-003, FR-005 |
 | BR-010 | Skill verification có NOT_SUBMITTED/PENDING/VERIFIED/REJECTED (+REVOKED/EXPIRED). | FR-003, FR-005 |
-| BR-011 | Verifier là nhóm riêng, được mời, có chuyên môn; không đồng nhất với Admin. | FR-004 |
+| BR-011 | Verifier là nhóm riêng, có chuyên môn (seed ngoài ứng dụng, không gán qua admin API); không đồng nhất với Admin. | FR-004 |
 | BR-012 | Verifier không được tự xác minh yêu cầu của chính mình. | FR-004, NFR-009 |
 | BR-013 | Teacher không được tự chọn Verifier. | FR-004 |
 | BR-014 | Bằng chứng đã submit bị khóa chỉnh sửa; thay đổi tạo phiên bản mới có audit trail. | FR-018 |
@@ -200,7 +200,7 @@ Form gồm tên trường (autocomplete), mã số sinh viên tùy chọn, và t
 
 ### 6.3 Xác minh năng lực Teacher
 
-Chọn kỹ năng từ taxonomy, tải nhiều file bằng chứng và mô tả kinh nghiệm. Hàng đợi Verifier lọc theo chuyên môn đã được Administrator công nhận, hiển thị đầy đủ bằng chứng, với lý do bắt buộc khi từ chối.
+Chọn kỹ năng từ taxonomy, tải nhiều file bằng chứng và mô tả kinh nghiệm. Hàng đợi Verifier lọc theo chuyên môn được seed cho tài khoản Verifier; Verifier claim một yêu cầu (khóa cho mình) rồi duyệt/từ chối với lý do bắt buộc khi từ chối.
 
 ### 6.4 Công bố lớp
 
@@ -273,7 +273,7 @@ Các màn hình chính của MVP gồm: đăng ký/đăng nhập, trang chủ Le
 | WithdrawalRequest | id, teacher_id, amount_credits, exchange_rate_vnd, destination_ref, status, trace_id | Has many LedgerTransactions through withdrawal_request_id; hold commits before payout; amount/rate/destination frozen | Pending → Processing → Completed/Failed; timeout retains hold until reconciliation; authorized payout reversal → Reversed | Sensitive financial | Teacher/Platform |
 | AuditEvent | id, actor_id, action, target_type/id, old_state_json, new_state_json, occurred_at, trace_id, metadata_json | Commits with state change; whitelisted decision snapshots preserve full evidence/role/completion/financial history | Append-only | Internal audit; no document content or payout destinations | Platform |
 
-ERD chi tiết và các ràng buộc triển khai: [data model](../diagrams/data/README.md). Một Class là một buổi học có lịch/phòng riêng, không có bảng Session. Hai cách xác minh là kiểm tra chứng chỉ hoặc Verifier công nhận năng lực; chỉ Verifier đang active và đúng chuyên môn được quyết định. Không có bảng phân công Verifier hoặc bảng TopUp. Evidence Approved còn hiệu lực quyết định level được phép dạy; pending/rejected replacement giữ quyền cũ còn hiệu lực. Quyết định lưu trên SkillEvidence, lịch sử trước/sau lưu trong audit. Chỉ publish khi Teacher còn xác minh sinh viên hiệu lực và được duyệt đủ level cho **tất cả** skill của lớp; khóa cam kết tại booking Confirmed đầu tiên. Payout giữ credit trước khi gọi gateway; timeout chưa phải thất bại. Thời điểm release, hoàn tiền/nguồn bù sau payout và làm tròn vẫn theo OQ-003 (đã resolved, xem AC-022–AC-027)/OQ-006/OQ-012.
+ERD chi tiết và các ràng buộc triển khai: [data model](../diagrams/data/README.md). Một Class là một buổi học có lịch/phòng riêng, không có bảng Session. Hai cách xác minh là kiểm tra chứng chỉ hoặc Verifier công nhận năng lực; chỉ Verifier đang active và đúng chuyên môn (seed) được quyết định, sau khi claim khóa yêu cầu cho mình (không nhả, ADR-027). Không có bảng phân công Verifier hoặc bảng TopUp. Evidence Approved còn hiệu lực quyết định level được phép dạy; pending/rejected replacement giữ quyền cũ còn hiệu lực. Quyết định lưu trên SkillEvidence, lịch sử trước/sau lưu trong audit. Chỉ publish khi Teacher còn xác minh sinh viên hiệu lực và được duyệt đủ level cho **tất cả** skill của lớp; khóa cam kết tại booking Confirmed đầu tiên. Payout giữ credit trước khi gọi gateway; timeout chưa phải thất bại. Thời điểm release, hoàn tiền/nguồn bù sau payout và làm tròn vẫn theo OQ-003 (đã resolved, xem AC-022–AC-027)/OQ-006/OQ-012.
 
 Access is server-authorized by role and ownership. Sensitive files are encrypted in transit and at rest, stored outside executable paths, and never written to application logs.
 

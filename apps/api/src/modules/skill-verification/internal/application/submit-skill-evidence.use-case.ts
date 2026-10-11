@@ -70,6 +70,11 @@ export class SubmitSkillEvidenceUseCase implements SubmitSkillEvidencePort {
       submittedAt: draft.submittedAt,
     });
 
-    return toSkillEvidenceView(stored, skill.id);
+    return toSkillEvidenceView(stored, {
+      skillId: skill.id,
+      skillName: skill.name,
+      category: skill.category,
+      ownerId: command.accountId,
+    });
   }
 }
