@@ -7,7 +7,7 @@ async function seed() {
   const account = await accounts.create({
     email: 'a@b.co',
     displayName: 'An',
-    role: 'teacher',
+    role: 'user',
     status: 'active',
   });
   return { accounts, account };
@@ -21,7 +21,7 @@ describe('GetMeUseCase (FR-001 / FR-017)', () => {
       id: account.id,
       email: 'a@b.co',
       displayName: 'An',
-      role: 'teacher',
+      role: 'user',
       status: 'active',
       studentVerification: null,
     });

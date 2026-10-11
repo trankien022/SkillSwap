@@ -1,5 +1,5 @@
 @startuml
-title <size:24>Dynamic View: SkillSwap System</size>\n<size:24>Verifier reviews teacher skills</size>
+title <size:24>Dynamic View: SkillSwap System</size>\n<size:24>Current verifier claim and decision via API client</size>
 
 set separator none
 left to right direction
@@ -14,24 +14,19 @@ left to right direction
 !include <C4/C4>
 !include <C4/C4_Context>
 !include <C4/C4_Container>
-!include C:/Users/LENOVO/.agents/skills/plantuml-skill/assets/premium-theme.puml
-skinparam backgroundcolor #ffffff
-skinparam linetype polyline
 
 System_Boundary("SkillSwapSystem_boundary", "SkillSwap System", $tags="") {
-  Container(SkillSwapSystem.WebApplication, "Web Application", $techn="Next.js (React)", $descr="Frontend for learners, teachers, verifiers, and administrators", $tags="", $link="")
-  Container(SkillSwapSystem.Gateway, "Gateway", $techn="NestJS (Node.js)", $descr="Public REST entry point: auth, rate limiting, route to RPC", $tags="", $link="")
-  Container(SkillSwapSystem.BackendAPI, "Backend API", $techn="NestJS (Node.js)", $descr="REST API handling business logic, authentication, and data access", $tags="", $link="")
-  ContainerDb(SkillSwapSystem.Database, "Database", $techn="PostgreSQL", $descr="Stores user accounts, classes, bookings, credits, reviews, and messages", $tags="", $link="")
+  ContainerDb(SkillSwapSystem.Database, "Database", $techn="PostgreSQL", $descr="One skillswap database; seven module schemas, per-module credentials; no cross-schema joins/FKs", $tags="", $link="")
+  ContainerQueue(SkillSwapSystem.MessageBroker, "Message Broker", $techn="RabbitMQ", $descr="Topic exchange skillswap.events: transactional outbox relay, idempotent consumers, DLQ (ADR-013)", $tags="", $link="")
+  Container(SkillSwapSystem.Gateway, "Gateway", $techn="NestJS (Node.js)", $descr="Public REST entry point: JWT, trusted identity, rate limiting, HTTP proxy :4000", $tags="", $link="")
+  Container(SkillSwapSystem.BackendAPI, "Backend API", $techn="NestJS (Node.js)", $descr="Private NestJS modular monolith :4001; seven contexts; payment adapter is in-process mock", $tags="", $link="")
 }
 
-Person(Verifier, "Verifier", $descr="Reviews and verifies teacher skills", $tags="", $link="")
-
-Rel(Verifier, SkillSwapSystem.WebApplication, "1: Reviews teacher evidence", $techn="HTTPS", $tags="", $link="")
-Rel(SkillSwapSystem.WebApplication, SkillSwapSystem.Gateway, "2: GET /verifications", $techn="HTTPS", $tags="", $link="")
-Rel(SkillSwapSystem.Gateway, SkillSwapSystem.BackendAPI, "3: Forwards request", $techn="REST/JSON", $tags="", $link="")
-Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.Database, "4: Read teacher skills", $techn="TypeORM", $tags="", $link="")
-
+Rel(SkillSwapSystem.Gateway, SkillSwapSystem.BackendAPI, "1: GET /api/verifiers/me/queue (API caller)", $techn="HTTP/JSON", $tags="", $link="")
+Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.Database, "2: Read expertise-filtered queue in skill_verification", $techn="TypeORM", $tags="", $link="")
+Rel(SkillSwapSystem.Gateway, SkillSwapSystem.BackendAPI, "3: POST /api/skill-evidence/:id/claim then /decision", $techn="HTTP/JSON", $tags="", $link="")
+Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.Database, "4: Authorize claim holder; decision, level, audit and outbox transaction", $techn="TypeORM", $tags="", $link="")
+Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.MessageBroker, "5: Relay approval events; Live Class updates own publish-rights projections", $techn="AMQP", $tags="", $link="")
 
 SHOW_LEGEND(true)
 hide stereotypes

@@ -31,13 +31,13 @@ describe('E2E: verifier decisions on skill evidence (FR-004)', () => {
       email,
       displayName: 'Evidence Learner',
       password: 'learner-password',
-      role: 'learner',
+      role: 'user',
     });
     return accountIdFromToken(res.json.accessToken);
   }
 
   async function verifyStudent(learnerId: string, adminId: string): Promise<void> {
-    api.actAs(learnerId, 'learner');
+    api.actAs(learnerId, 'user');
     const target = await api.post('/api/student-verifications/documents', {
       fileName: 'transcript.pdf',
       contentType: 'application/pdf',
@@ -53,7 +53,7 @@ describe('E2E: verifier decisions on skill evidence (FR-004)', () => {
 
   async function waitVerified(learnerId: string): Promise<void> {
     await waitFor(async () => {
-      api.actAs(learnerId, 'learner');
+      api.actAs(learnerId, 'user');
       const me = await api.get('/api/auth/me');
       return me.json?.studentVerification?.status === 'approved' ? me : null;
     });
@@ -64,7 +64,7 @@ describe('E2E: verifier decisions on skill evidence (FR-004)', () => {
     const learnerId = await registerLearner(email);
     await verifyStudent(learnerId, admin);
     await waitVerified(learnerId);
-    api.actAs(learnerId, 'learner');
+    api.actAs(learnerId, 'user');
     const submitted = await api.post('/api/skill-evidence', {
       skillId,
       requestedLevel: 'intermediate',
@@ -101,7 +101,7 @@ describe('E2E: verifier decisions on skill evidence (FR-004)', () => {
     expect(decided.json.approvedLevel).toBe('advanced');
 
     // The owner sees the effective level cached on their profile skill.
-    api.actAs(learnerId, 'learner');
+    api.actAs(learnerId, 'user');
     const mine = await api.get('/api/profile-skills/me');
     const entry = mine.json.find((row: { skillId: string }) => row.skillId === skillId);
     expect(entry.approvedLevel).toBe('advanced');

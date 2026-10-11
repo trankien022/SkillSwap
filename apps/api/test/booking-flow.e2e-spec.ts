@@ -1,6 +1,6 @@
 import { startHarness, type Harness } from './harness';
 import { accountIdFromToken, ApiClient, waitFor } from './support/api-client';
-import { resetDatabase, walletRow } from './support/db';
+import { resetDatabase, seedTeacherTrust, walletRow } from './support/db';
 import { PendingHoldSweeper } from '../src/modules/live-class/internal/adapter/in/scheduler/pending-hold.sweeper';
 
 jest.setTimeout(60_000);
@@ -39,19 +39,25 @@ describe('E2E: book → settle → room → complete → release', () => {
       email: 'learner@skillswap.test',
       displayName: 'Learner',
       password: 'learner-password',
-      role: 'learner',
+      role: 'user',
     });
     const teacher = await api.post('/api/auth/register', {
       email: 'teacher@skillswap.test',
       displayName: 'Teacher',
       password: 'teacher-password',
-      role: 'teacher',
+      role: 'user',
     });
     expect(learner.status).toBe(201);
     expect(teacher.status).toBe(201);
 
     learnerId = accountIdFromToken(learner.json.accessToken);
     teacherId = accountIdFromToken(teacher.json.accessToken);
+    // FR-005 publish gate: the teacher is a verified student approved for the class skill.
+    await seedTeacherTrust(harness, {
+      teacherId,
+      verified: true,
+      approvedLevels: { 'skill-guitar': 'advanced' },
+    });
     api.actAs(learnerId);
   });
 

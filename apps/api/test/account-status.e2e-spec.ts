@@ -30,7 +30,7 @@ describe('E2E: learner account status (FR-017)', () => {
       email,
       displayName: 'Status Learner',
       password: 'learner-password',
-      role: 'learner',
+      role: 'user',
     });
     return accountIdFromToken(res.json.accessToken);
   }
@@ -47,7 +47,7 @@ describe('E2E: learner account status (FR-017)', () => {
   /** Polls /auth/me until the projected verification status matches. */
   async function meUntilStatus(userId: string, status: string) {
     return waitFor(async () => {
-      api.actAs(userId, 'learner');
+      api.actAs(userId, 'user');
       const me = await api.get('/api/auth/me');
       return me.json.studentVerification?.status === status ? me : null;
     });
@@ -57,7 +57,7 @@ describe('E2E: learner account status (FR-017)', () => {
     const learnerId = await registerLearner('fr17-learner@skillswap.test');
 
     // No submission yet → null.
-    api.actAs(learnerId, 'learner');
+    api.actAs(learnerId, 'user');
     const before = await api.get('/api/auth/me');
     expect(before.status).toBe(200);
     expect(before.json.studentVerification).toBeNull();
@@ -90,7 +90,7 @@ describe('E2E: learner account status (FR-017)', () => {
 
   it('shows approved after an admin approval', async () => {
     const learnerId = await registerLearner('fr17-approve@skillswap.test');
-    api.actAs(learnerId, 'learner');
+    api.actAs(learnerId, 'user');
 
     const documentId = await upload();
     const submitted = await api.post('/api/student-verifications', {
@@ -109,7 +109,7 @@ describe('E2E: learner account status (FR-017)', () => {
 
   it('cascades a revocation into the owner view (FR-019 / ADR-025)', async () => {
     const learnerId = await registerLearner('fr19-revoke@skillswap.test');
-    api.actAs(learnerId, 'learner');
+    api.actAs(learnerId, 'user');
 
     const documentId = await upload();
     const submitted = await api.post('/api/student-verifications', {
@@ -135,7 +135,7 @@ describe('E2E: learner account status (FR-017)', () => {
     expect(mine.json.studentVerification).toEqual({ status: 'revoked', reason: 'Fake document' });
 
     // A non-admin cannot revoke (NFR-009).
-    api.actAs(learnerId, 'learner');
+    api.actAs(learnerId, 'user');
     const forbidden = await api.post(`/api/student-verifications/${verificationId}/revocation`, {
       reason: 'x',
     });

@@ -90,7 +90,7 @@ Thầy Hùng (Verifier, tài khoản và chuyên môn được cấp sẵn) th�
 
 | ID | Type | Requirement | Priority | Source | Status |
 |---|---|---|---|---|---|
-| FR-001 | Functional | Hệ thống phải cho phép sinh viên tạo, đăng nhập và quản lý một tài khoản dùng cho Learner và đăng ký Teacher. | Must | `docs/intent.md` | Confirmed |
+| FR-001 | Functional | Hệ thống phải cho phép sinh viên tạo, đăng nhập và quản lý một tài khoản (`user`); đăng ký công khai chỉ tạo `user`, các vai trò `verifier`/`admin` do vận hành cấp (ADR-029/ADR-030). Learner/Teacher là năng lực, không phải vai trò. | Must | `docs/intent.md` | Confirmed; role model resolved (ADR-030) |
 | FR-002 | Functional | Hệ thống phải cho phép sinh viên khai báo tên trường và tải giấy tờ để Administrator phê duyệt hoặc từ chối kèm lý do. | Must | `docs/intent.md` | Confirmed; retention open |
 | FR-003 | Functional | Hệ thống phải cho phép ứng viên Teacher nộp kỹ năng, chứng chỉ hoặc bằng chứng năng lực, với cơ chế nộp lại sau khi bị từ chối. | Must | `docs/intent.md` | Confirmed core; taxonomy open |
 | FR-004 | Functional | Hệ thống phải cho Verifier xét duyệt hồ sơ năng lực theo chuyên môn: chỉ thấy yêu cầu thuộc chuyên môn của mình, claim một yêu cầu (khóa vĩnh viễn cho Verifier đó, không nhả), rồi approve/reject; chỉ Verifier active, đúng chuyên môn, khác chủ hồ sơ được quyết định; Administrator chỉ đình chỉ/thu hồi Verifier (tài khoản Verifier và chuyên môn được seed ngoài ứng dụng). | Must | `docs/intent.md` | Confirmed core; expertise seeded (ADR-027) |
@@ -192,7 +192,7 @@ Toàn văn 70 quy tắc nghiệp vụ (BR-001–BR-070) được quản lý tậ
 
 ### 6.1 Xác thực và tài khoản
 
-Đăng ký bằng email và mật khẩu hoặc OAuth. Một tài khoản có thể mang cả hai vai trò Learner và Teacher, với chế độ xem rõ ràng để chuyển đổi giữa hai vai trò. Khôi phục mật khẩu qua email theo luồng chuẩn.
+Đăng ký bằng email và mật khẩu hoặc OAuth **chỉ tạo tài khoản `user`** (ADR-030). Vai trò tài khoản chỉ có `user`, `verifier`, `admin`; Learner/Teacher là năng lực — một `user` vừa học vừa dạy khi đã xác minh sinh viên và có skill được duyệt (BR-063). Không có "chuyển chế độ xem vai trò". Khôi phục mật khẩu qua email theo luồng chuẩn.
 
 ### 6.2 Xác minh sinh viên
 
@@ -255,13 +255,13 @@ Các màn hình chính của MVP gồm: đăng ký/đăng nhập, trang chủ Le
 
 | Entity | Key fields | Relationships | Lifecycle | Classification | Owner |
 |---|---|---|---|---|---|
-| User | id, email, roles, status | Has exactly one Profile, at most one user Wallet and role grants | Pending → Active → Suspended | PII | User/Administrator |
-| UserRole | user_id, role, status, assigned_by, assigned_at | One grant per User/role; role suspension is independent of account suspension | Active → Suspended/Revoked; reactivation audited | Internal authorization | Administrator |
-| Profile | id, user_id, display_name, bio, school_id, major_id | Belongs to User; has ProfileSkills and StudentVerifications | Created with User; school/major change requires re-verification | PII | User/Administrator |
+| Account | id, email, display_name, role, status, created_at | Exactly one role per account (`user \| verifier \| admin`, ADR-030); a `verifier` also has seeded expertise (ADR-027). Learner/Teacher are capabilities, not roles. No role-grant table. | Active → Suspended | PII | User/Administrator |
+| Profile | id, account_id, display_name, bio, school_id, major_id | Belongs to Account; has ProfileSkills and StudentVerifications | Created with the account; school/major change requires re-verification | PII | User/Administrator |
 | School / Major / SchoolMajor | id/code/name; school_id + major_id | Managed school and major catalogs; SchoolMajor lists valid pairs | Active → Inactive | Reference data | Administrator |
-| Skill / ProfileSkill | id, name; profile_id, skill_id, level, verifier_expertise_status | Profile ↔ Skill is many-to-many; level caches effective approval (NULL until approved); active Verifier role plus authorized expertise required | Skill Active/Inactive; valid SkillEvidence.approved_level governs teaching; pending upgrades preserve old approval | Public competency + internal authorization | User/Verifier/Administrator |
+| Skill / ProfileSkill | id, name, category; profile_id, skill_id, level | Skill is a `category → skill` catalogue entry (ADR-026); Profile ↔ Skill is many-to-many; level caches effective approval (NULL until approved) | Skill Active/Inactive; valid SkillEvidence.approved_level governs teaching; pending upgrades preserve old approval | Public competency + internal authorization | User/Verifier/Administrator |
+| Verifier | account_id, expertise (skill ids), status | An account with a `verifier` role and seeded expertise (ADR-027/ADR-029); expertise scopes the queue | Active → Suspended/Revoked; expertise seeded operationally | Internal authorization | Administrator (suspend/revoke) |
 | StudentVerification | id, profile_id, school_id, major_id, document_ref, status, reviewer_id, reason, expires_at | Belongs to Profile; immutable submission snapshots; resubmission creates a new row | Draft → Pending → Approved/Rejected; Approved → Superseded/Revoked/Expired | Sensitive identity document | Administrator |
-| SkillEvidence | id, profile_skill_id, evidence_type, document_ref/description, version, requested_level, approved_level, status, reviewer_id, decided_at | Belongs to ProfileSkill; certificate or Verifier recognition; reviewer updates status with audit, no assignment entity | Draft → Pending → Approved/Rejected; Approved → Superseded/Revoked/Expired | Sensitive credential | Teacher/Verifier |
+| SkillEvidence | id, profile_skill_id, evidence_type, document_ref/description, version, requested_level, approved_level, status, reviewer_id, claimed_by, claimed_at, decided_at | Belongs to ProfileSkill; certificate or Verifier recognition; reviewer updates status directly, no assignment table (claim locks the row, ADR-027) | Draft → Pending → Claimed → Approved/Rejected; claim locks permanently (no release) | Sensitive credential | Teacher/Verifier |
 | Class | id, teacher_id, starts_at, duration_minutes, price_credits, capacity, status, commitments_locked_at, completed_at/completed_by | One scheduled online session per Class; has Bookings/ClassSkills; Teacher/content/schedule/skills freeze at first confirmed Booking | Draft → Published/Full → In progress → Completed; cancellation by policy | Public marketplace data | Teacher |
 | ClassSkill | class_id, skill_id, target_level | Class ↔ Skill is many-to-many; Teacher approved level must cover target level | Managed with Class | Public marketplace data | Teacher |
 | Booking | id, class_id, learner_id, status, price_credits, idempotency_key | Links Class/Learner/ledger; price snapshot; at most one valid booking per Learner/Class and one full release operation | Pending → Confirmed → Completed/Cancelled/Disputed | Private transaction data | Learner/Teacher |

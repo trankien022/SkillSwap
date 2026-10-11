@@ -3,6 +3,8 @@ import {
   advanceStatusResultSchema,
   advanceStatusSchema,
   apiErrorSchema,
+  auditActionSchema,
+  auditEventSchema,
   bookingCancelledSchema,
   bookingConfirmedSchema,
   bookingRequestSchema,
@@ -24,7 +26,9 @@ import {
   registerSchema,
   roomAccessRequestSchema,
   roomAccessResponseSchema,
+  selfRegistrationRoleSchema,
   skillEvidenceEventSchema,
+  skillEvidenceHistorySchema,
   skillEvidenceViewSchema,
   skillEvidenceDecisionSchema,
   skillLevelSchema,
@@ -382,13 +386,13 @@ describe('bookingSchema', () => {
 });
 
 describe('auth schemas (ADR-016)', () => {
-  it('accepts a valid registration and defaults the role to learner', () => {
+  it('accepts a valid registration and defaults the role to user', () => {
     const parsed = registerSchema.parse({
       email: 'a@b.co',
       displayName: 'An',
       password: 'secret-password',
     });
-    expect(parsed.role).toBe('learner');
+    expect(parsed.role).toBe('user');
   });
 
   it('rejects a short password and a bad email', () => {
@@ -399,8 +403,25 @@ describe('auth schemas (ADR-016)', () => {
   });
 
   it('accepts only the known account roles', () => {
-    expect(accountRoleSchema.parse('teacher')).toBe('teacher');
+    expect(accountRoleSchema.parse('user')).toBe('user');
+    expect(accountRoleSchema.parse('verifier')).toBe('verifier');
+    expect(accountRoleSchema.options).toEqual(['user', 'verifier', 'admin']);
     expect(() => accountRoleSchema.parse('superuser')).toThrow();
+    expect(() => accountRoleSchema.parse('learner')).toThrow();
+    expect(() => accountRoleSchema.parse('teacher')).toThrow();
+  });
+
+  it('restricts public registration to the ordinary user role (ADR-030)', () => {
+    expect(selfRegistrationRoleSchema.options).toEqual(['user']);
+    expect(registerSchema.parse({ email: 'a@b.co', displayName: 'A', password: 'password1' }).role).toBe(
+      'user',
+    );
+    expect(() =>
+      registerSchema.parse({ email: 'a@b.co', displayName: 'A', password: 'password1', role: 'admin' }),
+    ).toThrow();
+    expect(() =>
+      registerSchema.parse({ email: 'a@b.co', displayName: 'A', password: 'password1', role: 'verifier' }),
+    ).toThrow();
   });
 
   it('round-trips a token response', () => {
@@ -413,7 +434,7 @@ describe('auth schemas (ADR-016)', () => {
       id: 'u1',
       email: 'a@b.co',
       displayName: 'An',
-      role: 'learner',
+      role: 'user',
       status: 'active',
       studentVerification: null,
     };
@@ -425,7 +446,7 @@ describe('auth schemas (ADR-016)', () => {
       id: 'u1',
       email: 'a@b.co',
       displayName: 'An',
-      role: 'learner',
+      role: 'user',
       status: 'active',
       studentVerification: { status: 'rejected', reason: 'Illegible document' },
     };
@@ -668,6 +689,15 @@ describe('student verification contracts', () => {
       };
       expect(skillEvidenceEventSchema.parse(event)).toEqual(event);
       expect(() => skillEvidenceEventSchema.parse({ ...event, status: 'nope' })).toThrow();
+
+      // A decision event carries the effective approved level (FR-005 gate consumes it).
+      const approved = {
+        ...event,
+        status: 'approved',
+        approvedLevel: 'advanced',
+        reason: null,
+      };
+      expect(skillEvidenceEventSchema.parse(approved)).toEqual(approved);
     });
 
     it('validates a verifier, its status change and a decision (FR-004)', () => {
@@ -685,6 +715,56 @@ describe('student verification contracts', () => {
       expect(
         skillEvidenceDecisionSchema.safeParse({ decision: 'reject', reason: 'Illegible' }).success,
       ).toBe(true);
+    });
+
+    it('validates the audit event and evidence history (FR-018)', () => {
+      expect(auditActionSchema.options).toEqual([
+        'submitted',
+        'claimed',
+        'approved',
+        'rejected',
+        'superseded',
+      ]);
+
+      const audit = {
+        id: 'a-1',
+        evidenceId: 'ev-1',
+        version: 1,
+        action: 'approved',
+        actorId: 'vf-1',
+        fromStatus: 'pending',
+        toStatus: 'approved',
+        reason: null,
+        snapshot: {
+          version: 1,
+          status: 'approved',
+          evidenceType: 'certificate',
+          requestedLevel: 'intermediate',
+          approvedLevel: 'intermediate',
+          reason: null,
+        },
+        occurredAt: '2026-10-11T00:00:00.000Z',
+        traceId: null,
+      };
+      expect(auditEventSchema.parse(audit)).toEqual(audit);
+      expect(() => auditEventSchema.parse({ ...audit, action: 'nope' })).toThrow();
+
+      const history = {
+        profileSkillId: 'ps-1',
+        skillId: 'sk-1',
+        versions: [
+          {
+            version: 1,
+            evidenceId: 'ev-1',
+            currentStatus: 'approved',
+            requestedLevel: 'intermediate',
+            approvedLevel: 'intermediate',
+            submittedAt: '2026-10-11T00:00:00.000Z',
+            entries: [audit],
+          },
+        ],
+      };
+      expect(skillEvidenceHistorySchema.parse(history)).toEqual(history);
     });
   });
 });

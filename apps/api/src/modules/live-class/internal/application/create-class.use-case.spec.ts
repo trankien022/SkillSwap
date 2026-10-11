@@ -2,11 +2,13 @@ import { CreateClassUseCase } from './create-class.use-case';
 import type { ClassRepository, CreateClassRecord, PersistedClass } from './port/out/class-repository';
 import type { Clock } from './port/out/clock';
 import { InvalidCapacityError } from '../domain/class';
+import { SkillNotApprovedError, UnverifiedTeacherError } from '../domain/publish-policy';
+import { FakeTeacherTrustReader } from './testing/live-class-fakes';
 
 const NOW = new Date('2026-10-08T00:00:00.000Z');
 const HOUR = 60 * 60 * 1000;
 
-function setup() {
+function setup(trust = new FakeTeacherTrustReader()) {
   const calls: CreateClassRecord[] = [];
   const classes: ClassRepository = {
     insert: jest.fn(async (record: CreateClassRecord) => {
@@ -22,7 +24,7 @@ function setup() {
     findAwaitingCompletion: jest.fn(async () => []),
   };
   const clock: Clock = { now: () => NOW };
-  return { useCase: new CreateClassUseCase(classes, clock), classes, calls };
+  return { useCase: new CreateClassUseCase(classes, clock, trust), classes, calls };
 }
 
 function command(overrides: Partial<Parameters<CreateClassUseCase['execute']>[0]> = {}) {
@@ -66,6 +68,20 @@ describe('CreateClassUseCase', () => {
     await expect(
       useCase.execute(command({ startsAt: new Date(NOW.getTime() - HOUR).toISOString() })),
     ).rejects.toThrow();
+    expect(classes.insert).not.toHaveBeenCalled();
+  });
+
+  it('refuses an unverified teacher (AC-002)', async () => {
+    const { useCase, classes } = setup(new FakeTeacherTrustReader({ verified: false }));
+    await expect(useCase.execute(command())).rejects.toThrow(UnverifiedTeacherError);
+    expect(classes.insert).not.toHaveBeenCalled();
+  });
+
+  it('refuses a class skill the teacher is not approved for (SR-BR-002)', async () => {
+    const { useCase, classes } = setup(
+      new FakeTeacherTrustReader({ approvedLevels: { 'skill-1': null } }),
+    );
+    await expect(useCase.execute(command())).rejects.toThrow(SkillNotApprovedError);
     expect(classes.insert).not.toHaveBeenCalled();
   });
 });

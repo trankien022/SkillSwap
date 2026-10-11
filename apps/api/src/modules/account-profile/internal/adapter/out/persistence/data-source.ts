@@ -6,6 +6,8 @@ import { CreateModuleTables1791072000000 } from './migrations/1791072000000-Crea
 import { CreateAccountTables1791072000001 } from './migrations/1791072000001-CreateAccountTables';
 import { CreateAccountVerificationStatus1791072000002 } from './migrations/1791072000002-CreateAccountVerificationStatus';
 import { WidenAccountVerificationStatus1791072000003 } from './migrations/1791072000003-WidenAccountVerificationStatus';
+import { WidenAccountRoles1791072000004 } from './migrations/1791072000004-WidenAccountRoles';
+import { CollapseAccountRoles1791072000005 } from './migrations/1791072000005-CollapseAccountRoles';
 import { SCHEMA } from './schema';
 
 /** One connection pool per module schema (ARCHITECTURE.md §5). */
@@ -25,6 +27,8 @@ export function createModuleDataSource(config: ApiConfig, schema: string = SCHEM
       CreateAccountTables1791072000001,
       CreateAccountVerificationStatus1791072000002,
       WidenAccountVerificationStatus1791072000003,
+      WidenAccountRoles1791072000004,
+      CollapseAccountRoles1791072000005,
     ],
     migrationsTableName: MIGRATIONS_TABLE,
     synchronize: false,

@@ -13,6 +13,7 @@ import type {
   ClaimRequest,
   ClaimedEvidence,
   CreateSkillEvidenceRequest,
+  EvidenceAuditRepository,
   PendingEvidenceForVerifier,
   ProfileSkillRepository,
   ProfileSkillWithSkill,
@@ -20,6 +21,7 @@ import type {
   VerifierRecord,
   VerifierRepository,
 } from '../port/out/skill-evidence-repository';
+import type { EvidenceAuditEntry } from '../../domain/history';
 import type { VerifiedStudentReader } from '../port/out/verified-student-reader';
 
 export function fixedClock(now: Date): Clock {
@@ -257,6 +259,17 @@ export class InMemoryVerifiedStudentReader implements VerifiedStudentReader {
 
   async isVerifiedStudent(accountId: string): Promise<boolean> {
     return this.verified.has(accountId);
+  }
+}
+
+/** In-memory EvidenceAuditRepository (reader) for history specs. */
+export class InMemoryEvidenceAuditRepository implements EvidenceAuditRepository {
+  readonly rows: EvidenceAuditEntry[] = [];
+
+  async listByProfileSkill(profileSkillId: string): Promise<EvidenceAuditEntry[]> {
+    return this.rows
+      .filter((row) => row.profileSkillId === profileSkillId)
+      .sort((a, b) => b.version - a.version || b.occurredAt.getTime() - a.occurredAt.getTime());
   }
 }
 

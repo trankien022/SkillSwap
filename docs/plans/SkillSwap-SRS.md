@@ -47,10 +47,11 @@ SkillSwap MVP ships two clients — a responsive, mobile-first **web application
 
 | Term | Definition |
 |---|---|
-| Learner | A verified student who searches, books and attends classes. |
-| Teacher | A student approved for at least one skill who publishes and teaches classes. |
-| Verifier | An expertise-matched reviewer of Teacher skill evidence; accounts are operator-provisioned with seeded expertise (ADR-027). |
-| Administrator | Platform operator who approves student verifications, manages Verifiers and handles exceptions. |
+| Learner | A **persona/capability**: a verified student who searches, books and attends classes. Not an account role. |
+| Teacher | A **persona/capability**: a user approved for at least one skill who publishes and teaches classes. Not an account role (ADR-030). |
+| Verifier | An expertise-matched reviewer of skill evidence; an account with the `verifier` role, operator-provisioned with seeded expertise (ADR-027/ADR-029). |
+| Administrator | Platform operator (the `admin` role) who approves student verifications, manages Verifiers and handles exceptions. |
+| Account role | One of `user`, `verifier`, `admin` — the access classes the system branches on (ADR-030). Learner/Teacher are capabilities, not roles. |
 | Credit | Internal currency unit; initial rate 1 credit = 1,000 VND (SR-BR-005). |
 | Wallet | Per-user ledger-backed available, pending income and reserved payout_hold credit; only available is spendable. |
 | Booking | A Learner's reservation of a seat in a Class, settled atomically against the wallet ledger. |
@@ -106,7 +107,7 @@ The software stack is fixed for the MVP: **Next.js (React)** web frontend, **Exp
 | Verifier (persona: Thầy Hùng, guest lecturer) | Expert in one domain; time-constrained | Reviews queue by domain; approve/reject with structured reasons. |
 | Administrator (persona: Chị Trang, operations) | Power user | Runs verification queues, manages Verifiers, resolves exceptions. |
 
-All four roles share one account model: a single account may hold both Learner and Teacher roles with an explicit role view (PRD §6.1).
+All accounts share one model with a **single `role`** per account from `user`, `verifier`, `admin` (ADR-030). Learner and Teacher are **capabilities, not roles**: any `user` learns, and a `user` who is a verified student with an approved skill may submit evidence and teach (BR-063/BR-065, enforced by FR-005). Self-registration creates only `user`; `verifier`/`admin` accounts are operator-provisioned (ADR-029). The PRD §6.1 "role view switch" is therefore obsolete.
 
 ### 2.4 Constraints
 
@@ -177,11 +178,11 @@ Priority follows MoSCoW from the PRD (`Must` / `Should`). Status preserves the P
 
 | ID | Requirement (shall) | Priority | Source | Status |
 |---|---|---|---|---|
-| FR-001 | The system shall allow a student to create, sign in to, and manage one account used for the Learner role and Teacher registration. | Must | intent.md | Confirmed |
+| FR-001 | The system shall allow a student to create, sign in to, and manage one account. Self-registration creates only an ordinary `user` account; `verifier` and `admin` accounts are provisioned out of band (ADR-029/ADR-030). Roles are access classes (`user`, `verifier`, `admin`); Learner/Teacher are capabilities, not roles (BR-063). | Must | intent.md | Confirmed; role model resolved (ADR-030) |
 | FR-002 | The system shall allow a student to declare a school name and upload documents for Administrator approval or rejection with a reason. | Must | intent.md | Confirmed; retention open (OQ-008) |
 | FR-003 | The system shall allow a Teacher candidate to submit skills, certificates or capability evidence, with resubmission after rejection. | Must | intent.md | Confirmed; taxonomy resolved (OQ-001, ADR-026) |
 | FR-004 | The system shall let a Verifier review skill evidence requests whose skill is within their expertise: they shall see only matching pending requests, claim one (which locks it to them permanently), and approve or reject it; only such an active, expertise-matched, non-owner Verifier may decide, and an Administrator may suspend or revoke a Verifier. | Must | intent.md | Confirmed core; expertise seeded (ADR-027) |
-| FR-005 | Only a verified Teacher shall be able to create and publish an online class with skill, description, schedule, duration, price and approved capacity rules. | Must | intent.md | Confirmed core; price open (OQ-002); capacity resolved (OQ-007, AC-028–AC-030) |
+| FR-005 | Only a verified Teacher shall be able to create and publish an online class with skill, description, schedule, duration, price and approved capacity rules. | Must | intent.md | Confirmed core; price resolved (OQ-002, self-price); capacity resolved (OQ-007, AC-028–AC-030) |
 | FR-006 | The system shall let a Learner browse and search open classes by class information and Teacher profile. | Must | intent.md | Confirmed core; taxonomy resolved (OQ-001, ADR-026); search granularity open (FR-006 Phase 0) |
 | FR-007 | The system shall only allow booking a class that has capacity, starts at least 24 hours from now, and lasts 30 minutes to 3 hours. | Must | intent.md | Confirmed core; capacity resolved (OQ-007, AC-028–AC-030); refund/cancellation resolved (OQ-003, AC-022–AC-027) |
 | FR-008 | The system shall allow top-up through a payment gateway at the applied rate, with exactly-once callback processing. | Must | intent.md | Confirmed core; gateway open (OQ-011) |
@@ -194,7 +195,7 @@ Priority follows MoSCoW from the PRD (`Must` / `Should`). Status preserves the P
 | FR-015 | The system shall provide an Administrator dashboard aggregating the student-verification queue, Verifier queue by domain, dispute/account-lock lists, and an audit log filterable by actor, time and action type. | Must | intent.md | Confirmed |
 | FR-016 | The system shall notify users on verification outcomes, booking confirmed/cancelled, class starting soon, completed wallet transactions and withdrawal outcomes. | Should | intent.md | Confirmed |
 | FR-017 | The system shall show the Learner their account status and any rejection reason on the main screen. | Must | intent.md | Confirmed |
-| FR-018 | The system shall show a Teacher the complete decision history for each immutable submitted evidence version, retaining old/new decisions when superseded, revoked or expired. | Must | intent.md | Confirmed |
+| FR-018 | The system shall show a Teacher the complete decision history for each immutable submitted evidence version, retaining old/new decisions when superseded, revoked or expired. | Must | intent.md | Confirmed; audit contract ADR-028; retention keep (OQ-008) |
 | FR-019 | The system shall support student re-verification and invalidate rights requiring VERIFIED when approval expires or is revoked; treatment of existing commitments follows the approved cascade policy. | Must | BRD BR-006 | Confirmed core; cascade/validity policy open (OQ-008) |
 | FR-020 | The system shall treat each Class as one scheduled online session, record its completion time and audited source/rule, and gate rating and income release on their eligibility conditions. | Must | BRD BR-042–BR-043 | Confirmed core; completion/release rule open (OQ-006) |
 
@@ -251,49 +252,23 @@ Detailed use cases UC-001–UC-005 are specified in the PRD §11 and restated he
 - Alternate flow: definite nonpayment posts hold release and Failed; timeout/unknown result retains hold in Pending/Processing until callback or reconciliation. Dispatch/retry never creates a second payout; terminal outcomes serialize on request/wallet locks.
 - Postconditions: payout status and trace ID visible in wallet history (AC-008).
 
-#### 3.2.4 Use case diagrams (level 0 and level 1)
+#### 3.2.4 Use case diagram — current implementation
 
-The use case model is leveled into a single **level-0** overview of actors × subsystems and one **level-1** diagram per subsystem. Notation is classic UML: stick-figure actors, elliptical use cases labeled with the immutable code before the name, and unlabeled plain associations connecting actors to use cases only.
+The current backend actor goals are maintained in one [checkpoint use case diagram](../diagrams/checkpoint/source/use-cases.puml). Learner and Teacher are capabilities of the same `user` account; Verifier and Administrator are provisioned account roles (ADR-029/ADR-030).
 
-**Level 0 — actors × subsystems**
+![Current implementation use cases](../diagrams/checkpoint/generated/use-cases.png)
 
-![Use case level 0 — actors and subsystems](../diagrams/usecase/srs-use-case-l0.png)
-
-**Level 1 — Accounts (UC-006–UC-008)**
-
-![Use case level 1 — Accounts](../diagrams/usecase/srs-use-case-accounts.png)
-
-**Level 1 — Verification (UC-001, UC-002, UC-009)**
-
-![Use case level 1 — Verification](../diagrams/usecase/srs-use-case-verification.png)
-
-**Level 1 — Marketplace (UC-003, UC-010, UC-011)**
-
-![Use case level 1 — Marketplace](../diagrams/usecase/srs-use-case-marketplace.png)
-
-**Level 1 — Finance (UC-005, UC-012, UC-013)**
-
-![Use case level 1 — Finance](../diagrams/usecase/srs-use-case-finance.png)
-
-**Level 1 — Learning (UC-004)**
-
-![Use case level 1 — Learning](../diagrams/usecase/srs-use-case-learning.png)
-
-**Level 1 — Operations (UC-014)**
-
-![Use case level 1 — Operations](../diagrams/usecase/srs-use-case-operations.png)
-
-*Reading: every diagram shows the SkillSwap MVP boundary. The four human actors are stick figures outside it; Payment Gateway and Jitsi appear as `«actor»` boxes because they are external systems. Lines are unlabeled actor–use case associations — there are no include/extend dependencies, because each use case is a standalone user goal and authentication is captured as a Precondition instead of an included Log In use case (§3.2.5). Register Account (UC-006) and Log In (UC-007) are linked to all four user roles. Every use case carries the identical code and name on its level-1 diagram, in the Use Case List (§3.2.5) and in the traceability matrix (Appendix C.2).*
+The full required use cases remain in §3.2.5. This diagram shows implemented API goals and explicitly marks mocks and unimplemented functionality; it does not replace or narrow the confirmed requirements. See [checkpoint traceability and gaps](../diagrams/checkpoint/README.md).
 
 #### 3.2.5 Use Case List
 
-One row per use case appearing on the diagrams, ordered by subsystem then code. Codes are immutable and names match the diagrams exactly.
+One row per required use case, ordered by subsystem then code. Codes and names are stable; the current implementation diagram groups related goals and does not claim every required flow is implemented.
 
 | UC ID | Use Case Name | Primary Actor | Secondary Actor(s) | Subsystem | Description | Precondition | Relationships | Priority |
 |---|---|---|---|---|---|---|---|---|
-| UC-006 | Register Account | Learner, Teacher, Verifier, Administrator | — | Accounts | A prospective user creates an account (FR-001); it starts Pending and becomes Active after verification where applicable. | No account exists yet. | — | Must |
-| UC-007 | Log In | Learner, Teacher, Verifier, Administrator | — | Accounts | An existing user authenticates and obtains the session required by every other use case. | Account registered (UC-006). | — | Must |
-| UC-008 | Manage account | Learner, Teacher | — | Accounts | View and edit the profile, switch the active role view (FR-017), and read account status and rejection reason (FR-001). | Logged in. | — | Must |
+| UC-006 | Register Account | Prospective user | — | Accounts | A prospective user self-registers an ordinary `user` account (FR-001, ADR-030); `verifier`/`admin` accounts are provisioned out of band (ADR-029). | No account exists yet. | — | Must |
+| UC-007 | Log In | User, Verifier, Administrator | — | Accounts | An existing user authenticates and obtains the session required by every other use case. | Account registered or provisioned (UC-006). | — | Must |
+| UC-008 | Manage account | User | — | Accounts | View and edit the profile and read account status and rejection reason (FR-001, FR-017). | Logged in. | — | Must |
 | UC-001 | Verify a student | Learner | Administrator | Verification | Submit student-status evidence; an Administrator approves or rejects it, activating the account on approval (FR-002). | Logged in; verification not yet Approved. | — | Must |
 | UC-002 | Verify a Teacher skill | Teacher | Verifier | Verification | Submit skill evidence; an active Verifier sees only requests matching their expertise, claims one (locking it to them), and approves or rejects it, preserving version/decision history and enabling publication at the approved level (FR-003, FR-004, FR-018). | Logged in as a verified student; initial or replacement evidence submitted; Verifier has seeded expertise for the skill. | — | Must |
 | UC-009 | Supervise verifiers | Administrator | — | Verification | Suspend or revoke a Verifier's access (FR-004). Verifier accounts and their expertise are provisioned outside the app (seeded); there is no invite/assign-domain step (ADR-027). | Logged in as Administrator. | — | Must |
@@ -483,7 +458,9 @@ stateDiagram-v2
 
 ### 3.7 Open items blocking implementation
 
-Implementation of the clauses listed in Appendix A is blocked until the corresponding Open Question is approved (decision policy: **block until resolved**). Affected increments (increment definitions per PRD §14): Increment 2 (OQ-008), Increment 3 (OQ-002; OQ-001 resolved — ADR-026, ADR-027; OQ-007 resolved), Increment 4 (OQ-002, OQ-005, OQ-006, OQ-011, OQ-012; OQ-003 resolved), Increment 5 (OQ-004, OQ-009), Increment 6 (no additional OQ; inherits Increment 5 gates), storage/lifecycle design (OQ-008), pilot planning (OQ-010).
+Implementation of the clauses listed in Appendix A is blocked until the corresponding Open Question is approved (decision policy: **block until resolved**). Affected increments (increment definitions per PRD §14): Increment 2 (OQ-008), Increment 3 (OQ-001 resolved — ADR-026, ADR-027; OQ-007 resolved), Increment 4 (OQ-005, OQ-006, OQ-011, OQ-012; OQ-002 resolved — pure self-price; OQ-003 resolved), Increment 5 (OQ-004, OQ-009), Increment 6 (no additional OQ; inherits Increment 5 gates), storage/lifecycle design (OQ-008), pilot planning (OQ-010).
+
+**Note (BR-063 vs. UI):** BR-063 is satisfied — one account can both learn and teach, because teaching is gated on *verification + approved skill*, not on a separate role. The PRD §6.1 "switch between Learner and Teacher role views" is a UI convenience that is **not** implemented in the MVP; the underlying capability (study + teach from one account) **is** available. A future increment may add explicit role views.
 
 ---
 
@@ -494,7 +471,7 @@ Confirmed cores of these requirements appear in §3.2.1; the following **depende
 | OQ | Decision required | Owner | Affects | Excluded clause (not specified in this SRS) |
 |---|---|---|---|---|
 | OQ-001 | Skill taxonomy structure and search granularity. | Product Owner | FR-003, FR-005, FR-006 | **Resolved (2026-10-11, FR-003 scope, ADR-026):** (1) **managed catalogue (1a)** — skills live in an admin-seeded `skills` catalogue owned by `skill-verification`; evidence/classes must reference a known skill, no free tagging; (2) **two-level tree (B)** — `category → skill` (fixed categories, exact depth 2); (3) **fixed ordered level scale (2a)** — `beginner < intermediate < advanced < expert` for requested/approved level. Search granularity (index/ranking) remains open for FR-006 Phase 0. |
-| OQ-002 | Teacher self-pricing vs. price bands vs. hybrid with floor/cap. | Product Owner | FR-005, FR-007–FR-009 | Price rules, minimum/maximum price validation. |
+| OQ-002 | Teacher self-pricing vs. price bands vs. hybrid with floor/cap. | Product Owner | FR-005, FR-007–FR-009 | **Resolved (2026-10-11, FR-005 scope, ADR-024 extension):** **pure self-price** — a Teacher sets any positive integer credit price; there is **no** band, floor or cap. Publish validation is `price >= 1` (unchanged). No min/max price rules apply in the MVP. |
 | OQ-003 | Cancellation, no-show, dispute, manual refund and Admin enforcement workflow. | Product Owner + Administrator | FR-007, FR-009–FR-011, FR-013 | **Resolved (2026-10-08):** refunds are app-wallet credits only (no real-money refund); no booking-cancellation policy; Teacher no-show = not joined within the first 15 minutes → credit refund, no penalty; Learner no-show has no automatic rule; Pending holds a seat and auto-cancels after ~15 minutes; Confirmed→Cancelled refunds credits. See AC-022–AC-027. |
 | OQ-004 | Rating threshold, minimum review count, visibility recovery. | Product Owner | FR-006, FR-013 | Down-ranking threshold mechanics (SR-BR-009 value). |
 | OQ-005 | Withdrawal conditions, limits, fees, processing time. | Product Owner + Finance | FR-010, FR-014 | **Partially resolved (2026-10-09, FR-008 scope):** only active accounts may top up; suspended accounts are rejected (ADR-017). Withdrawal limits/fees/SLA remain open for FR-014. |
@@ -512,9 +489,8 @@ Derived from PRD §9. Access is server-authorized by role and ownership; sensiti
 
 | Entity | Key fields | Relationships | Lifecycle | Classification | Owner |
 |---|---|---|---|---|---|
-| User | id, email, roles, status | Has exactly one Profile, at most one user Wallet and role grants | Pending → Active → Suspended | PII | User/Administrator |
-| UserRole | user_id, role, status, assigned_by, assigned_at | One grant per User/role; role suspension is independent of account suspension | Active → Suspended/Revoked; reactivation audited | Internal authorization | Administrator |
-| Profile | id, user_id, display_name, bio, school_id, major_id | Belongs to User; has ProfileSkills and StudentVerifications | Created with User; school/major change requires re-verification | PII | User/Administrator |
+| Account | id, email, display_name, role, status, created_at | Exactly one role per account (`user \| verifier \| admin`, ADR-030); a `verifier` account also has seeded expertise (ADR-027). Learner/Teacher are capabilities, not roles. No separate role-grant table. | Active → Suspended | PII | User/Administrator |
+| Profile | id, account_id, display_name, bio, school_id, major_id | Belongs to Account; has ProfileSkills and StudentVerifications | Created with the account; school/major change requires re-verification | PII | User/Administrator |
 | School / Major / SchoolMajor | id/code/name; school_id + major_id | Managed school and major catalogs; SchoolMajor lists valid pairs | Active → Inactive | Reference data | Administrator |
 | Skill / ProfileSkill | id, name, category; profile_id, skill_id, level | Skill is a `category → skill` catalogue entry (ADR-026); Profile ↔ Skill is many-to-many; level caches effective approval (NULL until approved) | Skill Active/Inactive; valid SkillEvidence.approved_level governs teaching; pending upgrades preserve old approval | Public competency + internal authorization | User/Verifier/Administrator |
 | Verifier | account_id, expertise (skill ids), status | An account with a `verifier` role and a seeded expertise set of skills (ADR-027); expertise scopes the queue and the authority | Active → Suspended/Revoked; expertise set operationally seeded, not admin-assigned | Internal authorization | Administrator (suspend/revoke) |
@@ -581,23 +557,19 @@ ERD chi tiết và các ràng buộc triển khai: [data model](../diagrams/data
 
 ### C.3 Diagrams index
 
-Use case diagrams are authored in PlantUML (`docs/diagrams/usecase/srs-use-case-*.puml`) and referenced as PNGs, because GitHub does not render PlantUML natively; state diagrams and the C4 context embed Mermaid/PNG as noted.
+The maintained diagram set is [Week 6 checkpoint](../diagrams/checkpoint/README.md): Structurizr DSL for C4, exported C4-PlantUML, and hand-authored PlantUML for use cases, sequence, activity and state views. SVG and PNG exports are kept beside the sources. Older duplicate use case and lifecycle exports have been removed.
 
-| Diagram | Section | Syntax | Rendered PNG |
-|---|---|---|---|
-| Use case level 0 (actors × subsystems) | §3.2.4 | PlantUML `usecase`/`rectangle` (straight links) | `docs/diagrams/usecase/srs-use-case-l0.png` |
-| Use case level 1 — Accounts (UC-006–UC-008) | §3.2.4 | PlantUML `usecase` (straight links) | `docs/diagrams/usecase/srs-use-case-accounts.png` |
-| Use case level 1 — Verification (UC-001, UC-002, UC-009) | §3.2.4 | PlantUML `usecase` (straight links) | `docs/diagrams/usecase/srs-use-case-verification.png` |
-| Use case level 1 — Marketplace (UC-003, UC-010, UC-011) | §3.2.4 | PlantUML `usecase` (straight links) | `docs/diagrams/usecase/srs-use-case-marketplace.png` |
-| Use case level 1 — Finance (UC-005, UC-012, UC-013) | §3.2.4 | PlantUML `usecase` (straight links) | `docs/diagrams/usecase/srs-use-case-finance.png` |
-| Use case level 1 — Learning (UC-004) | §3.2.4 | PlantUML `usecase` (straight links) | `docs/diagrams/usecase/srs-use-case-learning.png` |
-| Use case level 1 — Operations (UC-014) | §3.2.4 | PlantUML `usecase` (straight links) | `docs/diagrams/usecase/srs-use-case-operations.png` |
-| StudentVerification state machine | §3.2.6 | Mermaid `stateDiagram-v2` | [source](../diagrams/srs-state-student-verification.mmd) · [PNG](../diagrams/srs-state-student-verification.png) |
-| SkillEvidence state machine | §3.2.6 | Mermaid `stateDiagram-v2` | [source](../diagrams/srs-state-skill-evidence.mmd) · [PNG](../diagrams/srs-state-skill-evidence.png) |
-| Class state machine | §3.2.6 | Mermaid `stateDiagram-v2` | [source](../diagrams/srs-state-class.mmd) · [PNG](../diagrams/srs-state-class.png) |
-| Booking state machine | §3.2.6 | Mermaid `stateDiagram-v2` | [source](../diagrams/srs-state-booking.mmd) · [PNG](../diagrams/srs-state-booking.png) |
-| WithdrawalRequest state machine | §3.2.6 | Mermaid `stateDiagram-v2` | [source](../diagrams/srs-state-withdrawal-request.mmd) · [PNG](../diagrams/srs-state-withdrawal-request.png) |
-| System context (C4 L1) | §2.1 | Embedded PNG from `docs/diagrams/c4/generated/` | `docs/diagrams/c4/generated/structurizr-SystemContext.png` |
+| Current implementation diagram | Source | Preview |
+|---|---|---|
+| System context (checkpoint C0) | [Structurizr DSL](../diagrams/c4/source/workspace.dsl) | [PNG](../diagrams/c4/generated/structurizr-SystemContext.png) |
+| Containers (checkpoint C1) | [C4-PlantUML](../diagrams/c4/source/structurizr-Containers.puml) | [PNG](../diagrams/c4/generated/structurizr-Containers.png) |
+| Backend use cases | [PlantUML](../diagrams/checkpoint/source/use-cases.puml) | [PNG](../diagrams/checkpoint/generated/use-cases.png) |
+| StudentVerification lifecycle | [PlantUML](../diagrams/checkpoint/source/state-student-verification.puml) | [PNG](../diagrams/checkpoint/generated/state-student-verification.png) |
+| Class lifecycle | [PlantUML](../diagrams/checkpoint/source/state-class.puml) | [PNG](../diagrams/checkpoint/generated/state-class.png) |
+| Booking lifecycle | [PlantUML](../diagrams/checkpoint/source/state-booking.puml) | [PNG](../diagrams/checkpoint/generated/state-booking.png) |
+| Sequence, activity and additional architecture views | [Complete checkpoint index](../diagrams/checkpoint/README.md) | SVG and PNG linked in index |
+
+The inline state models in §3.2.6 remain requirement models; current-code diagrams record implementation differences separately. No WithdrawalRequest endpoint is claimed as implemented.
 
 ### C.4 FR-007 implementation traceability
 

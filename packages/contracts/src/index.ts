@@ -136,15 +136,22 @@ export const bookingSchema = z.object({
 });
 export type BookingView = z.infer<typeof bookingSchema>;
 
-/** FR-001: local accounts, sign-in and session lifecycle (ADR-016). */
-export const accountRoleSchema = z.enum(['learner', 'teacher', 'admin']);
+/** FR-001 / ADR-030: an account has exactly one access role. Learner/Teacher are capabilities, not roles. */
+export const accountRoleSchema = z.enum(['user', 'verifier', 'admin']);
 export type AccountRole = z.infer<typeof accountRoleSchema>;
+
+/**
+ * FR-001 / ADR-030: the only role a public user may create at registration. Verifier
+ * and Administrator accounts are provisioned out of band, never self-registered.
+ */
+export const selfRegistrationRoleSchema = z.enum(['user']);
+export type SelfRegistrationRole = z.infer<typeof selfRegistrationRoleSchema>;
 
 export const registerSchema = z.object({
   email: z.string().email(),
   displayName: z.string().min(1).max(120),
   password: z.string().min(8).max(200),
-  role: accountRoleSchema.default('learner'),
+  role: selfRegistrationRoleSchema.default('user'),
 });
 export type RegisterInput = z.infer<typeof registerSchema>;
 
@@ -399,6 +406,9 @@ export const skillEvidenceEventSchema = z.object({
   version: z.number().int().positive(),
   requestedLevel: skillLevelSchema,
   status: evidenceStatusSchema,
+  // Set on a decision: the effective level granted (null unless approved) and the reason on rejection.
+  approvedLevel: skillLevelSchema.nullable().optional(),
+  reason: z.string().min(1).nullable().optional(),
   occurredAt: z.string().datetime({ offset: true }),
 });
 export type SkillEvidenceEvent = z.infer<typeof skillEvidenceEventSchema>;
@@ -432,3 +442,52 @@ export const skillEvidenceDecisionSchema = z
     path: ['reason'],
   });
 export type SkillEvidenceDecisionInput = z.infer<typeof skillEvidenceDecisionSchema>;
+
+/**
+ * FR-018 / ADR-028: the reusable audit event contract (matches SRS `AuditEvent`).
+ * Append-only; snapshots are whitelisted and never carry document contents (NFR-005).
+ */
+export const auditActionSchema = z.enum(['submitted', 'claimed', 'approved', 'rejected', 'superseded']);
+export type AuditAction = z.infer<typeof auditActionSchema>;
+
+export const auditEventSchema = z.object({
+  id: z.string().min(1),
+  evidenceId: z.string().min(1),
+  version: z.number().int().positive(),
+  action: auditActionSchema,
+  actorId: z.string().min(1).nullable(),
+  fromStatus: evidenceStatusSchema.nullable(),
+  toStatus: evidenceStatusSchema,
+  reason: z.string().min(1).nullable(),
+  snapshot: z.object({
+    version: z.number().int().positive(),
+    status: evidenceStatusSchema,
+    evidenceType: evidenceTypeSchema,
+    requestedLevel: skillLevelSchema,
+    approvedLevel: skillLevelSchema.nullable(),
+    reason: z.string().min(1).nullable(),
+  }),
+  occurredAt: z.string().datetime({ offset: true }),
+  traceId: z.string().min(1).nullable(),
+});
+export type AuditEventView = z.infer<typeof auditEventSchema>;
+
+/** FR-018: one evidence version and its ordered audit entries. */
+export const evidenceVersionHistorySchema = z.object({
+  version: z.number().int().positive(),
+  evidenceId: z.string().min(1),
+  currentStatus: evidenceStatusSchema,
+  requestedLevel: skillLevelSchema,
+  approvedLevel: skillLevelSchema.nullable(),
+  submittedAt: z.string().datetime({ offset: true }),
+  entries: z.array(auditEventSchema),
+});
+export type EvidenceVersionHistoryView = z.infer<typeof evidenceVersionHistorySchema>;
+
+/** FR-018 / API: the full decision history of a profile-skill's evidence. */
+export const skillEvidenceHistorySchema = z.object({
+  profileSkillId: z.string().min(1),
+  skillId: z.string().min(1),
+  versions: z.array(evidenceVersionHistorySchema),
+});
+export type SkillEvidenceHistoryView = z.infer<typeof skillEvidenceHistorySchema>;

@@ -27,7 +27,7 @@ Nguồn: [skillswap-conceptual.dbml](skillswap-conceptual.dbml) · [SVG](skillsw
 
 ![Sơ đồ dữ liệu conceptual của SkillSwap](skillswap-conceptual.png)
 
-Một `User` có đúng một `Profile`, có thể đồng thời là Learner và Teacher. `UserRole` giữ vai trò được cấp cùng trạng thái Active/Suspended/Revoked. `Profile` liên kết trường, ngành, các yêu cầu xác minh sinh viên và nhiều kỹ năng qua `ProfileSkill`. Mỗi kỹ năng có nhiều phiên bản `SkillEvidence`; level được phép dạy đến từ evidence Approved còn hiệu lực. Trong MVP, một `Class` là một buổi học trực tuyến có một Teacher, một lịch và nhiều kỹ năng qua `ClassSkill`; không có bảng Session riêng.
+Một `Account` có **đúng một vai trò** (`user | verifier | admin`, ADR-030) và một `Profile`; không có bảng role-grant. Đăng ký công khai chỉ tạo `user`; tài khoản verifier/admin do vận hành cấp (ADR-029). Theo **BR-063**, Learner/Teacher **không** phải vai trò mà là năng lực: một `user` vừa học vừa dạy khi đã xác minh sinh viên và có skill được duyệt. `Profile` liên kết trường, ngành, các yêu cầu xác minh sinh viên và nhiều kỹ năng qua `ProfileSkill`. Mỗi kỹ năng có nhiều phiên bản `SkillEvidence`; level được phép dạy đến từ evidence Approved còn hiệu lực. Trong MVP, một `Class` là một buổi học trực tuyến có một Teacher, một lịch và nhiều kỹ năng qua `ClassSkill`; không có bảng Session riêng.
 
 ## Logical model
 
@@ -39,9 +39,9 @@ Thiết kế logical dùng PostgreSQL, thể hiện khóa chính, khóa ngoại,
 
 | Quan hệ | Cardinality | Cách quản lý |
 |---|---|---|
-| User → Profile | 1..1 | `profiles.user_id` UNIQUE; tạo cùng transaction với User. Chiều Profile → User cũng là 1..1. FK/UNIQUE riêng không bảo đảm User đã có Profile. |
-| User → UserRole | 0..N | Khóa chính `(user_id, role)`; mỗi grant có đúng một User; đình chỉ/thu hồi giữ lịch sử. |
-| User → Wallet | 0..1 | Chiều Wallet → User là 0..1 vì ví hệ thống không có chủ User. |
+| Account → Profile | 1..1 | `profiles.account_id` UNIQUE; tạo cùng transaction với Account. Chiều Profile → Account cũng là 1..1. FK/UNIQUE riêng không bảo đảm Account đã có Profile. |
+| Account (role) | 1 role | Mỗi account có **đúng một** `role` (`user \| verifier \| admin`, ADR-030) trên chính bảng account; **không có** bảng role-grant. Verifier/admin do vận hành cấp. |
+| Account → Wallet | 0..1 | Chiều Wallet → Account là 0..1 vì ví hệ thống không có chủ.
 | School → Major, qua SchoolMajor | 0..N | Quan hệ nhiều–nhiều được tách bằng `school_majors`; mỗi dòng nối có đúng một School và một Major. |
 | Profile → StudentVerification | 0..N | Giữ từng lần nộp; tối đa một xác minh Approved còn hiệu lực trên mỗi hồ sơ (BR-070). |
 | Profile → Skill, qua ProfileSkill | 0..N | `profile_skills` UNIQUE `(profile_id, skill_id)`; mỗi dòng nối có đúng một Profile và một Skill. |
@@ -180,10 +180,4 @@ SVG có thể phóng to mà không mất nét; PNG dành cho xem nhanh trong Mar
 
 [check-erd.py](check-erd.py) kiểm tra số bảng/quan hệ, 16 FK nullable, ký hiệu vòng tròn thực sự có trong SVG, các trường hợp 1–1, full reversal, nét định danh, nhãn khóa, chú thích trạng thái và độ bao phủ của bốn hình theo nhóm. Đây là kiểm tra tài liệu; không chạy migration hoặc kiểm thử ứng dụng. Sau khi thay đổi schema có chủ ý, cập nhật các kỳ vọng trong script và kiểm tra lại hình bằng mắt.
 
-Nguồn Mermaid của các lifecycle đã sửa được lưu cạnh PNG ở `docs/diagrams/srs-state-*.mmd` và phải khớp block tương ứng trong SRS §3.2.6. Xuất lại bằng Mermaid CLI:
-
-```bash
-for state_name in student-verification skill-evidence class withdrawal-request; do
-  npx --yes @mermaid-js/mermaid-cli -i "docs/diagrams/srs-state-${state_name}.mmd" -o "docs/diagrams/srs-state-${state_name}.png" -b white -s 2
-done
-```
+Các lifecycle phản ánh code hiện tại được quản lý trong [bộ checkpoint PlantUML](../checkpoint/README.md). Mô hình trạng thái yêu cầu vẫn nằm trực tiếp trong SRS §3.2.6; các bản Mermaid/PNG riêng trùng lặp đã được loại bỏ.

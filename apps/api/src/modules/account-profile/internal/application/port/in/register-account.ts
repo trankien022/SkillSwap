@@ -1,4 +1,4 @@
-import type { AccountRole } from '../../../domain/account';
+import type { SelfRegistrationRole } from '../../../domain/account';
 import type { TokenResponse } from '@skillswap/contracts';
 
 export const REGISTER_ACCOUNT = Symbol('RegisterAccount');
@@ -7,7 +7,8 @@ export interface RegisterAccountInput {
   readonly email: string;
   readonly displayName: string;
   readonly password: string;
-  readonly role?: AccountRole;
+  /** FR-001 / ADR-029: only a self-registration role may be chosen here. */
+  readonly role?: SelfRegistrationRole;
 }
 
 export interface RegisterAccountPort {

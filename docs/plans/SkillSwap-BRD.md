@@ -61,7 +61,7 @@ MVP chủ đích không theo đuổi tăng trưởng đa quốc gia hay đa ngô
 | Nhóm | Nội dung |
 |---|---|
 | Nền tảng | Web responsive, mobile-first (hỗ trợ các trình duyệt hiện hành trên di động và desktop) và ứng dụng mobile native Expo/React Native cho iOS/Android (ADR-015). |
-| Vai trò người dùng | Learner, Teacher, Verifier, Administrator. |
+| Vai trò người dùng | **Vai trò tài khoản: `user`, `verifier`, `admin`** (ADR-030). Learner/Teacher là **năng lực**, không phải vai trò: một `user` học, và dạy khi đã xác minh sinh viên + có skill được duyệt. |
 | Xác minh | Xác minh sinh viên thủ công (tên trường và giấy tờ); xác minh năng lực Teacher thủ công theo từng kỹ năng, bởi Verifier đúng chuyên môn. |
 | Marketplace | Tạo/công bố lớp, tìm kiếm/duyệt lớp, đặt lớp theo sức chứa. |
 | Tài chính | Ví credit nội bộ, nạp tiền qua gateway, trừ tiền khi booking, phân bổ 90/10, rút tiền cho Teacher. |
@@ -149,7 +149,7 @@ Teacher yêu cầu rút số dư khả dụng và xác thực bổ sung. Hệ th
 | BR-008 | Teacher & Skill Verification | Teacher chỉ được tạo hoặc publish lớp cho những skill đã được Verifier chấp thuận. |
 | BR-009 | Teacher & Skill Verification | Xác minh Teacher phải được quản lý theo từng skill, không phải một trạng thái xác minh chung cho toàn bộ năng lực của Teacher. |
 | BR-010 | Teacher & Skill Verification | Skill verification phải có các trạng thái tối thiểu: NOT_SUBMITTED, PENDING, VERIFIED, REJECTED và REVOKED/EXPIRED nếu hệ thống hỗ trợ thu hồi hoặc hết hạn. |
-| BR-011 | Teacher & Skill Verification | Verifier phải là nhóm người dùng riêng và có chuyên môn phù hợp; Verifier không đồng nhất với Admin. Tài khoản Verifier được **tạo sẵn ngoài ứng dụng (seed/onboarding)**, không có luồng Administrator mời/tạo hay gán chuyên môn qua API; chuyên môn (tập skill trong taxonomy) được seed cùng tài khoản. |
+| BR-011 | Teacher & Skill Verification | Verifier phải là nhóm người dùng riêng và có chuyên môn phù hợp; Verifier không đồng nhất với Admin. Tài khoản Verifier được **tạo sẵn ngoài ứng dụng (seed/onboarding)** với **vai trò `verifier` trên tài khoản** (ADR-029), không có luồng Administrator mời/tạo hay gán chuyên môn qua API; chuyên môn (tập skill trong taxonomy) được seed cùng tài khoản. Đăng ký công khai chỉ tạo được Learner/Teacher; Verifier/Administrator do vận hành cấp. |
 | BR-012 | Teacher & Skill Verification | Verifier không được tự xác minh yêu cầu skill/certificate của chính mình. |
 | BR-013 | Teacher & Skill Verification | Teacher không được tự chọn Verifier cho yêu cầu của mình; hệ thống chỉ cho Verifier có vai trò và chuyên môn đang hiệu lực review (hàng đợi lọc theo chuyên môn) để giảm xung đột lợi ích; quyết định cập nhật trực tiếp trạng thái evidence, lưu người duyệt và audit, không cần bảng phân công riêng (claim là trạng thái trên chính evidence, không phải bảng phân công). |
 | BR-014 | Teacher & Skill Verification | Sau submit, evidence/certificate và level đề nghị không được chỉnh sửa; nộp lại tạo phiên bản mới. Lịch sử quyết định trước/sau, reviewer, thời gian, approved level và lý do được giữ trong audit cùng transaction. |
@@ -201,7 +201,7 @@ Teacher yêu cầu rút số dư khả dụng và xác thực bổ sung. Hệ th
 | BR-060 | Withdrawal | Withdrawal có Pending, Processing, Completed, Failed và Reversed cho reversal hợp lệ. Timeout/kết quả chưa rõ giữ Pending/Processing và giữ tiền đến khi có kết quả/đối soát; chỉ xác nhận không chuyển tiền mới Failed và nhả hold. |
 | BR-061 | Withdrawal | Số tiền, tỷ giá và đích nhận bị khóa từ khi giữ tiền. Payout Completed không sửa/xóa dữ liệu tài chính; chỉ điều chỉnh bằng giao dịch mới liên kết, audit và policy reversal. Payout thành công và nhả hold do thất bại loại trừ nhau. |
 | BR-062 | Withdrawal | Trước khi launch, Product phải định nghĩa minimum withdrawal, maximum withdrawal nếu có, withdrawal fee nếu có, processing time và failed payout handling. |
-| BR-063 | Roles & Permissions | Learner và Teacher không nhất thiết là hai account tách biệt; một verified student có thể vừa học ở class này vừa dạy một skill đã được verify ở class khác. |
+| BR-063 | Roles & Permissions | Learner và Teacher **không** phải vai trò tài khoản mà là năng lực: một `user` có thể vừa học ở class này vừa dạy một skill đã được verify ở class khác. Vai trò tài khoản chỉ gồm `user`, `verifier`, `admin` (ADR-030). |
 | BR-064 | Roles & Permissions | Admin chịu trách nhiệm student verification và các chức năng quản trị được cấp; Verifier chịu trách nhiệm skill/certificate verification và không mặc định có quyền Admin. |
 | BR-065 | Roles & Permissions | Quyền tạo class giới hạn cho Teacher có xác minh hợp lệ theo mọi skill/level. Quyền quyết định skill chỉ dành cho Verifier active có chuyên môn phù hợp và không phải chủ hồ sơ; vai trò Administrator không tự cấp quyền review. |
 | BR-066 | Roles & Permissions | Mỗi quyết định xác minh, thay đổi quyền, hoàn tất lớp và chuyển trạng thái tài chính lưu actor hoặc nguồn hệ thống, thời gian, trạng thái trước/sau, lý do theo hành động và trace ID liên quan trong audit chỉ append, cùng transaction. |

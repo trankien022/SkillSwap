@@ -25,7 +25,7 @@ describe('RefreshSessionUseCase', () => {
     const account = await accounts.create({
       email: 'a@b.co',
       displayName: 'An',
-      role: 'learner',
+      role: 'user',
       status: 'active',
     });
     const raw = 'manual-token';
@@ -52,7 +52,7 @@ describe('RefreshSessionUseCase', () => {
     const account = await accounts.create({
       email: 'a@b.co',
       displayName: 'An',
-      role: 'learner',
+      role: 'user',
       status: 'active',
     });
     clock.set(new Date('2026-12-01T00:00:00.000Z'));

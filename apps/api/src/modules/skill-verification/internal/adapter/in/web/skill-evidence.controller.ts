@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Inject, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Post, Req } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   submitSkillEvidenceSchema,
   type ProfileSkillView,
+  type SkillEvidenceHistoryView,
   type SkillEvidenceView,
   type SubmitSkillEvidenceInput,
 } from '@skillswap/contracts';
@@ -14,6 +15,10 @@ import {
   GET_MY_PROFILE_SKILLS,
   type GetMyProfileSkillsPort,
 } from '../../../application/port/in/get-my-profile-skills';
+import {
+  GET_SKILL_EVIDENCE_HISTORY,
+  type GetSkillEvidenceHistoryPort,
+} from '../../../application/port/in/get-skill-evidence-history';
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
 import { ZodValidationPipe } from '../../../../../../shared/http/zod-validation.pipe';
 
@@ -23,6 +28,7 @@ export class SkillEvidenceController {
   constructor(
     @Inject(SUBMIT_SKILL_EVIDENCE) private readonly submit: SubmitSkillEvidencePort,
     @Inject(GET_MY_PROFILE_SKILLS) private readonly getMine: GetMyProfileSkillsPort,
+    @Inject(GET_SKILL_EVIDENCE_HISTORY) private readonly getHistory: GetSkillEvidenceHistoryPort,
   ) {}
 
   @Post()
@@ -39,6 +45,20 @@ export class SkillEvidenceController {
       evidenceType: body.evidenceType,
       documentRef: body.documentRef,
       description: body.description,
+    });
+  }
+
+  @Get(':id/history')
+  @ApiOperation({ summary: 'Decision history for each evidence version (FR-018)' })
+  @ApiOkResponse({ description: 'All versions of the profile-skill with their audit trail' })
+  history(
+    @Param('id') id: string,
+    @Req() request: RequestWithIdentity,
+  ): Promise<SkillEvidenceHistoryView> {
+    return this.getHistory.execute({
+      evidenceId: id,
+      viewerId: currentUserId(request),
+      viewerRole: request.user?.role,
     });
   }
 }

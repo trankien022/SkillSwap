@@ -1,5 +1,7 @@
 import type { BookingState, CancelReason } from '../../domain/booking';
 import type { ClassCancellationReason, CompletionBasis } from '../../domain/class';
+import type { SkillLevel } from '../../domain/skill-level';
+import type { TeacherTrust } from '../../domain/publish-policy';
 import type {
   BookingRepository,
   PersistedBooking,
@@ -214,5 +216,30 @@ export class FakeRoomIncidentRecorder implements RoomIncidentRecorder {
   readonly incidents: RoomIncident[] = [];
   async record(incident: RoomIncident): Promise<void> {
     this.incidents.push(incident);
+  }
+}
+
+/**
+ * FR-005: a fake trust reader for the publish gate. Defaults to a verified teacher
+ * approved at `expert` for **any** skill (happy path); pass overrides to test refusals.
+ * `approvedLevels` overrides specific skills; `defaultLevel` covers the rest (null = none).
+ */
+export class FakeTeacherTrustReader {
+  constructor(
+    private readonly trust: {
+      verified?: boolean;
+      defaultLevel?: SkillLevel | null;
+      approvedLevels?: Record<string, SkillLevel | null>;
+    } = {},
+  ) {}
+
+  async read(): Promise<TeacherTrust> {
+    const overrides = this.trust.approvedLevels ?? {};
+    const fallback = this.trust.defaultLevel ?? 'expert';
+    return {
+      verified: this.trust.verified ?? true,
+      approvedLevel: (skillId: string): SkillLevel | null =>
+        skillId in overrides ? (overrides[skillId] ?? null) : fallback,
+    };
   }
 }
