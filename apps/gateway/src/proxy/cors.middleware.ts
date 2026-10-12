@@ -15,14 +15,20 @@ import type { RequestHandler } from 'express';
  *
  * Mount this first at the `/api` boundary: a preflight must succeed before the
  * rate limiter counts it and before the identity middleware inspects it.
+ *
+ * Only a *real* preflight is short-circuited — an `OPTIONS` that carries both an
+ * allow-listed `Origin` and the `Access-Control-Request-Method` header a browser
+ * adds. Any other `OPTIONS` falls through to normal routing, so this middleware
+ * never turns an unrelated request into an empty 204.
  */
 export function corsMiddleware(origins: readonly string[]): RequestHandler {
   const allowed = new Set(origins);
 
   return (req, res, next) => {
     const origin = req.headers.origin;
+    const originAllowed = typeof origin === 'string' && allowed.has(origin);
 
-    if (typeof origin === 'string' && allowed.has(origin)) {
+    if (originAllowed) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Vary', 'Origin');
       res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -35,7 +41,13 @@ export function corsMiddleware(origins: readonly string[]): RequestHandler {
     }
 
     // A preflight carries no token and no body, so it must not reach the proxy.
-    if (req.method === 'OPTIONS') {
+    // It is identified by the browser's own marker header, which avoids
+    // swallowing an unrelated OPTIONS that happens to carry an Origin.
+    const isPreflight =
+      req.method === 'OPTIONS' &&
+      req.headers['access-control-request-method'] !== undefined;
+
+    if (isPreflight) {
       res.statusCode = 204;
       res.end();
       return;

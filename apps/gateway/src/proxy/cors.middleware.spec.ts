@@ -75,7 +75,10 @@ describe('corsMiddleware', () => {
     const res = new MockResponse();
     const { nextCalled } = run(
       corsMiddleware([ORIGIN]),
-      request('OPTIONS', { origin: ORIGIN }),
+      request('OPTIONS', {
+        origin: ORIGIN,
+        'access-control-request-method': 'GET',
+      }),
       res,
     );
 
@@ -84,9 +87,52 @@ describe('corsMiddleware', () => {
     expect(nextCalled).toBe(false);
   });
 
+  it('does not swallow an OPTIONS that is not a preflight', () => {
+    // Regression: the middleware used to end every OPTIONS with 204, so an
+    // ordinary OPTIONS carrying no Access-Control-Request-Method — or one from
+    // an origin that is not allow-listed — was silently answered instead of
+    // being routed.
+    const res = new MockResponse();
+    const { nextCalled } = run(
+      corsMiddleware([ORIGIN]),
+      request('OPTIONS', { origin: ORIGIN }),
+      res,
+    );
+
+    expect(res.ended).toBe(false);
+    expect(nextCalled).toBe(true);
+  });
+
+  it('answers a preflight from a non-allow-listed origin without CORS headers', () => {
+    // The browser must get a definitive answer it can reject. Forwarding the
+    // preflight to the proxy would be worse: it carries no token, and a 502
+    // from an unreachable API would be a misleading reason to block.
+    const res = new MockResponse();
+    const { nextCalled } = run(
+      corsMiddleware([ORIGIN]),
+      request('OPTIONS', {
+        origin: 'http://evil.test',
+        'access-control-request-method': 'GET',
+      }),
+      res,
+    );
+
+    expect(res.headers['access-control-allow-origin']).toBeUndefined();
+    expect(res.statusCode).toBe(204);
+    expect(res.ended).toBe(true);
+    expect(nextCalled).toBe(false);
+  });
+
   it('allows the headers the clients actually send', () => {
     const res = new MockResponse();
-    run(corsMiddleware([ORIGIN]), request('OPTIONS', { origin: ORIGIN }), res);
+    run(
+      corsMiddleware([ORIGIN]),
+      request('OPTIONS', {
+        origin: ORIGIN,
+        'access-control-request-method': 'GET',
+      }),
+      res,
+    );
 
     const allowedHeaders = res.headers['access-control-allow-headers'] ?? '';
     expect(allowedHeaders).toContain('Authorization');
