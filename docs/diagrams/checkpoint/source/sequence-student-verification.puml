@@ -1,39 +1,33 @@
 @startuml
-title Current backend | Student document and decision | FR-002/019
+title Submit proof and review student status | FR-002/019 | BR-002/003/005/070
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
 skinparam defaultFontName Arial
 skinparam defaultFontSize 14
 skinparam ArrowColor #475569
-skinparam sequenceParticipantBackgroundColor #F1F5F9
-skinparam sequenceParticipantBorderColor #475569
 skinparam activityBackgroundColor #F1F5F9
 skinparam activityBorderColor #475569
+skinparam sequenceParticipantBackgroundColor #F1F5F9
+skinparam sequenceParticipantBorderColor #475569
 skinparam stateBackgroundColor #F1F5F9
 skinparam stateBorderColor #475569
 actor Student as U
 actor Administrator as A
-participant Gateway as G
-participant "Student Verification" as V
-database "student_verification schema" as D
-participant "S3-compatible MinIO" as S
-participant "Shared relay / RabbitMQ" as E
-U -> G: POST /api/student-verifications/documents
-G -> V: Authenticated upload metadata
-V -> V: Sign presigned PUT URL (S3 Signature V4)
-V -> D: Create owned document metadata
-V --> U: documentId + upload URL
-U -> S: PUT document bytes using presigned URL
-U -> G: POST /api/student-verifications\ndocumentId + schoolName + major
-G -> V: SubmitStudentVerificationUseCase
-V -> D: Check effective submission + document owner\nCreate Pending; attach metadata
-note over V,S: Submission checks metadata ownership.\nDiagram does not assert an object-existence check in this use case.
-A -> G: POST /api/student-verifications/:id/decision
-G -> V: Administrator identity
-V -> V: Pending-only; reject requires reason
-V -> D: Decision + outbox in own transaction
-V --> A: Approved / Rejected view
-E -> D: Poll committed outbox
-E -> E: Publish; idempotent consumers update own trust projections
-note over V,E: Live Class now projects verified flag into its own teacher_verified table.
+participant "Student verification" as V
+participant "Private document storage" as D
+participant "Teaching eligibility" as E
+U -> V: Request an upload link for student proof
+V -> V: Register the document as owned by this Student
+V --> U: Private upload link
+U -> D: Upload proof of student status
+U -> V: Submit document, school name and major
+V -> V: Check document ownership and no existing active submission
+V --> U: Submission awaiting review, or reason for refusal
+note over V,D: Current submission checks the document registration,\nnot whether the uploaded file exists in storage.
+A -> V: Review the submission and give a decision
+V -> V: Check awaiting review, require a reason for rejection
+V -> V: Save the decision and arrange eligibility updates together
+V --> A: Approved or Rejected with a reason
+V -> E: Update student eligibility in the background
+note over V,E: Approval does not expire in the current implementation.\nAn Administrator may revoke approval with a reason.
 @enduml
