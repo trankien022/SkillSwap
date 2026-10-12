@@ -1,8 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
 import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import type { NotificationItem } from '@skillswap/contracts';
@@ -44,6 +42,15 @@ export default function NotificationsScreen() {
     if (!gatewayClient || busy) return;
     setBusy(true); setError(null);
     try {
+      // Imported lazily: expo-notifications and expo-device ship native modules
+      // that are absent in Expo Go from SDK 53 onward. Importing them at module
+      // scope crashed this whole screen — including the HTTP-backed inbox that
+      // does not need push at all — with a red-boxed error. Loading them only
+      // when the user asks for push keeps the inbox usable in Expo Go.
+      const [Notifications, Device] = await Promise.all([
+        import('expo-notifications'),
+        import('expo-device'),
+      ]);
       if (!Device.isDevice) throw new Error('physical device required');
       const permission = await Notifications.getPermissionsAsync();
       const finalPermission = permission.granted ? permission : await Notifications.requestPermissionsAsync();
