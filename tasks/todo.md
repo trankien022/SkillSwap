@@ -1,21 +1,20 @@
 # Mobile rubric — task checklist
 
-Tham chiếu: [plan](plan.md). Trạng thái checkpoint Android Emulator, 13/10/2026:
+Checkpoint Android 13/10/2026. [Kế hoạch nghiệm thu](mobile-week6-acceptance.md) · [Ma trận 26 API và evidence](mobile-week6-evidence.md).
 
-| Yêu cầu | Có code | Test/build | Runtime trên emulator/backend |
+| Hạng mục | Có code | Test/build | Runtime |
 |---|---|---|---|
-| Android dev build + app shell | Có; AVD `Medium_Phone_API_37.0` (Google Play) và APK debug đã build/cài; app đã mở tới màn login | Build Android thành công; mobile typecheck/test pass | Màn login đã thấy. Chưa đăng nhập; Gateway/API hiện không chạy và không có root `.env` demo |
-| ≥5 resources + 20–30 API | 30 route templates có adapter/caller UI trong source; các nhóm Account, StudentVerification, Skill/Evidence, Class, Booking, Wallet/Ledger, Rating, Notification/Device | Contracts/adapters và workspace tests pass | **Chưa đạt evidence**: chưa có request log từ app đã đăng nhập, chưa xác nhận ≥5 resource có record persisted trong DB demo |
-| Booking/payment | Hold Pending, confirm tường minh, idempotency và reconcile network/session; mock callback HMAC harness trong `scripts/mock-topup-callback.mjs` | Booking/coordinator/top-up test pass trong full suite | Chưa chạy booking/ledger trên account demo; callback mock chưa gửi; chưa đối chiếu debit/refund thật |
-| Teaching | List → detail → PATCH form (mô tả/giờ/giá/số chỗ) → confirm cancel; server vẫn quyết định edit lock/ownership | Gateway edit contract test pass; typecheck pass | Chưa chạy với hai account/backend thật |
-| Upload/evidence | Android document picker → signed storage upload/submit; skill catalogue/evidence APIs | Gateway/storage unit tests pass | Chưa xác nhận object bytes đọc lại từ MinIO hoặc duyệt verifier rồi refresh trên app |
-| Remote push scenario | Expo sender, ticket/receipt worker, retry/lease, token invalidation, Android channel, account rebind/logout và tap routing đã có code; migration mới additive | 9 API push/ownership tests + 3 mobile push lifecycle tests; full tests pass | **Chưa đạt**: Firebase/EAS chưa đăng nhập/cấu hình; thiếu project ID + FCM v1 JSON; không nhận remote push |
+| App/session/Dashboard | Có; error/retry và refresh | Mobile208 tests/27 suites, typecheck; full verify xanh | Login/register/refresh/logout, restart, account switch, offline/retry đã quan sát |
+| API/resources | 30 routes phạm vi code; 26 trong checkpoint | Contracts/adapters pass | 26 route templates có request thành công, 7 resource groups dùng thật |
+| Booking/payment | Pending/Processing/Confirmed, GET reconcile tối đa30s | Backoff và no command replay tests pass | Funded, poor UI chặn thiếu tiền, topup callback mock, ledger100/90/10 và cancellation refunds |
+| Teaching | List/detail/create/edit/cancel, localize và confirm | Typecheck/tests pass | Create>=48h, edit80→85, cancel, edit lock409; ownership403 ops |
+| Upload/skill | Picker/storage/submit/history | Adapter tests pass | PDF bytes MinIO match SHA256; admin/verifier approve và mobile đọc lại |
+| Remote push | Worker lease/ticket/receipt, device lifecycle, tap; locale theo Cài đặt | Provider/worker/copy/device tests pass | Backend cancellation remote tray nhận và tap mở lịch; receiptok/refund; heads-up tiếng Việt và cold start preview tap đúng lịch đã pass; dev launcher vẫn cần Metro |
+| Đóng gói | Development APK đã build/cài, Metro/backend chạy | Full `pnpm verify` exit0; arch warning orphan cũ | APK ARM64 có JS build/cài thành công; APK preview cold start/banner pass; hai diễn tập liên tục đầy đủ còn theo dõi |
 
-Môi trường: Postgres/RabbitMQ/MinIO/Jitsi containers đang chạy; AVD và Metro đã được khởi động trong lượt này, nhưng Gateway/API backend hiện dừng. Firebase CLI báo chưa đăng nhập, EAS CLI không có session; cần user hoàn tất OAuth trên máy để tạo/chọn Firebase/EAS projects và lấy config. Migration push chưa apply. Không reset database và không dùng credentials trong chat.
+Firebase/EAS/FCM v1 đã cấu hình cho `com.skillswap.app`; migration push và locale additive đã apply sau backup. Không seed/reset database. Topup **mô phỏng provider**, intent/ledger/backend thật. S3 object readback đã chứng minh; Jitsi không nghiệm thu. E2E DB test riêng pass6/6 (không forceExit; còn teardown logs). Upload failure/retry và push permission denial/inbox đã pass. Event replay inbox/delivery/refund đúng một lần; đã đối chiếu heads-up/cold start preview; đã chạy2 booking/push loops; còn giới hạn video full rehearsal và foreground heads-up.
 
-Kiểm tra 13/10: Android debug build pass; full `pnpm build`, `pnpm typecheck`, workspace `pnpm test` pass (API 561, Mobile 196, Contracts 161, Gateway 27, Web 161); `pnpm test:arch` exit 0 (còn warning orphan có sẵn `apps/mobile/src/infrastructure/mock/hung-classes.ts`). `pnpm verify` nguyên trạng dừng ở ESLint do unused variable trong file untracked `.agents/skills/design-system/scripts/generate-tokens.cjs`; không sửa file đó. ESLint toàn repo khi bỏ qua `.agents/**` pass. `git diff --check` pass. Các lệnh này không chứng minh runtime nghiệp vụ.
-
-**Checkpoint chưa hoàn tất.** Còn: Firebase/EAS credentials và rebuild; khởi động Gateway/API với demo env; user/teacher/admin-verifier fixture riêng; apply migration additive; nghiệm thu DB/API/MinIO và push remote end-to-end; request evidence 20–30 routes; tối thiểu hai lần diễn tập. Không gắn nhãn pass cho các mục runtime cho tới khi có bằng chứng trực tiếp.
+Các task dưới đây thuộc kế hoạch mobile đầy đủ, không mặc định hoàn tất chỉ vì checkpoint có code/tests/runtime subset. Reminder/Jitsi/rating/iPhone ngoài đợt này.
 
 ## Phase 0 — contract/risk
 
