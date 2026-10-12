@@ -6,6 +6,29 @@ import { callApi, unwrapEnvelope, dispatchWalletBalanceUpdate, getStoredWalletBa
 import { Navbar } from '../../../components/navbar';
 import type { WalletBalanceView, WalletHistoryItemView, MeResponse, TopUpIntentView } from '@skillswap/contracts';
 
+function getCombinedHistory(serverItems: WalletHistoryItemView[]): WalletHistoryItemView[] {
+  const localBookingsRaw = typeof window !== 'undefined' ? localStorage.getItem('skillswap_user_bookings') : null;
+  let localBookingItems: WalletHistoryItemView[] = [];
+  if (localBookingsRaw) {
+    try {
+      const bookings = JSON.parse(localBookingsRaw);
+      localBookingItems = bookings.map((b: { id: string; classTitle: string; priceCredits: number; startsAt?: string }) => ({
+        id: b.id || 'booking-local',
+        type: 'Thanh toán giữ chỗ (Escrow)',
+        direction: 'debit' as const,
+        amountCredits: b.priceCredits || 90,
+        status: 'completed' as const,
+        reference: b.classTitle || 'Lớp học kỹ năng',
+        createdAt: b.startsAt || new Date().toISOString(),
+      }));
+    } catch {
+      // Ignore
+    }
+  }
+  const combined = [...localBookingItems, ...serverItems];
+  return Array.from(new Map(combined.map((item) => [item.id, item])).values());
+}
+
 export default function WalletPage() {
   const [balance, setBalance] = useState<WalletBalanceView | null>(null);
   const [history, setHistory] = useState<WalletHistoryItemView[]>([]);
@@ -21,6 +44,7 @@ export default function WalletPage() {
     if (initialOverride) {
       setBalance(initialOverride);
     }
+    setHistory(getCombinedHistory([]));
 
     const fetchWallet = async () => {
       try {
@@ -40,7 +64,9 @@ export default function WalletPage() {
 
         if (histRes.ok) {
           const data = await unwrapEnvelope<{ items: WalletHistoryItemView[] }>(histRes);
-          setHistory(data.items || []);
+          setHistory(getCombinedHistory(data.items || []));
+        } else {
+          setHistory(getCombinedHistory([]));
         }
 
         if (meRes.ok) {
@@ -52,6 +78,14 @@ export default function WalletPage() {
     };
     fetchWallet();
   }, []);
+
+  const filteredHistory = history.filter((item) => {
+    if (filter === 'all') return true;
+    if (filter === 'deposit') return item.direction === 'credit';
+    if (filter === 'pay') return item.direction === 'debit';
+    if (filter === 'escrow') return item.type.toLowerCase().includes('escrow') || item.status === 'reversed';
+    return true;
+  });
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value) || 0;
@@ -107,14 +141,31 @@ export default function WalletPage() {
         callApi('/wallet/balance'),
         callApi('/wallet/history'),
       ]);
-      if (balRes.ok) {
-        const updatedBal = await unwrapEnvelope<WalletBalanceView>(balRes);
-        setBalance(updatedBal);
-        dispatchWalletBalanceUpdate(updatedBal);
+      const currentAvail = balance?.availableCredits ?? getStoredWalletBalance()?.availableCredits;
+      const currentPending = balance?.pendingCredits ?? (getStoredWalletBalance()?.pendingCredits ?? 0);
+
+      let newBal: WalletBalanceView;
+      if (currentAvail !== undefined) {
+        newBal = {
+          availableCredits: currentAvail + intent.amountCredits,
+          pendingCredits: currentPending,
+        };
+      } else if (balRes.ok) {
+        newBal = await unwrapEnvelope<WalletBalanceView>(balRes);
+      } else {
+        newBal = {
+          availableCredits: intent.amountCredits,
+          pendingCredits: 0,
+        };
       }
+      setBalance(newBal);
+      dispatchWalletBalanceUpdate(newBal);
+
       if (histRes.ok) {
         const data = await unwrapEnvelope<{ items: WalletHistoryItemView[] }>(histRes);
-        setHistory(data.items || []);
+        setHistory(getCombinedHistory(data.items || []));
+      } else {
+        setHistory(getCombinedHistory([]));
       }
 
       alert(`Nạp thành công ${intent.amountCredits} Credit vào ví!`);
@@ -210,7 +261,11 @@ export default function WalletPage() {
             <div className="mt-4 pt-3 border-t border-slate-100">
               <p className="text-[11px] leading-relaxed text-slate-600 flex items-start gap-1">
                 <span className="material-symbols-outlined text-[14px] text-amber-700 shrink-0 mt-0.5">info</span>
-                <span>Đang bảo chứng cho lớp Speaking IELTS 6.5+, giải ngân sau buổi học.</span>
+                <span>
+                  {(balance?.pendingCredits ?? 0) > 0
+                    ? `Đang bảo chứng an toàn ${balance?.pendingCredits} Credit cho lớp học đã đăng ký, giải ngân sau buổi học.`
+                    : 'Không có khoản tín dụng nào đang bị tạm giữ.'}
+                </span>
               </p>
             </div>
           </div>
@@ -225,15 +280,21 @@ export default function WalletPage() {
                 </div>
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-slate-900 tracking-tight">350</span>
+                <span className="text-3xl font-bold text-slate-900 tracking-tight">
+                  {history.filter((h) => h.direction === 'debit').reduce((acc, h) => acc + h.amountCredits, 0)}
+                </span>
                 <span className="text-sm font-semibold text-slate-600">Credit</span>
               </div>
-              <p className="text-xs text-slate-500 mt-1">≈ 350.000 VNĐ đã sử dụng</p>
+              <p className="text-xs text-slate-500 mt-1">
+                ≈ {(history.filter((h) => h.direction === 'debit').reduce((acc, h) => acc + h.amountCredits, 0) * 1000).toLocaleString('vi-VN')} VNĐ đã sử dụng
+              </p>
             </div>
             <div className="mt-4 pt-3 border-t border-slate-100">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-600 font-medium">Lớp hoàn thành</span>
-                <span className="font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md">4 buổi học</span>
+                <span className="text-slate-600 font-medium">Lớp đã đặt chỗ</span>
+                <span className="font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md">
+                  {history.filter((h) => h.direction === 'debit').length} buổi học
+                </span>
               </div>
             </div>
           </div>
@@ -490,7 +551,7 @@ export default function WalletPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
-                {history.length > 0 ? history.map(item => (
+                {filteredHistory.length > 0 ? filteredHistory.map(item => (
                   <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                     <td className="py-4 px-3">
                       <div className="flex items-center gap-3">

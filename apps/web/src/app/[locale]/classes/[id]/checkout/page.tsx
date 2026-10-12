@@ -245,9 +245,11 @@ export default function BookingCheckoutPage({ params }: PageProps) {
 
   const handleConfirmTopUp = () => {
     setIsTopUpModalOpen(false);
+    const currentAvail = balance?.availableCredits ?? getStoredWalletBalance()?.availableCredits ?? 0;
+    const currentPending = balance?.pendingCredits ?? getStoredWalletBalance()?.pendingCredits ?? 0;
     const newBal: WalletBalanceView = {
-      availableCredits: (balance?.availableCredits ?? 0) + 100,
-      pendingCredits: balance?.pendingCredits ?? 0,
+      availableCredits: currentAvail + 100,
+      pendingCredits: currentPending,
     };
     setBalance(newBal);
     dispatchWalletBalanceUpdate(newBal);
