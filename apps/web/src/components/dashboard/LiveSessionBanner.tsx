@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
 import type { LearnerBookingView } from '../../lib/dashboard/types';
 
@@ -101,15 +102,14 @@ export async function LiveSessionBanner({
           </div>
         </div>
         <div className="flex shrink-0 flex-col items-stretch gap-2 sm:flex-row sm:items-center xl:flex-col xl:items-end">
-          <a
-            href="#"
-            aria-disabled="true"
+          <Link
+            href={`/${locale}/bookings/${booking.id}/live`}
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-5 py-3 text-sm font-bold text-surface shadow-md transition-all hover:bg-ink-soft active:scale-95"
           >
             <MeetingRoomIcon className="h-5 w-5" />
             <span>{t('join')}</span>
             <span aria-hidden="true">→</span>
-          </a>
+          </Link>
           <div className="flex items-center gap-2">
             <button
               type="button"

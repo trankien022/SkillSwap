@@ -25,32 +25,34 @@ export function PublishActions({
 }: Props) {
   const t = useTranslations('Teacher.publish.actions');
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-4 shadow-sm">
-      <div className="flex items-center gap-1.5 rounded-lg border border-error bg-error-tint p-2.5 text-[11px] text-error">
-        <InfoIcon className="h-4 w-4 shrink-0" />
+    <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-xs leading-relaxed text-amber-900">
+        <span className="material-symbols-outlined mt-0.5 text-[16px] text-amber-700 shrink-0">
+          warning
+        </span>
         <span>{t('warning')}</span>
       </div>
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="flex flex-col gap-2.5 sm:flex-row">
         <button
           type="button"
           onClick={onPublish}
           disabled={!canPublish || publishing}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-ink px-4 py-3 text-base font-bold text-surface shadow-md transition-all hover:bg-ink-soft active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-ink-soft/50"
+          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
         >
-          <RocketLaunchIcon className="h-5 w-5" />
+          <RocketLaunchIcon className="h-4 w-4" />
           <span>{publishing ? '…' : t('publish')}</span>
         </button>
         <button
           type="button"
           onClick={onSaveDraft}
-          className="rounded-lg border border-success-ink/30 bg-success-tint px-4 py-3 text-sm font-semibold text-success-ink transition-colors hover:bg-success-tint/70"
+          className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-100"
         >
           {t('saveDraft')}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg px-3 py-3 text-sm font-semibold text-ink-soft transition-colors hover:text-error"
+          className="rounded-xl px-3 py-3 text-xs font-bold text-slate-400 transition-colors hover:text-rose-600"
         >
           {t('cancel')}
         </button>
@@ -59,15 +61,6 @@ export function PublishActions({
   );
 }
 
-function InfoIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
-      <circle cx="12" cy="12" r="9" />
-      <line x1="12" y1="11" x2="12" y2="16" />
-      <circle cx="12" cy="8" r="0.5" fill="currentColor" />
-    </svg>
-  );
-}
 
 function RocketLaunchIcon({ className = '' }: { className?: string }) {
   return (
