@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ClassDetailApiGateway, mapContractDetailToWeb } from './api-class-detail';
+import { ClassDetailApiGateway, mapContractDetailToWeb, mapCreatedClassToDetail } from './api-class-detail';
 import type { ClassDetailView as ContractClassDetailView } from '@skillswap/contracts';
 
 describe('ClassDetailApiGateway', () => {
@@ -41,6 +41,28 @@ describe('ClassDetailApiGateway', () => {
     expect(webView.reviews[0]?.authorName).toBe('Học viên A');
     expect(webView.syllabus.length).toBeGreaterThan(0);
     expect(webView.prerequisites.length).toBeGreaterThan(0);
+  });
+
+  it('maps locally stored created class to complete ClassDetailView', () => {
+    const local = {
+      id: 'cls-demo-56h3hb',
+      title: 'Luyện đề IELTS Speaking cấp tốc',
+      skillName: 'IELTS Speaking',
+      description: 'Luyện nói 1-1 phản xạ cùng cựu học sinh chuyên Anh.',
+      startsAt: '2026-10-28T10:00:00.000Z',
+      durationMinutes: 60,
+      priceCredits: 50,
+      capacity: 1,
+    };
+    const detail = mapCreatedClassToDetail(local);
+    expect(detail.id).toBe('cls-demo-56h3hb');
+    expect(detail.skillName).toBe('IELTS Speaking');
+    expect(detail.description).toBe('Luyện nói 1-1 phản xạ cùng cựu học sinh chuyên Anh.');
+    expect(detail.format).toBe('one-on-one');
+    expect(detail.priceCredits).toBe(50);
+    expect(detail.syllabus.length).toBe(3);
+    expect(detail.prerequisites.length).toBe(2);
+    expect(detail.teacherCredentials.length).toBeGreaterThanOrEqual(1);
   });
 
   it('resolves demo class IDs seamlessly from fallback fixture', async () => {

@@ -122,6 +122,7 @@ export function PublishForm({
             id: result.classId || realClassId || `cls-${Date.now()}`,
             title: draft.title || skillName,
             skillName,
+            description: draft.description,
             startsAt: startsAtIso,
             durationMinutes: draft.durationMinutes,
             priceCredits: draft.priceCredits,
