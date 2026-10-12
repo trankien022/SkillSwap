@@ -46,6 +46,7 @@ export default function TabsLayout() {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
           borderTopWidth: 1,
+          paddingTop: spacing.sm,
         },
         tabBarActiveTintColor: colors.campusEmerald,
         tabBarInactiveTintColor: colors.inkMuted,
@@ -53,6 +54,10 @@ export default function TabsLayout() {
           fontSize: 12,
           fontWeight: '600',
         },
+        tabBarItemStyle: {
+          minHeight: 52,
+        },
+        tabBarHideOnKeyboard: true,
       }}
     >
       <Tabs.Screen
