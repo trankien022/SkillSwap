@@ -11,17 +11,17 @@ import {
   Req,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
-  topUpCallbackSchema,
-  topUpRequestSchema,
-  walletHistoryQuerySchema,
-  type TopUpCallbackInput,
-  type TopUpIntentView,
-  type TopUpRequestInput,
-  type WalletBalanceView,
-  type WalletHistoryPage,
-  type WalletHistoryQueryInput,
+  ApiBearerAuth,
+  ApiHeader,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+import type {
+  TopUpIntentView,
+  WalletBalanceView,
+  WalletHistoryPage,
 } from '@skillswap/contracts';
 import {
   INITIATE_TOP_UP,
@@ -44,7 +44,18 @@ import {
   type WebhookSignatureVerifier,
 } from '../../../application/port/out/webhook-signature-verifier';
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
-import { ZodValidationPipe } from '../../../../../../shared/http/zod-validation.pipe';
+import {
+  ResponseCode,
+  ResponseMessage,
+} from '../../../../../../shared/http/response-code.decorator';
+import {
+  TopUpCallbackDto,
+  TopUpIntentDto,
+  TopUpRequestDto,
+  WalletBalanceDto,
+  WalletHistoryPageDto,
+  WalletHistoryQueryDto,
+} from './dto/wallet.dto';
 
 /** Express request with the raw body captured by Nest (for HMAC verification). */
 interface RequestWithRawBody extends RequestWithIdentity {
@@ -53,6 +64,7 @@ interface RequestWithRawBody extends RequestWithIdentity {
 
 @Controller('wallet')
 @ApiTags('wallet')
+@ApiBearerAuth('bearer')
 export class WalletController {
   constructor(
     @Inject(INITIATE_TOP_UP) private readonly initiateTopUp: InitiateTopUpPort,
@@ -64,9 +76,9 @@ export class WalletController {
 
   @Post('top-ups')
   @ApiOperation({ summary: 'Start a wallet top-up (FR-008 / API-006)' })
-  @ApiOkResponse({ description: 'Pending top-up intent with a payment URL' })
+  @ApiOkResponse({ type: TopUpIntentDto, description: 'Pending top-up intent with a payment URL' })
   start(
-    @Body(new ZodValidationPipe(topUpRequestSchema)) body: TopUpRequestInput,
+    @Body() body: TopUpRequestDto,
     @Req() request: RequestWithIdentity,
   ): Promise<TopUpIntentView> {
     return this.initiateTopUp.execute({ ownerId: currentUserId(request), amountVnd: body.amountVnd });
@@ -74,10 +86,11 @@ export class WalletController {
 
   @Post('top-ups/callback')
   @HttpCode(HttpStatus.OK)
+  @ApiHeader({ name: 'x-signature', description: 'HMAC signature of the raw body (ADR-017)' })
   @ApiOperation({ summary: 'Payment provider callback (signature verified)' })
   @ApiOkResponse({ description: 'Whether the callback was applied' })
   async onCallback(
-    @Body(new ZodValidationPipe(topUpCallbackSchema)) body: TopUpCallbackInput,
+    @Body() body: TopUpCallbackDto,
     @Headers('x-signature') signature: string | undefined,
     @Req() request: RequestWithRawBody,
   ): Promise<{ applied: boolean; status: string }> {
@@ -89,17 +102,21 @@ export class WalletController {
   }
 
   @Get('balance')
+  @ResponseCode('WALLET_BALANCE_OK')
+  @ResponseMessage('Wallet balance loaded')
   @ApiOperation({ summary: 'Read the wallet balance (FR-008/FR-010)' })
-  @ApiOkResponse({ description: 'Available and pending credits' })
+  @ApiOkResponse({ type: WalletBalanceDto, description: 'Available and pending credits' })
   balance(@Req() request: RequestWithIdentity): Promise<WalletBalanceView> {
     return this.getBalance.execute(currentUserId(request));
   }
 
   @Get('history')
+  @ResponseCode('WALLET_HISTORY_OK')
+  @ResponseMessage('Wallet history loaded')
   @ApiOperation({ summary: 'Read the wallet ledger history (FR-010 / ADR-022)' })
-  @ApiOkResponse({ description: 'A page of owner-scoped ledger entries, newest first' })
+  @ApiOkResponse({ type: WalletHistoryPageDto, description: 'A page of owner-scoped ledger entries, newest first' })
   history(
-    @Query(new ZodValidationPipe(walletHistoryQuerySchema)) query: WalletHistoryQueryInput,
+    @Query() query: WalletHistoryQueryDto,
     @Req() request: RequestWithIdentity,
   ): Promise<WalletHistoryPage> {
     return this.getHistory.execute({

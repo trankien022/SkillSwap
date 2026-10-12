@@ -15,6 +15,8 @@ export default tseslint.config(
       '**/next-env.d.ts',
       'docs/**',
       'tmp/**',
+      'apps/mobile/ios/**',
+      'apps/mobile/android/**',
     ],
   },
   js.configs.recommended,
@@ -53,7 +55,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['apps/web/**/*.{ts,tsx}'],
+    files: ['apps/web/**/*.{ts,tsx}', 'frontend-hung/**/*.{js,jsx,mjs}'],
     languageOptions: {
       globals: {
         ...globals.browser,

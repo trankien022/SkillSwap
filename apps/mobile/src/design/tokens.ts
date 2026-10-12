@@ -21,12 +21,15 @@ export const colors = {
   dangerInk: '#b91c1c',
   neutralTint: '#f1f5f9',
   neutralInk: '#475569',
+  overlay: 'rgba(15, 23, 42, 0.45)',
 } as const;
 
 export const radius = {
+  small: 8,
   pill: 9999,
   card: 16,
   control: 8,
+  avatar: 9999,
 } as const;
 
 export const spacing = {
@@ -36,12 +39,29 @@ export const spacing = {
   lg: 16,
   xl: 24,
   xxl: 32,
+  xxxl: 40,
 } as const;
 
 export const typography = {
-  title: { fontSize: 28, fontWeight: '700' as const },
-  heading: { fontSize: 20, fontWeight: '600' as const },
+  display: { fontSize: 32, fontWeight: '700' as const, lineHeight: 38 },
+  title: { fontSize: 28, fontWeight: '700' as const, lineHeight: 34 },
+  heading: { fontSize: 20, fontWeight: '600' as const, lineHeight: 28 },
+  subheading: { fontSize: 18, fontWeight: '600' as const, lineHeight: 26 },
   body: { fontSize: 16, fontWeight: '400' as const },
   label: { fontSize: 14, fontWeight: '500' as const },
   caption: { fontSize: 12, fontWeight: '400' as const },
+} as const;
+
+export const controls = {
+  minTouchTarget: 44,
+  buttonHeight: 50,
+  inputHeight: 52,
+} as const;
+
+export const layout = {
+  pageHorizontal: spacing.lg,
+  pageVertical: spacing.xl,
+  contentMaxWidth: 560,
+  cardPadding: spacing.lg,
+  sectionGap: spacing.xl,
 } as const;

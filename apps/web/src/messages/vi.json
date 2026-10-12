@@ -326,13 +326,18 @@
   },
   "Dashboard": {
     "page": {
-      "roleChip": "Bảng điều khiển học sinh",
+      "roleChip": "Học viên SkillSwap",
       "termChip": "Kỳ học hiện tại",
-      "title": "Lịch học & Phiên học của tôi",
+      "title": "Lớp học của tôi",
       "subtitle": "Theo dõi tiến độ các buổi học đã đặt, kiểm soát quy trình ký quỹ, truy cập phòng học và phê duyệt giải ngân credits sau mỗi ca học.",
       "ctaCalendar": "Đồng bộ lịch",
       "ctaExplore": "Khám phá lớp mới",
       "mockBadge": "Dữ liệu minh họa"
+    },
+    "empty": {
+      "title": "Chưa có buổi học nào",
+      "body": "Bạn chưa có lớp học nào trong danh mục này. Hãy khám phá và đặt lịch học cùng các bạn sinh viên xuất sắc khác!",
+      "cta": "Khám phá lớp học ngay"
     },
     "metrics": {
       "upcoming": "Lớp sắp diễn ra",
@@ -411,10 +416,13 @@
       "held": "Đang giữ an toàn",
       "total": "Tổng tài sản ước tính",
       "vndEstimate": "(~{vnd} VNĐ)",
+      "noDirectTitle": "Không chuyển thẳng",
       "noDirect": "Giảng viên chưa nhận được credits cho tới khi bạn xác nhận hoàn tất.",
+      "refundPolicyTitle": "Tự động hoàn",
       "refundPolicy": "Hoàn về ví tự động nếu buổi học bị huỷ trước giờ quy định.",
       "details": "Chi tiết nhật ký ký quỹ",
-      "signInToView": "Đăng nhập để xem số dư ví"
+      "signInToView": "Đăng nhập để xem số dư ví",
+      "signInCta": "Đăng nhập ngay"
     },
     "charter": {
       "title": "Quyền lợi học sinh",
@@ -424,10 +432,23 @@
       "contactBody": "Mọi trao đổi, gửi mã nguồn và cuộc gọi video đều diễn ra nội bộ trong SkillSwap để bảo đảm căn cứ giải quyết tranh chấp học thuật.",
       "support": "Cần trợ giúp học vụ"
     },
-    "empty": {
-      "title": "Chưa có buổi học nào",
-      "body": "Bạn chưa đặt lớp nào. Hãy khám phá các lớp hiện có.",
-      "cta": "Khám phá lớp"
+    "reviewModal": {
+      "title": "Đánh giá buổi học & Giải ngân ký quỹ",
+      "subtitle": "Xác nhận ca học đã diễn ra thành công để chuyển số credits ký quỹ cho giảng viên.",
+      "ratingLabel": "Mức độ hài lòng của bạn",
+      "starHint": "{rating} trên 5 sao",
+      "commentLabel": "Nhận xét học thuật & Góp ý (tuỳ chọn)",
+      "commentPlaceholder": "Chia sẻ trải nghiệm học tập, sự nhiệt tình và nội dung kiến thức được trao đổi...",
+      "pledge": "Cam kết học thuật: Đánh giá trung thực giúp xây dựng môi trường trao đổi kỹ năng minh bạch giữa sinh viên các trường.",
+      "cancel": "Để sau",
+      "submit": "Xác nhận & Giải ngân"
+    },
+    "noShowModal": {
+      "title": "Báo cáo giảng viên vắng mặt",
+      "subtitle": "Quy tắc bảo vệ học viên SkillSwap",
+      "body": "Nếu giảng viên không tham gia sau 15 phút tính từ giờ bắt đầu, yêu cầu báo cáo sẽ được ghi nhận và số credits ký quỹ sẽ tự động hoàn về ví của bạn.",
+      "cancel": "Quay lại",
+      "confirm": "Xác nhận báo vắng mặt"
     }
   },
   "Teacher": {
@@ -527,7 +548,310 @@
         "Tháng 10",
         "Tháng 11",
         "Tháng 12"
-      ]
+      ],
+      "stepNumber": "Bước {n}",
+      "steps": {
+        "step1Title": "Chọn kỹ năng giảng dạy",
+        "step1VerifiedBadge": "2 môn đã duyệt",
+        "step2Title": "Tiêu đề & Nội dung buổi học",
+        "syllabusLabel": "Tóm tắt lộ trình buổi học (Syllabus)",
+        "syllabus1": "15 phút đầu: Chẩn đoán phát âm & Warm-up phản xạ tự nhiên",
+        "syllabus2": "30 phút giữa: Mock Test 1-on-1 & Sửa cấu trúc PEEL trực tiếp",
+        "syllabus3": "15 phút cuối: Nhận xét chi tiết & Lộ trình tự ôn luyện 7 ngày",
+        "step3Title": "Hình thức tổ chức & Quy mô",
+        "format1to1Title": "1 kèm 1 (Private)",
+        "format1to1Desc": "Tối đa 1 học viên. Tương tác chuyên sâu, kèm cặp kỹ năng cá nhân hóa.",
+        "format1to1Completion": "Tỷ lệ hoàn thành 99.4%",
+        "formatGroupTitle": "Nhóm nhỏ (Group)",
+        "formatGroupDesc": "Sức chứa 4 - 6 học viên. Thực hành tranh biện, thảo luận nhóm theo chủ đề.",
+        "formatGroupSave": "Tiết kiệm chi phí tín dụng",
+        "step4Title": "Thời gian & Thời lượng giảng dạy",
+        "leadTimeBadge": "Tạo trước ít nhất 24 giờ",
+        "leadTimeValid": "Hợp lệ (Cách hiện tại > 24 tiếng)",
+        "autoRoom": "Tự động kết nối phòng học trực tuyến",
+        "autoRoomDesc": "SkillSwap Video Room (Bảo mật mã hóa đầu cuối)",
+        "autoRoomPill": "Tự động tạo link",
+        "step5Title": "Học phí Credit & Cơ chế Ký quỹ Escrow"
+      },
+      "checklist": {
+        "title": "Điều kiện Công bố Lớp",
+        "badge": "Đủ tiêu chuẩn",
+        "item1": "Kỹ năng đã được thẩm định học thuật",
+        "item1Status": "Hợp lệ",
+        "item2": "Thời gian mở lớp trước ít nhất 24 giờ",
+        "item2Status": "Sẵn sàng",
+        "item3": "Ký quỹ Escrow minh bạch 90/10",
+        "item3Status": "Sẵn sàng",
+        "pledgeTitle": "Cam kết Bảo vệ Quyền lợi SkillSwap",
+        "pledgeDesc": "Học viên được hoàn trả tín dụng đầy đủ theo chính sách nếu lớp bị hủy hoặc có sự cố kỹ thuật từ hệ thống."
+      }
+    }
+  },
+  "Auth": {
+    "brandTag": "Mạng lưới tri thức sinh viên",
+    "heroTitle1": "Trao đổi kỹ năng.",
+    "heroTitle2": "Tích lũy giá trị thực.",
+    "heroSubtitle": "Học hỏi từ bạn học xuất sắc và chia sẻ thế mạnh của bạn. Mọi trao đổi đều được bảo chứng minh bạch qua hệ thống tín chỉ công bằng.",
+    "pillar1Title": "Xác thực sinh viên chính danh",
+    "pillar1Desc": "Liên kết tài khoản trường đại học đảm bảo môi trường học tập an toàn.",
+    "pillar2Title": "Cơ chế ký quỹ minh bạch",
+    "pillar2Desc": "Tín chỉ chỉ chuyển giao khi buổi trao đổi diễn ra trọn vẹn và đạt yêu cầu.",
+    "pillar3Title": "Lớp học tương tác thời gian thực",
+    "pillar3Desc": "Phòng học tương tác trực tiếp với tài liệu học tập được chia sẻ đồng bộ.",
+    "testimonialQuote": "Trao đổi kỹ năng lập trình giúp mình luyện tập thêm nhiều buổi giao tiếp bổ ích. Quy trình chuẩn mực, tài khoản xác thực rất an tâm.",
+    "testimonialAuthor": "Minh Trí",
+    "testimonialRole": "Sinh viên khóa trước • 40+ giờ trao đổi kỹ năng",
+    "tabRegister": "Đăng ký tài khoản",
+    "tabLogin": "Đăng nhập",
+    "providerGoogle": "Tài khoản Google",
+    "providerMicrosoft": "Tài khoản Microsoft",
+    "providerComingSoon": "Chức năng đăng nhập này chưa được hỗ trợ",
+    "ssoComingSoon": "Chức năng đăng nhập này chưa được hỗ trợ",
+    "providerBadge": "Sắp có",
+    "orDivider": "Hoặc tiếp tục với email",
+    "fullName": "Họ và tên",
+    "fullNamePlaceholder": "Ví dụ: Nguyễn Văn A",
+    "email": "Email sinh viên",
+    "emailPlaceholder": "name@sinhvien.edu",
+    "emailHint": "Hệ thống hỗ trợ xác minh danh tính người học",
+    "password": "Mật khẩu",
+    "passwordPlaceholder": "Tối thiểu 8 ký tự",
+    "passwordStrengthWeak": "Yếu",
+    "passwordStrengthMedium": "Trung bình",
+    "passwordStrengthStrong": "Mạnh",
+    "passwordStrengthVeryStrong": "Rất mạnh",
+    "pledge": "Tôi cam kết tuân thủ quy chuẩn học thuật và trao đổi tri thức có văn hóa.",
+    "rememberMe": "Ghi nhớ thiết bị này trong 30 ngày",
+    "forgotPassword": "Quên mật khẩu?",
+    "btnRegister": "Tạo tài khoản học viên",
+    "btnLogin": "Đăng nhập vào SkillSwap",
+    "registerSuccess": "Đăng ký tài khoản thành công! Đang chuyển hướng…",
+    "loginSuccess": "Đăng nhập thành công! Đang chuyển hướng…",
+    "switchToLogin": "Đã có tài khoản?",
+    "switchToRegister": "Chưa có tài khoản?",
+    "validationError": "Vui lòng nhập đầy đủ thông tin hợp lệ (mật khẩu từ 8 ký tự).",
+    "pledgeError": "Bạn cần đồng ý với cam kết quy chuẩn học thuật."
+  },
+  "Verification": {
+    "badge": "Hồ sơ đã kiểm duyệt chính thức",
+    "title": "Trung tâm Thẩm định & Xác minh",
+    "subtitle": "Quản lý thông tin định danh sinh viên đại học và bằng chứng năng lực chuyên môn để trao đổi kỹ năng an toàn.",
+    "privacyBadge": {
+      "title": "Bảo mật sinh viên",
+      "subtitle": "Xác thực mã hoá an toàn"
+    },
+    "studentIdCard": {
+      "title": "Định danh Sinh viên chính khóa",
+      "verified": "Đã xác thực",
+      "pending": "Đang duyệt",
+      "unverified": "Chưa xác thực",
+      "sub": "Cổng đối soát dữ liệu sinh viên",
+      "cohort": "Niên khóa 2021 - 2025",
+      "school": "Trường Đại học",
+      "schoolSub": "Cơ sở TP. Hồ Chí Minh",
+      "studentCode": "Mã số sinh viên",
+      "studentCodeSub": "Khớp hệ thống quản lý đào tạo",
+      "studentEmail": "Email sinh viên",
+      "studentEmailSub": "Đã xác thực tài khoản chính quy",
+      "reverifyTerm": "Kỳ tái xác thực",
+      "reverifyTermValue": "Tháng 09/2025",
+      "reverifyTermSub": "Định kỳ theo niên khóa"
+    },
+    "cardScan": {
+      "title": "Bản quét thẻ sinh viên",
+      "subtitle": "Lưu trữ mã hóa bảo mật, thông tin nhạy cảm đã che mờ tự động.",
+      "updateCta": "Cập nhật thẻ mới",
+      "watermark": "SKILLSWAP VERIFIED",
+      "internalLock": "Bảo mật nội bộ",
+      "verifiedOn": "Xác thực: 15/09/2024"
+    },
+    "trustScore": {
+      "title": "Chỉ số Uy tín Học thuật",
+      "badge": "Độ tin cậy cao",
+      "score": "98",
+      "scoreMax": "/ 100 Điểm",
+      "completedSessions": "Hoàn thành buổi học",
+      "disputes": "Khiếu nại & tranh chấp",
+      "disputesValue": "0 vụ vi phạm",
+      "peerRating": "Đánh giá ngang hàng",
+      "endorsement": "Được bảo chứng qua 14 lượt xác thực từ mạng lưới sinh viên."
+    },
+    "certifications": {
+      "title": "Chứng chỉ chuyên môn",
+      "summary": "2 Đã duyệt • 1 Đang xét",
+      "ielts": "IELTS Speaking C1 (8.0)",
+      "ieltsSub": "Chứng chỉ quốc tế • Quyền mở lớp đã kích hoạt",
+      "toeic": "TOEIC 920 Business",
+      "toeicSub": "Chứng chỉ quốc tế • Quyền mở lớp đã kích hoạt",
+      "translation": "Dịch thuật Anh - Việt",
+      "translationSub": "Đang thẩm định hồ sơ chuyên môn",
+      "pendingBadge": "Chờ duyệt"
+    },
+    "pledge": {
+      "title": "Cam kết An toàn & Bảo mật SkillSwap",
+      "subtitle": "Môi trường trao đổi học thuật chuẩn mực, minh bạch và tôn trọng quyền riêng tư sinh viên.",
+      "item1Title": "Email trường sinh viên",
+      "item1Body": "Người học và người dạy được kiểm tra định danh chính thức qua hòm thư sinh viên còn hiệu lực.",
+      "item2Title": "Bảo mật danh tính cá nhân",
+      "item2Body": "Dữ liệu cá nhân nhạy cảm được che giấu. Thành viên chỉ nhìn thấy biệt danh xác thực và trường theo học.",
+      "item3Title": "Tái thẩm định theo niên khóa",
+      "item3Body": "Thẻ sinh viên được rà soát định kỳ hàng năm để bảo đảm tư cách thành viên và chất lượng buổi học."
+    }
+  },
+  "PostSessionReview": {
+    "steps": {
+      "step1": "1. Rời phòng Jitsi Meet",
+      "step2": "2. Nghiệm thu & Giải ngân Escrow",
+      "step3": "3. Đánh giá tín nhiệm Peer"
+    },
+    "banner": {
+      "badge": "Buổi học trực tuyến hoàn thành",
+      "title": "Buổi học đã hoàn thành thành công!",
+      "subtitle": "Phiên học trực tuyến 60 phút qua Jitsi Meet đã được ghi nhận an toàn.",
+      "bookingCode": "MÃ BUỔI HỌC: #{code}",
+      "duration": "Thời lượng: 60 phút (Trọn vẹn)"
+    },
+    "sessionInfo": {
+      "title": "Thông tin buổi học",
+      "tag": "1-on-1 Mentoring Session",
+      "classTitle": "Luyện Speaking IELTS 6.5+ Mock Interview 1-1",
+      "tutor": "Lan Anh",
+      "university": "Đại học Đối tác",
+      "verifiedBadge": "Thẻ SV Đã xác thực • Chuyên môn kiểm định",
+      "topicLabel": "Chủ đề thảo luận",
+      "topicValue": "Part 2 & 3 Education",
+      "jitsiLabel": "Đường truyền Jitsi",
+      "jitsiValue": "1080p Rõ nét"
+    },
+    "escrow": {
+      "title": "Thanh toán & Giữ cọc Escrow",
+      "status": "Đã giải ngân an toàn",
+      "desc": "Hệ thống tự động chuyển số Credit từ quỹ bảo lãnh sang Ví giảng viên sau khi phiên học kết thúc suôn sẻ.",
+      "totalCost": "Tổng chi phí buổi học",
+      "credits": "{n} Credit",
+      "tutorShare": "Ví giảng viên (90%)",
+      "platformShare": "Phí duy trì hệ thống (10%)",
+      "availableBalance": "Số dư khả dụng hiện tại:",
+      "viewWallet": "Xem ví →"
+    },
+    "materials": {
+      "title": "Tài liệu & Ghi chú buổi học",
+      "count": "2 tệp",
+      "desc": "Tải bản nhận xét chi tiết và phiếu tổng kết của buổi học.",
+      "file1Name": "Speaking_Critique_SS8821.pdf",
+      "file1Meta": "2.4 MB • Nhận xét ngữ pháp & từ vựng",
+      "file2Name": "Audio_Sample_Intonation.mp3",
+      "file2Meta": "5.1 MB • Ghi âm mẫu ngữ điệu Part 3"
+    },
+    "form": {
+      "badge": "Đánh giá người học",
+      "counterpart": "Sinh viên kết nối học tập",
+      "title": "Đánh giá chất lượng & Giảng viên",
+      "subtitle": "Góp ý của bạn giúp cải thiện chất lượng giảng dạy và tích lũy uy tín học thuật trong cộng đồng.",
+      "overallSatisfaction": "Mức độ hài lòng chung về buổi học",
+      "star1": "Chưa hài lòng (1.0 / 5.0) - Cần cải thiện",
+      "star2": "Tạm ổn (2.0 / 5.0) - Cần lưu ý một số điểm",
+      "star3": "Tốt (3.0 / 5.0) - Đạt chuẩn kỳ vọng",
+      "star4": "Rất tốt (4.0 / 5.0) - Hài lòng",
+      "star5": "Xuất sắc (5.0 / 5.0) - Cực kỳ khuyến nghị",
+      "criteriaTitle": "Đánh giá theo 4 tiêu chí cốt lõi",
+      "crit1": "1. Chuyên môn & Phương pháp",
+      "crit1Desc": "Nắm vững format kỳ thi, giải thích chuẩn xác",
+      "crit2": "2. Tính đúng giờ & Tác phong",
+      "crit2Desc": "Vào phòng Jitsi đúng giờ, thái độ tôn trọng",
+      "crit3": "3. Tương tác & Sửa lỗi trực tiếp",
+      "crit3Desc": "Ghi chú phản xạ phát âm chi tiết từng câu",
+      "crit4": "4. Hạ tầng kết nối video Jitsi",
+      "crit4Desc": "Âm thanh rõ, micro lọc ồn tốt, không giật lag",
+      "commentLabel": "Nhận xét chi tiết cho giảng viên",
+      "commentHint": "Chọn nhanh phản hồi nổi bật bên dưới để thêm vào nội dung đánh giá:",
+      "chip1": "Giải thích dễ hiểu, logic",
+      "chip2": "Sửa phát âm & nối âm rất chi tiết",
+      "chip3": "Tài liệu sát đề thi quý mới nhất",
+      "chip4": "Tạo cảm giác tự tin, không bị áp lực",
+      "commentPlaceholder": "Chia sẻ cảm nhận của bạn về buổi học...",
+      "defaultComment": "Giảng viên hướng dẫn rất tận tâm, chỉnh ngay các lỗi phát âm và giúp mình triển khai ý tưởng rất mạch lạc. Rất khuyến khích các bạn sinh viên cùng học!",
+      "crossMatchTitle": "Cơ hội Đổi chéo kỹ năng (Skill Swap)",
+      "crossMatchSub": "Gợi ý tương thích",
+      "crossMatchDesc": "Giảng viên đang muốn học thêm môn khác. Bạn có muốn đổi kỹ năng 1-1 cho các buổi tiếp theo?",
+      "crossMatchOpt1": "Đề xuất đổi kỹ năng chéo 1-1",
+      "crossMatchOpt2": "Lưu vào Danh bạ cố vấn",
+      "btnBack": "Quay lại Lớp của tôi",
+      "btnSubmit": "Gửi đánh giá & Hoàn tất",
+      "btnSubmitting": "Đang đồng bộ Escrow...",
+      "btnSuccess": "Đã gửi thành công!",
+      "toastSuccessTitle": "Đánh giá đã được ghi nhận vào sổ cái!",
+      "toastSuccessBody": "Cảm ơn bạn. Hồ sơ tín nhiệm của giảng viên đã được cập nhật. Đang chuyển hướng về trang lớp học..."
+    }
+  },
+  "LiveClassroom": {
+    "nav": {
+      "back": "Lớp học của tôi",
+      "bookingCode": "MÃ BUỔI HỌC: #{code}"
+    },
+    "statusBar": {
+      "rec": "REC LIVE",
+      "connection": "HD 1080p (24ms)",
+      "timer": "{elapsed} / {total}",
+      "e2e": "Mã hóa E2E bảo mật"
+    },
+    "video": {
+      "whiteboardTitle": "Bảng trắng tương tác • IELTS Speaking Part 2",
+      "liveSync": "Đồng bộ trực tiếp",
+      "topic": "Chủ đề: Describe an environmental problem in your hometown",
+      "pointLabel": "Cấu trúc PEEL:",
+      "pointText": "Air pollution due to heavy vehicular exhaust during rush hours.",
+      "collocationsLabel": "Từ vựng C1:",
+      "collocationsText": "deteriorating air quality, exponential rise, combative measures.",
+      "feedbackLabel": "Góp ý trực tiếp:",
+      "feedbackText": "Tập trung nối âm và ngắt nhịp tự nhiên theo ý tưởng.",
+      "mentorBadge": "Giảng viên",
+      "screenSharing": "Đang chia sẻ màn hình",
+      "studentName": "Minh Nguyễn (Bạn)",
+      "btnMic": "Micro",
+      "btnCamera": "Camera",
+      "btnScreen": "Chia sẻ màn hình",
+      "btnWhiteboard": "Bảng trắng",
+      "btnHand": "Giơ tay phát biểu",
+      "btnLeave": "Rời phòng"
+    },
+    "timeline": {
+      "stage": "Giai đoạn 3 / 4 • Buổi học mô phỏng 1-1",
+      "topicHeading": "Phương pháp PEEL & Khung phản xạ C1 Collocations",
+      "remainingTime": "Còn {n} phút luyện tập trực tiếp",
+      "progressLabel": "Tiến độ buổi học hiện tại",
+      "progressPct": "{pct}% hoàn thành",
+      "materialsTitle": "Tài liệu buổi học đính kèm ({n} tệp)",
+      "file1Title": "Forecast_Speaking_Q2_2025.pdf",
+      "file1Sub": "1.4 MB • Giáo trình chuẩn đối tác đào tạo",
+      "file2Title": "Band7_Topic_Collocations.docx",
+      "file2Sub": "420 KB • Ghi chú buổi học trọng tâm"
+    },
+    "chat": {
+      "title": "Chat Lớp Học Trực Tuyến",
+      "onlineCount": "{n} trực tuyến",
+      "safetyNotice": "Bảo mật SkillSwap: Mọi tương tác diễn ra trên nền tảng để bảo đảm quyền lợi ký quỹ an toàn và giải quyết khiếu nại học thuật.",
+      "systemStart": "Phòng học bắt đầu lúc {time} • Mã bảo mật #{code}",
+      "mentorName": "Lan Anh",
+      "mentorTime1": "19:32",
+      "mentorMsg1": "Chào Minh! Chúng ta bắt đầu phần Part 2: 'Describe an environmental problem in your hometown' nhé. Mình vừa chia sẻ bảng từ vựng qua whiteboard rồi nhé!",
+      "studentName": "Bạn (Minh Nguyễn)",
+      "studentTime": "19:34",
+      "studentMsg": "Dạ vâng, em đã nhận được tài liệu. Em xin 1 phút chuẩn bị dàn ý theo mô hình PEEL đã học ở buổi trước ạ!",
+      "mentorTime2": "19:40",
+      "mentorMsg2": "Rất tốt! Nhớ nhấn mạnh cụm 'exponential rise in automotive emission' để nâng điểm tiêu chí từ vựng nhé.",
+      "inputPlaceholder": "Gửi tin nhắn hoặc đặt câu hỏi...",
+      "send": "Gửi",
+      "attach": "Đính kèm tệp"
+    },
+    "escrow": {
+      "title": "Ký quỹ Bảo chứng - Escrow Active",
+      "subtitle": "Bảo vệ quyền lợi học viên & giảng viên",
+      "heldLabel": "Khoản bảo chứng đang khóa:",
+      "heldValue": "{credits} Credits (~{vnd} VNĐ)",
+      "badge": "Đang bảo chứng",
+      "notice": "Sau khi lớp kết thúc, bạn có 24 giờ để đánh giá buổi học trước khi hệ thống chính thức giải ngân số credits cho giảng viên.",
+      "btnEndAndReview": "Kết thúc lớp & Chấm điểm đánh giá"
     }
   }
 }

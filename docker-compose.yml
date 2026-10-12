@@ -88,7 +88,7 @@ services:
       - '8000:80'
     environment:
       ENABLE_AUTH: '1'
-      ENABLE_GUESTS: '1'
+      ENABLE_GUESTS: '0'
       AUTH_TYPE: jwt
       JWT_APP_ID: ${JITSI_APP_ID:-skillswap}
       JWT_APP_SECRET: ${JITSI_APP_SECRET:-skillswap_jitsi_dev_secret}
@@ -96,8 +96,9 @@ services:
       JWT_ACCEPTED_AUDIENCES: ${JITSI_APP_ID:-skillswap}
       ENABLE_LETSENCRYPT: '0'
       ENABLE_HTTP_REDIRECT: '0'
-      DISABLE_HTTPS: '1'
-      PUBLIC_URL: https://localhost:8443
+      DISABLE_HTTPS: '0'
+      PUBLIC_URL: ${JITSI_PUBLIC_URL:-https://localhost:8443}
+      XMPP_SERVER: jitsi-prosody
       XMPP_DOMAIN: meet.jitsi
       XMPP_AUTH_DOMAIN: auth.meet.jitsi
       XMPP_MUC_DOMAIN: muc.meet.jitsi
@@ -122,12 +123,16 @@ services:
       - '5280'
     environment:
       ENABLE_AUTH: '1'
-      ENABLE_GUESTS: '1'
+      ENABLE_GUESTS: '0'
       AUTH_TYPE: jwt
       JWT_APP_ID: ${JITSI_APP_ID:-skillswap}
       JWT_APP_SECRET: ${JITSI_APP_SECRET:-skillswap_jitsi_dev_secret}
       JWT_ACCEPTED_ISSUERS: ${JITSI_APP_ID:-skillswap}
       JWT_ACCEPTED_AUDIENCES: ${JITSI_APP_ID:-skillswap}
+      JICOFO_AUTH_USER: focus
+      JICOFO_AUTH_PASSWORD: ${JITSI_JICOFO_PASSWORD:-skillswap_jicofo_dev_password}
+      JVB_AUTH_USER: jvb
+      JVB_AUTH_PASSWORD: ${JITSI_JVB_PASSWORD:-skillswap_jvb_dev_password}
       XMPP_DOMAIN: meet.jitsi
       XMPP_AUTH_DOMAIN: auth.meet.jitsi
       XMPP_MUC_DOMAIN: muc.meet.jitsi
@@ -148,6 +153,9 @@ services:
       AUTH_TYPE: jwt
       JWT_APP_ID: ${JITSI_APP_ID:-skillswap}
       JWT_APP_SECRET: ${JITSI_APP_SECRET:-skillswap_jitsi_dev_secret}
+      JICOFO_AUTH_USER: focus
+      JICOFO_AUTH_PASSWORD: ${JITSI_JICOFO_PASSWORD:-skillswap_jicofo_dev_password}
+      JVB_BREWERY_MUC: jvbbrewery
       XMPP_DOMAIN: meet.jitsi
       XMPP_AUTH_DOMAIN: auth.meet.jitsi
       XMPP_INTERNAL_MUC_DOMAIN: internal-muc.meet.jitsi

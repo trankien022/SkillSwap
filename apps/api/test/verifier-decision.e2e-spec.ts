@@ -80,7 +80,7 @@ describe('E2E: verifier decisions on skill evidence (FR-004)', () => {
     api.actAs('vf-react', 'verifier');
     const queue = await api.get('/api/verifiers/me/queue');
     expect(queue.status).toBe(200);
-    expect(queue.json.map((row: { id: string }) => row.id)).toContain(evidenceId);
+    expect(queue.json.items.map((row: { id: string }) => row.id)).toContain(evidenceId);
 
     // Claim locks it, then approve sets the level.
     const claimed = await api.post(`/api/skill-evidence/${evidenceId}/claim`);
@@ -99,7 +99,7 @@ describe('E2E: verifier decisions on skill evidence (FR-004)', () => {
     // The owner sees the effective level cached on their profile skill.
     api.actAs(learnerId, 'user');
     const mine = await api.get('/api/profile-skills/me');
-    const entry = mine.json.find((row: { skillId: string }) => row.skillId === skillId);
+    const entry = mine.json.items.find((row: { skillId: string }) => row.skillId === skillId);
     expect(entry.approvedLevel).toBe('advanced');
   });
 
@@ -111,11 +111,11 @@ describe('E2E: verifier decisions on skill evidence (FR-004)', () => {
 
     api.actAs('vf-piano', 'verifier');
     const queue = await api.get('/api/verifiers/me/queue');
-    expect(queue.json.map((row: { id: string }) => row.id)).not.toContain(evidenceId);
+    expect(queue.json.items.map((row: { id: string }) => row.id)).not.toContain(evidenceId);
 
     const claimed = await api.post(`/api/skill-evidence/${evidenceId}/claim`);
     expect(claimed.status).toBe(403);
-    expect(claimed.json.error).toBe('OutOfExpertiseError');
+    expect(claimed.envelope.code).toBe('OutOfExpertiseError');
   });
 
   it('refuses an administrator deciding skill evidence (BR-065)', async () => {

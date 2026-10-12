@@ -80,6 +80,9 @@ export class WalletLedgerRegistrar implements OnModuleInit {
       queue: 'wallet-ledger.booking-confirmed',
       handler: async (message: BusMessage): Promise<void> => {
         const event = bookingConfirmedSchema.parse(message.payload);
+        if (event.settled) {
+          return;
+        }
         await this.recordBooking.execute(event);
       },
     });

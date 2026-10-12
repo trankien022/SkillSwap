@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { callApi } from '../../../lib/api-client';
+import { useLocale } from 'next-intl';
+import { callApi, unwrapEnvelope } from '../../../lib/api-client';
 import { Navbar } from '../../../components/navbar';
 import type { ProfileSkillView, WalletBalanceView, MeResponse } from '@skillswap/contracts';
 
@@ -16,6 +17,7 @@ export interface CreatedClassItem {
 }
 
 export default function InstructorDashboard() {
+  const locale = useLocale();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [skillSelect, setSkillSelect] = useState('IELTS Speaking');
@@ -45,16 +47,16 @@ export default function InstructorDashboard() {
         ]);
 
         if (skillsRes.ok) {
-          const data = await skillsRes.json();
-          if (Array.isArray(data)) setSkills(data);
+          const data = await unwrapEnvelope<{ items: typeof skills }>(skillsRes);
+          if (Array.isArray(data.items)) setSkills(data.items);
         }
 
         if (balRes.ok) {
-          setBalance(await balRes.json());
+          setBalance(await unwrapEnvelope(balRes));
         }
 
         if (meRes.ok) {
-          setMe(await meRes.json());
+          setMe(await unwrapEnvelope(meRes));
         }
       } catch (err) {
         console.error('Failed to load instructor data:', err);
@@ -68,23 +70,6 @@ export default function InstructorDashboard() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleJoinRoom = async (bookingId: string) => {
-    try {
-      setIsProcessing(true);
-      showToast(`Đang lấy key phòng Jitsi...`);
-      const res = await callApi(`/classes/bookings/${bookingId}/room-access`, {
-        method: 'POST',
-        body: JSON.stringify({ displayName: me?.displayName || 'Giảng viên' })
-      });
-      if (!res.ok) throw new Error('Từ chối truy cập hoặc chưa đến giờ');
-      const data = await res.json();
-      window.open(data.url, '_blank');
-    } catch (e) {
-      showToast('Lỗi: ' + (e as Error).message);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   const handleCompleteClass = async (classId: string) => {
     try {
@@ -97,7 +82,7 @@ export default function InstructorDashboard() {
       showToast(`Đã hoàn thành lớp! Doanh thu đã được giải ngân vào ví.`);
       // Refresh balance
       const balRes = await callApi('/wallet/balance');
-      if (balRes.ok) setBalance(await balRes.json());
+      if (balRes.ok) setBalance(await unwrapEnvelope(balRes));
     } catch (e) {
       showToast('Lỗi: ' + (e as Error).message);
     } finally {
@@ -158,12 +143,8 @@ export default function InstructorDashboard() {
         }),
       });
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || 'Không thể tạo lớp học');
-      }
-
-      const created = await res.json();
+      // NFR-013: unwrapEnvelope throws an ApiError (with the domain `code`) on failure.
+      const created = await unwrapEnvelope<{ id: string }>(res);
       const newClassItem: CreatedClassItem = {
         id: created.id,
         title: classTitle,
@@ -202,7 +183,7 @@ export default function InstructorDashboard() {
       {/* Main Content */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="w-full">
-          
+
           {/* 1. Header: Profile Summary */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-slate-200">
             <div className="flex items-center gap-4">
@@ -226,16 +207,16 @@ export default function InstructorDashboard() {
                 </p>
               </div>
             </div>
-            
+
             {/* Primary Action */}
             <div className="flex items-center gap-3">
-              <a href="/vi/wallet" className="px-4 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition-all shadow-sm">
+              <a href={`/${locale}/wallet`} className="px-4 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition-all shadow-sm">
                 Lịch sử giao dịch
               </a>
-              <button onClick={() => setIsModalOpen(true)} type="button" className="bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-semibold text-sm px-5 py-2.5 rounded-full shadow-sm transition-all flex items-center gap-2">
-                <span className="material-symbols-outlined text-[19px]">add</span>
-                Tạo lớp mới
-              </button>
+              <a href={`/${locale}/teach/classes/new`} className="bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-semibold text-sm px-5 py-2.5 rounded-full shadow-sm transition-all flex items-center gap-2">
+                <span className="material-symbols-outlined text-[19px]">add_circle</span>
+                Công bố Lớp học mới
+              </a>
             </div>
           </div>
 
@@ -331,7 +312,7 @@ export default function InstructorDashboard() {
                 <span className="material-symbols-outlined text-[16px]">add</span> Thêm kỹ năng mới
               </button>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {skills.length > 0 ? (
                 skills.map((s) => (
@@ -376,7 +357,7 @@ export default function InstructorDashboard() {
                       </button>
                     </div>
                   </div>
-                  
+
                   {/* Demo Skill 2 */}
                   <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
                     <div>
@@ -396,7 +377,7 @@ export default function InstructorDashboard() {
                       </button>
                     </div>
                   </div>
-                  
+
                   {/* Demo Skill 3 */}
                   <div className="bg-slate-50 p-4 rounded-2xl border border-dashed border-slate-300 flex flex-col justify-between">
                     <div>
@@ -457,7 +438,7 @@ export default function InstructorDashboard() {
                 </button>
               </div>
             </div>
-            
+
             <div className="space-y-4">
               {/* Dynamic Newly Created Classes */}
               {(classFilter === 'all' || classFilter === 'open') && newClasses.map((item) => (
@@ -527,9 +508,9 @@ export default function InstructorDashboard() {
                       <button onClick={() => openClassChat('CLS-8821')} type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 transition-all flex items-center gap-1.5" disabled={isProcessing}>
                         <span className="material-symbols-outlined text-[16px] text-slate-500">chat</span> Chat với học viên
                       </button>
-                      <button onClick={() => handleJoinRoom('00000000-0000-0000-0000-000000000001')} type="button" className="px-4 py-2 rounded-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all flex items-center gap-1.5" disabled={isProcessing}>
-                        <span className="material-symbols-outlined text-[16px]">video_call</span> Vào phòng Jitsi
-                      </button>
+                      <a href={`/${locale}/bookings/SS-VN-8821/live`} className="px-4 py-2 rounded-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[16px]">video_call</span> Vào phòng Live Class
+                      </a>
                       <button onClick={() => handleCompleteClass('00000000-0000-0000-0000-000000000002')} type="button" className="px-4 py-2 rounded-full text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all flex items-center gap-1.5" disabled={isProcessing}>
                         <span className="material-symbols-outlined text-[16px]">check_circle</span> Hoàn thành
                       </button>
@@ -642,11 +623,17 @@ export default function InstructorDashboard() {
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
+            <div className="px-6 py-2.5 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between text-xs">
+              <span className="text-emerald-800 font-medium">Bạn muốn thiết lập chi tiết giáo trình &amp; xem trước thẻ?</span>
+              <a href={`/${locale}/teach/classes/new`} className="font-bold text-emerald-700 hover:text-emerald-800 hover:underline flex items-center gap-0.5">
+                Mở Không gian 5 bước <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+              </a>
+            </div>
             <form onSubmit={handleCreateClassSubmit} className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="skill-select">Kỹ năng giảng dạy *</label>
-                <select 
-                  id="skill-select" 
+                <select
+                  id="skill-select"
                   value={skillSelect}
                   onChange={(e) => setSkillSelect(e.target.value)}
                   className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600" required>
@@ -666,12 +653,12 @@ export default function InstructorDashboard() {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="class-title">Tiêu đề buổi học *</label>
-                <input 
-                  id="class-title" 
+                <input
+                  id="class-title"
                   value={classTitle}
                   onChange={(e) => setClassTitle(e.target.value)}
-                  type="text" 
-                  placeholder="VD: Luyện phản xạ IELTS Speaking Part 2" 
+                  type="text"
+                  placeholder="VD: Luyện phản xạ IELTS Speaking Part 2"
                   className="w-full h-10 px-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600" required />
               </div>
               <div className="grid grid-cols-2 gap-3">

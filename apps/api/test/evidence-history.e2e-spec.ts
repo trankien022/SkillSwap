@@ -180,6 +180,6 @@ describe('E2E: evidence decision history (FR-018)', () => {
     api.actAs('nosy-user', 'user');
     const denied = await api.get(`/api/skill-evidence/${submitted.json.id}/history`);
     expect(denied.status).toBe(403);
-    expect(denied.json.error).toBe('AccessDeniedError');
+    expect(denied.envelope.code).toBe('AccessDeniedError');
   });
 });

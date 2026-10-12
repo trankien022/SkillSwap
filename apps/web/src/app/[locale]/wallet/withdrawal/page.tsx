@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { callApi } from '../../../../lib/api-client';
+import { callApi, unwrapEnvelope } from '../../../../lib/api-client';
 import { Navbar } from '../../../../components/navbar';
 import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
 
@@ -17,8 +17,8 @@ export default function WithdrawalPage() {
           callApi('/wallet/balance'),
           callApi('/auth/me'),
         ]);
-        if (balRes.ok) setBalance(await balRes.json());
-        if (meRes.ok) setMe(await meRes.json());
+        if (balRes.ok) setBalance(await unwrapEnvelope(balRes));
+        if (meRes.ok) setMe(await unwrapEnvelope(meRes));
       } catch (e) {
         console.error(e);
       }
@@ -47,7 +47,7 @@ export default function WithdrawalPage() {
       {/* Main Content */}
       <main className="w-full pt-16 flex-1">
         <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-8">
-          
+
           {/* Breadcrumb */}
           <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-600 mb-2">
             <a href="/vi/instructor" className="hover:text-emerald-600 transition-colors flex items-center gap-1">
@@ -89,10 +89,10 @@ export default function WithdrawalPage() {
 
           {/* Main Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            
+
             {/* Left Column */}
             <div className="lg:col-span-7 flex flex-col gap-6">
-              
+
               {/* 1. Balance Partition Card */}
               <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
                 <div className="flex items-center justify-between pb-2 mb-4">
@@ -102,7 +102,7 @@ export default function WithdrawalPage() {
                   </div>
                   <span className="text-xs text-slate-600">Tỷ giá: 1 CR = 1.000 VNĐ (BR-027)</span>
                 </div>
-                
+
                 {/* Academic Skill Ledger Mini Visualizer */}
                 <div className="mb-4">
                   <div className="flex justify-between items-center mb-1.5 text-xs">
@@ -173,18 +173,18 @@ export default function WithdrawalPage() {
                   </label>
                   <span className="text-xs text-slate-600">Tối thiểu: 200 CR (200.000 VNĐ)</span>
                 </div>
-                
+
                 <div className="relative">
                   <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-emerald-600 focus-within:border-emerald-600 transition-all">
                     <span className="material-symbols-outlined text-slate-400 mr-3 text-[22px]">toll</span>
-                    <input 
-                      id="creditAmount" 
-                      type="number" 
-                      min="200" 
-                      max="1260" 
+                    <input
+                      id="creditAmount"
+                      type="number"
+                      min="200"
+                      max="1260"
                       value={amount}
                       onChange={handleAmountChange}
-                      className="w-full bg-transparent text-2xl text-slate-900 font-bold tracking-tight focus:outline-none placeholder-slate-400" 
+                      className="w-full bg-transparent text-2xl text-slate-900 font-bold tracking-tight focus:outline-none placeholder-slate-400"
                     />
                     <div className="text-right flex flex-col items-end flex-shrink-0 pl-3">
                       <span className="text-base font-bold text-slate-900">Credits</span>
@@ -192,7 +192,7 @@ export default function WithdrawalPage() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex flex-wrap items-center gap-2 pt-1">
                   <span className="text-xs text-slate-600 mr-1">Chọn nhanh:</span>
                   <button onClick={() => setQuickAmount(500)} type="button" className="px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 text-xs font-medium hover:bg-slate-200 transition-colors">
@@ -205,7 +205,7 @@ export default function WithdrawalPage() {
                     Tất cả (1.260)
                   </button>
                 </div>
-                
+
                 <div className="p-3 bg-slate-50 rounded-lg flex items-center justify-between text-xs border border-slate-100">
                   <div className="flex items-center gap-2 text-slate-600">
                     <span className="material-symbols-outlined text-[18px]">savings</span>
@@ -230,7 +230,7 @@ export default function WithdrawalPage() {
                     Chính chủ sinh viên
                   </span>
                 </div>
-                
+
                 <div className="relative rounded-xl border-2 border-emerald-600 p-4 bg-emerald-50/30 flex items-start justify-between cursor-pointer shadow-sm">
                   <div className="flex items-start gap-3.5">
                     <div className="w-12 h-12 rounded-lg bg-white border border-slate-200 flex items-center justify-center flex-shrink-0 text-slate-900 text-base font-bold">
@@ -257,7 +257,7 @@ export default function WithdrawalPage() {
                     <span className="material-symbols-outlined text-[14px]">check</span>
                   </div>
                 </div>
-                
+
                 <button type="button" className="w-full py-3 px-4 rounded-xl border border-dashed border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-sm font-semibold transition-colors flex items-center justify-center gap-2">
                   <span className="material-symbols-outlined text-[18px]">add_circle</span>
                   Thêm tài khoản ngân hàng liên kết Napas 247 mới
@@ -303,7 +303,7 @@ export default function WithdrawalPage() {
                       Quy tắc nghiệp vụ Payout &amp; Bảo vệ Escrow (BR-058, BR-062):
                     </p>
                     <p className="text-[13px] text-slate-600 leading-relaxed">
-                      Số tiền rút không được vượt quá số dư khả dụng (1.260 Credits). Ngay khi bạn gửi yêu cầu, {amount} Credits sẽ được tự động chuyển sang trạng thái 
+                      Số tiền rút không được vượt quá số dư khả dụng (1.260 Credits). Ngay khi bạn gửi yêu cầu, {amount} Credits sẽ được tự động chuyển sang trạng thái
                       <span className="font-mono text-emerald-700 font-semibold mx-1">payout_hold</span> để khóa an toàn trong khi đối soát Napas. Nếu ngân hàng từ chối, khoản này sẽ hoàn trả ngay về ví.
                     </p>
                   </div>
@@ -313,7 +313,7 @@ export default function WithdrawalPage() {
 
             {/* Right Column */}
             <div className="lg:col-span-5 flex flex-col gap-6">
-              
+
               {/* Processing Timeline */}
               <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
                 <div className="flex items-center gap-2 mb-3 text-slate-900">
@@ -347,7 +347,7 @@ export default function WithdrawalPage() {
                   </div>
                   <a href="#" className="text-sm text-emerald-600 hover:underline font-semibold">Tất cả (8)</a>
                 </div>
-                
+
                 <div className="space-y-4">
                   {/* Processing */}
                   <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl space-y-2">

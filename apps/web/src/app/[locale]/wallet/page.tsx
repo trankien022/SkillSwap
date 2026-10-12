@@ -1,16 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createTopUpIntent } from './actions';
-import { callApi } from '../../../lib/api-client';
+import { simulatePaymentCallback } from './actions';
+import { callApi, unwrapEnvelope } from '../../../lib/api-client';
 import { Navbar } from '../../../components/navbar';
-import type { WalletBalanceView, WalletHistoryItemView, MeResponse } from '@skillswap/contracts';
+import type { WalletBalanceView, WalletHistoryItemView, MeResponse, TopUpIntentView } from '@skillswap/contracts';
 
 export default function WalletPage() {
   const [balance, setBalance] = useState<WalletBalanceView | null>(null);
   const [history, setHistory] = useState<WalletHistoryItemView[]>([]);
   const [me, setMe] = useState<MeResponse | null>(null);
-  
+
   const [amount, setAmount] = useState(100);
   const [bank, setBank] = useState('VCB');
   const [filter, setFilter] = useState('all');
@@ -26,18 +26,18 @@ export default function WalletPage() {
         ]);
 
         if (balRes.ok) {
-          setBalance(await balRes.json());
+          setBalance(await unwrapEnvelope(balRes));
         } else {
           console.warn('Wallet balance not found or error');
         }
 
         if (histRes.ok) {
-          const data = await histRes.json();
+          const data = await unwrapEnvelope<{ items: WalletHistoryItemView[] }>(histRes);
           setHistory(data.items || []);
         }
 
         if (meRes.ok) {
-          setMe(await meRes.json());
+          setMe(await unwrapEnvelope(meRes));
         }
       } catch (e) {
         console.error(e);
@@ -63,17 +63,56 @@ export default function WalletPage() {
   };
 
   const handleVerify = async () => {
+    if (amount <= 0) {
+      alert('Số tiền nạp tối thiểu là 10 Credit (10.000 VNĐ)');
+      return;
+    }
     try {
       setIsPending(true);
-      const data = await createTopUpIntent(amount * 1000);
-      if (data.paymentUrl) {
-        window.location.href = data.paymentUrl;
-      } else {
-        alert('Tạo yêu cầu nạp tiền thành công!');
+      // 1. Create top up intent via authenticated API
+      const res = await callApi('/wallet/top-ups', {
+        method: 'POST',
+        body: JSON.stringify({ amountVnd: amount * 1000 }),
+      });
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          alert('Phiên đăng nhập đã hết hạn hoặc chưa đăng nhập. Vui lòng đăng nhập lại!');
+          return;
+        }
+        const err = (await res.json().catch(() => ({}))) as { message?: string };
+        alert(`Không thể tạo yêu cầu nạp tiền: ${err.message || 'Lỗi hệ thống'}`);
+        return;
       }
-    } catch (e) {
+
+      const intent = await unwrapEnvelope<TopUpIntentView>(res);
+
+      // 2. Simulate payment settlement via HMAC-signed webhook in dev
+      const callbackResult = await simulatePaymentCallback(intent.providerRef, intent.amountVnd);
+      if (!callbackResult.success) {
+        alert(callbackResult.message);
+        return;
+      }
+
+      // 3. Re-fetch balance & history
+      await new Promise((r) => setTimeout(r, 600));
+      const [balRes, histRes] = await Promise.all([
+        callApi('/wallet/balance'),
+        callApi('/wallet/history'),
+      ]);
+      if (balRes.ok) {
+        setBalance(await unwrapEnvelope(balRes));
+      }
+      if (histRes.ok) {
+        const data = await unwrapEnvelope<{ items: WalletHistoryItemView[] }>(histRes);
+        setHistory(data.items || []);
+      }
+
+      alert(`Nạp thành công ${intent.amountCredits} Credit vào ví!`);
+    } catch (e: unknown) {
       console.error(e);
-      alert('Không thể kết nối đến cổng thanh toán lúc này. Vui lòng thử lại sau.');
+      const errMsg = e instanceof Error ? e.message : 'Vui lòng thử lại sau.';
+      alert(`Không thể hoàn tất nạp tiền: ${errMsg}`);
     } finally {
       setIsPending(false);
     }
@@ -94,7 +133,7 @@ export default function WalletPage() {
 
       {/* Main Content */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
+
         {/* Header Section */}
         <div className="mb-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -243,7 +282,7 @@ export default function WalletPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Left Column: Form */}
             <div className="lg:col-span-7 space-y-6">
-              
+
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">
                   1. Các gói credit phổ biến
@@ -257,7 +296,7 @@ export default function WalletPage() {
                     </div>
                     <span className="text-xs font-semibold text-slate-700">50.000đ</span>
                   </button>
-                  
+
                   <button onClick={() => setQuickAmount(100)} className={`p-3.5 rounded-xl border-2 text-left transition-all flex flex-col justify-between relative ${amount === 100 ? 'border-emerald-600 bg-emerald-50' : 'border-transparent bg-slate-50 hover:bg-slate-100'}`}>
                     <span className="absolute -top-2.5 right-2 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-600 text-white">Phổ biến</span>
                     <span className={`text-[11px] font-semibold ${amount === 100 ? 'text-emerald-700' : 'text-slate-600'}`}>Tiêu chuẩn</span>
@@ -267,7 +306,7 @@ export default function WalletPage() {
                     </div>
                     <span className="text-xs font-bold text-slate-900">100.000đ</span>
                   </button>
-                  
+
                   <button onClick={() => setQuickAmount(200)} className={`p-3.5 rounded-xl border-2 text-left transition-all flex flex-col justify-between ${amount === 200 ? 'border-emerald-600 bg-emerald-50' : 'border-transparent bg-slate-50 hover:bg-slate-100'}`}>
                     <span className={`text-[11px] font-medium ${amount === 200 ? 'text-emerald-700' : 'text-slate-600'}`}>Chăm chỉ</span>
                     <div className="my-2">
@@ -295,13 +334,13 @@ export default function WalletPage() {
                 </label>
                 <div className="flex items-center gap-3">
                   <div className="relative w-full max-w-xs">
-                    <input 
-                      type="number" 
-                      min="10" 
-                      step="10" 
+                    <input
+                      type="number"
+                      min="10"
+                      step="10"
                       value={amount}
                       onChange={handleAmountChange}
-                      className="w-full h-11 px-3.5 pr-16 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent transition-all" 
+                      className="w-full h-11 px-3.5 pr-16 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent transition-all"
                     />
                     <span className="absolute right-3.5 top-3 text-xs font-semibold text-slate-500 pointer-events-none">Credit</span>
                   </div>
@@ -356,7 +395,7 @@ export default function WalletPage() {
                 </div>
                 <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">VCB • MBBank Auto</span>
               </div>
-              
+
               <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm max-w-[220px] w-full flex flex-col items-center">
                 <div className="relative w-44 h-44 flex items-center justify-center bg-slate-100 rounded-lg">
                   {/* Placeholder QR */}
@@ -364,7 +403,7 @@ export default function WalletPage() {
                 </div>
                 <span className="text-[10px] text-slate-500 font-medium mt-2">Quét bằng Mobile Banking bất kỳ</span>
               </div>
-              
+
               <div className="w-full mt-4 bg-white rounded-xl border border-slate-200 p-3.5 text-left text-xs space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-slate-600">Ngân hàng:</span>
@@ -393,7 +432,7 @@ export default function WalletPage() {
                   </div>
                 </div>
               </div>
-              
+
               <button disabled={isPending} onClick={handleVerify} className="w-full mt-4 py-2.5 px-4 rounded-full bg-slate-900 hover:bg-slate-800 disabled:opacity-70 disabled:cursor-not-allowed text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2">
                 <span className={`material-symbols-outlined text-[16px] ${isPending ? 'animate-spin' : ''}`}>sync</span>
                 {isPending ? 'Đang tạo thanh toán...' : 'Đã chuyển khoản - Kiểm tra tức thì'}

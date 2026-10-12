@@ -7,6 +7,7 @@ import { CreateSkillEvidence1791072000600 } from './migrations/1791072000600-Cre
 import { CreateVerifiedStudentProjection1791072000601 } from './migrations/1791072000601-CreateVerifiedStudentProjection';
 import { CreateVerifiersAndEvidenceClaim1791072000602 } from './migrations/1791072000602-CreateVerifiersAndEvidenceClaim';
 import { CreateSkillEvidenceAudit1791072000603 } from './migrations/1791072000603-CreateSkillEvidenceAudit';
+import { AddVerifierQueueIndex1791072000604 } from './migrations/1791072000604-AddVerifierQueueIndex';
 import { SCHEMA } from './schema';
 
 /** One connection pool per module schema (ARCHITECTURE.md §5). */
@@ -27,6 +28,7 @@ export function createModuleDataSource(config: ApiConfig, schema: string = SCHEM
       CreateVerifiedStudentProjection1791072000601,
       CreateVerifiersAndEvidenceClaim1791072000602,
       CreateSkillEvidenceAudit1791072000603,
+      AddVerifierQueueIndex1791072000604,
     ],
     migrationsTableName: MIGRATIONS_TABLE,
     synchronize: false,

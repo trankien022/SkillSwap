@@ -2,25 +2,42 @@ import {
   accountRoleSchema,
   advanceStatusResultSchema,
   advanceStatusSchema,
+  apiEnvelopeSchema,
+  apiErrorItemSchema,
   apiErrorSchema,
+  ApiResponseError,
   auditActionSchema,
   auditEventSchema,
   bookingCancelledSchema,
   bookingConfirmedSchema,
   bookingRequestSchema,
   bookingSchema,
+  bookClassResultSchema,
+  cancelClassResultSchema,
   classCompletedSchema,
   classSchema,
+  completeClassResultSchema,
+  confirmBookingResultSchema,
   createClassSchema,
   documentUploadRequestSchema,
   documentUploadTargetSchema,
+  errorEnvelopeSchema,
+  envelopeErr,
+  envelopeOk,
+  EnvelopeResponseLike,
   eventEnvelopeSchema,
   evidenceStatusSchema,
   evidenceTypeSchema,
   identityHeadersSchema,
+  httpStatusCode,
   loginSchema,
+  markTeacherNoShowResultSchema,
   meResponseSchema,
   moduleStatusSchema,
+  pageMetaSchema,
+  pagedSchema,
+  paginationQuerySchema,
+  parseEnvelope,
   profileSkillSchema,
   refreshRequestSchema,
   registerSchema,
@@ -33,16 +50,19 @@ import {
   skillEvidenceDecisionSchema,
   skillLevelSchema,
   skillSchema,
+  startClassResultSchema,
   statusChangedSchema,
   studentVerificationEventSchema,
   studentVerificationSchema,
   submitSkillEvidenceSchema,
   submitStudentVerificationSchema,
+  successEnvelopeSchema,
   tokenResponseSchema,
   topUpCallbackSchema,
   topUpIntentSchema,
   topUpRequestSchema,
   updateClassSchema,
+  unwrapEnvelope,
   verificationDecisionSchema,
   verificationRevocationSchema,
   verificationStatusSchema,
@@ -54,6 +74,7 @@ import {
   walletHistoryPageSchema,
   walletHistoryQuerySchema,
 } from './index';
+import { z } from 'zod';
 
 describe('advanceStatusSchema', () => {
   it('accepts a target state', () => {
@@ -137,6 +158,7 @@ describe('bookingConfirmedSchema', () => {
       amountCredits: 25,
     });
     expect(parsed.amountCredits).toBe(25);
+    expect(parsed.settled).toBe(false);
   });
 
   it('rejects zero credits', () => {
@@ -175,7 +197,7 @@ describe('statusChangedSchema', () => {
   });
 });
 
-describe('apiErrorSchema', () => {
+describe('apiErrorSchema (legacy shape, retained for reference)', () => {
   it('accepts an error without the optional code', () => {
     expect(apiErrorSchema.parse({ statusCode: 409, message: 'conflict' })).toEqual({
       statusCode: 409,
@@ -187,6 +209,155 @@ describe('apiErrorSchema', () => {
     expect(apiErrorSchema.parse({ statusCode: 400, message: 'bad', error: 'Bad Request' }).error).toBe(
       'Bad Request',
     );
+  });
+});
+
+describe('response envelope (NFR-013)', () => {
+  it('accepts a success envelope with a null or object payload', () => {
+    const ok = {
+      success: true,
+      code: 'WALLET_HISTORY_OK',
+      message: 'Wallet history loaded',
+      data: { items: [] },
+      errors: [],
+    };
+    expect(apiEnvelopeSchema.parse(ok)).toEqual(ok);
+    expect(apiEnvelopeSchema.parse({ ...ok, data: null }).data).toBeNull();
+  });
+
+  it('accepts a failure envelope and requires at least one error entry', () => {
+    const bad = {
+      success: false,
+      code: 'ReasonRequiredError',
+      message: 'A rejection requires a reason',
+      data: null,
+      errors: [{ code: 'ReasonRequiredError', message: 'A rejection requires a reason' }],
+    };
+    expect(apiEnvelopeSchema.parse(bad)).toEqual(bad);
+    expect(() => apiEnvelopeSchema.parse({ ...bad, errors: [] })).not.toThrow();
+  });
+
+  it('rejects an error entry missing code or message', () => {
+    expect(() => apiErrorItemSchema.parse({ code: 'X' })).toThrow();
+    expect(() => apiErrorItemSchema.parse({ message: 'x' })).toThrow();
+  });
+
+  it('builds typed success and error envelopes', () => {
+    expect(
+      successEnvelopeSchema(z.array(z.string())).parse({
+        success: true,
+        code: 'PROFILE_SKILLS_OK',
+        message: 'ok',
+        data: ['a'],
+        errors: [],
+      }),
+    ).toMatchObject({ data: ['a'] });
+    expect(() =>
+      successEnvelopeSchema(z.array(z.string())).parse({
+        success: true,
+        code: 'X',
+        message: 'ok',
+        data: ['a'],
+        errors: [{ code: 'x', message: 'x' }],
+      }),
+    ).toThrow();
+    expect(
+      errorEnvelopeSchema().parse({
+        success: false,
+        code: 'INTERNAL_ERROR',
+        message: 'Internal server error',
+        data: null,
+        errors: [{ code: 'INTERNAL_ERROR', message: 'Internal server error' }],
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe('envelope runtime helpers (NFR-013, shared client layer)', () => {
+  const okBody = { success: true, code: 'ME_OK', message: 'ok', data: { id: 'u1' }, errors: [] };
+  const errBody = {
+    success: false,
+    code: 'ReasonRequiredError',
+    message: 'A rejection requires a reason',
+    data: null,
+    errors: [{ code: 'ReasonRequiredError', message: 'A rejection requires a reason' }],
+  };
+
+  function res(body: unknown, status = 200): EnvelopeResponseLike {
+    return { status, json: async () => body };
+  }
+
+  it('parses a success envelope and returns it', () => {
+    expect(parseEnvelope<{ id: string }>(okBody).data).toEqual({ id: 'u1' });
+  });
+
+  it('throws an ApiError carrying the stable code on a failure envelope', () => {
+    let caught: unknown;
+    try {
+      parseEnvelope(errBody, 409);
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toBeInstanceOf(ApiResponseError);
+    expect((caught as ApiResponseError).code).toBe('ReasonRequiredError');
+    expect((caught as ApiResponseError).errors).toHaveLength(1);
+  });
+
+  it('throws HTTP_<status> when the body is not an envelope at all', () => {
+    expect(() => parseEnvelope({ not: 'an envelope' }, 500)).toThrow(ApiResponseError);
+    try {
+      parseEnvelope('boom', 500);
+    } catch (error) {
+      expect((error as ApiResponseError).code).toBe('HTTP_500');
+    }
+  });
+
+  it('unwrapEnvelope returns data on success and throws on failure', async () => {
+    await expect(unwrapEnvelope<{ id: string }>(res(okBody))).resolves.toEqual({ id: 'u1' });
+    await expect(unwrapEnvelope(res(errBody, 409))).rejects.toBeInstanceOf(ApiResponseError);
+  });
+
+  it('envelopeOk/envelopeErr build canonical envelopes', () => {
+    expect(envelopeOk(['a'], { code: 'X_OK', message: 'loaded' })).toEqual({
+      success: true,
+      code: 'X_OK',
+      message: 'loaded',
+      data: ['a'],
+      errors: [],
+    });
+    expect(envelopeErr('Boom', 'it broke')).toMatchObject({
+      success: false,
+      code: 'Boom',
+      data: null,
+      errors: [{ code: 'Boom', message: 'it broke' }],
+    });
+  });
+
+  it('httpStatusCode is the stable HTTP_<status> form', () => {
+    expect(httpStatusCode(401)).toBe('HTTP_401');
+  });
+});
+
+describe('pagination contracts (NFR-014)', () => {
+  it('coerces limit and rejects out-of-range values', () => {
+    expect(paginationQuerySchema.parse({ limit: '20' })).toEqual({ limit: 20 });
+    expect(() => paginationQuerySchema.parse({ limit: 0 })).toThrow();
+    expect(() => paginationQuerySchema.parse({ limit: 101 })).toThrow();
+  });
+
+  it('models page metadata with a non-null total and a nullable cursor', () => {
+    const meta = { limit: 20, nextCursor: null, total: 0 };
+    expect(pageMetaSchema.parse(meta)).toEqual(meta);
+    expect(pageMetaSchema.parse({ limit: 20, nextCursor: 'abc', total: 137 }).total).toBe(137);
+  });
+
+  it('wraps an item schema into a paged collection', () => {
+    const page = pagedSchema(walletHistoryItemSchema).parse({
+      items: [],
+      page: { limit: 20, nextCursor: null, total: 0 },
+    });
+    expect(page.page.total).toBe(0);
+    expect(page.items).toEqual([]);
   });
 });
 
@@ -327,8 +498,8 @@ describe('wallet history schemas (FR-010 / ADR-022)', () => {
     expect(() => walletHistoryItemSchema.parse({ ...item, amountCredits: -5 })).toThrow();
   });
 
-  it('round-trips a page with a next cursor', () => {
-    const page = { items: [], nextCursor: 'xyz' };
+  it('round-trips a paged result with metadata (NFR-014)', () => {
+    const page = { items: [], page: { limit: 20, nextCursor: 'xyz', total: 3 } };
     expect(walletHistoryPageSchema.parse(page)).toEqual(page);
   });
 });
@@ -382,6 +553,55 @@ describe('bookingSchema', () => {
       createdAt: '2026-10-08T00:00:00.000Z',
     };
     expect(bookingSchema.parse(view)).toEqual(view);
+  });
+});
+
+describe('class lifecycle result schemas (FR-007 / FR-020)', () => {
+  const booking = {
+    bookingId: 'bkg-1',
+    classId: 'cls-1',
+    learnerId: 'learner-1',
+    state: 'pending',
+    priceCredits: 100,
+    createdAt: '2026-10-08T00:00:00.000Z',
+  };
+
+  it('bookClassResultSchema wraps a booking and its idempotency flag', () => {
+    expect(bookClassResultSchema.parse({ booking, created: true })).toEqual({
+      booking,
+      created: true,
+    });
+  });
+
+  it('confirmBookingResultSchema allows a null booking when nothing was pending', () => {
+    expect(confirmBookingResultSchema.parse({ confirmed: false, booking: null })).toEqual({
+      confirmed: false,
+      booking: null,
+    });
+  });
+
+  it('cancelClassResultSchema counts affected bookings', () => {
+    expect(cancelClassResultSchema.parse({ classCancelled: true, bookingsCancelled: 3 })).toEqual({
+      classCancelled: true,
+      bookingsCancelled: 3,
+    });
+    expect(() => cancelClassResultSchema.parse({ classCancelled: true, bookingsCancelled: -1 })).toThrow();
+  });
+
+  it('markTeacherNoShowResultSchema and startClassResultSchema carry a boolean', () => {
+    expect(markTeacherNoShowResultSchema.parse({ cancelled: true })).toEqual({ cancelled: true });
+    expect(startClassResultSchema.parse({ started: false })).toEqual({ started: false });
+  });
+
+  it('completeClassResultSchema allows a null basis when not completed', () => {
+    expect(completeClassResultSchema.parse({ completed: false, basis: null })).toEqual({
+      completed: false,
+      basis: null,
+    });
+    expect(completeClassResultSchema.parse({ completed: true, basis: 'scheduled_end' })).toEqual({
+      completed: true,
+      basis: 'scheduled_end',
+    });
   });
 });
 

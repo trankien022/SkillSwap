@@ -86,6 +86,11 @@ export class RabbitConsumer implements OnApplicationBootstrap, OnApplicationShut
     return this.teardown();
   }
 
+  /** True once every registered queue is bound and consuming on the active channel. */
+  isReady(): boolean {
+    return this.channel !== null;
+  }
+
   private ensureLoop(): void {
     if (this.stopped || this.connecting !== null || this.channel !== null) {
       return;
@@ -130,6 +135,13 @@ export class RabbitConsumer implements OnApplicationBootstrap, OnApplicationShut
           }
         });
       }
+      // Shutdown may have run while we were connecting: tear the fresh socket down
+      // instead of publishing it, otherwise a live connection would outlive
+      // app.close() and keep the process (and the CI job) alive forever.
+      if (this.stopped) {
+        await this.closeQuietly(channel, connection);
+        return;
+      }
       this.connection = connection;
       this.channel = channel;
     } catch (error) {
@@ -141,6 +153,19 @@ export class RabbitConsumer implements OnApplicationBootstrap, OnApplicationShut
       throw error instanceof BrokerUnavailableError
         ? error
         : new BrokerUnavailableError('Cannot set up RabbitMQ consumer channel', { cause: error });
+    }
+  }
+
+  private async closeQuietly(channel: AmqpChannel, connection: AmqpConnection): Promise<void> {
+    try {
+      await channel.close();
+    } catch {
+      /* already closed */
+    }
+    try {
+      await connection.close();
+    } catch {
+      /* already closed */
     }
   }
 
@@ -183,7 +208,7 @@ export class RabbitConsumer implements OnApplicationBootstrap, OnApplicationShut
   ): Promise<void> {
     try {
       const parsed = parseEnvelope(JSON.parse(message.content.toString('utf8')));
-      await this.store.runOnce(registration.moduleName, parsed.id, () =>
+      await this.store.runOnce(registration.moduleName, registration.queue, parsed.id, () =>
         registration.handler(parsed),
       );
       this.safeAck(message);
@@ -328,6 +353,16 @@ export class RabbitConsumer implements OnApplicationBootstrap, OnApplicationShut
   }
 
   private async teardown(): Promise<void> {
+    // If a connect is still in flight it may assign a fresh socket after we return;
+    // wait for it to settle (connectAndConsume re-checks `stopped` and closes it) so
+    // nothing is left open when the app has fully shut down.
+    if (this.connecting !== null) {
+      try {
+        await this.connecting;
+      } catch {
+        /* connect failure is already handled by scheduleRetry (a no-op when stopped) */
+      }
+    }
     const channel = this.channel;
     const connection = this.connection;
     this.channel = null;

@@ -6,6 +6,8 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import type { DataSource } from 'typeorm';
 import { AppModule } from '../src/bootstrap/app.module';
 import { ModuleDataSourceRegistry } from '../src/shared/messaging/module-registry';
+import { RabbitConsumer } from '../src/shared/messaging/rabbit-consumer';
+import { waitFor } from './support/api-client';
 
 // Load the repo-root `.env` exactly like the real bootstrap does.
 loadEnv({ path: resolve(__dirname, '../../../.env') });
@@ -48,6 +50,10 @@ export async function startHarness(): Promise<Harness> {
 
   const registry = app.get(ModuleDataSourceRegistry);
   await registry.ready; // rejects if the database is unreachable
+  await waitFor(async () => app.get(RabbitConsumer).isReady() ? true : null, {
+    timeoutMs: 15_000,
+    intervalMs: 50,
+  });
 
   const baseUrl = (await app.getUrl()).replace('[::1]', '127.0.0.1');
 

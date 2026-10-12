@@ -3,7 +3,7 @@ import { qualified } from '../../../../../../shared/sql/ident';
 import { returnedRows } from '../../../../../../shared/sql/result';
 import { ProfileSkill, type Skill, type SkillLevel } from '../../../domain/evidence';
 import type { SkillRepository } from '../../../application/port/out/skill-repository';
-import type { ProfileSkillRepository, ProfileSkillWithSkill } from '../../../application/port/out/skill-evidence-repository';
+import type { ListProfileSkillsQuery, ProfileSkillRepository, ProfileSkillWithSkill } from '../../../application/port/out/skill-evidence-repository';
 
 interface SkillRow {
   id: string;
@@ -105,15 +105,30 @@ export class SqlProfileSkillRepository implements ProfileSkillRepository {
     );
   }
 
-  async listByAccount(accountId: string): Promise<ProfileSkillWithSkill[]> {
+  async listByAccount(
+    accountId: string,
+    query: ListProfileSkillsQuery = {},
+  ): Promise<ProfileSkillWithSkill[]> {
     const source = this.registry.get(this.moduleName);
+    const params: unknown[] = [accountId];
+    let where = `ps."account_id" = $1`;
+    if (query.q !== undefined) {
+      params.push(`%${query.q}%`);
+      where += ` AND s."name" ILIKE $${params.length}`;
+    }
+    const order =
+      query.sort === 'name'
+        ? `s."name" ASC, s."category" ASC`
+        : query.sort === '-approvedLevel'
+          ? `ps."approved_level" DESC NULLS LAST, s."category", s."name"`
+          : `s."category", s."name"`;
     const rows = (await source.query(
       `SELECT ps."id", ps."skill_id", s."name" AS skill_name, s."category", ps."approved_level"
          FROM ${this.table} ps
          JOIN ${this.skillsTable} s ON s."id" = ps."skill_id"
-        WHERE ps."account_id" = $1
-        ORDER BY s."category", s."name"`,
-      [accountId],
+        WHERE ${where}
+        ORDER BY ${order}`,
+      params,
     )) as {
       id: string;
       skill_id: string;

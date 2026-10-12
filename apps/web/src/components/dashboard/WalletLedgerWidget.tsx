@@ -1,37 +1,53 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getTranslations, getLocale } from 'next-intl/server';
+import { useTranslations, useLocale } from 'next-intl';
 import type { WalletSnapshot } from '../../lib/dashboard/types';
+import { getTokens } from '../../lib/api-client';
 
 /**
  * Wallet ledger widget (FR-021 dashboard / FR-038 escrow release).
  *
  * Two visual states:
- *  - no auth (pilot): single card saying "Sign in to see your
- *    wallet" (Dashboard.wallet.signInToView). No fake balance.
+ *  - no auth (pilot): single card with prompt to sign in and direct login button.
  *  - authed: full breakdown of available / held / total + the
  *    wallet invariant progress bar + two trust lines + a link
  *    to the escrow ledger.
  *
  * No '100%' claim, no 'Smart-Escrow' wording, no invented SLA.
  */
-export async function WalletLedgerWidget({
+export function WalletLedgerWidget({
   wallet,
   isAuthed,
 }: {
   wallet: WalletSnapshot | null;
   isAuthed: boolean;
 }) {
-  const t = await getTranslations('Dashboard.wallet');
-  const locale = (await getLocale()) as 'vi' | 'en';
+  const t = useTranslations('Dashboard.wallet');
+  const locale = useLocale();
+  const [authed, setAuthed] = useState(isAuthed);
 
-  if (!isAuthed || !wallet) {
+  useEffect(() => {
+    if (getTokens() !== null) {
+      setAuthed(true);
+    }
+  }, []);
+
+  if (!authed || !wallet) {
     return (
       <article className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
         <div className="flex items-center gap-2">
-          <AccountBalanceIcon className="h-5 w-5 text-success-ink" />
+          <AccountBalanceIcon className="h-5 w-5 text-emerald-700" />
           <h3 className="text-base font-bold text-ink">{t('title')}</h3>
         </div>
-        <p className="mt-3 text-sm text-ink-soft">{t('signInToView')}</p>
+        <p className="mt-3 text-sm text-ink-soft leading-relaxed">{t('signInToView')}</p>
+        <Link
+          href={`/${locale}/auth?tab=login`}
+          className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95"
+        >
+          <span>{t('signInCta')}</span>
+        </Link>
       </article>
     );
   }
@@ -44,7 +60,7 @@ export async function WalletLedgerWidget({
   return (
     <article className="relative overflow-hidden rounded-2xl border border-border bg-surface p-6 shadow-sm">
       <div className="mb-4 flex items-center gap-2">
-        <AccountBalanceIcon className="h-5 w-5 text-success-ink" />
+        <AccountBalanceIcon className="h-5 w-5 text-emerald-700" />
         <h3 className="text-base font-bold text-ink">{t('title')}</h3>
       </div>
       <div className="mb-4 flex flex-col gap-2 rounded-xl border border-border bg-mist p-4">
@@ -62,7 +78,7 @@ export async function WalletLedgerWidget({
         </div>
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
           <div
-            className="h-full rounded-full bg-ink"
+            className="h-full rounded-full bg-emerald-600"
             style={{ width: `${heldPct}%` }}
           />
         </div>
@@ -78,23 +94,23 @@ export async function WalletLedgerWidget({
       </div>
       <div className="flex flex-col gap-2 text-sm text-ink-soft">
         <div className="flex items-start gap-2">
-          <VerifiedUserIcon className="mt-0.5 h-4 w-4 shrink-0 text-success-ink" />
+          <VerifiedUserIcon className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
           <span>
-            <strong className="text-ink">Không chuyển thẳng: </strong>
+            <strong className="text-ink">{t('noDirectTitle')}: </strong>
             {t('noDirect')}
           </span>
         </div>
         <div className="flex items-start gap-2">
           <HistoryIcon className="mt-0.5 h-4 w-4 shrink-0 text-ink" />
           <span>
-            <strong className="text-ink">Tự động hoàn: </strong>
+            <strong className="text-ink">{t('refundPolicyTitle')}: </strong>
             {t('refundPolicy')}
           </span>
         </div>
       </div>
       <Link
         href={`/${locale}/wallet`}
-        className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 py-2.5 text-sm font-semibold text-emerald-800 transition-colors hover:bg-emerald-100"
+        className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 py-2.5 text-xs font-semibold text-emerald-800 transition-colors hover:bg-emerald-100"
       >
         <AccountBalanceWalletIcon className="h-4 w-4 text-emerald-700" />
         <span>{t('details')}</span>

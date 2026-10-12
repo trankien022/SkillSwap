@@ -105,7 +105,7 @@ describe('E2E: skill evidence submission (FR-003)', () => {
       description: 'Reviewed portfolio',
     });
     expect(res.status).toBe(404);
-    expect(res.json.error).toBe('UnknownSkillError');
+    expect(res.envelope.code).toBe('UnknownSkillError');
   });
 
   it('creates a new version on resubmission (AC-016)', async () => {
@@ -136,7 +136,7 @@ describe('E2E: skill evidence submission (FR-003)', () => {
     // The owner view lists the skill once, with no effective level yet (FR-004 decides).
     const mine = await api.get('/api/profile-skills/me');
     expect(mine.status).toBe(200);
-    const entry = mine.json.find((row: { id: string }) => row.id === first.json.profileSkillId);
+    const entry = mine.json.items.find((row: { id: string }) => row.id === first.json.profileSkillId);
     expect(entry).toBeDefined();
     expect(entry.approvedLevel).toBeNull();
   });

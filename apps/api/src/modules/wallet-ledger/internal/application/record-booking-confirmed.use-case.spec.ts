@@ -56,4 +56,17 @@ describe('RecordBookingConfirmedUseCase (FR-009 / ADR-018)', () => {
     expect(await wallets.getBalance('st-1')).toEqual({ availableCredits: 50, pendingCredits: 0 });
     expect(await wallets.getBalance('tc-1')).toEqual({ availableCredits: 0, pendingCredits: 0 });
   });
+
+  it('ignores final settled events without debiting (ADR-032)', async () => {
+    const { wallets, useCase } = await setup();
+    const result = await useCase.execute({
+      bookingId: 'bk-final',
+      studentId: 'st-1',
+      teacherId: 'tc-1',
+      amountCredits: 100,
+      settled: true,
+    });
+    expect(result.applied).toBe(false);
+    expect(await wallets.getBalance('st-1')).toEqual({ availableCredits: 10_000, pendingCredits: 0 });
+  });
 });

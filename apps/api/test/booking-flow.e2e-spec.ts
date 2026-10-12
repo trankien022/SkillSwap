@@ -120,6 +120,33 @@ describe('E2E: book → settle → room → complete → release', () => {
     expect(settled.learner.availableCredits).toBe(0);
     expect(settled.teacher.availableCredits).toBe(0);
     expect(settled.teacher.pendingCredits).toBe(90);
+    const bookingDebits = await harness.query<{ id: string }>(
+      'wallet-ledger',
+      `SELECT "id" FROM ledger_entries
+        WHERE "entry_type" = 'learner_debit' AND "reference_id" = $1`,
+      [bookingId],
+    );
+    expect(bookingDebits).toHaveLength(1);
+    const walletOutcome = await harness.query<{ id: string; status: string; payload: unknown }>(
+      'wallet-ledger',
+      `SELECT "id", "status", "payload" FROM outbox_messages
+        WHERE "event_type" = 'wallet.transaction.completed'`,
+    );
+    expect(walletOutcome).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          payload: expect.objectContaining({ bookingId }),
+        }),
+      ]),
+    );
+    await waitFor(async () => {
+      const rows = await harness.query<{ state: string }>(
+        'live-class',
+        'SELECT "state" FROM bookings WHERE "id" = $1',
+        [bookingId],
+      );
+      return rows[0]?.state === 'confirmed' ? rows[0] : null;
+    });
 
     // Room access: learner gets a participant token, outsider is denied.
     api.actAs(learnerId);
@@ -128,7 +155,7 @@ describe('E2E: book → settle → room → complete → release', () => {
     });
     // The class is 48h out, so the access window is not open yet.
     expect(callWindow.status).toBe(403);
-    expect(callWindow.json.message).toMatch(/opens shortly before/i);
+    expect(callWindow.envelope.message).toMatch(/opens shortly before/i);
 
     // Move the class into the room window by starting it, then it can be joined.
     api.actAs(teacherId);
@@ -183,7 +210,7 @@ describe('E2E: book → settle → room → complete → release', () => {
     expect(teacher).toEqual({ availableCredits: 90, pendingCredits: 0 });
   });
 
-  it('rejects a booking when the learner has no balance (AC-005)', async () => {
+  it('keeps an unfunded booking pending, then confirms it after a funded retry (AC-005, ADR-032)', async () => {
     api.actAs(teacherId);
     const created = await api.post('/api/classes', {
       skillIds: ['skill-guitar'],
@@ -199,16 +226,75 @@ describe('E2E: book → settle → room → complete → release', () => {
     const booked = await api.post(`/api/classes/${classId}/bookings`, { idempotencyKey: 'k-nofunds' });
     bookingId = booked.json.booking.bookingId;
 
-    // Confirm tries to settle with a zero balance.
+    // A confirmation request is not proof of payment. The booking stays pending
+    // until the wallet emits a successful debit outcome.
     const confirmed = await api.post(`/api/classes/bookings/${bookingId}/confirm`);
-    expect(confirmed.status).toBe(200); // the request succeeds; the consumer fails to settle
+    expect(confirmed.status).toBe(200);
+    expect(confirmed.json).toMatchObject({
+      confirmed: false,
+      booking: { bookingId, state: 'pending' },
+    });
 
-    // Give the consumer time to attempt (and fail) the settlement.
+    // Give the request consumer time to observe insufficient funds.
     await new Promise((r) => setTimeout(r, 2000));
     const learner = await walletRow(harness, learnerId);
     const teacher = await walletRow(harness, teacherId);
     expect(learner?.availableCredits ?? 0).toBe(0);
     expect(teacher?.pendingCredits ?? 0).toBe(0);
+    const unsettledBooking = await harness.query<{ state: string }>(
+      'live-class',
+      'SELECT "state" FROM bookings WHERE "id" = $1',
+      [bookingId],
+    );
+    expect(unsettledBooking[0]?.state).toBe('pending');
+    const debitEntries = await harness.query(
+      'wallet-ledger',
+      `SELECT "id" FROM ledger_entries
+        WHERE "entry_type" = 'learner_debit' AND "reference_id" = $1`,
+      [bookingId],
+    );
+    expect(debitEntries).toHaveLength(0);
+    const finalEvents = await harness.query(
+      'live-class',
+      `SELECT "id" FROM outbox_messages
+        WHERE "event_type" = 'booking.confirmed'
+          AND "payload"->>'bookingId' = $1 AND "payload"->>'settled' = 'true'`,
+      [bookingId],
+    );
+    expect(finalEvents).toHaveLength(0);
+
+    // Once funded, the learner can retry the same booking. Only the successful
+    // wallet outcome changes its state and emits the settled confirmation.
+    await topUpLearner(100_000);
+    const retry = await api.post(`/api/classes/bookings/${bookingId}/confirm`);
+    expect(retry.status).toBe(200);
+    expect(retry.json).toMatchObject({ confirmed: false, booking: { state: 'pending' } });
+
+    const settlement = await waitFor(async () => {
+      const learnerWallet = await walletRow(harness, learnerId);
+      const teacherWallet = await walletRow(harness, teacherId);
+      const bookingRows = await harness.query<{ state: string }>(
+        'live-class',
+        'SELECT "state" FROM bookings WHERE "id" = $1',
+        [bookingId],
+      );
+      return learnerWallet?.availableCredits === 0 &&
+        teacherWallet?.pendingCredits === 90 &&
+        bookingRows[0]?.state === 'confirmed'
+        ? { learnerWallet, teacherWallet, state: bookingRows[0].state }
+        : null;
+    });
+    expect(settlement.state).toBe('confirmed');
+    expect(settlement.learnerWallet.availableCredits).toBe(0);
+    expect(settlement.teacherWallet.pendingCredits).toBe(90);
+    const settledEvents = await harness.query(
+      'live-class',
+      `SELECT "id" FROM outbox_messages
+        WHERE "event_type" = 'booking.confirmed'
+          AND "payload"->>'bookingId' = $1 AND "payload"->>'settled' = 'true'`,
+      [bookingId],
+    );
+    expect(settledEvents).toHaveLength(1);
   });
 
   it('expires a pending hold and releases the seat (AC-026)', async () => {
@@ -275,6 +361,14 @@ describe('E2E: book → settle → room → complete → release', () => {
     await waitFor(async () => {
       const t = await walletRow(harness, teacherId);
       return t && t.pendingCredits === 90 ? t : null;
+    });
+    await waitFor(async () => {
+      const rows = await harness.query<{ state: string }>(
+        'live-class',
+        'SELECT "state" FROM bookings WHERE "id" = $1',
+        [bookingId],
+      );
+      return rows[0]?.state === 'confirmed' ? rows[0] : null;
     });
 
     // Teacher never joins; the no-show endpoint refunds the learner.

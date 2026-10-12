@@ -326,13 +326,18 @@
   },
   "Dashboard": {
     "page": {
-      "roleChip": "Learner dashboard",
+      "roleChip": "SkillSwap Learner",
       "termChip": "Current term",
-      "title": "My schedule and sessions",
-      "subtitle": "Track every booked session, monitor the held escrow, join the room, and approve the credit release when a class is done.",
+      "title": "My Bookings",
+      "subtitle": "Track every booked session, monitor held escrow, join virtual classrooms, and approve credit release upon completion.",
       "ctaCalendar": "Sync calendar",
       "ctaExplore": "Find new classes",
       "mockBadge": "Demo data"
+    },
+    "empty": {
+      "title": "No sessions found",
+      "body": "You do not have any sessions in this category yet. Explore skills and book mentoring with peer students!",
+      "cta": "Browse classes now"
     },
     "metrics": {
       "upcoming": "Upcoming classes",
@@ -411,10 +416,13 @@
       "held": "Held safely",
       "total": "Estimated total",
       "vndEstimate": "(~{vnd} VND)",
+      "noDirectTitle": "No direct payout",
       "noDirect": "The teacher only receives the credits after you confirm completion.",
+      "refundPolicyTitle": "Automatic refund",
       "refundPolicy": "Credits are returned to your wallet automatically if the class is cancelled before the deadline.",
       "details": "View escrow ledger",
-      "signInToView": "Sign in to see your wallet"
+      "signInToView": "Sign in to see your wallet",
+      "signInCta": "Sign in now"
     },
     "charter": {
       "title": "Learner rights",
@@ -424,10 +432,23 @@
       "contactBody": "Every message, file share and video call stays inside SkillSwap so the support team has a full record if a dispute is opened.",
       "support": "Get academic help"
     },
-    "empty": {
-      "title": "No sessions yet",
-      "body": "You have not booked a class yet. Browse the marketplace to get started.",
-      "cta": "Browse classes"
+    "reviewModal": {
+      "title": "Review Session & Release Escrow",
+      "subtitle": "Confirm that the session was completed successfully to release the held credits to the teacher.",
+      "ratingLabel": "Your rating",
+      "starHint": "{rating} of 5 stars",
+      "commentLabel": "Academic feedback (optional)",
+      "commentPlaceholder": "Share your learning experience, clarity, and mentor helpfulness...",
+      "pledge": "Academic pledge: Honest reviews uphold transparent peer-mentoring standards across universities.",
+      "cancel": "Later",
+      "submit": "Confirm & Release Escrow"
+    },
+    "noShowModal": {
+      "title": "Report Teacher No-Show",
+      "subtitle": "SkillSwap Learner Protection Rule",
+      "body": "If the teacher did not join within 15 minutes of the start time, your report will be recorded and held escrow credits will automatically return to your wallet.",
+      "cancel": "Cancel",
+      "confirm": "Confirm No-Show Report"
     }
   },
   "Teacher": {
@@ -527,7 +548,310 @@
         "October",
         "November",
         "December"
-      ]
+      ],
+      "stepNumber": "Step {n}",
+      "steps": {
+        "step1Title": "Choose Teaching Subject",
+        "step1VerifiedBadge": "2 approved subjects",
+        "step2Title": "Class Title & Syllabus Roadmap",
+        "syllabusLabel": "Session Roadmap Summary (Syllabus)",
+        "syllabus1": "First 15m: Diagnostic pronunciation & natural warm-up",
+        "syllabus2": "Middle 30m: 1-on-1 Mock Test & live PEEL correction",
+        "syllabus3": "Final 15m: In-depth feedback & 7-day practice roadmap",
+        "step3Title": "Format & Class Scale",
+        "format1to1Title": "1-on-1 Mentoring (Private)",
+        "format1to1Desc": "Max 1 learner. In-depth interaction, personalized skill coaching.",
+        "format1to1Completion": "99.4% Completion Rate",
+        "formatGroupTitle": "Small Group",
+        "formatGroupDesc": "Capacity 4 - 6 learners. Group discussions, debate practice.",
+        "formatGroupSave": "Cost-effective credit sharing",
+        "step4Title": "Schedule & Class Duration",
+        "leadTimeBadge": "Schedule >=24h in advance",
+        "leadTimeValid": "Valid (>=24h lead time)",
+        "autoRoom": "Automatic virtual classroom connection",
+        "autoRoomDesc": "SkillSwap Video Room (End-to-End Encrypted)",
+        "autoRoomPill": "Auto-generated link",
+        "step5Title": "Tuition Credits & Escrow Payout"
+      },
+      "checklist": {
+        "title": "Class Publishing Checklist",
+        "badge": "Eligible",
+        "item1": "Subject verified by academic panel",
+        "item1Status": "Valid",
+        "item2": "Scheduled at least 24 hours in advance",
+        "item2Status": "Ready",
+        "item3": "Transparent 90/10 Escrow Settlement",
+        "item3Status": "Ready",
+        "pledgeTitle": "SkillSwap Protection Commitment",
+        "pledgeDesc": "Learners receive full policy-backed credit refunds if a session is cancelled or technical faults occur."
+      }
+    }
+  },
+  "Auth": {
+    "brandTag": "Verified Student Knowledge Network",
+    "heroTitle1": "Exchange skills.",
+    "heroTitle2": "Build real value.",
+    "heroSubtitle": "Learn from capable peers and share your strengths. Every exchange is protected through a fair credit system.",
+    "pillar1Title": "Genuine Student Verification",
+    "pillar1Desc": "Linked university accounts ensure a secure and trusted study environment.",
+    "pillar2Title": "Transparent Escrow Mechanism",
+    "pillar2Desc": "Credits are transferred only when sessions conclude successfully.",
+    "pillar3Title": "Real-time Interactive Classes",
+    "pillar3Desc": "Direct interactive classrooms with synchronized learning resources.",
+    "testimonialQuote": "Sharing programming skills helped me practice peer communication consistently. Clear process and verified peers give great peace of mind.",
+    "testimonialAuthor": "Minh Tri",
+    "testimonialRole": "Senior Student • 40+ hours exchanged",
+    "tabRegister": "Create Account",
+    "tabLogin": "Sign In",
+    "providerGoogle": "Google Account",
+    "providerMicrosoft": "Microsoft Account",
+    "providerComingSoon": "This login provider is not yet supported",
+    "ssoComingSoon": "This login provider is not yet supported",
+    "providerBadge": "Coming soon",
+    "orDivider": "Or continue with email",
+    "fullName": "Full Name",
+    "fullNamePlaceholder": "e.g. Alex Nguyen",
+    "email": "Student Email",
+    "emailPlaceholder": "name@student.edu",
+    "emailHint": "Assists with learner identity verification",
+    "password": "Password",
+    "passwordPlaceholder": "Minimum 8 characters",
+    "passwordStrengthWeak": "Weak",
+    "passwordStrengthMedium": "Medium",
+    "passwordStrengthStrong": "Strong",
+    "passwordStrengthVeryStrong": "Very Strong",
+    "pledge": "I pledge to uphold academic integrity and respectful knowledge exchange.",
+    "rememberMe": "Remember this device for 30 days",
+    "forgotPassword": "Forgot password?",
+    "btnRegister": "Create Learner Account",
+    "btnLogin": "Sign In to SkillSwap",
+    "registerSuccess": "Account created successfully! Redirecting…",
+    "loginSuccess": "Signed in successfully! Redirecting…",
+    "switchToLogin": "Already have an account?",
+    "switchToRegister": "Don't have an account?",
+    "validationError": "Please provide valid information (password at least 8 characters).",
+    "pledgeError": "You must agree to the academic integrity pledge."
+  },
+  "Verification": {
+    "badge": "Verified Student Profile",
+    "title": "Student Verification Center",
+    "subtitle": "Manage university identity credentials and subject competency proofs for safe peer mentoring.",
+    "privacyBadge": {
+      "title": "Learner Privacy",
+      "subtitle": "Securely verified"
+    },
+    "studentIdCard": {
+      "title": "Regular Student Identification",
+      "verified": "Verified",
+      "pending": "In review",
+      "unverified": "Unverified",
+      "sub": "Student credential registry",
+      "cohort": "Class of 2021 - 2025",
+      "school": "University",
+      "schoolSub": "Campus in Ho Chi Minh City",
+      "studentCode": "Student ID",
+      "studentCodeSub": "Matches student registry records",
+      "studentEmail": "Student Email",
+      "studentEmailSub": "Official student account verified",
+      "reverifyTerm": "Next Re-verification",
+      "reverifyTermValue": "September 2025",
+      "reverifyTermSub": "Annual academic cycle"
+    },
+    "cardScan": {
+      "title": "Student ID Card Scan",
+      "subtitle": "Stored encrypted, sensitive data masked automatically.",
+      "updateCta": "Update Student Card",
+      "watermark": "SKILLSWAP VERIFIED",
+      "internalLock": "Internal Privacy",
+      "verifiedOn": "Verified: 15/09/2024"
+    },
+    "trustScore": {
+      "title": "Academic Trust Index",
+      "badge": "High trust tier",
+      "score": "98",
+      "scoreMax": "/ 100 Points",
+      "completedSessions": "Session completion rate",
+      "disputes": "Disputes & violations",
+      "disputesValue": "0 violations",
+      "peerRating": "Peer review rating",
+      "endorsement": "Endorsed through 14 peer validations across universities."
+    },
+    "certifications": {
+      "title": "Subject Certifications",
+      "summary": "2 Approved • 1 In review",
+      "ielts": "IELTS Speaking C1 (8.0)",
+      "ieltsSub": "International credential • Class hosting enabled",
+      "toeic": "TOEIC 920 Business",
+      "toeicSub": "International credential • Class hosting enabled",
+      "translation": "English - Vietnamese Translation",
+      "translationSub": "Competency evidence undergoing review",
+      "pendingBadge": "Under review"
+    },
+    "pledge": {
+      "title": "SkillSwap Safety & Trust Pledge",
+      "subtitle": "A transparent, compliant peer-learning network respecting student privacy.",
+      "item1Title": "Valid Student Email",
+      "item1Body": "Learners and instructors verify student status via active student accounts.",
+      "item2Title": "Personal Identity Privacy",
+      "item2Body": "Sensitive documents remain protected. Only verified badges and universities are visible to peers.",
+      "item3Title": "Annual Academic Re-check",
+      "item3Body": "Student enrollment is re-checked annually to preserve high peer-learning standards."
+    }
+  },
+  "PostSessionReview": {
+    "steps": {
+      "step1": "1. Leave Jitsi Room",
+      "step2": "2. Escrow Settlement",
+      "step3": "3. Peer Review Rating"
+    },
+    "banner": {
+      "badge": "Online Session Completed",
+      "title": "Session Completed Successfully!",
+      "subtitle": "The 60-minute virtual session via Jitsi Meet has been recorded safely.",
+      "bookingCode": "BOOKING CODE: #{code}",
+      "duration": "Duration: 60 minutes (Complete)"
+    },
+    "sessionInfo": {
+      "title": "Session Overview",
+      "tag": "1-on-1 Mentoring Session",
+      "classTitle": "IELTS Speaking 6.5+ Mock Interview 1-1",
+      "tutor": "Lan Anh",
+      "university": "Partner University",
+      "verifiedBadge": "Verified Student Card • Subject Certified",
+      "topicLabel": "Discussion Topic",
+      "topicValue": "Part 2 & 3 Education",
+      "jitsiLabel": "Jitsi Connection",
+      "jitsiValue": "1080p Clear Video"
+    },
+    "escrow": {
+      "title": "Escrow Payout Settlement",
+      "status": "Escrow Safely Released",
+      "desc": "The credits held safely in escrow have been released to the instructor following successful class completion.",
+      "totalCost": "Total Session Cost",
+      "credits": "{n} Credits",
+      "tutorShare": "Instructor Wallet (90%)",
+      "platformShare": "Platform Operations (10%)",
+      "availableBalance": "Current Available Balance:",
+      "viewWallet": "View Wallet →"
+    },
+    "materials": {
+      "title": "Session Files & Notes",
+      "count": "2 files",
+      "desc": "Download critique notes and audio summaries from the session.",
+      "file1Name": "Speaking_Critique_SS8821.pdf",
+      "file1Meta": "2.4 MB • Grammar & vocabulary review",
+      "file2Name": "Audio_Sample_Intonation.mp3",
+      "file2Meta": "5.1 MB • Sample intonation audio Part 3"
+    },
+    "form": {
+      "badge": "Learner Review",
+      "counterpart": "Peer learning connection",
+      "title": "Quality Review & Instructor Feedback",
+      "subtitle": "Your feedback helps instructors improve and build trusted peer reputation across campuses.",
+      "overallSatisfaction": "Overall Session Satisfaction",
+      "star1": "Needs Improvement (1.0 / 5.0)",
+      "star2": "Fair (2.0 / 5.0)",
+      "star3": "Good (3.0 / 5.0) - Met expectations",
+      "star4": "Very Good (4.0 / 5.0) - Satisfied",
+      "star5": "Excellent (5.0 / 5.0) - Highly recommended",
+      "criteriaTitle": "Rating across 4 Core Pillars",
+      "crit1": "1. Subject Competency & Teaching",
+      "crit1Desc": "Clear explanations, solid understanding",
+      "crit2": "2. Punctuality & Professionalism",
+      "crit2Desc": "Joined on time, respectful conduct",
+      "crit3": "3. Interactive Feedback & Correction",
+      "crit3Desc": "Detailed pronunciation notes",
+      "crit4": "4. Video & Audio Connection Quality",
+      "crit4Desc": "Clear audio, good microphone, no lag",
+      "commentLabel": "Detailed Review for Instructor",
+      "commentHint": "Click suggestion chips to add feedback points quickly:",
+      "chip1": "Clear, logical explanations",
+      "chip2": "Detailed pronunciation feedback",
+      "chip3": "Exam-relevant practice questions",
+      "chip4": "Comfortable, encouraging atmosphere",
+      "commentPlaceholder": "Share your experience with the session...",
+      "defaultComment": "The mentor was very attentive, correcting pronunciation and helping structure answers clearly. Highly recommend!",
+      "crossMatchTitle": "Skill Swap Cross-Matching Opportunity",
+      "crossMatchSub": "Compatibility Suggestion",
+      "crossMatchDesc": "The mentor wants to learn other subjects. Propose a 1-1 skill swap for upcoming sessions?",
+      "crossMatchOpt1": "Propose 1-1 peer skill swap",
+      "crossMatchOpt2": "Save to Mentoring Directory",
+      "btnBack": "Back to My Bookings",
+      "btnSubmit": "Submit Review & Finalize",
+      "btnSubmitting": "Synchronizing Escrow...",
+      "btnSuccess": "Submitted Successfully!",
+      "toastSuccessTitle": "Review recorded in system ledger!",
+      "toastSuccessBody": "Thank you! The instructor trust score has been updated. Redirecting to your bookings..."
+    }
+  },
+  "LiveClassroom": {
+    "nav": {
+      "back": "My Bookings",
+      "bookingCode": "BOOKING CODE: #{code}"
+    },
+    "statusBar": {
+      "rec": "REC LIVE",
+      "connection": "HD 1080p (24ms)",
+      "timer": "{elapsed} / {total}",
+      "e2e": "End-to-End Encrypted"
+    },
+    "video": {
+      "whiteboardTitle": "Interactive Whiteboard • IELTS Speaking Part 2",
+      "liveSync": "Live Sync",
+      "topic": "Topic: Describe an environmental problem in your hometown",
+      "pointLabel": "PEEL Structure:",
+      "pointText": "Air pollution due to heavy vehicular exhaust during rush hours.",
+      "collocationsLabel": "C1 Collocations:",
+      "collocationsText": "deteriorating air quality, exponential rise, combative measures.",
+      "feedbackLabel": "Live Feedback:",
+      "feedbackText": "Focus on intonation and linking clauses naturally.",
+      "mentorBadge": "Mentor",
+      "screenSharing": "Sharing screen",
+      "studentName": "Minh Nguyen (You)",
+      "btnMic": "Microphone",
+      "btnCamera": "Camera",
+      "btnScreen": "Share Screen",
+      "btnWhiteboard": "Whiteboard",
+      "btnHand": "Raise Hand",
+      "btnLeave": "Leave Room"
+    },
+    "timeline": {
+      "stage": "Stage 3 of 4 • 1-on-1 Mock Session",
+      "topicHeading": "PEEL Structure & C1 Collocations Framework",
+      "remainingTime": "{n} minutes remaining in mock interview",
+      "progressLabel": "Current session progress",
+      "progressPct": "{pct}% completed",
+      "materialsTitle": "Attached session files ({n} files)",
+      "file1Title": "Forecast_Speaking_Q2_2025.pdf",
+      "file1Sub": "1.4 MB • Partner curriculum guide",
+      "file2Title": "Band7_Topic_Collocations.docx",
+      "file2Sub": "420 KB • Focused session summary notes"
+    },
+    "chat": {
+      "title": "Live Classroom Chat",
+      "onlineCount": "{n} online",
+      "safetyNotice": "SkillSwap Safety: Keep all interactions within the platform to maintain escrow protection and academic support guarantees.",
+      "systemStart": "Session started at {time} • Secure Room #{code}",
+      "mentorName": "Lan Anh",
+      "mentorTime1": "19:32",
+      "mentorMsg1": "Hello Minh! Let's start Part 2: 'Describe an environmental problem in your hometown'. I shared the vocabulary board on the whiteboard!",
+      "studentName": "You (Minh Nguyen)",
+      "studentTime": "19:34",
+      "studentMsg": "Yes, I can see the board. Let me take 1 minute to outline using the PEEL structure we practiced!",
+      "mentorTime2": "19:40",
+      "mentorMsg2": "Great job! Remember to emphasize 'exponential rise in automotive emission' to boost your lexical resource score.",
+      "inputPlaceholder": "Send a message or ask a question...",
+      "send": "Send",
+      "attach": "Attach file"
+    },
+    "escrow": {
+      "title": "Escrow Protection - Escrow Active",
+      "subtitle": "Safe peer guarantee for learners and tutors",
+      "heldLabel": "Locked escrow balance:",
+      "heldValue": "{credits} Credits (~{vnd} VND)",
+      "badge": "Escrow Protected",
+      "notice": "Once the session concludes, you have 24 hours to review before escrow credits are released to the instructor.",
+      "btnEndAndReview": "Finish Class & Proceed to Review"
     }
   }
 }

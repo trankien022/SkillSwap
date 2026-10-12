@@ -20,21 +20,28 @@ interface Props {
  */
 export function GeneralDetailsSection({ draft, onChange }: Props) {
   const t = useTranslations('Teacher.publish.general');
-  const tStep = useTranslations('Teacher.publish');
+  const tSteps = useTranslations('Teacher.publish.steps');
   const over = draft.title.length > TITLE_MAX_CHARS;
   return (
-    <section className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 shadow-sm">
+    <section className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="flex items-center gap-2">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white shadow-xs">
+          2
+        </span>
+        <h2 className="text-base font-bold text-slate-900">{tSteps('step2Title')}</h2>
+      </div>
+
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="class-title"
-          className="flex items-center justify-between text-base font-semibold text-ink"
+          className="flex items-center justify-between text-sm font-semibold text-slate-800"
         >
           <span>{t('titleLabel')}</span>
           <span
             className={
               over
-                ? 'text-[11px] font-semibold text-error'
-                : 'text-[11px] text-ink-soft'
+                ? 'text-xs font-semibold text-rose-600'
+                : 'text-xs text-slate-400'
             }
           >
             {t('titleCounter', {
@@ -50,83 +57,57 @@ export function GeneralDetailsSection({ draft, onChange }: Props) {
           maxLength={TITLE_MAX_CHARS + 50}
           onChange={(e) => onChange({ title: e.target.value })}
           placeholder={t('titlePlaceholder')}
-          className="w-full rounded-lg border border-border bg-mist px-4 py-2.5 text-base text-ink shadow-sm focus:outline-none focus:ring-2 focus:ring-ink"
+          className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-sm font-medium text-slate-900 shadow-xs focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white transition-colors"
         />
       </div>
+
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="class-desc"
-          className="text-base font-semibold text-ink"
+          className="text-sm font-semibold text-slate-800"
         >
           {t('descriptionLabel')}
         </label>
         <textarea
           id="class-desc"
-          rows={4}
+          rows={3}
           value={draft.description}
           onChange={(e) => onChange({ description: e.target.value })}
           placeholder={t('descriptionPlaceholder')}
-          className="w-full resize-y rounded-lg border border-border bg-mist px-4 py-2.5 text-base text-ink shadow-sm focus:outline-none focus:ring-2 focus:ring-ink"
+          className="w-full resize-y rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-sm font-normal text-slate-900 shadow-xs focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white transition-colors"
         />
       </div>
-      <div className="flex flex-col gap-1.5">
-        <div className="flex items-center justify-between">
-          <span className="text-base font-semibold text-ink">
-            {t('durationLabel')}
+
+      <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+        <div className="flex items-center gap-1.5">
+          <span className="material-symbols-outlined text-[16px] text-emerald-600" style={{ fontVariationSettings: "'FILL' 1" }}>
+            timeline
           </span>
-          <span className="text-[11px] text-ink-soft">
-            {t('durationStandard')}
+          <span className="text-xs font-bold text-slate-800">
+            {tSteps('syllabusLabel')}
           </span>
         </div>
-        <div className="grid grid-cols-4 gap-2">
-          {[30, 45, 60, 90].map((d) => {
-            const active = draft.durationMinutes === d;
-            return (
-              <button
-                key={d}
-                type="button"
-                onClick={() =>
-                  onChange({ durationMinutes: d as ClassDraft['durationMinutes'] })
-                }
-                className={
-                  active
-                    ? 'rounded-lg border border-ink bg-ink px-3 py-2 text-sm font-semibold text-surface shadow-sm'
-                    : 'rounded-lg border border-border bg-mist px-3 py-2 text-sm font-semibold text-ink-soft transition-colors hover:bg-surface'
-                }
-              >
-                {tStep('stepDuration', { count: d })}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      <div className="flex items-center justify-between rounded-lg border border-border bg-mist p-4">
-        <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-surface text-ink shadow-sm">
-            <VideocamIcon className="h-5 w-5" />
+        <div className="space-y-2 pt-1">
+          <div className="flex items-start gap-2.5 rounded-lg border border-slate-100 bg-white p-2.5 shadow-xs">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-800">
+              1
+            </span>
+            <span className="text-xs text-slate-700">{tSteps('syllabus1')}</span>
           </div>
-          <div>
-            <span className="block text-sm font-bold text-ink">
-              {t('platform.name')}
+          <div className="flex items-start gap-2.5 rounded-lg border border-slate-100 bg-white p-2.5 shadow-xs">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-800">
+              2
             </span>
-            <span className="block text-[11px] text-ink-soft">
-              {t('platform.caption')}
+            <span className="text-xs text-slate-700">{tSteps('syllabus2')}</span>
+          </div>
+          <div className="flex items-start gap-2.5 rounded-lg border border-slate-100 bg-white p-2.5 shadow-xs">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-800">
+              3
             </span>
+            <span className="text-xs text-slate-700">{tSteps('syllabus3')}</span>
           </div>
         </div>
-        <span className="rounded-full bg-success-tint px-2.5 py-1 text-[11px] font-semibold text-success-ink">
-          {t('platform.onlineOnly')}
-        </span>
       </div>
     </section>
-  );
-}
-
-function VideocamIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
-      <rect x="2" y="6" width="14" height="12" rx="2" />
-      <path d="M16 10l6-3v10l-6-3z" />
-    </svg>
   );
 }

@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect } from 'react';
 import { Navbar } from '../../../../../components/navbar';
-import { callApi } from '../../../../../lib/api-client';
+import { callApi, unwrapEnvelope } from '../../../../../lib/api-client';
 import type { WalletBalanceView } from '@skillswap/contracts';
 
 interface PageProps {
@@ -19,13 +19,14 @@ export default function BookingCheckoutPage({ params }: PageProps) {
   const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
+  const [bookingId, setBookingId] = useState<string>('SS-VN-8821');
 
   useEffect(() => {
     const fetchBalance = async () => {
       try {
         const res = await callApi('/wallet/balance');
         if (res.ok) {
-          setBalance(await res.json());
+          setBalance(await unwrapEnvelope(res));
         }
       } catch (e) {
         console.warn('Failed to load wallet balance for checkout', e);
@@ -49,22 +50,69 @@ export default function BookingCheckoutPage({ params }: PageProps) {
 
     setIsProcessing(true);
     try {
-      // Attempt backend booking API if class endpoint is live
+      let finalBookingId = 'SS-VN-8821';
+      let isRealSettled = false;
+
+      // 1. Hold booking via POST /api/classes/:id/bookings
       try {
-        await callApi(`/classes/${id}/book`, {
-          method: 'POST',
-        }, false);
+        const idempotencyKey =
+          typeof crypto !== 'undefined' && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `idemp-${Date.now()}`;
+        const res = await callApi(
+          `/classes/${id}/bookings`,
+          {
+            method: 'POST',
+            body: JSON.stringify({ idempotencyKey }),
+          },
+          false,
+        );
+
+        if (res.ok) {
+          const bookResult = await unwrapEnvelope<{
+            booking: { bookingId: string; priceCredits: number };
+            created: boolean;
+          }>(res);
+          finalBookingId = bookResult.booking.bookingId;
+          setBookingId(finalBookingId);
+
+          // 2. Settle payment via POST /api/classes/bookings/:bookingId/confirm
+          const confirmRes = await callApi(
+            `/classes/bookings/${finalBookingId}/confirm`,
+            {
+              method: 'POST',
+            },
+            false,
+          );
+
+          if (confirmRes.ok) {
+            isRealSettled = true;
+          } else {
+            const err = (await confirmRes.json().catch(() => ({}))) as { message?: string };
+            showToast(err.message || 'Số dư ví không đủ để thanh toán giữ chỗ.');
+            return;
+          }
+        }
       } catch (err) {
-        console.warn('Backend booking API fallback to simulated escrow', err);
+        console.warn('Real booking API fallback to simulated escrow', err);
       }
 
-      await new Promise((r) => setTimeout(r, 700));
+      await new Promise((r) => setTimeout(r, 600));
 
       setBookingConfirmed(true);
       setIsSuccessModalOpen(true);
 
-      // Deduct 100 Credits from current balance display
-      if (balance) {
+      // Refresh wallet balance
+      if (isRealSettled) {
+        try {
+          const balRes = await callApi('/wallet/balance');
+          if (balRes.ok) {
+            setBalance(await unwrapEnvelope(balRes));
+          }
+        } catch (e) {
+          console.warn('Failed to refresh balance after settlement', e);
+        }
+      } else if (balance) {
         setBalance({
           ...balance,
           availableCredits: Math.max(0, balance.availableCredits - 100),
@@ -606,11 +654,11 @@ export default function BookingCheckoutPage({ params }: PageProps) {
               </span>
             </div>
             <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-[11px] font-mono font-semibold">
-              Mã giao dịch: ESCROW-VN-2025-1028
+              Mã giữ chỗ: {bookingId}
             </span>
             <h3 className="text-xl font-bold text-slate-900 mt-3 mb-2">Đặt lớp &amp; Ký quỹ Thành công!</h3>
             <p className="text-xs text-slate-600 mb-5 leading-relaxed">
-              Hệ thống đã khóa <strong className="text-slate-900 font-semibold">100 Credits</strong> vào ví Escrow bảo chứng. Link phòng học Jitsi Meet đã được gửi đến email học viên của bạn.
+              Hệ thống đã khóa <strong className="text-slate-900 font-semibold">{priceCredits} Credits</strong> vào ví Escrow bảo chứng. Bạn có thể vào phòng học trực tuyến ngay khi mở cửa lớp học.
             </p>
             <div className="bg-slate-50 rounded-xl p-3.5 text-left text-xs space-y-2 mb-6 border border-slate-100">
               <div className="flex justify-between">
@@ -627,15 +675,22 @@ export default function BookingCheckoutPage({ params }: PageProps) {
               </div>
               <div className="flex justify-between border-t border-slate-200 pt-2 font-semibold">
                 <span className="text-slate-500">Số dư ví còn lại:</span>
-                <span className="font-mono text-emerald-700">{remainingCredits} Credits</span>
+                <span className="font-mono text-emerald-700">{balance ? balance.availableCredits : remainingCredits} Credits</span>
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-2.5">
               <a
-                href="/vi/instructor#classes"
-                className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors text-center"
+                href={`/vi/bookings/${bookingId}/live`}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors text-center flex items-center justify-center gap-1.5"
               >
-                Xem Lớp học của tôi
+                <span className="material-symbols-outlined text-[16px]">videocam</span>
+                Vào phòng học ngay
+              </a>
+              <a
+                href="/vi/my-bookings"
+                className="py-2.5 px-4 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors text-center"
+              >
+                Lịch học của tôi
               </a>
               <button
                 type="button"

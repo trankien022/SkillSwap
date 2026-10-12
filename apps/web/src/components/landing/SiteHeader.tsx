@@ -58,8 +58,8 @@ export async function SiteHeader() {
         {/* Right side: sign-in placeholder + avatar */}
         <div className="flex items-center gap-3">
           <Link
-            href="/status"
-            className="hidden rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900 sm:inline-flex"
+            href="/auth?tab=login"
+            className="hidden rounded-full bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 sm:inline-flex"
           >
             {t('signIn')}
           </Link>
