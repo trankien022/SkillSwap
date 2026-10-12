@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import type { WalletBalanceView } from '@skillswap/contracts';
 import { colors, radius, spacing, typography } from '@/design/tokens';
 import { AppButton, ScreenScroll, SurfaceCard } from './primitives';
@@ -43,9 +43,10 @@ export function DashboardView() {
     }
   }, [refreshMe, gatewayClient, t]);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
+    setSummaryReloadTrigger((previous) => previous + 1);
     void fetchDashboardData();
-  }, [fetchDashboardData]);
+  }, [fetchDashboardData]));
 
   const onRefresh = () => {
     setIsRefreshing(true);
@@ -126,13 +127,13 @@ export function DashboardView() {
             <View style={styles.balanceCol}>
               <Text style={styles.balanceLabel}>{t('Dashboard.availableCredits')}</Text>
               <Text style={styles.balanceValuePrimary}>
-                {balance ? `${balance.availableCredits} cr` : '0 cr'}
+                {balance ? `${balance.availableCredits} cr` : '—'}
               </Text>
             </View>
             <View style={styles.balanceCol}>
               <Text style={styles.balanceLabel}>{t('Dashboard.pendingCredits')}</Text>
               <Text style={styles.balanceValuePending}>
-                {balance ? `${balance.pendingCredits} cr` : '0 cr'}
+                {balance ? `${balance.pendingCredits} cr` : '—'}
               </Text>
             </View>
           </View>

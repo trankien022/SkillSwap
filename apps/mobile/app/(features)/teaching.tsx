@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import type { ClassListItemView, SkillCatalogueItemView } from '@skillswap/contracts';
 import { ClassReadGateway } from '@/infrastructure/http/class-read-gateway';
 import { TeachingGateway } from '@/infrastructure/http/teaching-gateway';
@@ -9,6 +9,7 @@ import { useSession } from '@/ui/session-context';
 import { AppButton, FeedbackBanner, ScreenScroll, SurfaceCard } from '@/ui/primitives';
 
 export default function TeachingScreen() {
+  const router = useRouter();
   const { t, gatewayClient } = useSession();
   const [items, setItems] = useState<ClassListItemView[]>([]);
   const [skills, setSkills] = useState<SkillCatalogueItemView[]>([]);
@@ -41,8 +42,6 @@ export default function TeachingScreen() {
     if (!gatewayClient || !skillId || !description.trim()) return;
     return run(() => new TeachingGateway(gatewayClient).create({ skillIds: [skillId], description: description.trim(), startsAt, durationMinutes: Number(duration), priceCredits: Number(price), capacity: Number(capacity) }));
   };
-  const updatePrice = (item: ClassListItemView) => gatewayClient && run(() => new TeachingGateway(gatewayClient).update(item.id, { priceCredits: item.priceCredits + 1 }));
-
   return <ScreenScroll contentContainerStyle={styles.container}>
     <SurfaceCard style={styles.card}>
       <Text style={styles.title}>{t('Teaching.title')}</Text>
@@ -57,13 +56,9 @@ export default function TeachingScreen() {
     <SurfaceCard style={styles.card}>
       <Text style={styles.subtitle}>{t('Teaching.myClasses')}</Text>
       {items.length === 0 ? <Text style={styles.body}>{t('Teaching.empty')}</Text> : items.map((item) => <View key={item.id} style={styles.classItem}>
-        <Text style={styles.body}>{item.description}</Text><Text style={styles.meta}>{item.state} · {new Date(item.startsAt).toLocaleString()}</Text>
-        {item.state === 'published' && <View style={styles.row}>
-          <Pressable style={styles.action} onPress={() => void updatePrice(item)} disabled={busy} accessibilityRole="button"><Text style={styles.actionText}>{t('Teaching.editPrice')}</Text></Pressable>
-          <Pressable style={styles.action} onPress={() => gatewayClient && void run(() => new TeachingGateway(gatewayClient).cancel(item.id))} disabled={busy} accessibilityRole="button"><Text style={styles.actionText}>{t('Teaching.cancel')}</Text></Pressable>
-          <Pressable style={styles.action} onPress={() => gatewayClient && void run(() => new TeachingGateway(gatewayClient).start(item.id))} disabled={busy} accessibilityRole="button"><Text style={styles.actionText}>{t('Teaching.start')}</Text></Pressable>
-        </View>}
-        {item.state === 'in_progress' && <Pressable style={styles.action} onPress={() => gatewayClient && void run(() => new TeachingGateway(gatewayClient).complete(item.id))} disabled={busy} accessibilityRole="button"><Text style={styles.actionText}>{t('Teaching.complete')}</Text></Pressable>}
+        <Text style={styles.body}>{item.description}</Text><Text style={styles.meta}>{t(`Teaching.state.${item.state}`)} · {new Date(item.startsAt).toLocaleString()}</Text>
+        <Text style={styles.meta}>{item.priceCredits} {t('Teaching.price')} · {item.capacity} {t('Teaching.capacity')}</Text>
+        <Pressable style={styles.action} onPress={() => router.push(`/(features)/teaching/${item.id}`)} accessibilityRole="button"><Text style={styles.actionText}>{t('Teaching.openDetail')}</Text></Pressable>
       </View>)}
     </SurfaceCard>
   </ScreenScroll>;

@@ -1,6 +1,6 @@
 # Plan mobile SkillSwap — phạm vi rubric 20%
 
-Ngày: 12/10/2026. Trạng thái: 30 endpoint API đã được nối vào mobile UI; Antigravity hết quota ở lát trước, Codex tiếp tục triển khai và kiểm tra.
+Ngày cập nhật: 13/10/2026. Trạng thái hiện hành được tách thành source, test/build và runtime tại [checklist](todo.md); chưa đánh dấu checkpoint runtime hoàn tất.
 
 ## 1. Mục tiêu và giả định
 
@@ -16,9 +16,9 @@ Giả định resources là đối tượng nghiệp vụ có dữ liệu/API/m�
 
 - Mobile dùng Expo + Expo Router với HTTP integration qua Gateway, session an toàn, dashboard learner, marketplace, lịch, ví, xác minh, kỹ năng, teaching, room access, rating và notifications.
 - 30/30 method + route template trong ma trận có backend handler, contract, mobile adapter và caller UI. `tasks/todo.md` ghi rõ phần native/runtime acceptance còn mở.
-- Top-up dùng mock provider (ADR-017); có callback HMAC nhưng URL mock chưa chứng minh checkout thật. Luồng demo cần mock-provider harness phía server, tuyệt đối không đưa HMAC secret vào app.
+- Top-up dùng mock provider (ADR-017), không phải cổng thanh toán thật. Đã thêm harness ký callback HMAC tại `scripts/mock-topup-callback.mjs`; sau khi app tạo intent, chạy trên Mac `node --env-file=.env scripts/mock-topup-callback.mjs --providerRef=<providerRef> --amountVnd=<amountVnd> --status=settled`. Secret chỉ đọc từ `.env`, không nhập vào app hoặc commit. Harness chưa được chạy trên intent/backend runtime trong checkpoint này.
 - Jitsi có quyết định self-hosted JWT (ADR-020); endpoint room access tồn tại không chứng minh cuộc gọi trên điện thoại hoạt động. Cần spike mạng/TLS/mic/camera sớm.
-- Inbox bền vững và APIs đăng ký/hủy thiết bị đã có; một số sự kiện xác minh/booking/wallet được ghi vào inbox. Push dispatcher gửi token tới Expo, receipt retry/invalidation và class-start reminder chưa được triển khai; không tính phần này là nghiệm thu push.
+- Inbox bền vững và APIs đăng ký/hủy thiết bị đã có; một số sự kiện xác minh/booking/wallet được ghi vào inbox. Đã thêm Expo push dispatcher, leased delivery worker, ticket/receipt polling/retry và mobile tap routing; migration mới chưa apply và remote push chưa được runtime nghiệm thu do thiếu EAS/Firebase config. Class-start reminder vẫn backlog.
 - Role là `user | verifier | admin` (ADR-030). Cùng một `user` học và dạy; khả năng dạy phụ thuộc xác minh và approved skills. Không tạo role teacher/learner.
 
 Phạm vi checkpoint này thu hẹp nghiệm thu còn ba luồng nghiệp vụ chạy được, ≥5 resources có dữ liệu lưu thật, 20–30 route có request evidence và một scenario remote push booking cancellation. Các số lượng source-level không được xem là runtime acceptance. Payment dùng mock provider theo ADR-017; Android upload cần xác minh bytes đọc lại được từ MinIO. Reminder 30 phút, Jitsi end-to-end, rating readback đầy đủ và iOS acceptance tiếp tục ở backlog.

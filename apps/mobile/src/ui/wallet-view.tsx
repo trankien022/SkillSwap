@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
   ActivityIndicator,
   Alert,
@@ -70,9 +71,7 @@ export function WalletView() {
     }
   }, [gatewayClient, t]);
 
-  useEffect(() => {
-    void loadWalletData();
-  }, [loadWalletData]);
+  useFocusEffect(useCallback(() => { void loadWalletData(); }, [loadWalletData]));
 
   const onRefresh = () => {
     setIsRefreshing(true);
@@ -178,13 +177,13 @@ export function WalletView() {
             <View style={styles.balanceCol}>
               <Text style={styles.balanceLabel}>{t('Dashboard.availableCredits')}</Text>
               <Text style={styles.balanceValuePrimary}>
-                {balance ? `${balance.availableCredits} cr` : '0 cr'}
+                {balance ? `${balance.availableCredits} cr` : '—'}
               </Text>
             </View>
             <View style={styles.balanceCol}>
               <Text style={styles.balanceLabel}>{t('Dashboard.pendingCredits')}</Text>
               <Text style={styles.balanceValuePending}>
-                {balance ? `${balance.pendingCredits} cr` : '0 cr'}
+                {balance ? `${balance.pendingCredits} cr` : '—'}
               </Text>
             </View>
           </View>

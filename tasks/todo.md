@@ -1,6 +1,21 @@
 # Mobile rubric — task checklist
 
-Tham chiếu: [plan](plan.md). Checkpoint 12/10/2026: **30/30 unique route templates được app gọi qua Gateway**, kèm contracts/adapters/UI; rating và inbox/device APIs có backend routes, persistence và focused tests. `pnpm verify` xanh: 532 API, 177 mobile, 143 contracts, 27 Gateway, 22 web tests; arch gate xanh. Hai migration mới đã apply vào database development local. E2E sau migration: booking-flow pass; publish-gate fail khi chờ trạng thái xác minh, cần điều tra và chạy lại. Push inbox records hiện nhận event verification/booking/wallet; Expo push dispatcher/receipt lifecycle và class reminder còn mở. Native iPhone upload/Jitsi/push acceptance còn mở; user chưa có Apple Developer/EAS. T09 concurrency/restart/late-cancellation và T22 vẫn mở; không đánh dấu checkpoint cuối.
+Tham chiếu: [plan](plan.md). Trạng thái checkpoint Android Emulator, 13/10/2026:
+
+| Yêu cầu | Có code | Test/build | Runtime trên emulator/backend |
+|---|---|---|---|
+| Android dev build + app shell | Có; AVD `Medium_Phone_API_37.0` (Google Play) và APK debug đã build/cài; app đã mở tới màn login | Build Android thành công; mobile typecheck/test pass | Màn login đã thấy. Chưa đăng nhập; Gateway/API hiện không chạy và không có root `.env` demo |
+| ≥5 resources + 20–30 API | 30 route templates có adapter/caller UI trong source; các nhóm Account, StudentVerification, Skill/Evidence, Class, Booking, Wallet/Ledger, Rating, Notification/Device | Contracts/adapters và workspace tests pass | **Chưa đạt evidence**: chưa có request log từ app đã đăng nhập, chưa xác nhận ≥5 resource có record persisted trong DB demo |
+| Booking/payment | Hold Pending, confirm tường minh, idempotency và reconcile network/session; mock callback HMAC harness trong `scripts/mock-topup-callback.mjs` | Booking/coordinator/top-up test pass trong full suite | Chưa chạy booking/ledger trên account demo; callback mock chưa gửi; chưa đối chiếu debit/refund thật |
+| Teaching | List → detail → PATCH form (mô tả/giờ/giá/số chỗ) → confirm cancel; server vẫn quyết định edit lock/ownership | Gateway edit contract test pass; typecheck pass | Chưa chạy với hai account/backend thật |
+| Upload/evidence | Android document picker → signed storage upload/submit; skill catalogue/evidence APIs | Gateway/storage unit tests pass | Chưa xác nhận object bytes đọc lại từ MinIO hoặc duyệt verifier rồi refresh trên app |
+| Remote push scenario | Expo sender, ticket/receipt worker, retry/lease, token invalidation, Android channel, account rebind/logout và tap routing đã có code; migration mới additive | 9 API push/ownership tests + 3 mobile push lifecycle tests; full tests pass | **Chưa đạt**: Firebase/EAS chưa đăng nhập/cấu hình; thiếu project ID + FCM v1 JSON; không nhận remote push |
+
+Môi trường: Postgres/RabbitMQ/MinIO/Jitsi containers đang chạy; AVD và Metro đã được khởi động trong lượt này, nhưng Gateway/API backend hiện dừng. Firebase CLI báo chưa đăng nhập, EAS CLI không có session; cần user hoàn tất OAuth trên máy để tạo/chọn Firebase/EAS projects và lấy config. Migration push chưa apply. Không reset database và không dùng credentials trong chat.
+
+Kiểm tra 13/10: Android debug build pass; full `pnpm build`, `pnpm typecheck`, workspace `pnpm test` pass (API 561, Mobile 196, Contracts 161, Gateway 27, Web 161); `pnpm test:arch` exit 0 (còn warning orphan có sẵn `apps/mobile/src/infrastructure/mock/hung-classes.ts`). `pnpm verify` nguyên trạng dừng ở ESLint do unused variable trong file untracked `.agents/skills/design-system/scripts/generate-tokens.cjs`; không sửa file đó. ESLint toàn repo khi bỏ qua `.agents/**` pass. `git diff --check` pass. Các lệnh này không chứng minh runtime nghiệp vụ.
+
+**Checkpoint chưa hoàn tất.** Còn: Firebase/EAS credentials và rebuild; khởi động Gateway/API với demo env; user/teacher/admin-verifier fixture riêng; apply migration additive; nghiệm thu DB/API/MinIO và push remote end-to-end; request evidence 20–30 routes; tối thiểu hai lần diễn tập. Không gắn nhãn pass cho các mục runtime cho tới khi có bằng chứng trực tiếp.
 
 ## Phase 0 — contract/risk
 
