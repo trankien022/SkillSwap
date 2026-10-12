@@ -1,14 +1,15 @@
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import type { NotificationItem } from '@skillswap/contracts';
-import { colors, radius, spacing, typography } from '@/design/tokens';
+import { colors, spacing, typography } from '@/design/tokens';
 import { NotificationGateway } from '@/infrastructure/http/notification-gateway';
 import { useSession } from '@/ui/session-context';
+import { AppButton, FeedbackBanner, ScreenScroll, SurfaceCard } from '@/ui/primitives';
 
 export default function NotificationsScreen() {
   const { t, gatewayClient } = useSession();
@@ -66,21 +67,19 @@ export default function NotificationsScreen() {
     catch { setError(t('Notifications.pushError')); }
     finally { setBusy(false); }
   };
-  return <ScrollView contentContainerStyle={styles.container}>
-    <View style={styles.card}>
+  return <ScreenScroll contentContainerStyle={styles.container}>
+    <SurfaceCard style={styles.card}>
       <Text style={styles.title}>{t('Notifications.title')}</Text>
       <Text style={styles.body}>{t('Notifications.unread', { count: unread })}</Text>
-      <Pressable style={styles.action} onPress={() => void (deviceId ? disablePush() : enablePush())} disabled={busy} accessibilityRole="button">
-        {busy ? <ActivityIndicator color={colors.campusEmerald} /> : <Text style={styles.actionText}>{deviceId ? t('Notifications.disablePush') : t('Notifications.enablePush')}</Text>}
-      </Pressable>
-      {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
+      <AppButton tone="secondary" onPress={() => void (deviceId ? disablePush() : enablePush())} busy={busy} label={deviceId ? t('Notifications.disablePush') : t('Notifications.enablePush')} />
+      {error && <FeedbackBanner tone="danger">{error}</FeedbackBanner>}
       {items.length === 0 && !busy ? <Text style={styles.body}>{t('Notifications.empty')}</Text> : items.map((item) => <View key={item.id} style={styles.item}>
         <Text style={styles.itemTitle}>{t(`Notifications.type_${item.type}`)}</Text>
         <Text style={styles.body}>{t(`Notifications.body_${item.type}`)}</Text>
         <Text style={styles.meta}>{new Date(item.createdAt).toLocaleString()}</Text>
       </View>)}
-      {cursor && <Pressable style={styles.action} onPress={() => void load(true)} disabled={busy} accessibilityRole="button"><Text style={styles.actionText}>{t('Notifications.loadMore')}</Text></Pressable>}
-    </View>
-  </ScrollView>;
+      {cursor && <AppButton tone="quiet" onPress={() => void load(true)} busy={busy} label={t('Notifications.loadMore')} />}
+    </SurfaceCard>
+  </ScreenScroll>;
 }
-const styles = StyleSheet.create({ container:{padding:spacing.lg,maxWidth:560,width:'100%',alignSelf:'center'},card:{backgroundColor:colors.surface,borderWidth:1,borderColor:colors.border,borderRadius:radius.card,padding:spacing.lg,gap:spacing.md},title:{color:colors.ink,fontSize:typography.heading.fontSize,fontWeight:'700'},body:{color:colors.inkSoft,fontSize:typography.body.fontSize},meta:{color:colors.inkMuted,fontSize:typography.caption.fontSize},item:{borderTopWidth:1,borderTopColor:colors.border,paddingTop:spacing.md,gap:spacing.xs},itemTitle:{color:colors.ink,fontWeight:'700'},action:{minHeight:44,justifyContent:'center',paddingHorizontal:spacing.md,borderWidth:1,borderColor:colors.border,borderRadius:radius.pill},actionText:{color:colors.campusEmerald,fontWeight:'700'},error:{color:colors.dangerInk} });
+const styles = StyleSheet.create({ container:{padding:spacing.lg,paddingBottom:spacing.xxxl,maxWidth:560,width:'100%',alignSelf:'center'},card:{gap:spacing.md},title:{color:colors.ink,fontSize:typography.heading.fontSize,fontWeight:'700'},body:{color:colors.inkSoft,fontSize:typography.body.fontSize},meta:{color:colors.inkMuted,fontSize:typography.caption.fontSize},item:{borderTopWidth:1,borderTopColor:colors.border,paddingTop:spacing.md,gap:spacing.xs},itemTitle:{color:colors.ink,fontWeight:'700'} });

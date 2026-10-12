@@ -1,11 +1,12 @@
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import type { ClassListItemView, SkillCatalogueItemView } from '@skillswap/contracts';
 import { ClassReadGateway } from '@/infrastructure/http/class-read-gateway';
 import { TeachingGateway } from '@/infrastructure/http/teaching-gateway';
 import { colors, radius, spacing, typography } from '@/design/tokens';
 import { useSession } from '@/ui/session-context';
+import { AppButton, FeedbackBanner, ScreenScroll, SurfaceCard } from '@/ui/primitives';
 
 export default function TeachingScreen() {
   const { t, gatewayClient } = useSession();
@@ -42,18 +43,18 @@ export default function TeachingScreen() {
   };
   const updatePrice = (item: ClassListItemView) => gatewayClient && run(() => new TeachingGateway(gatewayClient).update(item.id, { priceCredits: item.priceCredits + 1 }));
 
-  return <ScrollView contentContainerStyle={styles.container}>
-    <View style={styles.card}>
+  return <ScreenScroll contentContainerStyle={styles.container}>
+    <SurfaceCard style={styles.card}>
       <Text style={styles.title}>{t('Teaching.title')}</Text>
       <Text style={styles.subtitle}>{t('Teaching.createTitle')}</Text>
       {skills.map((skill) => <Pressable key={skill.id} style={[styles.option, skillId === skill.id && styles.selected]} onPress={() => setSkillId(skill.id)} accessibilityRole="radio" accessibilityState={{ checked: skillId === skill.id }}><Text style={styles.body}>{skill.category} · {skill.name}</Text></Pressable>)}
       <TextInput value={description} onChangeText={setDescription} placeholder={t('Teaching.description')} style={styles.input} accessibilityLabel={t('Teaching.description')} />
       <TextInput value={startsAt} onChangeText={setStartsAt} placeholder={t('Teaching.startsAt')} style={styles.input} accessibilityLabel={t('Teaching.startsAt')} />
       <View style={styles.row}>{[[duration,setDuration,t('Teaching.duration')],[price,setPrice,t('Teaching.price')],[capacity,setCapacity,t('Teaching.capacity')]].map(([value,setter,label]) => <TextInput key={label as string} value={value as string} onChangeText={setter as (v:string)=>void} keyboardType="number-pad" placeholder={label as string} style={[styles.input, styles.smallInput]} accessibilityLabel={label as string} />)}</View>
-      <Pressable disabled={busy || !skillId || !description.trim()} style={[styles.primary,(busy || !skillId || !description.trim())&&styles.disabled]} onPress={() => void create()} accessibilityRole="button">{busy?<ActivityIndicator color={colors.surface}/>:<Text style={styles.primaryText}>{t('Teaching.publish')}</Text>}</Pressable>
-      {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-    </View>
-    <View style={styles.card}>
+      <AppButton disabled={!skillId || !description.trim()} busy={busy} onPress={() => void create()} label={t('Teaching.publish')} />
+      {error && <FeedbackBanner tone="danger">{error}</FeedbackBanner>}
+    </SurfaceCard>
+    <SurfaceCard style={styles.card}>
       <Text style={styles.subtitle}>{t('Teaching.myClasses')}</Text>
       {items.length === 0 ? <Text style={styles.body}>{t('Teaching.empty')}</Text> : items.map((item) => <View key={item.id} style={styles.classItem}>
         <Text style={styles.body}>{item.description}</Text><Text style={styles.meta}>{item.state} · {new Date(item.startsAt).toLocaleString()}</Text>
@@ -64,11 +65,11 @@ export default function TeachingScreen() {
         </View>}
         {item.state === 'in_progress' && <Pressable style={styles.action} onPress={() => gatewayClient && void run(() => new TeachingGateway(gatewayClient).complete(item.id))} disabled={busy} accessibilityRole="button"><Text style={styles.actionText}>{t('Teaching.complete')}</Text></Pressable>}
       </View>)}
-    </View>
-  </ScrollView>;
+    </SurfaceCard>
+  </ScreenScroll>;
 }
 const styles = StyleSheet.create({
-  container:{padding:spacing.lg,gap:spacing.lg,maxWidth:600,width:'100%',alignSelf:'center'}, card:{backgroundColor:colors.surface,borderColor:colors.border,borderWidth:1,borderRadius:radius.card,padding:spacing.lg,gap:spacing.md},
+  container:{padding:spacing.lg,paddingBottom:spacing.xxxl,gap:spacing.lg,maxWidth:560,width:'100%',alignSelf:'center'}, card:{gap:spacing.md},
   title:{color:colors.ink,fontSize:typography.heading.fontSize,fontWeight:'700'}, subtitle:{color:colors.ink,fontSize:typography.body.fontSize,fontWeight:'700'}, body:{color:colors.inkSoft,fontSize:typography.body.fontSize}, meta:{color:colors.inkMuted,fontSize:typography.caption.fontSize},
-  option:{minHeight:44,justifyContent:'center',padding:spacing.sm,borderWidth:1,borderColor:colors.border,borderRadius:radius.control}, selected:{borderColor:colors.campusEmerald,backgroundColor:colors.successTint}, input:{minHeight:48,paddingHorizontal:spacing.md,borderWidth:1,borderColor:colors.border,borderRadius:radius.control,color:colors.ink}, smallInput:{flex:1,minWidth:70}, row:{flexDirection:'row',gap:spacing.xs,flexWrap:'wrap'}, primary:{minHeight:48,justifyContent:'center',alignItems:'center',backgroundColor:colors.campusEmerald,borderRadius:radius.pill}, primaryText:{color:colors.surface,fontWeight:'700'}, disabled:{opacity:.45}, error:{color:colors.dangerInk}, classItem:{gap:spacing.sm,borderTopWidth:1,borderTopColor:colors.border,paddingTop:spacing.md}, action:{minHeight:44,justifyContent:'center',paddingHorizontal:spacing.sm,borderWidth:1,borderColor:colors.border,borderRadius:radius.pill}, actionText:{color:colors.campusEmerald,fontWeight:'600'}
+  option:{minHeight:44,justifyContent:'center',padding:spacing.sm,borderWidth:1,borderColor:colors.border,borderRadius:radius.control}, selected:{borderColor:colors.campusEmerald,backgroundColor:colors.successTint}, input:{minHeight:52,paddingHorizontal:spacing.md,borderWidth:1,borderColor:colors.border,borderRadius:radius.control,color:colors.ink}, smallInput:{flex:1,minWidth:70}, row:{flexDirection:'row',gap:spacing.xs,flexWrap:'wrap'}, classItem:{gap:spacing.sm,borderTopWidth:1,borderTopColor:colors.border,paddingTop:spacing.md}, action:{minHeight:44,justifyContent:'center',paddingHorizontal:spacing.sm,borderWidth:1,borderColor:colors.border,borderRadius:radius.pill}, actionText:{color:colors.campusEmerald,fontWeight:'600'}
 });

@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
@@ -7,6 +7,7 @@ import { colors, radius, spacing, typography } from '@/design/tokens';
 import { StudentVerificationGateway } from '@/infrastructure/http/student-verification-gateway';
 import type { StudentVerificationView } from '@skillswap/contracts';
 import { useSession } from '@/ui/session-context';
+import { AppButton, FeedbackBanner, ScreenScroll, SurfaceCard } from '@/ui/primitives';
 
 export default function VerificationScreen() {
   const { t, gatewayClient, refreshMe } = useSession();
@@ -43,8 +44,8 @@ export default function VerificationScreen() {
   };
 
   const canSubmit = !busy && !!file && !!schoolName.trim() && !['pending', 'approved'].includes(verification?.status ?? '');
-  return <ScrollView contentContainerStyle={styles.container}>
-    <View style={styles.card}>
+  return <ScreenScroll contentContainerStyle={styles.container}>
+    <SurfaceCard style={styles.card}>
       <Text style={styles.title}>{t('Verification.title')}</Text>
       <Text style={styles.body}>{t('Verification.description')}</Text>
       {verification && <View style={styles.status}>
@@ -53,26 +54,19 @@ export default function VerificationScreen() {
       </View>}
       <TextInput value={schoolName} onChangeText={setSchoolName} placeholder={t('Verification.school')} style={styles.input} accessibilityLabel={t('Verification.school')} />
       <TextInput value={major} onChangeText={setMajor} placeholder={t('Verification.major')} style={styles.input} accessibilityLabel={t('Verification.major')} />
-      <Pressable style={styles.secondary} onPress={() => void pick()} accessibilityRole="button"><Text style={styles.secondaryText}>{file?.name ?? t('Verification.chooseFile')}</Text></Pressable>
-      {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-      <Pressable style={[styles.primary, !canSubmit && styles.disabled]} disabled={!canSubmit} onPress={() => void submit()} accessibilityRole="button">
-        {busy ? <ActivityIndicator color={colors.surface} /> : <Text style={styles.primaryText}>{t('Verification.submit')}</Text>}
-      </Pressable>
-    </View>
-  </ScrollView>;
+      <AppButton tone="quiet" onPress={() => void pick()} label={file?.name ?? t('Verification.chooseFile')} />
+      {!!error && <FeedbackBanner tone="danger">{error}</FeedbackBanner>}
+      <AppButton disabled={!canSubmit} busy={busy} onPress={() => void submit()} label={t('Verification.submit')} />
+    </SurfaceCard>
+  </ScreenScroll>;
 }
 
 const styles = StyleSheet.create({
-  container: { padding: spacing.lg, width: '100%', maxWidth: 520, alignSelf: 'center' },
-  card: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: radius.card, padding: spacing.lg, gap: spacing.md },
+  container: { padding: spacing.lg, paddingBottom: spacing.xxxl, width: '100%', maxWidth: 560, alignSelf: 'center' },
+  card: { gap: spacing.md },
   title: { color: colors.ink, fontSize: typography.heading.fontSize, fontWeight: '700' },
   body: { color: colors.inkSoft, fontSize: typography.body.fontSize },
   status: { backgroundColor: colors.mist, borderRadius: radius.control, padding: spacing.md, gap: spacing.xs },
-  input: { minHeight: 48, borderWidth: 1, borderColor: colors.border, borderRadius: radius.control, paddingHorizontal: spacing.md, color: colors.ink },
-  secondary: { minHeight: 48, justifyContent: 'center', paddingHorizontal: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: radius.control },
-  secondaryText: { color: colors.campusEmerald, fontSize: typography.body.fontSize },
-  primary: { minHeight: 48, borderRadius: radius.pill, backgroundColor: colors.campusEmerald, alignItems: 'center', justifyContent: 'center' },
-  primaryText: { color: colors.surface, fontWeight: '700', fontSize: typography.body.fontSize },
-  disabled: { opacity: 0.45 },
+  input: { minHeight: 52, borderWidth: 1, borderColor: colors.border, borderRadius: radius.control, paddingHorizontal: spacing.md, color: colors.ink },
   error: { color: colors.dangerInk, fontSize: typography.body.fontSize },
 });
