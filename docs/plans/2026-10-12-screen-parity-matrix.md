@@ -321,6 +321,40 @@ who pulls.
 
 ---
 
+## 9.1 Demo disclosure — what to say honestly
+
+These are the claims a reviewer or examiner can check, and the ones that must
+not be overstated. Each is verified against the code at `e74d746`
+(`pnpm verify` green).
+
+**True and demonstrable**
+
+| Claim | Evidence |
+|---|---|
+| Both clients are API-backed | web `lib/*/http-gateway.ts`, mobile `src/infrastructure/http/`; mock gateways are a mobile-only fallback |
+| Money is integer VND, 1 credit = 1,000 VND, 10% fee | `DEFAULT_FEE_BPS = 1000`, `VND_PER_CREDIT = 1000`; `computePlatformFee`/`computeNetCredits` |
+| Booking is hold-then-confirm | `POST /classes/:id/bookings` then `POST /classes/bookings/:bookingId/confirm` |
+| Outbox + idempotent consumers | `apps/api/src/shared/messaging`, `processed_events` |
+| Seven schemas, per-module credentials | ADR-014, `docker/postgres` init |
+
+**Must be stated as a limitation, not shown as working**
+
+| Limitation | Why it matters in the demo |
+|---|---|
+| Withdrawal has no endpoint | S11 renders an honest unavailable state; do not click it expecting a payout |
+| `BookClassUseCase` does not check verified-student eligibility | a non-verified account can still book if it has credits |
+| Class completion commits before wallet settlement, does not check expiry, no permanent class-lock column | the `complete` action returns before the release is guaranteed |
+| `averageRating`/`ratingsCount` are provisional | `mobile-classes.ts:176` marks them "rating table not yet implemented"; `/instructor` no longer shows them |
+| Mobile falls back to fixtures without `EXPO_PUBLIC_API_BASE_URL` | the demo **must** set it, or the mobile app silently shows mock data |
+| Gateway proxies HTTP/JSON, not RPC | do not describe the backend as microservices |
+| Generated diagram PNG/SVG for the corrected views are not re-rendered | re-run plantuml before the demo; sources are authoritative |
+
+**Cannot be honest if omitted:** demoing the mobile client without
+`EXPO_PUBLIC_API_BASE_URL` set shows fixtures that look like real data. Treat
+that as a misconfiguration to fix before recording, not a fallback to rely on.
+
+---
+
 ## 10. Definition of done for Phase 0
 
 - [x] Every screen mapped to a route in both clients
@@ -328,7 +362,7 @@ who pulls.
 - [x] Endpoint list verified against controllers, not docs
 - [x] Reusable contracts identified
 - [x] Defects recorded with severity and a decision needed
-- [ ] SRS screen inventory added (Phase 3C)
+- [x] SRS screen inventory added (Phase 3C) — SRS Appendix D, plus §2.3.1 User Stories
 
 ---
 
