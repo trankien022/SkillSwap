@@ -504,7 +504,7 @@
         "durationStandard": "Định dạng tiêu chuẩn sư phạm",
         "platform": {
           "name": "Phòng học trực tuyến mã hóa đầu cuối",
-          "caption": "Mã hóa đầu cuối • Cấp phát mã phòng tự động theo từng lớp",
+          "caption": "Mã hóa đầu cuối • Link phòng được cấp theo từng lượt đặt",
           "onlineOnly": "Chỉ trực tuyến"
         }
       },
@@ -546,13 +546,21 @@
       "actions": {
         "warning": "Cam kết sư phạm: Sau khi có học viên đầu tiên đăng ký, lớp sẽ tự động khóa toàn bộ thao tác sửa đổi giờ học và nội dung.",
         "publish": "Công bố lớp ngay",
-        "saveDraft": "Lưu bản nháp",
         "cancel": "Hủy"
       },
       "toast": {
         "title": "Xuất bản lớp học thành công",
         "body": "Lớp của bạn đã sẵn sàng trên Marketplace. Hệ thống sẵn sàng kích hoạt khóa nội dung khi nhận lượt book đầu tiên."
       },
+      "loading": "Đang tải kỹ năng đã xác thực…",
+      "loadingBody": "Đang đọc danh sách kỹ năng đã được duyệt từ máy chủ.",
+      "loadError": "Không tải được kỹ năng đã xác thực",
+      "signedOutTitle": "Đăng nhập để công bố lớp học",
+      "signedOutBody": "Cần tài khoản giảng viên đã xác thực để công bố lớp. Vui lòng đăng nhập để tiếp tục.",
+      "signIn": "Đăng nhập",
+      "noSkillsTitle": "Chưa có kỹ năng nào được xác thực",
+      "noSkillsBody": "Theo quy chuẩn kiểm định, bạn chỉ có thể mở lớp cho kỹ năng đã qua hội đồng chuyên môn. Hãy gửi kỹ năng để xác thực trước.",
+      "goToVerification": "Đi tới xác thực kỹ năng",
       "stepDuration": "{count} phút",
       "monthNames": [
         "Tháng 1",
@@ -726,21 +734,17 @@
     "banner": {
       "badge": "Buổi học trực tuyến hoàn thành",
       "title": "Buổi học đã hoàn thành thành công!",
-      "subtitle": "Phiên học trực tuyến 60 phút qua Jitsi Meet đã được ghi nhận an toàn.",
+      "subtitle": "Phiên học trực tuyến đã kết thúc. Hãy đánh giá để hoàn tất bước giải ngân ký quỹ.",
       "bookingCode": "MÃ BUỔI HỌC: #{code}",
-      "duration": "Thời lượng: 60 phút (Trọn vẹn)"
+      "duration": "Thời lượng: {minutes} phút"
     },
     "sessionInfo": {
       "title": "Thông tin buổi học",
       "tag": "1-on-1 Mentoring Session",
-      "classTitle": "Luyện Speaking IELTS 6.5+ Mock Interview 1-1",
-      "tutor": "Lan Anh",
-      "university": "Đại học Đối tác",
-      "verifiedBadge": "Thẻ SV Đã xác thực • Chuyên môn kiểm định",
-      "topicLabel": "Chủ đề thảo luận",
-      "topicValue": "Part 2 & 3 Education",
-      "jitsiLabel": "Đường truyền Jitsi",
-      "jitsiValue": "1080p Rõ nét"
+      "peerStudent": "Sinh viên cùng học",
+      "startsAtLabel": "Thời gian bắt đầu",
+      "durationLabel": "Thời lượng",
+      "durationValue": "{minutes} phút"
     },
     "escrow": {
       "title": "Thanh toán & Giữ cọc Escrow",
@@ -751,16 +755,11 @@
       "tutorShare": "Ví giảng viên (90%)",
       "platformShare": "Phí duy trì hệ thống (10%)",
       "availableBalance": "Số dư khả dụng hiện tại:",
-      "viewWallet": "Xem ví →"
+      "viewWallet": "Xem ví →",
+      "vndNote": "≈ {vnd} VNĐ theo tỷ giá hệ thống (1 Credit = 1.000 VNĐ)"
     },
     "materials": {
-      "title": "Tài liệu & Ghi chú buổi học",
-      "count": "2 tệp",
-      "desc": "Tải bản nhận xét chi tiết và phiếu tổng kết của buổi học.",
-      "file1Name": "Speaking_Critique_SS8821.pdf",
-      "file1Meta": "2.4 MB • Nhận xét ngữ pháp & từ vựng",
-      "file2Name": "Audio_Sample_Intonation.mp3",
-      "file2Meta": "5.1 MB • Ghi âm mẫu ngữ điệu Part 3"
+      "title": "Tài liệu & Ghi chú buổi học"
     },
     "form": {
       "badge": "Đánh giá người học",
@@ -789,18 +788,32 @@
       "chip3": "Tài liệu sát đề thi quý mới nhất",
       "chip4": "Tạo cảm giác tự tin, không bị áp lực",
       "commentPlaceholder": "Chia sẻ cảm nhận của bạn về buổi học...",
-      "defaultComment": "Giảng viên hướng dẫn rất tận tâm, chỉnh ngay các lỗi phát âm và giúp mình triển khai ý tưởng rất mạch lạc. Rất khuyến khích các bạn sinh viên cùng học!",
-      "crossMatchTitle": "Cơ hội Đổi chéo kỹ năng (Skill Swap)",
-      "crossMatchSub": "Gợi ý tương thích",
-      "crossMatchDesc": "Giảng viên đang muốn học thêm môn khác. Bạn có muốn đổi kỹ năng 1-1 cho các buổi tiếp theo?",
-      "crossMatchOpt1": "Đề xuất đổi kỹ năng chéo 1-1",
-      "crossMatchOpt2": "Lưu vào Danh bạ cố vấn",
       "btnBack": "Quay lại Lớp của tôi",
       "btnSubmit": "Gửi đánh giá & Hoàn tất",
       "btnSubmitting": "Đang đồng bộ Escrow...",
       "btnSuccess": "Đã gửi thành công!",
       "toastSuccessTitle": "Đánh giá đã được ghi nhận vào sổ cái!",
-      "toastSuccessBody": "Cảm ơn bạn. Hồ sơ tín nhiệm của giảng viên đã được cập nhật. Đang chuyển hướng về trang lớp học..."
+      "toastSuccessBody": "Cảm ơn bạn. Hồ sơ tín nhiệm của giảng viên đã được cập nhật. Đang chuyển hướng về trang lớp học...",
+      "criteriaNote": "Bốn tiêu chí này là phần tự đánh giá riêng của bạn. Chỉ điểm tổng quan ở trên được chia sẻ cho giảng viên.",
+      "commentRequired": "Vui lòng viết nhận xét trước khi gửi.",
+      "errorTitle": "Không gửi được đánh giá",
+      "errorAlreadyRated": "Bạn đã đánh giá lớp học này rồi.",
+      "errorNotEligible": "Lớp học này chưa thể đánh giá."
+    },
+    "states": {
+      "loading": "Đang tải thông tin buổi học…",
+      "loadingBody": "Đang đọc dữ liệu đặt lớp từ máy chủ.",
+      "signedOutTitle": "Đăng nhập để đánh giá buổi học",
+      "signedOutBody": "Thông tin buổi học và đánh giá chỉ hiển thị cho học viên đã đặt lớp.",
+      "notFoundTitle": "Không tìm thấy buổi học",
+      "notFoundBody": "Không tìm thấy lượt đặt lớp này trong tài khoản của bạn. Có thể nó thuộc về học viên khác.",
+      "notEligibleTitle": "Chưa thể đánh giá",
+      "notEligibleBody": "Chỉ có thể đánh giá sau khi buổi học được đánh dấu hoàn thành. Nếu lớp đã kết thúc, có thể hệ thống đang hoàn tất bước giải ngân ký quỹ.",
+      "ratedTitle": "Bạn đã đánh giá buổi học này",
+      "ratedBody": "Mỗi lượt đặt lớp chỉ được đánh giá một lần. Đánh giá của bạn đã được ghi nhận."
+    },
+    "unavailable": {
+      "materials": "Tài liệu và ghi chú của buổi học chưa khả dụng. Hiện hệ thống chưa có tính năng chia sẻ tài liệu."
     }
   },
   "LiveClassroom": {

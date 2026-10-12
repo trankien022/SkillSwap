@@ -504,7 +504,7 @@
         "durationStandard": "Standard academic format",
         "platform": {
           "name": "End-to-end encrypted online room",
-          "caption": "End-to-end encryption • auto-minted per-class room code",
+          "caption": "End-to-end encryption • room link is issued per booking",
           "onlineOnly": "Online only"
         }
       },
@@ -546,13 +546,21 @@
       "actions": {
         "warning": "Teaching commitment: once the first learner registers, schedule and content edits lock automatically.",
         "publish": "Publish class now",
-        "saveDraft": "Save draft",
         "cancel": "Cancel"
       },
       "toast": {
         "title": "Class published",
         "body": "Your class is live on the marketplace. The platform stands ready to lock edits as soon as the first booking arrives."
       },
+      "loading": "Loading your verified skills…",
+      "loadingBody": "Reading your approved skills from the server.",
+      "loadError": "Could not load your verified skills",
+      "signedOutTitle": "Sign in to publish a class",
+      "signedOutBody": "Publishing requires a verified teacher account. Sign in to continue.",
+      "signIn": "Sign in",
+      "noSkillsTitle": "No verified skill yet",
+      "noSkillsBody": "Per the verification standard, you can only open a class for a skill that has passed the academic review board. Submit a skill for verification first.",
+      "goToVerification": "Go to skill verification",
       "stepDuration": "{count} min",
       "monthNames": [
         "January",
@@ -726,21 +734,17 @@
     "banner": {
       "badge": "Online Session Completed",
       "title": "Session Completed Successfully!",
-      "subtitle": "The 60-minute virtual session via Jitsi Meet has been recorded safely.",
+      "subtitle": "Your virtual session has finished. Review it to close out the escrow settlement.",
       "bookingCode": "BOOKING CODE: #{code}",
-      "duration": "Duration: 60 minutes (Complete)"
+      "duration": "Duration: {minutes} minutes"
     },
     "sessionInfo": {
       "title": "Session Overview",
       "tag": "1-on-1 Mentoring Session",
-      "classTitle": "IELTS Speaking 6.5+ Mock Interview 1-1",
-      "tutor": "Lan Anh",
-      "university": "Partner University",
-      "verifiedBadge": "Verified Student Card • Subject Certified",
-      "topicLabel": "Discussion Topic",
-      "topicValue": "Part 2 & 3 Education",
-      "jitsiLabel": "Jitsi Connection",
-      "jitsiValue": "1080p Clear Video"
+      "peerStudent": "Peer student",
+      "startsAtLabel": "Scheduled start",
+      "durationLabel": "Duration",
+      "durationValue": "{minutes} minutes"
     },
     "escrow": {
       "title": "Escrow Payout Settlement",
@@ -751,16 +755,11 @@
       "tutorShare": "Instructor Wallet (90%)",
       "platformShare": "Platform Operations (10%)",
       "availableBalance": "Current Available Balance:",
-      "viewWallet": "View Wallet →"
+      "viewWallet": "View Wallet →",
+      "vndNote": "≈ {vnd} VNĐ at the platform rate (1 Credit = 1,000 VNĐ)"
     },
     "materials": {
-      "title": "Session Files & Notes",
-      "count": "2 files",
-      "desc": "Download critique notes and audio summaries from the session.",
-      "file1Name": "Speaking_Critique_SS8821.pdf",
-      "file1Meta": "2.4 MB • Grammar & vocabulary review",
-      "file2Name": "Audio_Sample_Intonation.mp3",
-      "file2Meta": "5.1 MB • Sample intonation audio Part 3"
+      "title": "Session Files & Notes"
     },
     "form": {
       "badge": "Learner Review",
@@ -789,18 +788,32 @@
       "chip3": "Exam-relevant practice questions",
       "chip4": "Comfortable, encouraging atmosphere",
       "commentPlaceholder": "Share your experience with the session...",
-      "defaultComment": "The mentor was very attentive, correcting pronunciation and helping structure answers clearly. Highly recommend!",
-      "crossMatchTitle": "Skill Swap Cross-Matching Opportunity",
-      "crossMatchSub": "Compatibility Suggestion",
-      "crossMatchDesc": "The mentor wants to learn other subjects. Propose a 1-1 skill swap for upcoming sessions?",
-      "crossMatchOpt1": "Propose 1-1 peer skill swap",
-      "crossMatchOpt2": "Save to Mentoring Directory",
       "btnBack": "Back to My Bookings",
       "btnSubmit": "Submit Review & Finalize",
       "btnSubmitting": "Synchronizing Escrow...",
       "btnSuccess": "Submitted Successfully!",
       "toastSuccessTitle": "Review recorded in system ledger!",
-      "toastSuccessBody": "Thank you! The instructor trust score has been updated. Redirecting to your bookings..."
+      "toastSuccessBody": "Thank you! The instructor trust score has been updated. Redirecting to your bookings...",
+      "criteriaNote": "These four pillars are your private self-assessment. Only the overall score above is shared with the instructor.",
+      "commentRequired": "Please write a review before submitting.",
+      "errorTitle": "Could not submit your review",
+      "errorAlreadyRated": "You have already reviewed this class.",
+      "errorNotEligible": "This class is not open for review yet."
+    },
+    "states": {
+      "loading": "Loading session details…",
+      "loadingBody": "Reading your booking from the server.",
+      "signedOutTitle": "Sign in to review this session",
+      "signedOutBody": "Session details and reviews are only shown to the learner who booked the class.",
+      "notFoundTitle": "Session not found",
+      "notFoundBody": "We could not find this booking in your account. It may belong to a different learner.",
+      "notEligibleTitle": "Review not available yet",
+      "notEligibleBody": "A session can be reviewed once it is marked complete. If the class has already finished, it may still be completing its escrow settlement.",
+      "ratedTitle": "You have reviewed this session",
+      "ratedBody": "Each booking can be reviewed once. Your review is already recorded."
+    },
+    "unavailable": {
+      "materials": "Session files and notes are not available yet. There is no shared-materials feature in the system at this time."
     }
   },
   "LiveClassroom": {
