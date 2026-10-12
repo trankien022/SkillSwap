@@ -8,7 +8,7 @@ Xây dựng app Expo/React Native tại `apps/mobile`, dùng backend hiện có 
 
 Giả định resources là đối tượng nghiệp vụ có dữ liệu/API/màn hình; API được đếm theo cặp HTTP method + route template. Đây là cách diễn giải rubric được cung cấp, chưa phải xác nhận của giảng viên. Không coi 5 resources đồng nghĩa 5 bộ CRUD: booking và ledger phải giữ state machine/immutability.
 
-iPhone (iOS) là nền tảng nghiệm thu ưu tiên hàng đầu; duy trì khả năng chạy và kiểm thử trên Android, chưa bao gồm phát hành store. Người dùng chưa có Apple Developer/EAS; push thật và video trên thiết bị vẫn chưa được nghiệm thu. Ước lượng 4–6 tuần ban đầu không phải lịch thực tế đã xác nhận.
+**Checkpoint 13/10/2026 chốt Android Emulator trên Mac làm nền tảng demo.** AVD `Medium_Phone_API_37.0` dùng Google Play services đã có trên máy; Android Studio và SDK cũng đã cài. Cần nghiệm thu bằng development build, Gateway thật và FCM v1; chưa có bằng chứng hiện tại cho đăng nhập trên AVD hoặc remote push. iOS và phát hành store nằm ngoài checkpoint này. Ước lượng checkpoint 8–14 giờ phụ thuộc build, credentials và dữ liệu demo; đây là ngân sách, không phải cam kết hoàn tất.
 
 ## 2. Căn cứ hiện tại
 
@@ -20,6 +20,8 @@ iPhone (iOS) là nền tảng nghiệm thu ưu tiên hàng đầu; duy trì kh�
 - Jitsi có quyết định self-hosted JWT (ADR-020); endpoint room access tồn tại không chứng minh cuộc gọi trên điện thoại hoạt động. Cần spike mạng/TLS/mic/camera sớm.
 - Inbox bền vững và APIs đăng ký/hủy thiết bị đã có; một số sự kiện xác minh/booking/wallet được ghi vào inbox. Push dispatcher gửi token tới Expo, receipt retry/invalidation và class-start reminder chưa được triển khai; không tính phần này là nghiệm thu push.
 - Role là `user | verifier | admin` (ADR-030). Cùng một `user` học và dạy; khả năng dạy phụ thuộc xác minh và approved skills. Không tạo role teacher/learner.
+
+Phạm vi checkpoint này thu hẹp nghiệm thu còn ba luồng nghiệp vụ chạy được, ≥5 resources có dữ liệu lưu thật, 20–30 route có request evidence và một scenario remote push booking cancellation. Các số lượng source-level không được xem là runtime acceptance. Payment dùng mock provider theo ADR-017; Android upload cần xác minh bytes đọc lại được từ MinIO. Reminder 30 phút, Jitsi end-to-end, rating readback đầy đủ và iOS acceptance tiếp tục ở backlog.
 
 Các nhận định trên là kiểm tra source, chưa chạy backend/devices hoặc `pnpm verify` trong bước lập plan.
 
@@ -142,7 +144,7 @@ Ví dụ đối soát: nạp 100.000 VND → 100 credit; lớp 100 credit → de
 
 ## 7. Push notification
 
-Chọn Expo Notifications + Expo Push Service để dùng cùng stack hiện có. Development build là yêu cầu cho remote push; nghiệm thu ưu tiên hàng đầu trên iPhone (iOS), đồng thời duy trì trên Android. FCM/APNs credentials cần sẵn; nếu chưa có credentials hoặc thiết bị thật, ghi nhận là incomplete ngoại vi, không thay bằng mock-only. Căn cứ: [Expo setup](https://docs.expo.dev/push-notifications/push-notifications-setup/) và [Expo notification concepts](https://docs.expo.dev/push-notifications/what-you-need-to-know/).
+Chọn Expo Notifications + Expo Push Service để dùng cùng stack hiện có. Development build và FCM v1 credentials là yêu cầu cho remote push. Nền tảng demo là Android Emulator có Google Play services; cấu hình FCM gắn package `com.skillswap.app` và Expo project ID đã được xác lập, không đặt service-account secret trong repo. Cần xác nhận push trên AVD bằng banner và deep link; ticket/receipt của Expo chỉ là bằng chứng provider, không chứng minh người dùng đã nhận. Nếu build hoặc credentials chưa cấu hình được, scenario push được ghi là chưa đạt. Căn cứ: [Expo setup](https://docs.expo.dev/push-notifications/push-notifications-setup/) và [Expo FCM credentials](https://docs.expo.dev/push-notifications/fcm-credentials/).
 
 - Xin permission có ngữ cảnh; từ chối vẫn dùng app và inbox được. Register token theo account + installation, token rotation/upsert; logout hủy association để máy chung không nhận thông báo của user cũ.
 - Nghiệp vụ tạo inbox record trước dispatch; source transaction + outbox/durable handoff, consumer dedup theo event/user; reminder dedup class/user/time offset. Offset đã chốt chính xác 30 phút theo ADR-031.
@@ -189,4 +191,4 @@ Evidence cuối: APK/install link, commit SHAs, API matrix request/response th�
 
 ## 10. Các thông tin còn cần chốt khi bắt đầu build
 
-Deadline/team; Android hay cả iOS; định nghĩa CRUD/resources của giảng viên; có bắt buộc chat/withdrawal/admin mobile không; real payment hay mock chấp nhận; domain staging/Jitsi, push credentials và nơi lưu upload. Plan dùng các giả định ở §1 để có thể review ngay, chưa phụ thuộc trả lời để hoàn thành bước lập kế hoạch.
+Các đầu vào còn phụ thuộc môi trường cho checkpoint 13/10: Expo project ID, Firebase FCM v1 service-account credentials, database demo với learner/teacher/admin-verifier đủ quyền, lớp bắt đầu tối thiểu 24 giờ sau, mock callback harness và kết nối MinIO. Không cần iOS signing, payment gateway thật, chat, withdrawal hay admin mobile dashboard cho checkpoint này.
