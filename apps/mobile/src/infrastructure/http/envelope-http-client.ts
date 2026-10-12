@@ -14,6 +14,7 @@ import { API_BASE_URL } from './api-config';
 export interface HttpRequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
+  signal?: AbortSignal;
   /** Injected so specs can substitute a fake fetch; defaults to the global fetch. */
   fetchImpl?: typeof fetch;
   headers?: Record<string, string>;
@@ -30,6 +31,7 @@ export async function requestJson<T>(path: string, options: HttpRequestOptions =
   }
   const res = await doFetch(`${base}/api${path}`, {
     method: options.method ?? 'GET',
+    signal: options.signal,
     headers: {
       'content-type': 'application/json',
       ...(options.headers ?? {}),
@@ -37,7 +39,13 @@ export async function requestJson<T>(path: string, options: HttpRequestOptions =
     ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) }),
   });
 
-  return unwrapEnvelope<T>(res);
+  if (res.status === 204) return undefined as T;
+  try {
+    return await unwrapEnvelope<T>(res);
+  } catch (error) {
+    if (error instanceof Error) Object.assign(error, { status: res.status });
+    throw error;
+  }
 }
 
 export { ApiResponseError };
