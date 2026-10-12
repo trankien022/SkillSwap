@@ -291,7 +291,7 @@ describe('SkillEvidenceGateway', () => {
       mockGatewayFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => sampleProfileSkills,
+        json: async () => ({ items: sampleProfileSkills, page: null }),
       });
 
       const result = await gateway.getMyProfileSkills();
@@ -304,7 +304,7 @@ describe('SkillEvidenceGateway', () => {
       expect(result).toEqual(sampleProfileSkills);
     });
 
-    it('rejects with ZodError when response is not an array', async () => {
+    it('rejects with ZodError when response is not a valid profile collection', async () => {
       mockGatewayFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -416,7 +416,7 @@ describe('SkillEvidenceGateway', () => {
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
-          json: async () => sampleProfileSkills,
+          json: async () => ({ items: sampleProfileSkills, page: null }),
         });
 
       const result = await gateway.getMyProfileSkills();

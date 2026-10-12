@@ -1,5 +1,5 @@
 import {
-  profileSkillSchema,
+  profileSkillListSchema,
   skillEvidenceHistorySchema,
   skillEvidenceViewSchema,
   submitSkillEvidenceSchema,
@@ -52,7 +52,7 @@ export class SkillEvidenceGateway {
    * Reads the caller's own profile skills and approved levels (GET /profile-skills/me).
    *
    * Never loads another user's profile.
-   * Validates server response with profileSkillSchema.array().
+   * Validates the backend collection contract and returns its items.
    */
   async getMyProfileSkills(): Promise<ProfileSkillView[]> {
     const response = await this.gatewayClient.authenticatedRequest<unknown>(
@@ -62,7 +62,7 @@ export class SkillEvidenceGateway {
       },
     );
 
-    return profileSkillSchema.array().parse(response);
+    return profileSkillListSchema.parse(response).items;
   }
 
   /**
