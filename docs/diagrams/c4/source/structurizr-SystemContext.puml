@@ -47,5 +47,5 @@ Rel(User, Onlineclassroom, "Attends or teaches a booked lesson")
 Rel(SkillSwap, Paymentgateway, "Initiates top-ups and payouts; receives signed payment callbacks")
 
 SHOW_LEGEND()
-footer Current backend capabilities. Web/mobile booking is demonstrated; the payment provider is represented as an external dependency.\nBackend currently uses a mock PaymentGateway adapter; a real provider is not selected.
+footer Current backend capabilities. Web and mobile booking screens post to the real hold and confirm endpoints; the payment provider is still represented as an external dependency.\nBackend currently uses a mock PaymentGateway adapter; a real provider is not selected.
 @enduml

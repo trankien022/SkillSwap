@@ -1,5 +1,5 @@
 @startuml
-title Preview booking on web and mobile | FR-007 | Demonstration only
+title Book and pay from the web or mobile client | FR-007, FR-009 | Current implementation
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
 skinparam defaultFontName Arial
@@ -13,17 +13,28 @@ skinparam stateBackgroundColor #F1F5F9
 skinparam stateBorderColor #475569
 actor Learner as L
 participant "Web or mobile booking screen" as UI
-participant "Local demonstration data" as D
-L -> UI: Open a demonstration class
-UI -> D: Load the example class
-D --> UI: Class details
+participant "Gateway" as G
+participant "Live Class" as LC
+participant "Wallet Ledger" as WL
+L -> UI: Open a published class
+UI -> G: GET /api/classes/:id
+G -> LC: Read the class and its free seats
+LC --> G: Class detail
+G --> UI: Class detail
 L -> UI: Choose Book class
-UI -> D: Check demonstration booking rules
+UI -> G: POST /api/classes/:id/bookings
+G -> LC: Hold a seat (row-locked, idempotent by key)
 alt Booking refused
- D --> UI: Reason the demonstration booking is refused
-else Booking accepted
- D --> UI: Local booking awaiting confirmation
+ LC --> G: Reason (insufficient balance, full, too late, duplicate)
+ G --> UI: Reason
+ UI --> L: Show the reason; nothing was booked
+else Booking held
+ LC --> G: Booking id + price, status Pending
+ G --> UI: Booking id + price
+ UI -> G: POST /api/classes/bookings/:bookingId/confirm
+ G -> LC: Commit the booking and emit booking.confirmed
+ LC -> WL: Settle the escrow (asynchronous, idempotent consumer)
+ UI --> L: Confirmation; the seat is really reserved
 end
-UI --> L: Display the booking result
-note over UI,D: This screen does not reserve a real seat, take payment,\nsend a notification or enter a live classroom.
+note over UI,WL: Both clients post to the real hold and confirm endpoints.\nConfirmation is committed before wallet settlement, so settlement\nis asynchronous and the client must not assume it has happened.\nMock gateways remain only as an unconfigured-build fallback on mobile.
 @enduml
