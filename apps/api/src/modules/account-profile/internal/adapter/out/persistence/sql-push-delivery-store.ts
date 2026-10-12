@@ -21,9 +21,10 @@ export class SqlPushDeliveryStore implements PushDeliveryStorePort {
     await this.registry.ready;
     await this.registry.get(this.moduleName).query(
       `UPDATE ${this.deliveries} p SET "status" = 'failed', "lease_expires_at" = NULL,
-        "last_error" = 'Device subscription is inactive', "updated_at" = now()
+        "last_error" = 'Device subscription is inactive or rebound', "updated_at" = now()
        WHERE p."status" IN ('pending','sending') AND EXISTS (
-         SELECT 1 FROM ${this.devices} d WHERE d."id" = p."device_id" AND d."is_active" = false
+         SELECT 1 FROM ${this.devices} d JOIN ${this.inbox} n ON n."id" = p."notification_id"
+         WHERE d."id" = p."device_id" AND (d."is_active" = false OR d."account_id" <> n."account_id")
        )`,
     );
     await this.registry.get(this.moduleName).query(
@@ -48,7 +49,7 @@ export class SqlPushDeliveryStore implements PushDeliveryStorePort {
       SELECT c."id" AS "delivery_id", c."notification_id", c."device_id", d."token", d."locale",
         n."type", n."title", n."body", n."target_type", n."target_id", c."attempts"
       FROM claimed c JOIN ${this.devices} d ON d."id" = c."device_id" AND d."is_active" = true
-      JOIN ${this.inbox} n ON n."id" = c."notification_id"`, [limit, leaseSeconds],
+      JOIN ${this.inbox} n ON n."id" = c."notification_id" AND n."account_id" = d."account_id"`, [limit, leaseSeconds],
     ));
     return rows.map((row) => ({
       deliveryId: row.delivery_id, notificationId: row.notification_id, deviceId: row.device_id,

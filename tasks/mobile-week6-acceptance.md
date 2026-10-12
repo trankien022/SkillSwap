@@ -25,3 +25,9 @@ Ba luồng đi từ UI tới backend; >=5 resource persisted; 20–30 route temp
 
 1. Chờ root navigation và route đăng nhập/index hoàn tất trước khi tiêu thụ đích thông báo; giữ pending target trong lúc khôi phục session để Redirect không ghi đè lịch.
 2. Thêm regression test navigation readiness, chạy focused/full gate và build lại APK có JS; nghiệm thu tap khi tiến trình không tồn tại trước tap, ghi video và ledger/refund.
+
+## Fix sau probe account rebind
+
+1. Database test riêng tái hiện pending delivery của account cũ trên device đã rebind account mới: store hiện claim thành sending. Không gọi provider trong probe.
+2. Trong account-profile, fail pending/sending jobs khi device inactive hoặc account không khớp inbox; claim SELECT cũng fence account hiện tại. Không sửa schema, không mở API.
+3. Regression SQL store tests + probe DB trước/sau; full verify, rebuild/restart API và cập nhật Graphify. Push đã được provider chấp nhận trước logout không thể thu hồi; payload không cấp quyền và tap luôn đọc bằng session hiện tại.
