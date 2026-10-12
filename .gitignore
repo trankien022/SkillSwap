@@ -18,3 +18,11 @@ apps/mobile/android/
 apps/web/dev.err
 # Source assets (work-in-progress logos) — only the curated copy under apps/web/public/ is committed
 logo/
+
+# Local agent skill installations and Codex configuration
+/.agents/skills/
+/.codex/
+
+# Generated Graphify indexes, reports, and caches
+/graphify-out/
+/apps/api/graphify-out/
