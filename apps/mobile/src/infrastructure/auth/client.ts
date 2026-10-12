@@ -14,7 +14,10 @@ export class AuthClient {
   constructor(
     private base: string,
     private storage: SessionStorage,
-    private transport: typeof fetch = fetch,
+    // Bind to the global: a bare `fetch` reference called as a method (or as a
+    // bare local) has a receiver of `this`/`undefined`, which the browser rejects
+    // with "Illegal invocation".
+    private transport: typeof fetch = globalThis.fetch.bind(globalThis),
   ) {}
   async restore() {
     const saved = await this.storage.read();

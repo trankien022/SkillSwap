@@ -123,7 +123,10 @@ export class GatewayClient implements AuthApiPort {
       tokenProvider?: SessionTokenProvider;
     },
   ) {
-    this.fetchFn = options?.fetchFn ?? globalThis.fetch;
+    // Bind to the global object: the browser's `fetch` throws
+    // "Illegal invocation" when called with any other receiver, and storing the
+    // bare reference makes the call site's receiver `this` (the client).
+    this.fetchFn = options?.fetchFn ?? globalThis.fetch.bind(globalThis);
     this.tokenProvider = options?.tokenProvider;
   }
 
