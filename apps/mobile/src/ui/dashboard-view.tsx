@@ -100,7 +100,7 @@ export function DashboardView() {
       {errorMessage ? (
         <View style={styles.errorBox}>
           <Text style={styles.errorText}>{errorMessage}</Text>
-          <Pressable style={styles.retryAction} onPress={() => void fetchDashboardData()} accessibilityRole="button" accessibilityLabel={t('Common.retry')}>
+          <Pressable style={styles.retryAction} onPress={() => { setSummaryReloadTrigger((previous) => previous + 1); void fetchDashboardData(); }} accessibilityRole="button" accessibilityLabel={t('Common.retry')}>
             <Text style={styles.retryActionText}>{t('Common.retry')}</Text>
           </Pressable>
         </View>
