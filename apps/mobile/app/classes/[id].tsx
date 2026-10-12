@@ -1,35 +1,73 @@
-import { useLocalSearchParams } from 'expo-router';
-import { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
-import { BookClassService } from '@/application/book-class-service';
-import { bookingScreenCopy } from '@/i18n/copy';
-import { defaultLocale } from '@/i18n';
-import { createBookingGateway } from '@/infrastructure/container';
-import { BookingScreen } from '@/ui/booking-screen';
+import React from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { Redirect, useLocalSearchParams } from 'expo-router';
 import { colors, spacing, typography } from '@/design/tokens';
+import { BootErrorView } from '@/ui/boot-error-view';
+import { ClassDetailView } from '@/ui/class-detail-view';
+import { ConfigErrorView } from '@/ui/config-error-view';
+import { useSession } from '@/ui/session-context';
 
-/** Class detail + booking route (FR-007; mock by default, HTTP when configured). */
+/**
+ * Real authenticated class detail + booking route (FR-007, FR-009).
+ * Preserves all infrastructure and session guards while replacing mock booking with real UI.
+ */
 export default function ClassDetailScreen() {
   const params = useLocalSearchParams<{ id: string }>();
-  const copy = useMemo(() => bookingScreenCopy(defaultLocale), []);
-  const service = useMemo(() => new BookClassService(createBookingGateway()), []);
+  const classId =
+    typeof params.id === 'string'
+      ? params.id
+      : Array.isArray(params.id)
+        ? params.id[0]
+        : '';
 
-  return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>{copy.title}</Text>
-      <BookingScreen classId={params.id} service={service} copy={copy} />
-    </ScrollView>
-  );
+  const {
+    isAuthenticated,
+    isLoading,
+    configError,
+    bootError,
+    retryBoot,
+    t,
+  } = useSession();
+
+  // 1. Config error guard
+  if (configError) {
+    return <ConfigErrorView error={configError} />;
+  }
+
+  // 2. Boot error guard
+  if (bootError) {
+    return <BootErrorView error={bootError} onRetry={retryBoot} />;
+  }
+
+  // 3. Loading state guard
+  if (isLoading) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color={colors.campusEmerald} />
+        <Text style={styles.loadingText}>{t('Common.loading')}</Text>
+      </View>
+    );
+  }
+
+  // 4. Authenticated session guard (must operate first before displaying class)
+  if (!isAuthenticated) {
+    return <Redirect href="/(auth)/login" />;
+  }
+
+  return <ClassDetailView classId={classId} />;
 }
 
 const styles = StyleSheet.create({
-  container: {
-    gap: spacing.lg,
-    padding: spacing.lg,
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.mist,
+    padding: spacing.xl,
+    gap: spacing.md,
   },
-  title: {
-    color: colors.ink,
-    fontSize: typography.title.fontSize,
-    fontWeight: typography.title.fontWeight,
+  loadingText: {
+    fontSize: typography.body.fontSize,
+    color: colors.inkMuted,
   },
 });

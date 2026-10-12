@@ -1,0 +1,8 @@
+# T11/T12 mobile HTTP adapters — 12 October 2026
+
+- Student adapter requests protected upload target, PUTs raw bytes directly to storage with exact content type and credentials omitted, then submits metadata referencing documentId. A failed PUT prevents submission; storage errors omit signed URL/signature. Owned status accepts JSON null or the actual verification resource.
+- Skill adapter submits canonical level/evidence inputs, reads /profile-skills/me and protected evidence history, preserving actual statuses and versions. No administrator decision operations or invented skill-upload route.
+- Supervisor fixed TypeScript6 binary-body compatibility using an owned ArrayBuffer for typed-array views, tested subarray boundaries, removed redundant header deletions and unused test imports. No direct zod dependency or framework imports in these pure HTTP adapters.
+- Focused student/skill/booking adapter tests39 passed, scoped lint zero. Broader mobile16 suites155 tests and typecheck passed before subsequent detail coordinator review; a final full gate follows that review.
+- Executed the actual mobile adapter source in Node against strict Gateway and real MinIO: authenticated upload target, successful PUT, independently SigV4-signed GET200, exact PDF content type and byte-for-byte subarray match, pending submission and subsequent owned status read. Owned skills and booking reads returned valid canonical responses. Credentials/URLs were not printed.
+- This proves the client HTTP implementation and actual storage persistence. It does not prove native picker behavior, student approval/rejection/resubmission, skill approval/history changes or full T11/T12 device acceptance. Disposable native probe account/doc remain local for later UI checks.

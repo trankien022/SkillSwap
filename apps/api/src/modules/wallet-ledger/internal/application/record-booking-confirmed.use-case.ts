@@ -16,6 +16,13 @@ export class RecordBookingConfirmedUseCase implements RecordBookingConfirmedPort
   constructor(private readonly wallets: WalletRepository) {}
 
   async execute(event: BookingConfirmedInput): Promise<RecordBookingConfirmedResult> {
+    if (event.settled) {
+      return {
+        applied: false,
+        teacherCredits: 0,
+        platformFeeCredits: 0,
+      };
+    }
     const { teacherCredits, platformFeeCredits } = splitSettlement(event.amountCredits);
     const outcome = await this.wallets.settleBooking({
       bookingId: event.bookingId,

@@ -5,24 +5,30 @@ import { qualified } from '../sql/ident';
 
 /**
  * Idempotent consumer bookkeeping (ADR-010): at-least-once delivery is made
- * safe by recording event ids per module schema.
+ * safe by recording each event id per consumer queue in its owning module schema.
  */
 export class PostgresProcessedEventStore {
   constructor(private readonly registry: ModuleDataSourceRegistry) {}
 
-  async runOnce(moduleName: string, eventId: string, handler: () => Promise<void>): Promise<void> {
+  async runOnce(
+    moduleName: string,
+    consumerId: string,
+    eventId: string,
+    handler: () => Promise<void>,
+  ): Promise<void> {
     const source = this.registry.get(moduleName);
     const schema = this.registry.getSchema(moduleName);
     const table = qualified(schema, PROCESSED_EVENTS_TABLE);
+    const processedId = `${consumerId}:${eventId}`;
 
     const inserted = (await source.query(
       `INSERT INTO ${table} (id, status) VALUES ($1, 'PROCESSING') ON CONFLICT (id) DO NOTHING RETURNING id`,
-      [eventId],
+      [processedId],
     )) as unknown[];
 
     if (inserted.length === 0) {
       const existing = (await source.query(`SELECT status FROM ${table} WHERE id = $1`, [
-        eventId,
+        processedId,
       ])) as Array<{ status: string }>;
       if (existing[0]?.status === 'DONE') {
         return;
@@ -33,13 +39,13 @@ export class PostgresProcessedEventStore {
       await handler();
       await source.query(
         `UPDATE ${table} SET status = 'DONE', processed_at = now() WHERE id = $1`,
-        [eventId],
+        [processedId],
       );
     } catch (error) {
       await source
         .query(
           `UPDATE ${table} SET status = 'FAILED', error = $2, processed_at = now() WHERE id = $1 AND status <> 'DONE'`,
-          [eventId, describeError(error)],
+          [processedId, describeError(error)],
         )
         .catch(() => undefined);
       throw error;

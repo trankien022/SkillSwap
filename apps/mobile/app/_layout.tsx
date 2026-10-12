@@ -1,10 +1,24 @@
+import React from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { SessionProvider } from '@/ui/hung/session';
 import { colors } from '@/design/tokens';
-export default function RootLayout() {
+import { BootErrorView } from '@/ui/boot-error-view';
+import { ConfigErrorView } from '@/ui/config-error-view';
+import { SessionProvider, useSession } from '@/ui/session-context';
+
+function RootNavigation() {
+  const { configError, bootError, retryBoot, t } = useSession();
+
+  if (configError) {
+    return <ConfigErrorView error={configError} />;
+  }
+
+  if (bootError) {
+    return <BootErrorView error={bootError} onRetry={retryBoot} />;
+  }
+
   return (
-    <SessionProvider>
+    <>
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
@@ -14,8 +28,20 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="auth" options={{ title: 'Tài khoản' }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="auth" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(features)" options={{ headerShown: false }} />
+        <Stack.Screen name="classes/[id]" options={{ headerShown: true, title: 'SkillSwap', headerBackTitle: t('Common.back') }} />
       </Stack>
+    </>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <SessionProvider>
+      <RootNavigation />
     </SessionProvider>
   );
 }

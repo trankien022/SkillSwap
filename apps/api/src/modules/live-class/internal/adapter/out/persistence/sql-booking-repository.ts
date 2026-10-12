@@ -2,13 +2,18 @@ import type { ModuleDataSourceRegistry } from '../../../../../../shared/messagin
 import { insertOutboxStatement } from '../../../../../../shared/messaging/outbox-statements';
 import { qualified } from '../../../../../../shared/sql/ident';
 import { returnedRows } from '../../../../../../shared/sql/result';
+import { bookingConfirmedSchema } from '@skillswap/contracts';
 import type {
   BookingRepository,
   BookingSeatRow,
   CreateBookingRecord,
   PersistedBooking,
 } from '../../../application/port/out/booking-repository';
-import type { BookingState, CancelReason } from '../../../domain/booking';
+import {
+  BookingNotAllowedError,
+  type BookingState,
+  type CancelReason,
+} from '../../../domain/booking';
 
 const BOOKINGS_TABLE = 'bookings';
 const CLASSES_TABLE = 'classes';
@@ -45,6 +50,19 @@ function toPersisted(row: BookingRow): PersistedBooking {
     createdAt: toDate(row.created_at),
     expiresAt: toNullableDate(row.expires_at),
   };
+}
+
+function assertSameReplayOwner(
+  row: BookingRow,
+  expectedLearnerId: string,
+  expectedClassId: string,
+): void {
+  if (row.learner_id !== expectedLearnerId || row.class_id !== expectedClassId) {
+    throw new BookingNotAllowedError(
+      'duplicate_booking',
+      'Idempotency key already in use for a different booking request',
+    );
+  }
 }
 
 const BOOKING_COLUMNS =
@@ -97,6 +115,7 @@ export class SqlBookingRepository implements BookingRepository {
         [record.idempotencyKey],
       )) as BookingRow[];
       if (existing[0] !== undefined) {
+        assertSameReplayOwner(existing[0], record.learnerId, record.classId);
         return { booking: toPersisted(existing[0]), created: false };
       }
 
@@ -108,21 +127,31 @@ export class SqlBookingRepository implements BookingRepository {
 
       guard(seatRows.map((row) => ({ learnerId: row.learner_id, state: row.state as BookingState })));
 
-      const inserted = (await manager.query(
-        `INSERT INTO ${bookings} ("class_id", "learner_id", "state", "price_credits", "idempotency_key", "expires_at")
-         VALUES ($1, $2, $3, $4, $5, $6)
-         RETURNING ${BOOKING_COLUMNS}`,
-        [
-          record.classId,
-          record.learnerId,
-          record.state,
-          record.priceCredits,
-          record.idempotencyKey,
-          record.expiresAt.toISOString(),
-        ],
-      )) as BookingRow[];
-      const created = inserted[0];
+      const inserted = await manager.query(
+          `INSERT INTO ${bookings} ("class_id", "learner_id", "state", "price_credits", "idempotency_key", "expires_at")
+           VALUES ($1, $2, $3, $4, $5, $6)
+           ON CONFLICT ("idempotency_key") DO NOTHING
+           RETURNING ${BOOKING_COLUMNS}`,
+          [
+            record.classId,
+            record.learnerId,
+            record.state,
+            record.priceCredits,
+            record.idempotencyKey,
+            record.expiresAt.toISOString(),
+          ],
+        );
+      const created = returnedRows<BookingRow>(inserted)[0];
       if (created === undefined) {
+        const race = (await manager.query(
+          `SELECT ${BOOKING_COLUMNS} FROM ${bookings} WHERE "idempotency_key" = $1`,
+          [record.idempotencyKey],
+        )) as BookingRow[];
+        const conflictRow = race[0];
+        if (conflictRow !== undefined) {
+          assertSameReplayOwner(conflictRow, record.learnerId, record.classId);
+          return { booking: toPersisted(conflictRow), created: false };
+        }
         throw new Error('Booking insert returned no row');
       }
       return { booking: toPersisted(created), created: true };
@@ -136,7 +165,7 @@ export class SqlBookingRepository implements BookingRepository {
     const source = this.registry.get(this.moduleName);
     const bookings = qualified(this.schema, BOOKINGS_TABLE);
     return source.transaction(async (manager) => {
-      // Lock the booking row, then only confirm if still pending (FR-009 / AC-005).
+      // Lock the booking row, then only confirm request if still pending (FR-009 / AC-005 / ADR-032).
       const locked = (await manager.query(
         `SELECT ${BOOKING_COLUMNS} FROM ${bookings} WHERE "id" = $1 AND "learner_id" = $2 FOR UPDATE`,
         [bookingId, learnerId],
@@ -146,15 +175,23 @@ export class SqlBookingRepository implements BookingRepository {
         return { confirmed: false, booking: current === undefined ? null : toPersisted(current) };
       }
 
-      const confirmedRows = (await manager.query(
-        `UPDATE ${bookings} SET "state" = 'confirmed', "confirmed_at" = now(), "updated_at" = now()
-           WHERE "id" = $1
-           RETURNING ${BOOKING_COLUMNS}`,
-        [bookingId],
-      )) as BookingRow[];
-      const booking = toPersisted(returnedRows<BookingRow>(confirmedRows)[0]);
+      // ADR-032 Phase C3a request boundary: do NOT set state to confirmed or touch confirmed_at.
+      // Use database now() atomic guard to deny expired pending holds even if expiry worker is delayed.
+      const touchedRows = returnedRows<BookingRow>(
+        await manager.query(
+          `UPDATE ${bookings} SET "updated_at" = now()
+             WHERE "id" = $1 AND "state" = 'pending' AND ("expires_at" IS NULL OR "expires_at" > now())
+             RETURNING ${BOOKING_COLUMNS}`,
+          [bookingId],
+        ),
+      );
+      const pendingRow = touchedRows[0];
+      if (pendingRow === undefined) {
+        return { confirmed: false, booking: toPersisted(current) };
+      }
+      const booking = toPersisted(pendingRow);
       await this.emitBookingEvent(manager, BOOKING_CONFIRMED_EVENT, booking, null);
-      return { confirmed: true, booking };
+      return { confirmed: false, booking };
     });
   }
 
@@ -266,6 +303,11 @@ export class SqlBookingRepository implements BookingRepository {
       amountCredits: booking.priceCredits,
       priceCredits: booking.priceCredits,
     };
+    if (eventType === BOOKING_CONFIRMED_EVENT) {
+      // ADR-032 Phase C3a: explicit settled=false on request event; validated by canonical contract.
+      payload.settled = false;
+      bookingConfirmedSchema.parse(payload);
+    }
     if (reason !== null) {
       payload.reason = reason;
     }

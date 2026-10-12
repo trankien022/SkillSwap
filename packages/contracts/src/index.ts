@@ -39,13 +39,7 @@ export type EventEnvelope<TPayload = unknown> = z.infer<typeof eventEnvelopeSche
   payload: TPayload;
 };
 
-export const bookingConfirmedSchema = z.object({
-  bookingId: z.string().min(1),
-  studentId: z.string().min(1),
-  teacherId: z.string().min(1),
-  amountCredits: z.number().int().positive(),
-});
-export type BookingConfirmed = z.infer<typeof bookingConfirmedSchema>;
+export * from './booking-payment-events';
 
 /** FR-007 / ADR-019: a cancelled booking that the wallet may need to refund. */
 export const bookingCancelledSchema = z.object({
@@ -141,18 +135,24 @@ export const bookingSchema = z.object({
 });
 export type BookingView = z.infer<typeof bookingSchema>;
 
-/** FR-007 / API-005: book a class. `created` is false on an idempotent replay. */
-export const bookClassResultSchema = z.object({
+/** Existing API-005/API-006 response names retained for mobile adapters. */
+export const bookClassResponseSchema = z.object({
   booking: bookingSchema,
   created: z.boolean(),
 });
-export type BookClassResultView = z.infer<typeof bookClassResultSchema>;
-
-/** FR-009 / API-006: confirm a pending booking. `booking` is null when nothing was pending. */
-export const confirmBookingResultSchema = z.object({
+export type BookClassResponse = z.infer<typeof bookClassResponseSchema>;
+export const confirmBookingResponseSchema = z.object({
   confirmed: z.boolean(),
   booking: bookingSchema.nullable(),
 });
+export type ConfirmBookingResponse = z.infer<typeof confirmBookingResponseSchema>;
+
+/** FR-007 / API-005: book a class. `created` is false on an idempotent replay. */
+export const bookClassResultSchema = bookClassResponseSchema;
+export type BookClassResultView = z.infer<typeof bookClassResultSchema>;
+
+/** FR-009 / API-006: confirm a pending booking. `booking` is null when nothing was pending. */
+export const confirmBookingResultSchema = confirmBookingResponseSchema;
 export type ConfirmBookingResultView = z.infer<typeof confirmBookingResultSchema>;
 
 /** FR-007 / AC-022: cancel a class and refund affected learners. */
@@ -567,3 +567,11 @@ export const skillEvidenceHistorySchema = z.object({
   versions: z.array(evidenceVersionHistorySchema),
 });
 export type SkillEvidenceHistoryView = z.infer<typeof skillEvidenceHistorySchema>;
+
+export * from './mobile-catalogue';
+export * from './mobile-classes';
+export * from './mobile-class-detail';
+export * from './mobile-my-bookings';
+export * from './mobile-ratings';
+export * from './mobile-notifications';
+

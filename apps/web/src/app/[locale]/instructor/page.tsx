@@ -183,7 +183,7 @@ export default function InstructorDashboard() {
       {/* Main Content */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="w-full">
-          
+
           {/* 1. Header: Profile Summary */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-slate-200">
             <div className="flex items-center gap-4">
@@ -207,7 +207,7 @@ export default function InstructorDashboard() {
                 </p>
               </div>
             </div>
-            
+
             {/* Primary Action */}
             <div className="flex items-center gap-3">
               <a href={`/${locale}/wallet`} className="px-4 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition-all shadow-sm">
@@ -312,7 +312,7 @@ export default function InstructorDashboard() {
                 <span className="material-symbols-outlined text-[16px]">add</span> Thêm kỹ năng mới
               </button>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {skills.length > 0 ? (
                 skills.map((s) => (
@@ -357,7 +357,7 @@ export default function InstructorDashboard() {
                       </button>
                     </div>
                   </div>
-                  
+
                   {/* Demo Skill 2 */}
                   <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
                     <div>
@@ -377,7 +377,7 @@ export default function InstructorDashboard() {
                       </button>
                     </div>
                   </div>
-                  
+
                   {/* Demo Skill 3 */}
                   <div className="bg-slate-50 p-4 rounded-2xl border border-dashed border-slate-300 flex flex-col justify-between">
                     <div>
@@ -438,7 +438,7 @@ export default function InstructorDashboard() {
                 </button>
               </div>
             </div>
-            
+
             <div className="space-y-4">
               {/* Dynamic Newly Created Classes */}
               {(classFilter === 'all' || classFilter === 'open') && newClasses.map((item) => (
@@ -632,8 +632,8 @@ export default function InstructorDashboard() {
             <form onSubmit={handleCreateClassSubmit} className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="skill-select">Kỹ năng giảng dạy *</label>
-                <select 
-                  id="skill-select" 
+                <select
+                  id="skill-select"
                   value={skillSelect}
                   onChange={(e) => setSkillSelect(e.target.value)}
                   className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600" required>
@@ -653,12 +653,12 @@ export default function InstructorDashboard() {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="class-title">Tiêu đề buổi học *</label>
-                <input 
-                  id="class-title" 
+                <input
+                  id="class-title"
                   value={classTitle}
                   onChange={(e) => setClassTitle(e.target.value)}
-                  type="text" 
-                  placeholder="VD: Luyện phản xạ IELTS Speaking Part 2" 
+                  type="text"
+                  placeholder="VD: Luyện phản xạ IELTS Speaking Part 2"
                   className="w-full h-10 px-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600" required />
               </div>
               <div className="grid grid-cols-2 gap-3">
