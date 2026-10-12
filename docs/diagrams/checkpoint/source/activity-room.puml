@@ -1,36 +1,45 @@
 @startuml
-title Current backend | Room authorization | FR-011
+title Join an online class | FR-011 | BR-039–041
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
 skinparam defaultFontName Arial
 skinparam defaultFontSize 14
 skinparam ArrowColor #475569
-skinparam sequenceParticipantBackgroundColor #F1F5F9
-skinparam sequenceParticipantBorderColor #475569
 skinparam activityBackgroundColor #F1F5F9
 skinparam activityBorderColor #475569
+skinparam sequenceParticipantBackgroundColor #F1F5F9
+skinparam sequenceParticipantBorderColor #475569
 skinparam stateBackgroundColor #F1F5F9
 skinparam stateBorderColor #475569
 start
-:Receive bookingId + trusted account identity;
-:Read booking and class;
-if (Requester is booking party?) then (yes)
-else (no)
- :Deny access;
+:Learner or Teacher asks to join a booked class;
+:Find the booking and its class;
+if (Is the person the booked Learner\nor the class Teacher?) then (Yes)
+else (No)
+ :Refuse access: this class is for its participants only;
  stop
 endif
-if (Booking confirmed and within access window?) then (yes)
-else (no)
- :Deny access;
+if (Is the booking confirmed?) then (Yes)
+else (No)
+ :Refuse access: the booking is not confirmed;
  stop
 endif
-:Sign short-lived scoped JWT;
-if (Issuer succeeds?) then (yes)
- :Return room + token + expiresAt + URL;
-else (no)
- :Persist incident; return 503;
+if (Is it within the allowed joining time?) then (Yes)
+else (No)
+ :Refuse access: the room is not open for this booking;
  stop
 endif
-:Caller may join self-hosted Jitsi;
+note right
+ By default, joining opens 15 minutes before class
+ and closes at the scheduled end.
+end note
+:Prepare a private, temporary invitation\nfor this person and this class;
+if (Can the invitation be prepared?) then (Yes)
+ :Give the person the room link\nand the invitation expiry time;
+ :Person can enter the online classroom;
+else (No)
+ :Record the problem for support;
+ :Tell the person room access is temporarily unavailable;
+endif
 stop
 @enduml

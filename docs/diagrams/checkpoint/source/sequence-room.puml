@@ -1,38 +1,35 @@
 @startuml
-title Current backend | Authorized Jitsi room access | FR-011
+title Join an online class | FR-011 | BR-039–041
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
 skinparam defaultFontName Arial
 skinparam defaultFontSize 14
 skinparam ArrowColor #475569
-skinparam sequenceParticipantBackgroundColor #F1F5F9
-skinparam sequenceParticipantBorderColor #475569
 skinparam activityBackgroundColor #F1F5F9
 skinparam activityBorderColor #475569
+skinparam sequenceParticipantBackgroundColor #F1F5F9
+skinparam sequenceParticipantBorderColor #475569
 skinparam stateBackgroundColor #F1F5F9
 skinparam stateBorderColor #475569
-actor "Booking party / API caller" as U
-participant Gateway as G
-participant "RequestRoomAccessUseCase" as C
-database "live_class schema" as D
-participant "JitsiRoomTokenIssuer" as I
-participant "Self-hosted Jitsi" as J
-U -> G: POST /api/classes/bookings/:bookingId/room-access
-G -> C: Trusted identity; validated request
-C -> D: Read booking + class
-C -> C: Check party, confirmed state and access window
-alt access denied
- C --> U: Forbidden / invalid access
-else authorized
- C -> I: Issue room-scoped short-lived HS256 JWT locally
- alt issuer fails
-  C -> D: Record room-access incident
-  C --> U: 503 + trace
- else token issued
-  I --> C: room, token, expiresAt, url
-  C --> U: Room access response
-  U -> J: Join with room URL + JWT (HTTPS/WebRTC)
+actor "Learner or Teacher" as U
+participant SkillSwap as S
+participant "Classroom invitation service" as I
+participant "Online classroom (Jitsi)" as J
+U -> S: Ask to join the booked class
+S -> S: Find the booking and class
+S -> S: Check participant identity, confirmed booking\nand allowed joining time
+alt Person is not allowed to join
+ S --> U: Refuse access and explain why
+else Person is allowed to join
+ S -> I: Prepare a private invitation for this class and person
+ alt Invitation cannot be prepared
+  S -> S: Record the problem for support
+  S --> U: Room access is temporarily unavailable
+ else Invitation is ready
+  I --> S: Temporary invitation and expiry time
+  S --> U: Room link and private invitation
+  U -> J: Enter the classroom using the invitation
  end
 end
-note over I,J: Token signing is local.\nNo REST call to create a Jitsi room is implied.
+note over S,J: Default joining time: 15 minutes before class until scheduled end.\nSkillSwap prepares access locally; joining does not create a room through a separate request.
 @enduml

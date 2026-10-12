@@ -1,29 +1,34 @@
 @startuml
-title Current implementation | StudentVerification | ADR-023/025
+title Student verification status | FR-002/019 | BR-002–006/070
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
 skinparam defaultFontName Arial
 skinparam defaultFontSize 14
 skinparam ArrowColor #475569
-skinparam sequenceParticipantBackgroundColor #F1F5F9
-skinparam sequenceParticipantBorderColor #475569
 skinparam activityBackgroundColor #F1F5F9
 skinparam activityBorderColor #475569
+skinparam sequenceParticipantBackgroundColor #F1F5F9
+skinparam sequenceParticipantBorderColor #475569
 skinparam stateBackgroundColor #F1F5F9
 skinparam stateBorderColor #475569
-[*] --> pending : new submission
+state "Awaiting review" as pending
+state "Approved" as approved
+state "Rejected" as rejected
+state "Revoked" as revoked
+[*] --> pending : Student submits proof
 pending --> approved : Administrator approves
-pending --> rejected : Administrator rejects with reason
-pending --> revoked : Administrator revokes with reason
-approved --> revoked : Administrator revokes with reason
+pending --> rejected : Administrator rejects with a reason
+pending --> revoked : Administrator revokes with a reason
+approved --> revoked : Administrator revokes with a reason
 rejected --> [*]
 revoked --> [*]
 note right of approved
- No expiry; no deletion or supersede.
- Pending/Approved blocks duplicate submission.
+ Approval does not expire in the current implementation.
+ Another submission is blocked while awaiting review or approved.
+ Records are retained.
 end note
 note right of revoked
- Revocation events update trust projections.
- Re-verification creates a NEW record in pending.
+ Update the student's eligibility in the background.
+ Re-verification begins with a new submission awaiting review.
 end note
 @enduml
