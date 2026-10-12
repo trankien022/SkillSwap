@@ -194,6 +194,7 @@
     "retrySkills": "Retry"
   },
   "Common": {
+    "cancel": "Cancel",
     "loading": "Loading data…",
     "errorTitle": "Something went wrong",
     "errorMessage": "Unable to connect to gateway. Please check connection and try again.",

@@ -12,7 +12,7 @@ export default function TeachingClassDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const classId = Array.isArray(id) ? id[0] : id;
   const router = useRouter();
-  const { t, gatewayClient } = useSession();
+  const { t, locale, gatewayClient } = useSession();
   const [item, setItem] = useState<ClassListItemView | null>(null);
   const [description, setDescription] = useState('');
   const [startsAt, setStartsAt] = useState('');
@@ -57,7 +57,7 @@ export default function TeachingClassDetailScreen() {
   return <ScreenScroll contentContainerStyle={styles.container}><SurfaceCard style={styles.card}>
     <Text style={styles.title}>{t('Teaching.detailTitle')}</Text>
     {item ? <>
-      <Text style={styles.meta}>{t(`Teaching.state.${item.state}`)} · {new Date(item.startsAt).toLocaleString()}</Text>
+    <Text style={styles.meta}>{t(`Teaching.state.${item.state}`)} · {new Date(item.startsAt).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}</Text>
       <Text style={styles.meta}>{item.priceCredits} {t('Teaching.price')} · {item.capacity} {t('Teaching.capacity')}</Text>
       <TextInput value={description} onChangeText={setDescription} editable={Boolean(canEdit) && !busy} placeholder={t('Teaching.description')} style={styles.input} accessibilityLabel={t('Teaching.description')} />
       <TextInput value={startsAt} onChangeText={setStartsAt} editable={Boolean(canEdit) && !busy} placeholder={t('Teaching.startsAt')} style={styles.input} accessibilityLabel={t('Teaching.startsAt')} />
