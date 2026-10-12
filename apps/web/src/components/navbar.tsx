@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useLocale } from 'next-intl';
 import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
 import { callApi, getTokens, getStoredUser, logout, unwrapEnvelope, WALLET_BALANCE_EVENT, type UserProfile } from '../lib/api-client';
 
@@ -76,9 +77,12 @@ export function Navbar({
   const balance = propBalance !== undefined ? propBalance : internalBalance;
   const me = propMe !== undefined ? propMe : internalMe;
 
-  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-  const locale = pathname.startsWith('/en') ? 'en' : 'vi';
-
+  // The locale comes from next-intl, which resolves it identically on the server
+  // and the client. This previously read `window.location.pathname`, falling back
+  // to 'vi' whenever `window` was undefined — so the server rendered Vietnamese
+  // hrefs/labels while the client rendered English ones and every page with this
+  // navbar failed hydration on the /en tree.
+  const locale = useLocale();
   const navLinks: { id: NavbarTab; label: string; tooltip?: string; href: string }[] = [
     { id: 'explore', label: locale === 'vi' ? 'Khám phá' : 'Explore', href: `/${locale}/classes` },
     { id: 'classes', label: locale === 'vi' ? 'Lớp học của tôi' : 'My Bookings', href: `/${locale}/bookings` },
