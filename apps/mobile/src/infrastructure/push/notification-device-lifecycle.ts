@@ -19,7 +19,7 @@ async function installationId(): Promise<string> {
 }
 
 /** Registers or rebinds this installation to the currently authenticated account. */
-export async function registerPushDevice(client: GatewayClient, requestPermission: boolean, locale: 'vi' | 'en' = 'vi'): Promise<string | null> {
+async function performRegistration(client: GatewayClient, requestPermission: boolean, locale: 'vi' | 'en' = 'vi'): Promise<string | null> {
   if (Platform.OS !== 'android' && Platform.OS !== 'ios') throw new Error('Push is only supported on Android and iOS');
 
   if (Platform.OS === 'android') {
@@ -52,8 +52,23 @@ export async function registerPushDevice(client: GatewayClient, requestPermissio
 }
 
 /** Deactivates the backend subscription before logout clears authenticated credentials. */
-export async function unregisterPushDevice(client: GatewayClient): Promise<void> {
+async function performUnregistration(client: GatewayClient): Promise<void> {
   const deviceId = await SecureStore.getItemAsync(PUSH_DEVICE_ID_KEY);
   if (deviceId) await new NotificationGateway(client).removeDevice(deviceId);
   await SecureStore.deleteItemAsync(PUSH_DEVICE_ID_KEY);
+}
+
+let deviceMutation: Promise<unknown> = Promise.resolve();
+function serializeDeviceMutation<T>(operation: () => Promise<T>): Promise<T> {
+  const result = deviceMutation.catch(() => undefined).then(operation);
+  deviceMutation = result;
+  return result;
+}
+
+export function registerPushDevice(client: GatewayClient, requestPermission: boolean, locale: 'vi' | 'en' = 'vi'): Promise<string | null> {
+  return serializeDeviceMutation(() => performRegistration(client, requestPermission, locale));
+}
+
+export function unregisterPushDevice(client: GatewayClient): Promise<void> {
+  return serializeDeviceMutation(() => performUnregistration(client));
 }

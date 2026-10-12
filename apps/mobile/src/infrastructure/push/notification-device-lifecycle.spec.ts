@@ -53,6 +53,19 @@ describe('notification device lifecycle', () => {
     }));
   });
 
+  it('serializes preference updates so the latest language wins', async () => {
+    const response = { id: 'device-1', installationId: 'install-1', platform: 'android', isActive: true, createdAt: '2026-10-13T00:00:00.000Z' };
+    let finish!: (value: typeof response) => void;
+    client.authenticatedRequest = jest.fn().mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; })).mockResolvedValue(response);
+    const english = registerPushDevice(client, false, 'en');
+    const vietnamese = registerPushDevice(client, false, 'vi');
+    for (let turn = 0; turn < 30; turn++) await Promise.resolve();
+    expect(client.authenticatedRequest).toHaveBeenCalledTimes(1);
+    finish(response);
+    await Promise.all([english, vietnamese]);
+    expect((client.authenticatedRequest as jest.Mock).mock.calls.map((call) => call[1].body.locale)).toEqual(['en', 'vi']);
+  });
+
   it('keeps the inbox usable without registering when permission is denied on silent rebind', async () => {
     (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({ granted: false });
     await expect(registerPushDevice(client, false)).resolves.toBeNull();

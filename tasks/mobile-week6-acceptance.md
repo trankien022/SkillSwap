@@ -31,3 +31,9 @@ Ba luồng đi từ UI tới backend; >=5 resource persisted; 20–30 route temp
 1. Database test riêng tái hiện pending delivery của account cũ trên device đã rebind account mới: store hiện claim thành sending. Không gọi provider trong probe.
 2. Trong account-profile, fail pending/sending jobs khi device inactive hoặc account không khớp inbox; claim SELECT cũng fence account hiện tại. Không sửa schema, không mở API.
 3. Regression SQL store tests + probe DB trước/sau; full verify, rebuild/restart API và cập nhật Graphify. Push đã được provider chấp nhận trước logout không thể thu hồi; payload không cấp quyền và tap luôn đọc bằng session hiện tại.
+
+## Fix sau đổi ngôn ngữ offline
+
+1. Runtime tái hiện: bỏ adb reverse4000, đổi English, khôi phục4000; UI English nhưng device locale vẫnvi do silent registration chỉ thử một lần.
+2. Retry đồng bộ push preference với backoff1–30s, refresh khi app foreground, stop khi session/root effect đổi. Serialize device register/unregister để preference mới nhất không bị request cũ ghi đè; serialize locale storage writes.
+3. Focused regression tests, full verify, rebuild/install APK có JS; offline locale đổi được đồng bộ sau nối lại mà không cần restart. Sau đó hai full rehearsals trên binary cuối.

@@ -67,10 +67,12 @@ export function SessionProvider({
   const [locale, updateLocale] = useState<Locale>(initialLocale);
   const [localeReady, setLocaleReady] = useState(false);
   const localeChanged = useRef(false);
+  const localeWrite = useRef<Promise<unknown>>(Promise.resolve());
   const setLocale = useCallback((next: Locale) => {
     localeChanged.current = true;
     updateLocale(next);
-    void SecureStore.setItemAsync('skillswap.locale', next).catch(() => undefined);
+    localeWrite.current = localeWrite.current.catch(() => undefined).then(() => SecureStore.setItemAsync('skillswap.locale', next));
+    void localeWrite.current.catch(() => undefined);
   }, []);
   useEffect(() => {
     let active = true;
