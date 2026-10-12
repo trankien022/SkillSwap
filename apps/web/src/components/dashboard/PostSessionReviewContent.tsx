@@ -111,7 +111,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
         }
         if (!bookingsRes.ok) {
           if (active) {
-            setLoad({ phase: 'error', message: t('errorTitle') });
+            setLoad({ phase: 'error', message: t('form.errorTitle') });
           }
           return;
         }
@@ -147,7 +147,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
         if (active) {
           setLoad({
             phase: 'error',
-            message: error instanceof Error ? error.message : t('errorTitle'),
+            message: error instanceof Error ? error.message : t('form.errorTitle'),
           });
         }
       }
@@ -198,7 +198,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
     } catch (error) {
       setSubmit({
         phase: 'error',
-        message: error instanceof Error ? error.message : t('errorTitle'),
+        message: error instanceof Error ? error.message : t('form.errorTitle'),
       });
     }
   };
@@ -698,7 +698,7 @@ function ReviewStateBlock({
       body: t('states.ratedBody'),
       href: `/${locale}/bookings`,
     },
-    error: { title: t('errorTitle'), body: state.phase === 'error' ? state.message : '', href: null },
+    error: { title: t('form.errorTitle'), body: state.phase === 'error' ? state.message : '', href: null },
   } as const;
 
   const entry = map[state.phase];
@@ -734,5 +734,5 @@ async function readRatingError(
     return body?.message ?? t('form.errorNotEligible');
   }
   const body = (await res.json().catch(() => null)) as { message?: string } | null;
-  return body?.message ?? t('errorTitle');
+  return body?.message ?? t('form.errorTitle');
 }
