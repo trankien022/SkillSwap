@@ -6,6 +6,8 @@ coverage/
 *.tsbuildinfo
 .env
 .env.local
+apps/mobile/google-services.json
+apps/mobile/*service-account*.json
 .secrets/
 *.log
 .DS_Store
