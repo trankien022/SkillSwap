@@ -1,0 +1,199 @@
+Project SkillSwap_Conceptual_Checkpoint {
+  Note: 'Business abstraction of repository migrations and explicit application identifier associations as of 2026-10-12. identifier and attribute are neutral DBML placeholders, not storage data types. Association fields exist only so dbdiagram can draw relationships. Native constraints, technical projections and infrastructure tables belong to the Logical model.'
+}
+
+Table Account {
+  id identifier [not null]
+  display_name attribute
+  role attribute
+  status attribute
+}
+
+Table Notification {
+  id identifier [not null]
+  account_id identifier [not null]
+  type attribute
+  title attribute
+  read attribute
+}
+
+Table NotificationDevice {
+  id identifier [not null]
+  account_id identifier [not null]
+  platform attribute
+  is_active attribute
+}
+
+Table PushDelivery {
+  id identifier [not null]
+  device_id identifier [not null]
+  notification_id identifier [not null]
+  status attribute
+}
+
+Table Booking {
+  id identifier [not null]
+  learner_id identifier [not null]
+  class_id identifier [not null]
+  state attribute
+  price_credits attribute
+}
+
+Table ClassSkill {
+  skill_id identifier [not null]
+  class_id identifier [not null]
+}
+
+Table Class {
+  id identifier [not null]
+  teacher_id identifier [not null]
+  state attribute
+  starts_at attribute
+  capacity attribute
+  Note: 'One scheduled online class. Teacher is an Account capability.'
+}
+
+Table Rating {
+  id identifier [not null]
+  learner_id identifier [not null]
+  booking_id identifier [not null]
+  class_id identifier [not null]
+  stars attribute
+}
+
+Table RoomAccessIncident {
+  id identifier [not null]
+  booking_id identifier [not null]
+  class_id identifier
+  requester_id identifier [not null]
+  reason attribute
+}
+
+Table ProfileSkill {
+  id identifier [not null]
+  account_id identifier [not null]
+  skill_id identifier [not null]
+  approved_level attribute
+  Note: 'Skill associated directly with an Account; public profiles are assembled from account and verification data.'
+}
+
+Table SkillEvidence {
+  id identifier [not null]
+  claimed_by identifier
+  reviewer_id identifier
+  profile_skill_id identifier [not null]
+  evidence_type attribute
+  requested_level attribute
+  approved_level attribute
+  status attribute
+}
+
+Table EvidenceDecisionHistory {
+  id identifier [not null]
+  evidence_id identifier [not null]
+  profile_skill_id identifier [not null]
+  actor_id identifier
+  action attribute
+  from_status attribute
+  to_status attribute
+  Note: 'Historical snapshots of evidence transitions and review decisions.'
+}
+
+Table Skill {
+  id identifier [not null]
+  name attribute
+  category attribute
+}
+
+Table VerifierExpertise {
+  skill_id identifier [not null]
+  account_id identifier [not null]
+}
+
+Table Verifier {
+  account_id identifier [not null]
+  status attribute
+  Note: 'Verifier lifecycle is distinct from Account status.'
+}
+
+Table StudentVerification {
+  id identifier [not null]
+  account_id identifier [not null]
+  reviewer_id identifier
+  document_ref identifier [not null]
+  school_name attribute
+  major attribute
+  status attribute
+  Note: 'School and major are submitted text, not separate catalogue entities in the current implementation.'
+}
+
+Table VerificationDocument {
+  id identifier [not null]
+  object_key identifier [not null]
+  account_id identifier [not null]
+  file_name attribute
+  status attribute
+  Note: 'StudentVerification.document_ref stores the uploaded object key.'
+}
+
+Table LedgerEntry {
+  id identifier [not null]
+  booking_id identifier
+  teacher_id identifier [not null]
+  owner_id identifier
+  amount_credits attribute
+  direction attribute
+  entry_type attribute
+  Note: 'Financial entry used by the current wallet implementation. No LedgerTransaction or LedgerPosting entity is assumed.'
+}
+
+Table TopUpIntent {
+  id identifier [not null]
+  owner_id identifier [not null]
+  amount_vnd attribute
+  amount_credits attribute
+  status attribute
+}
+
+Table Wallet {
+  owner_id identifier [not null]
+  available_credits attribute
+  pending_credits attribute
+  Note: 'At most one Wallet for an Account; balance values are part of the current implementation.'
+}
+
+Ref: Notification.account_id > Account.id
+Ref: NotificationDevice.account_id > Account.id
+Ref: Booking.learner_id > Account.id
+Ref: Class.teacher_id > Account.id
+Ref: ClassSkill.skill_id > Skill.id
+Ref: Rating.learner_id > Account.id
+Ref: RoomAccessIncident.booking_id > Booking.id
+Ref: RoomAccessIncident.class_id > Class.id
+Ref: RoomAccessIncident.requester_id > Account.id
+Ref: ProfileSkill.account_id > Account.id
+Ref: ProfileSkill.skill_id > Skill.id
+Ref: SkillEvidence.claimed_by > Verifier.account_id
+Ref: SkillEvidence.reviewer_id > Verifier.account_id
+Ref: EvidenceDecisionHistory.evidence_id > SkillEvidence.id
+Ref: EvidenceDecisionHistory.profile_skill_id > ProfileSkill.id
+Ref: EvidenceDecisionHistory.actor_id > Account.id
+Ref: VerifierExpertise.skill_id > Skill.id
+Ref: Account.id - Verifier.account_id
+Ref: StudentVerification.account_id > Account.id
+Ref: StudentVerification.reviewer_id > Account.id
+Ref: StudentVerification.document_ref > VerificationDocument.object_key
+Ref: VerificationDocument.account_id > Account.id
+Ref: LedgerEntry.booking_id > Booking.id
+Ref: LedgerEntry.teacher_id > Account.id
+Ref: LedgerEntry.owner_id > Wallet.owner_id
+Ref: TopUpIntent.owner_id > Wallet.owner_id
+Ref: Account.id - Wallet.owner_id
+Ref: PushDelivery.device_id > NotificationDevice.id
+Ref: PushDelivery.notification_id > Notification.id
+Ref: Booking.class_id > Class.id
+Ref: ClassSkill.class_id > Class.id
+Ref: Booking.id - Rating.booking_id
+Ref: Rating.class_id > Class.id
+Ref: SkillEvidence.profile_skill_id > ProfileSkill.id
+Ref: VerifierExpertise.account_id > Verifier.account_id
