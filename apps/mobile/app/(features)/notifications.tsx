@@ -12,7 +12,7 @@ import { AppButton, FeedbackBanner, ScreenScroll, SurfaceCard } from '@/ui/primi
 
 export default function NotificationsScreen() {
   const router = useRouter();
-  const { t, gatewayClient } = useSession();
+  const { t, locale, gatewayClient } = useSession();
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [unread, setUnread] = useState(0);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -73,7 +73,7 @@ export default function NotificationsScreen() {
       {items.length === 0 && !busy ? <Text style={styles.body}>{t('Notifications.empty')}</Text> : items.map((item) => <Pressable key={item.id} style={styles.item} onPress={() => router.push(notificationRoute(item.targetType, item.targetId))} accessibilityRole="button">
         <Text style={styles.itemTitle}>{t(`Notifications.type_${item.type}`)}</Text>
         <Text style={styles.body}>{t(`Notifications.body_${item.type}`)}</Text>
-        <Text style={styles.meta}>{new Date(item.createdAt).toLocaleString()}</Text>
+        <Text style={styles.meta}>{new Date(item.createdAt).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}</Text>
       </Pressable>)}
       {cursor && <AppButton tone="quiet" onPress={() => void load(true)} busy={busy} label={t('Notifications.loadMore')} />}
     </SurfaceCard>
