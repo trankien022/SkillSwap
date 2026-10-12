@@ -7,8 +7,8 @@ comes back".
 > Status: covers the implemented critical path — **auth (FR-001), wallet top-up (FR-008),
 > settlement (FR-009), booking lifecycle + refunds (FR-007), room access (FR-011), class
 > completion + income release (FR-020), wallet reads (FR-010)**.
-> Rating (FR-013), withdrawals (FR-014), chat (FR-012) and teacher/skill verification
-> (FR-002–FR-005) are **not** implemented yet.
+> Rating (FR-013), withdrawals (FR-014) and chat (FR-012) are **not** implemented yet.
+> Student/skill verification and publication checks are supported by the backend; client integration remains incomplete.
 
 ---
 
@@ -207,7 +207,8 @@ payment **asynchronously** — the Learner is debited `priceCredits`, the Teache
 ```json
 { "confirmed": true, "booking": { "…": "…", "state": "confirmed" } }
 ```
-If the Learner's balance is insufficient, the booking stays `pending` (no partial state).
+Current gap against BR-022/BR-026: confirmation is saved before payment processing.
+Insufficient balance does not automatically restore the booking to `pending`.
 The FE should re-read `/api/wallet/balance` after a moment to reflect the debit.
 
 **Room access** (`roomAccessResponseSchema`):
@@ -225,22 +226,185 @@ whose Teacher no-showed is **cancelled** by the system instead (see below).
 
 ---
 
-## 3. The happy path, step by step (Learner buys and attends a class)
+## 3. Sequence diagrams, split by task
 
+Each diagram covers one task; read **3.1–3.6** for the happy path and **3.7** for
+cancellation/refunds. Auth is shared by both roles; publishing and top-up can happen
+independently before booking.
+
+Diagram labels use plain English actions and outcomes, with FR/BR references.
+They describe backend capabilities; the current web/mobile booking screens are local demonstrations.
+Background wallet processing runs after the class operation. Endpoint details remain in §2.
+Wallet reads in these diagrams go through SkillSwap, not directly to an internal wallet service.
+
+| Part | Task | Requirement |
+|---|---|---|
+| [3.1](#31-authenticate-and-refresh-the-session) | Authenticate and refresh | FR-001 |
+| [3.2](#32-teacher-publishes-a-class) | Publish a class | FR-005 |
+| [3.3](#33-learner-tops-up-the-wallet) | Top up and read balance | FR-008 / FR-010 |
+| [3.4](#34-learner-books-and-confirms) | Hold a seat, confirm and settle | FR-007 / FR-009 |
+| [3.5](#35-participants-join-and-teacher-starts-the-class) | Get room access, join and start | FR-011 / FR-020 |
+| [3.6](#36-class-completes-and-teacher-income-is-released) | Complete and release income | FR-020 / FR-010 |
+| [3.7](#37-cancellation-and-refund) | Cancel and refund | FR-007 / FR-009 |
+
+### 3.1 Authenticate and refresh the session
+
+```mermaid
+sequenceDiagram
+    actor U as Student
+    participant S as SkillSwap
+    U->>S: Create an account or sign in
+    S-->>U: Signed-in session
+    U->>S: Request an account service
+    alt Session is still valid
+        S-->>U: Requested result
+    else Session has expired
+        U->>S: Renew the session
+        S-->>U: New session, old renewal permission cannot be reused
+        U->>S: Repeat the original request
+        S-->>U: Requested result
+    end
 ```
-Teacher                         Backend                              Learner
-  │ POST /classes ─────────────▶ (published)
-  │                                                                  │
-  │                                        POST /classes/:id/bookings ─▶ (pending, holds seat ~15m)
-  │                                        POST /classes/bookings/:id/confirm ─▶ confirmed + settle
-  │                                        (Learner -price, Teacher +90% pending, fee 10%)
-  │                                                                  │
-  │                                        POST /classes/bookings/:id/room-access ─▶ { room, token, url }
-  │                                        (only within 15m-before … end)
-  │                                                                  │ ▶ join Jitsi
-  │ POST /classes/:id/complete ────────▶ completed                      │
-  │                                        (Teacher pending 90% → available)
+
+If refresh fails, clear the stored tokens and require sign-in again (§5).
+
+### 3.2 Teacher publishes a class
+
+```mermaid
+sequenceDiagram
+    actor T as Teacher
+    participant S as SkillSwap
+    T->>S: Submit skills, description, schedule, price and seats
+    Note over S: FR-005, BR-015–017, check student status and approval for every skill
+    alt Teacher eligible and class details valid
+        S-->>T: Published class
+    else A check fails
+        S-->>T: Refuse publication and explain why
+    end
+    opt Edit before confirmed bookings prevent changes
+        T->>S: Submit changed class details
+        S-->>T: Updated class or reason editing is refused
+    end
 ```
+
+After the first confirmed booking, editing returns `409 ClassLockedError`.
+
+### 3.3 Learner tops up the wallet
+
+```mermaid
+sequenceDiagram
+    actor L as Learner
+    participant S as SkillSwap
+    participant P as Simulated payment provider
+    L->>S: Request a 100,000 VND wallet top-up
+    S-->>L: Demonstration checkout link
+    L->>P: Open the demonstration checkout
+    P->>S: Report the simulated payment outcome
+    Note over S: FR-008, BR-027/032, add 100 credits once if payment succeeds
+    S-->>P: Outcome acknowledged
+    L->>S: Read wallet balance
+    S-->>L: Current spendable credits and held income
+```
+
+The **provider sends the callback**; the browser only opens checkout and reads balance.
+Here `100000` integer VND adds `100` credits; a repeated callback cannot add them twice.
+
+### 3.4 Learner books and confirms
+
+```mermaid
+sequenceDiagram
+    actor L as Learner
+    participant S as Class booking
+    participant W as Background wallet processing
+    L->>S: Ask to book a class
+    Note over S: FR-007, BR-021/024/025/068, check timing, seats and booking eligibility
+    S-->>L: Awaiting confirmation, seat held for 15 minutes
+    L->>S: Confirm the booking
+    S-->>L: Confirmation saved, payment still to be processed
+    S->>W: Arrange wallet payment
+    alt Payment succeeds
+        Note over W: FR-009, BR-034–038, deduct full price and allocate Teacher income and fee together
+    else Payment fails
+        Note over S,W: Current gap against BR-022/026, saved confirmation is not automatically cancelled
+    end
+    L->>W: Read wallet balance
+    W-->>L: Current balance after processed transactions
+```
+
+Reuse the **same** `idempotencyKey` when retrying booking creation (`created: false`).
+The confirm HTTP response and wallet settlement are separate: the balance can lag,
+so do not treat `200` as proof that the wallet debit has finished. See §4 for insufficient
+credit and hold expiry.
+
+### 3.5 Participants join and Teacher starts the class
+
+```mermaid
+sequenceDiagram
+    actor U as Learner or Teacher
+    participant S as SkillSwap
+    participant J as Online classroom
+    U->>S: Ask to join the booked class
+    Note over S: FR-011, BR-040/041, check participant, confirmed booking and joining time
+    alt Access allowed
+        S-->>U: Room link and temporary private invitation
+        U->>J: Enter the classroom using the invitation
+    else Access denied
+        S-->>U: Explain why the person cannot join
+    end
+    Note over U,S: Default joining time opens 15 minutes before class and closes at scheduled end
+    U->>S: Teacher asks to start the class
+    S-->>U: Class in progress, Teacher income remains on hold
+```
+
+Room access is requested separately by each participant. Denied access returns `403`;
+provider failure returns `503`. The system can also start the class at its scheduled time.
+
+### 3.6 Class completes and Teacher income is released
+
+```mermaid
+sequenceDiagram
+    actor T as Teacher
+    participant S as Class management
+    participant W as Background wallet processing
+    T->>S: Mark the class as completed
+    Note over S: FR-020, BR-043, record completion time and reason
+    S-->>T: Class completion saved
+    S->>W: Arrange income release for eligible paid bookings
+    Note over W: Move each eligible booking income from held to spendable once
+    T->>W: Read wallet balance and transaction history
+    W-->>T: Current balance and recorded transactions
+```
+
+This shows the explicit Teacher completion path. The system can also complete at scheduled
+end with basis `scheduled_end` (ADR-021). A Teacher no-show leads to cancellation instead;
+income is not released. Release moves existing pending income into available credit.
+
+### 3.7 Cancellation and refund
+
+```mermaid
+sequenceDiagram
+    actor T as Teacher
+    participant S as Class management
+    participant W as Background wallet processing
+    actor L as Learner
+    T->>S: Cancel the class
+    Note over S: FR-007/009, BR-044–046, cancel class and affected active bookings
+    S-->>T: Cancellation saved
+    S->>W: Arrange refunds for affected bookings
+    alt Booking was paid
+        Note over W: Refund internal credits once and reverse the Teacher share and platform fee
+    else Booking was not paid
+        Note over W: No wallet change, no payment was taken
+    end
+    L->>W: Read wallet balance and transaction history
+    W-->>L: Current balance and any processed refund
+```
+
+Refunds are **internal credits**, never a payment-provider payout. Teacher no-show and
+pending-hold expiry also emit `booking.cancelled`; only previously settled bookings are
+refunded (ADR-019). There is no Learner self-cancellation endpoint in this MVP.
+
+### 3.8 Happy-path checklist and Learner call order
 
 1. **Teacher** registers (`role: user`), publishes a class (`POST /api/classes`).
 2. **Learner** registers (`role: user`).

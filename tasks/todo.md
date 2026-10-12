@@ -1,15 +1,15 @@
 # Mobile rubric — task checklist
 
-Tham chiếu: [plan](plan.md). Checkpoint 12/10/2026: **30/30 unique route templates được app gọi qua Gateway**, kèm contracts/adapters/UI; rating và inbox/device APIs có backend routes, persistence và focused tests. `pnpm verify` xanh: 532 API, 177 mobile, 143 contracts, 27 Gateway, 22 web tests; arch gate xanh. Hai migration mới đã apply vào database development local. E2E sau migration: booking-flow pass; publish-gate fail khi chờ trạng thái xác minh, cần điều tra và chạy lại. Push inbox records hiện nhận event verification/booking/wallet; Expo push dispatcher/receipt lifecycle và class reminder còn mở. Native iPhone upload/Jitsi/push acceptance còn mở; user chưa có Apple Developer/EAS. T09 concurrency/restart/late-cancellation và T22 vẫn mở; không đánh dấu checkpoint cuối.
+Tham chiếu: [plan](plan.md). Chưa triển khai. Mỗi task là một slice có thể verify; file paths là vùng dự kiến, phải thu hẹp khi thực hiện. Không tạo toàn bộ backend rồi mới nối UI.
 
 ## Phase 0 — contract/risk
 
-- [x] T01. Chốt 30 API/resource matrix và notification ownership ADR/SRS scope.
+- [ ] T01. Chốt 30 API/resource matrix và notification ownership ADR/SRS scope.
   - AC: 30 method+route duy nhất; FR Confirmed cho mỗi slice; ownership giữ 7 schemas và shared event contracts.
   - Verify: đối chiếu controllers/contracts/ADR; docs diff check.
-  - Depends: none. Files: docs/adr/ADR-031-mobile-delivery-contracts.md, tasks/mobile-contracts.md, tasks/plan.md. Scope: M.
-- [ ] T02. Spike push trên iPhone / Android development build.
-  - AC: máy nhận remote push và deep link có auth; biết credentials/native config còn thiếu (ưu tiên iPhone iOS, duy trì Android; thiếu APNs/FCM thì ghi nhận incomplete, không mock-only).
+  - Depends: none. Files: tasks/plan.md, SRS, một ADR mới phù hợp. Scope: M.
+- [ ] T02. Spike push trên Android development build.
+  - AC: máy nhận remote push và deep link có auth; biết credentials/native config còn thiếu.
   - Verify: device recording, không chỉ ticket status.
   - Depends: T01. Files: mobile app config, dependency config, push adapter PoC. Scope: M.
 - [ ] T03. Spike Jitsi và server-only top-up/upload harness.
@@ -45,7 +45,6 @@ Tham chiếu: [plan](plan.md). Checkpoint 12/10/2026: **30/30 unique route templ
   - Verify: mock signed callback thực + đối soát ledger/wallet.
   - Depends: T03,T05. Files: wallet service/adapter/screens/harness. Scope: M.
 - [ ] T09. Booking + confirmation nối flow có sẵn.
-  - Prerequisite: tasks/payment-boundary-review.md phases A-D; replay ownership, expired holds and confirmation-before-settlement must be corrected before acceptance.
   - AC: giữ idempotency key retry; Pending/Confirmed/insufficient credit đúng; không có learner cancel.
   - Verify: 24h/full/self-book/duplicate/retry tests + phone booking.
   - Depends: T07,T08. Files: booking service/gateway/UI. Scope: M.
@@ -114,7 +113,7 @@ Tham chiếu: [plan](plan.md). Checkpoint 12/10/2026: **30/30 unique route templ
   - Verify: relevant API+mobile focused tests, manual 360px/vi/en/accessibility; final pnpm verify.
   - Depends: T20,T16. Files: affected service tests + justified bug fixes only. Scope: split each found issue S/M.
 - [ ] T22. Installable build + evidence rubric.
-  - AC: Build cài được (ưu tiên iPhone/iOS TestFlight/development client, Android APK); 30 APIs app actually invokes; ≥5 resources persisted; dashboard + five flows + push video.
+  - AC: Android APK cài được; 30 APIs app actually invokes; ≥5 resources persisted; dashboard + five flows + push video.
   - Verify: clean install against staging/dev HTTPS; git diff --check; graphify update . sau code.
   - Depends: T21. Files: build config + docs acceptance matrix/demo guide. Scope: M.
 - [ ] Checkpoint final: full gate green, device evidence đủ, limitations mock payment/remaining SRS FR ghi rõ.

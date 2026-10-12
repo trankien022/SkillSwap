@@ -285,6 +285,8 @@ One row per required use case, ordered by subsystem then code. Codes and names a
 
 #### 3.2.6 State models
 
+These are requirement state models, not evidence that every transition is implemented. For current backend behavior, see the [checkpoint diagrams](../diagrams/checkpoint/README.md).
+
 Five entity lifecycles define the allowed structural transitions. Any transition not listed is forbidden; a transition governed by an OQ may execute only after its policy is approved. Re-submission creates a new verification/evidence row rather than returning an immutable submission to Draft.
 
 **1. StudentVerification (FR-002, SR-BR-001, SR-BR-011)**
@@ -292,12 +294,12 @@ Five entity lifecycles define the allowed structural transitions. Any transition
 ```mermaid
 stateDiagram-v2
   [*] --> Draft
-  Draft --> Pending : submit school/major and document
+  Draft --> Pending : Submit school, major and student proof
   Pending --> Approved : Administrator approves
   Pending --> Rejected : Administrator rejects with reason
   Approved --> Expired : validity period elapses (OQ-008)
   Approved --> Revoked : Administrator revokes or school/major changes
-  Approved --> Superseded : replacement approved atomically
+  Approved --> Superseded : A new approval replaces the old one in a single saved change
   Rejected --> [*]
   Expired --> [*]
   Revoked --> [*]
@@ -315,11 +317,11 @@ stateDiagram-v2
 ```mermaid
 stateDiagram-v2
   [*] --> Draft
-  Draft --> Pending : submit immutable evidence version N
-  Pending --> Claimed : expertise-matched Verifier claims (locks to that Verifier)
-  Claimed --> Approved : the claiming Verifier approves (sets approved level)
+  Draft --> Pending : Submit a new evidence version that cannot be edited
+  Pending --> Claimed : A Verifier with matching expertise takes responsibility for review
+  Claimed --> Approved : The assigned Verifier approves a teaching level
   Claimed --> Rejected : the claiming Verifier rejects with reason
-  Approved --> Superseded : replacement approved atomically
+  Approved --> Superseded : A new approval replaces the old one in a single saved change
   Approved --> Revoked : authorized Verifier revokes with reason
   Approved --> Expired : verification or certificate validity ends
   Rejected --> [*]
@@ -334,7 +336,7 @@ stateDiagram-v2
   note right of Approved
     Valid approved level controls teaching
     Pending upgrade retains old valid permission
-    Replacement updates level cache and audit atomically
+    Save the new teaching level and decision history together
   end note
   note right of Pending
     Administrator role alone cannot decide
@@ -353,7 +355,7 @@ stateDiagram-v2
   Full --> Published : seat released by allowed cancellation
   Published --> InProgress : session begins
   Full --> InProgress : session begins
-  InProgress --> Completed : approved completion rule satisfied (OQ-006)
+  InProgress --> Completed : Class meets the approved completion rule (OQ-006)
   Draft --> Cancelled : Teacher discards
   Published --> Cancelled : allowed cancellation (OQ-003 resolved; AC-022)
   Full --> Cancelled : allowed cancellation (OQ-003 resolved; AC-022)
@@ -364,7 +366,7 @@ stateDiagram-v2
     Duration remains 30 min to 3 h
   end note
   note right of Completed
-    Record completion time and audited source/rule
+    Keep completion time, reason and who recorded it
     Release timing still requires OQ-006
   end note
 ```
@@ -374,8 +376,8 @@ stateDiagram-v2
 ```mermaid
 stateDiagram-v2
   [*] --> Pending : booking attempt started
-  Pending --> Confirmed : atomic settlement succeeded (debit 100%, split 90/10)
-  Pending --> [*] : eligibility failed — no side effects
+  Pending --> Confirmed : Payment succeeds, deduct full price and allocate Teacher income and 10 percent fee together
+  Pending --> [*] : Booking refused, no seat or wallet change
   Confirmed --> Completed : class held, rating window open
   Confirmed --> Cancelled : cancellation per approved policy (OQ-003 resolved; AC-027)
   Completed --> Disputed : dispute raised (manual process)
@@ -383,8 +385,8 @@ stateDiagram-v2
   Disputed --> [*]
   note right of Confirmed
     No partial success state exists:
-    booking and ledger commit or
-    roll back together (AC-005)
+    Save the booking and payment together or
+    leave both unchanged (AC-005)
   end note
 ```
 
@@ -392,21 +394,21 @@ stateDiagram-v2
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Pending : request and credit hold commit (step-up auth)
-  Pending --> Processing : gateway payout accepted
-  Pending --> Completed : signed success/reconciliation posts payout
-  Processing --> Completed : signed success/reconciliation posts payout
-  Pending --> Failed : definite nonpayment and atomic hold release
-  Processing --> Failed : definite nonpayment and atomic hold release
+  [*] --> Pending : Confirm identity, save withdrawal request and reserve credits together
+  Pending --> Processing : Payment provider accepts the withdrawal
+  Pending --> Completed : Verified payment result confirms money was sent
+  Processing --> Completed : Verified payment result confirms money was sent
+  Pending --> Failed : Payment definitely failed, release the reserved credits once
+  Processing --> Failed : Payment definitely failed, release the reserved credits once
   Pending --> Pending : timeout/unknown result, retain hold
   Processing --> Processing : timeout/unknown result, retain hold
   Failed --> [*]
-  Completed --> Reversed : authorized reconciled payout reversal (OQ-006)
+  Completed --> Reversed : An authorized correction reverses the paid withdrawal (OQ-006)
   note right of Processing
-    Stable provider key prevents second payout
-    Replayed events never post twice (AC-008/009)
-    Unknown result cannot release credit
-    Success and failure release are exclusive
+    Repeating a withdrawal request cannot send money twice
+    Repeated payment results cannot change the wallet twice (AC-008/009)
+    Keep credits reserved while the payment outcome is unknown
+    Either record payment or release reserved credits, never both
   end note
 ```
 

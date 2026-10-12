@@ -10,6 +10,14 @@ Instructions for AI agents (and new humans) working in this repository.
 4. **`docs/plans/SkillSwap-SRS.md`** — requirements with stable IDs (`FR`/`BR`/`NFR`/`OQ`/`AC`/`ST`). Only **Confirmed** FRs are implementable.
 5. **`docs/adr/`** — decisions: `ADR-013` (RabbitMQ + outbox), `ADR-014` (TypeORM persistence, 7 schemas, per-module credentials), `ADR-015` (Expo mobile client + doc sync). ADRs are append-mostly: don't rewrite history.
 
+## Agent Skills
+
+- If the Agent Skills plugin is available, let Codex select a relevant skill from the task description, or invoke one explicitly with `@skill-name` (for example, `@planning-and-task-breakdown` or `@code-review-and-quality`).
+- Use skills as task workflows, not as replacements for repository guidance. This file, `ARCHITECTURE.md`, confirmed SRS requirements, and applicable ADRs remain authoritative when a skill suggests a conflicting process or implementation.
+- For code changes, the **Plan before code** rule below still applies: write a detailed multi-phase plan first and commit each phase separately. Skills such as `planning-and-task-breakdown` and `incremental-implementation` can help carry out that rule.
+- For feature work, implement only **Confirmed** FRs in `docs/plans/SkillSwap-SRS.md`; an invoked skill does not make an unconfirmed requirement implementable.
+- Do not copy a skill's full instructions into this file. Invoke or load only the skill relevant to the current task.
+
 ## Repo map
 
 ```
@@ -68,3 +76,16 @@ Test runners: **jest** in `api`, `gateway`, `contracts`; **vitest** in `web`. Li
 1. `pnpm verify` green.
 2. No new lint warnings; no float money; no cross-schema SQL.
 3. Docs touched only where the change demands (SRS ID updates, ADR for decisions, diagrams re-rendered).
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- Dirty graphify-out/ files are expected after hooks or incremental updates; dirty graph files are not a reason to skip graphify. Only skip graphify if the task is about stale or incorrect graph output, or the user explicitly says not to use it.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
