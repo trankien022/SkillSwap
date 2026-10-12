@@ -37,3 +37,9 @@ Ba luồng đi từ UI tới backend; >=5 resource persisted; 20–30 route temp
 1. Runtime tái hiện: bỏ adb reverse4000, đổi English, khôi phục4000; UI English nhưng device locale vẫnvi do silent registration chỉ thử một lần.
 2. Retry đồng bộ push preference với backoff1–30s, refresh khi app foreground, stop khi session/root effect đổi. Serialize device register/unregister để preference mới nhất không bị request cũ ghi đè; serialize locale storage writes.
 3. Focused regression tests, full verify, rebuild/install APK có JS; offline locale đổi được đồng bộ sau nối lại mà không cần restart. Sau đó hai full rehearsals trên binary cuối.
+
+## Chuẩn bị PR vào main
+
+1. Kiểm kê file chưa theo dõi và diff với `origin/main`; chỉ ignore output công cụ, APK cục bộ và file khóa PowerPoint. Giữ tài liệu nguồn có giá trị ở trạng thái chưa theo dõi để người tạo quyết định riêng. Commit kế hoạch trước khi sửa cấu hình.
+2. Rà soát thay đổi về secrets, boundary, push, booking và migration; sửa lỗi chặn merge nếu thấy. Cập nhật `.gitignore` bằng commit riêng, kiểm tra `git check-ignore` và `git diff --check`.
+3. Xác nhận gate mới nhất, push nhánh, tạo PR vào `main` với mô tả phạm vi, bằng chứng runtime và giới hạn nghiệm thu. Không merge tự động.
