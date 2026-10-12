@@ -538,4 +538,38 @@ Left untouched to keep the demo-freeze change narrow. The durable fix is a
 shared `requireUserId(request)` helper replacing the copy-pasted guard; that is
 deliberately a separate change.
 
+## 13. Client consistency faults found from the landing page (2026-10-13)
+
+Reported after the first live Expo Web run. All four were real; none was a
+misunderstanding. The env value was wrong *for the chosen target* — see F1.
+
+Plan: [2026-10-13-landing-branding-and-cors-plan.md](./2026-10-13-landing-branding-and-cors-plan.md).
+
+| Reported | Verdict | Cause | Fix |
+|---|---|---|---|
+| Expo Web cannot reach the API | **Real gap** | The gateway answered no CORS headers and did not route `OPTIONS` at all, so the browser blocked every cross-origin call. The Next.js web app never hit this because `next.config.ts` rewrites `/api/*`, keeping the browser same-origin; Expo Web, without a proxy, is exposed to it directly. | opt-in CORS via `CORS_ORIGINS`; `*` rejected at config load since the gateway injects trusted identity headers. Verified live on the built artifact. |
+| "We have the logo but other pages don't" | **Real inconsistency** | `SiteHeader` rendered `logo-skillswap-header.png`; the shared `Navbar` rendered an invented green `S` tile with the wordmark, so the product showed two logos. `globals.css` already documented `.header-logo` as shared by both — the navbar simply never used it. | one `BrandMark` component, both headers, one PNG asset. Also removed a hardcoded `Sinh viên` badge that rendered Vietnamese on `/en`. |
+| "Explore forwards into the class route regardless of login" | **Real UX defect** | `SiteHeader` linked `/classes` for everyone, but `GET /classes` is authenticated, so a guest landed on the screen's `unauth` state — which reads as breakage, not as a sign-in prompt. | guest → `/auth?tab=login&returnUrl=…`; signed-in keeps the direct link. Regression test proven failing against the old unconditional link. |
+| "And other problems" | **Confirmed dead links** | Landing CTAs and three footer links were `href="#"` with `aria-disabled`, and both files' comments admitted they were placeholders. | landed: CTAs point at the real auth route carrying `returnUrl`; the three footer links have no destination in this product and were removed rather than retargeted at invented routes. |
+
+Two further points, recorded so the demo is not overstated:
+
+- **The env target must match how you run the client.** `10.0.2.2` resolves only
+  inside the Android emulator; a browser at `localhost:8081` must use
+  `http://localhost:4000`. The original failure was a browser run with the
+  emulator value. `apps/mobile/.env.example` documents both.
+- **The `href="#"` pattern is not confined to the landing.** 13 occurrences
+  remain in `wallet/page.tsx`, `wallet/withdrawal/page.tsx`,
+  `classes/[id]/checkout/page.tsx`, `notifications/page.tsx` and
+  `marketplace/EscrowBanner.tsx`. Same defect, wider radius; deliberately left
+  to a follow-up so this change stayed reviewable.
+
+### 13.1 Branding parity — the honest position
+
+Web now shows one mark everywhere. **Mobile does not show a logo image at all**;
+it sets the wordmark as a navigation title (`app/_layout.tsx:35`). That is a
+recorded limitation, not parity, and no asset was invented to close it. If the
+presentation shows the mobile app, say this rather than implying the three
+clients are visually identical.
+
 

@@ -105,3 +105,26 @@ Cut length and repetition without deleting a single factual claim.
 `pnpm verify` green. New tests for L1 (config + preflight) and L2 (brand render).
 Manual check that the landing still states every money/trust fact after L5, and
 that no `href="#"` remains.
+
+## Outcome
+
+| Phase | Commit | Result |
+|---|---|---|
+| L1 gateway CORS | `0646fed` | CORS opt-in via `CORS_ORIGINS`; `*` rejected. Verified live against the built artifact: preflight `204` with correct headers, blocked origin gets none. |
+| L2 one logo | `b28ad04` | `BrandMark` shared by both headers; invented `S` tile gone. Also removed a hardcoded `Sinh viên` badge that rendered in Vietnamese on `/en`. |
+| L3 auth-aware landing | `1f62ca8` | Guest → `/auth?tab=login&returnUrl=…`; signed-in keeps the direct link. Regression test **proven failing against the old unconditional link**. |
+| L4 dead links | `8e84be2` | Landing CTAs point at the real auth route; the three non-existent footer pages removed. |
+| L5 compression | `6a677ab` | Five sections → three; assurance claims merged into one 5-row list. `+177 / −456` lines. Message test pins each claim in both locales. |
+
+### Not done, deliberately
+
+- **`href="#"` still exists outside the landing** — 13 occurrences in
+  `wallet/page.tsx`, `wallet/withdrawal/page.tsx`,
+  `classes/[id]/checkout/page.tsx`, `notifications/page.tsx` and
+  `marketplace/EscrowBanner.tsx`. Same defect, wider blast radius; left for a
+  follow-up rather than silently expanded into this change.
+- **Mobile still has no logo image.** It shows the wordmark as a stack title.
+  Recorded as a limitation; no asset was invented to fake parity.
+- **CORS is not enabled in production.** It is off unless `CORS_ORIGINS` lists
+  origins, and the local `.env` is gitignored.
+
