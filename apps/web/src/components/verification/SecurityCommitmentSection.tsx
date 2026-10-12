@@ -24,10 +24,10 @@ export default function SecurityCommitmentSection() {
         <p className="text-sm text-gray-500 mt-1">Môi trường trao đổi học thuật chuẩn mực, minh bạch và tôn trọng quyền riêng tư sinh viên.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
         {items.map((it) => (
-          <div key={it.title} className="p-4 rounded-xl bg-gray-50 space-y-2 h-full">
-            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                  <div key={it.title} className="p-4 rounded-xl bg-gray-50 space-y-2 h-full flex flex-col items-center text-center">
+                      <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 mx-auto">
               <span className="material-symbols-outlined text-[20px]">{it.icon}</span>
             </div>
             <h4 className="text-sm font-bold text-gray-900">{it.title}</h4>

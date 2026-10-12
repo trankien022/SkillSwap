@@ -1,13 +1,15 @@
 import { getTranslations } from 'next-intl/server';
-import { Navbar, type NavbarTab } from '../navbar';
 
 /**
- * Marketplace header harmonized with SkillSwap unified Navbar.
- * Displays live wallet balance, notification stream, student identity,
- * and seamless navigation across Marketplace, Bookings, Teaching, and Wallet.
+ * MarketplaceHeader used to render the shared Navbar inside pages.
+ * The application now renders the teammate's Navbar at the top-level layout
+ * to avoid duplicate headers. To preserve backward compatibility, this
+ * component is a no-op (returns null) so pages can still import it but
+ * won't render an extra header.
  */
-export async function MarketplaceHeader({ currentTab = 'explore' }: { currentTab?: NavbarTab }) {
-  // Touch namespace for messages parity
+export async function MarketplaceHeader({ _currentTab = 'explore' }: { _currentTab?: string }) {
+  // Touch namespace so builds that analyze translations still find the keys
   await getTranslations('Marketplace.nav');
-  return <Navbar currentTab={currentTab} />;
+  // No-op to avoid duplicate navbar rendering when layout provides the Navbar
+  return null;
 }

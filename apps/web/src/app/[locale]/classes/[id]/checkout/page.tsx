@@ -1,7 +1,6 @@
 'use client';
 
 import { use, useState, useEffect } from 'react';
-import { Navbar } from '../../../../../components/navbar';
 import { callApi, unwrapEnvelope } from '../../../../../lib/api-client';
 import type { WalletBalanceView } from '@skillswap/contracts';
 
@@ -94,10 +93,8 @@ export default function BookingCheckoutPage({ params }: PageProps) {
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-slate-50 text-slate-900 antialiased">
-      {/* Top Synchronized Navbar */}
-      <Navbar currentTab="explore" balance={balance} />
 
-      <main className="w-full flex-1">
+          <main className="w-full flex-1">
         {/* Dynamic Notification Banner / Top Flow Signal */}
         <div className="w-full bg-emerald-50 border-b border-emerald-100 px-4 sm:px-6 lg:px-8 py-2.5">
           <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs text-slate-700">

@@ -21,14 +21,14 @@ export default function AcademicReputationCard({ metrics }: Props) {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-bold text-gray-900">Uy tín &amp; Đánh giá</h3>
-          <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 text-xs font-semibold">Độ tin cậy</span>
+          <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-xs font-semibold">Độ tin cậy</span>
         </div>
 
         <div className="flex items-center justify-center py-3 mb-4">
           <div className="relative w-36 h-36 flex items-center justify-center">
             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
               <circle cx="60" cy="60" r="48" fill="transparent" stroke="#eef2ff" strokeWidth="8" />
-              <circle cx="60" cy="60" r="48" fill="transparent" stroke="#2563eb" strokeWidth="8" strokeLinecap="round" strokeDasharray={String(circumference)} strokeDashoffset={String(dashOffset)} />
+              <circle cx="60" cy="60" r="48" fill="transparent" stroke="#059669" strokeWidth="8" strokeLinecap="round" strokeDasharray={String(circumference)} strokeDashoffset={String(dashOffset)} />
             </svg>
 
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
@@ -42,7 +42,7 @@ export default function AcademicReputationCard({ metrics }: Props) {
           {items.map((it) => (
             <div key={it.label} className="p-3 rounded-lg bg-gray-50 flex items-center justify-between border border-gray-100">
               <div className="flex items-center gap-3">
-                <span className="material-symbols-outlined text-[18px] text-blue-600">{it.icon}</span>
+                <span className="material-symbols-outlined text-[18px] text-emerald-600">{it.icon}</span>
                 <span className="text-sm text-gray-900">{it.label}</span>
               </div>
               <span className="text-sm font-bold text-gray-900">{it.value}</span>

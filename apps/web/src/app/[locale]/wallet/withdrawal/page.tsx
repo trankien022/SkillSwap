@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { callApi, unwrapEnvelope } from '../../../../lib/api-client';
-import { Navbar } from '../../../../components/navbar';
 import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
 
 export default function WithdrawalPage() {
@@ -41,10 +40,7 @@ export default function WithdrawalPage() {
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-slate-50">
-      {/* Header */}
-      <Navbar currentTab="wallet" balance={balance} me={me} />
-
-      {/* Main Content */}
+          {/* Main Content */}
       <main className="w-full pt-16 flex-1">
         <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-8">
           

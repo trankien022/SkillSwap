@@ -33,4 +33,8 @@ export type Certificate = {
   issuer: string;
   status: "approved" | "pending" | "rejected";
   details?: string;
+  // optional image data URL (client-side preview) or hosted image URL
+  imageUrl?: string;
+  // optional external link for online certificates
+  linkUrl?: string;
 };

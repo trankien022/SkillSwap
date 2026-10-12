@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { StudentIdentity } from "../../types/verification";
 
 type Props = {
@@ -6,6 +7,8 @@ type Props = {
 };
 
 export default function StudentCardPreview({ scannedImageUrl, student }: Props) {
+  const [open, setOpen] = useState(false);
+
   return (
     <div>
       <div className="relative rounded-xl overflow-hidden bg-surface-container-high h-56 sm:h-64 border border-surface-variant/40">
@@ -42,7 +45,45 @@ export default function StudentCardPreview({ scannedImageUrl, student }: Props) 
             <span>Xác thực: {student.verifiedAt}</span>
           </div>
         </div>
+
+        {/* View button (enabled) */}
+        {scannedImageUrl && (
+          <div className="absolute top-3 right-3 pointer-events-none">
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              className="pointer-events-auto inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/90 text-emerald-700 shadow-md hover:bg-white"
+              aria-label="Xem thẻ"
+            >
+              <span className="material-symbols-outlined text-[18px]">visibility</span>
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Modal */}
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl max-w-3xl w-full mx-4 overflow-hidden">
+            <div className="p-4 flex items-center justify-between border-b">
+              <h3 className="text-lg font-semibold">Thẻ sinh viên</h3>
+              <button className="text-gray-500 hover:text-gray-700" onClick={() => setOpen(false)} aria-label="Close">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="p-4">
+              {scannedImageUrl ? (
+                <img src={scannedImageUrl} alt="Thẻ sinh viên" className="w-full h-auto rounded-md object-contain" />
+              ) : (
+                <div className="w-full h-64 flex items-center justify-center text-gray-500">No image available</div>
+              )}
+            </div>
+            <div className="p-4 text-right">
+              <button className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700" onClick={() => setOpen(false)}>Đóng</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,4 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { SiteHeader } from '../../components/landing/SiteHeader';
 import { HeroSection } from '../../components/landing/HeroSection';
 import { TrustSection } from '../../components/landing/TrustSection';
 import { MoneySection } from '../../components/landing/MoneySection';
@@ -19,7 +18,6 @@ export default async function HomePage({ params }: PageProps) {
 
   return (
     <div className="flex min-h-dvh flex-col bg-mist text-ink">
-      <SiteHeader />
       <main className="flex-1">
         <HeroSection />
         <TrustSection />

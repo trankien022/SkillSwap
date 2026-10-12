@@ -5,7 +5,7 @@ type Doc = { id: string; name: string; href: string; size?: string; note?: strin
 
 export default function Page() {
   const [rating, setRating] = useState<number>(5);
-  const [criteria, setCriteria] = useState<Record<string, number>>({
+    const [criteria, _setCriteria] = useState<Record<string, number>>({
     "1. Chuyên môn & Phương pháp": 5,
     "2. Tính đúng giờ & Tác phong": 5,
     "3. Tương tác & Sửa lỗi trực tiếp": 5,
@@ -18,7 +18,7 @@ export default function Page() {
   const [submitting, setSubmitting] = useState(false);
   const [skillSwap, setSkillSwap] = useState({ python: true, saveContact: false });
 
-  const docs: Doc[] = [
+  const _docs: Doc[] = [
     { id: 'd1', name: 'Speaking_Critique_SS8821.pdf', href: '#', size: '2.4 MB', note: 'Nhận xét ngữ pháp & từ vựng' },
     { id: 'd2', name: 'Audio_Sample_Intonation.mp3', href: '#', size: '5.1 MB', note: 'Ghi âm mẫu ngữ điệu Part 3' },
   ];
@@ -70,6 +70,7 @@ export default function Page() {
           if (mounted) setModuleStatuses(statuses);
         } catch (err: any) {
           // API unreachable — fall back to a safe local mock list so the UI remains useful during dev.
+          if (mounted) setApiProbeError(err?.message || String(err));
           try {
             const fallbackModules = ['student-verification', 'live-class', 'wallet-ledger'];
             const fallbackStatuses: Record<string, { ok: boolean; detail?: any; error?: string }> = {};
@@ -81,7 +82,7 @@ export default function Page() {
             setModuleStatuses(fallbackStatuses);
             setApiProbeError('Gateway/API unreachable — using mock module list.');
           } catch (innerErr: any) {
-            if (mounted) setApiProbeError(err?.message || String(err));
+                      if (mounted) setApiProbeError(innerErr?.message || String(innerErr));
           }
         }
       })();

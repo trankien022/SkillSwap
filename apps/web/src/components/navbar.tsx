@@ -68,7 +68,7 @@ export function Navbar({
     { id: 'classes', label: locale === 'vi' ? 'Lớp học của tôi' : 'My Bookings', href: `/${locale}/bookings` },
     { id: 'instructor', label: locale === 'vi' ? 'Studio Giảng dạy' : 'Teaching Studio', href: `/${locale}/instructor` },
     { id: 'wallet', label: locale === 'vi' ? 'Ví & Tín dụng' : 'Wallet & Credits', href: `/${locale}/wallet` },
-    { id: 'verification', label: locale === 'vi' ? 'Quản trị & Xác minh' : 'Verification', href: `/${locale}/status` },
+    { id: 'verification', label: locale === 'vi' ? 'Xác minh' : 'Verification', href: `/${locale}/status` },
   ];
 
   const availableCredits = balance ? balance.availableCredits : 0;
