@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server';
-import Image from 'next/image';
 import { Link } from '../../i18n/routing';
+import { BrandMark } from '../BrandMark';
 
 /**
  * Sticky site header (DESIGN.md §5 Navigation).
@@ -20,20 +20,13 @@ export async function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-mist/90 backdrop-blur shadow-sm">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 lg:px-8">
-        {/* Brand wordmark */}
+        {/* Brand wordmark — shared with the post-auth Navbar via BrandMark */}
         <Link
           href="/"
           aria-label="SkillSwap"
           className="flex items-center gap-2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-campus-emerald/40"
         >
-            <Image
-              src="/logo-skillswap-header.png"
-              alt="SkillSwap"
-              width={180}
-              height={32}
-              priority
-              className="header-logo"
-            />
+          <BrandMark />
         </Link>
 
         {/* Primary nav (md+) */}

@@ -129,6 +129,17 @@ describe('Navbar component', () => {
     expect(verificationLink.textContent).toBe('Xác minh');
   });
 
+  it('renders the shared brand logo, not a bespoke mark', () => {
+    // Regression: the navbar used to render an invented green "S" tile with a
+    // text wordmark, so the landing page and every other page showed different
+    // logos. Both now use BrandMark and the same PNG.
+    renderNavbar();
+
+    expect(screen.getByAltText('SkillSwap').getAttribute('src')).toContain(
+      'logo-skillswap-header.png',
+    );
+  });
+
   it('builds every nav href and label from the resolved locale, not the URL', () => {
     // Regression: the navbar used to derive the locale from
     // `window.location.pathname`, which is undefined during SSR and on the

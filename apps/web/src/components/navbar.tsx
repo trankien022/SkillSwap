@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useLocale } from 'next-intl';
+import { BrandMark } from './BrandMark';
 import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
 import { callApi, getTokens, getStoredUser, logout, unwrapEnvelope, WALLET_BALANCE_EVENT, type UserProfile } from '../lib/api-client';
 
@@ -111,17 +112,10 @@ export function Navbar({
         {/* Brand Logo & Main Nav */}
         <div className="flex items-center gap-3 xl:gap-8 min-w-0">
           <a href={`/${locale}/classes`} className="flex items-center gap-2.5 group shrink-0">
-            <div className="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold text-lg transition-transform group-hover:scale-105 shrink-0">
-              S
-            </div>
-            <div className="flex flex-col shrink-0">
-              <div className="flex items-center gap-1.5 shrink-0">
-                <span className="font-bold text-xl text-slate-900 tracking-tight leading-none whitespace-nowrap">SkillSwap</span>
-                <span className="whitespace-nowrap text-[11px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold leading-none border border-emerald-100 hidden sm:inline-block">
-                  Sinh viên
-                </span>
-              </div>
-            </div>
+            <BrandMark />
+            <span className="whitespace-nowrap text-[11px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold leading-none border border-emerald-100 hidden sm:inline-block">
+              {locale === 'vi' ? 'Sinh viên' : 'Students'}
+            </span>
           </a>
 
           <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1.5 shrink-0">
