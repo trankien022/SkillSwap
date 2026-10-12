@@ -23,11 +23,21 @@ describe('SqlNotificationManagement', () => {
   it('upserts an existing installation onto the current account and deactivates only owned devices', async () => {
     (manager.query as jest.Mock)
       .mockResolvedValueOnce([{ id: 'device-1' }])
-      .mockResolvedValueOnce([{ id: 'device-1', installation_id: 'install-1', platform: 'ios', is_active: true, created_at: new Date('2026-10-20T10:00:00.000Z') }]);
+      .mockResolvedValueOnce([{ id: 'device-1', installation_id: 'install-1', platform: 'ios', is_active: true, created_at: new Date('2026-10-20T10:00:00.000Z') }])
+      .mockResolvedValueOnce([{ id: 'device-1' }])
+      .mockResolvedValueOnce([]);
     const result = await repository.upsertDevice('account-2', { token: 'ExponentPushToken[x]', platform: 'ios', installationId: 'install-1' });
     expect(result).toMatchObject({ id: 'device-1', installationId: 'install-1', isActive: true });
     expect((manager.query as jest.Mock).mock.calls[1][1][1]).toBe('account-2');
     await repository.deleteDevice('account-2', 'device-1');
-    expect((source.query as jest.Mock).mock.calls[0][1]).toEqual(['device-1', 'account-2']);
+    expect((manager.query as jest.Mock).mock.calls[2][1]).toEqual(['device-1', 'account-2']);
+    expect((manager.query as jest.Mock).mock.calls[3][1]).toEqual(['device-1']);
+  });
+
+  it('does not fail deliveries when another account tries to disable a device', async () => {
+    (manager.query as jest.Mock).mockResolvedValueOnce([]);
+    await repository.deleteDevice('account-attacker', 'device-owned-by-someone-else');
+    expect(manager.query).toHaveBeenCalledTimes(1);
+    expect(manager.query).toHaveBeenCalledWith(expect.stringContaining('RETURNING "id"'), ['device-owned-by-someone-else', 'account-attacker']);
   });
 });

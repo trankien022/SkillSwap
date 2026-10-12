@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import * as SecureStore from 'expo-secure-store';
 import type {
   ActiveSession,
   LoginCredentials,
@@ -26,6 +27,7 @@ import {
 } from '@/infrastructure/http/gateway-client';
 import { SecureSessionStore } from '@/infrastructure/storage/secure-session-store';
 import { createCoordinatedTokenProvider } from './coordinated-token-provider';
+import { PUSH_DEVICE_ID_KEY, unregisterPushDevice } from '@/infrastructure/push/notification-device-lifecycle';
 
 export interface SessionContextValue {
   readonly session: ActiveSession | null;
@@ -186,10 +188,16 @@ export function SessionProvider({
 
   const logout = useCallback(async () => {
     if (!sessionService) return;
+    const pushDeviceId = await SecureStore.getItemAsync(PUSH_DEVICE_ID_KEY);
+    if (pushDeviceId) {
+      if (!gatewayClient) throw new Error('Cannot deactivate push device without an authenticated Gateway');
+      // Keep the session active if server-side deactivation fails so the user can retry.
+      await unregisterPushDevice(gatewayClient);
+    }
     ++uiGenerationRef.current;
     setSession(null);
     await sessionService.logout();
-  }, [sessionService]);
+  }, [gatewayClient, sessionService]);
 
   const refreshMe = useCallback(async () => {
     if (!sessionService) throw new Error('SessionService not initialized');
