@@ -661,5 +661,91 @@
       "item3Title": "Annual Academic Re-check",
       "item3Body": "Student enrollment is re-checked annually to preserve high peer-learning standards."
     }
+  },
+  "PostSessionReview": {
+    "steps": {
+      "step1": "1. Leave Jitsi Room",
+      "step2": "2. Escrow Settlement",
+      "step3": "3. Peer Review Rating"
+    },
+    "banner": {
+      "badge": "Online Session Completed",
+      "title": "Session Completed Successfully!",
+      "subtitle": "The 60-minute virtual session via Jitsi Meet has been recorded safely.",
+      "bookingCode": "BOOKING CODE: #{code}",
+      "duration": "Duration: 60 minutes (Complete)"
+    },
+    "sessionInfo": {
+      "title": "Session Overview",
+      "tag": "1-on-1 Mentoring Session",
+      "classTitle": "IELTS Speaking 6.5+ Mock Interview 1-1",
+      "tutor": "Lan Anh",
+      "university": "Partner University",
+      "verifiedBadge": "Verified Student Card • Subject Certified",
+      "topicLabel": "Discussion Topic",
+      "topicValue": "Part 2 & 3 Education",
+      "jitsiLabel": "Jitsi Connection",
+      "jitsiValue": "1080p Clear Video"
+    },
+    "escrow": {
+      "title": "Escrow Payout Settlement",
+      "status": "Escrow Safely Released",
+      "desc": "The credits held safely in escrow have been released to the instructor following successful class completion.",
+      "totalCost": "Total Session Cost",
+      "credits": "{n} Credits",
+      "tutorShare": "Instructor Wallet (90%)",
+      "platformShare": "Platform Operations (10%)",
+      "availableBalance": "Current Available Balance:",
+      "viewWallet": "View Wallet →"
+    },
+    "materials": {
+      "title": "Session Files & Notes",
+      "count": "2 files",
+      "desc": "Download critique notes and audio summaries from the session.",
+      "file1Name": "Speaking_Critique_SS8821.pdf",
+      "file1Meta": "2.4 MB • Grammar & vocabulary review",
+      "file2Name": "Audio_Sample_Intonation.mp3",
+      "file2Meta": "5.1 MB • Sample intonation audio Part 3"
+    },
+    "form": {
+      "badge": "Learner Review",
+      "counterpart": "Peer learning connection",
+      "title": "Quality Review & Instructor Feedback",
+      "subtitle": "Your feedback helps instructors improve and build trusted peer reputation across campuses.",
+      "overallSatisfaction": "Overall Session Satisfaction",
+      "star1": "Needs Improvement (1.0 / 5.0)",
+      "star2": "Fair (2.0 / 5.0)",
+      "star3": "Good (3.0 / 5.0) - Met expectations",
+      "star4": "Very Good (4.0 / 5.0) - Satisfied",
+      "star5": "Excellent (5.0 / 5.0) - Highly recommended",
+      "criteriaTitle": "Rating across 4 Core Pillars",
+      "crit1": "1. Subject Competency & Teaching",
+      "crit1Desc": "Clear explanations, solid understanding",
+      "crit2": "2. Punctuality & Professionalism",
+      "crit2Desc": "Joined on time, respectful conduct",
+      "crit3": "3. Interactive Feedback & Correction",
+      "crit3Desc": "Detailed pronunciation notes",
+      "crit4": "4. Video & Audio Connection Quality",
+      "crit4Desc": "Clear audio, good microphone, no lag",
+      "commentLabel": "Detailed Review for Instructor",
+      "commentHint": "Click suggestion chips to add feedback points quickly:",
+      "chip1": "Clear, logical explanations",
+      "chip2": "Detailed pronunciation feedback",
+      "chip3": "Exam-relevant practice questions",
+      "chip4": "Comfortable, encouraging atmosphere",
+      "commentPlaceholder": "Share your experience with the session...",
+      "defaultComment": "The mentor was very attentive, correcting pronunciation and helping structure answers clearly. Highly recommend!",
+      "crossMatchTitle": "Skill Swap Cross-Matching Opportunity",
+      "crossMatchSub": "Compatibility Suggestion",
+      "crossMatchDesc": "The mentor wants to learn other subjects. Propose a 1-1 skill swap for upcoming sessions?",
+      "crossMatchOpt1": "Propose 1-1 peer skill swap",
+      "crossMatchOpt2": "Save to Mentoring Directory",
+      "btnBack": "Back to My Bookings",
+      "btnSubmit": "Submit Review & Finalize",
+      "btnSubmitting": "Synchronizing Escrow...",
+      "btnSuccess": "Submitted Successfully!",
+      "toastSuccessTitle": "Review recorded in system ledger!",
+      "toastSuccessBody": "Thank you! The instructor trust score has been updated. Redirecting to your bookings..."
+    }
   }
 }

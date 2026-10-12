@@ -661,5 +661,91 @@
       "item3Title": "Tái thẩm định theo niên khóa",
       "item3Body": "Thẻ sinh viên được rà soát định kỳ hàng năm để bảo đảm tư cách thành viên và chất lượng buổi học."
     }
+  },
+  "PostSessionReview": {
+    "steps": {
+      "step1": "1. Rời phòng Jitsi Meet",
+      "step2": "2. Nghiệm thu & Giải ngân Escrow",
+      "step3": "3. Đánh giá tín nhiệm Peer"
+    },
+    "banner": {
+      "badge": "Buổi học trực tuyến hoàn thành",
+      "title": "Buổi học đã hoàn thành thành công!",
+      "subtitle": "Phiên học trực tuyến 60 phút qua Jitsi Meet đã được ghi nhận an toàn.",
+      "bookingCode": "MÃ BUỔI HỌC: #{code}",
+      "duration": "Thời lượng: 60 phút (Trọn vẹn)"
+    },
+    "sessionInfo": {
+      "title": "Thông tin buổi học",
+      "tag": "1-on-1 Mentoring Session",
+      "classTitle": "Luyện Speaking IELTS 6.5+ Mock Interview 1-1",
+      "tutor": "Lan Anh",
+      "university": "Đại học Đối tác",
+      "verifiedBadge": "Thẻ SV Đã xác thực • Chuyên môn kiểm định",
+      "topicLabel": "Chủ đề thảo luận",
+      "topicValue": "Part 2 & 3 Education",
+      "jitsiLabel": "Đường truyền Jitsi",
+      "jitsiValue": "1080p Rõ nét"
+    },
+    "escrow": {
+      "title": "Thanh toán & Giữ cọc Escrow",
+      "status": "Đã giải ngân an toàn",
+      "desc": "Hệ thống tự động chuyển số Credit từ quỹ bảo lãnh sang Ví giảng viên sau khi phiên học kết thúc suôn sẻ.",
+      "totalCost": "Tổng chi phí buổi học",
+      "credits": "{n} Credit",
+      "tutorShare": "Ví giảng viên (90%)",
+      "platformShare": "Phí duy trì hệ thống (10%)",
+      "availableBalance": "Số dư khả dụng hiện tại:",
+      "viewWallet": "Xem ví →"
+    },
+    "materials": {
+      "title": "Tài liệu & Ghi chú buổi học",
+      "count": "2 tệp",
+      "desc": "Tải bản nhận xét chi tiết và phiếu tổng kết của buổi học.",
+      "file1Name": "Speaking_Critique_SS8821.pdf",
+      "file1Meta": "2.4 MB • Nhận xét ngữ pháp & từ vựng",
+      "file2Name": "Audio_Sample_Intonation.mp3",
+      "file2Meta": "5.1 MB • Ghi âm mẫu ngữ điệu Part 3"
+    },
+    "form": {
+      "badge": "Đánh giá người học",
+      "counterpart": "Sinh viên kết nối học tập",
+      "title": "Đánh giá chất lượng & Giảng viên",
+      "subtitle": "Góp ý của bạn giúp cải thiện chất lượng giảng dạy và tích lũy uy tín học thuật trong cộng đồng.",
+      "overallSatisfaction": "Mức độ hài lòng chung về buổi học",
+      "star1": "Chưa hài lòng (1.0 / 5.0) - Cần cải thiện",
+      "star2": "Tạm ổn (2.0 / 5.0) - Cần lưu ý một số điểm",
+      "star3": "Tốt (3.0 / 5.0) - Đạt chuẩn kỳ vọng",
+      "star4": "Rất tốt (4.0 / 5.0) - Hài lòng",
+      "star5": "Xuất sắc (5.0 / 5.0) - Cực kỳ khuyến nghị",
+      "criteriaTitle": "Đánh giá theo 4 tiêu chí cốt lõi",
+      "crit1": "1. Chuyên môn & Phương pháp",
+      "crit1Desc": "Nắm vững format kỳ thi, giải thích chuẩn xác",
+      "crit2": "2. Tính đúng giờ & Tác phong",
+      "crit2Desc": "Vào phòng Jitsi đúng giờ, thái độ tôn trọng",
+      "crit3": "3. Tương tác & Sửa lỗi trực tiếp",
+      "crit3Desc": "Ghi chú phản xạ phát âm chi tiết từng câu",
+      "crit4": "4. Hạ tầng kết nối video Jitsi",
+      "crit4Desc": "Âm thanh rõ, micro lọc ồn tốt, không giật lag",
+      "commentLabel": "Nhận xét chi tiết cho giảng viên",
+      "commentHint": "Chọn nhanh phản hồi nổi bật bên dưới để thêm vào nội dung đánh giá:",
+      "chip1": "Giải thích dễ hiểu, logic",
+      "chip2": "Sửa phát âm & nối âm rất chi tiết",
+      "chip3": "Tài liệu sát đề thi quý mới nhất",
+      "chip4": "Tạo cảm giác tự tin, không bị áp lực",
+      "commentPlaceholder": "Chia sẻ cảm nhận của bạn về buổi học...",
+      "defaultComment": "Giảng viên hướng dẫn rất tận tâm, chỉnh ngay các lỗi phát âm và giúp mình triển khai ý tưởng rất mạch lạc. Rất khuyến khích các bạn sinh viên cùng học!",
+      "crossMatchTitle": "Cơ hội Đổi chéo kỹ năng (Skill Swap)",
+      "crossMatchSub": "Gợi ý tương thích",
+      "crossMatchDesc": "Giảng viên đang muốn học thêm môn khác. Bạn có muốn đổi kỹ năng 1-1 cho các buổi tiếp theo?",
+      "crossMatchOpt1": "Đề xuất đổi kỹ năng chéo 1-1",
+      "crossMatchOpt2": "Lưu vào Danh bạ cố vấn",
+      "btnBack": "Quay lại Lớp của tôi",
+      "btnSubmit": "Gửi đánh giá & Hoàn tất",
+      "btnSubmitting": "Đang đồng bộ Escrow...",
+      "btnSuccess": "Đã gửi thành công!",
+      "toastSuccessTitle": "Đánh giá đã được ghi nhận vào sổ cái!",
+      "toastSuccessBody": "Cảm ơn bạn. Hồ sơ tín nhiệm của giảng viên đã được cập nhật. Đang chuyển hướng về trang lớp học..."
+    }
   }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import type {
   BookingState,
@@ -77,6 +78,7 @@ function PendingCard({
   onAction?: (action: SessionAction) => void;
   tCard: CardTranslator;
 }) {
+  const locale = useLocale();
   const countdown = booking.autoReleaseCountdownSeconds ?? 0;
   const hours = Math.floor(countdown / 3600);
   const minutes = Math.floor((countdown % 3600) / 60);
@@ -107,14 +109,23 @@ function PendingCard({
             <ReportIcon className="h-4 w-4" />
             <span>{tCard('noShow')}</span>
           </button>
-          <button
-            type="button"
-            onClick={() => onAction?.({ type: 'confirm', bookingId: booking.id })}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95 sm:w-auto"
-          >
-            <CheckCircleIcon className="h-4 w-4" />
-            <span>{tCard('confirmReview')}</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={`/${locale}/bookings/${booking.id}/review`}
+              className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              <span>{locale === 'vi' ? 'Nghiệm thu chi tiết' : 'Detailed Settlement'}</span>
+              <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+            </Link>
+            <button
+              type="button"
+              onClick={() => onAction?.({ type: 'confirm', bookingId: booking.id })}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95 sm:w-auto"
+            >
+              <CheckCircleIcon className="h-4 w-4" />
+              <span>{tCard('confirmReview')}</span>
+            </button>
+          </div>
         </div>
       </div>
     </article>
