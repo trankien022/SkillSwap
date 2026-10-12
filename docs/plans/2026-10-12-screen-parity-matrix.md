@@ -30,7 +30,7 @@ Neither `SkillSwap-SRS.md` nor `SkillSwap-PRD.md` contains an explicit screen in
 | # | Screen | Web route | Mobile route | Endpoint that should back it | Web | Mobile |
 |---|---|---|---|---|---|---|
 | S1 | Landing / Home | `/{locale}` | `app/index.tsx` | none (static) | ✅ none | ➖ guard |
-| S2 | Learner dashboard | `/{locale}/bookings` | `(tabs)/index.tsx` → `dashboard-view.tsx` | `GET /classes/bookings/me` + `GET /wallet/balance` | ❌ Mock | ✅ Real |
+| S2 | Learner dashboard | `/{locale}/bookings` | `(tabs)/index.tsx` → `dashboard-view.tsx` | `GET /classes/bookings/me` + `GET /wallet/balance` | ✅ Real | ✅ Real |
 | S3 | Marketplace | `/{locale}/classes` | `(tabs)/explore.tsx` → `marketplace-view.tsx` | `GET /classes` + `GET /skills` | ✅ Real | ✅ Real |
 | S4 | Class detail | `/{locale}/classes/[id]` | `classes/[id].tsx` → `class-detail-view.tsx` | `GET /classes/{id}` | ✅ Real | ✅ Real |
 | S5 | Login | `/{locale}/auth` (`/login` redirects) | `(auth)/login.tsx` | `POST /auth/login` | ✅ Real | ✅ Real |
@@ -40,14 +40,14 @@ Neither `SkillSwap-SRS.md` nor `SkillSwap-PRD.md` contains an explicit screen in
 | S9 | Student verification | `/{locale}/verification` | `(features)/verification.tsx` | `GET/POST /student-verifications` | ✅ Real | ✅ Real |
 | S10 | Skills / evidence | **missing** | `(features)/skills.tsx` | `GET /skills`, `GET /profile-skills/me`, `POST /skill-evidence` | ❌ Missing | ✅ Real |
 | S11 | Withdrawal | `/{locale}/wallet/withdrawal` | `wallet-view.tsx` | `GET /wallet/balance` (submit has **no** endpoint) | ⚠️ Partial | ➖ not built |
-| S12 | My classes / teaching | `/{locale}/instructor` | `(features)/teaching.tsx` | `POST /classes`, `PATCH /classes/{id}`, `POST /classes/{id}/complete` | ⚠️ Partial | ✅ Real |
-| S13 | Post-class rating | `/{locale}/bookings/[id]/review` | `my-bookings-view.tsx` | `POST /classes/bookings/{id}/rating` | ❌ No call | ✅ Real |
+| S12 | My classes / teaching | `/{locale}/instructor`, `/{locale}/teach/classes/new` | `(features)/teaching.tsx` | `POST /classes`, `PATCH /classes/{id}`, `POST /classes/{id}/complete` | ✅ Real | ✅ Real |
+| S13 | Post-class rating | `/{locale}/bookings/[id]/review` | `my-bookings-view.tsx` | `POST /classes/bookings/{id}/rating` | ✅ Real | ✅ Real |
 | S14 | Jitsi classroom | `/{locale}/bookings/[id]/live` | `my-bookings-view.tsx` | `POST /classes/bookings/{id}/room-access` | ✅ Real | ✅ Real |
 | S15 | Profile | Navbar only | `(tabs)/profile.tsx` | session | ⚠️ Partial | ✅ session |
 | S16 | System status | `/{locale}/status` | — | `GET /health` | ✅ Real | ➖ |
 | S17 | Notifications | `/{locale}/notifications` | `(features)/notifications.tsx` | `GET /notifications`, `POST /notification-devices` | ❌ Hardcoded | ✅ Real |
 
-**Tally (after `f34d278` merge + Phase 1):** Web 10 real / 2 partial / 3 mock-or-missing. Mobile 12 real / 4 session-or-guard / 1 not built.
+**Tally (after `f34d278` merge + Phases 1A–1E):** Web 13 real / 2 partial / 2 mock-or-missing (S10 missing, S17 hardcoded). Mobile 12 real / 4 session-or-guard / 1 not built.
 
 ---
 
@@ -329,3 +329,120 @@ who pulls.
 - [x] Reusable contracts identified
 - [x] Defects recorded with severity and a decision needed
 - [ ] SRS screen inventory added (Phase 3C)
+
+---
+
+## 11. Phase 1E — S13 rating and the publish surfaces (D4)
+
+Commits: `0ffbc30` (money module + S13), `d8a1e19` (publish path),
+`0b22179` (local-cache removal and instructor demo data).
+
+### S13 — `/{locale}/bookings/[id]/review` is now real
+
+The defect was worse than "never calls the rating API". `handleSubmit` awaited
+the POST and then set success in a `finally`, so **a rejected rating still
+rendered the green "verified" toast** and redirected. The rated stars arrived
+from four per-criterion sliders that were averaged locally and discarded, and a
+blank comment was replaced with a canned Vietnamese sentence.
+
+Now: success is set only when the response is `ok`; a rejection shows the API's
+own message inline and does not redirect. The comment is required, matching
+`createRatingSchema`'s `comment.trim().min(1)`. The booking is located from
+`GET /classes/bookings/me` by the route id, with explicit loading / signed-out /
+not-found / not-eligible / already-rated states. The escrow split is derived
+from the real price via the shared `computePlatformFee`/`computeNetCredits`, and
+the balance comes from `GET /wallet/balance`. The four criteria are labelled a
+private self-assessment — only the overall score is submitted, and the UI says
+so. The fake downloadable files are replaced with an honest "not available yet"
+line; no materials endpoint exists.
+
+Removed with it: a hardcoded tutor (`Lan Anh`), avatar (`LA`), topic
+(`Part 2 & 3 Education`), `1080p Clear Video`, `Duration: 60 minutes`, the
+`150 Credit` balance, the `90 Credit`/`+81`/`9` settlement, a fabricated
+`SS-VN-8821` booking id, a cross-matching block with no backing field, and a
+`handleDownload` that only showed a toast.
+
+### Money helpers moved out of `mock-data.ts`
+
+`computePlatformFee`, `computeNetCredits`, `computeVndEstimate`, `clampPrice`,
+`clampCapacity` and the validity predicates are the **real** BR-034 rules, but
+they lived in a file named `mock-data.ts` next to demo fixtures. They are now in
+`lib/teacher/money.ts`, so the publish preview and the post-session settlement
+read one arithmetic source and cannot drift. The fixture half of
+`mock-data.ts` and the whole `MockTeacherPublishGateway` are deleted.
+
+### D4 — resolved: one publish path
+
+`/{locale}/teach/classes/new` already called the real `POST /classes`, but then
+**swallowed any failure** (`console.warn('...fallback to mock result')`) and
+reported success from a mock gateway — so a rejected publish looked published.
+It then **fabricated** `classroomCode = SS-<id tail>` and displayed it as
+"Mã phòng học": `createClassSchema` has no such field, and the room is minted
+later, per booking, by `POST /classes/bookings/{bookingId}/room-access`.
+
+`PublishResult` no longer has a room-code field to fabricate. Success shows only
+the class id the server returned.
+
+`/{locale}/instructor` gets its class list from `GET /classes?teacherId=me` and
+no longer layers a `skillswap_created_classes` cache on top, so the two screens
+cannot disagree. The cache is also gone from the checkout fallback and from
+`ClassDetailApiGateway`; an id the API cannot resolve is a not-found state.
+
+Three more publish-surface fixes fell out of the same read:
+
+1. **`new Date('T:00')` does not throw on V8** — it silently resolves to
+   2000-01-01. The old `toStartsAtIso` guarded only against `NaN`, so a blank
+   schedule would have published a class dated the year 2000. The date and time
+   shapes are now validated first, and calendar rollover (`2026-02-31`,
+   `24:30`) is rejected.
+2. **"Save draft" is removed.** There is no draft endpoint — `POST /classes`
+   publishes immediately — so the button could only pretend to persist.
+3. **Verified skills come from `GET /profile-skills/me`.** The picker previously
+   offered two fixture skills the server had never verified. That endpoint is
+   auth-gated, so the workspace is now a client component with loading /
+   signed-out / error / no-verified-skill states. Because
+   `ProfileSkillView` carries no verifier name or approval date, `VerifiedSkill`
+   drops both fields rather than inventing a person.
+
+### Fabricated data removed from `/instructor`
+
+None of these were computed from anything:
+
+| Claim | Was |
+|---|---|
+| "35 buổi học", "100% hoàn thành đúng giờ" | literal |
+| "4.9 / 5.0", "31 nhận xét", "98% hài lòng" | literal (schema marks rating fields **provisional**) |
+| three class cards | hardcoded, with a fabricated id and a booking link |
+| "Được duyệt bởi Thầy Hùng (8.5)" | a verifier not in the system |
+| "Mã SV: VNU-2021-0988" | literal |
+| name fallback `Lan Anh`, avatar `LA` | literals |
+| `showClassReview` → "5/5 sao" | literal for any class |
+| `copyShareLink` → `/lop-hoc/<code>` | a route that does not exist |
+
+The tiles now show only server-reported values (available and pending credits)
+and counts the class list itself yields; completed-session and satisfaction
+metrics are omitted because they are not computable.
+
+### Two more swallowed failures found in checkout
+
+- `handleConfirmBooking` caught a failed `POST /classes/:id/bookings` in an inner
+  `catch` and fell through to "simulated escrow", so **a booking that never
+  happened opened the success modal**. Both the hold and the confirm must now
+  succeed before the modal opens.
+- the wallet page merged fabricated debit entries parsed from the dead
+  `skillswap_user_bookings` key, defaulting the amount to `90` credits. The
+  server ledger is now the only source.
+
+### Left open (recorded, not faked)
+
+- **Per-criterion ratings are not persisted** — the API accepts one `stars`.
+- **`averageRating` / `ratingsCount`** are provisional per
+  `packages/contracts/src/mobile-classes.ts:176` ("rating table not yet
+  implemented"), so `/instructor` no longer shows them.
+- **`ClassDetailApiGateway` still serves known demo ids** from
+  `MockClassDetailGateway` before querying the API. Deliberate for the seeded
+  demo, but it means a demo id shadows a real class with the same id.
+- `BookClassUseCase` verified-student eligibility check (separate known gap).
+- Marketplace `DEFAULT_QUERY` still imported from `marketplace/mock-gateway`
+  (Phase 1F).
+
