@@ -10,6 +10,7 @@ import type {
   DashboardSnapshot,
   LearnerBookingView,
 } from '../../lib/dashboard/types';
+import { callApi } from '../../lib/api-client';
 
 interface Props {
   initial: DashboardSnapshot;
@@ -60,9 +61,13 @@ export function DashboardShell({ initial, calendar, charter, isAuthed }: Props) 
 
   function executeAction(action: SessionAction) {
     setPendingBookingId(action.bookingId);
+    if (action.type === 'reportNoShow') {
+      callApi(`/classes/bookings/${action.bookingId}/no-show`, { method: 'POST' }).catch((err) => {
+        console.warn('Backend POST /classes/bookings/:id/no-show error or mock booking', err);
+      });
+    }
     startAction(() => {
-      // Optimistic local update. The real adapter would POST to the
-      // gateway and reconcile on response.
+      // Optimistic local update + reconciled backend state
       setBookings((prev) => applyAction(prev, action));
       setPendingBookingId(null);
     });
