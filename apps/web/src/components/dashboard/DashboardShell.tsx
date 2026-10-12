@@ -11,7 +11,11 @@ import type {
   LearnerBookingView,
 } from '../../lib/dashboard/types';
 import { callApi } from '../../lib/api-client';
-import { fetchMyBookings } from '../../lib/dashboard/api-my-bookings';
+import {
+  fetchMyBookings,
+  USER_BOOKINGS_EVENT,
+  USER_BOOKINGS_STORAGE_KEY,
+} from '../../lib/dashboard/api-my-bookings';
 
 interface Props {
   initial: DashboardSnapshot;
@@ -43,15 +47,37 @@ export function DashboardShell({ initial, calendar, charter, isAuthed }: Props) 
   const [noShowBooking, setNoShowBooking] = useState<LearnerBookingView | null>(null);
 
   useEffect(() => {
-    // Hydrate real learner bookings from GET /api/classes/bookings/me
-    fetchMyBookings()
-      .then((real) => {
-        if (real && real.length > 0) {
-          setBookings(real);
-        }
-      })
-      .catch(() => {});
-  }, []);
+    let active = true;
+    const reload = () => {
+      fetchMyBookings()
+        .then((real) => {
+          if (!active) return;
+          if (real && real.length > 0) {
+            const realIds = new Set(real.map((r) => r.id));
+            setBookings([
+              ...real,
+              ...initial.bookings.filter((b) => !realIds.has(b.id)),
+            ]);
+          }
+        })
+        .catch(() => {});
+    };
+
+    reload();
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener(USER_BOOKINGS_EVENT, reload);
+      window.addEventListener('storage', reload);
+      return () => {
+        active = false;
+        window.removeEventListener(USER_BOOKINGS_EVENT, reload);
+        window.removeEventListener('storage', reload);
+      };
+    }
+    return () => {
+      active = false;
+    };
+  }, [initial.bookings]);
 
   const visibleBookings = useMemo(() => {
     return bookings.filter((b) => {
@@ -80,7 +106,25 @@ export function DashboardShell({ initial, calendar, charter, isAuthed }: Props) 
     }
     startAction(() => {
       // Optimistic local update + reconciled backend state
-      setBookings((prev) => applyAction(prev, action));
+      setBookings((prev) => {
+        const next = applyAction(prev, action);
+        try {
+          const raw = localStorage.getItem(USER_BOOKINGS_STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              const updated = parsed.map((item: LearnerBookingView) => {
+                const found = next.find((n) => n.id === item.id);
+                return found ?? item;
+              });
+              localStorage.setItem(USER_BOOKINGS_STORAGE_KEY, JSON.stringify(updated));
+            }
+          }
+        } catch {
+          // ignore
+        }
+        return next;
+      });
       setPendingBookingId(null);
     });
   }

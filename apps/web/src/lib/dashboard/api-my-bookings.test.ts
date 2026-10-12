@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { mapContractBookingToView, fetchMyBookings } from './api-my-bookings';
+import {
+  mapContractBookingToView,
+  fetchMyBookings,
+  saveUserBooking,
+  getLocalUserBookings,
+  USER_BOOKINGS_STORAGE_KEY,
+} from './api-my-bookings';
 import type { LearnerBookingItemView } from '@skillswap/contracts';
+import type { LearnerBookingView } from './types';
 
 describe('api-my-bookings', () => {
   const sampleContractItem: LearnerBookingItemView = {
@@ -39,5 +46,30 @@ describe('api-my-bookings', () => {
   it('handles network failure gracefully without throwing', async () => {
     const result = await fetchMyBookings();
     expect(result).toBeNull();
+  });
+
+  it('saves and retrieves local user bookings from storage', () => {
+    const mockItem: LearnerBookingView = {
+      id: 'bkg-test-local-1',
+      classId: 'cls-test-1',
+      classTitle: 'Lớp học lập trình Next.js',
+      skillIcon: 'code',
+      teacherName: 'Giảng viên Test',
+      teacherInitial: 'G',
+      teacherSchoolLabel: 'Đại học Quốc gia',
+      startsAt: '2026-10-30T10:00:00.000Z',
+      durationMinutes: 60,
+      priceCredits: 50,
+      state: 'upcoming',
+    };
+
+    saveUserBooking(mockItem);
+    const stored = getLocalUserBookings();
+    expect(stored.some((b: any) => b.id === 'bkg-test-local-1')).toBe(true);
+
+    // Clean up
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(USER_BOOKINGS_STORAGE_KEY);
+    }
   });
 });

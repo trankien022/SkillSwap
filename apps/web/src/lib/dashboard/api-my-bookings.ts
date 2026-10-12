@@ -37,20 +37,65 @@ export function mapContractBookingToView(item: LearnerBookingItemView): LearnerB
   };
 }
 
+export const USER_BOOKINGS_STORAGE_KEY = 'skillswap_user_bookings';
+export const USER_BOOKINGS_EVENT = 'skillswap:bookings-updated';
+
+export function getLocalUserBookings(): LearnerBookingView[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(USER_BOOKINGS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveUserBooking(booking: LearnerBookingView): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const existing = getLocalUserBookings();
+    const updated = [booking, ...existing.filter((b) => b.id !== booking.id)];
+    localStorage.setItem(USER_BOOKINGS_STORAGE_KEY, JSON.stringify(updated));
+  } catch (err) {
+    console.warn('Failed to save user booking to localStorage', err);
+  }
+}
+
+export function dispatchUserBookingsUpdate(booking: LearnerBookingView): void {
+  saveUserBooking(booking);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(USER_BOOKINGS_EVENT, { detail: booking }));
+  }
+}
+
 /**
  * Queries `GET /api/classes/bookings/me` for current authenticated user's real bookings.
+ * Merges local browser-stored bookings so newly created bookings appear immediately.
  */
 export async function fetchMyBookings(): Promise<LearnerBookingView[] | null> {
+  const localBookings = getLocalUserBookings();
+
   try {
     const res = await callApi('/classes/bookings/me');
     if (res.ok) {
       const page = await unwrapEnvelope<MyBookingsPageView>(res);
       if (page && Array.isArray(page.items)) {
-        return page.items.map(mapContractBookingToView);
+        const mapped = page.items.map(mapContractBookingToView);
+        const existingIds = new Set(mapped.map((m) => m.id));
+        return [
+          ...localBookings.filter((lb) => !existingIds.has(lb.id)),
+          ...mapped,
+        ];
       }
     }
   } catch (err) {
     console.warn('Failed to fetch /api/classes/bookings/me:', err);
+  }
+
+  if (localBookings.length > 0) {
+    return localBookings;
   }
   return null;
 }
