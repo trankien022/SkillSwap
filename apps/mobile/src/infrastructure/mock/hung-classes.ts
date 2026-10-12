@@ -1,0 +1,38 @@
+export const classes = [
+  {
+    id: 'hung-react',
+    title: 'React cơ bản: xây dựng ứng dụng đầu tiên',
+    category: 'Lập trình',
+    teacher: 'Minh Anh',
+    school: 'Đại học FPT',
+    price: 80,
+    minutes: 60,
+  },
+  {
+    id: 'hung-design',
+    title: 'Thiết kế giao diện với Figma',
+    category: 'Thiết kế',
+    teacher: 'Hoàng Nam',
+    school: 'Đại học HUTECH',
+    price: 65,
+    minutes: 90,
+  },
+  {
+    id: 'hung-english',
+    title: 'Tiếng Anh giao tiếp trong học tập',
+    category: 'Ngoại ngữ',
+    teacher: 'Thu Hà',
+    school: 'Đại học Khoa học Tự nhiên',
+    price: 50,
+    minutes: 60,
+  },
+  {
+    id: 'hung-guitar',
+    title: 'Guitar nhập môn cho người mới',
+    category: 'Âm nhạc',
+    teacher: 'Gia Huy',
+    school: 'Đại học Tôn Đức Thắng',
+    price: 100,
+    minutes: 60,
+  },
+];
