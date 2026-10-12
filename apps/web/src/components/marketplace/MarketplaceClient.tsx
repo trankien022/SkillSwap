@@ -9,13 +9,13 @@ import { FilterSidebar } from './FilterSidebar';
 import { ClassGrid } from './ClassGrid';
 import { PaginationBar } from './PaginationBar';
 import { HttpMarketplaceGateway } from '../../lib/marketplace/http-gateway';
-import { DEFAULT_QUERY } from '../../lib/marketplace/mock-gateway';
-import type {
-  MarketplaceClass,
-  MarketplacePage,
-  MarketplaceQuery,
-  SkillCategory,
-  SortOrder,
+import {
+  DEFAULT_QUERY,
+  type MarketplaceClass,
+  type MarketplacePage,
+  type MarketplaceQuery,
+  type SkillCategory,
+  type SortOrder,
 } from '../../lib/marketplace/types';
 
 /** Gateway instance is stateless, so one per module keeps fetch code simple. */

@@ -8,7 +8,7 @@ import {
   toMarketplaceClass,
   type SkillCatalogue,
 } from './api-mapping';
-import { DEFAULT_QUERY } from './mock-gateway';
+import { DEFAULT_QUERY } from './types';
 import type { MarketplaceClass, MarketplacePage, MarketplaceQuery } from './types';
 
 /**

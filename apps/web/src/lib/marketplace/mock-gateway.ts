@@ -108,16 +108,8 @@ function compare(
   return new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime();
 }
 
-/** Default query used by the marketplace page before any user input. */
-export const DEFAULT_QUERY: MarketplaceQuery = {
-  university: 'all',
-  category: 'all',
-  formats: ['one-on-one', 'group-2-4'],
-  timeFilter: 'all-valid',
-  sort: 'nearest',
-  page: 1,
-  perPage: 6,
-};
+/** Default query moved to `./types` — it is not mock behaviour. `mock-gateway`
+ * imports it from there for its own tests. */
 
 // Re-export the seeded classes for tests that want to assert on the input.
 export { demoMarketplaceClasses } from './mock-data';

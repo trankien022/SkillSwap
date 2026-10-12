@@ -67,6 +67,24 @@ export interface MarketplaceQuery {
   perPage: number;
 }
 
+/**
+ * The query the marketplace page starts from, before any user input.
+ *
+ * This lives beside the query type rather than in `mock-gateway.ts`, where it
+ * used to sit. The live gateway imported it from the mock module, which put the
+ * mock file in the production import graph and made a real screen depend on a
+ * fixture module for a default value that is not mock behaviour at all.
+ */
+export const DEFAULT_QUERY: MarketplaceQuery = {
+  university: 'all',
+  category: 'all',
+  formats: ['one-on-one', 'group-2-4'],
+  timeFilter: 'all-valid',
+  sort: 'nearest',
+  page: 1,
+  perPage: 6,
+};
+
 export interface MarketplacePage {
   items: MarketplaceClass[];
   total: number;
