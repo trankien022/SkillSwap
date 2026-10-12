@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useLocale } from 'next-intl';
 import { callApi, unwrapEnvelope } from '../../../lib/api-client';
+import { capacityIsValid, priceIsValid } from '../../../lib/teacher/money';
 import { Navbar } from '../../../components/navbar';
 import type {
   ProfileSkillView,
@@ -34,6 +35,13 @@ export interface TeacherClassItem {
 /** The class lifecycle states that mean "this class is over". */
 const COMPLETED_CLASS_STATES = new Set(['completed', 'cancelled']);
 
+/**
+ * The states from which `POST /classes/:id/start` is legal on the server
+ * (`published|full -> in_progress`). The button is gated on this so the common
+ * case does not rely on a 409 to be told the class cannot start yet.
+ */
+const STARTABLE_CLASS_STATES = new Set(['published', 'full']);
+
 export default function InstructorDashboard() {
   const locale = useLocale();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -46,6 +54,8 @@ export default function InstructorDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [classFilter, setClassFilter] = useState<'all' | 'upcoming' | 'open' | 'completed'>('all');
+  /** The class whose inline edit panel is open, or null. */
+  const [editingClassId, setEditingClassId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -83,19 +93,7 @@ export default function InstructorDashboard() {
             // Read straight from the server. There is deliberately no localStorage
             // cache: the list is server-owned, and a local copy is how this screen
             // and the publish screen came to disagree about which classes existed.
-            setClasses(
-              page.items.map((item) => ({
-                id: item.id,
-                description: item.description,
-                startsAt: item.startsAt,
-                durationMinutes: item.durationMinutes,
-                priceCredits: item.priceCredits,
-                capacity: item.capacity,
-                confirmedBookingsCount: item.confirmedBookingsCount,
-                availableSeats: item.availableSeats,
-                state: item.state,
-              })),
-            );
+            setClasses(page.items.map(toTeacherClassItem));
           }
         } else if (classesRes.status === 401) {
           setLoadError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
@@ -122,41 +120,94 @@ export default function InstructorDashboard() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  /**
+   * Re-reads the class list and wallet from the server and repaints from that
+   * response. Used after every lifecycle command so the screen shows server
+   * truth rather than an optimistically mutated local copy.
+   */
+  const refreshServerState = async () => {
+    const [balRes, classesRes] = await Promise.all([
+      callApi('/wallet/balance'),
+      callApi('/classes?teacherId=me'),
+    ]);
+    if (balRes.ok) setBalance(await unwrapEnvelope<WalletBalanceView>(balRes));
+    if (classesRes.ok) {
+      const page = await unwrapEnvelope<ListClassesPageView>(classesRes);
+      if (Array.isArray(page?.items)) setClasses(page.items.map(toTeacherClassItem));
+    }
+  };
+
+  /**
+   * Starts a class. The server answers `{ started }`: `false` means the class was
+   * already in progress, which is a truthful no-op rather than a new success, so
+   * the two are reported differently instead of both claiming "đã bắt đầu".
+   */
+  const handleStartClass = async (classId: string) => {
+    try {
+      setIsProcessing(true);
+      const res = await callApi(`/classes/${classId}/start`, { method: 'POST' });
+      if (!res.ok) throw new Error(await readApiMessage(res, 'Không bắt đầu được lớp'));
+      const result = await unwrapEnvelope<{ started: boolean }>(res);
+      showToast(result?.started ? 'Đã bắt đầu lớp học.' : 'Lớp này đã bắt đầu trước đó.');
+      await refreshServerState();
+    } catch (e) {
+      showToast('Lỗi: ' + (e as Error).message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  /**
+   * Completes a class and releases the teacher's income. The server answers
+   * `{ completed, basis }`: `completed: false` means nothing was settled (the
+   * class was already completed, or it had not started), so the income message is
+   * only shown when money actually moved — `basis` is the server's own reason.
+   */
   const handleCompleteClass = async (classId: string) => {
     try {
       setIsProcessing(true);
       const res = await callApi(`/classes/${classId}/complete`, { method: 'POST' });
-      if (!res.ok) {
-        if (res.status === 409) throw new Error('Lớp này đã hoàn thành hoặc chưa đủ điều kiện');
-        throw new Error('Lỗi hệ thống');
-      }
-      showToast('Đã hoàn thành lớp. Doanh thu đã được giải ngân vào ví.');
+      if (!res.ok) throw new Error(await readApiMessage(res, 'Không hoàn thành được lớp'));
+      const result = await unwrapEnvelope<{ completed: boolean; basis: string | null }>(res);
+      showToast(
+        result?.completed
+          ? 'Đã hoàn thành lớp. Doanh thu đã được giải ngân vào ví.'
+          : 'Lớp này không còn gì để hoàn thành.',
+      );
 
       // Re-read the wallet and the class list, so the screen shows server truth
       // after the money moved.
-      const [balRes, classesRes] = await Promise.all([
-        callApi('/wallet/balance'),
-        callApi('/classes?teacherId=me'),
-      ]);
-      if (balRes.ok) setBalance(await unwrapEnvelope<WalletBalanceView>(balRes));
-      if (classesRes.ok) {
-        const page = await unwrapEnvelope<ListClassesPageView>(classesRes);
-        if (Array.isArray(page?.items)) {
-          setClasses(
-            page.items.map((item) => ({
-              id: item.id,
-              description: item.description,
-              startsAt: item.startsAt,
-              durationMinutes: item.durationMinutes,
-              priceCredits: item.priceCredits,
-              capacity: item.capacity,
-              confirmedBookingsCount: item.confirmedBookingsCount,
-              availableSeats: item.availableSeats,
-              state: item.state,
-            })),
-          );
-        }
-      }
+      await refreshServerState();
+    } catch (e) {
+      showToast('Lỗi: ' + (e as Error).message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  /**
+   * Saves an edit to price and capacity. Only changed fields are sent, so an
+   * unrelated field is never overwritten with the same value. A `409` means the
+   * class is locked by a confirmed booking; the panel closes without changing
+   * anything and the server's own message is shown.
+   */
+  const handleSaveEdit = async (classId: string, draft: ClassEditDraft) => {
+    const payload = toUpdateClassInput(draft);
+    if (Object.keys(payload).length === 0) {
+      setEditingClassId(null);
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      const res = await callApi(`/classes/${classId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(await readApiMessage(res, 'Không lưu được thay đổi'));
+      showToast('Đã lưu thay đổi.');
+      setEditingClassId(null);
+      await refreshServerState();
     } catch (e) {
       showToast('Lỗi: ' + (e as Error).message);
     } finally {
@@ -475,6 +526,32 @@ export default function InstructorDashboard() {
                           </span>
                           {!isCompleted && (
                             <button
+                              onClick={() => setEditingClassId(
+                                editingClassId === item.id ? null : item.id,
+                              )}
+                              type="button"
+                              className="px-4 py-2 rounded-full text-xs font-semibold border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-60"
+                              disabled={isProcessing}
+                            >
+                              <span className="material-symbols-outlined text-[16px]">edit</span>{' '}
+                              Sửa
+                            </button>
+                          )}
+                          {STARTABLE_CLASS_STATES.has(item.state) && (
+                            <button
+                              onClick={() => handleStartClass(item.id)}
+                              type="button"
+                              className="px-4 py-2 rounded-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-60"
+                              disabled={isProcessing}
+                            >
+                              <span className="material-symbols-outlined text-[16px]">
+                                play_arrow
+                              </span>{' '}
+                              Bắt đầu
+                            </button>
+                          )}
+                          {!isCompleted && (
+                            <button
                               onClick={() => handleCompleteClass(item.id)}
                               type="button"
                               className="px-4 py-2 rounded-full text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-60"
@@ -488,6 +565,18 @@ export default function InstructorDashboard() {
                           )}
                         </div>
                       </div>
+
+                      {/* Inline edit — price and capacity only. A 409 means the
+                          class is locked by a confirmed booking; the panel stays
+                          open and the server's own message is shown. */}
+                      {editingClassId === item.id && (
+                        <ClassEditPanel
+                          item={item}
+                          disabled={isProcessing}
+                          onCancel={() => setEditingClassId(null)}
+                          onSave={(draft) => handleSaveEdit(item.id, draft)}
+                        />
+                      )}
                     </div>
                   );
                 })}
@@ -511,6 +600,172 @@ export default function InstructorDashboard() {
 }
 
 /* --- Small presentational helpers --- */
+
+/**
+ * The inline price/capacity editor for one class card.
+ *
+ * It edits a local copy and refuses to submit values the API would reject, using
+ * the same validators the publish form uses so the two cannot disagree. Capacity
+ * is additionally not allowed below the seats already confirmed, which the
+ * server would reject anyway — catching it here avoids a round trip that can
+ * only fail.
+ */
+function ClassEditPanel({
+  item,
+  disabled,
+  onCancel,
+  onSave,
+}: {
+  item: TeacherClassItem;
+  disabled: boolean;
+  onCancel: () => void;
+  onSave: (draft: ClassEditDraft) => void;
+}) {
+  const [price, setPrice] = useState(String(item.priceCredits));
+  const [capacity, setCapacity] = useState(String(item.capacity));
+
+  const priceNumber = Number(price);
+  const capacityNumber = Number(capacity);
+
+  const priceOk = priceIsValid(priceNumber);
+  const capacityOk =
+    capacityIsValid(capacityNumber) && capacityNumber >= item.confirmedBookingsCount;
+
+  const canSave = priceOk && capacityOk && !disabled;
+
+  return (
+    <div className="mt-4 pt-4 border-t border-slate-100">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-semibold text-slate-700">
+            Giá mỗi học viên (Credit)
+          </span>
+          <input
+            type="number"
+            inputMode="numeric"
+            min={1}
+            step={1}
+            value={price}
+            disabled={disabled}
+            onChange={(e) => setPrice(e.target.value)}
+            className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none disabled:bg-slate-50"
+          />
+          {!priceOk && (
+            <span className="text-[11px] text-rose-600">
+              Giá không hợp lệ (số nguyên Credit trong giới hạn cho phép).
+            </span>
+          )}
+        </label>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-semibold text-slate-700">Số chỗ tối đa</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            min={1}
+            step={1}
+            value={capacity}
+            disabled={disabled}
+            onChange={(e) => setCapacity(e.target.value)}
+            className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none disabled:bg-slate-50"
+          />
+          {!capacityOk && (
+            <span className="text-[11px] text-rose-600">
+              {capacityIsValid(capacityNumber)
+                ? `Không thể nhỏ hơn ${item.confirmedBookingsCount} chỗ đã xác nhận.`
+                : 'Sức chứa không hợp lệ (số nguyên trong giới hạn cho phép).'}
+            </span>
+          )}
+        </label>
+      </div>
+
+      <div className="mt-4 flex items-center gap-2.5">
+        <button
+          type="button"
+          onClick={() => onSave({ priceCredits: priceNumber, capacity: capacityNumber })}
+          disabled={!canSave}
+          className="px-4 py-2 rounded-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all disabled:opacity-50"
+        >
+          Lưu thay đổi
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={disabled}
+          className="px-4 py-2 rounded-full text-xs font-semibold border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-sm transition-all disabled:opacity-50"
+        >
+          Hủy
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The editable subset of a class. Only price and capacity are exposed: they are
+ * the fields a teacher changes in practice and the only two with local
+ * validators already (`priceIsValid`, `capacityIsValid`). Schedule changes
+ * interact with the 24 h booking lead time and are deferred.
+ */
+export interface ClassEditDraft {
+  priceCredits: number;
+  capacity: number;
+}
+
+/** One row of `GET /classes?teacherId=me`, mapped to the screen's view model. */
+export function toTeacherClassItem(item: {
+  id: string;
+  description: string;
+  startsAt: string;
+  durationMinutes: number;
+  priceCredits: number;
+  capacity: number;
+  confirmedBookingsCount: number;
+  availableSeats: number;
+  state: string;
+}): TeacherClassItem {
+  return {
+    id: item.id,
+    description: item.description,
+    startsAt: item.startsAt,
+    durationMinutes: item.durationMinutes,
+    priceCredits: item.priceCredits,
+    capacity: item.capacity,
+    confirmedBookingsCount: item.confirmedBookingsCount,
+    availableSeats: item.availableSeats,
+    state: item.state,
+  };
+}
+
+/**
+ * Builds the `PATCH /classes/:id` body for an edit that has already been
+ * validated locally. Only the two editable fields are ever sent, so an edit of
+ * price cannot silently rewrite the capacity.
+ */
+export function toUpdateClassInput(draft: ClassEditDraft): {
+  priceCredits?: number;
+  capacity?: number;
+} {
+  return {
+    priceCredits: draft.priceCredits,
+    capacity: draft.capacity,
+  };
+}
+
+/**
+ * Reads the API's own failure message from a non-2xx response, falling back to
+ * a caller-supplied string when the body carries none. The uniform envelope
+ * puts the human message on `message`.
+ */
+async function readApiMessage(res: Response, fallback: string): Promise<string> {
+  try {
+    const body = (await res.json()) as { message?: unknown };
+    if (typeof body?.message === 'string' && body.message.trim()) return body.message;
+  } catch {
+    // Non-JSON body; fall through to the caller's fallback.
+  }
+  return fallback;
+}
 
 function MetricCard({
   label,
