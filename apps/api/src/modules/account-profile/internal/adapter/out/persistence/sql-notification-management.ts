@@ -9,6 +9,16 @@ interface RawNotification { id: string; type: string; title: string; body: strin
 interface CountRow { count: string | number }
 function iso(value: Date | string): string { return value instanceof Date ? value.toISOString() : new Date(value).toISOString(); }
 function encodeCursor(createdAt: string, id: string): string { return Buffer.from(`${createdAt}|${id}`).toString('base64url'); }
+function notificationCopy(type: RecordInboxNotification['type']): { title: string; body: string } {
+  switch (type) {
+    case 'booking_cancelled': return { title: 'Class booking updated', body: 'A teacher canceled a class you booked. Open your schedule to review the booking and wallet.' };
+    case 'booking_confirmed': return { title: 'Booking confirmed', body: 'Your class booking is confirmed. Open your schedule to view the details.' };
+    case 'verification_outcome': return { title: 'Verification updated', body: 'Your verification status changed. Open SkillSwap to review the result.' };
+    case 'wallet_transaction': return { title: 'Wallet updated', body: 'A wallet transaction completed. Open your wallet to review the balance and history.' };
+    case 'class_starting_soon': return { title: 'Class starting soon', body: 'Your class is starting soon. Open your schedule to review the class.' };
+    case 'withdrawal_outcome': return { title: 'Withdrawal updated', body: 'Your withdrawal status changed. Open your wallet to review the result.' };
+  }
+}
 
 /** Account-owned notification storage adapter; all reads are owner-filtered. */
 export class SqlNotificationManagement implements NotificationManagementPort {
@@ -44,17 +54,26 @@ export class SqlNotificationManagement implements NotificationManagementPort {
         await manager.query(`DELETE FROM ${table} WHERE "id" = ANY($1::uuid[])`, [matches.filter((row) => row.id !== deviceId).map((row) => row.id)]);
       }
       if (deviceId) {
-        const result = returnedRows<RawDevice>(await manager.query(`UPDATE ${table} SET "account_id" = $2, "token" = $3, "platform" = $4, "installation_id" = $5, "app_version" = $6, "is_active" = true, "updated_at" = now() WHERE "id" = $1 RETURNING "id", "installation_id", "platform", "is_active", "created_at"`, [deviceId, accountId, input.token, input.platform, input.installationId, input.appVersion ?? null]));
+        const result = returnedRows<RawDevice>(await manager.query(`UPDATE ${table} SET "account_id" = $2, "token" = $3, "platform" = $4, "installation_id" = $5, "app_version" = $6, "locale" = COALESCE($7, "locale"), "is_active" = true, "updated_at" = now() WHERE "id" = $1 RETURNING "id", "installation_id", "platform", "is_active", "created_at"`, [deviceId, accountId, input.token, input.platform, input.installationId, input.appVersion ?? null, input.locale ?? null]));
         return deviceSubscriptionSchema.parse({ id: result[0]!.id, installationId: result[0]!.installation_id, platform: result[0]!.platform, isActive: result[0]!.is_active, createdAt: iso(result[0]!.created_at) });
       }
-      const result = returnedRows<RawDevice>(await manager.query(`INSERT INTO ${table} ("account_id", "token", "platform", "installation_id", "app_version") VALUES ($1,$2,$3,$4,$5) RETURNING "id", "installation_id", "platform", "is_active", "created_at"`, [accountId, input.token, input.platform, input.installationId, input.appVersion ?? null]));
+      const result = returnedRows<RawDevice>(await manager.query(`INSERT INTO ${table} ("account_id", "token", "platform", "installation_id", "app_version", "locale") VALUES ($1,$2,$3,$4,$5,COALESCE($6, 'vi')) RETURNING "id", "installation_id", "platform", "is_active", "created_at"`, [accountId, input.token, input.platform, input.installationId, input.appVersion ?? null, input.locale ?? null]));
       return deviceSubscriptionSchema.parse({ id: result[0]!.id, installationId: result[0]!.installation_id, platform: result[0]!.platform, isActive: result[0]!.is_active, createdAt: iso(result[0]!.created_at) });
     });
   }
 
   async deleteDevice(accountId: string, id: string): Promise<{ success: true }> {
     const table = qualified(this.schema, 'notification_devices');
-    await this.registry.get(this.moduleName).query(`UPDATE ${table} SET "is_active" = false, "updated_at" = now() WHERE "id" = $1 AND "account_id" = $2`, [id, accountId]);
+    const deliveries = qualified(this.schema, 'push_deliveries');
+    await this.registry.get(this.moduleName).transaction(async (manager) => {
+      const deactivated = returnedRows<{ id: string }>(await manager.query(
+        `UPDATE ${table} SET "is_active" = false, "updated_at" = now() WHERE "id" = $1 AND "account_id" = $2 RETURNING "id"`, [id, accountId],
+      ));
+      if (deactivated.length === 0) return;
+      await manager.query(`UPDATE ${deliveries} SET "status" = 'failed', "lease_expires_at" = NULL,
+        "last_error" = 'Device subscription was disabled', "updated_at" = now()
+        WHERE "device_id" = $1 AND "status" IN ('pending','sending')`, [id]);
+    });
     return { success: true };
   }
 
@@ -69,9 +88,10 @@ export class SqlNotificationManagement implements NotificationManagementPort {
         [`notification:${dedupeKey}`],
       ));
       if (claim.length === 0) return;
+      const copy = notificationCopy(notification.type);
       const created = returnedRows<{ id: string }>(await manager.query(
-        `INSERT INTO ${inbox} ("account_id", "deduplication_key", "type", "title", "body", "target_type", "target_id") VALUES ($1,$2,$3,$3,$3,$4,$5) ON CONFLICT ("deduplication_key") DO NOTHING RETURNING "id"`,
-        [notification.accountId, dedupeKey, notification.type, notification.targetType, notification.targetId],
+        `INSERT INTO ${inbox} ("account_id", "deduplication_key", "type", "title", "body", "target_type", "target_id") VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT ("deduplication_key") DO NOTHING RETURNING "id"`,
+        [notification.accountId, dedupeKey, notification.type, copy.title, copy.body, notification.targetType, notification.targetId],
       ));
       let notificationId = created[0]?.id;
       if (!notificationId) {

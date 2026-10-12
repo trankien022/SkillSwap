@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
   ActivityIndicator,
   Alert,
@@ -70,9 +71,11 @@ export function WalletView() {
     }
   }, [gatewayClient, t]);
 
-  useEffect(() => {
-    void loadWalletData();
-  }, [loadWalletData]);
+  useFocusEffect(
+    useCallback(() => {
+      void loadWalletData();
+    }, [loadWalletData]),
+  );
 
   const onRefresh = () => {
     setIsRefreshing(true);
@@ -178,13 +181,13 @@ export function WalletView() {
             <View style={styles.balanceCol}>
               <Text style={styles.balanceLabel}>{t('Dashboard.availableCredits')}</Text>
               <Text style={styles.balanceValuePrimary}>
-                {balance ? `${balance.availableCredits} cr` : '0 cr'}
+                {balance ? `${balance.availableCredits} cr` : '—'}
               </Text>
             </View>
             <View style={styles.balanceCol}>
               <Text style={styles.balanceLabel}>{t('Dashboard.pendingCredits')}</Text>
               <Text style={styles.balanceValuePending}>
-                {balance ? `${balance.pendingCredits} cr` : '0 cr'}
+                {balance ? `${balance.pendingCredits} cr` : '—'}
               </Text>
             </View>
           </View>
@@ -280,7 +283,11 @@ export function WalletView() {
               return (
                 <View key={item.id} style={styles.historyRow}>
                   <View style={styles.historyMeta}>
-                    <Text style={styles.historyType}>{item.type}</Text>
+                    <Text style={styles.historyType}>
+                      {t(
+                        `Wallet.type_${['top_up', 'learner_debit', 'teacher_pending', 'platform_fee', 'refund', 'release', 'teacher_credit'].includes(item.type) ? item.type : 'transaction'}`,
+                      )}
+                    </Text>
                     <Text style={styles.historyDate}>{formatDate(item.createdAt)}</Text>
                     {item.reference ? (
                       <Text style={styles.historyRef}>

@@ -271,6 +271,7 @@ Tất cả các route đều có tiền tố `/api`. Gateway xác thực Bearer 
     token: z.string().min(1),
     platform: z.enum(['ios', 'android', 'web']),
     installationId: z.string().min(1).max(128),
+    locale: z.enum(['vi', 'en']).optional(),
     appVersion: z.string().max(32).optional(),
   });
   ```
@@ -278,6 +279,8 @@ Tất cả các route đều có tiền tố `/api`. Gateway xác thực Bearer 
   - Gắn chặt token với `account_id` hiện tại.
   - Xử lý đổi tài khoản trên cùng thiết bị: nếu `installationId` hoặc `token` đã tồn tại cho tài khoản cũ, cập nhật sang `account_id` mới.
   - Cập nhật `updated_at` và đánh dấu `is_active = true`.
+  - Lưu locale của Cài đặt trên từng installation; mobile gửi vi/en khi enable/rebind/đổi ngôn ngữ. Nếu caller cũ bỏ locale, giữ giá trị hiện tại khi update, dùng vi cho device mới.
+  - Worker dịch title/body theo locale tại lúc claim; inbox mobile dịch theo locale UI. Pending/sending delivery của account cũ phải fail sau rebind; claim chỉ lấy inbox có account_id khớp device hiện tại. Push đã được provider nhận trước logout không thể thu hồi.
 - **Response (`200 OK`)**:
   ```ts
   export const deviceSubscriptionSchema = z.object({

@@ -1,5 +1,6 @@
 import { ApiResponseError, unwrapEnvelope } from '@skillswap/contracts';
 import { API_BASE_URL } from './api-config';
+import { evidenceFetch } from './api-evidence';
 
 /**
  * Thin envelope-aware HTTP client for the mobile app (NFR-013).
@@ -29,7 +30,7 @@ export async function requestJson<T>(path: string, options: HttpRequestOptions =
   if (base.length === 0) {
     throw new Error('EXPO_PUBLIC_API_BASE_URL is not set; the HTTP API is disabled.');
   }
-  const res = await doFetch(`${base}/api${path}`, {
+  const res = await evidenceFetch(doFetch, `${base}/api${path}`, {
     method: options.method ?? 'GET',
     signal: options.signal,
     headers: {

@@ -11,6 +11,8 @@ export type CoordinatorPhase =
   | 'ready'
   | 'submitting_booking'
   | 'submitting_confirm'
+  | 'settling'
+  | 'settlement_unknown'
   | 'reconciling_session'
   | 'reconciling_network'
   | 'confirmed_success'
@@ -36,6 +38,7 @@ export interface CoordinatorOptions {
   readonly onBalanceInvalidated?: () => void;
   readonly onStateChange?: (state: CoordinatorState) => void;
   readonly isMounted?: () => boolean;
+  readonly settlementTimeoutMs?: number;
 }
 
 /**
@@ -156,7 +159,11 @@ export class ClassDetailCoordinator {
       if (this.isStale(gen)) return;
 
       if (error instanceof GatewayHttpError && error.statusCode === 404) {
-        this.setState({ phase: 'not_found', errorMessage: error.message, errorReason: 'not_found' });
+        this.setState({
+          phase: 'not_found',
+          errorMessage: error.message,
+          errorReason: 'not_found',
+        });
       } else {
         this.setState({
           phase: 'error',
@@ -429,36 +436,83 @@ export class ClassDetailCoordinator {
   }
 
   private async reconcileConfirmOutcome(gen: number): Promise<void> {
+    this.setState({
+      phase: 'settling',
+      errorMessage: null,
+      errorReason: null,
+      canRetryWithSameKey: false,
+    });
+    const deadline = Date.now() + Math.min(30_000, this.options.settlementTimeoutMs ?? 30_000);
     try {
-      const detail = await this.options.gateway.getClassDetail(this.options.classId);
-      if (this.isStale(gen)) return;
-
-      if (detail.ownBooking?.state === 'confirmed') {
-        this.options.onBalanceInvalidated?.();
-        this.setState({
-          phase: 'confirmed_success',
-          classDetail: detail,
-          errorMessage: null,
-          errorReason: null,
+      let attempt = 0;
+      while (Date.now() < deadline) {
+        let timeout: ReturnType<typeof setTimeout> | undefined;
+        const detail = await Promise.race([
+          this.options.gateway.getClassDetail(this.options.classId),
+          new Promise<never>((_, reject) => {
+            timeout = setTimeout(
+              () => reject(new Error('Settlement reconciliation timed out')),
+              Math.max(1, deadline - Date.now()),
+            );
+          }),
+        ]).finally(() => {
+          if (timeout) clearTimeout(timeout);
         });
-        return;
+        if (this.isStale(gen)) return;
+
+        if (detail.ownBooking?.state === 'confirmed') {
+          this.options.onBalanceInvalidated?.();
+          this.setState({
+            phase: 'confirmed_success',
+            classDetail: detail,
+            errorMessage: null,
+            errorReason: null,
+          });
+          return;
+        }
+
+        this.setState({ classDetail: detail });
+        if (detail.ownBooking?.state !== 'pending') {
+          this.setState({ phase: 'ready', errorReason: 'confirm_unconfirmed' });
+          return;
+        }
+        await new Promise((resolve) =>
+          setTimeout(
+            resolve,
+            Math.min(500 * 2 ** attempt++, 4000, Math.max(1, deadline - Date.now())),
+          ),
+        );
+        if (this.isStale(gen)) return;
       }
 
-      // Reconciled but not confirmed
       this.setState({
-        phase: 'ready',
-        classDetail: detail,
-        errorMessage: 'Booking confirmation could not be completed.',
-        errorReason: 'confirm_unconfirmed',
+        phase: 'settlement_unknown',
+        errorMessage: 'Settlement is still pending; check status again.',
+        errorReason: 'settlement_pending',
       });
     } catch {
       if (this.isStale(gen)) return;
       this.setState({
-        phase: 'error',
-        errorReason: 'read_reconcile_failed',
+        phase: 'settlement_unknown',
+        errorReason: 'settlement_pending',
         errorMessage: 'Unable to verify confirmation status.',
-        canRetryWithSameKey: true,
+        canRetryWithSameKey: false,
       });
+    }
+  }
+
+  async checkConfirmation(): Promise<void> {
+    if (this.isBusyFlag) return;
+    this.isBusyFlag = true;
+    this.setState({ isBusy: true });
+    const gen = ++this.generation;
+    try {
+      await this.reconcileConfirmOutcome(gen);
+    } finally {
+      if (!this.isStale(gen)) {
+        this.isBusyFlag = false;
+        this.setState({ isBusy: false });
+      }
     }
   }
 }

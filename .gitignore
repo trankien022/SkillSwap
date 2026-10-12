@@ -6,6 +6,8 @@ coverage/
 *.tsbuildinfo
 .env
 .env.local
+apps/mobile/google-services.json
+apps/mobile/*service-account*.json
 .secrets/
 *.log
 .DS_Store
@@ -18,3 +20,12 @@ apps/mobile/android/
 apps/web/dev.err
 # Source assets (work-in-progress logos) — only the curated copy under apps/web/public/ is committed
 logo/
+
+# Locally installed agent tools and generated code graphs.
+.agents/
+.codex/
+**/graphify-out/
+
+# Local Android build output and Office lock files.
+apps/mobile/build-*.apk
+~$*.pptx

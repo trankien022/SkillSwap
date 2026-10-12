@@ -77,6 +77,14 @@
     "refresh": "Làm mới dữ liệu"
   },
   "Wallet": {
+    "type_top_up": "Nạp credit",
+    "type_learner_debit": "Thanh toán lớp học",
+    "type_teacher_pending": "Thu nhập chờ xử lý",
+    "type_platform_fee": "Phí nền tảng",
+    "type_refund": "Hoàn credit",
+    "type_release": "Giải ngân thu nhập",
+    "type_teacher_credit": "Thu nhập giảng dạy",
+    "type_transaction": "Giao dịch ví",
     "title": "Ví & Số dư",
     "balanceCard": "Số dư hiện tại",
     "available": "{credits} credit khả dụng",
@@ -148,7 +156,7 @@
     "state_pending": "Chờ duyệt", "state_claimed": "Đang được xem xét", "state_approved": "Đã duyệt", "state_rejected": "Bị từ chối", "state_superseded": "Đã thay thế"
   },
   "Teaching": {
-    "title": "Khu vực giảng dạy", "createTitle": "Tạo lớp học", "description": "Mô tả lớp học", "startsAt": "Thời gian bắt đầu (ISO 8601)", "duration": "Phút", "price": "Credit", "capacity": "Số chỗ", "publish": "Đăng lớp", "myClasses": "Lớp do tôi tạo", "empty": "Bạn chưa có lớp học.", "editPrice": "Tăng giá 1 credit", "cancel": "Hủy lớp", "start": "Bắt đầu", "complete": "Hoàn thành", "loadError": "Không tải được dữ liệu lớp học.", "actionError": "Thao tác thất bại. Tải lại dữ liệu để kiểm tra trạng thái."
+    "title": "Khu vực giảng dạy", "createTitle": "Tạo lớp học", "detailTitle": "Chi tiết lớp học", "description": "Mô tả lớp học", "startsAt": "Thời gian bắt đầu (ISO 8601)", "duration": "Phút", "price": "Credit", "capacity": "Số chỗ", "publish": "Đăng lớp", "myClasses": "Lớp do tôi tạo", "empty": "Bạn chưa có lớp học.", "openDetail": "Xem chi tiết", "save": "Lưu thay đổi", "cancel": "Hủy lớp", "cancelTitle": "Xác nhận hủy lớp", "cancelConfirm": "Bạn có chắc chắn muốn hủy lớp này?", "invalidForm": "Kiểm tra mô tả, thời gian, giá và số chỗ.", "notFound": "Không tìm thấy lớp trong danh sách lớp của bạn.", "start": "Bắt đầu", "complete": "Hoàn thành", "loadError": "Không tải được dữ liệu lớp học.", "actionError": "Thao tác thất bại. Máy chủ có thể đã khóa chỉnh sửa; tải lại lớp để kiểm tra trạng thái.", "state": { "draft": "Bản nháp", "published": "Đang mở", "full": "Đã đủ chỗ", "in_progress": "Đang diễn ra", "completed": "Đã hoàn thành", "cancelled": "Đã hủy" }
   },
   "Notifications": {
     "title":"Thông báo", "unread":"{count} thông báo chưa đọc", "enablePush":"Bật thông báo đẩy trên thiết bị này", "disablePush":"Tắt thông báo đẩy trên thiết bị này", "empty":"Chưa có thông báo.", "loadMore":"Xem thêm", "loadError":"Không tải được hộp thư thông báo.", "pushError":"Không thể đăng ký thiết bị. Kiểm tra quyền thông báo và thử lại.",
@@ -194,6 +202,7 @@
     "retrySkills": "Thử lại"
   },
   "Common": {
+    "cancel": "Hủy",
     "loading": "Đang tải dữ liệu…",
     "errorTitle": "Đã xảy ra sự cố",
     "errorMessage": "Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng và thử lại.",
@@ -234,6 +243,9 @@
     "reconcilingSession": "Phiên đăng nhập hết hạn. Đang đối soát trạng thái giao dịch…",
     "reconcilingNetwork": "Không thể xác nhận kết quả qua mạng. Đang kiểm tra lại trạng thái…",
     "manualRetry": "Thử lại thao tác",
+    "settling": "Đang xử lý thanh toán…",
+    "settlementPending": "Chưa xác nhận được kết quả thanh toán. Vui lòng kiểm tra lại trạng thái.",
+    "checkSettlement": "Kiểm tra trạng thái thanh toán",
     "reviewsTitle": "Đánh giá gần đây",
     "noReviews": "Chưa có đánh giá nào cho lớp học này.",
     "cannotBook": "Lớp học hiện không nhận đăng ký mới.",
