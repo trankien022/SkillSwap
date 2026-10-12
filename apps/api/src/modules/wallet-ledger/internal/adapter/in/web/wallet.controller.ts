@@ -45,6 +45,10 @@ import {
 } from '../../../application/port/out/webhook-signature-verifier';
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
 import {
+  ResponseCode,
+  ResponseMessage,
+} from '../../../../../../shared/http/response-code.decorator';
+import {
   TopUpCallbackDto,
   TopUpIntentDto,
   TopUpRequestDto,
@@ -98,6 +102,8 @@ export class WalletController {
   }
 
   @Get('balance')
+  @ResponseCode('WALLET_BALANCE_OK')
+  @ResponseMessage('Wallet balance loaded')
   @ApiOperation({ summary: 'Read the wallet balance (FR-008/FR-010)' })
   @ApiOkResponse({ type: WalletBalanceDto, description: 'Available and pending credits' })
   balance(@Req() request: RequestWithIdentity): Promise<WalletBalanceView> {
@@ -105,6 +111,8 @@ export class WalletController {
   }
 
   @Get('history')
+  @ResponseCode('WALLET_HISTORY_OK')
+  @ResponseMessage('Wallet history loaded')
   @ApiOperation({ summary: 'Read the wallet ledger history (FR-010 / ADR-022)' })
   @ApiOkResponse({ type: WalletHistoryPageDto, description: 'A page of owner-scoped ledger entries, newest first' })
   history(

@@ -8,6 +8,8 @@ The marketplace core (FR-005/FR-007/FR-009/FR-011/FR-020). A student teacher pub
 
 9 endpoints.
 
+Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
+
 ### `POST /api/classes`
 
 **Create and publish a class (FR-005 / API-004)**
@@ -17,6 +19,29 @@ Publish a new class (FR-005). Requires the teacher to be a verified student appr
 - Auth: 🔒 Bearer token required
 - Request body: `CreateClassDto`
 - Response: `ClassDto`
+
+**Request body — `CreateClassDto`**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `skillIds` | string[] | yes | at least 1 item(s) |
+| `description` | string | yes | min 1 chars |
+| `startsAt` | string | yes | date-time |
+| `durationMinutes` | integer | yes | ≥ 30; ≤ 180 |
+| `priceCredits` | integer | yes | > 0 |
+| `capacity` | integer | yes | > 0 |
+
+**Response — `ClassDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `teacherId` | string | yes | min 1 chars |
+| `state` | string | yes | min 1 chars |
+| `startsAt` | string | yes | date-time |
+| `durationMinutes` | integer | yes |  |
+| `priceCredits` | integer | yes |  |
+| `capacity` | integer | yes |  |
 
 ### `PATCH /api/classes/{id}`
 
@@ -32,6 +57,29 @@ Edit a class before its first confirmed booking locks it (AC-017).
 |---|---|---|---|---|
 | `id` | path | string | yes | The class id |
 
+**Request body — `UpdateClassDto`**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `skillIds` | string[] | no | at least 1 item(s) |
+| `description` | string | no | min 1 chars |
+| `startsAt` | string | no | date-time |
+| `durationMinutes` | integer | no | ≥ 30; ≤ 180 |
+| `priceCredits` | integer | no | > 0 |
+| `capacity` | integer | no | > 0 |
+
+**Response — `ClassDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `teacherId` | string | yes | min 1 chars |
+| `state` | string | yes | min 1 chars |
+| `startsAt` | string | yes | date-time |
+| `durationMinutes` | integer | yes |  |
+| `priceCredits` | integer | yes |  |
+| `capacity` | integer | yes |  |
+
 ### `POST /api/classes/{id}/bookings`
 
 **Book a class (FR-007 / API-005)**
@@ -46,6 +94,30 @@ Hold a seat with a pending booking (FR-007). Send an idempotencyKey so retries a
 |---|---|---|---|---|
 | `id` | path | string | yes | The class id |
 
+**Request body — `BookingRequestDto`**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `idempotencyKey` | string | yes | min 1 chars |
+
+**Response — `BookClassResultDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `booking` | object | yes |  |
+| `created` | boolean | yes |  |
+
+**`booking`** — BookClassResultDto.booking fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `bookingId` | string | yes | min 1 chars |
+| `classId` | string | yes | min 1 chars |
+| `learnerId` | string | yes | min 1 chars |
+| `state` | string | yes | min 1 chars |
+| `priceCredits` | integer | yes |  |
+| `createdAt` | string | yes | date-time |
+
 ### `POST /api/classes/{id}/cancel`
 
 **Cancel a class and refund affected learners (FR-007 / AC-022)**
@@ -58,6 +130,13 @@ Cancel a class and refund every affected learner (AC-022). Teacher-only.
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
 | `id` | path | string | yes | The class id |
+
+**Response — `CancelClassResultDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `classCancelled` | boolean | yes |  |
+| `bookingsCancelled` | integer | yes | ≥ 0 |
 
 ### `POST /api/classes/{id}/complete`
 
@@ -72,6 +151,13 @@ Teacher ends a class; completion releases the teacher income (FR-020, ADR-021).
 |---|---|---|---|---|
 | `id` | path | string | yes | The class id |
 
+**Response — `CompleteClassResultDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `completed` | boolean | yes |  |
+| `basis` | string | yes | min 1 chars; nullable |
+
 ### `POST /api/classes/{id}/start`
 
 **Start a class the teacher is holding (FR-020 / ADR-021)**
@@ -84,6 +170,12 @@ Teacher starts a held class, moving it to in-progress (FR-020).
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
 | `id` | path | string | yes | The class id |
+
+**Response — `StartClassResultDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `started` | boolean | yes |  |
 
 ### `POST /api/classes/bookings/{bookingId}/confirm`
 
@@ -98,6 +190,24 @@ Confirm a pending booking and settle payment from the wallet (FR-009). Fails whe
 |---|---|---|---|---|
 | `bookingId` | path | string | yes | The booking id |
 
+**Response — `ConfirmBookingResultDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `confirmed` | boolean | yes |  |
+| `booking` | object | yes | nullable |
+
+**`booking`** — ConfirmBookingResultDto.booking fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `bookingId` | string | yes | min 1 chars |
+| `classId` | string | yes | min 1 chars |
+| `learnerId` | string | yes | min 1 chars |
+| `state` | string | yes | min 1 chars |
+| `priceCredits` | integer | yes |  |
+| `createdAt` | string | yes | date-time |
+
 ### `POST /api/classes/bookings/{bookingId}/no-show`
 
 **Mark a teacher no-show for a booking (FR-007 / AC-024)**
@@ -110,6 +220,12 @@ Mark that the teacher never joined, cancelling and refunding the booking (AC-024
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
 | `bookingId` | path | string | yes | The booking id |
+
+**Response — `MarkTeacherNoShowResultDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `cancelled` | boolean | yes |  |
 
 ### `POST /api/classes/bookings/{bookingId}/room-access`
 
@@ -124,3 +240,18 @@ Issue a short-lived Jitsi room token for a party to the booking (FR-011). Use wh
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
 | `bookingId` | path | string | yes | The booking id |
+
+**Request body — `RoomAccessRequestDto`**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `displayName` | string | no | min 1 chars; max 120 chars |
+
+**Response — `RoomAccessResponseDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `room` | string | yes | min 1 chars |
+| `token` | string | yes | min 1 chars |
+| `expiresAt` | string | yes | date-time |
+| `url` | string | yes | min 1 chars |

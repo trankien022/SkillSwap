@@ -4,15 +4,15 @@ import { ScrollView, StyleSheet, Text } from 'react-native';
 import { BookClassService } from '@/application/book-class-service';
 import { bookingScreenCopy } from '@/i18n/copy';
 import { defaultLocale } from '@/i18n';
-import { MockBookingGateway } from '@/infrastructure/mock/mock-booking-gateway';
+import { createBookingGateway } from '@/infrastructure/container';
 import { BookingScreen } from '@/ui/booking-screen';
 import { colors, spacing, typography } from '@/design/tokens';
 
-/** Class detail + booking route (FR-007, mock data — no backend call). */
+/** Class detail + booking route (FR-007; mock by default, HTTP when configured). */
 export default function ClassDetailScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const copy = useMemo(() => bookingScreenCopy(defaultLocale), []);
-  const service = useMemo(() => new BookClassService(new MockBookingGateway()), []);
+  const service = useMemo(() => new BookClassService(createBookingGateway()), []);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>

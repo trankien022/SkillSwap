@@ -53,16 +53,18 @@ describe('FR-004 verifier authority use cases (AC-018)', () => {
   it('lists only expertise-matched pending requests in the queue', async () => {
     const ctx = await seedSubmittedEvidence({ skillId: 'sk-1', expertise: ['sk-2'] });
     const queue = new ListVerifierQueueQueryHandler(ctx.evidence, ctx.verifiers);
-    expect(await queue.execute('vf-1')).toEqual([]);
+    expect((await queue.execute({ verifierId: 'vf-1' })).items).toEqual([]);
 
     const queue2 = new ListVerifierQueueQueryHandler(
       ctx.evidence,
       new InMemoryVerifierRepository([{ accountId: 'vf-1', status: 'active', expertise: ['sk-1'] }]),
     );
-    const rows = await queue2.execute('vf-1');
-    expect(rows).toHaveLength(1);
-    expect(rows[0].skillId).toBe('sk-1');
-    expect(rows[0].status).toBe('pending');
+    const page = await queue2.execute({ verifierId: 'vf-1' });
+    expect(page.items).toHaveLength(1);
+    expect(page.items[0].skillId).toBe('sk-1');
+    expect(page.items[0].status).toBe('pending');
+    expect(page.page.total).toBe(1);
+    expect(page.page.limit).toBe(20);
   });
 
   it('claims a pending request for an active, expertise-matched, non-owner Verifier', async () => {

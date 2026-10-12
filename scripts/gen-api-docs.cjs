@@ -1,5 +1,12 @@
 require('reflect-metadata');
-const { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } = require('node:fs');
+const {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} = require('node:fs');
 const { join, resolve } = require('node:path');
 
 /**
@@ -28,21 +35,30 @@ const MODULE_NOTES = {
     purpose:
       'Account identity (FR-001, ADR-016). Registration, sign-in and the rotating refresh-token session. Everything else in the API trusts the identity the gateway injects from the access token.',
     endpoints: {
-      'POST /api/auth/register': 'Create a local account and receive the first token pair. Use on the sign-up screen.',
-      'POST /api/auth/login': 'Exchange email + password for a token pair. Use on the sign-in screen.',
-      'POST /api/auth/refresh': 'Rotate an expiring refresh token for a new pair. Call when the access token is near expiry, before it 401s.',
-      'POST /api/auth/logout': 'Revoke the refresh session. Call on sign-out so the refresh token can no longer mint access tokens.',
-      'GET /api/auth/me': 'Read the signed-in account and its student-verification status. Use to hydrate the header/profile and to gate verified-only UI (FR-017).',
+      'POST /api/auth/register':
+        'Create a local account and receive the first token pair. Use on the sign-up screen.',
+      'POST /api/auth/login':
+        'Exchange email + password for a token pair. Use on the sign-in screen.',
+      'POST /api/auth/refresh':
+        'Rotate an expiring refresh token for a new pair. Call when the access token is near expiry, before it 401s.',
+      'POST /api/auth/logout':
+        'Revoke the refresh session. Call on sign-out so the refresh token can no longer mint access tokens.',
+      'GET /api/auth/me':
+        'Read the signed-in account and its student-verification status. Use to hydrate the header/profile and to gate verified-only UI (FR-017).',
     },
   },
   wallet: {
     purpose:
       'Money in and out (FR-008/FR-010, ADR-017/ADR-022). Credits are integer VND, 1 credit = 1,000 VND. Top-ups go through a payment provider; the callback settles them.',
     endpoints: {
-      'POST /api/wallet/top-ups': 'Start a top-up and get a payment URL to redirect the learner to. Use from the "Add funds" screen.',
-      'POST /api/wallet/top-ups/callback': 'Provider → server webhook that settles/fails a top-up. Not called by the frontend; signature-verified via the x-signature header.',
-      'GET /api/wallet/balance': 'Read available + pending credits. Use to show the wallet balance and to pre-check affordability before booking.',
-      'GET /api/wallet/history': 'Paginated ledger entries (newest first). Use on the wallet activity screen; follow nextCursor for more.',
+      'POST /api/wallet/top-ups':
+        'Start a top-up and get a payment URL to redirect the learner to. Use from the "Add funds" screen.',
+      'POST /api/wallet/top-ups/callback':
+        'Provider → server webhook that settles/fails a top-up. Not called by the frontend; signature-verified via the x-signature header.',
+      'GET /api/wallet/balance':
+        'Read available + pending credits. Use to show the wallet balance and to pre-check affordability before booking.',
+      'GET /api/wallet/history':
+        'Paginated ledger entries (newest first). Use on the wallet activity screen; follow nextCursor for more.',
     },
   },
   classes: {
@@ -51,7 +67,8 @@ const MODULE_NOTES = {
     endpoints: {
       'POST /api/classes':
         'Publish a new class (FR-005). Requires the teacher to be a verified student approved for every skill (publish gate); otherwise 403.',
-      'PATCH /api/classes/{id}': 'Edit a class before its first confirmed booking locks it (AC-017).',
+      'PATCH /api/classes/{id}':
+        'Edit a class before its first confirmed booking locks it (AC-017).',
       'POST /api/classes/{id}/bookings':
         'Hold a seat with a pending booking (FR-007). Send an idempotencyKey so retries are safe; the seat expires if not confirmed.',
       'POST /api/classes/bookings/{bookingId}/confirm':
@@ -62,8 +79,10 @@ const MODULE_NOTES = {
         'Mark that the teacher never joined, cancelling and refunding the booking (AC-024).',
       'POST /api/classes/bookings/{bookingId}/room-access':
         'Issue a short-lived Jitsi room token for a party to the booking (FR-011). Use when the learner/teacher taps "Join class".',
-      'POST /api/classes/{id}/start': 'Teacher starts a held class, moving it to in-progress (FR-020).',
-      'POST /api/classes/{id}/complete': 'Teacher ends a class; completion releases the teacher income (FR-020, ADR-021).',
+      'POST /api/classes/{id}/start':
+        'Teacher starts a held class, moving it to in-progress (FR-020).',
+      'POST /api/classes/{id}/complete':
+        'Teacher ends a class; completion releases the teacher income (FR-020, ADR-021).',
     },
   },
   'student-verification': {
@@ -74,8 +93,10 @@ const MODULE_NOTES = {
         'Request a pre-signed S3 upload target (FR-002). Upload the file to uploadUrl, then submit its documentId.',
       'POST /api/student-verifications':
         'Submit a verification with the uploaded document (API-001). Only one effective (pending/approved) per account.',
-      'GET /api/student-verifications/me': "Read the caller's own verification and its status (FR-017).",
-      'POST /api/student-verifications/{id}/decision': 'Admin approves or rejects a pending verification (FR-002).',
+      'GET /api/student-verifications/me':
+        "Read the caller's own verification and its status (FR-017).",
+      'POST /api/student-verifications/{id}/decision':
+        'Admin approves or rejects a pending verification (FR-002).',
       'POST /api/student-verifications/{id}/revocation':
         'Admin revokes an approved verification (FR-019); the publish gate demotes the account.',
     },
@@ -86,12 +107,17 @@ const MODULE_NOTES = {
     endpoints: {
       'POST /api/skill-evidence':
         'Submit evidence for a known skill at a requested level (API-002). Requires being a verified student.',
-      'POST /api/skill-evidence/{id}/claim': 'Verifier claims a pending request, locking it to them (BR-071).',
-      'POST /api/skill-evidence/{id}/decision': 'Verifier approves or rejects a claimed request (API-003).',
+      'POST /api/skill-evidence/{id}/claim':
+        'Verifier claims a pending request, locking it to them (BR-071).',
+      'POST /api/skill-evidence/{id}/decision':
+        'Verifier approves or rejects a claimed request (API-003).',
       'GET /api/skill-evidence/{id}/history': 'Read every version and its audit trail (FR-018).',
-      'GET /api/profile-skills/me': "List the caller's skills and their effective approved levels (FR-003).",
-      'GET /api/verifiers/me/queue': "A Verifier's pending queue, scoped to their expertise (FR-004).",
-      'POST /api/verifiers/{accountId}/status': 'Admin suspends, revokes or reactivates a Verifier (FR-004, ADR-027).',
+      'GET /api/profile-skills/me':
+        "List the caller's skills and their effective approved levels (FR-003).",
+      'GET /api/verifiers/me/queue':
+        "A Verifier's pending queue, scoped to their expertise (FR-004).",
+      'POST /api/verifiers/{accountId}/status':
+        'Admin suspends, revokes or reactivates a Verifier (FR-004, ADR-027).',
     },
   },
   'account-profile': { purpose: 'Account profile module lifecycle probe.', endpoints: {} },
@@ -152,22 +178,181 @@ function refName(schema) {
   return schema.type || null;
 }
 
-function bodySchema(op) {
-  const content = op.requestBody && op.requestBody.content;
-  if (!content) return null;
-  const media = content['application/json'] || Object.values(content)[0];
-  return (media && media.schema) || null;
+/* -----------------------------------------------------------------------------------------------
+ * Schema rendering.
+ *
+ * The OpenAPI document exposes every DTO as a named schema under `components.schemas`, with nested
+ * objects (page metadata, booking, audit snapshots, …) inlined rather than `$ref`-ed. The helpers
+ * below turn a schema into a field table so the generated pages show *what the fields are*, not
+ * just the DTO name.
+ * --------------------------------------------------------------------------------------------- */
+
+/** Resolves a schema, following a top-level `$ref` into `components.schemas` (one hop is enough). */
+function resolveSchema(schema, schemas) {
+  if (!schema) return schema;
+  if (!schema.$ref) return schema;
+  const name = schema.$ref.split('/').pop();
+  return (schemas && schemas[name]) || schema;
 }
 
-function responseSchema(op) {
+/** The `components.schemas` name for a `$ref`, or `null` for an inline schema. */
+function schemaRefName(schema) {
+  if (!schema) return null;
+  if (schema.$ref) return schema.$ref.split('/').pop();
+  if (schema.type === 'array') return schemaRefName(schema.items);
+  return null;
+}
+
+/** A compact type label for a field, e.g. `string`, `integer`, `object`, `string[]`, `object[]`. */
+function fieldType(schema, schemas) {
+  const resolved = resolveSchema(schema, schemas);
+  if (!resolved) return 'any';
+  if (Array.isArray(resolved.anyOf) && resolved.anyOf.length) {
+    const parts = resolved.anyOf.map((alt) => fieldType(alt, schemas));
+    return [...new Set(parts)].join(' \\| ');
+  }
+  if (resolved.type === 'array') {
+    const inner = fieldType(resolved.items, schemas);
+    return inner === 'object' ? 'object[]' : `${inner}[]`;
+  }
+  if (resolved.enum) return 'enum';
+  if (resolved.type) return resolved.type;
+  if (resolved.properties) return 'object';
+  // An untyped, property-less schema (`{}`): a deliberately unconstrained value.
+  if (Object.keys(resolved).length === 0) return 'object';
+  return 'any';
+}
+
+/**
+ * Human notes for a field: enum values, format, bounds, default, array length. Kept to the raw
+ * constraints the schema carries — no invented prose.
+ */
+function fieldNotes(schema, schemas) {
+  const resolved = resolveSchema(schema, schemas);
+  if (!resolved) return '';
+  const notes = [];
+  if (Array.isArray(resolved.enum) && resolved.enum.length) {
+    notes.push(`one of ${resolved.enum.map((v) => `\`${v}\``).join(', ')}`);
+  }
+  if (resolved.format) notes.push(resolved.format);
+  notes.push(...numberBounds(resolved));
+  if (resolved.minLength !== undefined) notes.push(`min ${resolved.minLength} chars`);
+  if (resolved.maxLength !== undefined) notes.push(`max ${resolved.maxLength} chars`);
+  if (resolved.minItems !== undefined) notes.push(`at least ${resolved.minItems} item(s)`);
+  if (resolved.default !== undefined) notes.push(`default \`${JSON.stringify(resolved.default)}\``);
+  if (resolved.nullable) notes.push('nullable');
+  // A property-less schema (`{}`) is the "bounded collection" sentinel: `page` is `null` here.
+  if (Object.keys(resolved).length === 0) notes.push('`null` for a bounded list (no pagination)');
+  return notes.join('; ');
+}
+
+/** Reads the min/max JSON-Schema bounds, honouring the `exclusiveMinimum` boolean flag. */
+function numberBounds(schema) {
+  const notes = [];
+  if (schema.minimum !== undefined) {
+    notes.push(`${schema.exclusiveMinimum === true ? '>' : '≥'} ${schema.minimum}`);
+  }
+  if (schema.maximum !== undefined) {
+    notes.push(`${schema.exclusiveMaximum === true ? '<' : '≤'} ${schema.maximum}`);
+  }
+  return notes;
+}
+
+/** True when a property has nested fields worth rendering as a sub-table. */
+function hasNestedFields(schema, schemas) {
+  const resolved = resolveSchema(schema, schemas);
+  if (!resolved) return false;
+  const target = resolved.type === 'array' ? resolveSchema(resolved.items, schemas) : resolved;
+  if (!target) return false;
+  if (target.type === 'array') return hasNestedFields(target.items, schemas);
+  return Boolean(target.properties && Object.keys(target.properties).length);
+}
+
+/** Returns the object schema whose fields a nested property should render. */
+function nestedObject(schema, schemas) {
+  let target = resolveSchema(schema, schemas);
+  while (target && target.type === 'array') {
+    target = resolveSchema(target.items, schemas);
+  }
+  if (!target) return null;
+  if (Array.isArray(target.anyOf) && target.anyOf.length) {
+    return target.anyOf.map((alt) => nestedObject(alt, schemas)).find(Boolean) || null;
+  }
+  return target.properties ? target : null;
+}
+
+/**
+ * Renders a schema as Markdown: a `Field | Type | Required | Notes` table, then an indented
+ * sub-table for every nested object, recursively. `prefix` is the dotted field path used to label
+ * nested tables (e.g. `page`, `items[]`).
+ */
+function renderSchemaTable(schema, schemas, options = {}) {
+  const { prefix = '', depth = 0 } = options;
+  const resolved = resolveSchema(schema, schemas);
+  const lines = [];
+
+  if (!resolved) return lines;
+
+  if (resolved.type === 'array') {
+    return renderSchemaTable(resolved.items, schemas, options);
+  }
+
+  const properties = resolved.properties || {};
+  const required = new Set(resolved.required || []);
+  const names = Object.keys(properties);
+
+  if (names.length === 0) {
+    if (!prefix) lines.push('_No fields._');
+    return lines;
+  }
+
+  lines.push('| Field | Type | Required | Notes |', '|---|---|---|---|');
+  for (const name of names) {
+    const property = properties[name];
+    lines.push(
+      `| \`${name}\` | ${fieldType(property, schemas)} | ${required.has(name) ? 'yes' : 'no'} | ${fieldNotes(property, schemas)} |`,
+    );
+  }
+
+  // Recurse into nested objects so the reader sees the inner fields, not just "object".
+  for (const name of names) {
+    const property = properties[name];
+    if (!hasNestedFields(property, schemas)) continue;
+    const nested = nestedObject(property, schemas);
+    if (!nested || depth >= 6) continue;
+    const nestedProperty =
+      property.type === 'array' || (resolveSchema(property, schemas) || {}).type === 'array';
+    const label = prefix ? `${prefix}.${name}` : name;
+    lines.push('');
+    lines.push(`**\`${name}\`${nestedProperty ? '[]' : ''}** — ${label} fields:`);
+    lines.push('');
+    lines.push(...renderSchemaTable(nested, schemas, { prefix: label, depth: depth + 1 }));
+  }
+
+  return lines;
+}
+
+/** Resolves the request body schema and its `$ref` name (null when the body is declared inline). */
+function bodySchemaOf(op, schemas) {
+  const content = op.requestBody && op.requestBody.content;
+  if (!content) return { name: null, schema: null };
+  const media = content['application/json'] || Object.values(content)[0];
+  const schema = (media && media.schema) || null;
+  return { name: schemaRefName(schema), schema: resolveSchema(schema, schemas) };
+}
+
+/** Resolves the primary success response schema and its `$ref` name (null when inline). */
+function responseSchemaOf(op, schemas) {
   for (const code of ['200', '201', '202', '204']) {
     const resp = op.responses && op.responses[code];
     if (!resp) continue;
-    const schema = resp.content && resp.content['application/json'] && resp.content['application/json'].schema;
-    if (schema) return refName(schema);
-    return code === '204' ? 'no content' : null;
+    const media = resp.content && resp.content['application/json'];
+    const schema = media && media.schema;
+    if (schema) return { code, name: schemaRefName(schema), schema: resolveSchema(schema, schemas) };
+    if (code === '204') return { code, name: 'no content', schema: null };
+    return { code, name: null, schema: null };
   }
-  return null;
+  return { code: null, name: null, schema: null };
 }
 
 function paramsTable(op) {
@@ -192,9 +377,11 @@ function paramsTable(op) {
   return lines.join('\n');
 }
 
-function renderOperation(tag, { method, path, op }) {
+function renderOperation(tag, { method, path, op }, schemas) {
   const notes = MODULE_NOTES[tag] && MODULE_NOTES[tag].endpoints[`${method.toUpperCase()} ${path}`];
   const auth = (op.security || []).length ? '🔒 Bearer token required' : 'Public';
+  const reqBody = bodySchemaOf(op, schemas);
+  const resBody = responseSchemaOf(op, schemas);
   const out = [];
   out.push(`### \`${method.toUpperCase()} ${path}\``);
   out.push('');
@@ -205,20 +392,37 @@ function renderOperation(tag, { method, path, op }) {
     out.push('');
   }
   out.push(`- Auth: ${auth}`);
-  const reqBody = refName(bodySchema(op));
-  const resBody = responseSchema(op);
-  if (reqBody) out.push(`- Request body: \`${reqBody}\``);
-  if (resBody) out.push(`- Response: \`${resBody}\``);
+  if (reqBody.name) out.push(`- Request body: \`${reqBody.name}\``);
+  if (resBody.name) out.push(`- Response: \`${resBody.name}\``);
   out.push('');
+
   const params = paramsTable(op);
   if (params) {
     out.push(params);
     out.push('');
   }
+
+  if (reqBody.name && reqBody.schema) {
+    out.push(`**Request body — \`${reqBody.name}\`**`);
+    out.push('');
+    out.push(...renderSchemaTable(reqBody.schema, schemas, { prefix: reqBody.name }));
+    out.push('');
+  }
+
+  if (resBody.schema) {
+    const label = resBody.name || `HTTP ${resBody.code || 200}`;
+    out.push(
+      `**Response — \`${label}\`**` + (resBody.name ? ' (inside the `data` envelope key)' : ''),
+    );
+    out.push('');
+    out.push(...renderSchemaTable(resBody.schema, schemas, { prefix: resBody.name || '' }));
+    out.push('');
+  }
+
   return out.join('\n');
 }
 
-function renderModule(tag, operations) {
+function renderModule(tag, operations, schemas) {
   const notes = MODULE_NOTES[tag] || { purpose: '', endpoints: {} };
   const out = [];
   out.push(`# ${tag}`);
@@ -233,9 +437,19 @@ function renderModule(tag, operations) {
   }
   out.push(`${operations.length} endpoint${operations.length === 1 ? '' : 's'}.`);
   out.push('');
+  out.push(
+    tag === 'health'
+      ? '`GET /api/health` is **raw** (no envelope) for load balancers and CI — see ' +
+          '[RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the exemption.'
+      : 'Every domain response is wrapped in the uniform envelope ' +
+          '`{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** ' +
+          'payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.',
+  );
+  out.push('');
   for (const operation of operations) {
-    out.push(renderOperation(tag, operation));
+    out.push(renderOperation(tag, operation, schemas));
   }
+
   return out.join('\n');
 }
 
@@ -245,10 +459,14 @@ function renderIndex(byTag) {
   out.push('');
   out.push(`> ${BANNER} from the live OpenAPI document — do not edit by hand.`);
   out.push('');
-  out.push('Live, interactive spec: **`/api/docs`** (Swagger UI) · `/api/docs-json` (raw OpenAPI).');
+  out.push(
+    'Live, interactive spec: **`/api/docs`** (Swagger UI) · `/api/docs-json` (raw OpenAPI).',
+  );
   out.push('For the guided booking flow, see [FRONTEND-API-GUIDE.md](./FRONTEND-API-GUIDE.md).');
   out.push('');
-  out.push('All routes are prefixed with `/api`. Authenticated routes need `Authorization: Bearer <accessToken>`.');
+  out.push(
+    'All routes are prefixed with `/api`. Authenticated routes need `Authorization: Bearer <accessToken>`.',
+  );
   out.push('');
   out.push('| Module | Endpoints | What it is for |');
   out.push('|---|---|---|');
@@ -268,7 +486,9 @@ async function main() {
   process.chdir(join(ROOT, 'apps', 'api'));
   const { NestFactory } = require('@nestjs/core');
   const { AppModule } = require(join(ROOT, 'apps', 'api', 'dist', 'bootstrap', 'app.module.js'));
-  const { buildOpenApiDocument } = require(join(ROOT, 'apps', 'api', 'dist', 'bootstrap', 'openapi.js'));
+  const { buildOpenApiDocument } = require(
+    join(ROOT, 'apps', 'api', 'dist', 'bootstrap', 'openapi.js'),
+  );
 
   const app = await NestFactory.create(AppModule, { logger: false });
   app.setGlobalPrefix('api');
@@ -276,6 +496,7 @@ async function main() {
   await app.close();
 
   const byTag = collectOperations(doc);
+  const schemas = (doc.components && doc.components.schemas) || {};
 
   mkdirSync(OUT_DIR, { recursive: true });
   // Remove only previously generated pages, never hand-written files.
@@ -288,7 +509,7 @@ async function main() {
   }
 
   for (const [tag, operations] of byTag.entries()) {
-    writeFileSync(join(OUT_DIR, `${tag}.md`), renderModule(tag, operations), 'utf8');
+    writeFileSync(join(OUT_DIR, `${tag}.md`), renderModule(tag, operations, schemas), 'utf8');
   }
   writeFileSync(join(OUT_DIR, 'index.md'), renderIndex(byTag), 'utf8');
 

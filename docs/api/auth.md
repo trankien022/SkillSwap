@@ -8,6 +8,8 @@ Account identity (FR-001, ADR-016). Registration, sign-in and the rotating refre
 
 5 endpoints.
 
+Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
+
 ### `POST /api/auth/login`
 
 **Sign in with email and password (FR-001)**
@@ -17,6 +19,22 @@ Exchange email + password for a token pair. Use on the sign-in screen.
 - Auth: Public
 - Request body: `LoginDto`
 - Response: `TokenResponseDto`
+
+**Request body — `LoginDto`**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `email` | string | yes | email |
+| `password` | string | yes | min 1 chars |
+
+**Response — `TokenResponseDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `accessToken` | string | yes | min 1 chars |
+| `refreshToken` | string | yes | min 1 chars |
+| `expiresIn` | integer | yes | > 0 |
+| `tokenType` | enum | yes | one of `Bearer` |
 
 ### `POST /api/auth/logout`
 
@@ -28,6 +46,12 @@ Revoke the refresh session. Call on sign-out so the refresh token can no longer 
 - Request body: `LogoutRequestDto`
 - Response: `no content`
 
+**Request body — `LogoutRequestDto`**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `refreshToken` | string | yes | min 1 chars |
+
 ### `GET /api/auth/me`
 
 **Read the signed-in account and verification status (FR-001/FR-017)**
@@ -36,6 +60,24 @@ Read the signed-in account and its student-verification status. Use to hydrate t
 
 - Auth: 🔒 Bearer token required
 - Response: `MeResponseDto`
+
+**Response — `MeResponseDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `email` | string | yes | email |
+| `displayName` | string | yes | min 1 chars |
+| `role` | enum | yes | one of `user`, `verifier`, `admin` |
+| `status` | string | yes | min 1 chars |
+| `studentVerification` | object | yes | nullable |
+
+**`studentVerification`** — MeResponseDto.studentVerification fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `status` | enum | yes | one of `pending`, `approved`, `rejected`, `revoked` |
+| `reason` | string | yes | min 1 chars; nullable |
 
 ### `POST /api/auth/refresh`
 
@@ -47,6 +89,21 @@ Rotate an expiring refresh token for a new pair. Call when the access token is n
 - Request body: `RefreshRequestDto`
 - Response: `TokenResponseDto`
 
+**Request body — `RefreshRequestDto`**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `refreshToken` | string | yes | min 1 chars |
+
+**Response — `TokenResponseDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `accessToken` | string | yes | min 1 chars |
+| `refreshToken` | string | yes | min 1 chars |
+| `expiresIn` | integer | yes | > 0 |
+| `tokenType` | enum | yes | one of `Bearer` |
+
 ### `POST /api/auth/register`
 
 **Create a local account (FR-001)**
@@ -56,3 +113,21 @@ Create a local account and receive the first token pair. Use on the sign-up scre
 - Auth: Public
 - Request body: `RegisterDto`
 - Response: `TokenResponseDto`
+
+**Request body — `RegisterDto`**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `email` | string | yes | email |
+| `displayName` | string | yes | min 1 chars; max 120 chars |
+| `password` | string | yes | min 8 chars; max 200 chars |
+| `role` | enum | no | one of `user`; default `"user"` |
+
+**Response — `TokenResponseDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `accessToken` | string | yes | min 1 chars |
+| `refreshToken` | string | yes | min 1 chars |
+| `expiresIn` | integer | yes | > 0 |
+| `tokenType` | enum | yes | one of `Bearer` |

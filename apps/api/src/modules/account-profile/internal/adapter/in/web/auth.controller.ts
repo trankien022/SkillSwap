@@ -15,6 +15,10 @@ import { LOGOUT, type LogoutPort } from '../../../application/port/in/logout';
 import { GET_ME, type GetMePort } from '../../../application/port/in/get-me';
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
 import {
+  ResponseCode,
+  ResponseMessage,
+} from '../../../../../../shared/http/response-code.decorator';
+import {
   LoginDto,
   LogoutRequestDto,
   MeResponseDto,
@@ -66,6 +70,8 @@ export class AuthController {
 
   @Get('me')
   @ApiBearerAuth('bearer')
+  @ResponseCode('ME_OK')
+  @ResponseMessage('Account loaded')
   @ApiOperation({ summary: 'Read the signed-in account and verification status (FR-001/FR-017)' })
   @ApiOkResponse({
     type: MeResponseDto,

@@ -136,7 +136,7 @@ export async function refreshSession(): Promise<TokenPair | null> {
         throw new Error('Session expired');
       }
 
-      const data = await res.json();
+      const data = await unwrapEnvelope<{ accessToken: string; refreshToken: string }>(res);
       const remembered = readSession()?.remembered ?? false;
       saveTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken }, remembered);
       return { accessToken: data.accessToken, refreshToken: data.refreshToken };
@@ -173,6 +173,20 @@ export async function callApi(path: string, init: RequestInit = {}, retry = true
   return res;
 }
 
+import { unwrapEnvelope, type ApiEnvelope } from '@skillswap/contracts';
+
+/**
+ * NFR-013: the envelope runtime layer is shared from `@skillswap/contracts` so web, mobile and any
+ * other client parse responses identically. Re-exported here so existing imports keep working;
+ * transport concerns (base URL, auth, retry) stay in this file.
+ *
+ * `ApiError` is kept as a local alias of the shared `ApiResponseError` for call sites/tests that
+ * import it from here (the `contracts` package already uses `ApiError` for the legacy
+ * `apiErrorSchema` type, so the class is named `ApiResponseError` at the source).
+ */
+export { unwrapEnvelope, type ApiEnvelope, type ApiErrorItem } from '@skillswap/contracts';
+export { ApiResponseError as ApiError, ApiResponseError } from '@skillswap/contracts';
+
 export async function authenticate(
   mode: 'login' | 'register',
   payload: {
@@ -203,12 +217,15 @@ export async function authenticate(
   });
 
   if (!res.ok) {
-    const errorBody = await res.json().catch(() => null);
-    const msg = errorBody?.message || errorBody?.error || (mode === 'register' ? 'Đăng ký thất bại' : 'Đăng nhập thất bại');
-    throw new Error(Array.isArray(msg) ? msg.join(', ') : String(msg));
+    const errorBody = (await res.json().catch(() => null)) as ApiEnvelope<unknown> | null;
+    const msg =
+      errorBody?.message ||
+      errorBody?.errors?.[0]?.message ||
+      (mode === 'register' ? 'Đăng ký thất bại' : 'Đăng nhập thất bại');
+    throw new Error(msg);
   }
 
-  const data = await res.json();
+  const data = await unwrapEnvelope<{ accessToken: string; refreshToken: string }>(res);
   saveTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken }, remember);
 
   // Immediately try to fetch user info from /auth/me or store payload
@@ -220,7 +237,13 @@ export async function authenticate(
       },
     });
     if (meRes.ok) {
-      const meData = await meRes.json();
+      const meData = await unwrapEnvelope<{
+        id?: string;
+        email: string;
+        displayName?: string;
+        role?: string;
+        studentVerification?: { status?: string } | null;
+      }>(meRes);
       saveStoredUser({
         id: meData.id,
         email: meData.email,
@@ -267,5 +290,5 @@ export async function logout(): Promise<void> {
 export async function getMe(): Promise<UserProfile | null> {
   const res = await callApi('/auth/me');
   if (!res.ok) return null;
-  return res.json();
+  return unwrapEnvelope<UserProfile>(res);
 }

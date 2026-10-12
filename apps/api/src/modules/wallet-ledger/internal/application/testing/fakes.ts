@@ -130,7 +130,7 @@ export class FakeWalletReader implements WalletReader {
     const start = query.cursor === undefined ? 0 : Number.parseInt(query.cursor, 10);
     const slice = all.slice(start, start + query.limit);
     const next = start + query.limit < all.length ? String(start + query.limit) : null;
-    return { items: slice, nextCursor: next };
+    return { items: slice, page: { limit: query.limit, nextCursor: next, total: all.length } };
   }
 
   async sums(ownerId: string): Promise<{ credits: number; debits: number }> {
