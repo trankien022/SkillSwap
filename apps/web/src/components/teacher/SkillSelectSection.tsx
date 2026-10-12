@@ -50,8 +50,10 @@ export function SkillSelectSection({ skills, draft, onChange }: Props) {
           ) : (
             skills.map((skill) => (
               <option key={skill.id} value={skill.id}>
-                {skill.label} ({t('verifiedTag')}: {skill.verifierLabel} —{' '}
-                {skill.verifierFaculty})
+                {skill.label}
+                {skill.approvedLevel !== null
+                  ? ` (${t('verifiedTag')}: ${skill.approvedLevel})`
+                  : ''}
               </option>
             ))
           )}
