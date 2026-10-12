@@ -75,7 +75,7 @@ export function DashboardShell({ initial, calendar, charter, isAuthed }: Props) 
           setSearch(nextSearch);
         }}
       />
-      {liveBooking && (
+      {liveBooking && (filter === 'all' || filter === 'upcoming') && (
         <SessionCardSlot
           booking={liveBooking}
           onAction={onAction}

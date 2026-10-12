@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import type {
   BookingState,
@@ -47,8 +48,7 @@ export function SessionCard({
     case 'no_show_reported':
       return <ClosedCard booking={booking} tCard={tCard} tFilters={tFilters} />;
     case 'in_progress':
-      // in_progress is rendered by LiveSessionBanner, not here.
-      return null;
+      return <LiveCard booking={booking} tCard={tCard} />;
     default: {
       const _exhaustive: never = booking.state;
       void _exhaustive;
@@ -655,10 +655,139 @@ function ScheduleIcon({ className = '' }: { className?: string }) {
   );
 }
 
-function ShieldIcon({ className = '' }: { className?: string }) {
+function LiveCard({
+  booking,
+  tCard,
+}: {
+  booking: LearnerBookingView;
+  tCard: CardTranslator;
+}) {
+  const tLive = useTranslations('Dashboard.live');
+  const locale = useLocale() as 'vi' | 'en';
+  const start = new Date(booking.startsAt).getTime();
+  const now = Date.now();
+  const elapsedMs = Math.max(0, now - start);
+  const totalMs = booking.durationMinutes * 60 * 1000;
+  const elapsedMin = Math.min(
+    booking.durationMinutes,
+    Math.floor(elapsedMs / (60 * 1000)),
+  );
+  const pct = Math.min(100, Math.round((elapsedMs / totalMs) * 100));
+  const startTimeText = new Date(booking.startsAt).toLocaleTimeString(locale, {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  const endTimeText = new Date(start + totalMs).toLocaleTimeString(locale, {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  const [copied, setCopied] = useState(false);
+
   return (
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
-      <path d="M12 3l8 3v6c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V6l8-3z" />
+    <article className="relative overflow-hidden rounded-2xl border-2 border-emerald-500 bg-surface p-6 shadow-md transition-shadow">
+      <div className="absolute inset-x-0 top-0 h-1.5 bg-emerald-600" />
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <span className="relative flex h-3 w-3">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-600" />
+            </span>
+            <Chip tone="success">
+              <VideocamIcon className="h-4 w-4" />
+              <span className="font-bold tracking-wide">{tLive('badge')}</span>
+            </Chip>
+            <span className="text-xs text-ink-soft">
+              {tCard('bookingId', { id: booking.id.split('-').slice(-1)[0] ?? booking.id })}
+            </span>
+          </div>
+
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 border border-emerald-200">
+            <LockIcon className="h-3.5 w-3.5 text-emerald-600" />
+            <span>{tCard('escrowHeld', { credits: booking.priceCredits })}</span>
+          </span>
+        </div>
+
+        <div>
+          <h3 className="text-xl font-bold text-ink tracking-tight mb-2">
+            {booking.classTitle}
+          </h3>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-ink-soft">
+            <span className="inline-flex items-center gap-1.5 font-semibold text-ink">
+              <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px]">
+                {booking.teacherInitial}
+              </span>
+              <span>{booking.teacherName}</span>
+              <span className="text-ink-muted">· {booking.teacherSchoolLabel}</span>
+            </span>
+            <span className="inline-flex items-center gap-1 text-ink-soft">
+              <ScheduleIcon className="h-3.5 w-3.5 text-ink-muted" />
+              <span>{startTimeText} - {endTimeText} ({booking.durationMinutes} phút)</span>
+            </span>
+          </div>
+        </div>
+
+        <div className="space-y-1.5 rounded-xl border border-slate-100 bg-slate-50/80 p-3.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-medium text-slate-700">
+              {tLive('progress')}: <strong className="text-emerald-700">{elapsedMin}/{booking.durationMinutes} phút</strong>
+            </span>
+            <span className="font-bold text-emerald-700">{pct}%</span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+            <div
+              className="h-full rounded-full bg-emerald-600 transition-all duration-500"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
+          {booking.roomCode && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-ink-soft">Mã phòng:</span>
+              <code className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-xs font-bold text-slate-900">
+                {booking.roomCode}
+              </code>
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                    navigator.clipboard.writeText(booking.roomCode ?? '');
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }
+                }}
+                className="text-xs text-emerald-700 hover:text-emerald-800 font-medium"
+              >
+                {copied ? 'Đã sao chép!' : 'Sao chép'}
+              </button>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2">
+            <a
+              href={booking.roomCode ? `https://meet.jit.si/${booking.roomCode}` : '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95 sm:w-auto"
+            >
+              <VideocamIcon className="h-4 w-4" />
+              <span>{tLive('join')}</span>
+              <span aria-hidden="true">→</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function VideocamIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+      <polygon points="23 7 16 12 23 17 23 7" />
+      <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
     </svg>
   );
 }
