@@ -107,4 +107,13 @@ describe('Navbar component', () => {
     const signInLink = screen.getByRole('link', { name: 'Đăng nhập' });
     expect(signInLink).toBeDefined();
   });
+
+  it('renders responsive navigation link labels with title tooltip', () => {
+    render(<Navbar />);
+
+    const verificationLink = screen.getByTitle('Quản trị & Xác minh');
+    expect(verificationLink).toBeDefined();
+    expect(verificationLink.textContent).toContain('Quản trị & Xác minh');
+    expect(verificationLink.textContent).toContain('Xác minh');
+  });
 });
