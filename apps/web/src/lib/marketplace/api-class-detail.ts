@@ -4,7 +4,21 @@ import { MockClassDetailGateway } from './mock-class-detail';
 import type { ClassDetailView } from './types';
 
 /**
- * Transforms a backend ClassDetailView (Route 14) into the rich web ClassDetailView presentation structure.
+ * Transforms a backend ClassDetailView (Route 14) into the web ClassDetailView
+ * presentation shape.
+ *
+ * The API answers with `teacher { displayName, averageRating, ratingsCount }`,
+ * `description`, `startsAt`, `durationMinutes`, `priceCredits`, `capacity`,
+ * `availableSeats`, `state`, `skillIds` and `recentRatings` — nothing else.
+ *
+ * Everything the richer web layout can also show but the API does **not**
+ * provide (school, skill category, level, syllabus, prerequisites, teacher bio,
+ * teacher stats, credentials) is therefore left genuinely empty or null rather
+ * than invented. An earlier version of this function filled them with
+ * plausible-looking constants — `schoolCode: 'bk'`, `ratingAvg ?? 5.0`,
+ * `verified: true`, a three-step syllabus, a bio, `hoursTaught: 16` — which
+ * rendered as real class content and was indistinguishable from it. Absence is
+ * visible; a fabricated 5.0 rating is not.
  */
 export function mapContractDetailToWeb(detail: ContractClassDetailView): ClassDetailView {
   return {
@@ -16,67 +30,35 @@ export function mapContractDetailToWeb(detail: ContractClassDetailView): ClassDe
     priceCredits: detail.priceCredits,
     capacity: detail.capacity,
     teacherName: detail.teacher.displayName,
-    schoolCode: 'bk',
-    schoolName: 'Đại học Quốc gia',
-    skillName: detail.description.length > 35 ? `${detail.description.slice(0, 32)}...` : detail.description,
-    skillCategory: 'programming',
-    level: 'intermediate',
+    // Not supplied by `GET /classes/:id`; the UI must render an explicit
+    // "not provided" state rather than a placeholder that reads as fact.
+    schoolCode: null,
+    schoolName: null,
+    skillName: null,
+    skillCategory: null,
+    level: null,
+    // Derived only from data the API actually returns.
     format: detail.capacity <= 1 ? 'one-on-one' : 'group-2-4',
-    ratingAvg: detail.teacher.averageRating ?? 5.0,
+    // `averageRating` is nullable: a teacher with no ratings has no average, and
+    // coercing null to 5.0 was a fabricated perfect score.
+    ratingAvg: detail.teacher.averageRating,
     ratingCount: detail.teacher.ratingsCount,
-    verified: true,
+    // "Verified" is a claim about the teacher. The API sends no such flag here,
+    // so it is reported as unknown instead of asserted true.
+    verified: null,
     coverGradient: { from: '#0f766e', to: '#14b8a6' },
     description: detail.description,
-    syllabus: [
-      {
-        order: 1,
-        title: 'Giới thiệu & Tổng quan',
-        minutes: Math.round(detail.durationMinutes * 0.25),
-        body: 'Làm quen và thống nhất mục tiêu buổi học.',
-      },
-      {
-        order: 2,
-        title: 'Nội dung cốt lõi & Thực hành tương tác',
-        minutes: Math.round(detail.durationMinutes * 0.5),
-        body: 'Thực hành tương tác trực tiếp và phân tích bài toán thực tế.',
-      },
-      {
-        order: 3,
-        title: 'Hỏi đáp & Định hướng tự học',
-        minutes: Math.round(detail.durationMinutes * 0.25),
-        body: 'Giải đáp thắc mắc và tổng kết tài liệu tham khảo.',
-      },
-    ],
-    prerequisites: [
-      {
-        icon: 'devices',
-        title: 'Thiết bị kết nối',
-        body: 'Máy tính có kết nối Internet ổn định, micro và webcam.',
-      },
-      {
-        icon: 'topic',
-        title: 'Kiến thức chuẩn bị',
-        body: 'Đọc trước tài liệu hoặc chuẩn bị sẵn các câu hỏi trọng tâm.',
-      },
-    ],
-    teacherBio: 'Sinh viên hướng dẫn được cộng đồng đánh giá tích cực và đã hoàn tất xác thực thông tin.',
-    teacherStats: {
-      hoursTaught: 16,
-      responseRatePct: 98,
-      learnersHelped: 10,
-    },
-    teacherCredentials: [
-      {
-        icon: 'workspace_premium',
-        title: 'Xác thực sinh viên',
-        body: 'Hồ sơ sinh viên chính quy đã xác minh',
-        verifiedBy: 'SkillSwap Trust',
-      },
-    ],
+    // None of these are returned by the API.
+    syllabus: [],
+    prerequisites: [],
+    teacherBio: null,
+    teacherStats: null,
+    teacherCredentials: [],
     reviews: (detail.recentRatings ?? []).map((r) => ({
       id: r.id,
       authorName: r.learnerDisplayName,
-      schoolName: 'Học viên SkillSwap',
+      // The API returns no school for a reviewer, so none is shown.
+      schoolName: null,
       rating: r.stars,
       body: r.comment,
       attendedOn: r.createdAt,
@@ -85,17 +67,24 @@ export function mapContractDetailToWeb(detail: ContractClassDetailView): ClassDe
 }
 
 /**
- * Real API-backed Class Detail Gateway.
- * Queries `GET /api/classes/:id` from the backend. A class the API cannot
- * resolve returns null; there is no local reconstruction of one, because the
- * fabricated detail (placeholder teacher, 5.0 rating, invented syllabus and
- * reviews) was indistinguishable from a real class detail.
+ * Class Detail Gateway.
+ *
+ * Two sources, in a fixed order:
+ *  1. the demo fixtures in `MockClassDetailGateway`, keyed by demo ids like
+ *     `demo-ielts-speaking` (there is no such class in the database);
+ *  2. `GET /classes/:id`, for real UUIDs.
+ *
+ * A real class the API cannot resolve returns null. There is no local
+ * reconstruction of one: `mapContractDetailToWeb` fills only the fields the API
+ * actually returns, so an unresolvable class surfaces as not-found instead of a
+ * plausible-looking invention that is indistinguishable from a real detail.
  */
 export class ClassDetailApiGateway {
   private fallback = new MockClassDetailGateway();
 
   async getById(id: string): Promise<ClassDetailView | null> {
-    // 1. If it's a known mock ID, return immediately from mock fixture
+    // 1. Demo fixtures are keyed by their own non-UUID ids, so this cannot shadow
+    //    a real class. It exists so the seeded demo links still resolve offline.
     const mockItem = await this.fallback.getById(id);
     if (mockItem) {
       return mockItem;

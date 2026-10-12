@@ -337,21 +337,39 @@ export default function BookingCheckoutPage({ params }: PageProps) {
                     <div className="flex flex-col">
                       <div className="flex items-center gap-1.5">
                         <span className="font-bold text-base text-slate-900">{display.teacherName}</span>
-                        <span className="text-[11px] px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 font-semibold border border-emerald-100">
-                          {display.skillBadge}
-                        </span>
+                        {display.skillBadge !== null && (
+                          <span className="text-[11px] px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 font-semibold border border-emerald-100">
+                            {display.skillBadge}
+                          </span>
+                        )}
                       </div>
-                      <p className="text-xs text-slate-600">
-                        {display.schoolName}
-                      </p>
+                      {display.schoolName !== null && (
+                        <p className="text-xs text-slate-600">
+                          {display.schoolName}
+                        </p>
+                      )}
                       <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500">
-                        <span className="text-emerald-700 font-semibold flex items-center gap-0.5">
-                          <span className="material-symbols-outlined text-[14px]">shield</span> Đã xác minh bằng cấp
-                        </span>
-                        <span>•</span>
-                        <span>{display.hoursTaught} buổi đã dạy</span>
-                        <span>•</span>
-                        <span className="text-slate-800 font-medium">Đánh giá {display.ratingAvg}/5.0</span>
+                        {/* The credential claim appears only when the API
+                            actually asserts it; no such flag on this route. */}
+                        {display.credentialsVerified && (
+                          <>
+                            <span className="text-emerald-700 font-semibold flex items-center gap-0.5">
+                              <span className="material-symbols-outlined text-[14px]">shield</span> Đã xác minh bằng cấp
+                            </span>
+                            <span>•</span>
+                          </>
+                        )}
+                        {display.hoursTaught !== null && (
+                          <>
+                            <span>{display.hoursTaught} buổi đã dạy</span>
+                            <span>•</span>
+                          </>
+                        )}
+                        {display.ratingAvg === null ? (
+                          <span>Chưa có đánh giá</span>
+                        ) : (
+                          <span className="text-slate-800 font-medium">Đánh giá {display.ratingAvg}/5.0</span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -910,13 +928,17 @@ function buildDisplayModel(classDetail: ClassDetailView, balance: WalletBalanceV
     priceCredits,
     remainingCredits,
     lockedPercentage,
-    classTitle: classDetail.description || classDetail.skillName,
+    classTitle: classDetail.description || classDetail.skillName || '',
     skillBadge: classDetail.skillName,
     teacherName,
     teacherInitials,
     schoolName: classDetail.schoolName,
-    ratingAvg: classDetail.ratingAvg.toFixed(2),
+    // Null when the teacher has no ratings; the view says so instead of "5.00".
+    ratingAvg: classDetail.ratingAvg === null ? null : classDetail.ratingAvg.toFixed(2),
     hoursTaught: classDetail.teacherStats?.hoursTaught ?? null,
+    // The API sends no credential flag on this route; only an explicit `true`
+    // may be shown as verified.
+    credentialsVerified: classDetail.verified === true,
     timeFormatted: `${startsAtDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - ${new Date(startsAtDate.getTime() + classDetail.durationMinutes * 60000).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`,
     dateFormatted: startsAtDate.toLocaleDateString('vi-VN', {
       weekday: 'long',

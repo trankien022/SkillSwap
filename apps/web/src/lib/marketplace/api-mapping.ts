@@ -104,11 +104,10 @@ export function coverGradientFor(id: string): { from: string; to: string } {
 
 /**
  * `teacherDisplayName` is the only teacher field the list endpoint returns, and
- * there is no school column anywhere in the schema. The school line is therefore
- * a neutral label, not a fabricated affiliation.
+ * there is no school column anywhere in the schema. So both the school code and
+ * the school line are visibly absent rather than filled with a fabricated
+ * affiliation.
  */
-const SCHOOL_LABEL = 'Verified student teacher';
-
 export function toMarketplaceClass(
   item: ClassListItemView,
   catalogue: SkillCatalogue,
@@ -126,16 +125,21 @@ export function toMarketplaceClass(
     capacity: item.capacity,
 
     teacherName: item.teacherDisplayName,
-    schoolCode: 'bk',
-    schoolName: SCHOOL_LABEL,
+    // No school column exists in the schema, so no school or code is claimed.
+    schoolCode: null,
+    schoolName: null,
     skillName,
     skillCategory: toSkillCategory(skill?.category),
     level: toSkillLevel(skill),
     format: toClassFormat(item.capacity),
-    // The API flags the rating as provisional but always supplies both fields.
-    ratingAvg: item.averageRating ?? 0,
+    // `averageRating` is nullable on the contract: a teacher with no ratings
+    // has none. Coercing it to 0 rendered as a genuine zero-star score, which
+    // reads as "rated and bad" rather than "unrated".
+    ratingAvg: item.averageRating,
     ratingCount: item.ratingsCount,
-    verified: true,
+    // The list endpoint carries no verification flag; asserting one here would
+    // be a claim the API never made.
+    verified: null,
     coverGradient: coverGradientFor(item.id),
   };
 }
@@ -274,11 +278,18 @@ export function toClassDetailView(item: MarketplaceClass): ClassDetailView {
   const audience =
     item.format === 'one-on-one' ? 'a one-to-one session' : `a small group of up to ${item.capacity}`;
 
+  // This mapper documents the catalogue shape from `GET /classes`, which always
+  // supplies skillName and level. Both are nullable on the shared view model
+  // because `GET /classes/:id` does not return them, so they are narrowed here
+  // rather than defaulted: a placeholder would be read as the real skill.
+  const skillName = item.skillName ?? '';
+  const level = item.level ?? 'intermediate';
+
   // Derived: composed from real skill, format, duration and level only.
-  const description = `${item.skillName} in ${item.durationMinutes} minutes as ${audience}, pitched at ${item.level} level. The teacher runs a short goal check, then works on exactly the patterns you need.`;
+  const description = `${skillName} in ${item.durationMinutes} minutes as ${audience}, pitched at ${level} level. The teacher runs a short goal check, then works on exactly the patterns you need.`;
 
   // Derived: restates the real, verified facts about the teacher — no résumé.
-  const teacherBio = `Verified ${item.level}-level teacher for ${item.skillName} on SkillSwap.`;
+  const teacherBio = `Verified ${level}-level teacher for ${skillName} on SkillSwap.`;
 
   // Derived from the class contract: one published session, seats = capacity.
   const teacherStats: TeacherStats = {

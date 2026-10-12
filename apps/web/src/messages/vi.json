@@ -199,6 +199,7 @@
       },
       "duration": "{minutes} phút",
       "rating": "{avg} ({count})",
+      "noRating": "Chưa có đánh giá",
       "startsAt": "{when} • {time}",
       "deadline": "Hạn đặt: còn {hours}h",
       "seats": {
@@ -243,6 +244,7 @@
       "rating": "Đánh giá",
       "reviewsCount": "{count} đánh giá thực từ sinh viên",
       "completedLabel": "Đã hoàn thành {count} buổi dạy",
+      "noRating": "Chưa có đánh giá",
       "profileLink": "Xem hồ sơ đầy đủ",
       "mockBadge": "Dữ liệu minh họa"
     },

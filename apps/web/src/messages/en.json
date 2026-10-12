@@ -199,6 +199,7 @@
       },
       "duration": "{minutes} min",
       "rating": "{avg} ({count})",
+      "noRating": "No ratings yet",
       "startsAt": "{when} • {time}",
       "deadline": "Booking closes in {hours}h",
       "seats": {
@@ -243,6 +244,7 @@
       "rating": "Rating",
       "reviewsCount": "{count} verified student reviews",
       "completedLabel": "Completed {count} sessions",
+      "noRating": "No reviews yet",
       "profileLink": "View full profile",
       "mockBadge": "Demo data"
     },

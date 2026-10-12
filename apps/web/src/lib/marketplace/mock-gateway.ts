@@ -36,7 +36,7 @@ export class MockMarketplaceGateway {
 function matches(item: MarketplaceClass, query: MarketplaceQuery): boolean {
   if (query.keyword) {
     const needle = query.keyword.toLowerCase();
-    const haystack = `${item.skillName} ${item.teacherName}`.toLowerCase();
+    const haystack = `${item.skillName ?? ''} ${item.teacherName}`.toLowerCase();
     if (!haystack.includes(needle)) return false;
   }
   if (query.university && query.university !== 'all') {
@@ -48,7 +48,7 @@ function matches(item: MarketplaceClass, query: MarketplaceQuery): boolean {
   if (query.formats.length > 0 && !query.formats.includes(item.format)) {
     return false;
   }
-  if (query.minRating !== undefined && item.ratingAvg < query.minRating) {
+  if (query.minRating !== undefined && (item.ratingAvg ?? 0) < query.minRating) {
     return false;
   }
   if (query.priceMin !== undefined && item.priceCredits < query.priceMin) {
@@ -57,7 +57,7 @@ function matches(item: MarketplaceClass, query: MarketplaceQuery): boolean {
   if (query.priceMax !== undefined && item.priceCredits > query.priceMax) {
     return false;
   }
-  if (query.verifiedOnly === true && !item.verified) {
+  if (query.verifiedOnly === true && item.verified !== true) {
     return false;
   }
   if (!matchesTimeFilter(item, query.timeFilter)) {
@@ -99,7 +99,7 @@ function compare(
     return a.priceCredits - b.priceCredits;
   }
   if (sort === 'rating') {
-    return b.ratingAvg - a.ratingAvg;
+    return (b.ratingAvg ?? -1) - (a.ratingAvg ?? -1);
   }
   if (sort === 'popular') {
     return b.ratingCount - a.ratingCount;

@@ -91,13 +91,22 @@ function applyClientFilters(
   query: MarketplaceQuery,
 ): MarketplaceClass[] {
   return items.filter((item) => {
-    if (query.category && query.category !== 'all' && item.skillCategory !== query.category) {
+    // A class with no category cannot satisfy a category filter, for the same
+    // reason an unrated class cannot satisfy a rating filter.
+    if (
+      query.category &&
+      query.category !== 'all' &&
+      item.skillCategory !== query.category
+    ) {
       return false;
     }
     if (query.formats.length > 0 && !query.formats.includes(item.format)) {
       return false;
     }
-    if (query.minRating !== undefined && item.ratingAvg < query.minRating) {
+    // A class with no rating cannot satisfy a minimum-rating filter. Treating
+    // "unrated" as "passes" would let unrated classes through a filter the
+    // learner set to exclude them.
+    if (query.minRating !== undefined && (item.ratingAvg ?? 0) < query.minRating) {
       return false;
     }
     if (query.priceMin !== undefined && item.priceCredits < query.priceMin) {
@@ -108,7 +117,7 @@ function applyClientFilters(
     }
     if (query.keyword && query.keyword.trim().length > 0) {
       const needle = query.keyword.trim().toLowerCase();
-      const haystack = `${item.skillName} ${item.teacherName}`.toLowerCase();
+      const haystack = `${item.skillName ?? ''} ${item.teacherName}`.toLowerCase();
       if (!haystack.includes(needle)) {
         return false;
       }
@@ -132,7 +141,9 @@ function applySort(
     case 'price-low':
       return copy.sort((a, b) => a.priceCredits - b.priceCredits);
     case 'rating':
-      return copy.sort((a, b) => b.ratingAvg - a.ratingAvg);
+      // Unrated classes sort last rather than being treated as 5.0. `?? -1` puts
+      // them below any real rating without claiming a score they do not have.
+      return copy.sort((a, b) => (b.ratingAvg ?? -1) - (a.ratingAvg ?? -1));
     case 'popular':
       return copy.sort((a, b) => b.ratingCount - a.ratingCount);
     case 'nearest':

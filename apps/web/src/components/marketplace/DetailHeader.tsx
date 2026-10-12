@@ -20,8 +20,10 @@ export function DetailHeader({ item }: { item: ClassDetailView }) {
 
   // Map the kebab enum back to the camelCase i18n key (same lookup as
   // CategoryPills — kept inline to avoid coupling to that component).
+  // The detail route returns no category, so the label is simply absent.
   const categoryI18nKey = categoryKey(item.skillCategory);
-  const categoryLabel = useTranslations('Marketplace.categories')(categoryI18nKey);
+  const tCategories = useTranslations('Marketplace.categories');
+  const categoryLabel = categoryI18nKey === null ? null : tCategories(categoryI18nKey);
 
   return (
     <>
@@ -47,15 +49,23 @@ export function DetailHeader({ item }: { item: ClassDetailView }) {
               {tBread('explore')}
             </a>
             <span aria-hidden="true" className="text-ink-muted">/</span>
-            <a
-              href={`/${locale}/classes?category=${item.skillCategory}`}
-              className="transition-colors hover:text-ink"
-            >
-              {categoryLabel}
-            </a>
+            {/* No category on this route means no filter to link to; a plain
+                span avoids a link carrying `category=null`. */}
+            {item.skillCategory === null ? (
+              <span className="text-ink-soft">{tBread('explore')}</span>
+            ) : (
+              <a
+                href={`/${locale}/classes?category=${item.skillCategory}`}
+                className="transition-colors hover:text-ink"
+              >
+                {categoryLabel}
+              </a>
+            )}
             <span aria-hidden="true" className="text-ink-muted">/</span>
             <span className="max-w-xs truncate font-semibold text-ink md:max-w-sm">
-              {item.skillName}
+              {/* The detail route returns no skill name; the description the API
+                  does return is the honest label for the crumb. */}
+              {item.skillName ?? item.description}
             </span>
           </nav>
           <a
@@ -95,27 +105,41 @@ export function DetailHeader({ item }: { item: ClassDetailView }) {
             </Chip>
           </div>
 
-          {/* Title */}
+          {/* Title. The class-detail route returns no skill name, so the
+              description — which it does return — is used instead of printing
+              a placeholder that would read as the real subject. */}
           <h1 className="text-2xl font-bold leading-tight tracking-tight text-ink sm:text-3xl">
-            {item.skillName}
+            {item.skillName ?? item.description}
           </h1>
 
           {/* Rating + completion row */}
           <div className="flex flex-wrap items-center gap-3 text-sm text-ink-soft">
             <div className="flex items-center gap-1 text-ink">
               <StarIcon className="h-4 w-4 text-warning-ink" />
-              <span className="font-bold">{item.ratingAvg.toFixed(2)}</span>
-              <span className="font-normal text-ink-soft">
-                ({t('reviewsCount', { count: item.ratingCount })})
-              </span>
+              {item.ratingAvg === null ? (
+                <span className="font-normal text-ink-soft">{t('noRating')}</span>
+              ) : (
+                <>
+                  <span className="font-bold">{item.ratingAvg.toFixed(2)}</span>
+                  <span className="font-normal text-ink-soft">
+                    ({t('reviewsCount', { count: item.ratingCount })})
+                  </span>
+                </>
+              )}
             </div>
-            <span aria-hidden="true" className="text-ink-muted">•</span>
-            <div className="flex items-center gap-1">
-              <CheckIcon className="h-4 w-4 text-campus-emerald" />
-              <span>
-                {t('completedLabel', { count: item.teacherStats.hoursTaught })}
-              </span>
-            </div>
+            {/* The API sends no teaching-hours stat on the detail route, so the
+                line is omitted rather than showing an invented figure. */}
+            {item.teacherStats !== null && (
+              <>
+                <span aria-hidden="true" className="text-ink-muted">•</span>
+                <div className="flex items-center gap-1">
+                  <CheckIcon className="h-4 w-4 text-campus-emerald" />
+                  <span>
+                    {t('completedLabel', { count: item.teacherStats.hoursTaught })}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Teacher lead-in */}
@@ -126,7 +150,7 @@ export function DetailHeader({ item }: { item: ClassDetailView }) {
                 aria-hidden="true"
               >
                 {item.teacherName.charAt(0).toUpperCase()}
-                {item.verified && (
+                {item.verified === true && (
                   <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-surface shadow-sm">
                     <CheckIcon className="h-3.5 w-3.5 text-success-ink" />
                   </span>
@@ -137,17 +161,21 @@ export function DetailHeader({ item }: { item: ClassDetailView }) {
                   <span className="text-base font-semibold text-ink">
                     {item.teacherName}
                   </span>
-                  {item.verified && (
+                  {item.verified === true && item.schoolName !== null && (
                     <span className="inline-flex items-center gap-1 rounded-full border border-success-tint bg-success-tint px-2 py-0.5 text-[11px] font-semibold text-success-ink">
                       <SchoolIcon className="h-3 w-3" />
                       <span>{item.schoolName}</span>
                     </span>
                   )}
                 </div>
-                <p className="mt-0.5 flex items-center gap-1 text-xs text-ink-soft">
-                  <WorkspacePremiumIcon className="h-4 w-4 text-campus-emerald" />
-                  <span>{item.teacherBio}</span>
-                </p>
+                {/* No bio is returned on the detail route; the line is omitted
+                    rather than filled with a generated description. */}
+                {item.teacherBio !== null && (
+                  <p className="mt-0.5 flex items-center gap-1 text-xs text-ink-soft">
+                    <WorkspacePremiumIcon className="h-4 w-4 text-campus-emerald" />
+                    <span>{item.teacherBio}</span>
+                  </p>
+                )}
               </div>
             </div>
             <a
@@ -173,7 +201,7 @@ function Chip({
   children: React.ReactNode;
   variant?: 'neutral' | 'ink' | 'success' | 'warning';
 }) {
-  const map: Record<typeof variant, string> = {
+  const map: Record<'neutral' | 'ink' | 'success' | 'warning', string> = {
     neutral: 'border-border bg-mist text-ink-soft',
     ink: 'border-ink/20 bg-ink/10 text-ink',
     success: 'border-success-tint bg-success-tint text-success-ink',
@@ -190,7 +218,9 @@ function Chip({
 
 /* --- Enum to i18n key (mirrors CategoryPills) --- */
 
-function categoryI18nKey(category: ClassDetailView['skillCategory']): 'language' | 'programming' | 'design' | 'softSkills' | 'math' {
+function categoryI18nKey(
+  category: ClassDetailView['skillCategory'],
+): 'language' | 'programming' | 'design' | 'softSkills' | 'math' | null {
   switch (category) {
     case 'language':
       return 'language';
@@ -202,6 +232,9 @@ function categoryI18nKey(category: ClassDetailView['skillCategory']): 'language'
       return 'softSkills';
     case 'math':
       return 'math';
+    // The API does not return a category on the detail route.
+    default:
+      return null;
   }
 }
 

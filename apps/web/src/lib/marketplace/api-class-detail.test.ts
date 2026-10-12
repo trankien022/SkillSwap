@@ -31,16 +31,48 @@ describe('ClassDetailApiGateway', () => {
     ],
   };
 
-  it('maps backend ClassDetailView contract to web presentation view', () => {
+  it('maps only the fields the API actually returns, inventing nothing', () => {
     const webView = mapContractDetailToWeb(sampleContractDetail);
+
+    // Real fields pass through unchanged.
     expect(webView.id).toBe(sampleContractDetail.id);
     expect(webView.teacherName).toBe('Lê Minh');
     expect(webView.priceCredits).toBe(80);
     expect(webView.format).toBe('group-2-4');
+    expect(webView.description).toBe('Cấu trúc dữ liệu và giải thuật nâng cao');
     expect(webView.reviews).toHaveLength(1);
     expect(webView.reviews[0]?.authorName).toBe('Học viên A');
-    expect(webView.syllabus.length).toBeGreaterThan(0);
-    expect(webView.prerequisites.length).toBeGreaterThan(0);
+
+    // Fields the API does NOT return stay absent. This test previously asserted
+    // a non-empty syllabus and prerequisites — i.e. it locked in the fabricated
+    // three-step outline and the invented school/rating/bio. Absence is the
+    // honest state, so it is what is asserted now.
+    expect(webView.syllabus).toEqual([]);
+    expect(webView.prerequisites).toEqual([]);
+    expect(webView.teacherCredentials).toEqual([]);
+    expect(webView.teacherBio).toBeNull();
+    expect(webView.teacherStats).toBeNull();
+    expect(webView.schoolCode).toBeNull();
+    expect(webView.schoolName).toBeNull();
+    expect(webView.skillName).toBeNull();
+    expect(webView.skillCategory).toBeNull();
+    expect(webView.level).toBeNull();
+    expect(webView.verified).toBeNull();
+    // The reviewer's school is not returned, so none is claimed.
+    expect(webView.reviews[0]?.schoolName).toBeNull();
+  });
+
+  it('keeps a real rating and does not coerce an absent one to 5.0', () => {
+    expect(mapContractDetailToWeb(sampleContractDetail).ratingAvg).toBe(4.9);
+
+    const unrated = mapContractDetailToWeb({
+      ...sampleContractDetail,
+      teacher: { ...sampleContractDetail.teacher, averageRating: null, ratingsCount: 0 },
+      recentRatings: [],
+    });
+    // The old mapper wrote `?? 5.0`, turning "no ratings" into a perfect score.
+    expect(unrated.ratingAvg).toBeNull();
+    expect(unrated.ratingCount).toBe(0);
   });
 
   it('resolves demo class IDs seamlessly from fallback fixture', async () => {

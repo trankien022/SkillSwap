@@ -80,9 +80,13 @@ function ReviewCard({
               <span className="text-sm font-semibold text-ink">
                 {review.authorName}
               </span>
-              <span className="text-[11px] text-ink-soft">
-                {review.schoolName}
-              </span>
+              {/* The API returns no school for a reviewer, so the line is
+                  omitted rather than filled with a stand-in. */}
+              {review.schoolName !== null && (
+                <span className="text-[11px] text-ink-soft">
+                  {review.schoolName}
+                </span>
+              )}
             </div>
           </div>
           <StarsRow rating={review.rating} />

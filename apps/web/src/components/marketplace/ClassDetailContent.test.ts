@@ -99,7 +99,7 @@ describe('Class detail page content-guard (data boundary)', () => {
     for (const item of all) {
       for (const review of item.reviews) {
         expect(review.authorName.startsWith('Demo learner')).toBe(true);
-        expect(review.schoolName.startsWith('Demo ')).toBe(true);
+        expect(review.schoolName ?? '').toMatch(/^Demo /);
       }
     }
   });
@@ -124,7 +124,7 @@ describe('Class detail page content-guard (data boundary)', () => {
       expect(detail.startsAt).toBe(item.startsAt);
       // Derived fields exist and are honest: no fabricated reviews.
       expect(detail.description.length).toBeGreaterThan(0);
-      expect(detail.teacherBio.length).toBeGreaterThan(0);
+      expect((detail.teacherBio ?? '').length).toBeGreaterThan(0);
       expect(detail.syllabus.length).toBeGreaterThanOrEqual(3);
       expect(detail.prerequisites.length).toBeGreaterThanOrEqual(2);
       expect(detail.teacherCredentials.length).toBeGreaterThanOrEqual(1);
@@ -147,11 +147,12 @@ describe('Class detail page content-guard (data boundary)', () => {
   it('real-data mapping: derived teacher stats never invent history beyond the class', () => {
     for (const item of demoMarketplaceClasses()) {
       const detail = toClassDetailView(item);
-      expect(detail.teacherStats.hoursTaught).toBe(
+      expect(detail.teacherStats).not.toBeNull();
+      expect(detail.teacherStats!.hoursTaught).toBe(
         Math.round(item.durationMinutes / 60),
       );
-      expect(detail.teacherStats.learnersHelped).toBe(item.capacity);
-      expect(detail.teacherStats.responseRatePct).toBe(100);
+      expect(detail.teacherStats!.learnersHelped).toBe(item.capacity);
+      expect(detail.teacherStats!.responseRatePct).toBe(100);
       // Credentials always carry the platform verifier, never a named person.
       for (const credential of detail.teacherCredentials) {
         expect(credential.verifiedBy).toBe('SkillSwap Verifier Council');

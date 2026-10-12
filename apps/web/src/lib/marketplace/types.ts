@@ -39,15 +39,22 @@ export type TimeFilter = 'all-valid' | 'next-24-48h' | 'this-weekend';
 
 export interface MarketplaceClass extends ClassView {
   teacherName: string;
-  schoolCode: UniversityCode;
-  schoolName: string;
-  skillName: string;
-  skillCategory: SkillCategory;
-  level: SkillLevel;
+  /**
+   * Fields the API does not supply on every route are nullable, so an absent
+   * value is representable instead of being filled with a plausible stand-in.
+   * `GET /classes` (catalogue) does send them; `GET /classes/:id` does not.
+   */
+  schoolCode: UniversityCode | null;
+  schoolName: string | null;
+  skillName: string | null;
+  skillCategory: SkillCategory | null;
+  level: SkillLevel | null;
   format: ClassFormat;
-  ratingAvg: number;
+  /** Null when the teacher has no ratings yet — not a defaulted 5.0. */
+  ratingAvg: number | null;
   ratingCount: number;
-  verified: boolean;
+  /** Null when the API does not say; `true`/`false` only when it does. */
+  verified: boolean | null;
   /** Two hex colors used to render a subtle slate+emerald gradient cover. */
   coverGradient: { from: string; to: string };
 }
@@ -136,7 +143,8 @@ export interface TeacherCredential {
 export interface ReviewView {
   id: string;
   authorName: string;
-  schoolName: string;
+  /** Null when the API supplies no school for the reviewer. */
+  schoolName: string | null;
   rating: number;
   body: string;
   attendedOn: string; // ISO date
@@ -153,8 +161,10 @@ export interface ClassDetailView extends MarketplaceClass {
   description: string;
   syllabus: SyllabusStep[];
   prerequisites: PrerequisiteItem[];
-  teacherBio: string;
-  teacherStats: TeacherStats;
+  /** Null when the API returns no bio; never a generated one. */
+  teacherBio: string | null;
+  /** Null when the API reports no stats; a zeroed object would read as fact. */
+  teacherStats: TeacherStats | null;
   teacherCredentials: TeacherCredential[];
   reviews: ReviewView[];
 }
