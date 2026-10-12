@@ -77,6 +77,14 @@
     "refresh": "Làm mới dữ liệu"
   },
   "Wallet": {
+    "type_top_up": "Nạp credit",
+    "type_learner_debit": "Thanh toán lớp học",
+    "type_teacher_pending": "Thu nhập chờ xử lý",
+    "type_platform_fee": "Phí nền tảng",
+    "type_refund": "Hoàn credit",
+    "type_release": "Giải ngân thu nhập",
+    "type_teacher_credit": "Thu nhập giảng dạy",
+    "type_transaction": "Giao dịch ví",
     "title": "Ví & Số dư",
     "balanceCard": "Số dư hiện tại",
     "available": "{credits} credit khả dụng",

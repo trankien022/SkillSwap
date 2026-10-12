@@ -77,6 +77,14 @@
     "refresh": "Refresh data"
   },
   "Wallet": {
+    "type_top_up": "Credit top-up",
+    "type_learner_debit": "Class payment",
+    "type_teacher_pending": "Pending teaching income",
+    "type_platform_fee": "Platform fee",
+    "type_refund": "Credit refund",
+    "type_release": "Income release",
+    "type_teacher_credit": "Teaching income",
+    "type_transaction": "Wallet transaction",
     "title": "Wallet & Balance",
     "balanceCard": "Current Balance",
     "available": "{credits} credits available",

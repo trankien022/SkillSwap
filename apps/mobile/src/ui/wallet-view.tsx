@@ -71,7 +71,11 @@ export function WalletView() {
     }
   }, [gatewayClient, t]);
 
-  useFocusEffect(useCallback(() => { void loadWalletData(); }, [loadWalletData]));
+  useFocusEffect(
+    useCallback(() => {
+      void loadWalletData();
+    }, [loadWalletData]),
+  );
 
   const onRefresh = () => {
     setIsRefreshing(true);
@@ -279,7 +283,11 @@ export function WalletView() {
               return (
                 <View key={item.id} style={styles.historyRow}>
                   <View style={styles.historyMeta}>
-                    <Text style={styles.historyType}>{item.type}</Text>
+                    <Text style={styles.historyType}>
+                      {t(
+                        `Wallet.type_${['top_up', 'learner_debit', 'teacher_pending', 'platform_fee', 'refund', 'release', 'teacher_credit'].includes(item.type) ? item.type : 'transaction'}`,
+                      )}
+                    </Text>
                     <Text style={styles.historyDate}>{formatDate(item.createdAt)}</Text>
                     {item.reference ? (
                       <Text style={styles.historyRef}>
