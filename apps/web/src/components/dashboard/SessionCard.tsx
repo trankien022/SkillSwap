@@ -209,15 +209,13 @@ function UpcomingCard({
               <span>{tCard('downloadNotes')}</span>
             </button>
           </div>
-          <a
-            href={booking.roomCode ? `https://meet.jit.si/${booking.roomCode}` : '#'}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href={`/${locale}/bookings/${booking.id}/live`}
             className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-surface px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50"
           >
             <LockClockIcon className="h-4 w-4 text-emerald-600" />
             <span>{tCard('joinRoomSoon')}</span>
-          </a>
+          </Link>
         </div>
       </div>
     </article>
@@ -784,16 +782,14 @@ function LiveCard({
           )}
 
           <div className="flex items-center gap-2">
-            <a
-              href={booking.roomCode ? `https://meet.jit.si/${booking.roomCode}` : '#'}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href={`/${locale}/bookings/${booking.id}/live`}
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95 sm:w-auto"
             >
               <VideocamIcon className="h-4 w-4" />
               <span>{tLive('join')}</span>
               <span aria-hidden="true">→</span>
-            </a>
+            </Link>
           </div>
         </div>
       </div>

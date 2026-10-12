@@ -747,5 +747,75 @@
       "toastSuccessTitle": "Đánh giá đã được ghi nhận vào sổ cái!",
       "toastSuccessBody": "Cảm ơn bạn. Hồ sơ tín nhiệm của giảng viên đã được cập nhật. Đang chuyển hướng về trang lớp học..."
     }
+  },
+  "LiveClassroom": {
+    "nav": {
+      "back": "Lớp học của tôi",
+      "bookingCode": "MÃ BUỔI HỌC: #{code}"
+    },
+    "statusBar": {
+      "rec": "REC LIVE",
+      "connection": "HD 1080p (24ms)",
+      "timer": "{elapsed} / {total}",
+      "e2e": "Mã hóa E2E bảo mật"
+    },
+    "video": {
+      "whiteboardTitle": "Bảng trắng tương tác • IELTS Speaking Part 2",
+      "liveSync": "Đồng bộ trực tiếp",
+      "topic": "Chủ đề: Describe an environmental problem in your hometown",
+      "pointLabel": "Cấu trúc PEEL:",
+      "pointText": "Air pollution due to heavy vehicular exhaust during rush hours.",
+      "collocationsLabel": "Từ vựng C1:",
+      "collocationsText": "deteriorating air quality, exponential rise, combative measures.",
+      "feedbackLabel": "Góp ý trực tiếp:",
+      "feedbackText": "Tập trung nối âm và ngắt nhịp tự nhiên theo ý tưởng.",
+      "mentorBadge": "Giảng viên",
+      "screenSharing": "Đang chia sẻ màn hình",
+      "studentName": "Minh Nguyễn (Bạn)",
+      "btnMic": "Micro",
+      "btnCamera": "Camera",
+      "btnScreen": "Chia sẻ màn hình",
+      "btnWhiteboard": "Bảng trắng",
+      "btnHand": "Giơ tay phát biểu",
+      "btnLeave": "Rời phòng"
+    },
+    "timeline": {
+      "stage": "Giai đoạn 3 / 4 • Buổi học mô phỏng 1-1",
+      "topicHeading": "Phương pháp PEEL & Khung phản xạ C1 Collocations",
+      "remainingTime": "Còn {n} phút luyện tập trực tiếp",
+      "progressLabel": "Tiến độ buổi học hiện tại",
+      "progressPct": "{pct}% hoàn thành",
+      "materialsTitle": "Tài liệu buổi học đính kèm ({n} tệp)",
+      "file1Title": "Forecast_Speaking_Q2_2025.pdf",
+      "file1Sub": "1.4 MB • Giáo trình chuẩn đối tác đào tạo",
+      "file2Title": "Band7_Topic_Collocations.docx",
+      "file2Sub": "420 KB • Ghi chú buổi học trọng tâm"
+    },
+    "chat": {
+      "title": "Chat Lớp Học Trực Tuyến",
+      "onlineCount": "{n} trực tuyến",
+      "safetyNotice": "Bảo mật SkillSwap: Mọi tương tác diễn ra trên nền tảng để bảo đảm quyền lợi ký quỹ an toàn và giải quyết khiếu nại học thuật.",
+      "systemStart": "Phòng học bắt đầu lúc {time} • Mã bảo mật #{code}",
+      "mentorName": "Lan Anh",
+      "mentorTime1": "19:32",
+      "mentorMsg1": "Chào Minh! Chúng ta bắt đầu phần Part 2: 'Describe an environmental problem in your hometown' nhé. Mình vừa chia sẻ bảng từ vựng qua whiteboard rồi nhé!",
+      "studentName": "Bạn (Minh Nguyễn)",
+      "studentTime": "19:34",
+      "studentMsg": "Dạ vâng, em đã nhận được tài liệu. Em xin 1 phút chuẩn bị dàn ý theo mô hình PEEL đã học ở buổi trước ạ!",
+      "mentorTime2": "19:40",
+      "mentorMsg2": "Rất tốt! Nhớ nhấn mạnh cụm 'exponential rise in automotive emission' để nâng điểm tiêu chí từ vựng nhé.",
+      "inputPlaceholder": "Gửi tin nhắn hoặc đặt câu hỏi...",
+      "send": "Gửi",
+      "attach": "Đính kèm tệp"
+    },
+    "escrow": {
+      "title": "Ký quỹ Bảo chứng - Escrow Active",
+      "subtitle": "Bảo vệ quyền lợi học viên & giảng viên",
+      "heldLabel": "Khoản bảo chứng đang khóa:",
+      "heldValue": "{credits} Credits (~{vnd} VNĐ)",
+      "badge": "Đang bảo chứng",
+      "notice": "Sau khi lớp kết thúc, bạn có 24 giờ để đánh giá buổi học trước khi hệ thống chính thức giải ngân số credits cho giảng viên.",
+      "btnEndAndReview": "Kết thúc lớp & Chấm điểm đánh giá"
+    }
   }
 }

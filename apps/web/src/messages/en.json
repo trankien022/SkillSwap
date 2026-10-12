@@ -747,5 +747,75 @@
       "toastSuccessTitle": "Review recorded in system ledger!",
       "toastSuccessBody": "Thank you! The instructor trust score has been updated. Redirecting to your bookings..."
     }
+  },
+  "LiveClassroom": {
+    "nav": {
+      "back": "My Bookings",
+      "bookingCode": "BOOKING CODE: #{code}"
+    },
+    "statusBar": {
+      "rec": "REC LIVE",
+      "connection": "HD 1080p (24ms)",
+      "timer": "{elapsed} / {total}",
+      "e2e": "End-to-End Encrypted"
+    },
+    "video": {
+      "whiteboardTitle": "Interactive Whiteboard • IELTS Speaking Part 2",
+      "liveSync": "Live Sync",
+      "topic": "Topic: Describe an environmental problem in your hometown",
+      "pointLabel": "PEEL Structure:",
+      "pointText": "Air pollution due to heavy vehicular exhaust during rush hours.",
+      "collocationsLabel": "C1 Collocations:",
+      "collocationsText": "deteriorating air quality, exponential rise, combative measures.",
+      "feedbackLabel": "Live Feedback:",
+      "feedbackText": "Focus on intonation and linking clauses naturally.",
+      "mentorBadge": "Mentor",
+      "screenSharing": "Sharing screen",
+      "studentName": "Minh Nguyen (You)",
+      "btnMic": "Microphone",
+      "btnCamera": "Camera",
+      "btnScreen": "Share Screen",
+      "btnWhiteboard": "Whiteboard",
+      "btnHand": "Raise Hand",
+      "btnLeave": "Leave Room"
+    },
+    "timeline": {
+      "stage": "Stage 3 of 4 • 1-on-1 Mock Session",
+      "topicHeading": "PEEL Structure & C1 Collocations Framework",
+      "remainingTime": "{n} minutes remaining in mock interview",
+      "progressLabel": "Current session progress",
+      "progressPct": "{pct}% completed",
+      "materialsTitle": "Attached session files ({n} files)",
+      "file1Title": "Forecast_Speaking_Q2_2025.pdf",
+      "file1Sub": "1.4 MB • Partner curriculum guide",
+      "file2Title": "Band7_Topic_Collocations.docx",
+      "file2Sub": "420 KB • Focused session summary notes"
+    },
+    "chat": {
+      "title": "Live Classroom Chat",
+      "onlineCount": "{n} online",
+      "safetyNotice": "SkillSwap Safety: Keep all interactions within the platform to maintain escrow protection and academic support guarantees.",
+      "systemStart": "Session started at {time} • Secure Room #{code}",
+      "mentorName": "Lan Anh",
+      "mentorTime1": "19:32",
+      "mentorMsg1": "Hello Minh! Let's start Part 2: 'Describe an environmental problem in your hometown'. I shared the vocabulary board on the whiteboard!",
+      "studentName": "You (Minh Nguyen)",
+      "studentTime": "19:34",
+      "studentMsg": "Yes, I can see the board. Let me take 1 minute to outline using the PEEL structure we practiced!",
+      "mentorTime2": "19:40",
+      "mentorMsg2": "Great job! Remember to emphasize 'exponential rise in automotive emission' to boost your lexical resource score.",
+      "inputPlaceholder": "Send a message or ask a question...",
+      "send": "Send",
+      "attach": "Attach file"
+    },
+    "escrow": {
+      "title": "Escrow Protection - Escrow Active",
+      "subtitle": "Safe peer guarantee for learners and tutors",
+      "heldLabel": "Locked escrow balance:",
+      "heldValue": "{credits} Credits (~{vnd} VND)",
+      "badge": "Escrow Protected",
+      "notice": "Once the session concludes, you have 24 hours to review before escrow credits are released to the instructor.",
+      "btnEndAndReview": "Finish Class & Proceed to Review"
+    }
   }
 }
