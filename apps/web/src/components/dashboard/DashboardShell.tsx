@@ -1,83 +1,72 @@
 'use client';
 
-import { useMemo, useState, useEffect, useTransition } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { SessionCard, type SessionAction } from './SessionCard';
 import { FilterBar, type FilterKey } from './FilterBar';
-import type {
-  CalendarDay,
-  CharterEntry,
-  DashboardSnapshot,
-  LearnerBookingView,
-} from '../../lib/dashboard/types';
-import { callApi } from '../../lib/api-client';
+import { MetricTiles } from './MetricTiles';
+import { RightSidebar } from './RightSidebar';
+import type { DashboardSnapshot, LearnerBookingView } from '../../lib/dashboard/types';
 import {
-  fetchMyBookings,
-  USER_BOOKINGS_EVENT,
-  USER_BOOKINGS_STORAGE_KEY,
-} from '../../lib/dashboard/api-my-bookings';
+  DashboardAuthError,
+  HttpLearnerDashboardGateway,
+} from '../../lib/dashboard/http-gateway';
 
 interface Props {
-  initial: DashboardSnapshot;
-  calendar: CalendarDay[];
-  charter: CharterEntry[];
-  isAuthed: boolean;
+  /** Snapshot rendered before the first live fetch; null until it resolves. */
+  initial: DashboardSnapshot | null;
 }
+
+type LoadState =
+  | { phase: 'loading' }
+  | { phase: 'ready'; snapshot: DashboardSnapshot }
+  | { phase: 'signed-out' }
+  | { phase: 'error'; message: string };
 
 /**
  * Client-side shell for the learner dashboard (FR-021).
  *
- * Owns the bookings state, the filter state, and the side-effect
- * stubs (confirm / reportNoShow / rebook). All heavy lifting stays
- * on the server: this shell is a thin presentational controller
- * that re-renders when filter/search changes.
+ * Owns the bookings state, the filter state and the session-gated fetch. The
+ * snapshot comes from `HttpLearnerDashboardGateway`, which reads the real
+ * bookings and wallet endpoints; there is no local cache, so a booking created
+ * elsewhere appears on the next load and a state change made here is only shown
+ * once the server confirms it.
  */
-export function DashboardShell({ initial, calendar, charter, isAuthed }: Props) {
-  void calendar;
-  void charter;
-  void isAuthed;
-  const [bookings, setBookings] = useState<LearnerBookingView[]>(
-    initial.bookings,
+export function DashboardShell({ initial }: Props) {
+  const gateway = useMemo(() => new HttpLearnerDashboardGateway(), []);
+  const locale = useLocale();
+  const [load, setLoad] = useState<LoadState>(
+    initial !== null ? { phase: 'ready', snapshot: initial } : { phase: 'loading' },
   );
   const [filter, setFilter] = useState<FilterKey>('all');
   const [search, setSearch] = useState('');
-  const [pendingAction, startAction] = useTransition();
+  const [actionError, setActionError] = useState<string | null>(null);
   const [pendingBookingId, setPendingBookingId] = useState<string | null>(null);
   const [reviewBooking, setReviewBooking] = useState<LearnerBookingView | null>(null);
   const [noShowBooking, setNoShowBooking] = useState<LearnerBookingView | null>(null);
 
-  useEffect(() => {
-    let active = true;
-    const reload = () => {
-      fetchMyBookings()
-        .then((real) => {
-          if (!active) return;
-          if (real && real.length > 0) {
-            const realIds = new Set(real.map((r) => r.id));
-            setBookings([
-              ...real,
-              ...initial.bookings.filter((b) => !realIds.has(b.id)),
-            ]);
-          }
-        })
-        .catch(() => {});
-    };
-
-    reload();
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener(USER_BOOKINGS_EVENT, reload);
-      window.addEventListener('storage', reload);
-      return () => {
-        active = false;
-        window.removeEventListener(USER_BOOKINGS_EVENT, reload);
-        window.removeEventListener('storage', reload);
-      };
+  const reload = useCallback(async () => {
+    try {
+      const snapshot = await gateway.getSnapshot();
+      setLoad({ phase: 'ready', snapshot });
+      setActionError(null);
+    } catch (error) {
+      if (error instanceof DashboardAuthError) {
+        setLoad({ phase: 'signed-out' });
+        return;
+      }
+      setLoad({
+        phase: 'error',
+        message: error instanceof Error ? error.message : 'Could not load your bookings',
+      });
     }
-    return () => {
-      active = false;
-    };
-  }, [initial.bookings]);
+  }, [gateway]);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  const bookings = load.phase === 'ready' ? load.snapshot.bookings : [];
 
   const visibleBookings = useMemo(() => {
     return bookings.filter((b) => {
@@ -97,37 +86,43 @@ export function DashboardShell({ initial, calendar, charter, isAuthed }: Props) 
     (b) => b.state !== 'in_progress',
   );
 
-  function executeAction(action: SessionAction) {
-    setPendingBookingId(action.bookingId);
-    if (action.type === 'reportNoShow') {
-      callApi(`/classes/bookings/${action.bookingId}/no-show`, { method: 'POST' }).catch((err) => {
-        console.warn('Backend POST /classes/bookings/:id/no-show error or mock booking', err);
-      });
-    }
-    startAction(() => {
-      // Optimistic local update + reconciled backend state
-      setBookings((prev) => {
-        const next = applyAction(prev, action);
-        try {
-          const raw = localStorage.getItem(USER_BOOKINGS_STORAGE_KEY);
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) {
-              const updated = parsed.map((item: LearnerBookingView) => {
-                const found = next.find((n) => n.id === item.id);
-                return found ?? item;
-              });
-              localStorage.setItem(USER_BOOKINGS_STORAGE_KEY, JSON.stringify(updated));
-            }
-          }
-        } catch {
-          // ignore
+  /**
+   * Runs a booking mutation against the real endpoint, then refetches so the
+   * card reflects server state. The previous version applied a fabricated local
+   * transition (and wrote it to `localStorage`), so it could show "completed"
+   * for a settlement the backend had rejected.
+   */
+  const executeAction = useCallback(
+    async (action: SessionAction) => {
+      setPendingBookingId(action.bookingId);
+      setActionError(null);
+      try {
+        switch (action.type) {
+          case 'confirm':
+            await gateway.confirmBooking(action.bookingId, {
+              rating: action.rating ?? 5,
+              body: action.comment ?? '',
+            });
+            break;
+          case 'reportNoShow':
+            await gateway.reportNoShow(action.bookingId);
+            break;
+          case 'cancel':
+            await gateway.cancelBooking(action.bookingId);
+            break;
+          case 'rebook':
+            // Navigation-only action; nothing to persist.
+            break;
         }
-        return next;
-      });
-      setPendingBookingId(null);
-    });
-  }
+        await reload();
+      } catch (error) {
+        setActionError(error instanceof Error ? error.message : 'The action could not be completed');
+      } finally {
+        setPendingBookingId(null);
+      }
+    },
+    [gateway, reload],
+  );
 
   function onAction(action: SessionAction) {
     if (action.type === 'confirm' && !action.rating) {
@@ -144,35 +139,80 @@ export function DashboardShell({ initial, calendar, charter, isAuthed }: Props) 
         return;
       }
     }
-    executeAction(action);
+    void executeAction(action);
+  }
+
+  if (load.phase === 'loading') {
+    return <StatusBlock title="Đang tải lớp học của bạn…" body="Đang đọc dữ liệu từ máy chủ." />;
+  }
+
+  if (load.phase === 'signed-out') {
+    return (
+      <StatusBlock
+        title="Đăng nhập để xem lớp học của bạn"
+        body="Lịch học, số dư ký quỹ và đánh giá chỉ hiển thị cho tài khoản đã đăng nhập."
+        cta={{ label: 'Đăng nhập ngay', href: `/${locale}/login` }}
+      />
+    );
+  }
+
+  if (load.phase === 'error') {
+    return <StatusBlock title="Không tải được lớp học" body={load.message} />;
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <FilterBar
-        bookings={bookings}
-        onChange={({ filter: nextFilter, search: nextSearch }) => {
-          setFilter(nextFilter);
-          setSearch(nextSearch);
-        }}
-      />
-      {liveBooking && (filter === 'all' || filter === 'upcoming') && (
-        <SessionCardSlot
-          booking={liveBooking}
-          onAction={onAction}
-          pending={pendingAction && pendingBookingId === liveBooking.id}
-        />
-      )}
-      {sessionBookings.length === 0 && <EmptyState />}
-      <div className="flex flex-col gap-6">
-        {sessionBookings.map((b) => (
-          <SessionCardSlot
-            key={b.id}
-            booking={b}
-            onAction={onAction}
-            pending={pendingAction && pendingBookingId === b.id}
+    <>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="flex flex-col gap-6 lg:col-span-8">
+          <div className="flex flex-col gap-6">
+            <MetricTiles metrics={load.snapshot.metrics} />
+            <FilterBar
+              bookings={bookings}
+              onChange={({ filter: nextFilter, search: nextSearch }) => {
+                setFilter(nextFilter);
+                setSearch(nextSearch);
+              }}
+            />
+            {actionError !== null && (
+              <p
+                role="alert"
+                className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700"
+              >
+                {actionError}
+              </p>
+            )}
+            {liveBooking && (filter === 'all' || filter === 'upcoming') && (
+              <SessionCardSlot
+                booking={liveBooking}
+                onAction={onAction}
+                pending={pendingBookingId === liveBooking.id}
+              />
+            )}
+            {sessionBookings.length === 0 && <EmptyState />}
+            <div className="flex flex-col gap-6">
+              {sessionBookings.map((b) => (
+                <SessionCardSlot
+                  key={b.id}
+                  booking={b}
+                  onAction={onAction}
+                  pending={pendingBookingId === b.id}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="lg:col-span-4">
+          {/* Reached only from the `ready` state, i.e. an authenticated fetch
+              succeeded, so the wallet is signed-in data. */}
+          <RightSidebar
+            month={new Date().getUTCMonth()}
+            year={new Date().getUTCFullYear()}
+            days={load.snapshot.calendar}
+            wallet={load.snapshot.wallet}
+            charter={load.snapshot.charter}
+            isAuthed
           />
-        ))}
+        </div>
       </div>
 
       {reviewBooking && (
@@ -180,7 +220,7 @@ export function DashboardShell({ initial, calendar, charter, isAuthed }: Props) 
           booking={reviewBooking}
           onClose={() => setReviewBooking(null)}
           onSubmit={(rating, comment) => {
-            onAction({
+            void executeAction({
               type: 'confirm',
               bookingId: reviewBooking.id,
               rating,
@@ -196,7 +236,7 @@ export function DashboardShell({ initial, calendar, charter, isAuthed }: Props) 
           booking={noShowBooking}
           onClose={() => setNoShowBooking(null)}
           onConfirm={() => {
-            onAction({
+            void executeAction({
               type: 'reportNoShow',
               bookingId: noShowBooking.id,
               confirmed: true,
@@ -205,9 +245,36 @@ export function DashboardShell({ initial, calendar, charter, isAuthed }: Props) 
           }}
         />
       )}
+    </>
+  );
+}
+
+/** Non-list states: loading, signed out, load failure. */
+function StatusBlock({
+  title,
+  body,
+  cta,
+}: {
+  title: string;
+  body: string;
+  cta?: { label: string; href: string };
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-surface p-12 text-center shadow-sm">
+      <h2 className="text-base font-bold text-ink">{title}</h2>
+      <p className="max-w-md text-sm leading-relaxed text-ink-soft">{body}</p>
+      {cta && (
+        <a
+          href={cta.href}
+          className="mt-2 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95"
+        >
+          {cta.label}
+        </a>
+      )}
     </div>
   );
 }
+
 
 function SessionCardSlot({
   booking,
@@ -485,42 +552,4 @@ function matchesFilter(b: LearnerBookingView, filter: FilterKey): boolean {
         b.state === 'no_show_reported'
       );
   }
-}
-
-function applyAction(
-  prev: LearnerBookingView[],
-  action: SessionAction,
-): LearnerBookingView[] {
-  return prev.map((b) => {
-    if (b.id !== action.bookingId) return b;
-    switch (action.type) {
-      case 'confirm':
-        return {
-          ...b,
-          state: 'completed',
-          reviewSubmitted: {
-            rating: action.rating ?? 5,
-            body: action.comment?.trim() || 'Buổi học hoàn tất xuất sắc theo đúng cam kết thời gian và nội dung.',
-            submittedOn: new Date().toISOString(),
-          },
-          receiptId: b.receiptId ?? `rcpt-demo-${b.id.slice(-4)}`,
-        };
-      case 'reportNoShow':
-        return {
-          ...b,
-          state: 'no_show_reported',
-          receiptId: b.receiptId ?? `rcpt-demo-${b.id.slice(-4)}`,
-        };
-      case 'cancel':
-        return {
-          ...b,
-          state: 'cancelled',
-          receiptId: b.receiptId ?? `rcpt-demo-${b.id.slice(-4)}`,
-        };
-      case 'rebook':
-        // Rebook is a navigation action in the real app; here it
-        // is a no-op so the optimistic update is a no-op too.
-        return b;
-    }
-  });
 }

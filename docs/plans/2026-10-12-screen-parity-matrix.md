@@ -236,19 +236,72 @@ Design rule now enforced (pinned by `apps/web/src/lib/api-client.test.ts`):
 in-page event; the *persistence* is gone, so a reload or a different sign-in can
 no longer show a figure that disagrees with the ledger.
 
-### 8.2 Still open — `skillswap_user_bookings` (lower severity)
+### 8.2 Resolved in Phase 1C — `skillswap_user_bookings` removed
 
-| Key / helper | Written by | Behaviour |
+| Key / helper | Was written by | Behaviour before |
 |---|---|---|
-| `skillswap_user_bookings` | `lib/dashboard/api-my-bookings.ts:40-71`, written from `checkout/page.tsx` | **Merges** local bookings with `GET /classes/bookings/me`; local ids not present in the server list are prepended |
+| `skillswap_user_bookings` | `lib/dashboard/api-my-bookings.ts:40-71`, written from `checkout/page.tsx` and `booking-panel.tsx` | **Merged** local bookings with `GET /classes/bookings/me`; local ids not present in the server list were prepended |
 
-This is the same pattern but a weaker case than the wallet layer: it *merges*
-rather than *overrides*, and the endpoint it complements returns real rows. The
-only incorrect outcome is a duplicate-looking or unconfirmed booking lingering
-after a rejected settlement. Because real bookings already come back from
-`/classes/bookings/me`, the local copy is redundant and should be deleted when
-Phase 1C (dashboard, S2) replaces `MockLearnerDashboardGateway` — the two are
-the same screen, so they are fixed in one pass rather than twice.
+Same pattern as the wallet layer but weaker: it *merged* rather than
+*overrode*, and the endpoint it complemented returns real rows. Because a
+confirmed booking already comes back from `/classes/bookings/me`, the local copy
+was redundant, so it was deleted together with the dashboard rewrite below
+rather than fixed twice on the same screen.
+
+---
+
+## 10. Phase 1C — learner dashboard (S2) reads the live API
+
+`/{locale}/bookings` was a server component rendering `MockLearnerDashboardGateway`
+(a 5-booking fixture), and its client shell patched the list from `localStorage`
+and fabricated transitions. Both are gone.
+
+### 10.1 New gateway
+
+`apps/web/src/lib/dashboard/http-gateway.ts` — `HttpLearnerDashboardGateway`
+composes endpoints that already exist:
+
+| Snapshot field | Source | Kind |
+|---|---|---|
+| `bookings[]` | `GET /classes/bookings/me` (`learnerBookingItemSchema`) | real |
+| `metrics.upcomingCount` | same response, `totalUpcomingCount` | real (server-exact) |
+| `metrics.pendingReviewCount` | same response, `ratingEligible && !hasRated` | real |
+| `wallet.{available,held}` | `GET /wallet/balance` | real |
+| `metrics.escrowHeldCredits` | wallet `pendingCredits` | real |
+| `metrics.nextSessionLabel`, `escrowHeldClassCount`, `totalCompletedHours` | derived from the two payloads | **derived** (marked in code) |
+| `calendar[]` | derived from booking `startsAt` | **derived** |
+| `autoReleaseCountdownSeconds`, `receiptId` | derived from `expiresAt` / booking id | **derived** |
+
+No new endpoint was added. The presentation mapping lives in
+`lib/dashboard/api-my-bookings.ts` (`mapContractBookingToView`,
+`toPresentationState`) so the shape conversion has one home.
+
+### 10.2 The shell no longer invents state
+
+`DashboardShell` used to apply a fabricated transition (`state: 'completed'`, a
+review body, a receipt id) and write it to `localStorage` without the server
+confirming. Now `confirm` / `no-show` / `cancel` call the real routes
+(`POST /classes/bookings/:id/confirm`, `/no-show`, `/classes/:id/cancel`) and
+refetch; when a review is supplied it also posts `POST /classes/bookings/:id/rating`.
+A failure surfaces an inline `role="alert"` instead of a fake success.
+
+The page is now pure chrome: metrics, list, calendar/wallet sidebar and the
+loading / signed-out / error states are all owned by the shell, so nothing is
+rendered on the server from fixtures.
+
+### 10.3 Deleted as superseded
+
+`lib/dashboard/mock-gateway.ts`, `lib/dashboard/mock-data.ts` and
+`mock-gateway.test.ts` (dashboard-local) — nothing in production imported them
+after the rewrite. The equivalent coverage is now behavioural, in
+`DashboardShell.test.tsx` (live render, signed-out prompt, error state) and
+`http-gateway.test.ts` (two-endpoint composition, auth error).
+
+### 10.4 Known gap left open
+
+`lib/marketplace/http-gateway.ts` still imports `DEFAULT_QUERY` from
+`marketplace/mock-gateway.ts`, so that mock is still in the production import
+graph. Moving the constant to a neutral module is a Phase 1F cleanup, not 1C.
 
 ---
 

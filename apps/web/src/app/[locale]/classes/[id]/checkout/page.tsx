@@ -7,8 +7,6 @@ import { simulatePaymentCallback } from '../../../wallet/actions';
 import { ClassDetailApiGateway } from '../../../../../lib/marketplace/api-class-detail';
 import type { ClassDetailView } from '../../../../../lib/marketplace/types';
 import type { WalletBalanceView } from '@skillswap/contracts';
-import { dispatchUserBookingsUpdate } from '../../../../../lib/dashboard/api-my-bookings';
-import type { LearnerBookingView } from '../../../../../lib/dashboard/types';
 
 interface PageProps {
   params: Promise<{ locale: string; id: string }>;
@@ -204,27 +202,6 @@ export default function BookingCheckoutPage({ params }: PageProps) {
         }
       }
 
-      // Persist newly booked class in skillswap_user_bookings so it appears in /bookings ("Lớp học của tôi")
-      try {
-        const newBookingItem: LearnerBookingView = {
-          id: finalBookingId,
-          classId: classDetail?.id || id,
-          classTitle: classTitle,
-          skillIcon: 'code',
-          teacherName: teacherName,
-          teacherInitial: teacherInitials,
-          teacherSchoolLabel: schoolName,
-          startsAt: classDetail?.startsAt || startsAtDate.toISOString(),
-          durationMinutes: durationMin,
-          priceCredits: priceCredits,
-          state: 'upcoming',
-          roomCode: `ROOM-${finalBookingId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toUpperCase()}`,
-          receiptId: `REC-${finalBookingId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toUpperCase()}`,
-        };
-        dispatchUserBookingsUpdate(newBookingItem);
-      } catch (storageErr) {
-        console.warn('Failed to save user booking to localStorage', storageErr);
-      }
     } finally {
       setIsProcessing(false);
     }

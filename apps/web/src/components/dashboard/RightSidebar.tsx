@@ -1,19 +1,18 @@
+'use client';
+
 import { MiniCalendar } from './MiniCalendar';
 import { WalletLedgerWidget } from './WalletLedgerWidget';
 import { LearnerCharter } from './LearnerCharter';
-import type {
-  CalendarDay,
-  CharterEntry,
-  WalletSnapshot,
-} from '../../lib/dashboard/types';
+import type { CalendarDay, CharterEntry, WalletSnapshot } from '../../lib/dashboard/types';
 
 /**
  * Right sidebar (4/12) for the learner dashboard page.
- * Server-rendered; hosts the calendar, the wallet widget, and the
- * learner charter. Calendar and charter come from the gateway;
- * the wallet widget switches on the auth flag.
+ *
+ * Hosts the calendar, the wallet widget and the learner charter. Client
+ * component: every prop is part of the live snapshot `DashboardShell` fetches,
+ * so the column is rendered inside the shell rather than on the server.
  */
-export async function RightSidebar({
+export function RightSidebar({
   month,
   year,
   days,

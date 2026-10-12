@@ -1,16 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import {
-  mapContractBookingToView,
-  fetchMyBookings,
-  saveUserBooking,
-  getLocalUserBookings,
-  USER_BOOKINGS_STORAGE_KEY,
-} from './api-my-bookings';
+import { mapContractBookingToView, toPresentationState } from './api-my-bookings';
 import type { LearnerBookingItemView } from '@skillswap/contracts';
-import type { LearnerBookingView } from './types';
 
-describe('api-my-bookings', () => {
-  const sampleContractItem: LearnerBookingItemView = {
+function item(overrides: Partial<LearnerBookingItemView> = {}): LearnerBookingItemView {
+  return {
     bookingId: 'bkg-1234-5678',
     classId: 'cls-9876-5432',
     state: 'confirmed',
@@ -29,47 +22,54 @@ describe('api-my-bookings', () => {
     roomAccessEligible: true,
     ratingEligible: false,
     hasRated: false,
+    ...overrides,
   };
+}
 
-  it('maps backend LearnerBookingItemView to UI LearnerBookingView correctly', () => {
-    const view = mapContractBookingToView(sampleContractItem);
+describe('mapContractBookingToView', () => {
+  it('maps a backend booking item into the presentation model', () => {
+    const view = mapContractBookingToView(item());
     expect(view.id).toBe('bkg-1234-5678');
     expect(view.classId).toBe('cls-9876-5432');
     expect(view.classTitle).toBe('Luyện thi chứng chỉ AWS Cloud Practitioner');
     expect(view.teacherName).toBe('Nguyễn Thành Nam');
     expect(view.teacherInitial).toBe('N');
     expect(view.priceCredits).toBe(60);
-    expect(view.state).toBe('upcoming');
     expect(view.roomCode).toBe('ROOM-bkg-1234');
   });
 
-  it('handles network failure gracefully without throwing', async () => {
-    const result = await fetchMyBookings();
-    expect(result).toBeNull();
+  it('falls back to a neutral teacher initial when the display name is blank', () => {
+    const view = mapContractBookingToView(
+      item({ classSummary: { ...item().classSummary, teacherDisplayName: '' } as never }),
+    );
+    expect(view.teacherInitial).toBe('T');
   });
 
-  it('saves and retrieves local user bookings from storage', () => {
-    const mockItem: LearnerBookingView = {
-      id: 'bkg-test-local-1',
-      classId: 'cls-test-1',
-      classTitle: 'Lớp học lập trình Next.js',
-      skillIcon: 'code',
-      teacherName: 'Giảng viên Test',
-      teacherInitial: 'G',
-      teacherSchoolLabel: 'Đại học Quốc gia',
-      startsAt: '2026-10-30T10:00:00.000Z',
-      durationMinutes: 60,
-      priceCredits: 50,
-      state: 'upcoming',
-    };
+  it('hides the room code when the learner is not yet eligible to join', () => {
+    const view = mapContractBookingToView(item({ roomAccessEligible: false }));
+    expect(view.roomCode).toBeUndefined();
+  });
+});
 
-    saveUserBooking(mockItem);
-    const stored = getLocalUserBookings();
-    expect(stored.some((b: any) => b.id === 'bkg-test-local-1')).toBe(true);
+describe('toPresentationState', () => {
+  it('keeps a confirmed booking whose class has not started as upcoming', () => {
+    const future = new Date(Date.now() + 3 * 3_600_000).toISOString();
+    const it0 = item({ classSummary: { ...item().classSummary, startsAt: future } as never });
+    expect(toPresentationState(it0)).toBe('upcoming');
+  });
 
-    // Clean up
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem(USER_BOOKINGS_STORAGE_KEY);
-    }
+  it('surfaces a finished but unconfirmed booking as pending learner confirmation', () => {
+    const past = new Date(Date.now() - 5 * 3_600_000).toISOString();
+    const done = item({
+      expiresAt: new Date(Date.now() + 12 * 3_600_000).toISOString(),
+      classSummary: { ...item().classSummary, startsAt: past, durationMinutes: 60 } as never,
+    });
+    expect(toPresentationState(done)).toBe('pending_learner_confirmation');
+  });
+
+  it('passes the terminal backend states straight through', () => {
+    expect(toPresentationState(item({ state: 'completed' }))).toBe('completed');
+    expect(toPresentationState(item({ state: 'cancelled' }))).toBe('cancelled');
+    expect(toPresentationState(item({ state: 'disputed' }))).toBe('no_show_reported');
   });
 });
