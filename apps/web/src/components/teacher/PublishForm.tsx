@@ -15,6 +15,7 @@ import {
   priceIsValid,
   titleOver,
 } from '../../lib/teacher/mock-data';
+import { MockTeacherPublishGateway } from '../../lib/teacher/mock-gateway';
 import {
   TITLE_MAX_CHARS,
   type ClassDraft,
@@ -25,8 +26,8 @@ import {
 interface Props {
   initialDraft: ClassDraft;
   skills: VerifiedSkill[];
-  publish: (draft: ClassDraft) => Promise<PublishResult>;
-  saveDraft: (draft: ClassDraft) => Promise<ClassDraft>;
+  publish?: (draft: ClassDraft) => Promise<PublishResult>;
+  saveDraft?: (draft: ClassDraft) => Promise<ClassDraft>;
 }
 
 /**
@@ -52,6 +53,19 @@ export function PublishForm({
   const [publishing, startPublishing] = useTransition();
   const [lastResult, setLastResult] = useState<PublishResult | null>(null);
 
+  const defaultGateway = useMemo(
+    () => new MockTeacherPublishGateway(initialDraft),
+    [initialDraft],
+  );
+  const doPublish = useMemo(
+    () => publish ?? ((d: ClassDraft) => defaultGateway.publishDraft(d)),
+    [publish, defaultGateway],
+  );
+  const doSaveDraft = useMemo(
+    () => saveDraft ?? ((d: ClassDraft) => defaultGateway.saveDraft(d)),
+    [saveDraft, defaultGateway],
+  );
+
   const isValid = useMemo(() => validateDraft(draft, skills), [draft, skills]);
 
   const onChange = useCallback((next: Partial<ClassDraft>) => {
@@ -62,7 +76,7 @@ export function PublishForm({
     if (!isValid) return;
     startPublishing(async () => {
       try {
-        const result = await publish(draft);
+        const result = await doPublish(draft);
         setLastResult(result);
         setToastOpen(true);
       } catch {
@@ -70,17 +84,17 @@ export function PublishForm({
         // throws when the draft is valid.
       }
     });
-  }, [draft, isValid, publish]);
+  }, [draft, isValid, doPublish]);
 
   const handleSaveDraft = useCallback(() => {
     startPublishing(async () => {
       try {
-        await saveDraft(draft);
+        await doSaveDraft(draft);
       } catch {
         // ignored for the mock
       }
     });
-  }, [draft, saveDraft]);
+  }, [draft, doSaveDraft]);
 
   const handleCancel = useCallback(() => {
     // Pilot: just reset to the initial draft. The real cancel
