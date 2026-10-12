@@ -8,7 +8,7 @@ PDF dùng tên **C0** cho system landscape/context và **C1** cho containers. Ch
 
 Revised on 2026-10-12. All 14 UML diagrams and the descriptions in all six C4 views use plain English actions, decisions and outcomes. FR references identify the capability; canonical BR references identify its business rules. Read activities for decisions, sequences for interactions, and states for lifecycle changes.
 
-Backend behavior remains the basis of these views. Notes distinguish current limitations from required behavior: demonstration booking/payment, confirmation before wallet payment, and incomplete lifecycle transitions. Technical API routes, tables and source links stay in the traceability section below. Architecture views retain technology labels where needed to explain their structure; database ERDs remain technical data models.
+Backend behavior remains the basis of these views. Notes distinguish current limitations from required behavior: simulated payment provider, confirmation before wallet payment, and incomplete lifecycle transitions. Technical API routes, tables and source links stay in the traceability section below. Architecture views retain technology labels where needed to explain their structure; database ERDs remain technical data models.
 
 Start with [Join an online class](generated/activity-room.svg), [Publish a class](generated/activity-publish.svg), [Book and pay](generated/activity-booking.svg), or [Verify student status](generated/activity-student-verification.svg). Editable sources remain in `source/`; each diagram has regenerated SVG and PNG files.
 
@@ -70,16 +70,18 @@ Publish-rights implementation anchors: [policy](../../../apps/api/src/modules/li
 ## Reproduce
 
 1. Validate `../c4/source/workspace.dsl` with Structurizr. Export the six keys `SystemContext`, `Containers`, `Deployment`, `BookingFlow`, `TeachingFlow`, `VerificationFlow` using its C4-PlantUML exporter into `../c4/source/structurizr-<key>.puml`.
-2. Render from repository root with PlantUML 1.2026.8 (bundled C4 includes, no Windows-only theme):
+2. Render from repository root with PlantUML 1.2026.7 (bundled C4 includes, no theme override — the repo's views carry their own styles):
 
 ```sh
-plantuml -tsvg -o ../generated docs/diagrams/c4/source/structurizr-*.puml
-plantuml -tpng -o ../generated docs/diagrams/c4/source/structurizr-*.puml
-plantuml -tsvg -o ../generated docs/diagrams/checkpoint/source/*.puml
-plantuml -tpng -o ../generated docs/diagrams/checkpoint/source/*.puml
+java -jar <plantuml.jar> -tsvg -o <abs>/generated docs/diagrams/c4/source/structurizr-*.puml
+java -jar <plantuml.jar> -tpng -o <abs>/generated docs/diagrams/c4/source/structurizr-*.puml
+java -jar <plantuml.jar> -tsvg -o <abs>/generated docs/diagrams/checkpoint/source/*.puml
+java -jar <plantuml.jar> -tpng -o <abs>/generated docs/diagrams/checkpoint/source/*.puml
 pnpm verify
 ```
 
-The Windows `plantuml-skill/render.py` path specified in AGENTS.md does not exist on this Mac and no installed counterpart was found. The local PlantUML executable is used for rendering; source and generated destinations are preserved.
+`-o` must be an absolute path: a relative one lands the output under the source directory (e.g. `source/docs/...`). PlantUML emits one format per invocation, so SVG and PNG need separate runs.
 
-**Pending render (2026-10-12).** The sources for three views were corrected — `sequence-client-booking.puml` (the client booking flow is no longer local-only), `structurizr-Containers.puml` and `structurizr-SystemContext.puml` (the web and mobile containers are no longer "demonstration" ones) — but no PlantUML renderer was available in the environment where the edit was made, so the generated PNG/SVG beside them still show the previous text. Re-run the `plantuml -tsvg/-tpng` commands below before the demo; the source text is authoritative and the diagrams must be regenerated to match it.
+**Render environment.** AGENTS.md points at `plantuml-skill/render.py`; that script's default theme would restyle these views, so it is deliberately not used. The jar bundled with the skill (`plantuml-skill/assets/plantuml.jar`, 1.2026.7) is invoked directly with no theme, which matches how the rest of the set was produced. Graphviz 2.44.1 is found by the jar.
+
+**Render status (2026-10-12).** All affected views were re-rendered after the corrections: `sequence-client-booking` (real hold/confirm flow), and the C4 `Containers`, `SystemContext`, `Deployment`, `BookingFlow`, `TeachingFlow`, `VerificationFlow` views (no more "demonstration client" tag or legend, corrected container descriptions and relationship labels). Sources and generated PNG/SVG are in sync at this commit.

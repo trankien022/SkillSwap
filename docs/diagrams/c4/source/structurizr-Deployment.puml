@@ -29,11 +29,10 @@ UpdateElementStyle("system", $bgColor="#047857", $fontColor="#FFFFFF", $borderCo
 UpdateElementStyle("external_system", $bgColor="#64748B", $fontColor="#FFFFFF", $borderColor="#64748B", $legendText="Supporting software system")
 UpdateElementStyle("container", $bgColor="#047857", $fontColor="#FFFFFF", $borderColor="#047857", $legendText="Application or data store")
 UpdateRelStyle($lineColor="#475569", $textColor="#334155")
-AddElementTag("Demo", $bgColor="#F1F5F9", $fontColor="#0F172A", $borderColor="#64748B", $legendText="Demonstration client (local booking data)")
 
 Deployment_Node(Development.Developermachine, "Developer machine", $type="macOS / Docker", $descr="Local development environment", $tags="", $link="") {
   Deployment_Node(Development.Developermachine.Applicationprocesses, "Application processes", $type="Node.js / pnpm", $descr="Started on the host", $tags="", $link="") {
-    Container(Development.Developermachine.Applicationprocesses.Webapplication_1, "Web application", $techn="Container: Next.js / TypeScript", $descr="Shows service status and demonstration bookings.", $tags="Demo", $link="")
+    Container(Development.Developermachine.Applicationprocesses.Webapplication_1, "Web application", $techn="Container: Next.js / TypeScript", $descr="Learns, publishes classes, manages the wallet and submits verification evidence.", $tags="", $link="")
     Container(Development.Developermachine.Applicationprocesses.APIgateway_1, "API gateway", $techn="Container: NestJS / TypeScript", $descr="Checks sign-in and forwards public requests.", $tags="", $link="")
     Container(Development.Developermachine.Applicationprocesses.BackendAPI_1, "Backend API", $techn="Container: NestJS / TypeScript", $descr="Runs account, verification, class and wallet rules in one application.", $tags="", $link="")
   }
@@ -50,7 +49,7 @@ Deployment_Node(Development.Developermachine, "Developer machine", $type="macOS 
 
 }
 
-Rel(Development.Developermachine.Applicationprocesses.Webapplication_1, Development.Developermachine.Applicationprocesses.APIgateway_1, "Requests service status only", $techn="HTTP / JSON", $tags="", $link="")
+Rel(Development.Developermachine.Applicationprocesses.Webapplication_1, Development.Developermachine.Applicationprocesses.APIgateway_1, "Sends every feature request", $techn="HTTP / JSON", $tags="", $link="")
 Rel(Development.Developermachine.Applicationprocesses.APIgateway_1, Development.Developermachine.Applicationprocesses.BackendAPI_1, "Forwards authenticated requests", $techn="HTTP / JSON", $tags="", $link="")
 Rel(Development.Developermachine.Applicationprocesses.BackendAPI_1, Development.Developermachine.Dockerservices.Businessdatabase_1, "Reads and saves owned business records", $techn="PostgreSQL protocol / TypeORM", $tags="", $link="")
 Rel(Development.Developermachine.Dockerservices.Businessmessagebroker_1, Development.Developermachine.Applicationprocesses.BackendAPI_1, "Delivers changes to background handlers", $techn="AMQP", $tags="", $link="")

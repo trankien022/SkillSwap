@@ -28,7 +28,6 @@ UpdateElementStyle("system", $bgColor="#047857", $fontColor="#FFFFFF", $borderCo
 UpdateElementStyle("external_system", $bgColor="#64748B", $fontColor="#FFFFFF", $borderColor="#64748B", $legendText="Supporting software system")
 UpdateElementStyle("container", $bgColor="#047857", $fontColor="#FFFFFF", $borderColor="#047857", $legendText="Application or data store")
 UpdateRelStyle($lineColor="#475569", $textColor="#334155")
-AddElementTag("Demo", $bgColor="#F1F5F9", $fontColor="#0F172A", $borderColor="#64748B", $legendText="Demonstration client (local booking data)")
 
 System_Boundary("SkillSwap_boundary", "SkillSwap", $tags="") {
   Container(SkillSwap.APIgateway, "API gateway", $techn="Container: NestJS / TypeScript", $descr="Checks sign-in and forwards public requests.", $tags="", $link="")

@@ -22,12 +22,12 @@ workspace "SkillSwap" "Current architecture of the student learning marketplace"
         skillSwap -> jitsi "Authorizes access to booked lessons"
         user -> jitsi "Attends or teaches a booked lesson"
         skillSwap -> paymentGateway "Initiates top-ups and payouts; receives signed payment callbacks"
-        accountHolder -> webApp "Views status and demo bookings" "Browser"
-        accountHolder -> mobileApp "Tries demo bookings" "Native UI"
+        accountHolder -> webApp "Learns, teaches and manages the wallet" "Browser"
+        accountHolder -> mobileApp "Uses the same learner and teacher screens" "Native UI"
         accountHolder -> gateway "Requests services allowed for their account" "HTTP / JSON (local development)"
         accountHolder -> storage "Uploads owned student proof using a temporary link" "HTTP PUT (local development)"
         accountHolder -> jitsi "Joins a booked lesson with a private invitation" "HTTPS / WebRTC"
-        webApp -> gateway "Requests service status only" "HTTP / JSON (local development)"
+        webApp -> gateway "Sends every feature request" "HTTP / JSON (local development)"
         gateway -> backendApi "Forwards authenticated requests" "HTTP / JSON"
         paymentGateway -> gateway "Sends signed payment callbacks" "HTTPS / REST webhook"
         backendApi -> paymentGateway "Starts cash payments through the PaymentGateway port" "Provider adapter"
@@ -119,11 +119,6 @@ workspace "SkillSwap" "Current architecture of the student learning marketplace"
             }
             element "Queue" {
                 shape Pipe
-            }
-            element "Demo" {
-                background #f1f5f9
-                color #0f172a
-                border dashed
             }
         }
     }

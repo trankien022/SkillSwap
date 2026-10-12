@@ -21,7 +21,7 @@ Start with C4-L0: one `user` account can learn and, when eligible, teach; `verif
 
 Then zoom into C4-L1. The Backend API is one modular application with seven business areas; they are not seven deployed microservices. The gateway checks identity and forwards requests over HTTP. PostgreSQL stores seven separately owned schemas; TypeORM is the backend persistence adapter. RabbitMQ carries saved changes in both directions between the publishing and consuming parts of the same backend. MinIO is a SkillSwap-owned private document store, inside its system boundary. One account-holder actor covers role-authorized access without duplicating the person for demo apps and API calls.
 
-The Container view shows the payment gateway as an external dependency for cash top-ups and payouts, including signed callbacks. The current backend binds `PaymentGateway` to a mock adapter; the external box documents the intended provider boundary and does not claim that a real provider is configured. Web only calls service-status endpoints; mobile booking has no backend connection. A light client box denotes local demonstration booking data, with the same meaning in the legend.
+The Container view shows the payment gateway as an external dependency for cash top-ups and payouts, including signed callbacks. The current backend binds `PaymentGateway` to a mock adapter; the external box documents the intended provider boundary and does not claim that a real provider is configured. Web and mobile both call the API for every feature screen, not only service status, and both book through the same hold and confirm endpoints.
 
 For Dynamic views, follow the interaction numbers. Booking confirmation is saved before wallet processing, a current gap against BR-022/BR-026. The wallet records the full debit, Teacher allocation and platform fee together; repeat processing does not charge again. Teaching evidence decisions update publishing rights in the background. Joining a class requires the right participant, a confirmed booking and the permitted time window.
 
@@ -38,7 +38,7 @@ The organization follows the official C4 guidance for [System Context](https://c
 ## Regenerate and verify
 
 1. Validate `source/workspace.dsl` using Structurizr.
-2. Export the six keys listed above with the C4-PlantUML exporter. Preserve presentation additions: explicit types, Campus Emerald/slate colors, demo tags, compact titles, layout hints and explanatory footers. The bundled PlantUML C4 library does not export Structurizr custom styling, so these additions are kept in the editable PlantUML views.
+2. Export the six keys listed above with the C4-PlantUML exporter. Preserve presentation additions: explicit types, Campus Emerald/slate colors, compact titles, layout hints and explanatory footers. The bundled PlantUML C4 library does not export Structurizr custom styling, so these additions are kept in the editable PlantUML views.
 3. Render with the installed PlantUML executable (the Windows-only renderer referenced in AGENTS.md is unavailable on this Mac):
 
 ```sh
