@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server';
-import { MockClassDetailGateway } from '../../lib/marketplace/mock-class-detail';
+import { ClassDetailApiGateway } from '../../lib/marketplace/api-class-detail';
 import { DetailHeader } from './DetailHeader';
 import { ScheduleSection } from './ScheduleSection';
 import { SyllabusSection } from './SyllabusSection';
@@ -13,12 +13,11 @@ import type { ClassDetailView } from '../../lib/marketplace/types';
 /**
  * Server-side composition of the class detail page (FR-006 detail).
  *
- * Pulls the detail view from `MockClassDetailGateway`. If the id is
- * unknown, renders a 404 panel instead. When a real `HttpClassDetailGateway`
- * ships, the only change is the gateway instantiation.
+ * Pulls the detail view from `ClassDetailApiGateway` (which queries GET /api/classes/:id
+ * and falls back gracefully to MockClassDetailGateway for demo IDs). If unknown, renders a 404 panel.
  */
 export async function ClassDetailContent({ id }: { id: string }) {
-  const gateway = new MockClassDetailGateway();
+  const gateway = new ClassDetailApiGateway();
   const item = await gateway.getById(id);
   if (!item) return <NotFoundPanel />;
   return <ClassDetailBody item={item} />;
