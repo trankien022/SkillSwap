@@ -1,6 +1,6 @@
 import { startHarness, type Harness } from './harness';
-import { accountIdFromToken, ApiClient, waitFor } from './support/api-client';
-import { resetDatabase, seedSkill, seedVerifier } from './support/db';
+import { accountIdFromToken, ApiClient } from './support/api-client';
+import { resetDatabase, seedSkill, seedVerifier, waitVerifiedStudent } from './support/db';
 
 jest.setTimeout(60_000);
 
@@ -51,11 +51,7 @@ describe('E2E: evidence decision history (FR-018)', () => {
   }
 
   async function waitVerified(learnerId: string): Promise<void> {
-    await waitFor(async () => {
-      api.actAs(learnerId, 'user');
-      const me = await api.get('/api/auth/me');
-      return me.json?.studentVerification?.status === 'approved' ? me : null;
-    });
+    await waitVerifiedStudent(harness, learnerId);
   }
 
   it('shows both versions with decisions and the supersession', async () => {
