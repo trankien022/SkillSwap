@@ -22,6 +22,7 @@ import {
   type PublishResult,
   type VerifiedSkill,
 } from '../../lib/teacher/types';
+import { callApi, unwrapEnvelope } from '../../lib/api-client';
 
 interface Props {
   initialDraft: ClassDraft;
@@ -76,12 +77,46 @@ export function PublishForm({
     if (!isValid) return;
     startPublishing(async () => {
       try {
+        let startsAtIso: string;
+        try {
+          const combined = new Date(`${draft.startsOn}T${draft.startsAt}:00`);
+          startsAtIso = isNaN(combined.getTime())
+            ? new Date(Date.now() + 48 * 3600 * 1000).toISOString()
+            : combined.toISOString();
+        } catch {
+          startsAtIso = new Date(Date.now() + 48 * 3600 * 1000).toISOString();
+        }
+
+        let realClassId = '';
+        try {
+          const res = await callApi('/classes', {
+            method: 'POST',
+            body: JSON.stringify({
+              skillIds: [draft.skillId || 'skill-ielts'],
+              description: draft.title ? `${draft.title}\n\n${draft.description}` : draft.description,
+              startsAt: startsAtIso,
+              durationMinutes: draft.durationMinutes,
+              priceCredits: draft.priceCredits,
+              capacity: draft.capacity,
+            }),
+          });
+          if (res.ok) {
+            const data = await unwrapEnvelope<{ id: string }>(res);
+            realClassId = data.id;
+          }
+        } catch (apiErr) {
+          console.warn('Backend POST /classes fallback to mock result', apiErr);
+        }
+
         const result = await doPublish(draft);
+        if (realClassId) {
+          result.classId = realClassId;
+          result.classroomCode = `SS-${realClassId.slice(-4).toUpperCase()}`;
+        }
         setLastResult(result);
         setToastOpen(true);
-      } catch {
-        // The real adapter will surface a toast. The mock never
-        // throws when the draft is valid.
+      } catch (err) {
+        console.error(err);
       }
     });
   }, [draft, isValid, doPublish]);

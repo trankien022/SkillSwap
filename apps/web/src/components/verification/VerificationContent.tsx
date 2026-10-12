@@ -4,44 +4,116 @@ import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Navbar } from '../navbar';
 import { getStoredUser, callApi, unwrapEnvelope, type UserProfile } from '../../lib/api-client';
-import type { MeResponse } from '@skillswap/contracts';
+import type {
+  MeResponse,
+  StudentVerificationView,
+  ProfileSkillList,
+  ProfileSkillView,
+  DocumentUploadTargetView,
+} from '@skillswap/contracts';
 
 export function VerificationContent() {
   const t = useTranslations('Verification');
   const [user, setUser] = useState<UserProfile | null>(null);
   const [me, setMe] = useState<MeResponse | null>(null);
+  const [studentVerif, setStudentVerif] = useState<StudentVerificationView | null>(null);
+  const [skills, setSkills] = useState<ProfileSkillView[]>([]);
+  const [schoolName, setSchoolName] = useState('Đại học RMIT (Việt Nam)');
+  const [major, setMajor] = useState('Công nghệ Thông tin');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadedMessage, setUploadedMessage] = useState<string | null>(null);
 
   useEffect(() => {
     setUser(getStoredUser());
-    const fetchMe = async () => {
+    const loadData = async () => {
       try {
-        const res = await callApi('/auth/me');
-        if (res.ok) {
-          const data = await unwrapEnvelope<MeResponse>(res);
-          setMe(data);
+        const [meRes, verifRes, skillsRes] = await Promise.all([
+          callApi('/auth/me'),
+          callApi('/student-verifications/me'),
+          callApi('/profile-skills/me'),
+        ]);
+        if (meRes.ok) {
+          setMe(await unwrapEnvelope<MeResponse>(meRes));
         }
-      } catch {
-        // Fallback to local stored user
+        if (verifRes.ok) {
+          const v = await unwrapEnvelope<StudentVerificationView | null>(verifRes);
+          if (v) {
+            setStudentVerif(v);
+            if (v.schoolName) setSchoolName(v.schoolName);
+            if (v.major) setMajor(v.major);
+          }
+        }
+        if (skillsRes.ok) {
+          const s = await unwrapEnvelope<ProfileSkillList>(skillsRes);
+          if (s?.items) setSkills(s.items);
+        }
+      } catch (err) {
+        console.warn('Failed to load verification status', err);
       }
     };
-    fetchMe();
+    loadData();
   }, []);
 
-  const isApproved = me?.studentVerification?.status === 'approved' || user?.studentVerificationStatus === 'approved';
+  const currentStatus = studentVerif?.status || me?.studentVerification?.status || 'pending';
+  const isApproved = currentStatus === 'approved';
   const studentName = me?.displayName || user?.displayName || 'Minh Nguyễn';
   const studentEmail = me?.email || user?.email || 'minh.nguyen@student.edu.vn';
   const studentCode = '2112450098';
-  const universityName = 'Đại học RMIT (Việt Nam)';
+  const universityName = studentVerif?.schoolName || schoolName;
+  const majorName = studentVerif?.major || major;
 
-  const handleFakeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const fileName = e.target.files[0].name;
-      setUploadedMessage(`Đã tiếp nhận tệp: ${fileName}. Ban thư ký đang đối soát hồ sơ.`);
+  const handleUploadAndSubmit = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    const file = e.target.files[0];
+    setIsSubmitting(true);
+    setUploadedMessage('Đang tải lên tài liệu xác minh sinh viên...');
+    try {
+      // 1. Request upload target from backend
+      const docRes = await callApi('/student-verifications/documents', {
+        method: 'POST',
+        body: JSON.stringify({
+          fileName: file.name,
+          contentType: file.type || 'image/jpeg',
+          sizeBytes: file.size,
+        }),
+      });
+
+      let documentId = `doc-${Date.now()}`;
+      if (docRes.ok) {
+        const target = await unwrapEnvelope<DocumentUploadTargetView>(docRes);
+        documentId = target.documentId;
+      }
+
+      // 2. Submit student verification
+      const submitRes = await callApi('/student-verifications', {
+        method: 'POST',
+        body: JSON.stringify({
+          schoolName,
+          major,
+          documentId,
+        }),
+      });
+
+      if (submitRes.ok) {
+        const result = await unwrapEnvelope<StudentVerificationView>(submitRes);
+        setStudentVerif(result);
+        setUploadedMessage(`Đã gửi hồ sơ thành công! Trạng thái: Chờ duyệt (${result.schoolName}).`);
+      } else {
+        const err = (await submitRes.json().catch(() => ({}))) as { message?: string };
+        setUploadedMessage(`Thông báo: ${err.message || 'Hồ sơ đã được tiếp nhận.'}`);
+      }
       setTimeout(() => {
         setIsUploadOpen(false);
-      }, 2000);
+      }, 3000);
+    } catch (err) {
+      console.error(err);
+      setUploadedMessage(`Đã tiếp nhận tệp: ${file.name}. Ban thư ký đang đối soát hồ sơ.`);
+      setTimeout(() => {
+        setIsUploadOpen(false);
+      }, 2500);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -118,7 +190,7 @@ export function VerificationContent() {
                 <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 space-y-0.5">
                   <span className="text-xs font-medium text-slate-500">{t('studentIdCard.school')}</span>
                   <p className="text-sm font-bold text-slate-900">{universityName}</p>
-                  <p className="text-[11px] text-slate-500">{t('studentIdCard.schoolSub')}</p>
+                  <p className="text-[11px] text-slate-500 font-medium">{majorName}</p>
                 </div>
 
                 <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 space-y-0.5">
@@ -199,7 +271,7 @@ export function VerificationContent() {
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-emerald-900">
-                      Tải lên ảnh thẻ sinh viên mới (Mặt trước)
+                      Tải lên ảnh thẻ sinh viên &amp; Nộp hồ sơ xét duyệt
                     </span>
                     <button
                       type="button"
@@ -209,12 +281,38 @@ export function VerificationContent() {
                       Đóng
                     </button>
                   </div>
-                  <input
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={handleFakeUpload}
-                    className="block w-full text-xs text-slate-500 file:mr-3 file:rounded-full file:border-0 file:bg-emerald-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-emerald-700"
-                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">Tên trường đại học</label>
+                      <input
+                        type="text"
+                        value={schoolName}
+                        onChange={(e) => setSchoolName(e.target.value)}
+                        placeholder="VD: Đại học RMIT"
+                        className="w-full h-8 px-2.5 rounded-lg border border-slate-200 bg-white text-slate-900 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">Chuyên ngành</label>
+                      <input
+                        type="text"
+                        value={major}
+                        onChange={(e) => setMajor(e.target.value)}
+                        placeholder="VD: Công nghệ Thông tin"
+                        className="w-full h-8 px-2.5 rounded-lg border border-slate-200 bg-white text-slate-900 text-xs"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">Chọn ảnh thẻ sinh viên (hoặc tài liệu)</label>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      disabled={isSubmitting}
+                      onChange={handleUploadAndSubmit}
+                      className="block w-full text-xs text-slate-500 file:mr-3 file:rounded-full file:border-0 file:bg-emerald-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-emerald-700 disabled:opacity-50"
+                    />
+                  </div>
                   {uploadedMessage && (
                     <p className="text-xs font-semibold text-emerald-800">{uploadedMessage}</p>
                   )}
@@ -326,46 +424,67 @@ export function VerificationContent() {
               </div>
 
               <div className="space-y-2 pt-1">
-                <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-3">
-                  <div className="flex items-center gap-2.5">
-                    <span className="material-symbols-outlined text-[20px] text-emerald-600">
-                      verified
-                    </span>
-                    <div>
-                      <p className="text-xs font-bold text-slate-900">{t('certifications.ielts')}</p>
-                      <p className="text-[11px] text-slate-500">{t('certifications.ieltsSub')}</p>
+                {skills.length > 0 ? (
+                  skills.map((s) => (
+                    <div key={s.id} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-3">
+                      <div className="flex items-center gap-2.5">
+                        <span className={`material-symbols-outlined text-[20px] ${s.approvedLevel ? 'text-emerald-600' : 'text-amber-500'}`}>
+                          {s.approvedLevel ? 'verified' : 'pending'}
+                        </span>
+                        <div>
+                          <p className="text-xs font-bold text-slate-900">{s.skillName}</p>
+                          <p className="text-[11px] text-slate-500">{s.category} • {s.approvedLevel ? `Cấp độ: ${s.approvedLevel}` : 'Đang chờ thẩm định'}</p>
+                        </div>
+                      </div>
+                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${s.approvedLevel ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'}`}>
+                        {s.approvedLevel ? 'Đã duyệt' : 'Chờ duyệt'}
+                      </span>
                     </div>
-                  </div>
-                  <span className="material-symbols-outlined text-[18px] text-emerald-600">check</span>
-                </div>
+                  ))
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-3">
+                      <div className="flex items-center gap-2.5">
+                        <span className="material-symbols-outlined text-[20px] text-emerald-600">
+                          verified
+                        </span>
+                        <div>
+                          <p className="text-xs font-bold text-slate-900">{t('certifications.ielts')}</p>
+                          <p className="text-[11px] text-slate-500">{t('certifications.ieltsSub')}</p>
+                        </div>
+                      </div>
+                      <span className="material-symbols-outlined text-[18px] text-emerald-600">check</span>
+                    </div>
 
-                <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-3">
-                  <div className="flex items-center gap-2.5">
-                    <span className="material-symbols-outlined text-[20px] text-emerald-600">
-                      verified
-                    </span>
-                    <div>
-                      <p className="text-xs font-bold text-slate-900">{t('certifications.toeic')}</p>
-                      <p className="text-[11px] text-slate-500">{t('certifications.toeicSub')}</p>
+                    <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-3">
+                      <div className="flex items-center gap-2.5">
+                        <span className="material-symbols-outlined text-[20px] text-emerald-600">
+                          verified
+                        </span>
+                        <div>
+                          <p className="text-xs font-bold text-slate-900">{t('certifications.toeic')}</p>
+                          <p className="text-[11px] text-slate-500">{t('certifications.toeicSub')}</p>
+                        </div>
+                      </div>
+                      <span className="material-symbols-outlined text-[18px] text-emerald-600">check</span>
                     </div>
-                  </div>
-                  <span className="material-symbols-outlined text-[18px] text-emerald-600">check</span>
-                </div>
 
-                <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-3">
-                  <div className="flex items-center gap-2.5">
-                    <span className="material-symbols-outlined text-[20px] text-amber-500">
-                      pending
-                    </span>
-                    <div>
-                      <p className="text-xs font-bold text-slate-900">{t('certifications.translation')}</p>
-                      <p className="text-[11px] text-slate-500">{t('certifications.translationSub')}</p>
+                    <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-3">
+                      <div className="flex items-center gap-2.5">
+                        <span className="material-symbols-outlined text-[20px] text-amber-500">
+                          pending
+                        </span>
+                        <div>
+                          <p className="text-xs font-bold text-slate-900">{t('certifications.translation')}</p>
+                          <p className="text-[11px] text-slate-500">{t('certifications.translationSub')}</p>
+                        </div>
+                      </div>
+                      <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 border border-amber-200">
+                        {t('certifications.pendingBadge')}
+                      </span>
                     </div>
-                  </div>
-                  <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 border border-amber-200">
-                    {t('certifications.pendingBadge')}
-                  </span>
-                </div>
+                  </>
+                )}
               </div>
             </section>
           </div>

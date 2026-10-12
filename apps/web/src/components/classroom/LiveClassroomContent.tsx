@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { callApi, unwrapEnvelope } from '../../lib/api-client';
 
 export interface LiveClassroomProps {
   bookingId?: string;
@@ -34,9 +35,28 @@ export function LiveClassroomContent({
   const [whiteboardActive, setWhiteboardActive] = useState<boolean>(true);
   const [handRaised, setHandRaised] = useState<boolean>(false);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const [roomAccess, setRoomAccess] = useState<{ room: string; token: string; url: string } | null>(null);
 
   // Timer simulation state (seconds from 42m 12s = 2532s)
   const [secondsElapsed, setSecondsElapsed] = useState<number>(2532);
+
+  useEffect(() => {
+    const fetchRoomAccess = async () => {
+      try {
+        const res = await callApi(`/classes/bookings/${bookingId}/room-access`, {
+          method: 'POST',
+          body: JSON.stringify({ displayName: 'Học viên' }),
+        });
+        if (res.ok) {
+          const data = await unwrapEnvelope<{ room: string; token: string; url: string }>(res);
+          setRoomAccess(data);
+        }
+      } catch (err) {
+        console.warn('Room access window not open yet or simulated room', err);
+      }
+    };
+    if (bookingId) fetchRoomAccess();
+  }, [bookingId]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -151,6 +171,18 @@ export function LiveClassroomContent({
             <span className="material-symbols-outlined text-[14px] text-emerald-600">verified_user</span>
             <span>{t('statusBar.e2e')}</span>
           </span>
+
+          {roomAccess && (
+            <a
+              href={roomAccess.url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold text-emerald-900 border border-emerald-300 hover:bg-emerald-200 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[14px] text-emerald-700">open_in_new</span>
+              <span>Jitsi Live Room</span>
+            </a>
+          )}
         </div>
       </section>
 
