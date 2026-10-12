@@ -1,4 +1,27 @@
 import type { Harness } from '../harness';
+import { waitFor } from './api-client';
+
+/**
+ * Waits until the **skill-verification** module's own `verified_students`
+ * projection reflects `approved` for `accountId`.
+ *
+ * The approval event is consumed independently by `account-profile` (into
+ * `account_verification_status`, which `/api/auth/me` reads) and by
+ * `skill-verification` (into `verified_students`, which the FR-003 submit gate
+ * reads). Waiting on `/api/auth/me` therefore only proves the *account-profile*
+ * consumer ran, and the submit call can still race into a spurious 403. Poll the
+ * projection that actually gates the call instead.
+ */
+export async function waitVerifiedStudent(harness: Harness, accountId: string): Promise<void> {
+  await waitFor(async () => {
+    const rows = await harness.query<{ status: string }>(
+      'skill-verification',
+      'SELECT "status" FROM verified_students WHERE "account_id" = $1',
+      [accountId],
+    );
+    return rows[0]?.status === 'approved' ? rows : null;
+  });
+}
 
 /**
  * Empties the schemas the E2E flow touches, keeping migrations. Runs before each
