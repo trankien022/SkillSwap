@@ -19,7 +19,7 @@ async function installationId(): Promise<string> {
 }
 
 /** Registers or rebinds this installation to the currently authenticated account. */
-export async function registerPushDevice(client: GatewayClient, requestPermission: boolean): Promise<string | null> {
+export async function registerPushDevice(client: GatewayClient, requestPermission: boolean, locale: 'vi' | 'en' = 'vi'): Promise<string | null> {
   if (Platform.OS !== 'android' && Platform.OS !== 'ios') throw new Error('Push is only supported on Android and iOS');
 
   if (Platform.OS === 'android') {
@@ -43,6 +43,7 @@ export async function registerPushDevice(client: GatewayClient, requestPermissio
   const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
   const device = await new NotificationGateway(client).registerDevice({
     token,
+    locale,
     platform: Platform.OS,
     installationId: await installationId(),
   });

@@ -14,3 +14,9 @@ Phạm vi đã được người dùng duyệt: Android Emulator Google Play, >=
 ## Điều kiện đạt
 
 Ba luồng đi từ UI tới backend; >=5 resource persisted; 20–30 route templates có request thực từ app; storage bytes đọc lại khớp; remote banner nghiệp vụ được nhận và tap đúng lịch; hoàn 100 credit đúng một lần. Fixture seed, provider receipt và test pass không thay thế runtime evidence.
+
+## Bổ sung: ngôn ngữ thông báo theo Cài đặt
+
+1. Contract/persistence: thêm locale vi/en vào đăng ký thiết bị, lưu qua entity column và migration additive; không sửa migration cũ. Push lấy locale hiện tại của thiết bị khi claim delivery và chọn copy nghiệp vụ tương ứng.
+2. Mobile: giữ locale trong SecureStore; chờ khôi phục locale trước rebind; đăng ký lại khi đổi ngôn ngữ. Inbox tiếp tục dịch theo locale UI. Không cấp quyền qua payload.
+3. Nghiệm thu: tests copy vi/en, device locale persistence và callback đăng ký; build/typecheck/full verify; đổi Cài đặt trên Android và kiểm tra backend/push thực. Commit riêng cho thay đổi ngôn ngữ.

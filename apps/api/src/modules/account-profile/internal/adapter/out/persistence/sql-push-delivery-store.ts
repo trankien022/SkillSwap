@@ -5,7 +5,7 @@ import type { PushDelivery, PushDeliveryStorePort, PushReceiptCheck } from '../.
 
 interface RawDelivery {
   delivery_id: string; notification_id: string; device_id: string; token: string; type: string;
-  title: string; body: string; target_type: string; target_id: string; attempts: number;
+  title: string; body: string; target_type: string; target_id: string; attempts: number; locale: 'vi' | 'en';
 }
 interface RawReceipt { delivery_id: string; device_id: string; ticket_id: string; receipt_attempts: number }
 
@@ -45,14 +45,14 @@ export class SqlPushDeliveryStore implements PushDeliveryStorePort {
         FROM due WHERE d."id" = due."id"
         RETURNING d."id", d."notification_id", d."device_id", d."attempts"
       )
-      SELECT c."id" AS "delivery_id", c."notification_id", c."device_id", d."token",
+      SELECT c."id" AS "delivery_id", c."notification_id", c."device_id", d."token", d."locale",
         n."type", n."title", n."body", n."target_type", n."target_id", c."attempts"
       FROM claimed c JOIN ${this.devices} d ON d."id" = c."device_id" AND d."is_active" = true
       JOIN ${this.inbox} n ON n."id" = c."notification_id"`, [limit, leaseSeconds],
     ));
     return rows.map((row) => ({
       deliveryId: row.delivery_id, notificationId: row.notification_id, deviceId: row.device_id,
-      token: row.token, type: row.type, title: row.title, body: row.body,
+      locale: row.locale, token: row.token, type: row.type, title: row.title, body: row.body,
       targetType: row.target_type, targetId: row.target_id, attempts: Number(row.attempts),
     }));
   }

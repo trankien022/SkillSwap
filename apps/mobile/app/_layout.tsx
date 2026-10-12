@@ -16,7 +16,7 @@ Notifications.setNotificationHandler({
 });
 
 function RootNavigation() {
-  const { configError, bootError, retryBoot, t, isAuthenticated, isLoading, user, gatewayClient } = useSession();
+  const { locale, localeReady, configError, bootError, retryBoot, t, isAuthenticated, isLoading, user, gatewayClient } = useSession();
   const router = useRouter();
   const [pendingPushOpen, setPendingPushOpen] = useState<ReturnType<typeof notificationRoute> | null>(null);
 
@@ -49,13 +49,13 @@ function RootNavigation() {
   }, [pendingPushOpen, isAuthenticated, isLoading, router]);
 
   useEffect(() => {
-    if (!gatewayClient || !user?.id || isLoading) return;
+    if (!gatewayClient || !user?.id || isLoading || !localeReady) return;
     let active = true;
     void SecureStore.getItemAsync(PUSH_OPT_IN_KEY).then(async (enabled) => {
-      if (active && enabled === 'true') await registerPushDevice(gatewayClient, false);
+      if (active && enabled === 'true') await registerPushDevice(gatewayClient, false, locale);
     }).catch(() => undefined);
     return () => { active = false; };
-  }, [gatewayClient, isLoading, user?.id]);
+  }, [gatewayClient, isLoading, user?.id, locale, localeReady]);
 
   if (configError) {
     return <ConfigErrorView error={configError} />;

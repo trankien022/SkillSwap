@@ -54,10 +54,10 @@ export class SqlNotificationManagement implements NotificationManagementPort {
         await manager.query(`DELETE FROM ${table} WHERE "id" = ANY($1::uuid[])`, [matches.filter((row) => row.id !== deviceId).map((row) => row.id)]);
       }
       if (deviceId) {
-        const result = returnedRows<RawDevice>(await manager.query(`UPDATE ${table} SET "account_id" = $2, "token" = $3, "platform" = $4, "installation_id" = $5, "app_version" = $6, "is_active" = true, "updated_at" = now() WHERE "id" = $1 RETURNING "id", "installation_id", "platform", "is_active", "created_at"`, [deviceId, accountId, input.token, input.platform, input.installationId, input.appVersion ?? null]));
+        const result = returnedRows<RawDevice>(await manager.query(`UPDATE ${table} SET "account_id" = $2, "token" = $3, "platform" = $4, "installation_id" = $5, "app_version" = $6, "locale" = COALESCE($7, "locale"), "is_active" = true, "updated_at" = now() WHERE "id" = $1 RETURNING "id", "installation_id", "platform", "is_active", "created_at"`, [deviceId, accountId, input.token, input.platform, input.installationId, input.appVersion ?? null, input.locale ?? null]));
         return deviceSubscriptionSchema.parse({ id: result[0]!.id, installationId: result[0]!.installation_id, platform: result[0]!.platform, isActive: result[0]!.is_active, createdAt: iso(result[0]!.created_at) });
       }
-      const result = returnedRows<RawDevice>(await manager.query(`INSERT INTO ${table} ("account_id", "token", "platform", "installation_id", "app_version") VALUES ($1,$2,$3,$4,$5) RETURNING "id", "installation_id", "platform", "is_active", "created_at"`, [accountId, input.token, input.platform, input.installationId, input.appVersion ?? null]));
+      const result = returnedRows<RawDevice>(await manager.query(`INSERT INTO ${table} ("account_id", "token", "platform", "installation_id", "app_version", "locale") VALUES ($1,$2,$3,$4,$5,COALESCE($6, 'vi')) RETURNING "id", "installation_id", "platform", "is_active", "created_at"`, [accountId, input.token, input.platform, input.installationId, input.appVersion ?? null, input.locale ?? null]));
       return deviceSubscriptionSchema.parse({ id: result[0]!.id, installationId: result[0]!.installation_id, platform: result[0]!.platform, isActive: result[0]!.is_active, createdAt: iso(result[0]!.created_at) });
     });
   }

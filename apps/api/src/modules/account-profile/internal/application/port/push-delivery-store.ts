@@ -5,6 +5,7 @@ export interface PushDelivery {
   readonly notificationId: string;
   readonly deviceId: string;
   readonly token: string;
+  readonly locale?: 'vi' | 'en';
   readonly type: string;
   readonly title: string;
   readonly body: string;

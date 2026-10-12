@@ -1,3 +1,4 @@
+import { notificationCopy } from './notification-copy';
 import type { PushDeliveryStorePort } from './port/push-delivery-store';
 import type { PushDeliveryLoggerPort } from './port/push-delivery-logger';
 import type { PushProviderPort, PushProviderResult } from './port/push-provider';
@@ -50,6 +51,7 @@ export class PushDeliveryWorker {
   private async dispatchDue(): Promise<void> {
     const deliveries = await this.store.claimDueDeliveries(PUSH_BATCH_SIZE, PUSH_LEASE_SECONDS);
     await Promise.all(deliveries.map(async (delivery) => {
+      const copy = notificationCopy(delivery.type, delivery.locale ?? 'vi');
       const data = {
         notificationId: delivery.notificationId,
         type: delivery.type,
@@ -59,8 +61,8 @@ export class PushDeliveryWorker {
       try {
         const result = await this.provider.send({
           to: delivery.token,
-          title: delivery.title,
-          body: delivery.body,
+          title: copy?.title ?? delivery.title,
+          body: copy?.body ?? delivery.body,
           data,
           channelId: 'skillswap-updates-v1',
           sound: 'default',

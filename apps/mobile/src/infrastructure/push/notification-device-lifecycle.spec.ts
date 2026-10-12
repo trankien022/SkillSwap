@@ -41,9 +41,16 @@ describe('notification device lifecycle', () => {
     await expect(registerPushDevice(client, true)).resolves.toBe('device-1');
 
     expect(Notifications.setNotificationChannelAsync).toHaveBeenCalledWith('skillswap-updates-v1', expect.objectContaining({ name: 'SkillSwap updates', importance: Notifications.AndroidImportance.HIGH }));
-    expect(client.authenticatedRequest).toHaveBeenCalledWith('/notification-devices', expect.objectContaining({ method: 'POST' }));
+    expect(client.authenticatedRequest).toHaveBeenCalledWith('/notification-devices', expect.objectContaining({ method: 'POST', body: expect.objectContaining({ locale: 'vi' }) }));
     expect(SecureStore.setItemAsync).toHaveBeenCalledWith(PUSH_DEVICE_ID_KEY, 'device-1');
     expect(SecureStore.setItemAsync).toHaveBeenCalledWith(INSTALLATION_ID_KEY, expect.stringMatching(/^install-/));
+  });
+
+  it('registers the selected English locale on rebind', async () => {
+    await registerPushDevice(client, false, 'en');
+    expect(client.authenticatedRequest).toHaveBeenCalledWith('/notification-devices', expect.objectContaining({
+      body: expect.objectContaining({ locale: 'en' }),
+    }));
   });
 
   it('keeps the inbox usable without registering when permission is denied on silent rebind', async () => {

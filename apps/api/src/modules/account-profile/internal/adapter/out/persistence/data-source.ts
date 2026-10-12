@@ -1,3 +1,4 @@
+import { AddNotificationDeviceLocale1791072000008 } from './migrations/1791072000008-AddNotificationDeviceLocale';
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import { ApiConfig } from '../../../../../../shared/config/api-config';
@@ -33,6 +34,7 @@ export function createModuleDataSource(config: ApiConfig, schema: string = SCHEM
       CollapseAccountRoles1791072000005,
       CreateNotificationStorage1791072000006,
       AddPushDeliveryLeasesAndReceipts1791072000007,
+      AddNotificationDeviceLocale1791072000008,
     ],
     migrationsTableName: MIGRATIONS_TABLE,
     synchronize: false,

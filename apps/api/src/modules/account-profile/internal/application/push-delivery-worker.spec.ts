@@ -32,10 +32,18 @@ describe('PushDeliveryWorker', () => {
 
     expect(provider.send).toHaveBeenCalledWith(expect.objectContaining({
       to: delivery.token,
+      title: 'Lớp học đã hủy',
       data: { notificationId: 'notification-1', type: 'booking_cancelled', targetType: 'booking', targetId: 'booking-1' },
       channelId: 'skillswap-updates-v1',
     }));
     expect(store.acceptTicket).toHaveBeenCalledWith('delivery-1', 'ticket-1', expect.any(Number));
+  });
+
+  it('uses the current device language for remote push', async () => {
+    const store = makeStore({ claimDueDeliveries: jest.fn().mockResolvedValue([{ ...delivery, locale: 'en' }]) });
+    const provider = { send: jest.fn().mockResolvedValue({ status: 'ok', ticketId: 'ticket-en' }), getReceipts: jest.fn() };
+    await new PushDeliveryWorker(store, provider as unknown as PushProviderPort, makeLogger()).sweep();
+    expect(provider.send).toHaveBeenCalledWith(expect.objectContaining({ title: 'Class canceled' }));
   });
 
   it('deactivates a DeviceNotRegistered subscription and fails the delivery', async () => {

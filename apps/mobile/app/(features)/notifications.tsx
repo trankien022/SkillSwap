@@ -45,7 +45,7 @@ export default function NotificationsScreen() {
     if (!gatewayClient || busy) return;
     setBusy(true); setError(null);
     try {
-      const id = await registerPushDevice(gatewayClient, true);
+      const id = await registerPushDevice(gatewayClient, true, locale);
       if (id) {
         await SecureStore.setItemAsync(PUSH_OPT_IN_KEY, 'true');
         setDeviceId(id);

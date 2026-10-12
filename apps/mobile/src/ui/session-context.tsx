@@ -37,6 +37,7 @@ export interface SessionContextValue {
   readonly bootError: Error | null;
   readonly configError: ConfigurationError | null;
   readonly locale: Locale;
+  readonly localeReady: boolean;
   readonly setLocale: (locale: Locale) => void;
   readonly t: (key: string, vars?: Record<string, string | number>) => string;
   readonly login: (credentials: LoginCredentials) => Promise<void>;
@@ -63,7 +64,21 @@ export function SessionProvider({
   injectedGateway,
   injectedSessionService,
 }: SessionProviderProps) {
-  const [locale, setLocale] = useState<Locale>(initialLocale);
+  const [locale, updateLocale] = useState<Locale>(initialLocale);
+  const [localeReady, setLocaleReady] = useState(false);
+  const localeChanged = useRef(false);
+  const setLocale = useCallback((next: Locale) => {
+    localeChanged.current = true;
+    updateLocale(next);
+    void SecureStore.setItemAsync('skillswap.locale', next).catch(() => undefined);
+  }, []);
+  useEffect(() => {
+    let active = true;
+    void SecureStore.getItemAsync('skillswap.locale').then((saved) => {
+      if (active && !localeChanged.current && (saved === 'vi' || saved === 'en')) updateLocale(saved);
+    }).catch(() => undefined).finally(() => { if (active) setLocaleReady(true); });
+    return () => { active = false; };
+  }, []);
   const [session, setSession] = useState<ActiveSession | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [bootError, setBootError] = useState<Error | null>(null);
@@ -224,6 +239,7 @@ export function SessionProvider({
       bootError,
       configError,
       locale,
+      localeReady,
       setLocale,
       t,
       login,
@@ -240,6 +256,7 @@ export function SessionProvider({
       bootError,
       configError,
       locale,
+      localeReady,
       t,
       login,
       register,
