@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
 
 interface NotificationItem {
   id: string;
@@ -32,8 +33,8 @@ export default function NotificationsPage() {
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('minh.nguyen@rmit.edu.vn');
   const [frequency, setFrequency] = useState<'instant' | 'daily' | 'weekly'>('instant');
-  const [balance, setBalance] = useState<WalletBalanceView | null>(null);
-  const [me, setMe] = useState<MeResponse | null>(null);
+  const [_balance, setBalance] = useState<WalletBalanceView | null>(null);
+  const [_me, setMe] = useState<MeResponse | null>(null);
 
   useEffect(() => {
     // 1. Fetch live notifications from GET /api/notifications

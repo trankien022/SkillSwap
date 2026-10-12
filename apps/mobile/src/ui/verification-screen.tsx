@@ -14,6 +14,24 @@ export function VerificationScreen() {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  // Optional runtime import of expo-linear-gradient to avoid linting errors and allow the
+  // code to work even when the native module is not installed in web/CI environments.
+  const [LinearGradient, setLinearGradient] = useState<React.ComponentType<Record<string, unknown>> | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const mod = await import('expo-linear-gradient');
+        if (mounted && mod?.LinearGradient) setLinearGradient(() => mod.LinearGradient);
+      } catch {
+        // not available — ignore
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const load = useCallback(async () => {
     setRefreshing(true);
@@ -21,8 +39,9 @@ export function VerificationScreen() {
       const d = await service.load();
       setState({ phase: 'ready', data: d });
       setCertificates(d.certificates || []);
-    } catch (err: any) {
-      setState({ phase: 'error', message: err?.message ?? String(err) });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setState({ phase: 'error', message: msg });
     } finally {
       setRefreshing(false);
     }
@@ -37,9 +56,10 @@ export function VerificationScreen() {
         setState({ phase: 'ready', data: d });
         setCertificates(d.certificates || []);
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         if (!active) return;
-        setState({ phase: 'error', message: err?.message ?? String(err) });
+        const msg = err instanceof Error ? err.message : String(err);
+        setState({ phase: 'error', message: msg });
       });
     return () => {
       active = false;
@@ -134,59 +154,62 @@ export function VerificationScreen() {
           </View>
 
           {/* Academic Reputation (mobile-friendly hero metrics) */}
-          {(() => {
-            const LinearGradient = (() => {
-              try {
-                // eslint-disable-next-line @typescript-eslint/no-var-requires
-                return require('expo-linear-gradient').LinearGradient;
-              } catch {
-                return null;
-              }
-            })();
+          {LinearGradient ? (
+            <View style={[styles.card, styles.metricsCard, { padding: 0 }]}>
+              {/* use gradient if expo-linear-gradient is available */}
+              <LinearGradient colors={["#061226", "#071d2b"]} style={styles.metricsGradient as unknown as Record<string, unknown>}>
+                <View style={styles.metricsInnerContainer}>
+                  <Text style={[styles.sectionTitle, { textAlign: 'center' }]}>Academic Trust Score</Text>
+                  <View style={styles.metricsCenter}>
+                    <View style={styles.scoreCircle}>
+                      <Text style={styles.scoreText}>{data.metrics.score}</Text>
+                      <Text style={styles.scoreSub}>/100</Text>
+                    </View>
+                  </View>
 
-            const MetricsInner = (
-              <>
-                <Text style={[styles.sectionTitle, { textAlign: 'center' }]}>Academic Trust Score</Text>
-                <View style={styles.metricsCenter}>
-                  <View style={styles.scoreCircle}>
-                    <Text style={styles.scoreText}>{data.metrics.score}</Text>
-                    <Text style={styles.scoreSub}>/100</Text>
+                  <View style={styles.metricsItemsRow}>
+                    <View style={styles.metricChip}>
+                      <Text style={styles.metricChipLabel}>Attendance</Text>
+                      <Text style={styles.metricChipValue}>{data.metrics.courseCompletion}</Text>
+                    </View>
+                    <View style={styles.metricChip}>
+                      <Text style={styles.metricChipLabel}>Disputes</Text>
+                      <Text style={styles.metricChipValue}>{data.metrics.disputes}</Text>
+                    </View>
+                    <View style={styles.metricChip}>
+                      <Text style={styles.metricChipLabel}>Peer rating</Text>
+                      <Text style={styles.metricChipValue}>{data.metrics.peerRating}</Text>
+                    </View>
                   </View>
                 </View>
-
-                <View style={styles.metricsItemsRow}>
-                  <View style={styles.metricChip}>
-                    <Text style={styles.metricChipLabel}>Attendance</Text>
-                    <Text style={styles.metricChipValue}>{data.metrics.courseCompletion}</Text>
-                  </View>
-                  <View style={styles.metricChip}>
-                    <Text style={styles.metricChipLabel}>Disputes</Text>
-                    <Text style={styles.metricChipValue}>{data.metrics.disputes}</Text>
-                  </View>
-                  <View style={styles.metricChip}>
-                    <Text style={styles.metricChipLabel}>Peer rating</Text>
-                    <Text style={styles.metricChipValue}>{data.metrics.peerRating}</Text>
-                  </View>
+              </LinearGradient>
+            </View>
+          ) : (
+            <View style={[styles.card, styles.metricsCard]}>
+              <Text style={[styles.sectionTitle, { textAlign: 'center' }]}>Academic Trust Score</Text>
+              <View style={styles.metricsCenter}>
+                <View style={styles.scoreCircle}>
+                  <Text style={styles.scoreText}>{data.metrics.score}</Text>
+                  <Text style={styles.scoreSub}>/100</Text>
                 </View>
-              </>
-            );
+              </View>
 
-            return LinearGradient ? (
-              <View style={[styles.card, styles.metricsCard, { padding: 0 }]}> 
-                {/* use gradient if expo-linear-gradient is available */}
-                {/* eslint-disable-next-line react/jsx-no-undef */}
-                <LinearGradient colors={["#061226", "#071d2b"]} style={styles.metricsGradient}>
-                  <View style={styles.metricsInnerContainer}>
-                    {MetricsInner}
-                  </View>
-                </LinearGradient>
+              <View style={styles.metricsItemsRow}>
+                <View style={styles.metricChip}>
+                  <Text style={styles.metricChipLabel}>Attendance</Text>
+                  <Text style={styles.metricChipValue}>{data.metrics.courseCompletion}</Text>
+                </View>
+                <View style={styles.metricChip}>
+                  <Text style={styles.metricChipLabel}>Disputes</Text>
+                  <Text style={styles.metricChipValue}>{data.metrics.disputes}</Text>
+                </View>
+                <View style={styles.metricChip}>
+                  <Text style={styles.metricChipLabel}>Peer rating</Text>
+                  <Text style={styles.metricChipValue}>{data.metrics.peerRating}</Text>
+                </View>
               </View>
-            ) : (
-              <View style={[styles.card, styles.metricsCard]}>
-                {MetricsInner}
-              </View>
-            );
-          })()}
+            </View>
+          )}
 
           {/* Pillars of Trust - inline icon + text */}
 

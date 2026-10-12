@@ -28,15 +28,16 @@ export default function Page() {
           : `${DEFAULT_API_BASE}/api/student-verification/status`;
         const resp = await fetchJson<VerificationData>(endpoint);
         if (mounted) setData(resp);
-      } catch (err: any) {
+      } catch (err: unknown) {
         // Keep the original error visible in developer console while falling back to mock
         console.warn('verification fetch failed', err);
         // If API is unreachable, fall back to a local mock so the UI remains usable during dev.
         try {
           const { verificationSuccess } = await import("../../../lib/mocks/verification.mock");
           if (mounted) setData(verificationSuccess);
-        } catch (innerErr: any) {
-          if (mounted) setError(innerErr?.message || String(innerErr));
+        } catch (innerErr: unknown) {
+          const innerMsg = innerErr instanceof Error ? innerErr.message : String(innerErr);
+          if (mounted) setError(innerMsg);
         }
       } finally {
         if (mounted) setLoading(false);

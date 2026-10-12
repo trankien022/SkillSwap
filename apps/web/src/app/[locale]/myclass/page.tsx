@@ -36,7 +36,7 @@ export default function Page() {
   }, []);
 
     const [apiModules, setApiModules] = useState<string[] | null>(null);
-    const [moduleStatuses, setModuleStatuses] = useState<Record<string, { ok: boolean; detail?: any; error?: string }>>({});
+    const [moduleStatuses, setModuleStatuses] = useState<Record<string, { ok: boolean; detail?: unknown; error?: string }>>({});
     const [apiProbeError, setApiProbeError] = useState<string | null>(null);
 
     // Probe API health and each module's /status endpoint so the user can decide whether
@@ -50,7 +50,7 @@ export default function Page() {
           if (!mounted) return;
           setApiModules(health.modules || []);
 
-          const statuses: Record<string, { ok: boolean; detail?: any; error?: string }> = {};
+          const statuses: Record<string, { ok: boolean; detail?: unknown; error?: string }> = {};
           await Promise.all(
             (health.modules || []).map(async (m) => {
               try {
@@ -62,18 +62,20 @@ export default function Page() {
                 } else {
                   statuses[m] = { ok: false, error: `HTTP ${detail.status}` };
                 }
-              } catch (err: any) {
-                statuses[m] = { ok: false, error: err?.message || String(err) };
+              } catch (err: unknown) {
+                const msg = err instanceof Error ? err.message : String(err);
+                statuses[m] = { ok: false, error: msg };
               }
             }),
           );
           if (mounted) setModuleStatuses(statuses);
-        } catch (err: any) {
+        } catch (err: unknown) {
           // API unreachable — fall back to a safe local mock list so the UI remains useful during dev.
-          if (mounted) setApiProbeError(err?.message || String(err));
+          const emsg = err instanceof Error ? err.message : String(err);
+          if (mounted) setApiProbeError(emsg);
           try {
             const fallbackModules = ['student-verification', 'live-class', 'wallet-ledger'];
-            const fallbackStatuses: Record<string, { ok: boolean; detail?: any; error?: string }> = {};
+            const fallbackStatuses: Record<string, { ok: boolean; detail?: unknown; error?: string }> = {};
             fallbackModules.forEach((m) => {
               fallbackStatuses[m] = { ok: false, error: 'unreachable - using local mock' };
             });
@@ -81,8 +83,9 @@ export default function Page() {
             setApiModules(fallbackModules);
             setModuleStatuses(fallbackStatuses);
             setApiProbeError('Gateway/API unreachable — using mock module list.');
-          } catch (innerErr: any) {
-                      if (mounted) setApiProbeError(innerErr?.message || String(innerErr));
+          } catch (innerErr: unknown) {
+                      const innerMsg = innerErr instanceof Error ? innerErr.message : String(innerErr);
+                      if (mounted) setApiProbeError(innerMsg);
           }
         }
       })();

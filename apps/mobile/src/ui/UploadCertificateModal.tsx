@@ -3,12 +3,6 @@ import { View, Text, Modal, StyleSheet, Pressable, TextInput, TouchableOpacity, 
 import { colors, spacing } from '@/design/tokens';
 // Optional: expo-image-picker provides a nicer UX for picking images on device. If not installed, the "Use link" flow still works.
 // To enable image picking, install: expo install expo-image-picker
-let ImagePicker: any = null;
-try {
-  ImagePicker = require('expo-image-picker');
-} catch (e) {
-  ImagePicker = null;
-}
 
 type Props = {
   visible: boolean;
@@ -23,25 +17,24 @@ export function UploadCertificateModal({ visible, onClose, onAdd }: Props) {
   const [imageUri, setImageUri] = useState<string | null>(null);
 
   async function pickImage() {
-    if (!ImagePicker) {
-      // Image picker not installed — inform user (no UI library here). Fallback to link input.
-      return;
-    }
     try {
+      const mod = await import('expo-image-picker');
+            const ImagePicker = mod as typeof import('expo-image-picker');
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync?.();
       if (permission?.granted === false) return;
       const result = await ImagePicker.launchImageLibraryAsync?.({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8, base64: false });
       if (result && !result.cancelled) {
         setImageUri(result.uri);
       }
-    } catch (err) {
+    } catch (err: unknown) {
+      // expo-image-picker not installed or permission denied — fall back silently to link input
       console.warn('Image picker error', err);
     }
   }
 
   function submit() {
     if (!title.trim()) return; // require a title
-    const payload: any = { title: title.trim(), issuer: issuer.trim() || 'Unknown' };
+    const payload: { title: string; issuer: string; imageUrl?: string; linkUrl?: string } = { title: title.trim(), issuer: issuer.trim() || 'Unknown' };
     if (imageUri) payload.imageUrl = imageUri;
     if (linkUrl.trim()) payload.linkUrl = linkUrl.trim();
     onAdd(payload);

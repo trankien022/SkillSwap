@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createTopUpIntent } from './actions';
 import { callApi, unwrapEnvelope } from '../../../lib/api-client';
 import type { WalletBalanceView, WalletHistoryItemView, MeResponse } from '@skillswap/contracts';
 
