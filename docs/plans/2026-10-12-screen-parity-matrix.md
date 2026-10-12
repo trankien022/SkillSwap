@@ -214,7 +214,41 @@ Two consequences worth deciding on before the demo:
 1. **Money display.** Checkout and the navbar prefer the stored balance (`override ?? remoteBal`), so a stale local value can disagree with the server. It is a display override, not a ledger write, so no incorrect settlement occurs — but the numbers shown can be wrong.
 2. **Classes that do not exist server-side** appear in the marketplace and are bookable-looking, yet `POST /classes/:id/bookings` would reject them.
 
-This is recorded, not fixed — it touches the money path and needs the same explicit decision as D4.
+### 8.1 Resolution — money layer removed (commit pending)
+
+The decision was to remove the shadow rather than tolerate it, because it sits on
+the one path the rubric cares about most (Backend 25% + money rules). What changed:
+
+| Site | Before | After |
+|---|---|---|
+| `lib/api-client.ts` | `getStoredWalletBalance()` read the key; `saveStoredWalletBalance()` wrote it | `getStoredWalletBalance()` always returns `null` **and deletes the key** (self-healing); the write helper is gone |
+| `lib/api-client.ts` `dispatchWalletBalanceUpdate()` | saved to storage, then emitted | emits the `CustomEvent` only — instant same-page update, nothing persisted |
+| `navbar.tsx` | `setInternalBalance(override ?? serverBal)` | `setInternalBalance(serverBal)` |
+| `wallet/page.tsx` (load) | `setBalance(override ?? bal)` | `setBalance(bal)` |
+| `wallet/page.tsx` (top-up) | computed `availableCredits + amountCredits` locally | refetches `/wallet/balance` after settlement |
+| `checkout/page.tsx` (load) | `setBalance(override ?? remoteBal)`, plus a `skillswap_created_classes` fallback | server only |
+| `checkout/page.tsx` (post-booking) | fabricated `currentCredits - priceCredits`; accepted the server value only `if (remote < current)` | refetches the balance; server is authoritative |
+| `checkout/page.tsx` (quick top-up) | added 100 credits locally and reported "Nạp thành công" **without calling the API** | calls `POST /wallet/top-ups`, settles via the signed callback, then refetches |
+
+Design rule now enforced (pinned by `apps/web/src/lib/api-client.test.ts`):
+**wallet balance is server-owned state and is never cached.** The optimistic
+*effect* (navbar updates the moment you book/top-up) is preserved via the
+in-page event; the *persistence* is gone, so a reload or a different sign-in can
+no longer show a figure that disagrees with the ledger.
+
+### 8.2 Still open — `skillswap_user_bookings` (lower severity)
+
+| Key / helper | Written by | Behaviour |
+|---|---|---|
+| `skillswap_user_bookings` | `lib/dashboard/api-my-bookings.ts:40-71`, written from `checkout/page.tsx` | **Merges** local bookings with `GET /classes/bookings/me`; local ids not present in the server list are prepended |
+
+This is the same pattern but a weaker case than the wallet layer: it *merges*
+rather than *overrides*, and the endpoint it complements returns real rows. The
+only incorrect outcome is a duplicate-looking or unconfirmed booking lingering
+after a rejected settlement. Because real bookings already come back from
+`/classes/bookings/me`, the local copy is redundant and should be deleted when
+Phase 1C (dashboard, S2) replaces `MockLearnerDashboardGateway` — the two are
+the same screen, so they are fixed in one pass rather than twice.
 
 ---
 

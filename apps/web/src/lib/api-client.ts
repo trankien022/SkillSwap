@@ -298,27 +298,32 @@ export async function getMe(): Promise<UserProfile | null> {
 export const WALLET_BALANCE_STORAGE_KEY = 'skillswap-wallet-balance-override';
 export const WALLET_BALANCE_EVENT = 'skillswap:balance-updated';
 
+/**
+ * Wallet balance is server-owned state and is never cached in `localStorage`.
+ *
+ * An earlier revision persisted an optimistic balance here and let it override
+ * the server (`override ?? serverBal`). Because the key never expired and was
+ * never reconciled, a reload or a different sign-in could show a balance that
+ * disagreed with the ledger. The key is deleted on read so sessions that still
+ * carry it self-heal.
+ */
 export function getStoredWalletBalance(): WalletBalanceView | null {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = localStorage.getItem(WALLET_BALANCE_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    // Purge values written by the previous caching revision.
+    window.localStorage.removeItem(WALLET_BALANCE_STORAGE_KEY);
   } catch {
-    return null;
+    // Storage unavailable (private mode); nothing to purge.
   }
+  return null;
 }
 
-export function saveStoredWalletBalance(balance: WalletBalanceView): void {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(WALLET_BALANCE_STORAGE_KEY, JSON.stringify(balance));
-  } catch {
-    // Ignore storage quota errors
-  }
-}
-
+/**
+ * Broadcasts a fresh balance to listeners on the current page (e.g. the navbar
+ * badge) without persisting it. The value always originates from a server
+ * response, so the UI updates instantly while staying server-truthful.
+ */
 export function dispatchWalletBalanceUpdate(balance: WalletBalanceView): void {
-  saveStoredWalletBalance(balance);
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(WALLET_BALANCE_EVENT, { detail: balance }));
   }

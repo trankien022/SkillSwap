@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
-import { callApi, getTokens, getStoredUser, logout, unwrapEnvelope, WALLET_BALANCE_EVENT, getStoredWalletBalance, type UserProfile } from '../lib/api-client';
+import { callApi, getTokens, getStoredUser, logout, unwrapEnvelope, WALLET_BALANCE_EVENT, type UserProfile } from '../lib/api-client';
 
 export type NavbarTab = 'explore' | 'classes' | 'instructor' | 'wallet' | 'verification' | 'notifications';
 
@@ -28,13 +28,8 @@ export function Navbar({
     setHasTokens(Boolean(getTokens()));
     setStoredUser(getStoredUser());
 
-    // Sync with any stored wallet balance override
-    const storedBal = getStoredWalletBalance();
-    if (storedBal) {
-      setInternalBalance(storedBal);
-    }
-
-    // Listen to real-time wallet balance update events
+    // Listen for in-page balance updates (e.g. after a top-up or booking) so the
+    // badge reflects the change without a refetch.
     const handleBalanceEvent = (e: Event) => {
       const customEvent = e as CustomEvent<WalletBalanceView>;
       if (customEvent.detail) {
@@ -52,9 +47,8 @@ export function Navbar({
             propMe === undefined ? callApi('/auth/me') : Promise.resolve(null),
           ]);
           if (balRes && balRes.ok) {
-            const serverBal = await unwrapEnvelope<WalletBalanceView>(balRes);
-            const latestOverride = getStoredWalletBalance();
-            setInternalBalance(latestOverride ?? serverBal);
+            // The server is the single source of truth for the balance.
+            setInternalBalance(await unwrapEnvelope<WalletBalanceView>(balRes));
           }
           if (meRes && meRes.ok) {
             const meData = await unwrapEnvelope<MeResponse>(meRes);

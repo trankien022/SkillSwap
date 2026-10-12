@@ -2,7 +2,8 @@
 
 import { use, useState, useEffect } from 'react';
 import { Navbar } from '../../../../../components/navbar';
-import { callApi, unwrapEnvelope, dispatchWalletBalanceUpdate, getStoredWalletBalance } from '../../../../../lib/api-client';
+import { callApi, unwrapEnvelope, dispatchWalletBalanceUpdate } from '../../../../../lib/api-client';
+import { simulatePaymentCallback } from '../../../wallet/actions';
 import { ClassDetailApiGateway } from '../../../../../lib/marketplace/api-class-detail';
 import type { ClassDetailView } from '../../../../../lib/marketplace/types';
 import type { WalletBalanceView } from '@skillswap/contracts';
@@ -29,17 +30,12 @@ export default function BookingCheckoutPage({ params }: PageProps) {
   useEffect(() => {
     let isMounted = true;
     const loadData = async () => {
-      // 1. Load wallet balance
+      // 1. Load wallet balance from the server (never a cached copy)
       try {
-        const storedBal = getStoredWalletBalance();
-        if (storedBal) {
-          setBalance(storedBal);
-        }
         const res = await callApi('/wallet/balance');
         if (res.ok) {
           const remoteBal = await unwrapEnvelope<WalletBalanceView>(res);
-          const override = getStoredWalletBalance();
-          if (isMounted) setBalance(override ?? remoteBal);
+          if (isMounted) setBalance(remoteBal);
         }
       } catch (e) {
         console.warn('Failed to load wallet balance for checkout', e);
@@ -191,15 +187,22 @@ export default function BookingCheckoutPage({ params }: PageProps) {
       setBookingConfirmed(true);
       setIsSuccessModalOpen(true);
 
-      // Deduct balance locally and dispatch update across the app
-      const newAvailable = Math.max(0, currentCredits - priceCredits);
-      const newPending = (balance?.pendingCredits ?? 0) + priceCredits;
-      const updatedBalance: WalletBalanceView = {
-        availableCredits: newAvailable,
-        pendingCredits: newPending,
-      };
-      setBalance(updatedBalance);
-      dispatchWalletBalanceUpdate(updatedBalance);
+      // The confirm call above settled the escrow on the server, so the balance
+      // is refetched rather than calculated. Subtracting the price locally would
+      // show a figure that ignores the escrow hold vs. debit distinction and any
+      // server-side fee, and it would persist that guess across reloads.
+      if (isRealSettled) {
+        try {
+          const balRes = await callApi('/wallet/balance');
+          if (balRes.ok) {
+            const remote = await unwrapEnvelope<WalletBalanceView>(balRes);
+            setBalance(remote);
+            dispatchWalletBalanceUpdate(remote);
+          }
+        } catch (e) {
+          console.warn('Failed to refresh balance after settlement', e);
+        }
+      }
 
       // Persist newly booked class in skillswap_user_bookings so it appears in /bookings ("Lớp học của tôi")
       try {
@@ -222,38 +225,51 @@ export default function BookingCheckoutPage({ params }: PageProps) {
       } catch (storageErr) {
         console.warn('Failed to save user booking to localStorage', storageErr);
       }
-
-      // Refresh wallet balance if backend settled
-      if (isRealSettled) {
-        try {
-          const balRes = await callApi('/wallet/balance');
-          if (balRes.ok) {
-            const remote = await unwrapEnvelope<WalletBalanceView>(balRes);
-            if (remote.availableCredits < currentCredits) {
-              setBalance(remote);
-              dispatchWalletBalanceUpdate(remote);
-            }
-          }
-        } catch (e) {
-          console.warn('Failed to refresh balance after settlement', e);
-        }
-      }
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleConfirmTopUp = () => {
-    setIsTopUpModalOpen(false);
-    const currentAvail = balance?.availableCredits ?? getStoredWalletBalance()?.availableCredits ?? 0;
-    const currentPending = balance?.pendingCredits ?? getStoredWalletBalance()?.pendingCredits ?? 0;
-    const newBal: WalletBalanceView = {
-      availableCredits: currentAvail + 100,
-      pendingCredits: currentPending,
-    };
-    setBalance(newBal);
-    dispatchWalletBalanceUpdate(newBal);
-    showToast('Nạp thành công 100 Credits! Phiên đặt chỗ vẫn được bảo toàn nguyên vẹn.');
+  const handleConfirmTopUp = async () => {
+    try {
+      setIsProcessing(true);
+      // Real top-up: create the intent, settle it, then read the balance back
+      // from the server. The previous version added 100 credits to local state
+      // and reported success without contacting the API at all.
+      const res = await callApi('/wallet/top-ups', {
+        method: 'POST',
+        body: JSON.stringify({ amountVnd: 100_000 }),
+      });
+
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { message?: string };
+        showToast(err.message || 'Không thể tạo yêu cầu nạp tiền.');
+        return;
+      }
+
+      const intent = await unwrapEnvelope<{ providerRef: string; amountVnd: number }>(res);
+      const settled = await simulatePaymentCallback(intent.providerRef, intent.amountVnd);
+      if (!settled.success) {
+        showToast(settled.message);
+        return;
+      }
+
+      const balRes = await callApi('/wallet/balance');
+      if (balRes.ok) {
+        const remote = await unwrapEnvelope<WalletBalanceView>(balRes);
+        setBalance(remote);
+        dispatchWalletBalanceUpdate(remote);
+        setIsTopUpModalOpen(false);
+        showToast('Nạp thành công 100 Credits. Số dư đã cập nhật.');
+      } else {
+        showToast('Nạp tiền đã xử lý nhưng chưa đọc được số dư. Vui lòng tải lại trang.');
+      }
+    } catch (e) {
+      console.warn('Top-up failed', e);
+      showToast('Không thể nạp tiền. Vui lòng thử lại.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -858,10 +874,11 @@ export default function BookingCheckoutPage({ params }: PageProps) {
             </div>
             <button
               type="button"
-              onClick={handleConfirmTopUp}
-              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-all shadow-sm"
+              onClick={() => void handleConfirmTopUp()}
+              disabled={isProcessing}
+              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-semibold transition-all shadow-sm"
             >
-              Giả lập Xác nhận Nạp tiền Thành công
+              {isProcessing ? 'Đang xử lý…' : 'Xác nhận nạp 100.000 VNĐ'}
             </button>
           </div>
         </div>
