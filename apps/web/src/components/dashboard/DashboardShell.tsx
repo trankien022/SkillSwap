@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useMemo, useState, useEffect, useTransition } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { SessionCard, type SessionAction } from './SessionCard';
 import { FilterBar, type FilterKey } from './FilterBar';
@@ -11,6 +11,7 @@ import type {
   LearnerBookingView,
 } from '../../lib/dashboard/types';
 import { callApi } from '../../lib/api-client';
+import { fetchMyBookings } from '../../lib/dashboard/api-my-bookings';
 
 interface Props {
   initial: DashboardSnapshot;
@@ -40,6 +41,17 @@ export function DashboardShell({ initial, calendar, charter, isAuthed }: Props) 
   const [pendingBookingId, setPendingBookingId] = useState<string | null>(null);
   const [reviewBooking, setReviewBooking] = useState<LearnerBookingView | null>(null);
   const [noShowBooking, setNoShowBooking] = useState<LearnerBookingView | null>(null);
+
+  useEffect(() => {
+    // Hydrate real learner bookings from GET /api/classes/bookings/me
+    fetchMyBookings()
+      .then((real) => {
+        if (real && real.length > 0) {
+          setBookings(real);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const visibleBookings = useMemo(() => {
     return bookings.filter((b) => {
