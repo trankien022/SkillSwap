@@ -29,9 +29,10 @@ Make PR #76 mergeable against the current `origin/main` while preserving the mob
 
 ### Phase 3 — Stabilize event-driven E2E startup
 
-- CI exposed repeatable timeouts in verification projection tests because the E2E harness began issuing requests before the background RabbitMQ consumer finished binding its queues.
-- Expose the consumer's subscription-ready state and make the E2E harness wait for it before exercising event-driven flows; do not change runtime request or business behavior.
-- Add focused readiness coverage, rerun the affected E2E specs, then rerun the repository verification gate and confirm PR checks.
+- CI exposed repeatable timeouts in verification projection tests. First, the E2E harness issued requests before RabbitMQ queues were ready; after synchronizing startup, verification approval still failed because two handlers in `account-profile` shared one processed-event idempotency key.
+- Expose the consumer's subscription-ready state and make the E2E harness wait for it before exercising event-driven flows.
+- Scope processed-event idempotency by queue so independent handlers for the same event each apply their own side effect, while duplicate delivery to one queue remains idempotent.
+- Add focused readiness and idempotency coverage, rerun the affected E2E specs, then rerun the repository verification gate and confirm PR checks.
 
 ### Phase 4 — Update PR #76
 
