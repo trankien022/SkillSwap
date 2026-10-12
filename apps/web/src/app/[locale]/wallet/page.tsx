@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { simulatePaymentCallback } from './actions';
-import { callApi, unwrapEnvelope } from '../../../lib/api-client';
+import { callApi, unwrapEnvelope, dispatchWalletBalanceUpdate, getStoredWalletBalance } from '../../../lib/api-client';
 import { Navbar } from '../../../components/navbar';
 import type { WalletBalanceView, WalletHistoryItemView, MeResponse, TopUpIntentView } from '@skillswap/contracts';
 
@@ -17,6 +17,11 @@ export default function WalletPage() {
   const [isPending, setIsPending] = useState(false);
 
   useEffect(() => {
+    const initialOverride = getStoredWalletBalance();
+    if (initialOverride) {
+      setBalance(initialOverride);
+    }
+
     const fetchWallet = async () => {
       try {
         const [balRes, histRes, meRes] = await Promise.all([
@@ -26,7 +31,9 @@ export default function WalletPage() {
         ]);
 
         if (balRes.ok) {
-          setBalance(await unwrapEnvelope(balRes));
+          const bal = await unwrapEnvelope<WalletBalanceView>(balRes);
+          const override = getStoredWalletBalance();
+          setBalance(override ?? bal);
         } else {
           console.warn('Wallet balance not found or error');
         }
@@ -101,7 +108,9 @@ export default function WalletPage() {
         callApi('/wallet/history'),
       ]);
       if (balRes.ok) {
-        setBalance(await unwrapEnvelope(balRes));
+        const updatedBal = await unwrapEnvelope<WalletBalanceView>(balRes);
+        setBalance(updatedBal);
+        dispatchWalletBalanceUpdate(updatedBal);
       }
       if (histRes.ok) {
         const data = await unwrapEnvelope<{ items: WalletHistoryItemView[] }>(histRes);

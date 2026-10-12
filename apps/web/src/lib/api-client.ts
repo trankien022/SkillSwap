@@ -1,3 +1,5 @@
+import type { WalletBalanceView } from '@skillswap/contracts';
+
 // Use empty string on client side so it hits Next.js rewrites, avoiding CORS
 export const API = typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000');
 
@@ -292,3 +294,33 @@ export async function getMe(): Promise<UserProfile | null> {
   if (!res.ok) return null;
   return unwrapEnvelope<UserProfile>(res);
 }
+
+export const WALLET_BALANCE_STORAGE_KEY = 'skillswap-wallet-balance-override';
+export const WALLET_BALANCE_EVENT = 'skillswap:balance-updated';
+
+export function getStoredWalletBalance(): WalletBalanceView | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(WALLET_BALANCE_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveStoredWalletBalance(balance: WalletBalanceView): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(WALLET_BALANCE_STORAGE_KEY, JSON.stringify(balance));
+  } catch {
+    // Ignore storage quota errors
+  }
+}
+
+export function dispatchWalletBalanceUpdate(balance: WalletBalanceView): void {
+  saveStoredWalletBalance(balance);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(WALLET_BALANCE_EVENT, { detail: balance }));
+  }
+}
+

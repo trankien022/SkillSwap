@@ -119,7 +119,11 @@ export async function StickyBookingCard({
             href={`/${locale}/classes/${item.id}/checkout`}
             className="flex w-full items-center justify-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
           >
-            <span>{locale === 'vi' ? 'Xem xét & Khóa ký quỹ (90 Credit)' : 'Review & Lock Escrow (90 Credits)'}</span>
+            <span>
+              {locale === 'vi'
+                ? `Xem xét & Khóa ký quỹ (${item.priceCredits} Credit)`
+                : `Review & Lock Escrow (${item.priceCredits} Credits)`}
+            </span>
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <line x1="5" y1="12" x2="19" y2="12" />
               <polyline points="12 5 19 12 12 19" />

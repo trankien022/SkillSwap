@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
-import { callApi, getTokens, getStoredUser, logout, unwrapEnvelope, type UserProfile } from '../lib/api-client';
+import { callApi, getTokens, getStoredUser, logout, unwrapEnvelope, WALLET_BALANCE_EVENT, getStoredWalletBalance, type UserProfile } from '../lib/api-client';
 
 export type NavbarTab = 'explore' | 'classes' | 'instructor' | 'wallet' | 'verification' | 'notifications';
 
@@ -27,6 +27,22 @@ export function Navbar({
   useEffect(() => {
     setHasTokens(Boolean(getTokens()));
     setStoredUser(getStoredUser());
+
+    // Sync with any stored wallet balance override
+    const storedBal = getStoredWalletBalance();
+    if (storedBal) {
+      setInternalBalance(storedBal);
+    }
+
+    // Listen to real-time wallet balance update events
+    const handleBalanceEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<WalletBalanceView>;
+      if (customEvent.detail) {
+        setInternalBalance(customEvent.detail);
+      }
+    };
+    window.addEventListener(WALLET_BALANCE_EVENT, handleBalanceEvent);
+
     // Only fetch if not supplied via props
     if (propBalance === undefined || propMe === undefined) {
       const load = async () => {
@@ -36,7 +52,9 @@ export function Navbar({
             propMe === undefined ? callApi('/auth/me') : Promise.resolve(null),
           ]);
           if (balRes && balRes.ok) {
-            setInternalBalance(await unwrapEnvelope(balRes));
+            const serverBal = await unwrapEnvelope<WalletBalanceView>(balRes);
+            const latestOverride = getStoredWalletBalance();
+            setInternalBalance(latestOverride ?? serverBal);
           }
           if (meRes && meRes.ok) {
             const meData = await unwrapEnvelope<MeResponse>(meRes);
@@ -55,6 +73,10 @@ export function Navbar({
       };
       load();
     }
+
+    return () => {
+      window.removeEventListener(WALLET_BALANCE_EVENT, handleBalanceEvent);
+    };
   }, [propBalance, propMe]);
 
   const balance = propBalance !== undefined ? propBalance : internalBalance;
