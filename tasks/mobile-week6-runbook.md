@@ -60,3 +60,6 @@ APK đã cài: `~/Downloads/skillswap-mobile-evidence-20261013/skillswap-week6-a
 
 
 Trạng thái dữ liệu cuối: learner500 available, poor20 available, teacher90 pending. Poor đã có booking Confirmed tại lớp demo live; learner chưa đặt lớp này. Hủy lớp demo sẽ hoàn credit cho mọi booking hợp lệ, mỗi booking đúng1 lần. Tiếng Việt đã được khôi phục trong Cài đặt và quyền push đã grant/enable lại.
+
+
+Lớp thiếu tiền dành cho poor: `CHECKPOINT - Python thu thieu credit` (100 credit, chưa booking). Lớp `CHECKPOINT - Python demo live` dành cho learner booking; poor đã có booking ở lớp này nên không dùng nó để thử thiếu tiền lần nữa. Backend mới có fence ngăn queued push của account cũ theo device đã rebind; app đang chạy learner/vi/push active.

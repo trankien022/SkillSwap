@@ -52,7 +52,7 @@ Bảy nhóm resources đã được sử dụng: Account, Class, Booking, Wallet
 
 Thư mục evidence ở Downloads chứa snapshot database trước acceptance và trước migration, log request JSONL, PDF readback, screenshots/video. Không commit database dump hoặc credentials. `booking-success.mp4` là video booking sau fix. `booking.mp4`, `push-open.mp4` và các ảnh push2 ban đầu có lỗi runtime, không dùng làm bằng chứng pass.
 
-Full `pnpm verify` sau locale fix xanh: mobile208 tests/27 suites; API569 tests/107 suites; arch exit0 còn warning orphan có sẵn. `git diff --check` xanh. E2E payment/upload trên DB test riêng pass6/6, exit0 không forceExit; còn log lỗi đóng kết nối trong teardown; Jitsi/reminder/rating/iPhone ngoài phạm vi.
+Full `pnpm verify` sau locale fix xanh: mobile208 tests/27 suites; API571 tests/108 suites; arch exit0 còn warning orphan có sẵn. `git diff --check` xanh. E2E payment/upload trên DB test riêng pass6/6, exit0 không forceExit; còn log lỗi đóng kết nối trong teardown; Jitsi/reminder/rating/iPhone ngoài phạm vi.
 
 **Các điều kiện checkpoint chính đã có evidence**: ba flow, 7 resources, 26 APIs, MinIO bytes match, remote push banner/tap/refund. APK ARM64 có JS đã build/cài. Hai diễn tập liên tục đầy đủ và các negative probes còn được theo dõi riêng; không suy ra chúng từ các scenario rời.
 
@@ -63,7 +63,7 @@ Full `pnpm verify` sau locale fix xanh: mobile208 tests/27 suites; API569 tests/
 
 Evidence mới: `push-preview-heads-up-vi.png`, `push-preview-tray-vi.png`, `push-preview-coldstart-schedule.png`, `push-preview-cancelled.png`, `push-preview-coldstart-success.mp4`. `push-preview-open-before-routing-fix.mp4` là lượt lỗi trước fix, không phải bằng chứng pass. Code tại commit `67d6419`/`c483bc6` đã trong preview; root pending notification chờ auth/index Redirect kết thúc.
 
-Graphify code graph cập nhật: 8.551 nodes / 18.578 edges; extractor không thay thế nghiệm thu runtime. Các thay đổi docs semantic chưa được CLI code-update tái trích xuất.
+Graphify code graph cập nhật: 8.557 nodes / 18.587 edges; extractor không thay thế nghiệm thu runtime. Các thay đổi docs semantic chưa được CLI code-update tái trích xuất.
 
 
 Lớp mới từ UI sau diễn tập: `58baa38e-588e-4216-9367-acf7d77ac868` (Python push English), `3c7c0afe-350f-4bda-9d65-37825b03b90c` (Python demo live). Cả hai bắt đầu sau72h; lớp demo live sửa100→110 qua PATCH/readback rồi100, để dành cho demo. Screenshot `teaching-edit-persisted.png` ghi110 trước khi đưa về100.
@@ -74,7 +74,7 @@ Lớp mới từ UI sau diễn tập: `58baa38e-588e-4216-9367-acf7d77ac868` (Py
 - Tiếng Việt: lớp204, booking `b5abbed8-7f93-4816-9e25-aa7456a2df9a`; trước cancel tiến trình app không tồn tại; remote notification, tap cold start mở Lịch của tôi; ledger100/90/10/refund100, receiptok.
 - English: lớp`58baa38e-588e-4216-9367-acf7d77ac868`, booking`d10ba603-4ddb-4479-9fcd-d1619d29bbf2`; teacher tạo qua UI, learner search/detail/hold/confirm qua UI. Đổi English → subscriptionen → tắt tiến trình → teacher cancelAPI → “Class canceled”/English body → tap vào My Schedule sau restart, localeen được giữ; ledger100/90/10/refund100. Ảnh `settings-english.png`, `push-tray-en-expanded.png`, `push-coldstart-en-schedule.png`.
 - `mobile-final-rehearsal.mp4` là video bổ trợ một phần thao tác; không phải video bao trọn cả hai lượt liên tục. Hai lượt booking/push đã chạy trên APK cuối; chưa có hai video diễn tập toàn bộ Dashboard/Resource/Upload liên tục.
-- Request evidence hiện306 requests, vẫn26 templates. Khi tiếp tục diễn tập, số request tăng nhưng không tăng số API unique.
+- Request evidence vẫn26 templates. Khi tiếp tục diễn tập, số request tăng nhưng không tăng số API unique.
 
 ## Các negative probes còn giới hạn
 
@@ -91,3 +91,10 @@ Mobile upload failure/retry và từ chối quyền push đã nghiệm thu như 
 - App được trả về learner, localevi, push đã bật. Provider mock, callback, thao tác admin/verifier/cancel qua Mac được công bố và không tính vào mobile26 APIs.
 
 Không tuyên bố video bao trọn hai diễn tập toàn bộ các thao tác; đã có hai lượt booking/push với hai lớp trên APK cuối, Resource create/edit/cancel và upload được nghiệm thu riêng. Main conditions có evidence; giới hạn video/foreground heads-up được giữ rõ để không suy ra từ receipt/unit tests.
+
+
+## Account rebind fence sau review
+
+Probe trên DB test riêng (không gửi provider): device active đã rebind account mới nhưng delivery thuộc inbox account cũ. Trước fix store claim=true/statussending; sau fix claim=false/statusfailed. Commit `5843106` fail jobs inactive/rebound và fence account trong claim SELECT. Hai regression tests pass; full verify mới nhất xanh (mobile208, API571), Graphify code graph cập nhật, API live đã restart. Push đã được provider nhận trước logout là giới hạn không thể thu hồi, không phải bằng chứng account cũ còn subscription.
+
+Lớp chuẩn bị thêm qua UI: `08423b0a-9e8a-4dab-be21-227b20ed7b3c`, “CHECKPOINT - Python thu thieu credit”, published100, capacity8, chưa có booking, bắt đầu sau72h. Dùng lớp này với poor20; lớp demo live đã có poor Confirmed nên không dùng để thử poor giữ chỗ lần nữa.
