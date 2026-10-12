@@ -1,4 +1,6 @@
-import { getTranslations } from 'next-intl/server';
+'use client';
+
+import { useTranslations } from 'next-intl';
 
 /**
  * Inline escrow protection banner (FR-006 detail).
@@ -7,8 +9,8 @@ import { getTranslations } from 'next-intl/server';
  * left column right before the sticky booking card. Copy follows
  * BR-058/061 + ADR-019 (no '100% refund', no 'Smart-Escrow').
  */
-export async function EscrowInlineBanner() {
-  const t = await getTranslations('ClassDetail.escrow');
+export function EscrowInlineBanner() {
+  const t = useTranslations('ClassDetail.escrow');
 
   return (
     <aside className="flex items-start gap-3 rounded-xl border border-success-tint bg-success-tint/50 p-4 shadow-sm">

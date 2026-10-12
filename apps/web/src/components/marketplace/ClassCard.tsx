@@ -14,13 +14,10 @@ import type { MarketplaceClass } from '../../lib/marketplace/types';
  * Client component so it can be rendered inside the `MarketplaceClient`
  * shell without breaking the server/client boundary. The cover area is
  * a slate-to-mist gradient placeholder; no third-party CDN images.
- *
- * The 'Dữ liệu minh họa' badge renders only outside production builds.
  */
 export function ClassCard({ item }: { item: MarketplaceClass }) {
   const t = useTranslations('Marketplace.card');
   const locale = useLocale() as 'vi' | 'en';
-  const isDev = process.env.NODE_ENV !== 'production';
 
   const weekday = formatStartsAt(item.startsAt, locale);
   const time = new Date(item.startsAt).toLocaleTimeString(locale, {
@@ -65,13 +62,6 @@ export function ClassCard({ item }: { item: MarketplaceClass }) {
             ({item.ratingCount})
           </span>
         </div>
-
-        {/* Dev-only mock badge */}
-        {isDev && (
-          <span className="absolute right-3 top-3 rounded-full bg-warning-tint px-2 py-0.5 text-[10px] font-semibold text-warning-ink shadow-sm">
-            {t('mockDataBadge')}
-          </span>
-        )}
       </div>
 
       {/* Body */}

@@ -175,6 +175,15 @@
         "popular": "Most learners enrolled"
       }
     },
+    "states": {
+      "loading": "Loading classes…",
+      "signInTitle": "Sign in to browse classes",
+      "signInBody": "Class listings are only shown to signed-in students so we can protect teacher contact details and your booking rights.",
+      "signInCta": "Sign in now",
+      "errorTitle": "We couldn't load classes",
+      "errorBody": "Something went wrong while fetching open classes. Please try again.",
+      "retry": "Try again"
+    },
     "filters": {
       "title": "Advanced filters",
       "reset": "Reset",
@@ -294,7 +303,8 @@
     "reviews": {
       "title": "Recent learner reviews",
       "all": "All {count} reviews",
-      "autoVerified": "Auto-verified review"
+      "autoVerified": "Auto-verified review",
+      "empty": "No reviews yet. Reviews appear here once a learner completes this class."
     },
     "escrow": {
       "title": "Ledger escrow protection",
@@ -321,6 +331,15 @@
     "notFound": {
       "title": "Class not found",
       "body": "This class may have been cancelled or the link is wrong.",
+      "back": "Back to class list"
+    },
+    "states": {
+      "loading": "Loading class details…",
+      "signInTitle": "Sign in to view this class",
+      "signInBody": "Class details are only shown to signed-in students so we can protect teacher contact details and your booking rights.",
+      "signInCta": "Sign in now",
+      "errorTitle": "We couldn't load this class",
+      "errorBody": "Something went wrong while fetching the class. Please try again.",
       "back": "Back to class list"
     }
   },

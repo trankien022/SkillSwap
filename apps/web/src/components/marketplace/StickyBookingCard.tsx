@@ -1,4 +1,6 @@
-import { getLocale, getTranslations } from 'next-intl/server';
+'use client';
+
+import { useLocale, useTranslations } from 'next-intl';
 import { BookingPanel, type BookingMessages } from '../booking/booking-panel';
 import { formatSeats, formatStartsAt } from '../../lib/marketplace/mock-data';
 import type { ClassDetailView } from '../../lib/marketplace/types';
@@ -16,14 +18,14 @@ import type { ClassDetailView } from '../../lib/marketplace/types';
  * widget. The detail page renders only the parts that do not depend
  * on a session.
  */
-export async function StickyBookingCard({
+export function StickyBookingCard({
   item,
 }: {
   item: ClassDetailView;
 }) {
-  const t = await getTranslations('ClassDetail.booking');
-  const tBooking = await getTranslations('Booking');
-  const locale = (await getLocale()) as 'vi' | 'en';
+  const t = useTranslations('ClassDetail.booking');
+  const tBooking = useTranslations('Booking');
+  const locale = useLocale() as 'vi' | 'en';
   const dateText = formatStartsAt(item.startsAt, locale);
   const timeText = new Date(item.startsAt).toLocaleTimeString(locale, {
     hour: '2-digit',

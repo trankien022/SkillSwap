@@ -175,6 +175,15 @@
         "popular": "Lớp đông học viên nhất"
       }
     },
+    "states": {
+      "loading": "Đang tải danh sách lớp học…",
+      "signInTitle": "Đăng nhập để xem lớp học",
+      "signInBody": "Danh sách lớp chỉ hiển thị cho sinh viên đã đăng nhập để bảo vệ thông tin liên hệ của giảng viên và quyền đặt lớp của bạn.",
+      "signInCta": "Đăng nhập ngay",
+      "errorTitle": "Không tải được danh sách lớp",
+      "errorBody": "Đã xảy ra lỗi khi tải các lớp đang mở. Vui lòng thử lại.",
+      "retry": "Thử lại"
+    },
     "filters": {
       "title": "Bộ lọc chuyên sâu",
       "reset": "Đặt lại",
@@ -294,7 +303,8 @@
     "reviews": {
       "title": "Đánh giá gần đây từ học viên khác",
       "all": "Tất cả {count} đánh giá",
-      "autoVerified": "Đánh giá tự động xác thực"
+      "autoVerified": "Đánh giá tự động xác thực",
+      "empty": "Chưa có đánh giá. Đánh giá sẽ xuất hiện sau khi một học viên hoàn thành lớp này."
     },
     "escrow": {
       "title": "Bảo chứng ký quỹ",
@@ -321,6 +331,15 @@
     "notFound": {
       "title": "Không tìm thấy lớp học",
       "body": "Lớp học này có thể đã bị huỷ hoặc đường dẫn không đúng.",
+      "back": "Quay lại danh sách lớp"
+    },
+    "states": {
+      "loading": "Đang tải thông tin lớp học…",
+      "signInTitle": "Đăng nhập để xem lớp học",
+      "signInBody": "Thông tin lớp chỉ hiển thị cho sinh viên đã đăng nhập để bảo vệ thông tin liên hệ của giảng viên và quyền đặt lớp của bạn.",
+      "signInCta": "Đăng nhập ngay",
+      "errorTitle": "Không tải được lớp học",
+      "errorBody": "Đã xảy ra lỗi khi tải thông tin lớp học. Vui lòng thử lại.",
       "back": "Quay lại danh sách lớp"
     }
   },

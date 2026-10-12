@@ -1,4 +1,6 @@
-import { getTranslations } from 'next-intl/server';
+'use client';
+
+import { useTranslations } from 'next-intl';
 import type {
   ClassDetailView,
   TeacherCredential,
@@ -8,17 +10,16 @@ import type {
  * Teacher dossier (FR-006 detail).
  *
  * Shows the teacher avatar (initial placeholder, no real image), bio,
- * mock teaching stats (hours taught / response rate / learners
- * helped), and a credentials block. Credentials come from
- * `teacherCredentials` — never from a fabricated score, real name,
- * or named Verifier.
+ * teaching stats (hours taught / response rate / learners helped),
+ * and a credentials block. Credentials come from `teacherCredentials` —
+ * never from a fabricated score, real name, or named Verifier.
  */
-export async function TeacherDossierSection({
+export function TeacherDossierSection({
   item,
 }: {
   item: ClassDetailView;
 }) {
-  const t = await getTranslations('ClassDetail.dossier');
+  const t = useTranslations('ClassDetail.dossier');
   const stats = item.teacherStats;
 
   return (

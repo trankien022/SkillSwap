@@ -1,4 +1,6 @@
-import { getLocale, getTranslations } from 'next-intl/server';
+'use client';
+
+import { useLocale, useTranslations } from 'next-intl';
 import type { ClassDetailView } from '../../lib/marketplace/types';
 import { SKILL_CATEGORIES } from '../../lib/marketplace/types';
 
@@ -7,22 +9,19 @@ import { SKILL_CATEGORIES } from '../../lib/marketplace/types';
  *
  * Renders the breadcrumb, the back link, and the hero card with format
  * + level + security chips, the title, the rating block, and the
- * teacher lead-in card. The dev-only "Dữ liệu minh họa" badge is
- * rendered when NODE_ENV !== 'production'.
+ * teacher lead-in card. Client component so it can render inside the
+ * fetch-driven `ClassDetailContent` shell.
  */
-export async function DetailHeader({ item }: { item: ClassDetailView }) {
-  const t = await getTranslations('ClassDetail.hero');
-  const tBread = await getTranslations('ClassDetail.breadcrumb');
-  const tBack = await getTranslations('ClassDetail');
-  const locale = (await getLocale()) as 'vi' | 'en';
-  const isDev = process.env.NODE_ENV !== 'production';
+export function DetailHeader({ item }: { item: ClassDetailView }) {
+  const t = useTranslations('ClassDetail.hero');
+  const tBread = useTranslations('ClassDetail.breadcrumb');
+  const tBack = useTranslations('ClassDetail');
+  const locale = useLocale() as 'vi' | 'en';
 
   // Map the kebab enum back to the camelCase i18n key (same lookup as
-  // CategoryPills — kept inline to avoid coupling server components).
+  // CategoryPills — kept inline to avoid coupling to that component).
   const categoryI18nKey = categoryKey(item.skillCategory);
-  const categoryLabel = (await getTranslations('Marketplace.categories'))(
-    categoryI18nKey,
-  );
+  const categoryLabel = useTranslations('Marketplace.categories')(categoryI18nKey);
 
   return (
     <>
@@ -94,11 +93,6 @@ export async function DetailHeader({ item }: { item: ClassDetailView }) {
               <LockIcon className="h-3.5 w-3.5" />
               <span>{t('security')}</span>
             </Chip>
-            {isDev && (
-              <Chip variant="warning">
-                <span>{t('mockBadge')}</span>
-              </Chip>
-            )}
           </div>
 
           {/* Title */}

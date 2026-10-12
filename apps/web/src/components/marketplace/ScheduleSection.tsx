@@ -1,4 +1,6 @@
-import { getLocale, getTranslations } from 'next-intl/server';
+'use client';
+
+import { useLocale, useTranslations } from 'next-intl';
 import { formatSeats, hoursUntilBookingDeadline } from '../../lib/marketplace/mock-data';
 import type { ClassDetailView } from '../../lib/marketplace/types';
 
@@ -10,9 +12,9 @@ import type { ClassDetailView } from '../../lib/marketplace/types';
  * The second card surfaces capacity (AC-028/029) and the E2EE infra
  * requirement (BR-018) without naming it.
  */
-export async function ScheduleSection({ item }: { item: ClassDetailView }) {
-  const t = await getTranslations('ClassDetail.schedule');
-  const locale = (await getLocale()) as 'vi' | 'en';
+export function ScheduleSection({ item }: { item: ClassDetailView }) {
+  const t = useTranslations('ClassDetail.schedule');
+  const locale = useLocale() as 'vi' | 'en';
   const hoursLeft = hoursUntilBookingDeadline(item.startsAt);
   const [taken, capacity] = formatSeats(item.format, item.capacity)
     .split('/')

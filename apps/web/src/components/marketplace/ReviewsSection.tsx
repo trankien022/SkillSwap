@@ -1,16 +1,19 @@
-import { getLocale, getTranslations } from 'next-intl/server';
+'use client';
+
+import { useLocale, useTranslations } from 'next-intl';
 import type { ClassDetailView, ReviewView } from '../../lib/marketplace/types';
 
 /**
  * Reviews section (FR-006 detail / FR-013).
  *
- * Two-column grid of review cards. The auto-verified note is
- * intentionally generic — no "trusted by X" wording, no fake reviewer
- * names (all reviewers are 'Demo learner N' per the fixture).
+ * Two-column grid of review cards. When the class has no review data yet
+ * (the live API exposes none), a neutral empty state is rendered instead
+ * of inventing reviewers or quotes. The auto-verified note is generic —
+ * no "trusted by X" wording, no fake reviewer names.
  */
-export async function ReviewsSection({ item }: { item: ClassDetailView }) {
-  const t = await getTranslations('ClassDetail.reviews');
-  const locale = (await getLocale()) as 'vi' | 'en';
+export function ReviewsSection({ item }: { item: ClassDetailView }) {
+  const t = useTranslations('ClassDetail.reviews');
+  const locale = useLocale() as 'vi' | 'en';
   const reviews = item.reviews;
   const count = item.ratingCount;
 
@@ -27,16 +30,22 @@ export async function ReviewsSection({ item }: { item: ClassDetailView }) {
           {t('all', { count })}
         </span>
       </div>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        {reviews.map((review) => (
-          <ReviewCard
-            key={review.id}
-            review={review}
-            autoVerifiedLabel={t('autoVerified')}
-            locale={locale}
-          />
-        ))}
-      </div>
+      {reviews.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-border bg-mist p-6 text-center text-sm text-ink-soft">
+          {t('empty')}
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {reviews.map((review) => (
+            <ReviewCard
+              key={review.id}
+              review={review}
+              autoVerifiedLabel={t('autoVerified')}
+              locale={locale}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }
