@@ -27,9 +27,15 @@ Make PR #76 mergeable against the current `origin/main` while preserving the mob
 - Run `pnpm verify` and `git diff --check`.
 - Review the merge result for lost behaviors, accidental secrets, unrelated generated files, and dependency changes.
 
-### Phase 3 — Update PR #76
+### Phase 3 — Stabilize event-driven E2E startup
 
-- Commit the merge resolution with a conventional message.
+- CI exposed repeatable timeouts in verification projection tests because the E2E harness began issuing requests before the background RabbitMQ consumer finished binding its queues.
+- Expose the consumer's subscription-ready state and make the E2E harness wait for it before exercising event-driven flows; do not change runtime request or business behavior.
+- Add focused readiness coverage, rerun the affected E2E specs, then rerun the repository verification gate and confirm PR checks.
+
+### Phase 4 — Update PR #76
+
+- Commit the merge resolution and E2E readiness fix with conventional messages.
 - Push the updated feature branch.
 - Check GitHub PR mergeability and report the resulting status and validation evidence.
 
