@@ -86,6 +86,11 @@ export class RabbitConsumer implements OnApplicationBootstrap, OnApplicationShut
     return this.teardown();
   }
 
+  /** True once every registered queue is bound and consuming on the active channel. */
+  isReady(): boolean {
+    return this.channel !== null;
+  }
+
   private ensureLoop(): void {
     if (this.stopped || this.connecting !== null || this.channel !== null) {
       return;
@@ -203,7 +208,7 @@ export class RabbitConsumer implements OnApplicationBootstrap, OnApplicationShut
   ): Promise<void> {
     try {
       const parsed = parseEnvelope(JSON.parse(message.content.toString('utf8')));
-      await this.store.runOnce(registration.moduleName, parsed.id, () =>
+      await this.store.runOnce(registration.moduleName, registration.queue, parsed.id, () =>
         registration.handler(parsed),
       );
       this.safeAck(message);
