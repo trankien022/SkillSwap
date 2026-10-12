@@ -218,7 +218,23 @@ This is recorded, not fixed — it touches the money path and needs the same exp
 
 ---
 
-## 9. Definition of done for Phase 0
+## 9. Merge verification note
+
+Resolving the two marketplace conflicts produced a clean working tree, but the
+first merge commit captured a **stale index**: `HEAD` still contained a stray
+`<<<<<<< HEAD` line in `MarketplaceClient.tsx` and `ClassDetailContent.tsx`.
+Typecheck on the working tree passed, so it looked green while the commit itself
+was broken. It was found by checking the marker count in `HEAD` directly rather
+than in the files on disk, and fixed by staging the two resolved files and
+amending.
+
+Lesson for Phase 5: verify markers against `git show HEAD:<file>`, not the
+working copy — a conflict marker left in a commit breaks the build for everyone
+who pulls.
+
+---
+
+## 10. Definition of done for Phase 0
 
 - [x] Every screen mapped to a route in both clients
 - [x] Every claim carries `file:line` evidence
