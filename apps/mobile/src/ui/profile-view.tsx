@@ -87,16 +87,16 @@ export function ProfileView() {
 
       <SurfaceCard style={styles.card}>
         <Text style={styles.cardTitle}>{t('Profile.learningAndTeaching')}</Text>
-        <Pressable style={styles.linkButton} onPress={() => router.push('/(tabs)/verification')} accessibilityRole="button">
+        <Pressable style={styles.linkButton} onPress={() => router.push('/(features)/verification')} accessibilityRole="button">
           <Text style={styles.linkButtonText}>{t('Profile.studentVerification')}</Text>
         </Pressable>
-        <Pressable style={styles.linkButton} onPress={() => router.push('/(tabs)/skills')} accessibilityRole="button">
+        <Pressable style={styles.linkButton} onPress={() => router.push('/(features)/skills')} accessibilityRole="button">
           <Text style={styles.linkButtonText}>{t('Profile.skillEvidence')}</Text>
         </Pressable>
-        <Pressable style={styles.linkButton} onPress={() => router.push('/(tabs)/teaching')} accessibilityRole="button">
+        <Pressable style={styles.linkButton} onPress={() => router.push('/(features)/teaching')} accessibilityRole="button">
           <Text style={styles.linkButtonText}>{t('Profile.teachingClasses')}</Text>
         </Pressable>
-        <Pressable style={styles.linkButton} onPress={() => router.push('/(tabs)/notifications')} accessibilityRole="button">
+        <Pressable style={styles.linkButton} onPress={() => router.push('/(features)/notifications')} accessibilityRole="button">
           <Text style={styles.linkButtonText}>{t('Profile.notifications')}</Text>
         </Pressable>
       </SurfaceCard>

@@ -102,10 +102,6 @@ export default function TabsLayout() {
         tabBarIcon: ({ color, size, focused }) => <SymbolView name={{ ios: 'person.crop.circle.fill', android: 'account_circle' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
         }}
       />
-      <Tabs.Screen name="verification" options={{ href: null }} />
-      <Tabs.Screen name="skills" options={{ href: null }} />
-      <Tabs.Screen name="teaching" options={{ href: null }} />
-      <Tabs.Screen name="notifications" options={{ href: null }} />
     </Tabs>
   );
 }
