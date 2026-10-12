@@ -18,3 +18,8 @@ export function notificationRoute(targetType: unknown, targetId: unknown): Notif
   }
   return { pathname: '/(features)/notifications' };
 }
+
+/** Wait until the session gate's Redirect has mounted an authenticated route. */
+export function canOpenNotification(authenticated: boolean, loading: boolean, navigationKey: string | undefined, firstSegment: string | undefined): boolean {
+  return authenticated && !loading && !!navigationKey && !!firstSegment && firstSegment !== 'index' && firstSegment !== '(auth)' && firstSegment !== 'auth';
+}

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
-import { useRouter } from 'expo-router';
+import { useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as Notifications from 'expo-notifications';
 import * as SecureStore from 'expo-secure-store';
@@ -9,7 +9,7 @@ import { BootErrorView } from '@/ui/boot-error-view';
 import { ConfigErrorView } from '@/ui/config-error-view';
 import { SessionProvider, useSession } from '@/ui/session-context';
 import { PUSH_OPT_IN_KEY, registerPushDevice } from '@/infrastructure/push/notification-device-lifecycle';
-import { notificationRoute } from '@/infrastructure/push/notification-target';
+import { canOpenNotification, notificationRoute } from '@/infrastructure/push/notification-target';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({ shouldPlaySound: true, shouldSetBadge: true, shouldShowBanner: true, shouldShowList: true }),
@@ -18,6 +18,8 @@ Notifications.setNotificationHandler({
 function RootNavigation() {
   const { locale, localeReady, configError, bootError, retryBoot, t, isAuthenticated, isLoading, user, gatewayClient } = useSession();
   const router = useRouter();
+  const segments = useSegments();
+  const navigation = useRootNavigationState();
   const [pendingPushOpen, setPendingPushOpen] = useState<ReturnType<typeof notificationRoute> | null>(null);
 
   useEffect(() => {
@@ -43,10 +45,10 @@ function RootNavigation() {
   }, []);
 
   useEffect(() => {
-    if (!pendingPushOpen || isLoading || !isAuthenticated) return;
+    if (!pendingPushOpen || !canOpenNotification(isAuthenticated, isLoading, navigation?.key, segments[0])) return;
     router.replace(pendingPushOpen);
     setPendingPushOpen(null);
-  }, [pendingPushOpen, isAuthenticated, isLoading, router]);
+  }, [pendingPushOpen, isAuthenticated, isLoading, router, navigation?.key, segments]);
 
   useEffect(() => {
     if (!gatewayClient || !user?.id || isLoading || !localeReady) return;

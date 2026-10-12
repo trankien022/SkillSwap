@@ -20,3 +20,8 @@ Ba luồng đi từ UI tới backend; >=5 resource persisted; 20–30 route temp
 1. Contract/persistence: thêm locale vi/en vào đăng ký thiết bị, lưu qua entity column và migration additive; không sửa migration cũ. Push lấy locale hiện tại của thiết bị khi claim delivery và chọn copy nghiệp vụ tương ứng.
 2. Mobile: giữ locale trong SecureStore; chờ khôi phục locale trước rebind; đăng ký lại khi đổi ngôn ngữ. Inbox tiếp tục dịch theo locale UI. Không cấp quyền qua payload.
 3. Nghiệm thu: tests copy vi/en, device locale persistence và callback đăng ký; build/typecheck/full verify; đổi Cài đặt trên Android và kiểm tra backend/push thực. Commit riêng cho thay đổi ngôn ngữ.
+
+## Fix sau nghiệm thu cold start
+
+1. Chờ root navigation và route đăng nhập/index hoàn tất trước khi tiêu thụ đích thông báo; giữ pending target trong lúc khôi phục session để Redirect không ghi đè lịch.
+2. Thêm regression test navigation readiness, chạy focused/full gate và build lại APK có JS; nghiệm thu tap khi tiến trình không tồn tại trước tap, ghi video và ledger/refund.
