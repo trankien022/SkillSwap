@@ -29,6 +29,7 @@ function RootNavigation() {
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="auth" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(features)" options={{ headerShown: false }} />
         <Stack.Screen name="classes/[id]" options={{ headerShown: true, title: 'SkillSwap', headerBackTitle: t('Common.back') }} />

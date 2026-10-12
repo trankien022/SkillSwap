@@ -1,3 +1,4 @@
+import { apiEnvelopeSchema, ApiResponseError, unwrapEnvelope } from '@skillswap/contracts';
 import {
   apiErrorSchema,
   loginSchema,
@@ -299,8 +300,25 @@ export class GatewayClient implements AuthApiPort {
     }
 
     try {
-      return (await response.json()) as T;
-    } catch {
+      const payload: unknown = await response.json();
+      if (payload && typeof payload === 'object' && 'success' in payload) {
+        try {
+          return await unwrapEnvelope<T>({
+            status: response.status,
+            json: async () => payload,
+          });
+        } catch (error) {
+          if (error instanceof ApiResponseError) {
+            throw new GatewayHttpError(response.status, error.message, {
+              errorDetails: { code: error.code, errors: error.errors },
+            });
+          }
+          throw error;
+        }
+      }
+      return payload as T;
+    } catch (error) {
+      if (error instanceof GatewayHttpError) throw error;
       return undefined as T;
     }
   }
@@ -381,8 +399,15 @@ export class GatewayClient implements AuthApiPort {
 
     try {
       const json = await response.json();
+      const parsedEnvelope = apiEnvelopeSchema.safeParse(json);
       const parsedApiError = apiErrorSchema.safeParse(json);
-      if (parsedApiError.success) {
+      if (parsedEnvelope.success) {
+        errorMessage = parsedEnvelope.data.message;
+        errorDetails = {
+          code: parsedEnvelope.data.code,
+          errors: parsedEnvelope.data.errors,
+        };
+      } else if (parsedApiError.success) {
         errorMessage = parsedApiError.data.message;
         errorDetails = parsedApiError.data.error;
       } else if (json && typeof json === 'object') {

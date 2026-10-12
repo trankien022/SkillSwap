@@ -38,7 +38,7 @@ export class ApiClient {
     options: { signature?: string } = {},
     // Response bodies are untyped test fixtures; `any` keeps the specs readable.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ): Promise<{ status: number; json: any; text: string }> {
+  ): Promise<{ status: number; json: any; envelope: any; text: string }> {
     const headers = this.headers({ 'content-type': 'application/json' });
     if (options.signature !== undefined) {
       headers['x-signature'] = options.signature;
@@ -49,13 +49,27 @@ export class ApiClient {
       body: body === undefined ? undefined : JSON.stringify(body),
     });
     const text = await response.text();
-    let json: unknown = null;
+    let parsed: unknown = null;
     try {
-      json = text === '' ? null : JSON.parse(text);
+      parsed = text === '' ? null : JSON.parse(text);
     } catch {
-      json = null;
+      parsed = null;
     }
-    return { status: response.status, json, text };
+
+    // NFR-013: domain responses are enveloped `{ success, code, message, data, errors }`. `json`
+    // stays the *payload* (the envelope's `data`) so specs read the shape the endpoint returns;
+    // `envelope` exposes the raw wrapper for code/message assertions. `/health` is raw (no
+    // envelope) and passes through unchanged.
+    const isEnvelope =
+      parsed !== null &&
+      typeof parsed === 'object' &&
+      'success' in parsed &&
+      'code' in parsed &&
+      'errors' in parsed;
+    const json = isEnvelope ? (parsed as { data: unknown }).data : parsed;
+    const envelope = isEnvelope ? parsed : null;
+
+    return { status: response.status, json, envelope, text };
   }
 
   get(path: string) {

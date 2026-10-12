@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+export * from './envelope';
+export * from './pagination';
+
+import { pagedSchema, paginationQuerySchema } from './pagination';
+
 export const identityHeadersSchema = z.object({
   'x-user-id': z.string().min(1).optional(),
   'x-user-email': z.string().email().optional(),
@@ -130,7 +135,7 @@ export const bookingSchema = z.object({
 });
 export type BookingView = z.infer<typeof bookingSchema>;
 
-/** Existing API-005/API-006 HTTP envelopes; confirmation is distinct from wallet settlement. */
+/** Existing API-005/API-006 response names retained for mobile adapters. */
 export const bookClassResponseSchema = z.object({
   booking: bookingSchema,
   created: z.boolean(),
@@ -141,6 +146,40 @@ export const confirmBookingResponseSchema = z.object({
   booking: bookingSchema.nullable(),
 });
 export type ConfirmBookingResponse = z.infer<typeof confirmBookingResponseSchema>;
+
+/** FR-007 / API-005: book a class. `created` is false on an idempotent replay. */
+export const bookClassResultSchema = bookClassResponseSchema;
+export type BookClassResultView = z.infer<typeof bookClassResultSchema>;
+
+/** FR-009 / API-006: confirm a pending booking. `booking` is null when nothing was pending. */
+export const confirmBookingResultSchema = confirmBookingResponseSchema;
+export type ConfirmBookingResultView = z.infer<typeof confirmBookingResultSchema>;
+
+/** FR-007 / AC-022: cancel a class and refund affected learners. */
+export const cancelClassResultSchema = z.object({
+  classCancelled: z.boolean(),
+  bookingsCancelled: z.number().int().min(0),
+});
+export type CancelClassResultView = z.infer<typeof cancelClassResultSchema>;
+
+/** FR-007 / AC-024: mark a teacher no-show for a booking. */
+export const markTeacherNoShowResultSchema = z.object({
+  cancelled: z.boolean(),
+});
+export type MarkTeacherNoShowResultView = z.infer<typeof markTeacherNoShowResultSchema>;
+
+/** FR-020 / ADR-021: start a class the teacher is holding. */
+export const startClassResultSchema = z.object({
+  started: z.boolean(),
+});
+export type StartClassResultView = z.infer<typeof startClassResultSchema>;
+
+/** FR-020 / ADR-021: complete a class; `basis` is the completion reason, null when not completed. */
+export const completeClassResultSchema = z.object({
+  completed: z.boolean(),
+  basis: z.string().min(1).nullable(),
+});
+export type CompleteClassResultView = z.infer<typeof completeClassResultSchema>;
 
 /** FR-001 / ADR-030: an account has exactly one access role. Learner/Teacher are capabilities, not roles. */
 export const accountRoleSchema = z.enum(['user', 'verifier', 'admin']);
@@ -255,10 +294,8 @@ export const walletHistoryItemSchema = z.object({
 });
 export type WalletHistoryItemView = z.infer<typeof walletHistoryItemSchema>;
 
-export const walletHistoryPageSchema = z.object({
-  items: z.array(walletHistoryItemSchema),
-  nextCursor: z.string().min(1).nullable(),
-});
+/** FR-010 / NFR-014 (ADR-022): a page of wallet history with page metadata. */
+export const walletHistoryPageSchema = pagedSchema(walletHistoryItemSchema);
 export type WalletHistoryPage = z.infer<typeof walletHistoryPageSchema>;
 
 /** FR-011: join an online class room (ADR-020). */
@@ -370,6 +407,24 @@ export const profileSkillSchema = z.object({
 });
 export type ProfileSkillView = z.infer<typeof profileSkillSchema>;
 
+/**
+ * FR-003 / NFR-014: query params for GET /profile-skills/me. The result is bounded by the
+ * managed skill catalogue, so there is no pagination (`page: null`); the caller may still
+ * search by skill name and choose the sort order.
+ */
+export const profileSkillQuerySchema = z.object({
+  q: z.string().min(1).optional(),
+  sort: z.enum(['category', 'name', '-approvedLevel']).optional(),
+});
+export type ProfileSkillQueryInput = z.infer<typeof profileSkillQuerySchema>;
+
+/** FR-003: the caller's profile skills (bounded by the catalogue → no page metadata). */
+export const profileSkillListSchema = z.object({
+  items: z.array(profileSkillSchema),
+  page: z.null(),
+});
+export type ProfileSkillList = z.infer<typeof profileSkillListSchema>;
+
 /** FR-003 / API-002: submit skill evidence for a known skill at a requested level. */
 export const submitSkillEvidenceSchema = z.object({
   skillId: z.string().min(1),
@@ -422,6 +477,21 @@ export type SkillEvidenceEvent = z.infer<typeof skillEvidenceEventSchema>;
 /** FR-004 / ADR-027: a Verifier account with a seeded expertise set. */
 export const verifierStatusSchema = z.enum(['active', 'suspended', 'revoked']);
 export type VerifierStatus = z.infer<typeof verifierStatusSchema>;
+
+/** FR-004 / NFR-014: query params for GET /verifiers/me/queue. */
+export const verifierQueueQuerySchema = paginationQuerySchema.extend({
+  level: skillLevelSchema.optional(),
+  type: evidenceTypeSchema.optional(),
+  // Skill-name free-text search.
+  q: z.string().min(1).optional(),
+  // 'submittedAt' (oldest first, FIFO) or '-submittedAt' (newest first).
+  sort: z.enum(['submittedAt', '-submittedAt']).optional(),
+});
+export type VerifierQueueQueryInput = z.infer<typeof verifierQueueQuerySchema>;
+
+/** FR-004 / NFR-014: a page of the Verifier's expertise-scoped pending queue. */
+export const verifierQueuePageSchema = pagedSchema(skillEvidenceViewSchema);
+export type VerifierQueuePage = z.infer<typeof verifierQueuePageSchema>;
 
 export const verifierSchema = z.object({
   accountId: z.string().min(1),

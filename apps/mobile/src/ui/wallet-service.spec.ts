@@ -45,7 +45,7 @@ describe('WalletService', () => {
             createdAt: '2026-10-12T00:00:00Z',
           },
         ],
-        nextCursor: 'cursor-2',
+        page: { limit: 15, nextCursor: 'cursor-2', total: 1 },
       };
       mockGateway.authenticatedRequest.mockResolvedValueOnce(mockPage);
 

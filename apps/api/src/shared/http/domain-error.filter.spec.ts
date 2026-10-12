@@ -55,55 +55,85 @@ function makeLogger(): AppLogger {
   } as unknown as AppLogger;
 }
 
+function run(exception: unknown): Captured {
+  const captured: Captured = { status: () => captured, json: () => undefined };
+  new DomainErrorFilter(makeLogger()).catch(exception, makeHost(captured));
+  return captured;
+}
+
 describe('DomainErrorFilter', () => {
-  it('maps StatusTransitionError and StatusConflictError to 409', () => {
-    for (const error of [new StatusTransitionError('open', 'closed'), new StatusConflictError('open', 'closed')]) {
-      const captured: Captured = { status: () => captured, json: () => undefined };
-      new DomainErrorFilter(makeLogger()).catch(error, makeHost(captured));
+  it('maps StatusTransitionError and StatusConflictError to a 409 failure envelope', () => {
+    for (const error of [
+      new StatusTransitionError('open', 'closed'),
+      new StatusConflictError('open', 'closed'),
+    ]) {
+      const captured = run(error);
       expect(captured.statusCode).toBe(409);
-      expect(captured.body).toMatchObject({ statusCode: 409, error: error.name });
+      expect(captured.body).toMatchObject({
+        success: false,
+        code: error.name,
+        message: error.message,
+        data: null,
+        errors: [{ code: error.name, message: error.message }],
+      });
     }
   });
 
   it('maps UnknownStateError to 400', () => {
-    const captured: Captured = { status: () => captured, json: () => undefined };
-    new DomainErrorFilter(makeLogger()).catch(new UnknownStateError('bogus'), makeHost(captured));
-    expect(captured.statusCode).toBe(400);
+    expect(run(new UnknownStateError('bogus')).statusCode).toBe(400);
   });
 
   it('maps ModuleNotInitialisedError to 500', () => {
-    const captured: Captured = { status: () => captured, json: () => undefined };
-    new DomainErrorFilter(makeLogger()).catch(
-      new ModuleNotInitialisedError('schedule'),
-      makeHost(captured),
-    );
-    expect(captured.statusCode).toBe(500);
+    expect(run(new ModuleNotInitialisedError('schedule')).statusCode).toBe(500);
   });
 
-  it('passes HttpException status and message through', () => {
-    const captured: Captured = { status: () => captured, json: () => undefined };
-    new DomainErrorFilter(makeLogger()).catch(
-      new BadRequestException('bad input'),
-      makeHost(captured),
+  it('wraps an HttpException string payload (validation) in the failure envelope', () => {
+    const captured = run(new BadRequestException('name: required'));
+    expect(captured.statusCode).toBe(400);
+    expect(captured.body).toMatchObject({
+      success: false,
+      code: 'VALIDATION_FAILED',
+      message: 'name: required',
+      data: null,
+      errors: [{ code: 'VALIDATION_FAILED', message: 'name: required' }],
+    });
+  });
+
+  it('maps a non-validation HttpException to HTTP_<status>', () => {
+    const captured = run(new HttpException('nope', 418));
+    expect(captured.statusCode).toBe(418);
+    expect(captured.body).toMatchObject({
+      success: false,
+      code: 'HTTP_418',
+      message: 'nope',
+      data: null,
+    });
+  });
+
+  it('expands class-validator-style field errors into one entry per field', () => {
+    const captured = run(
+      new BadRequestException({ message: ['email must be an email', 'password too short'] }),
     );
     expect(captured.statusCode).toBe(400);
-    expect(captured.body).toMatchObject({ statusCode: 400, message: 'bad input' });
+    expect(captured.body).toMatchObject({
+      success: false,
+      code: 'VALIDATION_FAILED',
+      errors: [
+        { code: 'VALIDATION_FAILED', message: 'email must be an email' },
+        { code: 'VALIDATION_FAILED', message: 'password too short' },
+      ],
+    });
   });
 
-  it('falls back to 500 for unknown errors', () => {
-    const captured: Captured = { status: () => captured, json: () => undefined };
-    new DomainErrorFilter(makeLogger()).catch(new Error('kaboom'), makeHost(captured));
+  it('falls back to a 500 INTERNAL_ERROR envelope for unknown errors', () => {
+    const captured = run(new Error('kaboom'));
     expect(captured.statusCode).toBe(500);
-    expect(captured.body).toMatchObject({ statusCode: 500, message: 'Internal server error' });
-  });
-
-  it('keeps object payloads but forces statusCode', () => {
-    const captured: Captured = { status: () => captured, json: () => undefined };
-    new DomainErrorFilter(makeLogger()).catch(
-      new HttpException({ statusCode: 0, message: 'weird' }, 418),
-      makeHost(captured),
-    );
-    expect(captured.statusCode).toBe(418);
-    expect(captured.body).toMatchObject({ statusCode: 418, message: 'weird' });
+    expect(captured.body).toMatchObject({
+      success: false,
+      code: 'INTERNAL_ERROR',
+      message: 'Internal server error',
+      data: null,
+      errors: [{ code: 'INTERNAL_ERROR', message: 'Internal server error' }],
+    });
   });
 });

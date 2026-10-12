@@ -173,6 +173,50 @@ describe('GatewayClient', () => {
     });
   });
 
+  describe('response envelope compatibility', () => {
+    it('unwraps the current API success envelope and returns its bare data', async () => {
+      const mockFetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          success: true,
+          code: 'AUTH_LOGIN_OK',
+          message: 'Signed in',
+          data: sampleTokenResponse,
+          errors: [],
+        }),
+      });
+      const client = new GatewayClient(config, { fetchFn: mockFetch as unknown as typeof fetch });
+
+      await expect(client.request('/auth/login', { method: 'POST', body: {} })).resolves.toEqual(sampleTokenResponse);
+    });
+
+    it('preserves the response envelope code and message for API failures', async () => {
+      const mockFetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        json: async () => ({
+          success: false,
+          code: 'INVALID_CREDENTIALS',
+          message: 'Invalid credentials',
+          data: null,
+          errors: [{ code: 'INVALID_CREDENTIALS', message: 'Invalid credentials' }],
+        }),
+      });
+      const client = new GatewayClient(config, { fetchFn: mockFetch as unknown as typeof fetch });
+
+      await expect(client.request('/auth/login', { method: 'POST', body: {} })).rejects.toMatchObject({
+        name: 'GatewayHttpError',
+        statusCode: 401,
+        message: 'Invalid credentials',
+        errorDetails: {
+          code: 'INVALID_CREDENTIALS',
+        },
+      });
+    });
+  });
+
   describe('Error Normalization and Security', () => {
     it('normalizes ApiError response extracting statusCode and message', async () => {
       const mockFetch = jest.fn().mockResolvedValue({

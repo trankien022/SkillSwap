@@ -1,13 +1,14 @@
 import './init-env';
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { SwaggerModule } from '@nestjs/swagger';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { pinoHttp } from 'pino-http';
 import { AppModule } from './app.module';
 import { ApiConfig } from '../shared/config/api-config';
 import { AppLogger } from '../shared/logger/app-logger';
 import { createHttpLoggerOptions } from './http-logger-options';
+import { buildOpenApiDocument } from './openapi';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -22,11 +23,17 @@ async function bootstrap(): Promise<void> {
   app.setGlobalPrefix('api');
   app.enableShutdownHooks();
 
-  const document = SwaggerModule.createDocument(
-    app,
-    new DocumentBuilder().setTitle('SkillSwap API').setVersion('1.0').build(),
-  );
-  SwaggerModule.setup('api/docs', app, document);
+  SwaggerModule.setup('api/docs', app, buildOpenApiDocument(app), {
+    swaggerOptions: {
+      // Sort operations by HTTP verb then path within each tag.
+      operationsSorter: (a: { get: (key: string) => string }, b: { get: (key: string) => string }) => {
+        const order = ['get', 'post', 'put', 'patch', 'delete'];
+        const byVerb = order.indexOf(a.get('method')) - order.indexOf(b.get('method'));
+        return byVerb !== 0 ? byVerb : a.get('path').localeCompare(b.get('path'));
+      },
+      tagsSorter: 'alpha',
+    },
+  });
 
   await app.listen(config.apiPort);
 }

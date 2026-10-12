@@ -61,7 +61,7 @@ export function WalletView() {
       ]);
       setBalance(balResult);
       setHistory(historyResult.items);
-      setNextCursor(historyResult.nextCursor);
+      setNextCursor(historyResult.page.nextCursor);
     } catch {
       setErrorMessage(t('Common.errorMessage'));
     } finally {
@@ -86,7 +86,7 @@ export function WalletView() {
       const walletService = new WalletService(gatewayClient);
       const nextPage = await walletService.getHistory(20, nextCursor);
       setHistory((prev) => [...prev, ...nextPage.items]);
-      setNextCursor(nextPage.nextCursor);
+      setNextCursor(nextPage.page.nextCursor);
     } catch {
       Alert.alert(t('Common.errorTitle'), t('Common.errorMessage'));
     } finally {

@@ -1,11 +1,9 @@
-import { Body, Controller, Get, Inject, Param, Post, Req } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import {
-  submitSkillEvidenceSchema,
-  type ProfileSkillView,
-  type SkillEvidenceHistoryView,
-  type SkillEvidenceView,
-  type SubmitSkillEvidenceInput,
+import { Body, Controller, Get, Inject, Param, Post, Query, Req } from '@nestjs/common';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import type {
+  ProfileSkillList,
+  SkillEvidenceHistoryView,
+  SkillEvidenceView,
 } from '@skillswap/contracts';
 import {
   SUBMIT_SKILL_EVIDENCE,
@@ -20,10 +18,21 @@ import {
   type GetSkillEvidenceHistoryPort,
 } from '../../../application/port/in/get-skill-evidence-history';
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
-import { ZodValidationPipe } from '../../../../../../shared/http/zod-validation.pipe';
+import {
+  ResponseCode,
+  ResponseMessage,
+} from '../../../../../../shared/http/response-code.decorator';
+import {
+  ProfileSkillListDto,
+  ProfileSkillQueryDto,
+  SkillEvidenceDto,
+  SkillEvidenceHistoryDto,
+  SubmitSkillEvidenceDto,
+} from './dto/skill-verification.dto';
 
 @Controller('skill-evidence')
 @ApiTags('skill-verification')
+@ApiBearerAuth('bearer')
 export class SkillEvidenceController {
   constructor(
     @Inject(SUBMIT_SKILL_EVIDENCE) private readonly submit: SubmitSkillEvidencePort,
@@ -33,9 +42,9 @@ export class SkillEvidenceController {
 
   @Post()
   @ApiOperation({ summary: 'Submit skill evidence for a known skill (FR-003 / API-002)' })
-  @ApiOkResponse({ description: 'The new pending evidence version' })
+  @ApiOkResponse({ type: SkillEvidenceDto, description: 'The new pending evidence version' })
   create(
-    @Body(new ZodValidationPipe(submitSkillEvidenceSchema)) body: SubmitSkillEvidenceInput,
+    @Body() body: SubmitSkillEvidenceDto,
     @Req() request: RequestWithIdentity,
   ): Promise<SkillEvidenceView> {
     return this.submit.execute({
@@ -49,8 +58,15 @@ export class SkillEvidenceController {
   }
 
   @Get(':id/history')
-  @ApiOperation({ summary: 'Decision history for each evidence version (FR-018)' })
-  @ApiOkResponse({ description: 'All versions of the profile-skill with their audit trail' })
+  @ResponseCode('SKILL_EVIDENCE_HISTORY_OK')
+  @ResponseMessage('Skill evidence history loaded')
+  @ApiParam({ name: 'id', description: 'The evidence id' })
+  @ApiOperation({
+    summary: 'Decision history for each evidence version (FR-018)',
+    description:
+      'Complete by design: returns every version of the profile-skill with its audit trail (bounded by the number of submissions), so it is not paginated.',
+  })
+  @ApiOkResponse({ type: SkillEvidenceHistoryDto, description: 'All versions of the profile-skill with their audit trail' })
   history(
     @Param('id') id: string,
     @Req() request: RequestWithIdentity,
@@ -65,15 +81,29 @@ export class SkillEvidenceController {
 
 @Controller('profile-skills')
 @ApiTags('skill-verification')
+@ApiBearerAuth('bearer')
 export class ProfileSkillController {
   constructor(
     @Inject(GET_MY_PROFILE_SKILLS) private readonly getMine: GetMyProfileSkillsPort,
   ) {}
 
   @Get('me')
-  @ApiOperation({ summary: "List the caller's skills and approved levels (FR-003)" })
-  @ApiOkResponse({ description: 'The caller\'s profile skills with effective levels' })
-  mine(@Req() request: RequestWithIdentity): Promise<ProfileSkillView[]> {
-    return this.getMine.execute(currentUserId(request));
+  @ResponseCode('PROFILE_SKILLS_OK')
+  @ResponseMessage('Profile skills loaded')
+  @ApiOperation({
+    summary: "List the caller's skills and approved levels (FR-003 / NFR-014)",
+    description:
+      'Bounded by the managed skill catalogue (at most one row per catalogue skill), so it is not paginated and returns `page: null`. Supports a skill-name search (`q`) and a sort order.',
+  })
+  @ApiOkResponse({ type: ProfileSkillListDto, description: "The caller's profile skills with effective levels" })
+  mine(
+    @Query() query: ProfileSkillQueryDto,
+    @Req() request: RequestWithIdentity,
+  ): Promise<ProfileSkillList> {
+    return this.getMine.execute({
+      accountId: currentUserId(request),
+      q: query.q,
+      sort: query.sort,
+    });
   }
 }

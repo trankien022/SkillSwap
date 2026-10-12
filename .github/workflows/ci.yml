@@ -8,6 +8,7 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -38,6 +39,7 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     # Real Postgres + RabbitMQ (docker services); Jitsi is left out of CI, so the
     # Jitsi spec self-skips. Runs the booking flow end to end against the DB.
     services:

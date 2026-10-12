@@ -6,9 +6,9 @@ describe('NotificationGateway', () => {
   const config: MobileConfig = { gatewayBaseUrl: 'http://localhost:4000', apiBaseUrl: 'http://localhost:4000/api' };
   it('calls inbox and device subscription routes with contract-checked payloads', async () => {
     const fetchMock = jest.fn()
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ items: [], nextCursor: null, unreadCount: 0 }) })
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ id: 'dev1', installationId: 'install1', platform: 'ios', isActive: true, createdAt: '2026-10-20T10:00:00.000Z' }) })
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ success: true }) });
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ success: true, code: 'OK', message: 'OK', data: { items: [], nextCursor: null, unreadCount: 0 }, errors: [] }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ success: true, code: 'OK', message: 'OK', data: { id: 'dev1', installationId: 'install1', platform: 'ios', isActive: true, createdAt: '2026-10-20T10:00:00.000Z' }, errors: [] }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ success: true, code: 'OK', message: 'OK', data: { success: true }, errors: [] }) });
     const client = new GatewayClient(config, { fetchFn: fetchMock as unknown as typeof fetch });
     client.setTokenProvider({ getAccessToken: async () => 'access', refreshSession: async () => ({ tokens: { accessToken: 'next' } }) });
     const gateway = new NotificationGateway(client);

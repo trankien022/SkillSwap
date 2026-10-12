@@ -7,14 +7,11 @@ describe('StudentVerificationController nullable status transport', () => {
     id: 'verification-1', status: 'pending', schoolName: 'Test school', major: null,
     reviewerId: null, reason: null, decidedAt: null, submittedAt: '2026-10-12T00:00:00.000Z',
   };
-  it.each([null, resource])('serializes the nullable resource as JSON and binds caller ownership', async (verification) => {
+  it.each([null, resource])('returns the nullable resource and binds caller ownership', async (verification) => {
     const getMine: GetMyVerificationPort = { execute: jest.fn().mockResolvedValue(verification) };
     const unused = { execute: jest.fn() };
     const controller = new StudentVerificationController(unused, unused, unused, unused, getMine);
-    const response = { json: jest.fn() };
-    await controller.mine({ headers: {}, user: { id: 'caller-1', role: 'user' } }, response);
+    await expect(controller.mine({ headers: {}, user: { id: 'caller-1', role: 'user' } })).resolves.toEqual(verification);
     expect(getMine.execute).toHaveBeenCalledWith('caller-1');
-    expect(response.json).toHaveBeenCalledTimes(1);
-    expect(response.json).toHaveBeenCalledWith(verification);
   });
 });

@@ -11,7 +11,7 @@ export interface HistoryQuery {
 
 /** Read-only view of a wallet's ledger, owner-scoped (FR-010 / ADR-022). */
 export interface WalletReader {
-  /** Paginated ledger history for one owner, newest first. */
+  /** Paginated ledger history for one owner, newest first (NFR-014). */
   history(query: HistoryQuery): Promise<WalletHistoryPage>;
   /** Sum of credits and debits for one owner, for reconciliation. */
   sums(ownerId: string): Promise<{ credits: number; debits: number }>;

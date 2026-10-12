@@ -1,13 +1,6 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Param, Post, Req } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import {
-  skillEvidenceDecisionSchema,
-  verifierStatusChangeSchema,
-  type SkillEvidenceDecisionInput,
-  type SkillEvidenceView,
-  type VerifierStatusChangeInput,
-  type VerifierView,
-} from '@skillswap/contracts';
+import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Param, Post, Query, Req } from '@nestjs/common';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import type { SkillEvidenceView, VerifierQueuePage, VerifierView } from '@skillswap/contracts';
 import {
   CHANGE_VERIFIER_STATUS,
   type ChangeVerifierStatusPort,
@@ -26,10 +19,22 @@ import {
 } from '../../../application/port/in/decide-skill-evidence';
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
 import { Roles } from '../../../../../../shared/http/roles.decorator';
-import { ZodValidationPipe } from '../../../../../../shared/http/zod-validation.pipe';
+import {
+  ResponseCode,
+  ResponseMessage,
+} from '../../../../../../shared/http/response-code.decorator';
+import {
+  SkillEvidenceDecisionDto,
+  SkillEvidenceDto,
+  VerifierDto,
+  VerifierQueuePageDto,
+  VerifierQueueQueryDto,
+  VerifierStatusChangeDto,
+} from './dto/skill-verification.dto';
 
 @Controller('verifiers')
 @ApiTags('skill-verification')
+@ApiBearerAuth('bearer')
 export class VerifierController {
   constructor(
     @Inject(CHANGE_VERIFIER_STATUS) private readonly changeStatus: ChangeVerifierStatusPort,
@@ -39,26 +44,44 @@ export class VerifierController {
   @Post(':accountId/status')
   @Roles('admin')
   @HttpCode(HttpStatus.OK)
+  @ApiParam({ name: 'accountId', description: 'The verifier account id' })
   @ApiOperation({ summary: 'Suspend, revoke or reactivate a Verifier (admin, FR-004 / ADR-027)' })
-  @ApiOkResponse({ description: 'The updated verifier' })
+  @ApiOkResponse({ type: VerifierDto, description: 'The updated verifier' })
   setStatus(
     @Param('accountId') accountId: string,
-    @Body(new ZodValidationPipe(verifierStatusChangeSchema)) body: VerifierStatusChangeInput,
+    @Body() body: VerifierStatusChangeDto,
   ): Promise<VerifierView> {
     return this.changeStatus.execute({ verifierId: accountId, status: body.status });
   }
 
   @Get('me/queue')
   @Roles('verifier')
-  @ApiOperation({ summary: "The Verifier's expertise-scoped pending queue (FR-004)" })
-  @ApiOkResponse({ description: 'Pending evidence requests matching the caller’s expertise' })
-  myQueue(@Req() request: RequestWithIdentity): Promise<SkillEvidenceView[]> {
-    return this.queue.execute(currentUserId(request));
+  @ResponseCode('VERIFIER_QUEUE_OK')
+  @ResponseMessage('Verifier queue loaded')
+  @ApiOperation({ summary: "The Verifier's expertise-scoped pending queue (FR-004 / NFR-014)" })
+  @ApiOkResponse({
+    type: VerifierQueuePageDto,
+    description: 'A page of pending evidence requests matching the caller’s expertise',
+  })
+  myQueue(
+    @Query() query: VerifierQueueQueryDto,
+    @Req() request: RequestWithIdentity,
+  ): Promise<VerifierQueuePage> {
+    return this.queue.execute({
+      verifierId: currentUserId(request),
+      limit: query.limit,
+      cursor: query.cursor,
+      level: query.level,
+      type: query.type,
+      q: query.q,
+      sort: query.sort,
+    });
   }
 }
 
 @Controller('skill-evidence')
 @ApiTags('skill-verification')
+@ApiBearerAuth('bearer')
 export class SkillEvidenceDecisionController {
   constructor(
     @Inject(CLAIM_SKILL_EVIDENCE) private readonly claim: ClaimSkillEvidencePort,
@@ -68,8 +91,9 @@ export class SkillEvidenceDecisionController {
   @Post(':id/claim')
   @Roles('verifier')
   @HttpCode(HttpStatus.OK)
+  @ApiParam({ name: 'id', description: 'The evidence id' })
   @ApiOperation({ summary: 'Claim a pending evidence request, locking it (FR-004 / BR-071)' })
-  @ApiOkResponse({ description: 'The now-claimed evidence' })
+  @ApiOkResponse({ type: SkillEvidenceDto, description: 'The now-claimed evidence' })
   claimEvidence(
     @Param('id') id: string,
     @Req() request: RequestWithIdentity,
@@ -80,12 +104,13 @@ export class SkillEvidenceDecisionController {
   @Post(':id/decision')
   @Roles('verifier')
   @HttpCode(HttpStatus.OK)
+  @ApiParam({ name: 'id', description: 'The evidence id' })
   @ApiOperation({ summary: 'Approve or reject a claimed evidence request (FR-004 / API-003)' })
-  @ApiOkResponse({ description: 'The decided evidence' })
+  @ApiOkResponse({ type: SkillEvidenceDto, description: 'The decided evidence' })
   decideEvidence(
     @Param('id') id: string,
     @Req() request: RequestWithIdentity,
-    @Body(new ZodValidationPipe(skillEvidenceDecisionSchema)) body: SkillEvidenceDecisionInput,
+    @Body() body: SkillEvidenceDecisionDto,
   ): Promise<SkillEvidenceView> {
     return this.decide.execute({
       reviewerId: currentUserId(request),

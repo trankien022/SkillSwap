@@ -1,6 +1,5 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Post, Req } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { advanceStatusSchema } from '@skillswap/contracts';
 import {
   ADVANCE_STATUS,
   type AdvanceStatusPort,
@@ -12,7 +11,11 @@ import {
 } from '../../../application/port/in/get-module-status';
 import type { ModuleStatusView } from '../../../application/port/out/module-status-reader';
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
-import { ZodValidationPipe } from '../../../../../../shared/http/zod-validation.pipe';
+import {
+  ResponseCode,
+  ResponseMessage,
+} from '../../../../../../shared/http/response-code.decorator';
+import { AdvanceStatusDto, AdvanceStatusResultDto, ModuleStatusDto } from './dto/status.dto';
 
 @Controller('schedule')
 @ApiTags('schedule')
@@ -23,8 +26,10 @@ export class StatusController {
   ) {}
 
   @Get('status')
+  @ResponseCode('SCHEDULE_STATUS_OK')
+  @ResponseMessage('Schedule module status loaded')
   @ApiOperation({ summary: 'Read Schedule module status' })
-  @ApiOkResponse({ description: 'Current module status' })
+  @ApiOkResponse({ type: ModuleStatusDto, description: 'Current module status' })
   readStatus(): Promise<ModuleStatusView> {
     return this.getStatus.execute();
   }
@@ -32,9 +37,9 @@ export class StatusController {
   @Post('status/advance')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Advance Schedule module status' })
-  @ApiOkResponse({ description: 'Applied status transition' })
+  @ApiOkResponse({ type: AdvanceStatusResultDto, description: 'Applied status transition' })
   advance(
-    @Body(new ZodValidationPipe(advanceStatusSchema)) body: { toState: string },
+    @Body() body: AdvanceStatusDto,
     @Req() request: RequestWithIdentity,
   ): Promise<AdvanceStatusResult> {
     return this.advanceStatus.execute({

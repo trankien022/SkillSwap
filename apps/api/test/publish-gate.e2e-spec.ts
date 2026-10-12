@@ -131,7 +131,7 @@ describe('E2E: publish gate (FR-005 / AC-002)', () => {
     api.actAs(teacherId, 'user');
     const refused = await api.post('/api/classes', publishBody([approvedSkill, otherSkill]));
     expect(refused.status).toBe(403);
-    expect(refused.json.error).toBe('SkillNotApprovedError');
+    expect(refused.envelope.code).toBe('SkillNotApprovedError');
   });
 
   it('demotes publish rights when student verification is revoked (FR-019)', async () => {

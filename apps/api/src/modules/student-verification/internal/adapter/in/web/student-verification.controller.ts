@@ -1,16 +1,14 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Param, Post, Req, Res } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Param, Post, Req } from '@nestjs/common';
 import {
-  documentUploadRequestSchema,
-  submitStudentVerificationSchema,
-  verificationDecisionSchema,
-  verificationRevocationSchema,
-  type DocumentUploadRequestInput,
-  type DocumentUploadTargetView,
-  type StudentVerificationView,
-  type SubmitStudentVerificationInput,
-  type VerificationDecisionInput,
-  type VerificationRevocationInput,
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
+import type {
+  DocumentUploadTargetView,
+  StudentVerificationView,
 } from '@skillswap/contracts';
 import {
   SUBMIT_STUDENT_VERIFICATION,
@@ -34,10 +32,22 @@ import {
 } from '../../../application/port/in/get-my-verification';
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
 import { Roles } from '../../../../../../shared/http/roles.decorator';
-import { ZodValidationPipe } from '../../../../../../shared/http/zod-validation.pipe';
+import {
+  ResponseCode,
+  ResponseMessage,
+} from '../../../../../../shared/http/response-code.decorator';
+import {
+  DocumentUploadRequestDto,
+  DocumentUploadTargetDto,
+  StudentVerificationDto,
+  SubmitStudentVerificationDto,
+  VerificationDecisionDto,
+  VerificationRevocationDto,
+} from './dto/student-verification.dto';
 
 @Controller('student-verifications')
 @ApiTags('student-verification')
+@ApiBearerAuth('bearer')
 export class StudentVerificationController {
   constructor(
     @Inject(SUBMIT_STUDENT_VERIFICATION) private readonly submit: SubmitStudentVerificationPort,
@@ -49,9 +59,9 @@ export class StudentVerificationController {
 
   @Post('documents')
   @ApiOperation({ summary: 'Request a pre-signed document upload target (FR-002)' })
-  @ApiOkResponse({ description: 'Pre-signed PUT URL plus the document id to submit' })
+  @ApiOkResponse({ type: DocumentUploadTargetDto, description: 'Pre-signed PUT URL plus the document id to submit' })
   requestDocumentUpload(
-    @Body(new ZodValidationPipe(documentUploadRequestSchema)) body: DocumentUploadRequestInput,
+    @Body() body: DocumentUploadRequestDto,
     @Req() request: RequestWithIdentity,
   ): Promise<DocumentUploadTargetView> {
     return this.requestUpload.execute({
@@ -64,9 +74,9 @@ export class StudentVerificationController {
 
   @Post()
   @ApiOperation({ summary: 'Submit a student verification (FR-002 / API-001)' })
-  @ApiOkResponse({ description: 'The pending verification' })
+  @ApiOkResponse({ type: StudentVerificationDto, description: 'The pending verification' })
   create(
-    @Body(new ZodValidationPipe(submitStudentVerificationSchema)) body: SubmitStudentVerificationInput,
+    @Body() body: SubmitStudentVerificationDto,
     @Req() request: RequestWithIdentity,
   ): Promise<StudentVerificationView> {
     return this.submit.execute({
@@ -80,12 +90,13 @@ export class StudentVerificationController {
   @Post(':id/decision')
   @Roles('admin')
   @HttpCode(HttpStatus.OK)
+  @ApiParam({ name: 'id', description: 'The verification id' })
   @ApiOperation({ summary: 'Approve or reject a verification (admin, FR-002)' })
-  @ApiOkResponse({ description: 'The decided verification' })
+  @ApiOkResponse({ type: StudentVerificationDto, description: 'The decided verification' })
   decideVerification(
     @Param('id') id: string,
     @Req() request: RequestWithIdentity,
-    @Body(new ZodValidationPipe(verificationDecisionSchema)) body: VerificationDecisionInput,
+    @Body() body: VerificationDecisionDto,
   ): Promise<StudentVerificationView> {
     return this.decide.execute({
       verificationId: id,
@@ -100,12 +111,13 @@ export class StudentVerificationController {
   @Post(':id/revocation')
   @Roles('admin')
   @HttpCode(HttpStatus.OK)
+  @ApiParam({ name: 'id', description: 'The verification id' })
   @ApiOperation({ summary: 'Revoke a verification (admin, FR-019 / ADR-025)' })
-  @ApiOkResponse({ description: 'The revoked verification' })
+  @ApiOkResponse({ type: StudentVerificationDto, description: 'The revoked verification' })
   revokeVerification(
     @Param('id') id: string,
     @Req() request: RequestWithIdentity,
-    @Body(new ZodValidationPipe(verificationRevocationSchema)) body: VerificationRevocationInput,
+    @Body() body: VerificationRevocationDto,
   ): Promise<StudentVerificationView> {
     return this.revoke.execute({
       verificationId: id,
@@ -116,13 +128,11 @@ export class StudentVerificationController {
   }
 
   @Get('me')
+  @ResponseCode('STUDENT_VERIFICATION_ME_OK')
+  @ResponseMessage('Your verification loaded')
   @ApiOperation({ summary: "Read the caller's own verification (FR-017)" })
-  @ApiOkResponse({ description: 'The latest verification for the caller, or null' })
-  async mine(
-    @Req() request: RequestWithIdentity,
-    @Res() response: { json(body: StudentVerificationView | null): unknown },
-  ): Promise<void> {
-    const verification = await this.getMine.execute(currentUserId(request));
-    response.json(verification);
+  @ApiOkResponse({ type: StudentVerificationDto, description: 'The latest verification for the caller, or null' })
+  mine(@Req() request: RequestWithIdentity): Promise<StudentVerificationView | null> {
+    return this.getMine.execute(currentUserId(request));
   }
 }
