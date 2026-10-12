@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useLocale } from 'next-intl';
 import { callApi, unwrapEnvelope } from '../../../lib/api-client';
 import { Navbar } from '../../../components/navbar';
 import type { ProfileSkillView, WalletBalanceView, MeResponse } from '@skillswap/contracts';
@@ -16,6 +17,7 @@ export interface CreatedClassItem {
 }
 
 export default function InstructorDashboard() {
+  const locale = useLocale();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [skillSelect, setSkillSelect] = useState('IELTS Speaking');
@@ -225,13 +227,13 @@ export default function InstructorDashboard() {
             
             {/* Primary Action */}
             <div className="flex items-center gap-3">
-              <a href="/vi/wallet" className="px-4 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition-all shadow-sm">
+              <a href={`/${locale}/wallet`} className="px-4 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition-all shadow-sm">
                 Lịch sử giao dịch
               </a>
-              <button onClick={() => setIsModalOpen(true)} type="button" className="bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-semibold text-sm px-5 py-2.5 rounded-full shadow-sm transition-all flex items-center gap-2">
-                <span className="material-symbols-outlined text-[19px]">add</span>
-                Tạo lớp mới
-              </button>
+              <a href={`/${locale}/teach/classes/new`} className="bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-semibold text-sm px-5 py-2.5 rounded-full shadow-sm transition-all flex items-center gap-2">
+                <span className="material-symbols-outlined text-[19px]">add_circle</span>
+                Công bố Lớp học mới
+              </a>
             </div>
           </div>
 
@@ -637,6 +639,12 @@ export default function InstructorDashboard() {
               <button onClick={() => setIsModalOpen(false)} type="button" className="w-8 h-8 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-colors">
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
+            </div>
+            <div className="px-6 py-2.5 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between text-xs">
+              <span className="text-emerald-800 font-medium">Bạn muốn thiết lập chi tiết giáo trình &amp; xem trước thẻ?</span>
+              <a href={`/${locale}/teach/classes/new`} className="font-bold text-emerald-700 hover:text-emerald-800 hover:underline flex items-center gap-0.5">
+                Mở Không gian 5 bước <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+              </a>
             </div>
             <form onSubmit={handleCreateClassSubmit} className="p-6 space-y-4">
               <div>
