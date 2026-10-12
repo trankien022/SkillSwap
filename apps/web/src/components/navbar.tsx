@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
 import { callApi, getTokens, getStoredUser, logout, unwrapEnvelope, WALLET_BALANCE_EVENT, type UserProfile } from '../lib/api-client';
 
-export type NavbarTab = 'explore' | 'classes' | 'instructor' | 'wallet' | 'verification' | 'notifications';
+export type NavbarTab = 'explore' | 'classes' | 'instructor' | 'wallet' | 'verification' | 'skills' | 'notifications';
 
 export interface NavbarProps {
   currentTab?: NavbarTab;
@@ -84,6 +84,7 @@ export function Navbar({
     { id: 'classes', label: locale === 'vi' ? 'Lớp học của tôi' : 'My Bookings', href: `/${locale}/bookings` },
     { id: 'instructor', label: locale === 'vi' ? 'Giảng dạy' : 'Teaching', tooltip: locale === 'vi' ? 'Studio Giảng dạy' : 'Teaching Studio', href: `/${locale}/instructor` },
     { id: 'wallet', label: locale === 'vi' ? 'Ví & Tín dụng' : 'Wallet & Credits', href: `/${locale}/wallet` },
+    { id: 'skills', label: locale === 'vi' ? 'Kỹ năng' : 'Skills', tooltip: locale === 'vi' ? 'Kỹ năng & Bằng chứng' : 'Skills & Evidence', href: `/${locale}/skills` },
     { id: 'verification', label: locale === 'vi' ? 'Xác minh' : 'Verification', tooltip: locale === 'vi' ? 'Trung tâm Thẩm định & Xác minh' : 'Verification Center', href: `/${locale}/verification` },
   ];
 
