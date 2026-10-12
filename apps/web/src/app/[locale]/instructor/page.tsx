@@ -70,23 +70,6 @@ export default function InstructorDashboard() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleJoinRoom = async (bookingId: string) => {
-    try {
-      setIsProcessing(true);
-      showToast(`Đang lấy key phòng Jitsi...`);
-      const res = await callApi(`/classes/bookings/${bookingId}/room-access`, {
-        method: 'POST',
-        body: JSON.stringify({ displayName: me?.displayName || 'Giảng viên' })
-      });
-      if (!res.ok) throw new Error('Từ chối truy cập hoặc chưa đến giờ');
-      const data = await unwrapEnvelope<{ url: string }>(res);
-      window.open(data.url, '_blank');
-    } catch (e) {
-      showToast('Lỗi: ' + (e as Error).message);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   const handleCompleteClass = async (classId: string) => {
     try {
@@ -525,9 +508,9 @@ export default function InstructorDashboard() {
                       <button onClick={() => openClassChat('CLS-8821')} type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 transition-all flex items-center gap-1.5" disabled={isProcessing}>
                         <span className="material-symbols-outlined text-[16px] text-slate-500">chat</span> Chat với học viên
                       </button>
-                      <button onClick={() => handleJoinRoom('00000000-0000-0000-0000-000000000001')} type="button" className="px-4 py-2 rounded-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all flex items-center gap-1.5" disabled={isProcessing}>
-                        <span className="material-symbols-outlined text-[16px]">video_call</span> Vào phòng Jitsi
-                      </button>
+                      <a href={`/${locale}/bookings/SS-VN-8821/live`} className="px-4 py-2 rounded-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[16px]">video_call</span> Vào phòng Live Class
+                      </a>
                       <button onClick={() => handleCompleteClass('00000000-0000-0000-0000-000000000002')} type="button" className="px-4 py-2 rounded-full text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all flex items-center gap-1.5" disabled={isProcessing}>
                         <span className="material-symbols-outlined text-[16px]">check_circle</span> Hoàn thành
                       </button>
