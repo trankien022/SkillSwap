@@ -595,5 +595,71 @@
     "switchToRegister": "Chưa có tài khoản?",
     "validationError": "Vui lòng nhập đầy đủ thông tin hợp lệ (mật khẩu từ 8 ký tự).",
     "pledgeError": "Bạn cần đồng ý với cam kết quy chuẩn học thuật."
+  },
+  "Verification": {
+    "badge": "Hồ sơ đã kiểm duyệt chính thức",
+    "title": "Trung tâm Thẩm định & Xác minh",
+    "subtitle": "Quản lý thông tin định danh sinh viên đại học và bằng chứng năng lực chuyên môn để trao đổi kỹ năng an toàn.",
+    "privacyBadge": {
+      "title": "Bảo mật sinh viên",
+      "subtitle": "Xác thực mã hoá an toàn"
+    },
+    "studentIdCard": {
+      "title": "Định danh Sinh viên chính khóa",
+      "verified": "Đã xác thực",
+      "pending": "Đang duyệt",
+      "unverified": "Chưa xác thực",
+      "sub": "Cổng đối soát dữ liệu sinh viên",
+      "cohort": "Niên khóa 2021 - 2025",
+      "school": "Trường Đại học",
+      "schoolSub": "Cơ sở TP. Hồ Chí Minh",
+      "studentCode": "Mã số sinh viên",
+      "studentCodeSub": "Khớp hệ thống quản lý đào tạo",
+      "studentEmail": "Email sinh viên",
+      "studentEmailSub": "Đã xác thực tài khoản chính quy",
+      "reverifyTerm": "Kỳ tái xác thực",
+      "reverifyTermValue": "Tháng 09/2025",
+      "reverifyTermSub": "Định kỳ theo niên khóa"
+    },
+    "cardScan": {
+      "title": "Bản quét thẻ sinh viên",
+      "subtitle": "Lưu trữ mã hóa bảo mật, thông tin nhạy cảm đã che mờ tự động.",
+      "updateCta": "Cập nhật thẻ mới",
+      "watermark": "SKILLSWAP VERIFIED",
+      "internalLock": "Bảo mật nội bộ",
+      "verifiedOn": "Xác thực: 15/09/2024"
+    },
+    "trustScore": {
+      "title": "Chỉ số Uy tín Học thuật",
+      "badge": "Độ tin cậy cao",
+      "score": "98",
+      "scoreMax": "/ 100 Điểm",
+      "completedSessions": "Hoàn thành buổi học",
+      "disputes": "Khiếu nại & tranh chấp",
+      "disputesValue": "0 vụ vi phạm",
+      "peerRating": "Đánh giá ngang hàng",
+      "endorsement": "Được bảo chứng qua 14 lượt xác thực từ mạng lưới sinh viên."
+    },
+    "certifications": {
+      "title": "Chứng chỉ chuyên môn",
+      "summary": "2 Đã duyệt • 1 Đang xét",
+      "ielts": "IELTS Speaking C1 (8.0)",
+      "ieltsSub": "Chứng chỉ quốc tế • Quyền mở lớp đã kích hoạt",
+      "toeic": "TOEIC 920 Business",
+      "toeicSub": "Chứng chỉ quốc tế • Quyền mở lớp đã kích hoạt",
+      "translation": "Dịch thuật Anh - Việt",
+      "translationSub": "Đang thẩm định hồ sơ chuyên môn",
+      "pendingBadge": "Chờ duyệt"
+    },
+    "pledge": {
+      "title": "Cam kết An toàn & Bảo mật SkillSwap",
+      "subtitle": "Môi trường trao đổi học thuật chuẩn mực, minh bạch và tôn trọng quyền riêng tư sinh viên.",
+      "item1Title": "Email trường sinh viên",
+      "item1Body": "Người học và người dạy được kiểm tra định danh chính thức qua hòm thư sinh viên còn hiệu lực.",
+      "item2Title": "Bảo mật danh tính cá nhân",
+      "item2Body": "Dữ liệu cá nhân nhạy cảm được che giấu. Thành viên chỉ nhìn thấy biệt danh xác thực và trường theo học.",
+      "item3Title": "Tái thẩm định theo niên khóa",
+      "item3Body": "Thẻ sinh viên được rà soát định kỳ hàng năm để bảo đảm tư cách thành viên và chất lượng buổi học."
+    }
   }
 }

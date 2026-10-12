@@ -111,7 +111,7 @@ describe('Navbar component', () => {
   it('renders navigation link with title tooltip for verification', () => {
     render(<Navbar />);
 
-    const verificationLink = screen.getByTitle('Quản trị & Xác minh');
+    const verificationLink = screen.getByTitle('Trung tâm Thẩm định & Xác minh');
     expect(verificationLink).toBeDefined();
     expect(verificationLink.textContent).toBe('Xác minh');
   });

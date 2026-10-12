@@ -595,5 +595,71 @@
     "switchToRegister": "Don't have an account?",
     "validationError": "Please provide valid information (password at least 8 characters).",
     "pledgeError": "You must agree to the academic integrity pledge."
+  },
+  "Verification": {
+    "badge": "Verified Student Profile",
+    "title": "Student Verification Center",
+    "subtitle": "Manage university identity credentials and subject competency proofs for safe peer mentoring.",
+    "privacyBadge": {
+      "title": "Learner Privacy",
+      "subtitle": "Securely verified"
+    },
+    "studentIdCard": {
+      "title": "Regular Student Identification",
+      "verified": "Verified",
+      "pending": "In review",
+      "unverified": "Unverified",
+      "sub": "Student credential registry",
+      "cohort": "Class of 2021 - 2025",
+      "school": "University",
+      "schoolSub": "Campus in Ho Chi Minh City",
+      "studentCode": "Student ID",
+      "studentCodeSub": "Matches student registry records",
+      "studentEmail": "Student Email",
+      "studentEmailSub": "Official student account verified",
+      "reverifyTerm": "Next Re-verification",
+      "reverifyTermValue": "September 2025",
+      "reverifyTermSub": "Annual academic cycle"
+    },
+    "cardScan": {
+      "title": "Student ID Card Scan",
+      "subtitle": "Stored encrypted, sensitive data masked automatically.",
+      "updateCta": "Update Student Card",
+      "watermark": "SKILLSWAP VERIFIED",
+      "internalLock": "Internal Privacy",
+      "verifiedOn": "Verified: 15/09/2024"
+    },
+    "trustScore": {
+      "title": "Academic Trust Index",
+      "badge": "High trust tier",
+      "score": "98",
+      "scoreMax": "/ 100 Points",
+      "completedSessions": "Session completion rate",
+      "disputes": "Disputes & violations",
+      "disputesValue": "0 violations",
+      "peerRating": "Peer review rating",
+      "endorsement": "Endorsed through 14 peer validations across universities."
+    },
+    "certifications": {
+      "title": "Subject Certifications",
+      "summary": "2 Approved • 1 In review",
+      "ielts": "IELTS Speaking C1 (8.0)",
+      "ieltsSub": "International credential • Class hosting enabled",
+      "toeic": "TOEIC 920 Business",
+      "toeicSub": "International credential • Class hosting enabled",
+      "translation": "English - Vietnamese Translation",
+      "translationSub": "Competency evidence undergoing review",
+      "pendingBadge": "Under review"
+    },
+    "pledge": {
+      "title": "SkillSwap Safety & Trust Pledge",
+      "subtitle": "A transparent, compliant peer-learning network respecting student privacy.",
+      "item1Title": "Valid Student Email",
+      "item1Body": "Learners and instructors verify student status via active student accounts.",
+      "item2Title": "Personal Identity Privacy",
+      "item2Body": "Sensitive documents remain protected. Only verified badges and universities are visible to peers.",
+      "item3Title": "Annual Academic Re-check",
+      "item3Body": "Student enrollment is re-checked annually to preserve high peer-learning standards."
+    }
   }
 }
