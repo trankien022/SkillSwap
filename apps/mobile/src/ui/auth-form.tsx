@@ -1,16 +1,7 @@
 import React, { useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, typography } from '@/design/tokens';
+import { AppButton, LabeledInput, SurfaceCard } from './primitives';
 import {
   getLocalizedAuthError,
   validateAuthInput,
@@ -113,7 +104,7 @@ export function AuthForm({ mode, onToggleMode }: AuthFormProps) {
           </Pressable>
         </View>
 
-        <View style={styles.card}>
+        <SurfaceCard style={styles.card}>
           <Text style={styles.title}>
             {isRegister ? t('Auth.registerTitle') : t('Auth.signInTitle')}
           </Text>
@@ -130,10 +121,9 @@ export function AuthForm({ mode, onToggleMode }: AuthFormProps) {
             </View>
           ) : null}
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>{t('Auth.emailLabel')}</Text>
-            <TextInput
+          <LabeledInput
               style={styles.input}
+              label={t('Auth.emailLabel')}
               value={email}
               onChangeText={(text) => {
                 setEmail(text);
@@ -145,15 +135,12 @@ export function AuthForm({ mode, onToggleMode }: AuthFormProps) {
               keyboardType="email-address"
               autoCorrect={false}
               editable={!isSubmitting}
-              accessibilityLabel={t('Auth.emailLabel')}
             />
-          </View>
 
           {isRegister ? (
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>{t('Auth.displayNameLabel')}</Text>
-              <TextInput
+              <LabeledInput
                 style={styles.input}
+                label={t('Auth.displayNameLabel')}
                 value={displayName}
                 onChangeText={(text) => {
                   setDisplayName(text);
@@ -162,15 +149,12 @@ export function AuthForm({ mode, onToggleMode }: AuthFormProps) {
                 placeholder="Nguyen Van A"
                 placeholderTextColor={colors.inkMuted}
                 editable={!isSubmitting}
-                accessibilityLabel={t('Auth.displayNameLabel')}
               />
-            </View>
           ) : null}
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>{t('Auth.passwordLabel')}</Text>
-            <TextInput
+            <LabeledInput
               style={styles.input}
+              label={t('Auth.passwordLabel')}
               value={password}
               onChangeText={(text) => {
                 setPassword(text);
@@ -181,15 +165,12 @@ export function AuthForm({ mode, onToggleMode }: AuthFormProps) {
               secureTextEntry
               autoCapitalize="none"
               editable={!isSubmitting}
-              accessibilityLabel={t('Auth.passwordLabel')}
             />
-          </View>
 
           {isRegister ? (
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>{t('Auth.confirmPasswordLabel')}</Text>
-              <TextInput
+              <LabeledInput
                 style={styles.input}
+                label={t('Auth.confirmPasswordLabel')}
                 value={confirmPassword}
                 onChangeText={(text) => {
                   setConfirmPassword(text);
@@ -200,32 +181,15 @@ export function AuthForm({ mode, onToggleMode }: AuthFormProps) {
                 secureTextEntry
                 autoCapitalize="none"
                 editable={!isSubmitting}
-                accessibilityLabel={t('Auth.confirmPasswordLabel')}
               />
-            </View>
           ) : null}
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.submitButton,
-              isSubmitting && styles.submitButtonDisabled,
-              pressed && !isSubmitting && styles.submitButtonPressed,
-            ]}
+          <AppButton
             onPress={handleSubmit}
-            disabled={isSubmitting}
-            accessibilityRole="button"
-            accessibilityLabel={
-              isRegister ? t('Auth.registerButton') : t('Auth.signInButton')
-            }
-          >
-            {isSubmitting ? (
-              <ActivityIndicator color={colors.surface} />
-            ) : (
-              <Text style={styles.submitButtonText}>
-                {isRegister ? t('Auth.registerButton') : t('Auth.signInButton')}
-              </Text>
-            )}
-          </Pressable>
+            label={isRegister ? t('Auth.registerButton') : t('Auth.signInButton')}
+            busy={isSubmitting}
+            style={styles.submitButton}
+          />
 
           <Pressable
             style={styles.switchButton}
@@ -243,7 +207,7 @@ export function AuthForm({ mode, onToggleMode }: AuthFormProps) {
                 : t('Auth.switchToRegister')}
             </Text>
           </Pressable>
-        </View>
+        </SurfaceCard>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -295,7 +259,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing.xl,
+    padding: spacing.lg,
     gap: spacing.lg,
   },
   title: {
@@ -313,42 +277,11 @@ const styles = StyleSheet.create({
     fontSize: typography.label.fontSize,
     lineHeight: 20,
   },
-  fieldGroup: {
-    gap: spacing.xs,
-  },
-  label: {
-    fontSize: typography.label.fontSize,
-    fontWeight: typography.label.fontWeight,
-    color: colors.inkSoft,
-  },
   input: {
-    minHeight: 48,
-    borderRadius: radius.control,
-    borderWidth: 1,
-    borderColor: colors.border,
     backgroundColor: colors.mist,
-    paddingHorizontal: spacing.md,
-    fontSize: typography.body.fontSize,
-    color: colors.ink,
   },
   submitButton: {
-    minHeight: 48,
-    backgroundColor: colors.campusEmerald,
-    borderRadius: radius.pill,
-    justifyContent: 'center',
-    alignItems: 'center',
     marginTop: spacing.sm,
-  },
-  submitButtonDisabled: {
-    opacity: 0.6,
-  },
-  submitButtonPressed: {
-    backgroundColor: colors.campusEmeraldDeep,
-  },
-  submitButtonText: {
-    color: colors.surface,
-    fontSize: typography.body.fontSize,
-    fontWeight: '600',
   },
   switchButton: {
     minHeight: 44,

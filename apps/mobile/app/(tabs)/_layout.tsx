@@ -1,6 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { Redirect, Tabs } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { colors, spacing, typography } from '@/design/tokens';
 import { BootErrorView } from '@/ui/boot-error-view';
 import { ConfigErrorView } from '@/ui/config-error-view';
@@ -47,6 +48,7 @@ export default function TabsLayout() {
           borderTopColor: colors.border,
           borderTopWidth: 1,
           paddingTop: spacing.sm,
+        minHeight: 76,
         },
         tabBarActiveTintColor: colors.campusEmerald,
         tabBarInactiveTintColor: colors.inkMuted,
@@ -65,6 +67,7 @@ export default function TabsLayout() {
         options={{
           title: t('Nav.home'),
           tabBarLabel: t('Nav.home'),
+        tabBarIcon: ({ color, size, focused }) => <SymbolView name={{ ios: 'house.fill', android: 'home' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
         }}
       />
       <Tabs.Screen
@@ -72,6 +75,7 @@ export default function TabsLayout() {
         options={{
           title: t('Nav.explore'),
           tabBarLabel: t('Nav.explore'),
+        tabBarIcon: ({ color, size, focused }) => <SymbolView name={{ ios: 'magnifyingglass', android: 'search' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
         }}
       />
       <Tabs.Screen
@@ -79,6 +83,7 @@ export default function TabsLayout() {
         options={{
           title: t('Nav.schedule'),
           tabBarLabel: t('Nav.schedule'),
+        tabBarIcon: ({ color, size, focused }) => <SymbolView name={{ ios: 'calendar', android: 'calendar_month' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
         }}
       />
       <Tabs.Screen
@@ -86,6 +91,7 @@ export default function TabsLayout() {
         options={{
           title: t('Nav.wallet'),
           tabBarLabel: t('Nav.wallet'),
+        tabBarIcon: ({ color, size, focused }) => <SymbolView name={{ ios: 'wallet.pass.fill', android: 'account_balance_wallet' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
         }}
       />
       <Tabs.Screen
@@ -93,6 +99,7 @@ export default function TabsLayout() {
         options={{
           title: t('Nav.profile'),
           tabBarLabel: t('Nav.profile'),
+        tabBarIcon: ({ color, size, focused }) => <SymbolView name={{ ios: 'person.crop.circle.fill', android: 'account_circle' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
         }}
       />
       <Tabs.Screen name="verification" options={{ href: null }} />

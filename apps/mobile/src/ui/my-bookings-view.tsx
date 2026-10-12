@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -24,6 +23,7 @@ import {
 import { myBookingsStyles as styles } from './my-bookings-styles';
 import { useSession } from './session-context';
 import { StatusPill, type PillTone } from './status-pill';
+import { ScreenScroll } from './primitives';
 
 /**
  * Real authenticated learner bookings view (Route 22, FR-007, FR-009).
@@ -241,7 +241,7 @@ export function MyBookingsView() {
   };
 
   return (
-    <ScrollView
+    <ScreenScroll
       contentContainerStyle={styles.container}
       refreshControl={
         <RefreshControl
@@ -496,7 +496,7 @@ export function MyBookingsView() {
           )}
         </View>
       ) : null}
-    </ScrollView>
+    </ScreenScroll>
   );
 }
 

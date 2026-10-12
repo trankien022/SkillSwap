@@ -216,7 +216,7 @@ export function MarketplaceView() {
             </View>
             <View style={styles.filterRow}>
               <Pressable style={styles.filterBtn} onPress={() => setIsSkillModalOpen(true)} accessibilityRole="button" accessibilityLabel={selectedSkillName}>
-                <Text style={styles.filterBtnText} numberOfLines={1}>🏷️ {selectedSkillName}</Text>
+                <Text style={styles.filterBtnText} numberOfLines={1}>{selectedSkillName}</Text>
               </Pressable>
               {hasActiveFilters && (
                 <Pressable
@@ -323,8 +323,8 @@ export function MarketplaceView() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surface },
-  listContainer: { padding: spacing.lg, gap: spacing.md, maxWidth: 500, width: '100%', alignSelf: 'center' },
+  screen: { flex: 1, backgroundColor: colors.mist },
+  listContainer: { padding: spacing.lg, paddingTop: spacing.xl, paddingBottom: spacing.xxxl, gap: spacing.md, maxWidth: 560, width: '100%', alignSelf: 'center' },
   header: { gap: spacing.md, marginBottom: spacing.xs },
   title: { fontSize: typography.heading.fontSize, fontWeight: typography.heading.fontWeight, color: colors.ink },
   searchRow: { flexDirection: 'row', gap: spacing.sm },
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
   retryBtnText: { color: colors.dangerInk, fontWeight: '700', fontSize: typography.label.fontSize },
   loadMoreBtn: { minHeight: 44, borderWidth: 1, borderColor: colors.border, borderRadius: radius.pill, justifyContent: 'center', alignItems: 'center', marginVertical: spacing.md },
   loadMoreText: { color: colors.inkSoft, fontSize: typography.label.fontSize, fontWeight: '600' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.4)', justifyContent: 'flex-end' },
+  modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
   modalCard: { backgroundColor: colors.surface, borderTopLeftRadius: radius.card, borderTopRightRadius: radius.card, maxHeight: '75%', padding: spacing.lg, gap: spacing.md },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
   modalTitle: { fontSize: typography.heading.fontSize, fontWeight: typography.heading.fontWeight, color: colors.ink },

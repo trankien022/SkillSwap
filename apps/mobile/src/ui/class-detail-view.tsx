@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Pressable,
   RefreshControl,
-  ScrollView,
   Text,
   View,
 } from 'react-native';
@@ -21,6 +20,7 @@ import { classDetailStyles as styles } from './class-detail-styles';
 import { useSession } from './session-context';
 import { StatusPill, type PillTone } from './status-pill';
 import { WalletService } from './wallet-service';
+import { ScreenScroll, SurfaceCard } from './primitives';
 
 export interface ClassDetailViewProps {
   readonly classId: string;
@@ -211,8 +211,8 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
   // 2. Not found state
   if (coordinatorState.phase === 'not_found') {
     return (
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.card}>
+      <ScreenScroll contentContainerStyle={styles.container}>
+        <SurfaceCard style={styles.card}>
           <StatusPill tone="neutral" label={t('Common.errorTitle')} />
           <Text style={styles.notFoundText}>{t('ClassDetail.notFound')}</Text>
           <Pressable
@@ -223,16 +223,16 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
           >
             <Text style={styles.outlineCtaText}>{t('Dashboard.exploreClasses')}</Text>
           </Pressable>
-        </View>
-      </ScrollView>
+        </SurfaceCard>
+      </ScreenScroll>
     );
   }
 
   // 3. Error state with no detail
   if (coordinatorState.phase === 'error' && !detail) {
     return (
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.card}>
+      <ScreenScroll contentContainerStyle={styles.container}>
+        <SurfaceCard style={styles.card}>
           <StatusPill tone="danger" label={t('Common.errorTitle')} />
           <Text style={styles.errorBodyText} accessibilityRole="alert">
             {getLocalizedErrorMessage(coordinatorState.errorReason)}
@@ -245,8 +245,8 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
           >
             <Text style={styles.primaryCtaText}>{t('Common.retry')}</Text>
           </Pressable>
-        </View>
-      </ScrollView>
+        </SurfaceCard>
+      </ScreenScroll>
     );
   }
 
@@ -326,7 +326,7 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
     ownBooking?.state === 'confirmed' || coordinatorState.phase === 'confirmed_success';
 
   return (
-    <ScrollView
+    <ScreenScroll
       contentContainerStyle={styles.container}
       refreshControl={
         <RefreshControl
@@ -337,7 +337,7 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
       }
     >
       {/* 1. Header & Teacher Card */}
-      <View style={styles.card}>
+      <SurfaceCard style={styles.card}>
         <View style={styles.headerRow}>
           <Text style={styles.title}>{t('ClassDetail.title')}</Text>
           <StatusPill tone={statusTone} label={statusText} />
@@ -357,10 +357,10 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
             {teacherRatingText}
           </Text>
         </View>
-      </View>
+      </SurfaceCard>
 
       {/* 2. Description Card */}
-      <View style={styles.card}>
+      <SurfaceCard style={styles.card}>
         <Text style={styles.sectionTitle}>{t('ClassDetail.description')}</Text>
         <Text style={styles.descriptionText}>{detail.description}</Text>
 
@@ -380,10 +380,10 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
             </View>
           </View>
         )}
-      </View>
+      </SurfaceCard>
 
       {/* 3. Schedule, Seats & Price Details Card */}
-      <View style={styles.card}>
+      <SurfaceCard style={styles.card}>
         <Text style={styles.sectionTitle}>{t('ClassDetail.schedule')}</Text>
 
         <View style={styles.gridRow}>
@@ -406,7 +406,7 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
 
         <View style={styles.scheduleRow}>
           <Text style={styles.scheduleText}>
-            📅 {localizedDate} · {localizedTime}
+            {localizedDate} · {localizedTime}
           </Text>
         </View>
 
@@ -419,7 +419,7 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
           </View>
           <Text style={styles.rateHintText}>{t('ClassDetail.creditEquivalent')}</Text>
         </View>
-      </View>
+      </SurfaceCard>
 
       {/* 4. Own Booking & Actions Area */}
       {isConfirmed ? (
@@ -434,7 +434,7 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
 
           {ownBooking.expiresAt && (
             <Text style={styles.expiresAtText}>
-              ⏱️ {t('ClassDetail.expiresAt', { time: formatExpiryTime(ownBooking.expiresAt) })}
+              {t('ClassDetail.expiresAt', { time: formatExpiryTime(ownBooking.expiresAt) })}
             </Text>
           )}
 
@@ -459,7 +459,7 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
           {coordinatorState.isInsufficientBalance && (
             <View style={styles.insufficientBox}>
               <Text style={styles.insufficientTitle}>
-                ⚠️ {t('ClassDetail.insufficientBalanceTitle')}
+                {t('ClassDetail.insufficientBalanceTitle')}
               </Text>
               <Text style={styles.insufficientMessage}>
                 {t('ClassDetail.insufficientBalanceMessage', {
@@ -545,7 +545,7 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
       )}
 
       {/* 7. Recent Ratings Section (No peer identity fabrication) */}
-      <View style={styles.card}>
+      <SurfaceCard style={styles.card}>
         <Text style={styles.sectionTitle}>{t('ClassDetail.reviewsTitle')}</Text>
         {detail.recentRatings.length === 0 ? (
           <Text style={styles.noReviewsText}>{t('ClassDetail.noReviews')}</Text>
@@ -562,7 +562,7 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
             ))}
           </View>
         )}
-      </View>
-    </ScrollView>
+      </SurfaceCard>
+    </ScreenScroll>
   );
 }

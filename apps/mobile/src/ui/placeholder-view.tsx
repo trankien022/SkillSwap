@@ -1,9 +1,10 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors, radius, spacing, typography } from '@/design/tokens';
 import { DEMO_CLASS_ID } from '@/infrastructure/mock/mock-booking-gateway';
 import { useSession } from './session-context';
+import { ScreenScroll, SurfaceCard } from './primitives';
 
 export interface PlaceholderViewProps {
   readonly type: 'explore' | 'schedule';
@@ -24,8 +25,8 @@ export function PlaceholderView({ type }: PlaceholderViewProps) {
       : t('Placeholder.scheduleMessage');
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.card}>
+    <ScreenScroll contentContainerStyle={styles.container}>
+      <SurfaceCard style={styles.card}>
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.message}>{message}</Text>
 
@@ -45,8 +46,8 @@ export function PlaceholderView({ type }: PlaceholderViewProps) {
             </Pressable>
           </View>
         ) : null}
-      </View>
-    </ScrollView>
+      </SurfaceCard>
+    </ScreenScroll>
   );
 }
 
@@ -63,7 +64,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing.xl,
+    padding: spacing.lg,
     gap: spacing.lg,
   },
   title: {

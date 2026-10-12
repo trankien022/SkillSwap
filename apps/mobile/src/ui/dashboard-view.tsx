@@ -4,7 +4,6 @@ import {
   Alert,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -12,6 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import type { WalletBalanceView } from '@skillswap/contracts';
 import { colors, radius, spacing, typography } from '@/design/tokens';
+import { AppButton, ScreenScroll, SurfaceCard } from './primitives';
 import { useSession } from './session-context';
 import { UpcomingBookingsSummary } from './upcoming-bookings-summary';
 import { WalletService } from './wallet-service';
@@ -73,14 +73,14 @@ export function DashboardView() {
   const badgeColors = getVerificationBadgeStyle();
 
   return (
-    <ScrollView
+    <ScreenScroll
       contentContainerStyle={styles.container}
       refreshControl={
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} colors={[colors.campusEmerald]} />
       }
     >
       {/* 1. Header & Greeting */}
-      <View style={styles.card}>
+      <SurfaceCard style={styles.card}>
         <Text style={styles.greeting}>
           {t('Dashboard.greeting', { name: user?.displayName ?? t('Common.defaultUserName') })}
         </Text>
@@ -94,19 +94,19 @@ export function DashboardView() {
                 : t('Dashboard.userRole')}
           </Text>
         </View>
-      </View>
+      </SurfaceCard>
 
       {errorMessage ? (
         <View style={styles.errorBox}>
           <Text style={styles.errorText}>{errorMessage}</Text>
-          <Pressable style={styles.retryAction} onPress={() => void fetchDashboardData()}>
+          <Pressable style={styles.retryAction} onPress={() => void fetchDashboardData()} accessibilityRole="button" accessibilityLabel={t('Common.retry')}>
             <Text style={styles.retryActionText}>{t('Common.retry')}</Text>
           </Pressable>
         </View>
       ) : null}
 
       {/* 2. Wallet Financials Card */}
-      <View style={styles.card}>
+      <SurfaceCard style={styles.card}>
         <View style={styles.cardHeader}>
           <Text style={styles.cardTitle}>{t('Dashboard.walletSummary')}</Text>
           <Pressable
@@ -137,13 +137,13 @@ export function DashboardView() {
             </View>
           </View>
         )}
-      </View>
+      </SurfaceCard>
 
       {/* 2.5. Upcoming Schedule Summary Card */}
       <UpcomingBookingsSummary reloadTrigger={summaryReloadTrigger} />
 
       {/* 3. Student Verification Trust Card */}
-      <View style={styles.card}>
+      <SurfaceCard style={styles.card}>
         <View style={styles.cardHeader}>
           <Text style={styles.cardTitle}>{t('Dashboard.verificationTitle')}</Text>
           <View style={[styles.statusBadge, { backgroundColor: badgeColors.bg }]}>
@@ -192,28 +192,25 @@ export function DashboardView() {
             </Text>
           </Pressable>
         )}
-      </View>
+      </SurfaceCard>
 
       {/* 4. Quick Actions */}
       <View style={styles.actionsContainer}>
-        <Pressable
-          style={({ pressed }) => [styles.primaryCta, pressed && styles.primaryCtaPressed]}
+        <AppButton
           onPress={() => router.push('/(tabs)/explore')}
-          accessibilityRole="button"
-          accessibilityLabel={t('Dashboard.exploreClasses')}
-        >
-          <Text style={styles.primaryCtaText}>{t('Dashboard.exploreClasses')}</Text>
-        </Pressable>
+          label={t('Dashboard.exploreClasses')}
+        />
       </View>
-    </ScrollView>
+    </ScreenScroll>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     padding: spacing.lg,
-    gap: spacing.lg,
-    maxWidth: 500,
+    paddingBottom: spacing.xxxl,
+    gap: spacing.xl,
+    maxWidth: 560,
     width: '100%',
     alignSelf: 'center',
   },
@@ -222,7 +219,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing.xl,
+    padding: spacing.lg,
     gap: spacing.md,
   },
   cardHeader: {
@@ -236,7 +233,8 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   greeting: {
-    fontSize: typography.title.fontSize,
+    fontSize: 24,
+    lineHeight: 32,
     fontWeight: typography.title.fontWeight,
     color: colors.ink,
   },
@@ -358,7 +356,8 @@ const styles = StyleSheet.create({
   errorBox: {
     backgroundColor: colors.dangerTint,
     borderRadius: radius.control,
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -366,7 +365,8 @@ const styles = StyleSheet.create({
   errorText: {
     color: colors.dangerInk,
     flex: 1,
-    fontSize: typography.label.fontSize,
+    fontSize: typography.caption.fontSize,
+    lineHeight: 18,
   },
   retryAction: {
     minHeight: 44,

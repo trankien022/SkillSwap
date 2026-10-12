@@ -5,7 +5,6 @@ import {
   Linking,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -17,6 +16,7 @@ import type {
   WalletHistoryItemView,
 } from '@skillswap/contracts';
 import { colors, radius, spacing, typography } from '@/design/tokens';
+import { AppButton, ScreenScroll, SurfaceCard } from './primitives';
 import { useSession } from './session-context';
 import { WalletService } from './wallet-service';
 
@@ -147,7 +147,7 @@ export function WalletView() {
   };
 
   return (
-    <ScrollView
+    <ScreenScroll
       contentContainerStyle={styles.container}
       refreshControl={
         <RefreshControl
@@ -158,7 +158,7 @@ export function WalletView() {
       }
     >
       {/* 1. Current Balance Card */}
-      <View style={styles.card}>
+      <SurfaceCard style={styles.card}>
         <View style={styles.cardHeader}>
           <Text style={styles.cardTitle}>{t('Wallet.balanceCard')}</Text>
           <Pressable
@@ -191,7 +191,7 @@ export function WalletView() {
         )}
 
         <Text style={styles.rateHintText}>{t('Wallet.creditEquivalent')}</Text>
-      </View>
+      </SurfaceCard>
 
       {errorMessage ? (
         <View style={styles.errorBox}>
@@ -203,7 +203,7 @@ export function WalletView() {
       ) : null}
 
       {/* 2. Top-Up Section */}
-      <View style={styles.card}>
+      <SurfaceCard style={styles.card}>
         <Text style={styles.cardTitle}>{t('Wallet.topUpTitle')}</Text>
 
         {topUpIntent ? (
@@ -257,29 +257,18 @@ export function WalletView() {
 
             {topUpError ? <Text style={styles.fieldErrorText}>{topUpError}</Text> : null}
 
-            <Pressable
-              style={({ pressed }) => [
-                styles.primaryCta,
-                (!isValidAmount || isSubmittingTopUp) && styles.ctaDisabled,
-                pressed && isValidAmount && !isSubmittingTopUp && styles.primaryCtaPressed,
-              ]}
+            <AppButton
               onPress={() => void handleTopUp()}
-              disabled={!isValidAmount || isSubmittingTopUp}
-              accessibilityRole="button"
-              accessibilityLabel={t('Wallet.topUpButton')}
-            >
-              {isSubmittingTopUp ? (
-                <ActivityIndicator color={colors.surface} />
-              ) : (
-                <Text style={styles.primaryCtaText}>{t('Wallet.topUpButton')}</Text>
-              )}
-            </Pressable>
+              label={t('Wallet.topUpButton')}
+              disabled={!isValidAmount}
+              busy={isSubmittingTopUp}
+            />
           </View>
         )}
-      </View>
+      </SurfaceCard>
 
       {/* 3. Transaction History Section */}
-      <View style={styles.card}>
+      <SurfaceCard style={styles.card}>
         <Text style={styles.cardTitle}>{t('Wallet.historyTitle')}</Text>
 
         {history.length === 0 && !isLoading ? (
@@ -353,16 +342,18 @@ export function WalletView() {
             ) : null}
           </View>
         )}
-      </View>
-    </ScrollView>
+      </SurfaceCard>
+    </ScreenScroll>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     padding: spacing.lg,
-    gap: spacing.lg,
-    maxWidth: 500,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xxxl,
+    gap: spacing.xl,
+    maxWidth: 560,
     width: '100%',
     alignSelf: 'center',
   },
@@ -371,7 +362,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing.xl,
+    padding: spacing.lg,
     gap: spacing.md,
   },
   cardHeader: {

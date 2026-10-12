@@ -4,8 +4,9 @@ import { colors, radius, spacing, typography } from '@/design/tokens';
 export const classDetailStyles = StyleSheet.create({
   container: {
     padding: spacing.lg,
-    gap: spacing.lg,
-    maxWidth: 500,
+    paddingBottom: spacing.xxxl,
+    gap: spacing.xl,
+    maxWidth: 560,
     width: '100%',
     alignSelf: 'center',
   },
@@ -14,7 +15,7 @@ export const classDetailStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.mist,
-    padding: spacing.xl,
+    padding: spacing.lg,
     gap: spacing.md,
   },
   loadingText: {

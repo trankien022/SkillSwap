@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
-  ActivityIndicator,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { colors, radius, spacing, typography } from '@/design/tokens';
+import { AppButton, ScreenScroll, SurfaceCard } from './primitives';
 import { useSession } from './session-context';
 
 export function ProfileView() {
@@ -44,9 +43,9 @@ export function ProfileView() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScreenScroll contentContainerStyle={styles.container}>
       {/* 1. Account Details Card */}
-      <View style={styles.card}>
+      <SurfaceCard style={styles.card}>
         <Text style={styles.cardTitle}>{t('Profile.accountDetails')}</Text>
 
         <View style={styles.avatarRow}>
@@ -84,9 +83,9 @@ export function ProfileView() {
             </Text>
           </View>
         </View>
-      </View>
+      </SurfaceCard>
 
-      <View style={styles.card}>
+      <SurfaceCard style={styles.card}>
         <Text style={styles.cardTitle}>{t('Profile.learningAndTeaching')}</Text>
         <Pressable style={styles.linkButton} onPress={() => router.push('/(tabs)/verification')} accessibilityRole="button">
           <Text style={styles.linkButtonText}>{t('Profile.studentVerification')}</Text>
@@ -100,10 +99,10 @@ export function ProfileView() {
         <Pressable style={styles.linkButton} onPress={() => router.push('/(tabs)/notifications')} accessibilityRole="button">
           <Text style={styles.linkButtonText}>{t('Profile.notifications')}</Text>
         </Pressable>
-      </View>
+      </SurfaceCard>
 
       {/* 2. Language Selection Card */}
-      <View style={styles.card}>
+      <SurfaceCard style={styles.card}>
         <Text style={styles.cardTitle}>{t('Profile.languageSection')}</Text>
 
         <View style={styles.langSelectorRow}>
@@ -122,7 +121,7 @@ export function ProfileView() {
                 locale === 'vi' && styles.langOptionTextSelected,
               ]}
             >
-              🇻🇳 {t('Profile.languageVi')}
+              VI · {t('Profile.languageVi')}
             </Text>
           </Pressable>
 
@@ -141,41 +140,32 @@ export function ProfileView() {
                 locale === 'en' && styles.langOptionTextSelected,
               ]}
             >
-              🇬🇧 {t('Profile.languageEn')}
+              EN · {t('Profile.languageEn')}
             </Text>
           </Pressable>
         </View>
-      </View>
+      </SurfaceCard>
 
       {/* 3. Sign Out CTA */}
       <View style={styles.actionsContainer}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.signOutBtn,
-            pressed && !isSigningOut && styles.signOutBtnPressed,
-            isSigningOut && styles.btnDisabled,
-          ]}
+        <AppButton
           onPress={() => void handleSignOut()}
-          disabled={isSigningOut}
-          accessibilityRole="button"
-          accessibilityLabel={t('Profile.signOutButton')}
-        >
-          {isSigningOut ? (
-            <ActivityIndicator color={colors.dangerInk} />
-          ) : (
-            <Text style={styles.signOutBtnText}>{t('Profile.signOutButton')}</Text>
-          )}
-        </Pressable>
+          label={t('Profile.signOutButton')}
+          tone="danger"
+          busy={isSigningOut}
+        />
       </View>
-    </ScrollView>
+    </ScreenScroll>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     padding: spacing.lg,
-    gap: spacing.lg,
-    maxWidth: 500,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xxxl,
+    gap: spacing.xl,
+    maxWidth: 560,
     width: '100%',
     alignSelf: 'center',
   },
@@ -184,7 +174,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing.xl,
+    padding: spacing.lg,
     gap: spacing.md,
   },
   cardTitle: {

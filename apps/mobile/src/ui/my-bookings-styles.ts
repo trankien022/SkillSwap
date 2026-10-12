@@ -4,9 +4,10 @@ import { colors, radius, spacing, typography } from '@/design/tokens';
 export const myBookingsStyles = StyleSheet.create({
   container: {
     padding: spacing.lg,
-    paddingBottom: spacing.xxl,
-    gap: spacing.lg,
-    maxWidth: 500,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xxxl,
+    gap: spacing.xl,
+    maxWidth: 560,
     width: '100%',
     alignSelf: 'center',
   },
@@ -36,10 +37,12 @@ export const myBookingsStyles = StyleSheet.create({
   },
   filterBar: {
     flexDirection: 'row',
-    backgroundColor: colors.neutralTint,
-    borderRadius: radius.control,
+    backgroundColor: colors.mist,
+    borderRadius: radius.pill,
     padding: spacing.xs,
     gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   filterTab: {
     flex: 1,
@@ -50,7 +53,9 @@ export const myBookingsStyles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
   },
   filterTabActive: {
-    backgroundColor: colors.campusEmerald,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   filterTabText: {
     fontSize: typography.label.fontSize,
@@ -58,7 +63,7 @@ export const myBookingsStyles = StyleSheet.create({
     color: colors.inkSoft,
   },
   filterTabTextActive: {
-    color: colors.surface,
+    color: colors.campusEmeraldDeep,
     fontWeight: '700',
   },
   card: {

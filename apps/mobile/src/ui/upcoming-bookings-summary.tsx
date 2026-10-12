@@ -10,6 +10,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { colors, radius, spacing, typography } from '@/design/tokens';
 import { MyBookingsGateway } from '@/infrastructure/http/my-bookings-gateway';
 import { useSession } from './session-context';
+import { SurfaceCard } from './primitives';
 
 export interface UpcomingBookingsSummaryProps {
   readonly reloadTrigger?: number;
@@ -93,7 +94,7 @@ export function UpcomingBookingsSummary({ reloadTrigger }: UpcomingBookingsSumma
   }, [reloadTrigger, loadSummary]);
 
   return (
-    <View style={styles.card}>
+    <SurfaceCard style={styles.card}>
       <View style={styles.cardHeader}>
         <Text style={styles.cardTitle}>{t('MyBookings.upcomingSummaryTitle')}</Text>
         <Pressable
@@ -132,7 +133,7 @@ export function UpcomingBookingsSummary({ reloadTrigger }: UpcomingBookingsSumma
           </View>
         </View>
       )}
-    </View>
+    </SurfaceCard>
   );
 }
 
@@ -142,7 +143,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing.xl,
+    padding: spacing.lg,
     gap: spacing.md,
   },
   cardHeader: {
