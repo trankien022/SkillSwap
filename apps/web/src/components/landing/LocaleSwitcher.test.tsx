@@ -5,13 +5,9 @@ import enMessages from '../../messages/en.json';
 import viMessages from '../../messages/vi.json';
 
 const replaceMock = vi.fn();
-let currentPath = '/en';
+let currentPath = '/classes';
 
 vi.mock('../../i18n/routing', () => ({
-  routing: {
-    locales: ['en', 'vi'],
-    defaultLocale: 'en',
-  },
   useRouter: () => ({ replace: replaceMock }),
   usePathname: () => currentPath,
 }));
@@ -22,7 +18,7 @@ const { LocaleSwitcher } = await import('./LocaleSwitcher');
 afterEach(() => {
   cleanup();
   replaceMock.mockClear();
-  currentPath = '/en';
+  currentPath = '/classes';
 });
 
 function renderSwitcher(locale: 'vi' | 'en' = 'en') {
@@ -48,49 +44,46 @@ function label(locale: 'vi' | 'en') {
 }
 
 describe('LocaleSwitcher', () => {
-  it('marks the English button as checked when path starts with /en', () => {
-    currentPath = '/en';
+  it('marks English as active for the English locale', () => {
     renderSwitcher('en');
 
     const messages = label('en');
-    const enButton = screen.getByRole('radio', { name: messages.en });
-    const viButton = screen.getByRole('radio', { name: messages.vi });
+    const enButton = screen.getByRole('button', { name: messages.en });
+    const viButton = screen.getByRole('button', { name: messages.vi });
 
-    expect(enButton.getAttribute('aria-checked')).toBe('true');
-    expect(viButton.getAttribute('aria-checked')).toBe('false');
+    expect(enButton.getAttribute('aria-pressed')).toBe('true');
+    expect(viButton.getAttribute('aria-pressed')).toBe('false');
   });
 
-  it('marks the Vietnamese button as checked when path starts with /vi', () => {
-    currentPath = '/vi';
+  it('marks Vietnamese as active for the Vietnamese locale', () => {
     renderSwitcher('vi');
 
     const messages = label('vi');
-    const enButton = screen.getByRole('radio', { name: messages.en });
-    const viButton = screen.getByRole('radio', { name: messages.vi });
+    const enButton = screen.getByRole('button', { name: messages.en });
+    const viButton = screen.getByRole('button', { name: messages.vi });
 
-    expect(viButton.getAttribute('aria-checked')).toBe('true');
-    expect(enButton.getAttribute('aria-checked')).toBe('false');
+    expect(viButton.getAttribute('aria-pressed')).toBe('true');
+    expect(enButton.getAttribute('aria-pressed')).toBe('false');
   });
 
   it('calls router.replace with the other locale while keeping the path', () => {
-    currentPath = '/en';
+    currentPath = '/classes/abc';
     renderSwitcher('en');
 
     const messages = label('en');
-    fireEvent.click(screen.getByRole('radio', { name: messages.vi }));
+    fireEvent.click(screen.getByRole('button', { name: messages.vi }));
 
     expect(replaceMock).toHaveBeenCalledTimes(1);
     const [path, opts] = replaceMock.mock.calls[0] ?? [];
-    expect(path).toBe('/en');
+    expect(path).toBe('/classes/abc');
     expect(opts).toEqual({ locale: 'vi' });
   });
 
   it('does not call router.replace when the active locale is clicked again', () => {
-    currentPath = '/vi';
     renderSwitcher('vi');
 
     const messages = label('vi');
-    fireEvent.click(screen.getByRole('radio', { name: messages.vi }));
+    fireEvent.click(screen.getByRole('button', { name: messages.vi }));
 
     expect(replaceMock).not.toHaveBeenCalled();
   });

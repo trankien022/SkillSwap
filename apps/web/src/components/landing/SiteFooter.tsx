@@ -1,13 +1,10 @@
 import { getTranslations } from 'next-intl/server';
-import { LocaleSwitcher } from './LocaleSwitcher';
 
 /**
  * Minimalist footer (DESIGN.md §5 Navigation mobile + footer pattern).
  *
  * - Mist background, hairline border-top.
- * - Brand tagline + copyright, center links, locale switcher placeholder.
- * - Phase 3 will replace the locale switcher placeholder with a real
- *   next-intl navigation swap. Pilot keeps it as read-only display.
+ * - Brand tagline + copyright and centered links.
  */
 export async function SiteFooter() {
   const t = await getTranslations('Landing.footer');
@@ -58,8 +55,6 @@ export async function SiteFooter() {
           </a>
         </nav>
 
-        {/* Locale switcher — real next-intl navigation swap */}
-        <LocaleSwitcher />
       </div>
       <div className="mx-auto max-w-7xl px-4 pb-6 text-center text-xs text-ink-muted lg:px-8">
         © {new Date().getFullYear()} SkillSwap MVP
