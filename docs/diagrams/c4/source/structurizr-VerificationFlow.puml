@@ -37,9 +37,9 @@ System_Boundary("SkillSwap_boundary", "SkillSwap", $tags="") {
   ContainerQueue(SkillSwap.Businessmessagebroker, "Business message broker", $techn="Container: RabbitMQ", $descr="Delivers saved business changes for background processing.", $tags="", $link="")
 }
 
-Person(Backenduser, "Backend user", $descr="[Person]\nLearner, Teacher, Verifier or Administrator using an API client.", $tags="", $link="")
+Person(Verifier, "Verifier", $descr="[Person]\nReviews evidence within assigned expertise.", $tags="", $link="")
 
-Rel(Backenduser, SkillSwap.APIgateway, "1: Verifier requests evidence within their expertise", $techn="HTTP / JSON", $tags="", $link="")
+Rel(Verifier, SkillSwap.APIgateway, "1: Verifier requests evidence within their expertise", $techn="HTTP / JSON", $tags="", $link="")
 Rel(SkillSwap.APIgateway, SkillSwap.BackendAPI, "2: Forward the review request", $techn="HTTP / JSON", $tags="", $link="")
 Rel(SkillSwap.BackendAPI, SkillSwap.Businessdatabase, "3: Read matching evidence awaiting review", $techn="PostgreSQL protocol / TypeORM", $tags="", $link="")
 Rel(SkillSwap.APIgateway, SkillSwap.BackendAPI, "4: Forward the Verifier claim and decision", $techn="HTTP / JSON", $tags="", $link="")

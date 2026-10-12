@@ -37,17 +37,17 @@ System_Boundary("SkillSwap_boundary", "SkillSwap", $tags="") {
   ContainerQueue(SkillSwap.Businessmessagebroker, "Business message broker", $techn="Container: RabbitMQ", $descr="Delivers saved business changes for background processing.", $tags="", $link="")
 }
 
-Person(Backenduser, "Backend user", $descr="[Person]\nLearner, Teacher, Verifier or Administrator using an API client.", $tags="", $link="")
+Person(User, "User", $descr="[Person]\nBooks a class using the learning capability of the account.", $tags="", $link="")
 
-Rel(Backenduser, SkillSwap.APIgateway, "1: Learner asks to book a class", $techn="HTTP / JSON", $tags="", $link="")
+Rel(User, SkillSwap.APIgateway, "1: User asks to book a class", $techn="HTTP / JSON", $tags="", $link="")
 Rel(SkillSwap.APIgateway, SkillSwap.BackendAPI, "2: Forward the booking request", $techn="HTTP / JSON", $tags="", $link="")
 Rel(SkillSwap.BackendAPI, SkillSwap.Businessdatabase, "3: Check booking rules and hold a seat for 15 minutes", $techn="PostgreSQL protocol / TypeORM", $tags="", $link="")
-Rel(SkillSwap.APIgateway, SkillSwap.BackendAPI, "4: Forward the Learner confirmation", $techn="HTTP / JSON", $tags="", $link="")
+Rel(SkillSwap.APIgateway, SkillSwap.BackendAPI, "4: Forward the User confirmation", $techn="HTTP / JSON", $tags="", $link="")
 Rel(SkillSwap.BackendAPI, SkillSwap.Businessdatabase, "5: Save confirmation and a request for payment processing", $techn="PostgreSQL protocol / TypeORM", $tags="", $link="")
 Rel(SkillSwap.BackendAPI, SkillSwap.Businessmessagebroker, "6: Publish the saved payment request", $techn="AMQP", $tags="", $link="")
 Rel(SkillSwap.Businessmessagebroker, SkillSwap.BackendAPI, "7: Deliver the request to the wallet handler", $techn="AMQP", $tags="", $link="")
-Rel(SkillSwap.BackendAPI, SkillSwap.Businessdatabase, "8: Deduct credits and allocate Teacher income and fee together", $techn="PostgreSQL protocol / TypeORM", $tags="", $link="")
+Rel(SkillSwap.BackendAPI, SkillSwap.Businessdatabase, "8: Deduct credits and allocate teaching-user income and fee together", $techn="PostgreSQL protocol / TypeORM", $tags="", $link="")
 
 SHOW_LEGEND()
-footer Current backend: confirmation is saved before wallet payment finishes (gap against BR-022/026).\nTeacher income stays on hold. Repeated payment processing cannot charge the booking twice.
+footer Current backend: confirmation is saved before wallet payment finishes (gap against BR-022/026).\nTeaching-user income stays on hold. Repeated payment processing cannot charge the booking twice.
 @enduml

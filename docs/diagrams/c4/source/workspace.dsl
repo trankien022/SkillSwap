@@ -1,12 +1,10 @@
 workspace "SkillSwap" "Current architecture of the student learning marketplace" {
     !impliedRelationships false
     model {
-        learner = person "Learner" "Books classes and attends online lessons."
-        teacher = person "Teacher" "Verified student with approved skills who publishes and teaches classes."
+        user = person "User" "A student account that can learn and, when eligible, teach."
         verifier = person "Verifier" "Reviews teaching evidence within assigned expertise."
-        admin = person "Administrator" "Reviews student proof and manages Verifier access."
-        student = person "Student" "Learner or Teacher using the demonstration apps."
-        apiUser = person "Backend user" "Learner, Teacher, Verifier or Administrator using an API client."
+        admin = person "Admin" "Reviews student proof and manages Verifier access."
+        accountHolder = person "Account holder" "Uses demonstration clients or role-authorized API services."
         skillSwap = softwareSystem "SkillSwap" "Helps students verify skills, book classes and pay with internal credits." {
             webApp = container "Web application" "Shows service status and demonstration bookings." "Next.js / TypeScript" "Demo"
             mobileApp = container "Mobile application" "Shows demonstration bookings using local data." "Expo / React Native" "Demo"
@@ -16,21 +14,23 @@ workspace "SkillSwap" "Current architecture of the student learning marketplace"
             messageBroker = container "Business message broker" "Delivers saved business changes for background processing." "RabbitMQ" "Queue"
             storage = container "Private document store" "Stores student proof uploaded through temporary private links." "MinIO / S3-compatible API" "Database"
         }
-        jitsi = softwareSystem "Online classroom" "Hosts live lessons for authorized Learners and Teachers." "External"
-        learner -> skillSwap "Books classes and uses wallet credits"
-        teacher -> skillSwap "Submits skills and manages teaching"
+        jitsi = softwareSystem "Online classroom" "Hosts live lessons for users who are learning or teaching." "External"
+        paymentGateway = softwareSystem "Third-party payment gateway" "Processes cash top-ups and payouts; provider selection is pending." "External"
+        user -> skillSwap "Learns, books classes and may publish or teach when eligible"
         verifier -> skillSwap "Reviews teaching evidence"
         admin -> skillSwap "Approves students and manages Verifiers"
         skillSwap -> jitsi "Authorizes access to booked lessons"
-        learner -> jitsi "Attends booked lessons"
-        teacher -> jitsi "Teaches booked lessons"
-        student -> webApp "Views status and demo bookings" "Browser"
-        student -> mobileApp "Tries demo bookings" "Native UI"
-        apiUser -> gateway "Requests services allowed for their account" "HTTP / JSON (local development)"
-        apiUser -> storage "Uploads owned student proof using a temporary link" "HTTP PUT (local development)"
-        apiUser -> jitsi "Joins a booked lesson with a private invitation" "HTTPS / WebRTC"
+        user -> jitsi "Attends or teaches a booked lesson"
+        skillSwap -> paymentGateway "Initiates top-ups and payouts; receives signed payment callbacks"
+        accountHolder -> webApp "Views status and demo bookings" "Browser"
+        accountHolder -> mobileApp "Tries demo bookings" "Native UI"
+        accountHolder -> gateway "Requests services allowed for their account" "HTTP / JSON (local development)"
+        accountHolder -> storage "Uploads owned student proof using a temporary link" "HTTP PUT (local development)"
+        accountHolder -> jitsi "Joins a booked lesson with a private invitation" "HTTPS / WebRTC"
         webApp -> gateway "Requests service status only" "HTTP / JSON (local development)"
         gateway -> backendApi "Forwards authenticated requests" "HTTP / JSON"
+        paymentGateway -> gateway "Sends signed payment callbacks" "HTTPS / REST webhook"
+        backendApi -> paymentGateway "Starts cash payments through the PaymentGateway port" "Provider adapter"
         backendApi -> database "Reads and saves owned business records" "PostgreSQL protocol / TypeORM"
         backendApi -> messageBroker "Publishes saved business changes" "AMQP"
         messageBroker -> backendApi "Delivers changes to background handlers" "AMQP"
@@ -55,12 +55,12 @@ workspace "SkillSwap" "Current architecture of the student learning marketplace"
         }
     }
     views {
-        systemContext skillSwap "SystemContext" "System context | SkillSwap | Current capabilities" {
-            include learner teacher verifier admin skillSwap jitsi
+        systemContext skillSwap "SystemContext" "C4-L0 | System context | SkillSwap | Current capabilities" {
+            include user verifier admin skillSwap jitsi paymentGateway
             autoLayout lr
         }
-        container skillSwap "Containers" "Containers | SkillSwap | Current implementation" {
-            include student apiUser webApp mobileApp gateway backendApi database messageBroker storage jitsi
+        container skillSwap "Containers" "C4-L1 | Containers | SkillSwap | Current implementation" {
+            include accountHolder webApp mobileApp gateway backendApi database messageBroker storage jitsi paymentGateway
             autoLayout lr
         }
         deployment skillSwap "Development" "Deployment" "Deployment | SkillSwap | Local development only" {
@@ -68,25 +68,25 @@ workspace "SkillSwap" "Current architecture of the student learning marketplace"
             autoLayout lr
         }
         dynamic skillSwap "BookingFlow" "Booking and payment | FR-007/009 | BR-021–026/034–038" {
-            apiUser -> gateway "Learner asks to book a class"
+            accountHolder -> gateway "User asks to book a class"
             gateway -> backendApi "Forward the booking request"
             backendApi -> database "Check booking rules and hold a seat for 15 minutes"
-            gateway -> backendApi "Forward the Learner confirmation"
+            gateway -> backendApi "Forward the User confirmation"
             backendApi -> database "Save confirmation and a request for payment processing"
             backendApi -> messageBroker "Publish the saved payment request"
             messageBroker -> backendApi "Deliver the request to the wallet handler"
-            backendApi -> database "Deduct credits and allocate Teacher income and fee together"
+            backendApi -> database "Deduct credits and allocate teaching-user income and fee together"
             autoLayout lr
         }
         dynamic skillSwap "TeachingFlow" "Join an online class | FR-011 | BR-039–041" {
-            apiUser -> gateway "Participant asks to join a booked class"
+            accountHolder -> gateway "Participant asks to join a booked class"
             gateway -> backendApi "Forward the verified participant identity"
             backendApi -> database "Read booking and class for participant and joining-time checks"
-            apiUser -> jitsi "Enter the booked classroom using the invitation"
+            accountHolder -> jitsi "Enter the booked classroom using the invitation"
             autoLayout lr
         }
         dynamic skillSwap "VerificationFlow" "Review teaching skills | FR-004/005 | BR-008/011/015" {
-            apiUser -> gateway "Verifier requests evidence within their expertise"
+            accountHolder -> gateway "Verifier requests evidence within their expertise"
             gateway -> backendApi "Forward the review request"
             backendApi -> database "Read matching evidence awaiting review"
             gateway -> backendApi "Forward the Verifier claim and decision"

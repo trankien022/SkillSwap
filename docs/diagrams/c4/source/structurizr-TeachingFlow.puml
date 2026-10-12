@@ -36,13 +36,13 @@ System_Boundary("SkillSwap_boundary", "SkillSwap", $tags="") {
   ContainerDb(SkillSwap.Businessdatabase, "Business database", $techn="Container: PostgreSQL / TypeORM", $descr="Stores records in seven separately owned business schemas.", $tags="", $link="")
 }
 
-Person(Backenduser, "Backend user", $descr="[Person]\nLearner, Teacher, Verifier or Administrator using an API client.", $tags="", $link="")
-System_Ext(Onlineclassroom, "Online classroom", $descr="[Supporting software system]\nHosts live lessons for authorized Learners and Teachers.", $tags="", $link="")
+Person(User, "User", $descr="[Person]\nAttends or teaches using the same account, when eligible.", $tags="", $link="")
+System_Ext(Onlineclassroom, "Online classroom", $descr="[Supporting software system]\nHosts live lessons for authorized users.", $tags="", $link="")
 
-Rel(Backenduser, SkillSwap.APIgateway, "1: Participant asks to join a booked class", $techn="HTTP / JSON", $tags="", $link="")
+Rel(User, SkillSwap.APIgateway, "1: Participant asks to join a booked class", $techn="HTTP / JSON", $tags="", $link="")
 Rel(SkillSwap.APIgateway, SkillSwap.BackendAPI, "2: Forward the verified participant identity", $techn="HTTP / JSON", $tags="", $link="")
 Rel(SkillSwap.BackendAPI, SkillSwap.Businessdatabase, "3: Read booking and class for participant and joining-time checks", $techn="PostgreSQL protocol / TypeORM", $tags="", $link="")
-Rel(Backenduser, Onlineclassroom, "4: Enter the booked classroom using the invitation", $techn="HTTPS / WebRTC", $tags="", $link="")
+Rel(User, Onlineclassroom, "4: Enter the booked classroom using the invitation", $techn="HTTPS / WebRTC", $tags="", $link="")
 
 SHOW_LEGEND()
 footer Backend prepares the private invitation locally and returns it through the gateway.\nAccess requires the correct participant, a confirmed booking and the permitted joining time.

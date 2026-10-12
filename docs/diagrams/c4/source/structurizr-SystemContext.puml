@@ -1,5 +1,5 @@
 @startuml
-title System Context — SkillSwap (C4 Level 1)
+title C4-L0 System Context — SkillSwap (C4 standard Level 1)
 
 set separator none
 top to bottom direction
@@ -30,23 +30,22 @@ UpdateRelStyle($lineColor="#475569", $textColor="#334155")
 AddElementTag("Demo", $bgColor="#F1F5F9", $fontColor="#0F172A", $borderColor="#64748B", $legendText="Demonstration client (local booking data)")
 
 together {
-  Person(Learner, "Learner", $descr="[Person]\nBooks classes and attends online lessons.", $tags="", $link="")
-  Person(Teacher, "Teacher", $descr="[Person]\nVerified student with approved skills who publishes and teaches classes.", $tags="", $link="")
+  Person(User, "User", $descr="[Person]\nA student account that can learn and, when eligible, teach.", $tags="", $link="")
   Person(Verifier, "Verifier", $descr="[Person]\nReviews teaching evidence within assigned expertise.", $tags="", $link="")
-  Person(Administrator, "Administrator", $descr="[Person]\nReviews student proof and manages Verifier access.", $tags="", $link="")
+  Person(Admin, "Admin", $descr="[Person]\nReviews student proof and manages Verifier access.", $tags="", $link="")
 }
 
-System_Ext(Onlineclassroom, "Online classroom", $descr="[Supporting software system]\nHosts live lessons for authorized Learners and Teachers.", $tags="", $link="")
+System_Ext(Onlineclassroom, "Online classroom", $descr="[Supporting software system]\nHosts live lessons for users who are learning or teaching.", $tags="", $link="")
+System_Ext(Paymentgateway, "Third-party payment gateway", $descr="[Supporting software system]\nProcesses cash top-ups and payouts; provider selection is pending.", $tags="", $link="")
 System(SkillSwap, "SkillSwap", $descr="[Software system]\nHelps students verify skills, book classes and pay with internal credits.", $tags="", $link="")
 
-Rel(Learner, SkillSwap, "Books classes and uses wallet credits")
-Rel(Teacher, SkillSwap, "Submits skills and manages teaching")
+Rel(User, SkillSwap, "Learns, books classes and may publish or teach when eligible")
 Rel(Verifier, SkillSwap, "Reviews teaching evidence")
-Rel(Administrator, SkillSwap, "Approves students and manages Verifiers")
+Rel(Admin, SkillSwap, "Approves students and manages Verifiers")
 Rel(SkillSwap, Onlineclassroom, "Authorizes access to booked lessons")
-Rel(Learner, Onlineclassroom, "Attends booked lessons")
-Rel(Teacher, Onlineclassroom, "Teaches booked lessons")
+Rel(User, Onlineclassroom, "Attends or teaches a booked lesson")
+Rel(SkillSwap, Paymentgateway, "Initiates top-ups and payouts; receives signed payment callbacks")
 
 SHOW_LEGEND()
-footer Current backend capabilities. Web/mobile booking and wallet checkout are demonstrations.\nLearner and Teacher are capabilities of the same student account.
+footer Current backend capabilities. Web/mobile booking is demonstrated; the payment provider is represented as an external dependency.\nBackend currently uses a mock PaymentGateway adapter; a real provider is not selected.
 @enduml

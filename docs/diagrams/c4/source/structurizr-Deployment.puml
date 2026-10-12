@@ -43,7 +43,7 @@ Deployment_Node(Development.Developermachine, "Developer machine", $type="macOS 
     ContainerQueue(Development.Developermachine.Dockerservices.Businessmessagebroker_1, "Business message broker", $techn="Container: RabbitMQ", $descr="Delivers saved business changes for background processing.", $tags="", $link="")
     ContainerDb(Development.Developermachine.Dockerservices.Privatedocumentstore_1, "Private document store", $techn="Container: MinIO / S3-compatible API", $descr="Stores student proof uploaded through temporary private links.", $tags="", $link="")
     Deployment_Node(Development.Developermachine.Dockerservices.Jitsiservices, "Jitsi services", $type="Jitsi / Docker", $descr="Web, signaling and video services", $tags="", $link="") {
-      System_Ext(Development.Developermachine.Dockerservices.Jitsiservices.Onlineclassroom_1, "Online classroom", $descr="[Supporting software system]\nHosts live lessons for authorized Learners and Teachers.", $tags="", $link="")
+      System_Ext(Development.Developermachine.Dockerservices.Jitsiservices.Onlineclassroom_1, "Online classroom", $descr="[Supporting software system]\nHosts live lessons for users who are learning or teaching.", $tags="", $link="")
     }
 
   }
