@@ -416,10 +416,13 @@
       "held": "Đang giữ an toàn",
       "total": "Tổng tài sản ước tính",
       "vndEstimate": "(~{vnd} VNĐ)",
+      "noDirectTitle": "Không chuyển thẳng",
       "noDirect": "Giảng viên chưa nhận được credits cho tới khi bạn xác nhận hoàn tất.",
+      "refundPolicyTitle": "Tự động hoàn",
       "refundPolicy": "Hoàn về ví tự động nếu buổi học bị huỷ trước giờ quy định.",
       "details": "Chi tiết nhật ký ký quỹ",
-      "signInToView": "Đăng nhập để xem số dư ví"
+      "signInToView": "Đăng nhập để xem số dư ví",
+      "signInCta": "Đăng nhập ngay"
     },
     "charter": {
       "title": "Quyền lợi học sinh",
@@ -429,10 +432,23 @@
       "contactBody": "Mọi trao đổi, gửi mã nguồn và cuộc gọi video đều diễn ra nội bộ trong SkillSwap để bảo đảm căn cứ giải quyết tranh chấp học thuật.",
       "support": "Cần trợ giúp học vụ"
     },
-    "empty": {
-      "title": "Chưa có buổi học nào",
-      "body": "Bạn chưa đặt lớp nào. Hãy khám phá các lớp hiện có.",
-      "cta": "Khám phá lớp"
+    "reviewModal": {
+      "title": "Đánh giá buổi học & Giải ngân ký quỹ",
+      "subtitle": "Xác nhận ca học đã diễn ra thành công để chuyển số credits ký quỹ cho giảng viên.",
+      "ratingLabel": "Mức độ hài lòng của bạn",
+      "starHint": "{rating} trên 5 sao",
+      "commentLabel": "Nhận xét học thuật & Góp ý (tuỳ chọn)",
+      "commentPlaceholder": "Chia sẻ trải nghiệm học tập, sự nhiệt tình và nội dung kiến thức được trao đổi...",
+      "pledge": "Cam kết học thuật: Đánh giá trung thực giúp xây dựng môi trường trao đổi kỹ năng minh bạch giữa sinh viên các trường.",
+      "cancel": "Để sau",
+      "submit": "Xác nhận & Giải ngân"
+    },
+    "noShowModal": {
+      "title": "Báo cáo giảng viên vắng mặt",
+      "subtitle": "Quy tắc bảo vệ học viên SkillSwap",
+      "body": "Nếu giảng viên không tham gia sau 15 phút tính từ giờ bắt đầu, yêu cầu báo cáo sẽ được ghi nhận và số credits ký quỹ sẽ tự động hoàn về ví của bạn.",
+      "cancel": "Quay lại",
+      "confirm": "Xác nhận báo vắng mặt"
     }
   },
   "Teacher": {

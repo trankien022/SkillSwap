@@ -416,10 +416,13 @@
       "held": "Held safely",
       "total": "Estimated total",
       "vndEstimate": "(~{vnd} VND)",
+      "noDirectTitle": "No direct payout",
       "noDirect": "The teacher only receives the credits after you confirm completion.",
+      "refundPolicyTitle": "Automatic refund",
       "refundPolicy": "Credits are returned to your wallet automatically if the class is cancelled before the deadline.",
       "details": "View escrow ledger",
-      "signInToView": "Sign in to see your wallet"
+      "signInToView": "Sign in to see your wallet",
+      "signInCta": "Sign in now"
     },
     "charter": {
       "title": "Learner rights",
@@ -429,10 +432,23 @@
       "contactBody": "Every message, file share and video call stays inside SkillSwap so the support team has a full record if a dispute is opened.",
       "support": "Get academic help"
     },
-    "empty": {
-      "title": "No sessions yet",
-      "body": "You have not booked a class yet. Browse the marketplace to get started.",
-      "cta": "Browse classes"
+    "reviewModal": {
+      "title": "Review Session & Release Escrow",
+      "subtitle": "Confirm that the session was completed successfully to release the held credits to the teacher.",
+      "ratingLabel": "Your rating",
+      "starHint": "{rating} of 5 stars",
+      "commentLabel": "Academic feedback (optional)",
+      "commentPlaceholder": "Share your learning experience, clarity, and mentor helpfulness...",
+      "pledge": "Academic pledge: Honest reviews uphold transparent peer-mentoring standards across universities.",
+      "cancel": "Later",
+      "submit": "Confirm & Release Escrow"
+    },
+    "noShowModal": {
+      "title": "Report Teacher No-Show",
+      "subtitle": "SkillSwap Learner Protection Rule",
+      "body": "If the teacher did not join within 15 minutes of the start time, your report will be recorded and held escrow credits will automatically return to your wallet.",
+      "cancel": "Cancel",
+      "confirm": "Confirm No-Show Report"
     }
   },
   "Teacher": {

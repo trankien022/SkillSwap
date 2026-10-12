@@ -58,8 +58,8 @@ export function SessionCard({
 }
 
 export type SessionAction =
-  | { type: 'confirm'; bookingId: string }
-  | { type: 'reportNoShow'; bookingId: string }
+  | { type: 'confirm'; bookingId: string; rating?: number; comment?: string }
+  | { type: 'reportNoShow'; bookingId: string; confirmed?: boolean }
   | { type: 'cancel'; bookingId: string }
   | { type: 'rebook'; bookingId: string };
 
@@ -394,7 +394,7 @@ function CardBody({
 function RuleBox({ tCard }: { tCard: CardTranslator }) {
   return (
     <div className="flex items-start gap-2 rounded-xl border border-border bg-mist p-4 text-sm text-ink-soft">
-      <ShieldIcon className="mt-0.5 h-5 w-5 shrink-0 text-ink" />
+      <PolicyIcon className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
       <p className="leading-relaxed">
         <strong className="font-semibold text-ink">{tCard('ruleTitle')}: </strong>
         {tCard('ruleBody')}
