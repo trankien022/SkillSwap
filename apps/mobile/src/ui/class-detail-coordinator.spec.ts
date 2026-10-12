@@ -182,6 +182,7 @@ describe('ClassDetailCoordinator', () => {
       gateway: mockGateway,
       accountId: 'account-1',
       classId: 'class-1',
+      settlementTimeoutMs: 10,
     });
 
     await coordinator.loadDetail();
@@ -189,7 +190,15 @@ describe('ClassDetailCoordinator', () => {
 
     // State must NOT be confirmed_success!
     expect(coordinator.getState().phase).not.toBe('confirmed_success');
-    expect(coordinator.getState().errorMessage).toContain('could not be completed');
+    expect(coordinator.getState().phase).toBe('settlement_unknown');
+    expect(coordinator.getState().canRetryWithSameKey).toBe(false);
+    mockGateway.getClassDetail.mockResolvedValue({
+      ...detailWithPending,
+      ownBooking: { bookingId: 'booking-1', state: 'confirmed', expiresAt: null },
+    });
+    await coordinator.checkConfirmation();
+    expect(coordinator.getState().phase).toBe('confirmed_success');
+    expect(mockGateway.confirmBooking).toHaveBeenCalledTimes(1);
   });
 
   it('marks confirmed_success only when authoritative reread confirms ownBooking.state === confirmed', async () => {
@@ -237,16 +246,14 @@ describe('ClassDetailCoordinator', () => {
   });
 
   it('reconciles with authoritative GET on 401 SessionExpiredRetryRequiredError without auto POST replay', async () => {
-    mockGateway.getClassDetail
-      .mockResolvedValueOnce(sampleClassDetail)
-      .mockResolvedValueOnce({
-        ...sampleClassDetail,
-        ownBooking: {
-          bookingId: 'booking-recovered',
-          state: 'pending',
-          expiresAt: '2026-10-30T10:15:00.000Z',
-        },
-      });
+    mockGateway.getClassDetail.mockResolvedValueOnce(sampleClassDetail).mockResolvedValueOnce({
+      ...sampleClassDetail,
+      ownBooking: {
+        bookingId: 'booking-recovered',
+        state: 'pending',
+        expiresAt: '2026-10-30T10:15:00.000Z',
+      },
+    });
 
     mockGateway.bookClass.mockRejectedValueOnce(
       new SessionExpiredRetryRequiredError('Session expired during booking command'),
@@ -447,10 +454,18 @@ describe('ClassDetailCoordinator', () => {
   it('does not let an obsolete write clear a newer write busy guard after refocus', async () => {
     let releaseOld!: (value: BookClassResponse) => void;
     let releaseNew!: (value: BookClassResponse) => void;
-    const oldResponse = new Promise<BookClassResponse>((resolve) => { releaseOld = resolve; });
-    const newResponse = new Promise<BookClassResponse>((resolve) => { releaseNew = resolve; });
+    const oldResponse = new Promise<BookClassResponse>((resolve) => {
+      releaseOld = resolve;
+    });
+    const newResponse = new Promise<BookClassResponse>((resolve) => {
+      releaseNew = resolve;
+    });
     mockGateway.bookClass.mockReturnValueOnce(oldResponse).mockReturnValueOnce(newResponse);
-    const coordinator = new ClassDetailCoordinator({ gateway: mockGateway, accountId: 'account-1', classId: 'class-1' });
+    const coordinator = new ClassDetailCoordinator({
+      gateway: mockGateway,
+      accountId: 'account-1',
+      classId: 'class-1',
+    });
     await coordinator.loadDetail();
     const oldWrite = coordinator.bookClass();
     coordinator.dispose();
@@ -465,5 +480,4 @@ describe('ClassDetailCoordinator', () => {
     await newWrite;
     expect(coordinator.isBusy()).toBe(false);
   });
-
 });
