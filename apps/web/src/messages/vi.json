@@ -46,7 +46,8 @@
     "nav": {
       "explore": "Khám phá lớp",
       "standard": "Quy chuẩn xác minh",
-      "signIn": "Đăng nhập"
+      "signIn": "Đăng nhập",
+      "myBookings": "Buổi học của tôi"
     },
     "hero": {
       "headline1": "Nền tảng học kỹ năng trực tuyến",

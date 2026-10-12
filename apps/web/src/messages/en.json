@@ -46,7 +46,8 @@
     "nav": {
       "explore": "Explore classes",
       "standard": "Verification standard",
-      "signIn": "Sign in"
+      "signIn": "Sign in",
+      "myBookings": "My bookings"
     },
     "hero": {
       "headline1": "An online skill marketplace",

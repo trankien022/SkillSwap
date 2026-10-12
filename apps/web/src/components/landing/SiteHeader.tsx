@@ -28,9 +28,12 @@ export function SiteHeader({ locale }: { locale: string }) {
           <BrandMark />
         </Link>
 
-        {/* Primary nav (md+) + auth-aware action */}
+        {/* Primary nav (md+) + auth-aware action.
+            `exploreHref` is locale-less: next-intl's Link prefixes the locale
+            itself, and `returnUrl` is rebuilt from the locale inside the
+            action. Passing `/${locale}/classes` here produced /en/en/classes. */}
         <nav aria-label="Primary" className="flex items-center gap-2">
-          <LandingAuthAction exploreHref={`/${locale}/classes`} />
+          <LandingAuthAction exploreHref="/classes" locale={locale} />
         </nav>
       </div>
     </header>
