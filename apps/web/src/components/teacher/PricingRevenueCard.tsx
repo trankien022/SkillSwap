@@ -28,21 +28,27 @@ interface Props {
  */
 export function PricingRevenueCard({ draft, onChange }: Props) {
   const t = useTranslations('Teacher.publish.pricing');
+  const tSteps = useTranslations('Teacher.publish.steps');
   const fee = computePlatformFee(draft.priceCredits);
   const net = computeNetCredits(draft.priceCredits);
   const vnd = computeVndEstimate(net);
   return (
-    <section className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 shadow-sm">
+    <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold text-ink">{t('title')}</h3>
-        <span className="text-[11px] font-medium text-ink-soft">
+        <div className="flex items-center gap-2">
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white shadow-xs">
+            5
+          </span>
+          <h2 className="text-base font-bold text-slate-900">{tSteps('step5Title')}</h2>
+        </div>
+        <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
           {t('rate')}
         </span>
       </div>
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="credits-input"
-          className="text-sm font-semibold text-ink"
+          className="text-sm font-semibold text-slate-800"
         >
           {t('inputLabel')}
         </label>
@@ -66,42 +72,42 @@ export function PricingRevenueCard({ draft, onChange }: Props) {
               );
               onChange({ priceCredits: clamped });
             }}
-            className="w-full rounded-lg border border-border bg-mist px-4 py-2 pr-20 text-xl font-semibold text-ink shadow-sm focus:outline-none focus:ring-2 focus:ring-ink"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-2.5 pr-20 text-xl font-bold text-slate-900 shadow-xs focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white transition-colors"
           />
-          <span className="absolute right-3 text-sm font-semibold text-ink-soft">
+          <span className="absolute right-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
             {t('inputUnit')}
           </span>
         </div>
       </div>
-      <div className="flex flex-col gap-2 rounded-lg border border-border bg-mist p-4 text-sm text-ink-soft">
+      <div className="flex flex-col gap-2.5 rounded-xl border border-slate-200 bg-slate-50/80 p-4 text-sm text-slate-600">
         <div className="flex items-center justify-between">
-          <span>{t('tuition')}</span>
-          <span className="text-sm font-bold text-ink">
+          <span className="text-xs font-medium text-slate-600">{t('tuition')}</span>
+          <span className="text-sm font-bold text-slate-900">
             {draft.priceCredits} credits
           </span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-600">
             {t('fee')}
-            <HelpOutlineIcon className="h-3.5 w-3.5 text-ink-soft" />
+            <HelpOutlineIcon className="h-3.5 w-3.5 text-slate-400" />
           </span>
-          <span className="text-sm font-bold text-error">
+          <span className="text-sm font-bold text-rose-600">
             −{fee} credits
           </span>
         </div>
-        <div className="my-1 h-px bg-border" />
+        <div className="my-0.5 h-px bg-slate-200" />
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
-            <span className="text-base font-bold text-success-ink">
+            <span className="text-sm font-bold text-emerald-800">
               {t('net')}
             </span>
-            <span className="text-[11px] text-ink-soft">{t('netHint')}</span>
+            <span className="text-[11px] text-slate-500">{t('netHint')}</span>
           </div>
           <div className="text-right">
-            <span className="block text-xl font-bold text-success-ink">
-              {net} credits
+            <span className="block text-lg font-extrabold text-emerald-700">
+              +{net} credits
             </span>
-            <span className="block text-[11px] text-ink-soft">
+            <span className="block text-[11px] font-medium text-slate-500">
               {t('vnd', {
                 vnd: vnd.toLocaleString('vi-VN'),
               })}
@@ -109,9 +115,9 @@ export function PricingRevenueCard({ draft, onChange }: Props) {
           </div>
         </div>
       </div>
-      <div className="flex items-start gap-1.5 text-ink-soft">
-        <PolicyIcon className="mt-0.5 h-4 w-4 shrink-0 text-success-ink" />
-        <p className="text-[11px] leading-relaxed">{t('policy')}</p>
+      <div className="flex items-start gap-2 rounded-xl bg-emerald-50/70 border border-emerald-100 p-3 text-slate-600">
+        <PolicyIcon className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
+        <p className="text-xs leading-relaxed text-slate-600">{t('policy')}</p>
       </div>
       {/* VND_PER_CREDIT is intentionally kept as a constant so the
           rate stays auditable from the pricing module. */}

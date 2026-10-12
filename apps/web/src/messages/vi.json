@@ -548,7 +548,43 @@
         "Tháng 10",
         "Tháng 11",
         "Tháng 12"
-      ]
+      ],
+      "stepNumber": "Bước {n}",
+      "steps": {
+        "step1Title": "Chọn kỹ năng giảng dạy",
+        "step1VerifiedBadge": "2 môn đã duyệt",
+        "step2Title": "Tiêu đề & Nội dung buổi học",
+        "syllabusLabel": "Tóm tắt lộ trình buổi học (Syllabus)",
+        "syllabus1": "15 phút đầu: Chẩn đoán phát âm & Warm-up phản xạ tự nhiên",
+        "syllabus2": "30 phút giữa: Mock Test 1-on-1 & Sửa cấu trúc PEEL trực tiếp",
+        "syllabus3": "15 phút cuối: Nhận xét chi tiết & Lộ trình tự ôn luyện 7 ngày",
+        "step3Title": "Hình thức tổ chức & Quy mô",
+        "format1to1Title": "1 kèm 1 (Private)",
+        "format1to1Desc": "Tối đa 1 học viên. Tương tác chuyên sâu, kèm cặp kỹ năng cá nhân hóa.",
+        "format1to1Completion": "Tỷ lệ hoàn thành 99.4%",
+        "formatGroupTitle": "Nhóm nhỏ (Group)",
+        "formatGroupDesc": "Sức chứa 4 - 6 học viên. Thực hành tranh biện, thảo luận nhóm theo chủ đề.",
+        "formatGroupSave": "Tiết kiệm chi phí tín dụng",
+        "step4Title": "Thời gian & Thời lượng giảng dạy",
+        "leadTimeBadge": "Tạo trước ít nhất 24 giờ",
+        "leadTimeValid": "Hợp lệ (Cách hiện tại > 24 tiếng)",
+        "autoRoom": "Tự động kết nối phòng học trực tuyến",
+        "autoRoomDesc": "SkillSwap Video Room (Bảo mật mã hóa đầu cuối)",
+        "autoRoomPill": "Tự động tạo link",
+        "step5Title": "Học phí Credit & Cơ chế Ký quỹ Escrow"
+      },
+      "checklist": {
+        "title": "Điều kiện Công bố Lớp",
+        "badge": "Đủ tiêu chuẩn",
+        "item1": "Kỹ năng đã được thẩm định học thuật",
+        "item1Status": "Hợp lệ",
+        "item2": "Thời gian mở lớp trước ít nhất 24 giờ",
+        "item2Status": "Sẵn sàng",
+        "item3": "Ký quỹ Escrow minh bạch 90/10",
+        "item3Status": "Sẵn sàng",
+        "pledgeTitle": "Cam kết Bảo vệ Quyền lợi SkillSwap",
+        "pledgeDesc": "Học viên được hoàn trả tín dụng đầy đủ theo chính sách nếu lớp bị hủy hoặc có sự cố kỹ thuật từ hệ thống."
+      }
     }
   },
   "Auth": {

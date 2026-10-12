@@ -548,7 +548,43 @@
         "October",
         "November",
         "December"
-      ]
+      ],
+      "stepNumber": "Step {n}",
+      "steps": {
+        "step1Title": "Choose Teaching Subject",
+        "step1VerifiedBadge": "2 approved subjects",
+        "step2Title": "Class Title & Syllabus Roadmap",
+        "syllabusLabel": "Session Roadmap Summary (Syllabus)",
+        "syllabus1": "First 15m: Diagnostic pronunciation & natural warm-up",
+        "syllabus2": "Middle 30m: 1-on-1 Mock Test & live PEEL correction",
+        "syllabus3": "Final 15m: In-depth feedback & 7-day practice roadmap",
+        "step3Title": "Format & Class Scale",
+        "format1to1Title": "1-on-1 Mentoring (Private)",
+        "format1to1Desc": "Max 1 learner. In-depth interaction, personalized skill coaching.",
+        "format1to1Completion": "99.4% Completion Rate",
+        "formatGroupTitle": "Small Group",
+        "formatGroupDesc": "Capacity 4 - 6 learners. Group discussions, debate practice.",
+        "formatGroupSave": "Cost-effective credit sharing",
+        "step4Title": "Schedule & Class Duration",
+        "leadTimeBadge": "Schedule >=24h in advance",
+        "leadTimeValid": "Valid (>=24h lead time)",
+        "autoRoom": "Automatic virtual classroom connection",
+        "autoRoomDesc": "SkillSwap Video Room (End-to-End Encrypted)",
+        "autoRoomPill": "Auto-generated link",
+        "step5Title": "Tuition Credits & Escrow Payout"
+      },
+      "checklist": {
+        "title": "Class Publishing Checklist",
+        "badge": "Eligible",
+        "item1": "Subject verified by academic panel",
+        "item1Status": "Valid",
+        "item2": "Scheduled at least 24 hours in advance",
+        "item2Status": "Ready",
+        "item3": "Transparent 90/10 Escrow Settlement",
+        "item3Status": "Ready",
+        "pledgeTitle": "SkillSwap Protection Commitment",
+        "pledgeDesc": "Learners receive full policy-backed credit refunds if a session is cancelled or technical faults occur."
+      }
     }
   },
   "Auth": {
