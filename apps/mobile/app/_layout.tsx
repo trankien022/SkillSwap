@@ -21,14 +21,19 @@ function RootNavigation() {
   const [pendingPushOpen, setPendingPushOpen] = useState<ReturnType<typeof notificationRoute> | null>(null);
 
   useEffect(() => {
-    const onResponse = (response: Notifications.NotificationResponse) => {
+    let mounted = true;
+    const onResponse = async (response: Notifications.NotificationResponse) => {
+      const responseId = response.notification.request.identifier;
+      const key = 'skillswap.notification.last-opened';
+      if (await SecureStore.getItemAsync(key) === responseId) return;
+      await SecureStore.setItemAsync(key, responseId);
+      if (!mounted) return;
       const data = response.notification.request.content.data;
       setPendingPushOpen(notificationRoute(data?.targetType, data?.targetId));
     };
-    const responseSubscription = Notifications.addNotificationResponseReceivedListener(onResponse);
-    let mounted = true;
+    const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => { void onResponse(response).catch(() => undefined); });
     void Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (mounted && response) onResponse(response);
+      if (mounted && response) void onResponse(response).catch(() => undefined);
       if (response) Notifications.clearLastNotificationResponse();
     }).catch(() => undefined);
     return () => {
