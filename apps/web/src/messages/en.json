@@ -326,13 +326,18 @@
   },
   "Dashboard": {
     "page": {
-      "roleChip": "Learner dashboard",
+      "roleChip": "SkillSwap Learner",
       "termChip": "Current term",
-      "title": "My schedule and sessions",
-      "subtitle": "Track every booked session, monitor the held escrow, join the room, and approve the credit release when a class is done.",
+      "title": "My Bookings",
+      "subtitle": "Track every booked session, monitor held escrow, join virtual classrooms, and approve credit release upon completion.",
       "ctaCalendar": "Sync calendar",
       "ctaExplore": "Find new classes",
       "mockBadge": "Demo data"
+    },
+    "empty": {
+      "title": "No sessions found",
+      "body": "You do not have any sessions in this category yet. Explore skills and book mentoring with peer students!",
+      "cta": "Browse classes now"
     },
     "metrics": {
       "upcoming": "Upcoming classes",

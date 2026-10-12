@@ -326,13 +326,18 @@
   },
   "Dashboard": {
     "page": {
-      "roleChip": "Bảng điều khiển học sinh",
+      "roleChip": "Học viên SkillSwap",
       "termChip": "Kỳ học hiện tại",
-      "title": "Lịch học & Phiên học của tôi",
+      "title": "Lớp học của tôi",
       "subtitle": "Theo dõi tiến độ các buổi học đã đặt, kiểm soát quy trình ký quỹ, truy cập phòng học và phê duyệt giải ngân credits sau mỗi ca học.",
       "ctaCalendar": "Đồng bộ lịch",
       "ctaExplore": "Khám phá lớp mới",
       "mockBadge": "Dữ liệu minh họa"
+    },
+    "empty": {
+      "title": "Chưa có buổi học nào",
+      "body": "Bạn chưa có lớp học nào trong danh mục này. Hãy khám phá và đặt lịch học cùng các bạn sinh viên xuất sắc khác!",
+      "cta": "Khám phá lớp học ngay"
     },
     "metrics": {
       "upcoming": "Lớp sắp diễn ra",
