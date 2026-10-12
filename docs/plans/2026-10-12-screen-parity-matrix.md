@@ -499,3 +499,43 @@ metrics are omitted because they are not computable.
 - Marketplace `DEFAULT_QUERY` still imported from `marketplace/mock-gateway`
   (Phase 1F).
 
+---
+
+## 12. Runtime faults found while running both clients (2026-10-12)
+
+Four faults were reported from a live dev run. Two were real defects, one was
+correct behaviour, and one was a documented limitation surfacing. They are kept
+here because the honest answer when presenting is not "everything was fine" but
+"three of these were ours and one is by design."
+
+Plan: [2026-10-12-client-runtime-faults-plan.md](./2026-10-12-client-runtime-faults-plan.md).
+
+| Reported | Verdict | Cause | Fix |
+|---|---|---|---|
+| Hydration mismatch on `/{locale}/classes` (`/en/classes` vs `/vi/classes`) | **Real bug** | `navbar.tsx` read `window.location.pathname`, which is `undefined` during SSR, so the server always rendered the `vi` fallback while the client rendered `en`. Every page carrying the navbar mismatched on the `/en` tree. | locale now comes from `useLocale()`; regression test renders in both locales and asserts hrefs/labels follow the provider |
+| `expo-notifications` red box on the mobile inbox | **Real defect** | `notifications.tsx` imported `expo-notifications` / `expo-device` at module scope. Both ship native modules absent in Expo Go from SDK 53, so the import alone crashed the screen — including the HTTP inbox that never needed push. | both imported lazily inside `enablePush`; the inbox renders in Expo Go, push still works on a development build |
+| `api skills unauthorized` | **Not a bug** | `SkillsController.list` rejects `'anonymous'` (`skills.controller.ts:33`). The request carried no identity. | none |
+| `auth/me 500` | **Real bug** | `AuthController.me` was the one `me`-style handler without the `'anonymous'` guard. `GetMeUseCase` passed the literal `'anonymous'` into `accounts.id` (a `uuid` column); Postgres raised `invalid input syntax for type uuid`, an unmapped error, so `DomainErrorFilter` returned 500 instead of 401. | controller rejects anonymous with 401, matching `NotificationsController` / `SkillsController` / `MyBookingsController` / `ClassListController`; regression test asserts 401 and that the use case is never called |
+| Mobile "Cần cấu hình Gateway" panel | **By design (D5)** | `EXPO_PUBLIC_API_BASE_URL` is unset, so `httpApiEnabled()` is false and mobile falls back to fixtures. | none — already disclosed in §9.1 |
+
+Both regression tests were demonstrated failing against the pre-fix code before
+being kept.
+
+### 12.1 Follow-up hole (not fixed here)
+
+`auth/me` was not the only handler feeding `'anonymous'` into a uuid lookup.
+These are guarded inconsistently and can produce the same 500:
+
+- `wallet-ledger` — `GET /wallet/balance`, `GET /wallet/history`
+  (`wallet.controller.ts:110,123` → `sql-wallet-reader.ts`, `sql-wallet-repository.ts`
+  filter on `"owner_id"`).
+- `student-verification` — `GET /student-verifications/me`
+  (`student-verification.controller.ts:136`).
+- `skill-verification` — the `skill-evidence` reads
+  (`skill-evidence.controller.ts:51,76,104`).
+
+Left untouched to keep the demo-freeze change narrow. The durable fix is a
+shared `requireUserId(request)` helper replacing the copy-pasted guard; that is
+deliberately a separate change.
+
+
