@@ -44,6 +44,12 @@ Five phases, each its own commit. No new dependency is introduced.
 gateway injects trusted identity headers, so a blanket wildcard would be a real
 security regression, not a convenience.
 
+**Correction found by probing a live boot:** the first implementation ended
+*every* `OPTIONS` with `204`, so an `OPTIONS` that was not a preflight was
+swallowed instead of routed. A preflight is now identified by the browser's
+`Access-Control-Request-Method` header. Recorded here because the unit tests
+alone did not catch it — the defect only appeared against a running gateway.
+
 ### Phase L2 — One logo everywhere (F2)
 
 - Extract the existing mark into a single `BrandMark` component used by both
@@ -110,7 +116,7 @@ that no `href="#"` remains.
 
 | Phase | Commit | Result |
 |---|---|---|
-| L1 gateway CORS | `0646fed` | CORS opt-in via `CORS_ORIGINS`; `*` rejected. Verified live against the built artifact: preflight `204` with correct headers, blocked origin gets none. |
+| L1 gateway CORS | `0646fed`, `695a785` | CORS opt-in via `CORS_ORIGINS`; `*` rejected. Verified live against a real Nest boot with the project `.env`: preflight `204` with correct headers, allowed origin gets them, foreign origin gets none. The live probe also exposed a second defect — the middleware swallowed *every* `OPTIONS`, not just a preflight — fixed in `695a785`. |
 | L2 one logo | `b28ad04` | `BrandMark` shared by both headers; invented `S` tile gone. Also removed a hardcoded `Sinh viên` badge that rendered in Vietnamese on `/en`. |
 | L3 auth-aware landing | `1f62ca8` | Guest → `/auth?tab=login&returnUrl=…`; signed-in keeps the direct link. Regression test **proven failing against the old unconditional link**. |
 | L4 dead links | `8e84be2` | Landing CTAs point at the real auth route; the three non-existent footer pages removed. |
