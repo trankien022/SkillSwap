@@ -63,6 +63,10 @@ jobs:
       JITSI_APP_SECRET: skillswap_jitsi_dev_secret
       # The Jitsi spec self-skips because no Jitsi container is published here.
       JITSI_WEB_URL: http://localhost:8000
+      # Cross-module projections are event-fed; drain the outbox promptly so a
+      # loaded runner does not sit on the default 2s relay tick between a write
+      # and the read that asserts it.
+      OUTBOX_POLL_INTERVAL_MS: 250
     steps:
       - uses: actions/checkout@v4
 
