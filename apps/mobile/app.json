@@ -26,6 +26,13 @@
     },
     "android": {
       "package": "com.skillswap.app"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "35945ae4-740f-4477-99f4-c824b74a4fe5"
+      },
+      "router": {}
+    },
+    "owner": "trankienqt02"
   }
 }
