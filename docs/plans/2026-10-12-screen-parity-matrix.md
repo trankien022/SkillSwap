@@ -324,7 +324,7 @@ who pulls.
 ## 9.1 Demo disclosure — what to say honestly
 
 These are the claims a reviewer or examiner can check, and the ones that must
-not be overstated. Each is verified against the code at `e74d746`
+not be overstated. Each is verified against the code at `ebc6fec`
 (`pnpm verify` green).
 
 **True and demonstrable**
@@ -352,6 +352,25 @@ not be overstated. Each is verified against the code at `e74d746`
 **Cannot be honest if omitted:** demoing the mobile client without
 `EXPO_PUBLIC_API_BASE_URL` set shows fixtures that look like real data. Treat
 that as a misconfiguration to fix before recording, not a fallback to rely on.
+
+### 9.1.1 Review pass — fabricated publish values removed
+
+A review of the branch against its own honesty rule found five values in the
+publish workspace that were presented as fact with nothing behind them. They
+are fixed at `ebc6fec`; the list is kept so the same class of defect is
+recognisable, and so nobody re-adds a marketing number to make a screen look
+fuller.
+
+| Was shown | Why it was wrong | Now |
+|---|---|---|
+| Checklist: three ticks, "Valid"/"Ready", green "Eligible" badge | rendered unconditionally with no inputs — an ineligible draft got the same verdict as an eligible one | derived per row from the draft and the approved-skill list; header reads "Not yet eligible" when any row fails |
+| Skill picker: "2 approved subjects" | fixed string; the teacher may have 0, 3 or 10 | plural over the real `skills.length` |
+| Step 2: three roadmap bullets ("First 15m: Diagnostic pronunciation…") | fixed English-tutoring content shown as the teacher's syllabus; `POST /classes` stores one `description`, so nothing was ever submitted | bullets removed; panel explains it is an example and where the text actually goes |
+| 1-on-1 card: "99.4% Completion Rate" | a statistic with no source; nothing computes one | removed |
+| Group card: "Capacity 4 - 6"; room card: "End-to-End Encrypted" | the stepper allows 2–15; the self-hosted Jitsi setup has not been shown to be E2E-encrypted | capacity text matches the stepper; the encryption claim is dropped for "self-hosted Jitsi" |
+
+Also fixed: the publish success panel was hardcoded Vietnamese, so it rendered
+in Vietnamese on the English site — a vn/en mix on one screen.
 
 ---
 
