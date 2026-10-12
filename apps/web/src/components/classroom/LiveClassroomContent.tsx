@@ -171,6 +171,18 @@ export function LiveClassroomContent({
             <span className="material-symbols-outlined text-[14px] text-emerald-600">verified_user</span>
             <span>{t('statusBar.e2e')}</span>
           </span>
+
+          {roomAccess && (
+            <a
+              href={roomAccess.url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold text-emerald-900 border border-emerald-300 hover:bg-emerald-200 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[14px] text-emerald-700">open_in_new</span>
+              <span>Jitsi Live Room</span>
+            </a>
+          )}
         </div>
       </section>
 

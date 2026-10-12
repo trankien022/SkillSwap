@@ -190,7 +190,7 @@ export function VerificationContent() {
                 <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 space-y-0.5">
                   <span className="text-xs font-medium text-slate-500">{t('studentIdCard.school')}</span>
                   <p className="text-sm font-bold text-slate-900">{universityName}</p>
-                  <p className="text-[11px] text-slate-500">{t('studentIdCard.schoolSub')}</p>
+                  <p className="text-[11px] text-slate-500 font-medium">{majorName}</p>
                 </div>
 
                 <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 space-y-0.5">
