@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createTopUpIntent } from './actions';
+import { simulatePaymentCallback } from './actions';
 import { callApi, unwrapEnvelope } from '../../../lib/api-client';
 import { Navbar } from '../../../components/navbar';
-import type { WalletBalanceView, WalletHistoryItemView, MeResponse } from '@skillswap/contracts';
+import type { WalletBalanceView, WalletHistoryItemView, MeResponse, TopUpIntentView } from '@skillswap/contracts';
 
 export default function WalletPage() {
   const [balance, setBalance] = useState<WalletBalanceView | null>(null);
@@ -63,17 +63,56 @@ export default function WalletPage() {
   };
 
   const handleVerify = async () => {
+    if (amount <= 0) {
+      alert('Số tiền nạp tối thiểu là 10 Credit (10.000 VNĐ)');
+      return;
+    }
     try {
       setIsPending(true);
-      const data = await createTopUpIntent(amount * 1000);
-      if (data.paymentUrl) {
-        window.location.href = data.paymentUrl;
-      } else {
-        alert('Tạo yêu cầu nạp tiền thành công!');
+      // 1. Create top up intent via authenticated API
+      const res = await callApi('/wallet/top-ups', {
+        method: 'POST',
+        body: JSON.stringify({ amountVnd: amount * 1000 }),
+      });
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          alert('Phiên đăng nhập đã hết hạn hoặc chưa đăng nhập. Vui lòng đăng nhập lại!');
+          return;
+        }
+        const err = (await res.json().catch(() => ({}))) as { message?: string };
+        alert(`Không thể tạo yêu cầu nạp tiền: ${err.message || 'Lỗi hệ thống'}`);
+        return;
       }
-    } catch (e) {
+
+      const intent = await unwrapEnvelope<TopUpIntentView>(res);
+
+      // 2. Simulate payment settlement via HMAC-signed webhook in dev
+      const callbackResult = await simulatePaymentCallback(intent.providerRef, intent.amountVnd);
+      if (!callbackResult.success) {
+        alert(callbackResult.message);
+        return;
+      }
+
+      // 3. Re-fetch balance & history
+      await new Promise((r) => setTimeout(r, 600));
+      const [balRes, histRes] = await Promise.all([
+        callApi('/wallet/balance'),
+        callApi('/wallet/history'),
+      ]);
+      if (balRes.ok) {
+        setBalance(await unwrapEnvelope(balRes));
+      }
+      if (histRes.ok) {
+        const data = await unwrapEnvelope<{ items: WalletHistoryItemView[] }>(histRes);
+        setHistory(data.items || []);
+      }
+
+      alert(`Nạp thành công ${intent.amountCredits} Credit vào ví!`);
+    } catch (e: unknown) {
       console.error(e);
-      alert('Không thể kết nối đến cổng thanh toán lúc này. Vui lòng thử lại sau.');
+      const errMsg = e instanceof Error ? e.message : 'Vui lòng thử lại sau.';
+      alert(`Không thể hoàn tất nạp tiền: ${errMsg}`);
     } finally {
       setIsPending(false);
     }
