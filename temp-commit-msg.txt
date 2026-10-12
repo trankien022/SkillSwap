@@ -1,0 +1,7 @@
+fix(mobile): types and styles in verification screen
+
+- add title/body styles used by UI
+- remove duplicate pillar style entries causing TS1117
+- add ambient declarations for optional expo packages
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
