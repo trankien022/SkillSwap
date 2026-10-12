@@ -12,11 +12,12 @@ All routes are prefixed with `/api`. Authenticated routes need `Authorization: B
 | [account-profile](./account-profile.md) | 2 | Account profile module lifecycle probe. |
 | [admin-operation](./admin-operation.md) | 2 | Admin operations module lifecycle probe. |
 | [auth](./auth.md) | 5 | Account identity (FR-001, ADR-016) |
-| [classes](./classes.md) | 9 | The marketplace core (FR-005/FR-007/FR-009/FR-011/FR-020) |
+| [classes](./classes.md) | 13 | The marketplace core (FR-005/FR-007/FR-009/FR-011/FR-020) |
 | [health](./health.md) | 1 | Liveness/readiness for the load balancer and CI. |
 | [live-class](./live-class.md) | 2 | Live class module lifecycle probe. |
+| [notifications](./notifications.md) | 3 |  |
 | [schedule](./schedule.md) | 2 | Schedule module lifecycle probe. |
-| [skill-verification](./skill-verification.md) | 9 | Proving a specific skill at a level (FR-003/FR-004/FR-018, ADR-026/ADR-027/ADR-028) |
+| [skill-verification](./skill-verification.md) | 10 | Proving a specific skill at a level (FR-003/FR-004/FR-018, ADR-026/ADR-027/ADR-028) |
 | [student-verification](./student-verification.md) | 7 | Proving a learner is a real student (FR-002/FR-019, ADR-023/ADR-025) |
 | [wallet](./wallet.md) | 4 | Money in and out (FR-008/FR-010, ADR-017/ADR-022) |
 | [wallet-ledger](./wallet-ledger.md) | 2 | Wallet ledger module lifecycle probe. |

@@ -6,9 +6,15 @@
 
 The marketplace core (FR-005/FR-007/FR-009/FR-011/FR-020). A student teacher publishes a class; learners book and pay; the teacher starts, completes, or cancels; room access issues a Jitsi token.
 
-9 endpoints.
+13 endpoints.
 
 Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
+
+### `GET /api/classes`
+
+**List classes for marketplace or own teaching (FR-005, FR-006 / Route 13)**
+
+- Auth: Public
 
 ### `POST /api/classes`
 
@@ -42,6 +48,16 @@ Publish a new class (FR-005). Requires the teacher to be a verified student appr
 | `durationMinutes` | integer | yes |  |
 | `priceCredits` | integer | yes |  |
 | `capacity` | integer | yes |  |
+
+### `GET /api/classes/{id}`
+
+**Get class detail (FR-005, FR-006, FR-007 / Route 14)**
+
+- Auth: Public
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `id` | path | string | yes |  |
 
 ### `PATCH /api/classes/{id}`
 
@@ -227,6 +243,16 @@ Mark that the teacher never joined, cancelling and refunding the booking (AC-024
 |---|---|---|---|
 | `cancelled` | boolean | yes |  |
 
+### `POST /api/classes/bookings/{bookingId}/rating`
+
+**Submit one rating for an eligible completed class (FR-013 / Route 27)**
+
+- Auth: Public
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `bookingId` | path | string | yes |  |
+
 ### `POST /api/classes/bookings/{bookingId}/room-access`
 
 **Request room access for a booking (FR-011 / API-008)**
@@ -255,3 +281,9 @@ Issue a short-lived Jitsi room token for a party to the booking (FR-011). Use wh
 | `token` | string | yes | min 1 chars |
 | `expiresAt` | string | yes | date-time |
 | `url` | string | yes | min 1 chars |
+
+### `GET /api/classes/bookings/me`
+
+**Get learner bookings and exact upcoming count (FR-007, FR-009, FR-011, FR-020 / Route 22)**
+
+- Auth: Public

@@ -38,7 +38,7 @@ Neither `SkillSwap-SRS.md` nor `SkillSwap-PRD.md` contains an explicit screen in
 | S7 | Wallet | `/{locale}/wallet` | `(tabs)/wallet.tsx` | `GET /wallet/balance`, `GET /wallet/history` | ✅ Real | ✅ Real |
 | S8 | Top-up / checkout | `/{locale}/classes/[id]/checkout` | `wallet-view.tsx` | `POST /wallet/top-ups`, `POST /classes/{id}/bookings` | ✅ Real | ✅ Real |
 | S9 | Student verification | `/{locale}/verification` | `(features)/verification.tsx` | `GET/POST /student-verifications` | ✅ Real | ✅ Real |
-| S10 | Skills / evidence | **missing** | `(features)/skills.tsx` | `GET /skills`, `GET /profile-skills/me`, `POST /skill-evidence` | ❌ Missing | ✅ Real |
+| S10 | Skills / evidence | `/{locale}/skills` | `(features)/skills.tsx` | `GET /skills`, `GET /profile-skills/me`, `POST /skill-evidence` | ✅ Real | ✅ Real |
 | S11 | Withdrawal | `/{locale}/wallet/withdrawal` | `wallet-view.tsx` | `GET /wallet/balance` (submit has **no** endpoint) | ⚠️ Partial | ➖ not built |
 | S12 | My classes / teaching | `/{locale}/instructor`, `/{locale}/teach/classes/new` | `(features)/teaching.tsx` | `POST /classes`, `PATCH /classes/{id}`, `POST /classes/{id}/complete` | ✅ Real | ✅ Real |
 | S13 | Post-class rating | `/{locale}/bookings/[id]/review` | `my-bookings-view.tsx` | `POST /classes/bookings/{id}/rating` | ✅ Real | ✅ Real |
@@ -47,7 +47,7 @@ Neither `SkillSwap-SRS.md` nor `SkillSwap-PRD.md` contains an explicit screen in
 | S16 | System status | `/{locale}/status` | — | `GET /health` | ✅ Real | ➖ |
 | S17 | Notifications | `/{locale}/notifications` | `(features)/notifications.tsx` | `GET /notifications`, `POST /notification-devices` | ❌ Hardcoded | ✅ Real |
 
-**Tally (after `f34d278` merge + Phases 1A–1E):** Web 13 real / 2 partial / 2 mock-or-missing (S10 missing, S17 hardcoded). Mobile 12 real / 4 session-or-guard / 1 not built.
+**Tally (after `f34d278` merge + Phases 1A–1G):** Web 14 real / 2 partial / 1 mock-or-missing (S17 hardcoded). Mobile 12 real / 4 session-or-guard / 1 not built.
 
 ---
 
