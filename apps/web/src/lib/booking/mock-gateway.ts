@@ -25,10 +25,36 @@ export class MockBookingGateway implements BookingGateway {
 
   async getClass(classId: string): Promise<ClassView> {
     const found = this.classes.find((item) => item.id === classId);
-    if (found === undefined) {
-      throw new Error(`Class not found: ${classId}`);
+    if (found !== undefined) {
+      return found;
     }
-    return found;
+
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('skillswap_created_classes');
+        if (raw) {
+          const stored = JSON.parse(raw);
+          if (Array.isArray(stored)) {
+            const local = stored.find((c: { id: string }) => c.id === classId);
+            if (local) {
+              return {
+                id: local.id,
+                teacherId: 'teacher-local',
+                state: 'published',
+                startsAt: local.startsAt || new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+                durationMinutes: local.durationMinutes || 60,
+                priceCredits: local.priceCredits || 50,
+                capacity: local.capacity || 2,
+              };
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    throw new Error(`Class not found: ${classId}`);
   }
 
   async bookClass(classId: string, idempotencyKey: string): Promise<BookClassResult> {

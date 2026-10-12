@@ -1,16 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { SearchHub } from './SearchHub';
 import { CategoryPills } from './CategoryPills';
 import { FilterSidebar } from './FilterSidebar';
 import { ClassGrid } from './ClassGrid';
 import { PaginationBar } from './PaginationBar';
-import {
-  DEFAULT_QUERY,
-  MockMarketplaceGateway,
-} from '../../lib/marketplace/mock-gateway';
+import { DEFAULT_QUERY } from '../../lib/marketplace/mock-gateway';
+import { MarketplaceApiGateway } from '../../lib/marketplace/api-gateway';
 import type {
   MarketplaceClass,
   MarketplacePage,
@@ -19,7 +17,7 @@ import type {
   SortOrder,
 } from '../../lib/marketplace/types';
 
-const gateway = new MockMarketplaceGateway();
+const apiGateway = new MarketplaceApiGateway();
 
 /**
  * Marketplace client shell (FR-006).
@@ -45,9 +43,14 @@ export function MarketplaceClient({
   const [page, setPage] = useState<MarketplacePage>(initialPage);
   const [filterOpen, setFilterOpen] = useState<boolean>(true);
 
+  useEffect(() => {
+    // Hydrate real database classes from GET /api/classes when mounted in client
+    apiGateway.search(query).then(setPage).catch(() => {});
+  }, []);
+
   async function runQuery(next: MarketplaceQuery) {
     setQuery(next);
-    setPage(await gateway.search(next));
+    setPage(await apiGateway.search(next));
   }
 
   return (

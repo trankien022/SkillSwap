@@ -113,13 +113,35 @@ export function PublishForm({
           result.classId = realClassId;
           result.classroomCode = `SS-${realClassId.slice(-4).toUpperCase()}`;
         }
+
+        // Store published class in skillswap_created_classes so it appears in instructor dashboard & explore
+        try {
+          const selectedSkill = skills.find((s) => s.id === draft.skillId);
+          const skillName = selectedSkill?.label || 'Kỹ năng chuyên đề';
+          const newClassItem = {
+            id: result.classId || realClassId || `cls-${Date.now()}`,
+            title: draft.title || skillName,
+            skillName,
+            description: draft.description,
+            startsAt: startsAtIso,
+            durationMinutes: draft.durationMinutes,
+            priceCredits: draft.priceCredits,
+            capacity: draft.capacity,
+          };
+          const existing = JSON.parse(localStorage.getItem('skillswap_created_classes') || '[]');
+          const updated = [newClassItem, ...existing.filter((c: { id: string }) => c.id !== newClassItem.id)];
+          localStorage.setItem('skillswap_created_classes', JSON.stringify(updated));
+        } catch (storageErr) {
+          console.warn('Failed to save published class to localStorage', storageErr);
+        }
+
         setLastResult(result);
         setToastOpen(true);
       } catch (err) {
         console.error(err);
       }
     });
-  }, [draft, isValid, doPublish]);
+  }, [draft, isValid, doPublish, skills]);
 
   const handleSaveDraft = useCallback(() => {
     startPublishing(async () => {
