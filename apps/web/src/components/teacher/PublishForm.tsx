@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { SkillSelectSection } from './SkillSelectSection';
 import { GeneralDetailsSection } from './GeneralDetailsSection';
 import { ClassFormatSection } from './ClassFormatSection';
@@ -56,6 +57,7 @@ export function PublishForm({
   const [lastResult, setLastResult] = useState<PublishResult | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [toastOpen, setToastOpen] = useState(false);
+  const tResult = useTranslations('Teacher.publish.result');
 
   const gateway = useMemo(() => new HttpTeacherPublishGateway(), []);
   const doPublish = useMemo(
@@ -126,7 +128,7 @@ export function PublishForm({
         {/* Right Column: Sticky Live Preview, Eligibility Checklist & Actions */}
         <div className="flex flex-col gap-6 lg:col-span-5 lg:sticky lg:top-24">
           <MarketplacePreviewCard draft={draft} skills={skills} />
-          <EligibilityChecklistCard />
+          <EligibilityChecklistCard draft={draft} skills={skills} />
           <PublishActions
             onPublish={handlePublish}
             onCancel={handleCancel}
@@ -147,7 +149,9 @@ export function PublishForm({
 
           {/* Success shows only what the server actually returned: the class id.
               The old "Mã phòng học" line displayed a code this screen made up —
-              the video room is minted later, per booking, by the backend. */}
+              the video room is minted later, per booking, by the backend. The
+              labels are translated: this panel used to be hardcoded Vietnamese,
+              so it read in Vietnamese on the English site. */}
           {lastResult !== null && (
             <div
               role="status"
@@ -156,10 +160,10 @@ export function PublishForm({
             >
               <div className="flex items-center gap-1.5 font-bold text-emerald-800 pb-1">
                 <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                <span>Lớp học đã được tạo thành công</span>
+                <span>{tResult('successTitle')}</span>
               </div>
               <div>
-                <span className="font-semibold text-slate-800">Mã lớp:</span>{' '}
+                <span className="font-semibold text-slate-800">{tResult('classIdLabel')}</span>{' '}
                 <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-slate-700">
                   {lastResult.classId}
                 </code>
