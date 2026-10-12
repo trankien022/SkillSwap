@@ -148,7 +148,7 @@ Present and used by both clients:
 | Step | Screens | Why this order |
 |---|---|---|
 | 1A | S3, S4 | Highest visual divergence; contracts exist |
-| 1B | S8 | Money path — but Web **already** uses the real booking endpoint, so this is smaller than planned. Real work is removing `MockBookingGateway` from `booking-panel.tsx:57` |
+| 1B | S8 | Money path — **done** (`3697fbc`). Web already used the real booking endpoint; the real work was removing `MockBookingGateway` from `booking-panel.tsx`, now replaced by `lib/booking/http-gateway.ts` |
 | 1C | S2 | Needs `GET /classes/bookings/me` + `/wallet/balance`; several dashboard fields have no API → derive |
 | 1D | S17 | Replace hardcoded data; endpoint + schema both exist |
 | 1E | S13, S12 | Rating endpoint exists; S12 must unify the two publish surfaces (D4) |
