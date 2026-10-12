@@ -1,8 +1,8 @@
 @startuml
-title <size:24>Container View: SkillSwap System</size>\n<size:24>Container diagram showing the internal structure of SkillSwap</size>
+title C4-L1 Container Diagram — SkillSwap (C4 standard Level 2)
 
 set separator none
-left to right direction
+top to bottom direction
 
 <style>
   root {
@@ -15,40 +15,53 @@ left to right direction
 !include <C4/C4_Context>
 !include <C4/C4_Container>
 
-Person(Learner, "Learner", $descr="User acting as Learner (role=user): booking, wallet, verification; booking UI mocked", $tags="", $link="")
-Person(Teacher, "Teacher", $descr="User acting as Teacher (role=user): verified student + approved skills to publish; no payout API", $tags="", $link="")
-Person(Verifier, "Verifier", $descr="Provisioned role=verifier; active matching expertise and claim required", $tags="", $link="")
-Person(Administrator, "Administrator", $descr="Provisioned role=admin; student decisions, Verifier access status", $tags="", $link="")
-System(Privatedocumentstorage, "Private document storage", $descr="S3-compatible MinIO in Docker; presigned uploads", $tags="", $link="")
-System(Jitsiselfhosted, "Jitsi (self-hosted)", $descr="Self-hosted Jitsi Docker stack; room-scoped JWT; WebRTC media", $tags="", $link="")
+' Presentation only: model elements and relationships come from workspace.dsl.
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam nodesep 35
+skinparam ranksep 45
+skinparam footerFontSize 12
+skinparam titleFontSize 20
+UpdateElementStyle("person", $bgColor="#0F172A", $fontColor="#FFFFFF", $borderColor="#0F172A", $legendText="Person")
+UpdateElementStyle("system", $bgColor="#047857", $fontColor="#FFFFFF", $borderColor="#047857", $legendText="Software system in scope")
+UpdateElementStyle("external_system", $bgColor="#64748B", $fontColor="#FFFFFF", $borderColor="#64748B", $legendText="Supporting software system")
+UpdateElementStyle("container", $bgColor="#047857", $fontColor="#FFFFFF", $borderColor="#047857", $legendText="Application or data store")
+UpdateRelStyle($lineColor="#475569", $textColor="#334155")
+AddElementTag("Demo", $bgColor="#F1F5F9", $fontColor="#0F172A", $borderColor="#64748B", $legendText="Demonstration client (local booking data)")
 
-System_Boundary("SkillSwapSystem_boundary", "SkillSwap System", $tags="") {
-  ContainerDb(SkillSwapSystem.Database, "Database", $techn="PostgreSQL", $descr="One skillswap database; seven module schemas, per-module credentials; no cross-schema joins/FKs", $tags="", $link="")
-  ContainerQueue(SkillSwapSystem.MessageBroker, "Message Broker", $techn="RabbitMQ", $descr="Topic exchange skillswap.events: transactional outbox relay, idempotent consumers, DLQ (ADR-013)", $tags="", $link="")
-  Container(SkillSwapSystem.WebApplication, "Web Application", $techn="Next.js (React)", $descr="Web scaffold; HTTP health/status UI; booking UI uses local mock", $tags="", $link="")
-  Container(SkillSwapSystem.MobileApplication, "Mobile Application", $techn="Expo (React Native)", $descr="Expo client scaffold; booking UI uses local mock, not Backend API (ADR-015)", $tags="", $link="")
-  Container(SkillSwapSystem.Gateway, "Gateway", $techn="NestJS (Node.js)", $descr="Public REST entry point: JWT, trusted identity, rate limiting, HTTP proxy :4000", $tags="", $link="")
-  Container(SkillSwapSystem.BackendAPI, "Backend API", $techn="NestJS (Node.js)", $descr="Private NestJS modular monolith :4001; seven contexts; payment adapter is in-process mock", $tags="", $link="")
+Person(AccountHolder, "Account holder", $descr="[Person]\nUses demonstration clients or role-authorized API services.", $tags="", $link="")
+System_Ext(Onlineclassroom, "Online classroom", $descr="[Supporting software system]\nHosts live lessons for users who are learning or teaching.", $tags="", $link="")
+System_Ext(Paymentgateway, "Third-party payment gateway", $descr="[Supporting software system]\nProcesses cash top-ups and payouts; provider selection is pending.", $tags="", $link="")
+
+System_Boundary("SkillSwap_boundary", "SkillSwap", $tags="") {
+  Container(SkillSwap.APIgateway, "API gateway", $techn="Container: NestJS / TypeScript", $descr="Checks sign-in and forwards public requests.", $tags="", $link="")
+  Container(SkillSwap.BackendAPI, "Backend API", $techn="Container: NestJS / TypeScript", $descr="Runs account, verification, class and wallet rules in one application.", $tags="", $link="")
+  ContainerDb(SkillSwap.Businessdatabase, "Business database", $techn="Container: PostgreSQL / TypeORM", $descr="Stores records in seven separately owned business schemas.", $tags="", $link="")
+  ContainerQueue(SkillSwap.Businessmessagebroker, "Business message broker", $techn="Container: RabbitMQ", $descr="Delivers saved business changes for background processing.", $tags="", $link="")
+  ContainerDb(SkillSwap.Privatedocumentstore, "Private document store", $techn="Container: MinIO / S3-compatible API", $descr="Stores student proof uploaded through temporary private links.", $tags="", $link="")
+  Container(SkillSwap.Webapplication, "Web application", $techn="Container: Next.js / TypeScript", $descr="Shows service status and demonstration bookings.", $tags="Demo", $link="")
+  Container(SkillSwap.Mobileapplication, "Mobile application", $techn="Container: Expo / React Native", $descr="Shows demonstration bookings using local data.", $tags="Demo", $link="")
 }
 
-Rel(Learner, SkillSwapSystem.WebApplication, "Health/status UI and local mock booking", $techn="Browser", $tags="", $link="")
-Rel(Teacher, SkillSwapSystem.WebApplication, "Web scaffold; role workflows incomplete", $techn="Browser", $tags="", $link="")
-Rel(Verifier, SkillSwapSystem.Gateway, "Queue, claim and decision via API client", $techn="HTTPS/REST", $tags="", $link="")
-Rel(Administrator, SkillSwapSystem.Gateway, "Student decisions and Verifier status via API client", $techn="HTTPS/REST", $tags="", $link="")
-Rel(Learner, SkillSwapSystem.MobileApplication, "Local mock booking UI", $techn="Native UI", $tags="", $link="")
-Rel(Teacher, SkillSwapSystem.MobileApplication, "Native scaffold; role workflows incomplete", $techn="Native UI", $tags="", $link="")
-Rel(Learner, SkillSwapSystem.Gateway, "Booking, wallet and verification via API client", $techn="HTTPS/REST", $tags="", $link="")
-Rel(Teacher, SkillSwapSystem.Gateway, "Class and evidence commands via API client", $techn="HTTPS/REST", $tags="", $link="")
-Rel(Learner, Privatedocumentstorage, "Upload document bytes using API-issued URL", $techn="Presigned HTTPS PUT", $tags="", $link="")
-Rel(Teacher, Jitsiselfhosted, "Teaches live class", $techn="HTTPS/WebRTC", $tags="", $link="")
-Rel(Learner, Jitsiselfhosted, "Attends live class", $techn="HTTPS/WebRTC", $tags="", $link="")
-Rel(SkillSwapSystem.WebApplication, SkillSwapSystem.Gateway, "Health/status HTTP calls only; booking uses local mock", $techn="HTTPS/REST", $tags="", $link="")
-Rel(SkillSwapSystem.Gateway, SkillSwapSystem.BackendAPI, "Forwards requests to", $techn="HTTP/JSON", $tags="", $link="")
-Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.Database, "Reads from and writes to", $techn="TypeORM", $tags="", $link="")
-Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.MessageBroker, "Publishes integration events via outbox", $techn="AMQP", $tags="", $link="")
-Rel(SkillSwapSystem.BackendAPI, Jitsiselfhosted, "Signs scoped JWT locally; client joins Jitsi", $techn="HS256 JWT", $tags="", $link="")
-Rel(SkillSwapSystem.BackendAPI, Privatedocumentstorage, "Signs presigned upload URL locally", $techn="S3 Signature V4", $tags="", $link="")
+Rel(AccountHolder, SkillSwap.Webapplication, "Views status and demo bookings", $techn="Browser", $tags="", $link="")
+Rel(AccountHolder, SkillSwap.Mobileapplication, "Tries demo bookings", $techn="Native UI", $tags="", $link="")
+Rel(AccountHolder, SkillSwap.APIgateway, "Requests services allowed for their account", $techn="HTTP / JSON", $tags="", $link="")
+Rel(AccountHolder, SkillSwap.Privatedocumentstore, "Uploads owned student proof using a temporary link", $techn="HTTP PUT", $tags="", $link="")
+Rel(AccountHolder, Onlineclassroom, "Joins a booked lesson with a private invitation", $techn="HTTPS / WebRTC", $tags="", $link="")
+Rel(SkillSwap.Webapplication, SkillSwap.APIgateway, "Requests service status only", $techn="HTTP / JSON", $tags="", $link="")
+Rel(SkillSwap.APIgateway, SkillSwap.BackendAPI, "Forwards authenticated requests", $techn="HTTP / JSON", $tags="", $link="")
+Rel(SkillSwap.BackendAPI, SkillSwap.Businessdatabase, "Reads and saves owned business records", $techn="PostgreSQL protocol / TypeORM", $tags="", $link="")
+Rel(SkillSwap.BackendAPI, SkillSwap.Businessmessagebroker, "Publishes saved business changes", $techn="AMQP", $tags="", $link="")
+Rel(SkillSwap.Businessmessagebroker, SkillSwap.BackendAPI, "Delivers changes to background handlers", $techn="AMQP", $tags="", $link="")
+Rel(SkillSwap.BackendAPI, Paymentgateway, "Starts cash payments through the PaymentGateway port", $techn="Provider adapter", $tags="", $link="")
+Rel(Paymentgateway, SkillSwap.APIgateway, "Sends signed payment callbacks", $techn="HTTPS / REST webhook", $tags="", $link="")
 
-SHOW_LEGEND(true)
-hide stereotypes
+Lay_R(AccountHolder, Onlineclassroom)
+Lay_R(SkillSwap.Webapplication, SkillSwap.Mobileapplication)
+Lay_D(SkillSwap.APIgateway, SkillSwap.BackendAPI)
+Lay_R(SkillSwap.Businessdatabase, SkillSwap.Businessmessagebroker)
+Lay_R(SkillSwap.Privatedocumentstore, Onlineclassroom)
+SHOW_LEGEND()
+footer Current implementation: booking screens use local data and PaymentGateway is backed by a mock adapter; no provider is selected.\nBackend signs classroom invitations and document upload links locally. No network call to Jitsi/MinIO is implied.\nHTTP labels describe local development; production ingress is HTTPS. Only status calls are connected from the web app.
 @enduml

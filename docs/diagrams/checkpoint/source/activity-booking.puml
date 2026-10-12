@@ -1,42 +1,50 @@
 @startuml
-title Current backend | Booking decisions | FR-007/009
+title Book and pay for a class | FR-007/009 | BR-021–026/034–038/068
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
 skinparam defaultFontName Arial
 skinparam defaultFontSize 14
 skinparam ArrowColor #475569
-skinparam sequenceParticipantBackgroundColor #F1F5F9
-skinparam sequenceParticipantBorderColor #475569
 skinparam activityBackgroundColor #F1F5F9
 skinparam activityBorderColor #475569
+skinparam sequenceParticipantBackgroundColor #F1F5F9
+skinparam sequenceParticipantBorderColor #475569
 skinparam stateBackgroundColor #F1F5F9
 skinparam stateBorderColor #475569
 start
-:Authenticated backend booking request;
-if (Existing idempotency key?) then (yes)
- :Return stored booking;
+:Learner asks to book a class;
+if (Is this a repeat of the same request?) then (Yes)
+ :Return the existing booking without creating another;
  stop
 endif
-:Read class and lock seat allocation;
-if (Published, not self, >=24h lead,\n30-180 min, unique active booking, capacity?) then (yes)
- :Persist Pending + price snapshot + 15-minute expiry;
-else (no)
- :Reject with typed reason; no debit;
+if (Class open, seat available, not own class,\nno existing active booking, starts in at least 24 hours,\nand lasts 30–180 minutes?) then (Yes)
+ :Hold a seat for 15 minutes\nand keep the price agreed at booking;
+else (No)
+ :Refuse the booking and explain why;\ndo not take payment;
  stop
 endif
-:Return Pending;
-if (Learner confirms while state is Pending?) then (yes)
- :Commit Confirmed\nand booking.confirmed outbox;
- :Return confirmation;
-note right: Current confirm repository checks Pending state, not expiry timestamp.
- :Shared relay / RabbitMQ dispatch;
- if (Wallet can settle?) then (yes)
-  :Atomic wallet debit + Teacher pending + platform fee;
- else (no)
-  :Consumer retry / DLQ;\nno confirmation compensation shown in current code;
+:Show booking as Awaiting confirmation;
+if (Learner confirms before the system cancels the hold?) then (Yes)
+ :Save the booking as Confirmed;
+ :Return the confirmation to the Learner;
+ :Process the wallet payment in the background;
+ if (Does the wallet payment succeed?) then (Yes)
+  :Deduct the full price from the Learner;\nallocate Teacher income and the 10% platform fee together;
+  :Keep Teacher income on hold until release is allowed;
+ else (No)
+  :Retry payment processing;\nkeep unresolved failures for investigation;
+  note right
+   Current gap against BR-022/026:
+   confirmation is saved before payment succeeds.
+   A failed payment does not automatically undo confirmation.
+  end note
  endif
-else (no)
- :Expiry sweep cancels Pending and releases seat;
+else (No)
+ :System cancels the expired hold\nand makes the seat available again;
 endif
+note left
+ Current confirmation checks booking status.
+ It does not check the 15-minute deadline itself.
+end note
 stop
 @enduml

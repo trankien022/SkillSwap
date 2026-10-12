@@ -31,8 +31,8 @@ Neither `SkillSwap-SRS.md` nor `SkillSwap-PRD.md` contains an explicit screen in
 |---|---|---|---|---|---|---|
 | S1 | Landing / Home | `/{locale}` | `app/index.tsx` | none (static) | ✅ none | ➖ guard |
 | S2 | Learner dashboard | `/{locale}/bookings` | `(tabs)/index.tsx` → `dashboard-view.tsx` | `GET /classes/bookings/me` + `GET /wallet/balance` | ❌ Mock | ✅ Real |
-| S3 | Marketplace | `/{locale}/classes` | `(tabs)/explore.tsx` → `marketplace-view.tsx` | `GET /classes` + `GET /skills` | ❌ Mock | ✅ Real |
-| S4 | Class detail | `/{locale}/classes/[id]` | `classes/[id].tsx` → `class-detail-view.tsx` | `GET /classes/{id}` | ❌ Mock | ✅ Real |
+| S3 | Marketplace | `/{locale}/classes` | `(tabs)/explore.tsx` → `marketplace-view.tsx` | `GET /classes` + `GET /skills` | ✅ Real | ✅ Real |
+| S4 | Class detail | `/{locale}/classes/[id]` | `classes/[id].tsx` → `class-detail-view.tsx` | `GET /classes/{id}` | ✅ Real | ✅ Real |
 | S5 | Login | `/{locale}/auth` (`/login` redirects) | `(auth)/login.tsx` | `POST /auth/login` | ✅ Real | ✅ Real |
 | S6 | Register | `/{locale}/auth` (`/register` redirects) | `(auth)/register.tsx` | `POST /auth/register` | ✅ Real | ✅ Real |
 | S7 | Wallet | `/{locale}/wallet` | `(tabs)/wallet.tsx` | `GET /wallet/balance`, `GET /wallet/history` | ✅ Real | ✅ Real |
@@ -47,7 +47,7 @@ Neither `SkillSwap-SRS.md` nor `SkillSwap-PRD.md` contains an explicit screen in
 | S16 | System status | `/{locale}/status` | — | `GET /health` | ✅ Real | ➖ |
 | S17 | Notifications | `/{locale}/notifications` | `(features)/notifications.tsx` | `GET /notifications`, `POST /notification-devices` | ❌ Hardcoded | ✅ Real |
 
-**Tally:** Web 8 real / 2 partial / 5 mock-or-missing. Mobile 12 real / 4 session-or-guard / 1 not built.
+**Tally (after `f34d278` merge + Phase 1):** Web 10 real / 2 partial / 3 mock-or-missing. Mobile 12 real / 4 session-or-guard / 1 not built.
 
 ---
 
@@ -147,17 +147,78 @@ Present and used by both clients:
 
 | Step | Screens | Why this order |
 |---|---|---|
-| 1A | S3, S4 | Highest visual divergence; contracts exist |
+| 1A | S3, S4 | **done** (`d2f6873`) — `HttpMarketplaceGateway` + `api-mapping.ts` |
 | 1B | S8 | Money path — **done** (`3697fbc`). Web already used the real booking endpoint; the real work was removing `MockBookingGateway` from `booking-panel.tsx`, now replaced by `lib/booking/http-gateway.ts` |
 | 1C | S2 | Needs `GET /classes/bookings/me` + `/wallet/balance`; several dashboard fields have no API → derive |
-| 1D | S17 | Replace hardcoded data; endpoint + schema both exist |
+| 1D | S17 | Replace hardcoded data; endpoint + schema both exist — **partly done upstream** in `f34d278` (`lib/notifications/api-notifications.ts`) |
 | 1E | S13, S12 | Rating endpoint exists; S12 must unify the two publish surfaces (D4) |
-| 1F | D1, D2 | Delete or repoint dead code; consolidate auth clients |
+| 1F | D1, D2 | D1 **done** (`92c41bc`); D2 (duplicate auth clients) still open |
 | 1G | S10 | Add the missing Web skills screen, mirroring `(features)/skills.tsx` |
 
 ---
 
-## 7. Definition of done for Phase 0
+## 7. Merge reconciliation with `origin/main` (`f34d278`)
+
+While this branch was open, `f34d278` ("Fix UI web") landed on `main` and implemented its own marketplace API layer for the **same** screens. Both versions were merged; this records which survived and why.
+
+### Kept from upstream
+
+| Item | Reason |
+|---|---|
+| `lib/notifications/api-notifications.ts` (+ test) | Real notifications API layer with no equivalent here |
+| `lib/dashboard/api-my-bookings.ts` (+ test) | Real my-bookings API layer |
+| `lib/marketplace/api-class-detail.ts` (+ test) | Still used by the checkout page |
+| All `docs/diagrams/**` refreshes | Phase 4 work delivered upstream — no longer needed here |
+| Checkout, navbar, wallet, instructor, dashboard UI changes | Upstream UI fixes unrelated to this phase |
+
+### Kept from this branch
+
+| Item | Reason |
+|---|---|
+| `lib/marketplace/http-gateway.ts` | The live marketplace gateway |
+| `lib/marketplace/api-mapping.ts` | Resolves skill name/category/level from the **real** `/skills` catalogue |
+| `lib/booking/http-gateway.ts` | Real booking adapter (replaces `MockBookingGateway` in the panel) |
+| Loading / sign-in / error states | Upstream rendered fake data instead |
+
+### Removed (upstream code superseded here)
+
+| File | Reason |
+|---|---|
+| `lib/marketplace/api-gateway.ts` (+ test) | Zero production callers after the merge. Its test asserted *"falls back to mock catalogue when network fails or user is unauthenticated"* — i.e. it **pinned displaying fake classes as correct behaviour**. Deleted with the file rather than left failing |
+| `components/marketplace/ClientClassDetailFallback.tsx` | Only existed to render classes fabricated from browser `localStorage` |
+
+### Field-quality difference (why the local version won)
+
+| Field | Upstream | This branch |
+|---|---|---|
+| `skillName` | Truncated `description` | Real name from `/skills` |
+| `skillCategory` | Hardcoded `'programming'` | Real catalogue category |
+| `level` | Hardcoded `'intermediate'` | Real first level from catalogue |
+| `ratingAvg` fallback | `?? 5.0` (invents a perfect rating) | `?? 0` (honest "unrated") |
+| `schoolName` | Hardcoded `'Đại học Quốc gia'` | Neutral label |
+| On API failure | Silent mock fallback | Explicit sign-in / error state |
+
+---
+
+## 8. Newly found after the merge — `localStorage` shadow state (money-relevant)
+
+`f34d278` introduced a `localStorage` layer that **overrides real API responses**, which the audit did not previously capture:
+
+| Key / helper | Written by | Overrides |
+|---|---|---|
+| `getStoredWalletBalance()` | `lib/api-client.ts:301` | Real `/wallet/balance` in navbar, wallet, checkout |
+| `skillswap_created_classes` | `instructor/page.tsx:79,187`, `teacher/PublishForm.tsx:133` | The class list — classes that were never persisted |
+
+Two consequences worth deciding on before the demo:
+
+1. **Money display.** Checkout and the navbar prefer the stored balance (`override ?? remoteBal`), so a stale local value can disagree with the server. It is a display override, not a ledger write, so no incorrect settlement occurs — but the numbers shown can be wrong.
+2. **Classes that do not exist server-side** appear in the marketplace and are bookable-looking, yet `POST /classes/:id/bookings` would reject them.
+
+This is recorded, not fixed — it touches the money path and needs the same explicit decision as D4.
+
+---
+
+## 9. Definition of done for Phase 0
 
 - [x] Every screen mapped to a route in both clients
 - [x] Every claim carries `file:line` evidence

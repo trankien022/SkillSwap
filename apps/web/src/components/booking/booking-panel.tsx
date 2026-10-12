@@ -8,6 +8,7 @@ import { newIdempotencyKey } from '../../lib/booking/idempotency';
 import { BookButton } from './book-button';
 import { ClassCard } from './class-card';
 import { StatusPill } from './status-pill';
+import { dispatchUserBookingsUpdate } from '../../lib/dashboard/api-my-bookings';
 
 /** Plain, serializable messages passed from the server component. */
 export interface BookingMessages {
@@ -87,6 +88,30 @@ export function BookingPanel({
     try {
       const { booking } = await service.book(classId, key);
       setState({ phase: 'booked', classView, booking });
+      try {
+        const raw = localStorage.getItem('skillswap_created_classes');
+        const createdClasses = raw ? JSON.parse(raw) : [];
+        const foundClass = Array.isArray(createdClasses)
+          ? createdClasses.find((c: { id: string; title?: string; skillName?: string }) => c.id === classId)
+          : null;
+        dispatchUserBookingsUpdate({
+          id: booking.bookingId,
+          classId: booking.classId,
+          classTitle: foundClass?.title || foundClass?.skillName || 'Lớp học kỹ năng chuyên đề',
+          skillIcon: 'code',
+          teacherName: 'Giảng viên',
+          teacherInitial: 'G',
+          teacherSchoolLabel: 'Đại học Quốc gia',
+          startsAt: classView.startsAt,
+          durationMinutes: classView.durationMinutes,
+          priceCredits: booking.priceCredits,
+          state: 'upcoming',
+          roomCode: `ROOM-${booking.bookingId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toUpperCase()}`,
+          receiptId: `REC-${booking.bookingId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toUpperCase()}`,
+        });
+      } catch {
+        // ignore
+      }
     } catch (error) {
       const reason = error instanceof BookingError ? error.reason : 'unknown';
       setState({ phase: 'error', message: errorText(reason) });
