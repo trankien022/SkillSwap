@@ -1,6 +1,6 @@
 import { startHarness, type Harness } from './harness';
-import { accountIdFromToken, ApiClient, waitFor } from './support/api-client';
-import { resetDatabase, seedSkill } from './support/db';
+import { accountIdFromToken, ApiClient } from './support/api-client';
+import { resetDatabase, seedSkill, waitVerifiedStudent } from './support/db';
 
 jest.setTimeout(60_000);
 
@@ -55,18 +55,12 @@ describe('E2E: skill evidence submission (FR-003)', () => {
     });
   }
 
-  /** Waits until the approved status has propagated to the event-fed projections. */
-  async function waitVerified(learnerId: string): Promise<void> {
-    await waitFor(async () => {
-      api.actAs(learnerId, 'user');
-      const me = await api.get('/api/auth/me');
-      return me.json?.studentVerification?.status === 'approved' ? me : null;
-    });
-  }
-
-  /** Submits evidence once the account is a projected verified student. */
+  /**
+   * Submits evidence once the **skill-verification** projection has the approved
+   * status (the projection the submit gate reads — not `/api/auth/me`).
+   */
   async function submitEvidence(learnerId: string, body: unknown) {
-    await waitVerified(learnerId);
+    await waitVerifiedStudent(harness, learnerId);
     api.actAs(learnerId, 'user');
     return api.post('/api/skill-evidence', body);
   }
