@@ -245,6 +245,41 @@ describe('ClassDetailCoordinator', () => {
     expect(onBalanceInvalidated).toHaveBeenCalledTimes(1);
   });
 
+  it('waits for delayed settlement without replaying the confirmation command', async () => {
+    const pending: ClassDetailView = {
+      ...sampleClassDetail,
+      ownBooking: {
+        bookingId: 'booking-1',
+        state: 'pending',
+        expiresAt: '2026-10-30T10:15:00.000Z',
+      },
+    };
+    const confirmed: ClassDetailView = {
+      ...pending,
+      ownBooking: { bookingId: 'booking-1', state: 'confirmed', expiresAt: null },
+    };
+    mockGateway.getClassDetail
+      .mockResolvedValueOnce(pending)
+      .mockResolvedValueOnce(pending)
+      .mockResolvedValue(confirmed);
+    mockGateway.confirmBooking.mockResolvedValue({
+      confirmed: false,
+      booking: samplePendingBooking,
+    });
+    const phases: string[] = [];
+    const coordinator = new ClassDetailCoordinator({
+      gateway: mockGateway,
+      accountId: 'account-1',
+      classId: 'class-1',
+      onStateChange: (state) => phases.push(state.phase),
+    });
+    await coordinator.loadDetail();
+    await coordinator.confirmBooking();
+    expect(phases).toContain('settling');
+    expect(coordinator.getState().phase).toBe('confirmed_success');
+    expect(mockGateway.confirmBooking).toHaveBeenCalledTimes(1);
+  });
+
   it('reconciles with authoritative GET on 401 SessionExpiredRetryRequiredError without auto POST replay', async () => {
     mockGateway.getClassDetail.mockResolvedValueOnce(sampleClassDetail).mockResolvedValueOnce({
       ...sampleClassDetail,
