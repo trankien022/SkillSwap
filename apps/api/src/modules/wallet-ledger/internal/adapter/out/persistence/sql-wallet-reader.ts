@@ -1,6 +1,7 @@
-import type { WalletHistoryItemView, WalletHistoryPage } from '@skillswap/contracts';
+import type { PageMeta, WalletHistoryItemView, WalletHistoryPage } from '@skillswap/contracts';
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { qualified } from '../../../../../../shared/sql/ident';
+import { decodeCursor, encodeCursor } from '../../../../../../shared/http/keyset-cursor';
 import type { HistoryQuery, WalletReader } from '../../../application/port/out/wallet-reader';
 
 const LEDGER_TABLE = 'ledger_entries';
@@ -33,18 +34,6 @@ function toItem(row: EntryRow): WalletHistoryItemView {
   };
 }
 
-/** Decodes a `createdAt|id` cursor; returns null when absent. */
-function decodeCursor(cursor: string | undefined): { createdAt: string; id: string } | null {
-  if (cursor === undefined) {
-    return null;
-  }
-  const separator = cursor.indexOf('|');
-  if (separator <= 0) {
-    return null;
-  }
-  return { createdAt: cursor.slice(0, separator), id: cursor.slice(separator + 1) };
-}
-
 export class SqlWalletReader implements WalletReader {
   constructor(
     private readonly registry: ModuleDataSourceRegistry,
@@ -58,28 +47,43 @@ export class SqlWalletReader implements WalletReader {
   async history(query: HistoryQuery): Promise<WalletHistoryPage> {
     const source = this.registry.get(this.moduleName);
     const cursor = decodeCursor(query.cursor);
-    // Fetch one extra row to know whether another page exists.
-    const params: unknown[] = [query.ownerId, query.limit + 1];
-    let where = `"owner_id" = $1`;
-    if (cursor !== null) {
-      where += ` AND ("created_at", "id") < ($3::timestamptz, $4::bigint)`;
-      params.push(cursor.createdAt, cursor.id);
-    }
-    const rows = (await source.query(
-      `SELECT "id", "entry_type", "direction", "amount_credits", "reference_id", "created_at"
-         FROM ${this.table}
-        WHERE ${where}
-        ORDER BY "created_at" DESC, "id" DESC
-        LIMIT $2`,
-      params,
-    )) as EntryRow[];
 
-    const hasMore = rows.length > query.limit;
-    const page = hasMore ? rows.slice(0, query.limit) : rows;
-    const items = page.map(toItem);
-    const last = page[page.length - 1];
-    const nextCursor = hasMore && last !== undefined ? `${iso(last.created_at)}|${String(last.id)}` : null;
-    return { items, nextCursor };
+    // Page + count share one filtered WHERE and run in a single transaction (NFR-014) so the
+    // total is coincident with the page (approximate under concurrent writes).
+    return source.transaction(async (manager) => {
+      const params: unknown[] = [query.ownerId, query.limit + 1];
+      let where = `"owner_id" = $1`;
+      if (cursor !== null) {
+        where += ` AND ("created_at", "id") < ($3::timestamptz, $4::bigint)`;
+        params.push(cursor[0], cursor[1]);
+      }
+
+      const [rows, countRows] = await Promise.all([
+        manager.query(
+          `SELECT "id", "entry_type", "direction", "amount_credits", "reference_id", "created_at"
+             FROM ${this.table}
+            WHERE ${where}
+            ORDER BY "created_at" DESC, "id" DESC
+            LIMIT $2`,
+          params,
+        ) as Promise<EntryRow[]>,
+        manager.query(
+          `SELECT COUNT(*)::int AS "total" FROM ${this.table} WHERE "owner_id" = $1`,
+          [query.ownerId],
+        ) as Promise<Array<{ total: number }>>,
+      ]);
+
+      const hasMore = rows.length > query.limit;
+      const pageRows = hasMore ? rows.slice(0, query.limit) : rows;
+      const last = pageRows[pageRows.length - 1];
+      const page: PageMeta = {
+        limit: query.limit,
+        nextCursor:
+          hasMore && last !== undefined ? encodeCursor([iso(last.created_at), String(last.id)]) : null,
+        total: countRows[0]?.total ?? 0,
+      };
+      return { items: pageRows.map(toItem), page };
+    });
   }
 
   async sums(ownerId: string): Promise<{ credits: number; debits: number }> {

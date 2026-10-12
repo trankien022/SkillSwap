@@ -4,17 +4,24 @@ Project SkillSwap_Conceptual {
   Note: 'Business view of the MVP; attributes, keys, and storage choices are in the logical model.'
 }
 
-Table User {
+Table Account {
   id uuid [pk]
-  Note: 'One student account may act as Learner and Teacher. Verifier and Administrator are assigned roles.'
+  role varchar [not null, note: 'user | verifier | admin — exactly one role per account (ADR-030)']
+  status varchar [not null, note: 'active | suspended']
+  Note: 'A single role per account. Self-registration creates only an ordinary user; verifier/admin accounts are operator-provisioned. Per BR-063 one account can both learn and teach — Learner/Teacher are capabilities, not roles; teaching is gated on verified-student status and an approved skill.'
 }
 
-Table UserRole {
-  user_id uuid [not null]
-  role varchar [not null, note: 'Learner | Teacher | Verifier | Administrator']
+Table Verifier {
+  account_id uuid [pk]
   status varchar [not null, note: 'active | suspended | revoked']
-  indexes { (user_id, role) [pk] }
-  Note: 'Role grants are retained and audited; a Verifier role and matching expertise must both be active to review skills.'
+  Note: 'A reviewer account with a seeded expertise set of skills (from the taxonomy). Expertise scopes the pending queue and the decision authority; no admin assignment and no self-service (ADR-027).'
+}
+
+Table VerifierExpertise {
+  account_id uuid [not null]
+  skill_id uuid [not null]
+  indexes { (account_id, skill_id) [pk] }
+  Note: 'The skills a Verifier is competent to review. Seeded; a Verifier may hold several skills (ADR-027).'
 }
 
 Table StudentVerification {
@@ -28,15 +35,16 @@ Table StudentVerification {
 
 Table Skill {
   id uuid [pk]
-  Note: 'A skill concept; taxonomy depth remains OQ-001.'
+  category varchar [not null]
+  Note: 'A skill in the managed two-level category → skill catalogue, admin-seeded (OQ-001 resolved, ADR-026).'
 }
 
 Table Profile {
   id uuid [pk]
-  user_id uuid [not null, unique]
+  account_id uuid [not null, unique]
   school_id uuid
   major_id uuid
-  Note: 'One profile per User; school and major may be absent for invited non-student roles.'
+  Note: 'One profile per Account; school and major may be absent for provisioned non-student roles.'
 }
 
 Table School {
@@ -57,20 +65,21 @@ Table ProfileSkill {
   id uuid [pk]
   profile_id uuid [not null]
   skill_id uuid [not null]
-  level varchar [note: 'Cached effective approved level: begin | mid | senior; NULL until approved']
-  verifier_expertise_status varchar
-  Note: 'Many skills per profile. Valid SkillEvidence.approved_level controls teaching permission. Pending upgrades retain the old valid approval; a new approval updates the cache atomically. Administrator authorizes Verifier expertise.'
+  level varchar [note: 'Cached effective approved level: beginner | intermediate | advanced | expert; NULL until approved']
+  Note: 'Many skills per profile. Valid SkillEvidence.approved_level controls teaching permission. Pending upgrades retain the old valid approval; a new approval updates the cache atomically.'
 }
 
 Table SkillEvidence {
   id uuid [pk]
   profile_skill_id uuid [not null]
-  evidence_type varchar [note: 'certificate | verifier_recognition']
+  evidence_type varchar [note: 'certificate | verifier_assessment']
   status varchar
   requested_level varchar
   approved_level varchar
+  claimed_by uuid
+  claimed_at timestamp
   reviewer_id uuid
-  Note: 'Only an active domain-matched Verifier reviews certificates or recognizes skill; Administrator role alone cannot decide. Preserve versions and old/new decision audit; no assignment entity.'
+  Note: 'Only an active, expertise-matched Verifier (not Admin, not the owner) reviews. A distinct claim locks the row to one Verifier permanently (no release, ADR-027). Preserve versions and old/new decision audit; the claim is a state on the row, not an assignment entity.'
 }
 
 Table Class {
@@ -138,8 +147,7 @@ Table Rating {
   Note: 'A Booking has zero or one Rating; only its eligible Learner may review a completed Class.'
 }
 
-Ref: User.id < UserRole.user_id
-Ref: User.id - Profile.user_id
+Ref: Account.id - Profile.account_id
 Ref: School.id < Profile.school_id
 Ref: Major.id < Profile.major_id
 Ref: School.id < SchoolMajor.school_id
@@ -150,22 +158,22 @@ Ref: Major.id < StudentVerification.major_id
 Ref: Profile.id < ProfileSkill.profile_id
 Ref: Skill.id < ProfileSkill.skill_id
 Ref: ProfileSkill.id < SkillEvidence.profile_skill_id
-Ref: User.id < SkillEvidence.reviewer_id
-Ref: User.id < Class.teacher_id
+Ref: Account.id < SkillEvidence.reviewer_id
+Ref: Account.id < Class.teacher_id
 Ref: Class.id < ClassSkill.class_id
 Ref: Skill.id < ClassSkill.skill_id
 Ref: Class.id < Booking.class_id
-Ref: User.id < Booking.learner_id
-Ref: User.id - Wallet.owner_id
+Ref: Account.id < Booking.learner_id
+Ref: Account.id - Wallet.owner_id
 Ref: LedgerTransaction.id < LedgerPosting.transaction_id
 Ref: Wallet.id < LedgerPosting.wallet_id
-Ref: User.id < LedgerPosting.user_id
+Ref: Account.id < LedgerPosting.user_id
 Ref: Class.id < LedgerPosting.class_id
-Ref: User.id < LedgerTransaction.initiated_by_user_id
+Ref: Account.id < LedgerTransaction.initiated_by_user_id
 Ref: Booking.id < LedgerTransaction.booking_id
-Ref: User.id < WithdrawalRequest.teacher_id
+Ref: Account.id < WithdrawalRequest.teacher_id
 Ref: WithdrawalRequest.id < LedgerTransaction.withdrawal_request_id
 Ref: LedgerTransaction.reverses_transaction_id - LedgerTransaction.id
 Ref: Class.id < Message.class_id
-Ref: User.id < Message.sender_id
+Ref: Account.id < Message.sender_id
 Ref: Booking.id - Rating.booking_id

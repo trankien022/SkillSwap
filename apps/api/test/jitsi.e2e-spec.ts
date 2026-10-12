@@ -1,7 +1,7 @@
 import { createHmac } from 'node:crypto';
 import { startHarness, type Harness } from './harness';
 import { accountIdFromToken, ApiClient, waitFor } from './support/api-client';
-import { resetDatabase, walletRow } from './support/db';
+import { resetDatabase, seedTeacherTrust, walletRow } from './support/db';
 
 jest.setTimeout(60_000);
 
@@ -58,16 +58,22 @@ describe('E2E: Jitsi room access (real host)', () => {
       email: 'jit-learner@skillswap.test',
       displayName: 'Jit Learner',
       password: 'learner-password',
-      role: 'learner',
+      role: 'user',
     });
     const teacher = await api.post('/api/auth/register', {
       email: 'jit-teacher@skillswap.test',
       displayName: 'Jit Teacher',
       password: 'teacher-password',
-      role: 'teacher',
+      role: 'user',
     });
     const learnerId = accountIdFromToken(learner.json.accessToken);
     const teacherId = accountIdFromToken(teacher.json.accessToken);
+    // FR-005 publish gate: the teacher must be a verified student approved for the skill.
+    await seedTeacherTrust(harness, {
+      teacherId,
+      verified: true,
+      approvedLevels: { 'skill-guitar': 'advanced' },
+    });
 
     api.actAs(learnerId);
     const topUp = await api.post('/api/wallet/top-ups', { amountVnd: 100_000 });

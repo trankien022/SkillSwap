@@ -38,14 +38,39 @@ After login/register you hold an `accessToken`. Attach it to **every** authentic
 Authorization: Bearer <accessToken>
 ```
 
-### Error shape
-All errors are JSON (see `apiErrorSchema`):
+### Response envelope
 
+Every domain response uses the uniform envelope (see `docs/api/RESPONSE-CONVENTIONS.md`,
+**NFR-013**). Health probes (`GET /health`) are the only exemption.
+
+Success:
 ```json
-{ "statusCode": 403, "message": "Room access opens shortly before the class starts", "error": "RoomAccessDeniedError" }
+{
+  "success": true,
+  "code": "ME_OK",
+  "message": "Account loaded",
+  "data": { "id": "…" },
+  "errors": []
+}
 ```
 
-Common status codes: `400` invalid body, `401` missing/expired token or bad credentials,
+Error:
+```json
+{
+  "success": false,
+  "code": "RoomAccessDeniedError",
+  "message": "Room access opens shortly before the class starts",
+  "data": null,
+  "errors": [
+    { "code": "RoomAccessDeniedError", "message": "Room access opens shortly before the class starts" }
+  ]
+}
+```
+
+Read the payload from `body.data`; branch on `body.success` and `body.code` / `body.errors[].code`
+(never on `message`). The HTTP status code still reflects the real outcome.
+
+Common status codes: `400` invalid body/query, `401` missing/expired token or bad credentials,
 `403` forbidden (not a party / suspended / not owner), `404` not found, `409` conflict
 (duplicate email, class locked, illegal transition), `503` room provider unavailable.
 
@@ -63,7 +88,7 @@ Common status codes: `400` invalid body, `401` missing/expired token or bad cred
 | POST | `/api/auth/logout` | none | `{ refreshToken }` | `204` |
 | GET | `/api/auth/me` | **yes** | — | `200` account |
 
-`role` ∈ `learner | teacher | admin`, default `learner`. `password` ≥ 8 chars.
+`role` ∈ `user` only (default `user`); `verifier`/`admin` are provisioned out of band (ADR-030). `password` ≥ 8 chars. Account roles are `user | verifier | admin`; Learner/Teacher are capabilities, not roles.
 
 **Token pair** (`tokenResponseSchema`):
 ```json
@@ -72,7 +97,7 @@ Common status codes: `400` invalid body, `401` missing/expired token or bad cred
 
 **`me`** (`meResponseSchema`):
 ```json
-{ "id": "uuid", "email": "a@b.co", "displayName": "An", "role": "learner", "status": "active" }
+{ "id": "uuid", "email": "a@b.co", "displayName": "An", "role": "user", "status": "active" }
 ```
 
 Register example:
@@ -80,7 +105,8 @@ Register example:
 const res = await fetch(`${API}/api/auth/register`, {
   method: 'POST',
   headers: { 'content-type': 'application/json' },
-  body: JSON.stringify({ email: 'an@b.co', displayName: 'An', password: 'secret-password', role: 'learner' }),
+  // role is optional; only 'user' is accepted (ADR-030). Verifier/admin are provisioned out of band.
+  body: JSON.stringify({ email: 'an@b.co', displayName: 'An', password: 'secret-password' }),
 });
 const { accessToken, refreshToken } = await res.json(); // store these
 ```
@@ -99,7 +125,7 @@ const { accessToken, refreshToken } = await res.json(); // store these
 | POST | `/api/wallet/top-ups` | **yes** | `{ amountVnd }` | `201` top-up intent |
 | POST | `/api/wallet/top-ups/callback` | **no** (HMAC) | `{ providerRef, amountVnd, status }` + `x-signature` | `200` `{ applied, status }` |
 | GET | `/api/wallet/balance` | **yes** | — | `200` `{ availableCredits, pendingCredits }` |
-| GET | `/api/wallet/history` | **yes** | `?limit=&cursor=` | `200` `{ items, nextCursor }` |
+| GET | `/api/wallet/history` | **yes** | `?limit=&cursor=` | `200` paged envelope (`{ items, page }`) |
 
 - `amountVnd` is an **integer VND**, max `100,000,000`, and must be a whole number of
   credits at **1 credit = 1,000 VND** (so `100000` → 100 credits).
@@ -216,8 +242,8 @@ Teacher                         Backend                              Learner
   │                                        (Teacher pending 90% → available)
 ```
 
-1. **Teacher** registers (`role: teacher`), publishes a class (`POST /api/classes`).
-2. **Learner** registers (`role: learner`).
+1. **Teacher** registers (`role: user`), publishes a class (`POST /api/classes`).
+2. **Learner** registers (`role: user`).
 3. **Learner** funds the wallet: `POST /api/wallet/top-ups` → pay → `GET /api/wallet/balance`.
 4. **Learner** books: `POST /api/classes/:id/bookings` with an idempotency key → `pending`.
 5. **Learner** confirms: `POST /api/classes/bookings/:bookingId/confirm` → settles.

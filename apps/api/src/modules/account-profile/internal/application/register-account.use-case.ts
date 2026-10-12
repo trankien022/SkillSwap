@@ -7,7 +7,7 @@ import type { PasswordHasher } from './port/out/password-hasher';
 import type { RegisterAccountInput, RegisterAccountPort } from './port/in/register-account';
 import { issueSession, type SessionDeps } from './issue-session';
 
-/** FR-001 / UC-006: create a local account and return a first session. */
+/** FR-001 / UC-006 / ADR-029: create a local account and return a first session. */
 export class RegisterAccountUseCase implements RegisterAccountPort {
   constructor(
     private readonly accounts: AccountRepository,
@@ -18,7 +18,7 @@ export class RegisterAccountUseCase implements RegisterAccountPort {
 
   async execute(input: RegisterAccountInput): Promise<TokenResponse> {
     assertPasswordPolicy(input.password);
-    const role = input.role ?? 'learner';
+    const role = input.role ?? 'user';
     assertAccountRole(role);
 
     const existing = await this.accounts.findByEmail(input.email);

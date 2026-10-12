@@ -27,6 +27,8 @@ const SCHEMA_TO_MODULE: Record<string, string> = {
   account_profile: 'account-profile',
   live_class: 'live-class',
   wallet_ledger: 'wallet-ledger',
+  student_verification: 'student-verification',
+  skill_verification: 'skill-verification',
 };
 
 /**

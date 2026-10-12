@@ -35,6 +35,8 @@ docker/         postgres init (7 roles + 7 schemas, ADR-007)
 | Lint / build / typecheck / tests / arch rules | `pnpm lint` · `pnpm build` · `pnpm typecheck` · `pnpm test` · `pnpm test:arch` |
 | Dev stack (postgres + rabbitmq) | `pnpm db:up` (down: `pnpm db:down`) |
 | Apply DB migrations | `pnpm db:migrate` |
+| One-command demo (up + migrate + seed) | `pnpm db:demo` |
+| Regenerate API reference docs | `pnpm docs:api` |
 | Dev JWT/signing keys | `pnpm keys:gen` |
 | One app | `pnpm --filter @skillswap/api …` (names: `api`, `gateway`, `web`, `mobile`, `contracts`) |
 

@@ -1,5 +1,10 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { Link } from '../../i18n/routing';
+import { SiteHeader } from '../../components/landing/SiteHeader';
+import { HeroSection } from '../../components/landing/HeroSection';
+import { TrustSection } from '../../components/landing/TrustSection';
+import { MoneySection } from '../../components/landing/MoneySection';
+import { CtaSection } from '../../components/landing/CtaSection';
+import { SiteFooter } from '../../components/landing/SiteFooter';
 
 type PageProps = {
   params: Promise<{ locale: string }>;
@@ -8,18 +13,20 @@ type PageProps = {
 export default async function HomePage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations('Home');
+  // Touch Landing so the namespace is statically tracked even if a child
+  // server component runs before the first getTranslations call here.
+  await getTranslations('Landing.nav');
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-5xl flex-col items-start justify-center gap-6 px-6 py-12">
-      <h1 className="text-4xl font-bold tracking-tight text-slate-900">{t('title')}</h1>
-      <p className="max-w-2xl text-lg leading-relaxed text-slate-600">{t('subtitle')}</p>
-      <Link
-        href="/status"
-        className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-700"
-      >
-        {t('statusLink')}
-      </Link>
-    </main>
+    <div className="flex min-h-dvh flex-col bg-mist text-ink">
+      <SiteHeader />
+      <main className="flex-1">
+        <HeroSection />
+        <TrustSection />
+        <MoneySection />
+        <CtaSection />
+      </main>
+      <SiteFooter />
+    </div>
   );
 }

@@ -9,7 +9,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:e2e": "jest --config jest.e2e.config.cjs --runInBand"
+    "test:e2e": "jest --config jest.e2e.config.cjs --runInBand --forceExit"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
@@ -19,6 +19,7 @@
     "@skillswap/contracts": "workspace:*",
     "amqplib": "^0.10.5",
     "dotenv": "^16.4.7",
+    "nestjs-zod": "^5.5.0",
     "pg": "^8.13.1",
     "pino": "^9.6.0",
     "pino-http": "^10.4.0",

@@ -6,35 +6,34 @@ Project SkillSwap_Logical {
 }
 
 Enum account_role {
-  Learner
-  Teacher
-  Verifier
-  Administrator
+  user
+  verifier
+  admin
 }
 
-Table users {
+Table accounts {
   id uuid [pk]
   email varchar(320) [not null, unique]
-  status varchar(24) [not null, default: 'pending', note: 'pending | active | suspended']
+  display_name varchar(160) [not null]
+  role account_role [not null, note: 'Exactly one role per account: user | verifier | admin (ADR-030); verifier/admin are operator-provisioned']
+  status varchar(24) [not null, default: 'active', note: 'active | suspended']
   created_at timestamptz [not null]
   updated_at timestamptz [not null]
+  Note: 'A single role per account (no role-grant table). Self-registration creates only learner/teacher; verifier/admin are operator-provisioned. Per BR-063 one account can both learn and teach — teaching is not a separate role but is gated on verified-student status and an approved skill. Suspending an account is independent from a Verifier lifecycle status.'
 }
 
-Table user_roles {
-  user_id uuid [not null, ref: > users.id]
-  role account_role [not null]
-  status varchar(24) [not null, default: 'active', note: 'active | suspended | revoked']
-  assigned_by uuid [ref: > users.id]
-  assigned_at timestamptz [not null]
-  updated_at timestamptz [not null]
-  indexes { (user_id, role) [pk] }
-  Note: 'Retain grants when suspended/revoked; every transition is audited. Suspending a Verifier role does not suspend the User or their Learner/Teacher roles. Skill review requires this role AND matching expertise to be active.'
+Table verifier_expertise {
+  account_id uuid [not null]
+  skill_id uuid [not null, ref: > skills.id]
+  indexes { (account_id, skill_id) [pk] }
+  Note: 'Skills a Verifier is competent to review; seeded (ADR-027). A Verifier may hold several skills. Scopes the pending queue and the decision authority; no assignment table for requests.'
 }
 
 Enum skill_level {
-  begin
-  mid
-  senior
+  beginner
+  intermediate
+  advanced
+  expert
 }
 
 Table schools {
@@ -60,7 +59,7 @@ Table school_majors {
 
 Table profiles {
   id uuid [pk]
-  user_id uuid [not null, unique, ref: - users.id]
+  account_id uuid [not null, unique, ref: - accounts.id]
   display_name varchar(160) [not null]
   bio text
   avatar_ref text
@@ -82,7 +81,7 @@ Table student_verifications {
   major_name_snapshot varchar(200) [not null]
   document_ref text [not null, note: 'Private encrypted object reference, never a public URL']
   status varchar(24) [not null, note: 'draft | pending | approved | rejected | superseded | revoked | expired']
-  reviewer_id uuid [ref: > users.id]
+  reviewer_id uuid [ref: > accounts.id]
   decision_reason text
   submitted_at timestamptz
   decided_at timestamptz
@@ -98,9 +97,14 @@ Ref: student_verifications.(school_id, major_id) > school_majors.(school_id, maj
 
 Table skills {
   id uuid [pk]
-  name varchar(160) [not null, unique]
+  name varchar(160) [not null]
+  category varchar(160) [not null]
   active boolean [not null, default: true]
-  Note: 'Only the skill itself is modeled; category hierarchy and tags await OQ-001.'
+  indexes {
+    (name, category) [unique]
+    (category)
+  }
+  Note: 'Managed, admin-seeded catalogue; a two-level category → skill tree (ADR-026). Evidence must reference a known, active skill.'
 }
 
 Table profile_skills {
@@ -108,16 +112,12 @@ Table profile_skills {
   profile_id uuid [not null, ref: > profiles.id]
   skill_id uuid [not null, ref: > skills.id]
   level skill_level [note: 'Cached effective approved level; NULL before approval or when no effective approval remains. Not self-editable.']
-  verifier_expertise_status varchar(24) [not null, default: 'none', note: 'none | active | suspended | revoked; managed only by Administrator for invited Verifiers']
-  expertise_approved_by uuid [ref: > users.id]
-  expertise_approved_at timestamptz
   created_at timestamptz [not null]
   updated_at timestamptz [not null]
   indexes {
     (profile_id, skill_id) [unique]
-    (skill_id, verifier_expertise_status)
   }
-  Note: 'Valid approved SkillEvidence.approved_level is the authority for teaching permission; level is only a cache. A new requested level belongs to the new evidence, leaving the old valid approval usable while pending or rejected. Approval atomically supersedes the previous evidence and updates this cache, including approval below the requested level. Expiry/revocation invalidates the cache; authorization always checks live evidence and certificate expiry. Active Verifier expertise requires an active Verifier role and Administrator approval.'
+  Note: 'Valid approved SkillEvidence.approved_level is the authority for teaching permission; level is only a cache. A new requested level belongs to the new evidence, leaving the old valid approval usable while pending or rejected. Approval atomically supersedes the previous evidence and updates this cache, including approval below the requested level. Expiry/revocation invalidates the cache; authorization always checks live evidence and certificate expiry.'
 }
 
 Table skill_evidence {
@@ -132,8 +132,10 @@ Table skill_evidence {
   certificate_expires_at timestamptz
   requested_level skill_level [not null]
   approved_level skill_level
-  status varchar(24) [not null, note: 'draft | pending | approved | rejected | superseded | revoked | expired']
-  reviewer_id uuid [ref: > users.id]
+  status varchar(24) [not null, note: 'pending | claimed | approved | rejected | superseded']
+  claimed_by uuid [ref: > accounts.id, note: 'Verifier who locked this request; NULL until claimed']
+  claimed_at timestamptz
+  reviewer_id uuid [ref: > accounts.id]
   decision_reason text
   submitted_at timestamptz
   decided_at timestamptz
@@ -142,12 +144,12 @@ Table skill_evidence {
     (profile_skill_id, version) [unique]
     (status, submitted_at)
   }
-  Note: 'No assignment table. Only an active, domain-matched Verifier may decide; Administrator role alone never grants skill-review permission. Reviewer cannot be the owner (BR-011..BR-013). Approval requires reviewer, time and approved level; rejection/revocation requires reason. Certificates are reviewed, never auto-approved. Submitted proof and requested level are immutable; resubmission creates a new version. Partial unique index on profile_skill_id WHERE status = approved. Replacement approval, old evidence supersession, profile_skills.level update and structured audit commit atomically under a ProfileSkill lock. Pending/rejected replacements preserve old valid permission. Every transition retains old/new decision data in audit_events (FR-018).'
+  Note: 'No assignment table. Only an active, expertise-matched Verifier (not Admin, not the owner) may decide. A distinct claim (claimed_by/claimed_at) locks the request to one Verifier permanently — no release in the MVP, not even on suspend/revoke (ADR-027). Approval requires reviewer, time and approved level; rejection requires reason. Submitted proof and requested level are immutable; resubmission creates a new version. Partial unique index on profile_skill_id WHERE status = approved. Replacement approval, old evidence supersession and profile_skills.level update commit atomically under a ProfileSkill lock. Pending/rejected replacements preserve old valid permission. Every transition retains old/new decision data in audit_events (FR-018).'
 }
 
 Table classes {
   id uuid [pk]
-  teacher_id uuid [not null, ref: > users.id]
+  teacher_id uuid [not null, ref: > accounts.id]
   title varchar(200) [not null]
   description text [not null]
   starts_at timestamptz [not null]
@@ -158,7 +160,7 @@ Table classes {
   jitsi_room_ref varchar(255) [unique, note: 'Room metadata only; access token is short lived and not stored here']
   commitments_locked_at timestamptz [note: 'Set atomically at the first confirmed booking; never reset after cancellation']
   completed_at timestamptz
-  completed_by uuid [ref: > users.id, note: 'NULL for system completion; audit records its rule and source']
+  completed_by uuid [ref: > accounts.id, note: 'NULL for system completion; audit records its rule and source']
   created_at timestamptz [not null]
   updated_at timestamptz [not null]
   indexes {
@@ -179,7 +181,7 @@ Table class_skills {
 Table bookings {
   id uuid [pk]
   class_id uuid [not null, ref: > classes.id]
-  learner_id uuid [not null, ref: > users.id]
+  learner_id uuid [not null, ref: > accounts.id]
   status varchar(24) [not null, note: 'pending | confirmed | completed | cancelled | disputed']
   price_credits decimal(18,3) [not null, note: 'Price snapshot at booking']
   idempotency_key varchar(128) [not null]
@@ -195,7 +197,7 @@ Table bookings {
 
 Table wallets {
   id uuid [pk]
-  owner_user_id uuid [ref: - users.id, unique, note: 'NULL for platform and gateway clearing wallets']
+  owner_user_id uuid [ref: - accounts.id, unique, note: 'NULL for platform and gateway clearing wallets']
   kind varchar(32) [not null, note: 'user | platform_fee | gateway_clearing']
   status varchar(24) [not null, default: 'active']
   created_at timestamptz [not null]
@@ -208,7 +210,7 @@ Table ledger_transactions {
   status varchar(24) [not null, note: 'pending | posted | failed | reversed']
   booking_id uuid [ref: > bookings.id]
   withdrawal_request_id uuid [ref: > withdrawal_requests.id]
-  initiated_by_user_id uuid [ref: > users.id, note: 'Required for user commands; NULL only for audited system operations']
+  initiated_by_user_id uuid [ref: > accounts.id, note: 'Required for user commands; NULL only for audited system operations']
   provider varchar(64)
   provider_reference varchar(255)
   amount_vnd decimal(18,0) [note: 'Positive real-money amount for top_up/withdrawal']
@@ -233,7 +235,7 @@ Table ledger_postings {
   id uuid [pk]
   transaction_id uuid [not null, ref: > ledger_transactions.id]
   wallet_id uuid [not null, ref: > wallets.id]
-  user_id uuid [ref: > users.id, note: 'Wallet owner; NULL only for system wallets']
+  user_id uuid [ref: > accounts.id, note: 'Wallet owner; NULL only for system wallets']
   class_id uuid [ref: > classes.id, note: 'Required for class-related transactions, NULL for top_up/withdrawal']
   bucket varchar(16) [not null, note: 'available | pending | payout_hold']
   amount_credits decimal(18,3) [not null, note: 'Signed delta; CHECK amount_credits <> 0']
@@ -249,7 +251,7 @@ Table ledger_postings {
 
 Table withdrawal_requests {
   id uuid [pk]
-  teacher_id uuid [not null, ref: > users.id]
+  teacher_id uuid [not null, ref: > accounts.id]
   amount_credits decimal(18,3) [not null, note: 'CHECK amount_credits > 0; immutable once held']
   exchange_rate_vnd decimal(18,3) [not null, note: 'CHECK exchange_rate_vnd > 0; applied snapshot']
   destination_ref text [not null, note: 'Encrypted payout destination token/reference']
@@ -278,7 +280,7 @@ Table gateway_events {
 Table messages {
   id uuid [pk]
   class_id uuid [not null, ref: > classes.id]
-  sender_id uuid [not null, ref: > users.id]
+  sender_id uuid [not null, ref: > accounts.id]
   body text [not null]
   created_at timestamptz [not null]
   indexes { (class_id, created_at, id) }
@@ -297,7 +299,7 @@ Table ratings {
 
 Table audit_events {
   id uuid [pk]
-  actor_id uuid [ref: > users.id]
+  actor_id uuid [ref: > accounts.id]
   action varchar(100) [not null]
   target_type varchar(80) [not null]
   target_id uuid [not null]
@@ -315,7 +317,7 @@ Table audit_events {
 
 Table notifications {
   id uuid [pk]
-  user_id uuid [not null, ref: > users.id]
+  user_id uuid [not null, ref: > accounts.id]
   event_type varchar(80) [not null]
   payload_json jsonb [not null, note: 'No secrets or private document content']
   created_at timestamptz [not null]
