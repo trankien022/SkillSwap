@@ -29,6 +29,46 @@ export function mapClassListItemToMarketplace(item: ClassListItemView): Marketpl
   };
 }
 
+function getLocalCreatedClasses(): MarketplaceClass[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem('skillswap_created_classes');
+    if (!raw) return [];
+    const items = JSON.parse(raw);
+    if (!Array.isArray(items)) return [];
+    return items.map((c: {
+      id: string;
+      title: string;
+      skillName?: string;
+      startsAt: string;
+      durationMinutes: number;
+      priceCredits: number;
+      capacity: number;
+    }) => ({
+      id: c.id,
+      teacherId: 'teacher-local',
+      state: 'published' as const,
+      startsAt: c.startsAt,
+      durationMinutes: c.durationMinutes,
+      priceCredits: c.priceCredits,
+      capacity: c.capacity,
+      teacherName: 'Giảng viên',
+      schoolCode: 'bk',
+      schoolName: 'Đại học Quốc gia',
+      skillName: c.skillName || c.title,
+      skillCategory: 'programming' as const,
+      level: 'intermediate' as const,
+      format: c.capacity <= 1 ? ('one-on-one' as const) : ('group-2-4' as const),
+      ratingAvg: 5.0,
+      ratingCount: 1,
+      verified: true,
+      coverGradient: { from: '#0f766e', to: '#14b8a6' },
+    }));
+  } catch {
+    return [];
+  }
+}
+
 /**
  * Real API-backed Marketplace Gateway.
  * Queries `GET /api/classes` from backend with graceful fallback to MockMarketplaceGateway
@@ -38,6 +78,8 @@ export class MarketplaceApiGateway {
   private fallback = new MockMarketplaceGateway();
 
   async search(query: MarketplaceQuery): Promise<MarketplacePage> {
+    const localClasses = getLocalCreatedClasses();
+
     try {
       const params = new URLSearchParams();
       if (query.keyword) {
@@ -50,9 +92,14 @@ export class MarketplaceApiGateway {
         const pageData = await unwrapEnvelope<ListClassesPageView>(res);
         if (pageData && Array.isArray(pageData.items) && pageData.items.length > 0) {
           const mappedItems = pageData.items.map(mapClassListItemToMarketplace);
+          const existingIds = new Set(mappedItems.map((m) => m.id));
+          const combined = [
+            ...localClasses.filter((lc) => !existingIds.has(lc.id)),
+            ...mappedItems,
+          ];
           return {
-            items: mappedItems,
-            total: mappedItems.length,
+            items: combined,
+            total: combined.length,
             page: query.page,
             perPage: query.perPage,
           };
@@ -62,6 +109,20 @@ export class MarketplaceApiGateway {
       console.warn('Real /api/classes search failed, falling back to mock catalogue:', err);
     }
 
-    return this.fallback.search(query);
+    const fallbackPage = await this.fallback.search(query);
+    if (localClasses.length > 0) {
+      const existingIds = new Set(fallbackPage.items.map((m) => m.id));
+      const combined = [
+        ...localClasses.filter((lc) => !existingIds.has(lc.id)),
+        ...fallbackPage.items,
+      ];
+      return {
+        items: combined,
+        total: combined.length,
+        page: query.page,
+        perPage: query.perPage,
+      };
+    }
+    return fallbackPage;
   }
 }

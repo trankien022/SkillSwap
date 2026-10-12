@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useLocale } from 'next-intl';
 import { callApi, unwrapEnvelope } from '../../../lib/api-client';
 import { Navbar } from '../../../components/navbar';
-import type { ProfileSkillView, WalletBalanceView, MeResponse } from '@skillswap/contracts';
+import type { ProfileSkillView, WalletBalanceView, MeResponse, ListClassesPageView } from '@skillswap/contracts';
 
 export interface CreatedClassItem {
   id: string;
@@ -40,10 +40,11 @@ export default function InstructorDashboard() {
 
     const loadData = async () => {
       try {
-        const [skillsRes, balRes, meRes] = await Promise.all([
+        const [skillsRes, balRes, meRes, classesRes] = await Promise.all([
           callApi('/profile-skills/me'),
           callApi('/wallet/balance'),
           callApi('/auth/me'),
+          callApi('/classes?teacherId=me'),
         ]);
 
         if (skillsRes.ok) {
@@ -57,6 +58,31 @@ export default function InstructorDashboard() {
 
         if (meRes.ok) {
           setMe(await unwrapEnvelope(meRes));
+        }
+
+        if (classesRes.ok) {
+          const classesPage = await unwrapEnvelope<ListClassesPageView>(classesRes);
+          if (classesPage && Array.isArray(classesPage.items)) {
+            const backendClasses: CreatedClassItem[] = classesPage.items.map((item) => ({
+              id: item.id,
+              title: item.description,
+              skillName: item.description.length > 25 ? `${item.description.slice(0, 22)}...` : item.description,
+              startsAt: item.startsAt,
+              durationMinutes: item.durationMinutes,
+              priceCredits: item.priceCredits,
+              capacity: item.capacity,
+            }));
+            setNewClasses((prev) => {
+              const existingIds = new Set(backendClasses.map((b) => b.id));
+              const combined = [...backendClasses, ...prev.filter((p) => !existingIds.has(p.id))];
+              try {
+                localStorage.setItem('skillswap_created_classes', JSON.stringify(combined));
+              } catch {
+                // Ignore storage write error
+              }
+              return combined;
+            });
+          }
         }
       } catch (err) {
         console.error('Failed to load instructor data:', err);
