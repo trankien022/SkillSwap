@@ -1,8 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { SiteHeader } from '../../components/landing/SiteHeader';
 import { HeroSection } from '../../components/landing/HeroSection';
-import { TrustSection } from '../../components/landing/TrustSection';
-import { MoneySection } from '../../components/landing/MoneySection';
+import { AssuranceSection } from '../../components/landing/AssuranceSection';
 import { CtaSection } from '../../components/landing/CtaSection';
 import { SiteFooter } from '../../components/landing/SiteFooter';
 
@@ -19,12 +18,11 @@ export default async function HomePage({ params }: PageProps) {
 
   return (
     <div className="flex min-h-dvh flex-col bg-mist text-ink">
-      <SiteHeader />
+      <SiteHeader locale={locale} />
       <main className="flex-1">
         <HeroSection />
-        <TrustSection />
-        <MoneySection />
-        <CtaSection />
+        <AssuranceSection />
+        <CtaSection locale={locale} />
       </main>
       <SiteFooter />
     </div>
