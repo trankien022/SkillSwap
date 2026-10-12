@@ -98,11 +98,11 @@ function PendingCard({
         </div>
         <CardBody booking={booking} tCard={tCard} />
         <RuleBox tCard={tCard} />
-        <div className="flex flex-col items-center justify-between gap-2 pt-1 sm:flex-row">
+        <div className="flex flex-col items-center justify-between gap-3 pt-2 sm:flex-row">
           <button
             type="button"
             onClick={() => onAction?.({ type: 'reportNoShow', bookingId: booking.id })}
-            className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-error transition-colors hover:bg-error-tint sm:w-auto"
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-rose-200 bg-rose-50/60 px-4 py-2 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-100 sm:w-auto"
           >
             <ReportIcon className="h-4 w-4" />
             <span>{tCard('noShow')}</span>
@@ -110,7 +110,7 @@ function PendingCard({
           <button
             type="button"
             onClick={() => onAction?.({ type: 'confirm', bookingId: booking.id })}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-ink px-5 py-2.5 text-sm font-bold text-surface shadow-md transition-all hover:bg-ink-soft active:scale-95 sm:w-auto"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95 sm:w-auto"
           >
             <CheckCircleIcon className="h-4 w-4" />
             <span>{tCard('confirmReview')}</span>
@@ -163,18 +163,18 @@ function UpcomingCard({
         </div>
         <CardBody booking={booking} tCard={tCard} startText={startText} />
         {booking.roomCode && (
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-mist px-4 py-2 text-sm text-ink-soft">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-mist px-4 py-2.5 text-sm text-ink-soft">
             <div className="flex items-center gap-2 text-xs">
               <LinkIcon className="h-4 w-4 text-ink" />
               <span>
                 Room:{' '}
-                <code className="rounded bg-surface px-1.5 py-0.5 font-mono text-xs font-bold text-ink">
+                <code className="rounded border border-slate-200 bg-surface px-1.5 py-0.5 font-mono text-xs font-bold text-ink">
                   {booking.roomCode}
                 </code>
               </span>
             </div>
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-ink">
-              <PolicyIcon className="h-3.5 w-3.5" />
+            <span className="inline-flex items-center gap-1 rounded-md border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800">
+              <PolicyIcon className="h-3.5 w-3.5 text-emerald-600" />
               <span>{tCard('ruleTitle')}</span>
             </span>
           </div>
@@ -183,29 +183,30 @@ function UpcomingCard({
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              aria-disabled="true"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-mist px-3 py-1.5 text-sm font-semibold text-ink-soft transition-colors hover:bg-surface"
+              onClick={() => alert(locale === 'vi' ? 'Kênh chat nội bộ sẽ mở trước buổi học 15 phút cùng phòng Jitsi.' : 'Internal chat will be enabled with the Jitsi room.')}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-mist px-3 py-1.5 text-xs font-semibold text-ink-soft transition-colors hover:bg-surface"
             >
               <ChatIcon className="h-4 w-4" />
               <span>{tCard('chat')}</span>
             </button>
             <button
               type="button"
-              aria-disabled="true"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-mist px-3 py-1.5 text-sm font-semibold text-ink-soft transition-colors hover:bg-surface"
+              onClick={() => alert(locale === 'vi' ? 'Tài liệu buổi học sẽ được chia sẻ bởi giảng viên trong phòng học.' : 'Class materials will be provided by mentor in session.')}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-mist px-3 py-1.5 text-xs font-semibold text-ink-soft transition-colors hover:bg-surface"
             >
               <DownloadIcon className="h-4 w-4" />
               <span>{tCard('downloadNotes')}</span>
             </button>
           </div>
-          <button
-            type="button"
-            aria-disabled="true"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-ink-soft"
+          <a
+            href={booking.roomCode ? `https://meet.jit.si/${booking.roomCode}` : '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-surface px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50"
           >
-            <LockClockIcon className="h-4 w-4" />
+            <LockClockIcon className="h-4 w-4 text-emerald-600" />
             <span>{tCard('joinRoomSoon')}</span>
-          </button>
+          </a>
         </div>
       </div>
     </article>
@@ -292,7 +293,7 @@ function CompletedCard({
           <button
             type="button"
             onClick={() => onAction?.({ type: 'rebook', bookingId: booking.id })}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-ink transition-colors hover:bg-mist"
+            className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-xs font-semibold text-emerald-800 transition-colors hover:bg-emerald-100"
           >
             <ReplayIcon className="h-4 w-4" />
             <span>{tCard('rebook')}</span>
@@ -376,9 +377,15 @@ function CardBody({
           </span>
         </div>
       </div>
-      <div className="flex shrink-0 flex-row items-end justify-between gap-2 text-right md:flex-col">
+      <div className="flex shrink-0 flex-row items-end justify-between gap-1 text-right md:flex-col">
         <span className="text-xs text-ink-soft">{tCard('cost', { credits: booking.priceCredits })}</span>
-        <span className="text-lg font-bold text-ink">{booking.priceCredits} credits</span>
+        <div className="flex items-baseline gap-1">
+          <span className="text-lg font-bold text-ink">{booking.priceCredits}</span>
+          <span className="text-xs font-semibold text-slate-500">Credits</span>
+        </div>
+        <span className="text-[11px] text-slate-400 font-medium">
+          ~{(booking.priceCredits * 1000).toLocaleString('vi-VN')}đ
+        </span>
       </div>
     </div>
   );
