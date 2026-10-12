@@ -33,7 +33,7 @@ describe('PushDeliveryWorker', () => {
     expect(provider.send).toHaveBeenCalledWith(expect.objectContaining({
       to: delivery.token,
       data: { notificationId: 'notification-1', type: 'booking_cancelled', targetType: 'booking', targetId: 'booking-1' },
-      channelId: 'default',
+      channelId: 'skillswap-updates-v1',
     }));
     expect(store.acceptTicket).toHaveBeenCalledWith('delivery-1', 'ticket-1', expect.any(Number));
   });

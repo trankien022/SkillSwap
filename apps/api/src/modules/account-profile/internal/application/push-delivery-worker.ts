@@ -62,7 +62,7 @@ export class PushDeliveryWorker {
           title: delivery.title,
           body: delivery.body,
           data,
-          channelId: 'default',
+          channelId: 'skillswap-updates-v1',
           sound: 'default',
         });
         if (result.status === 'ok' && result.ticketId) {

@@ -10,7 +10,7 @@ export interface PushMessage {
     readonly targetType: string;
     readonly targetId: string;
   };
-  readonly channelId: 'default';
+  readonly channelId: 'default' | 'skillswap-updates-v1';
   readonly sound: 'default';
 }
 

@@ -18,6 +18,7 @@ describe('ExpoPushProvider', () => {
 
     expect(result).toEqual({ status: 'ok', ticketId: 'ticket-1' });
     expect(request).toHaveBeenCalledWith('https://exp.host/--/api/v2/push/send', expect.objectContaining({ method: 'POST' }));
+    expect(JSON.parse(request.mock.calls[0][1].body)).toEqual({ ...message, priority: 'high' });
   });
 
   it('flags unregistered tokens for deactivation', async () => {

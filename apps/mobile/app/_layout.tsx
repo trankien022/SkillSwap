@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -18,12 +18,12 @@ Notifications.setNotificationHandler({
 function RootNavigation() {
   const { configError, bootError, retryBoot, t, isAuthenticated, isLoading, user, gatewayClient } = useSession();
   const router = useRouter();
-  const pendingPushOpen = useRef<ReturnType<typeof notificationRoute> | null>(null);
+  const [pendingPushOpen, setPendingPushOpen] = useState<ReturnType<typeof notificationRoute> | null>(null);
 
   useEffect(() => {
     const onResponse = (response: Notifications.NotificationResponse) => {
       const data = response.notification.request.content.data;
-      pendingPushOpen.current = notificationRoute(data?.targetType, data?.targetId);
+      setPendingPushOpen(notificationRoute(data?.targetType, data?.targetId));
     };
     const responseSubscription = Notifications.addNotificationResponseReceivedListener(onResponse);
     let mounted = true;
@@ -38,11 +38,10 @@ function RootNavigation() {
   }, []);
 
   useEffect(() => {
-    if (!pendingPushOpen.current || isLoading || !isAuthenticated) return;
-    const target = pendingPushOpen.current;
-    pendingPushOpen.current = null;
-    router.replace(target);
-  }, [isAuthenticated, isLoading, router]);
+    if (!pendingPushOpen || isLoading || !isAuthenticated) return;
+    router.replace(pendingPushOpen);
+    setPendingPushOpen(null);
+  }, [pendingPushOpen, isAuthenticated, isLoading, router]);
 
   useEffect(() => {
     if (!gatewayClient || !user?.id || isLoading) return;

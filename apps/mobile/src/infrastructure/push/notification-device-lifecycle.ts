@@ -23,9 +23,9 @@ export async function registerPushDevice(client: GatewayClient, requestPermissio
   if (Platform.OS !== 'android' && Platform.OS !== 'ios') throw new Error('Push is only supported on Android and iOS');
 
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
+    await Notifications.setNotificationChannelAsync('skillswap-updates-v1', {
       name: 'SkillSwap updates',
-      importance: Notifications.AndroidImportance.DEFAULT,
+      importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#059669',
     });

@@ -1,6 +1,6 @@
 jest.mock('react-native', () => ({ Platform: { OS: 'android' } }));
 jest.mock('expo-notifications', () => ({
-  AndroidImportance: { DEFAULT: 3 },
+  AndroidImportance: { DEFAULT: 3, HIGH: 4 },
   setNotificationChannelAsync: jest.fn(),
   getPermissionsAsync: jest.fn(),
   requestPermissionsAsync: jest.fn(),
@@ -40,7 +40,7 @@ describe('notification device lifecycle', () => {
   it('creates the Android channel and persists the authenticated device association', async () => {
     await expect(registerPushDevice(client, true)).resolves.toBe('device-1');
 
-    expect(Notifications.setNotificationChannelAsync).toHaveBeenCalledWith('default', expect.objectContaining({ name: 'SkillSwap updates' }));
+    expect(Notifications.setNotificationChannelAsync).toHaveBeenCalledWith('skillswap-updates-v1', expect.objectContaining({ name: 'SkillSwap updates', importance: Notifications.AndroidImportance.HIGH }));
     expect(client.authenticatedRequest).toHaveBeenCalledWith('/notification-devices', expect.objectContaining({ method: 'POST' }));
     expect(SecureStore.setItemAsync).toHaveBeenCalledWith(PUSH_DEVICE_ID_KEY, 'device-1');
     expect(SecureStore.setItemAsync).toHaveBeenCalledWith(INSTALLATION_ID_KEY, expect.stringMatching(/^install-/));

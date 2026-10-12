@@ -30,7 +30,7 @@ export class ExpoPushProvider implements PushProviderPort {
     const response = await this.request(SEND_URL, {
       method: 'POST',
       headers: { accept: 'application/json', 'accept-encoding': 'gzip, deflate', 'content-type': 'application/json' },
-      body: JSON.stringify(message),
+      body: JSON.stringify({ ...message, priority: 'high' }),
       signal: AbortSignal.timeout(30_000),
     });
     if (!response.ok) throw new Error(`Expo push service returned HTTP ${response.status}`);
