@@ -108,12 +108,11 @@ describe('Navbar component', () => {
     expect(signInLink).toBeDefined();
   });
 
-  it('renders responsive navigation link labels with title tooltip', () => {
+  it('renders navigation link with title tooltip for verification', () => {
     render(<Navbar />);
 
     const verificationLink = screen.getByTitle('Quản trị & Xác minh');
     expect(verificationLink).toBeDefined();
-    expect(verificationLink.textContent).toContain('Quản trị & Xác minh');
-    expect(verificationLink.textContent).toContain('Xác minh');
+    expect(verificationLink.textContent).toBe('Xác minh');
   });
 });

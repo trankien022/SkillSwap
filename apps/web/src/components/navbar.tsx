@@ -63,12 +63,12 @@ export function Navbar({
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
   const locale = pathname.startsWith('/en') ? 'en' : 'vi';
 
-  const navLinks: { id: NavbarTab; label: string; shortLabel?: string; href: string }[] = [
+  const navLinks: { id: NavbarTab; label: string; tooltip?: string; href: string }[] = [
     { id: 'explore', label: locale === 'vi' ? 'Khám phá' : 'Explore', href: `/${locale}/classes` },
-    { id: 'classes', label: locale === 'vi' ? 'Lớp học của tôi' : 'My Bookings', shortLabel: locale === 'vi' ? 'Lớp của tôi' : 'Bookings', href: `/${locale}/bookings` },
-    { id: 'instructor', label: locale === 'vi' ? 'Studio Giảng dạy' : 'Teaching Studio', shortLabel: locale === 'vi' ? 'Giảng dạy' : 'Teaching', href: `/${locale}/instructor` },
-    { id: 'wallet', label: locale === 'vi' ? 'Ví & Tín dụng' : 'Wallet & Credits', shortLabel: locale === 'vi' ? 'Ví tín dụng' : 'Wallet', href: `/${locale}/wallet` },
-    { id: 'verification', label: locale === 'vi' ? 'Quản trị & Xác minh' : 'Verification', shortLabel: locale === 'vi' ? 'Xác minh' : 'Verify', href: `/${locale}/status` },
+    { id: 'classes', label: locale === 'vi' ? 'Lớp học của tôi' : 'My Bookings', href: `/${locale}/bookings` },
+    { id: 'instructor', label: locale === 'vi' ? 'Giảng dạy' : 'Teaching', tooltip: locale === 'vi' ? 'Studio Giảng dạy' : 'Teaching Studio', href: `/${locale}/instructor` },
+    { id: 'wallet', label: locale === 'vi' ? 'Ví & Tín dụng' : 'Wallet & Credits', href: `/${locale}/wallet` },
+    { id: 'verification', label: locale === 'vi' ? 'Xác minh' : 'Verification', tooltip: locale === 'vi' ? 'Quản trị & Xác minh' : 'Verification', href: `/${locale}/status` },
   ];
 
   const availableCredits = balance ? balance.availableCredits : 0;
@@ -110,15 +110,14 @@ export function Navbar({
                 <a
                   key={link.id}
                   href={link.href}
-                  title={link.label}
-                  className={`whitespace-nowrap px-2 xl:px-3 py-1.5 rounded-lg text-xs xl:text-sm transition-colors shrink-0 ${
+                  title={link.tooltip || link.label}
+                  className={`whitespace-nowrap px-2.5 xl:px-3 py-1.5 rounded-lg text-xs xl:text-sm transition-colors shrink-0 ${
                     isActive
                       ? 'text-emerald-700 bg-emerald-50 font-semibold'
                       : 'font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                   }`}
                 >
-                  <span className="hidden xl:inline">{link.label}</span>
-                  <span className="inline xl:hidden">{link.shortLabel || link.label}</span>
+                  {link.label}
                 </a>
               );
             })}
