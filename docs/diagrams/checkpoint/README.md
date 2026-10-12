@@ -4,9 +4,17 @@ Ngày đối chiếu: 2026-10-11. Code được pull từ `origin/main`: `166ee3
 
 PDF dùng tên **C0** cho system landscape/context và **C1** cho containers. Chúng tương ứng Context/Container trong C4; không đổi thành Component view.
 
+## Read the diagrams in business language
+
+Revised on 2026-10-12. All 14 UML diagrams and the descriptions in all six C4 views use plain English actions, decisions and outcomes. FR references identify the capability; canonical BR references identify its business rules. Read activities for decisions, sequences for interactions, and states for lifecycle changes.
+
+Backend behavior remains the basis of these views. Notes distinguish current limitations from required behavior: demonstration booking/payment, confirmation before wallet payment, and incomplete lifecycle transitions. Technical API routes, tables and source links stay in the traceability section below. Architecture views retain technology labels where needed to explain their structure; database ERDs remain technical data models.
+
+Start with [Join an online class](generated/activity-room.svg), [Publish a class](generated/activity-publish.svg), [Book and pay](generated/activity-booking.svg), or [Verify student status](generated/activity-student-verification.svg). Editable sources remain in `source/`; each diagram has regenerated SVG and PNG files.
+
 ## Bộ diagram để nộp
 
-C4 có nguồn Structurizr DSL; sáu view được xuất bằng Structurizr sang C4-PlantUML. UML dùng PlantUML trực tiếp. Mỗi hình có SVG để phóng to và PNG để chèn báo cáo.
+C4 có nguồn Structurizr DSL; sáu view được xuất bằng Structurizr sang C4-PlantUML, với bố cục và ký pháp đã chỉnh trong [C4 index](../c4/README.md). UML dùng PlantUML trực tiếp. Mỗi hình có SVG để phóng to và PNG để chèn báo cáo.
 
 | Yêu cầu | Diagram / xem SVG | Nguồn sửa được |
 |---|---|---|
@@ -26,7 +34,7 @@ C4 có nguồn Structurizr DSL; sáu view được xuất bằng Structurizr san
 | State: main entity | [Booking](generated/state-booking.svg) | [PlantUML](source/state-booking.puml) |
 | State: class lifecycle | [Class](generated/state-class.svg) | [PlantUML](source/state-class.puml) |
 | State: student approval | [StudentVerification](generated/state-student-verification.svg) | [PlantUML](source/state-student-verification.puml) |
-| Additional architecture evidence | [Booking](../c4/generated/structurizr-BookingFlow.svg), [Teaching](../c4/generated/structurizr-TeachingFlow.svg), [Verification](../c4/generated/structurizr-VerificationFlow.svg), [Development deployment](../c4/generated/structurizr-Deployment.svg) | [C4 sources](../c4/source/) |
+| Additional architecture evidence | [Booking](../c4/generated/structurizr-BookingFlow.svg), [Room access](../c4/generated/structurizr-TeachingFlow.svg), [Verification](../c4/generated/structurizr-VerificationFlow.svg), [Development deployment](../c4/generated/structurizr-Deployment.svg) | [C4 sources](../c4/source/) |
 
 ## Architecture → Business Flow → API → Source Code → Data
 

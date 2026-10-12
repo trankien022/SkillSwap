@@ -1,5 +1,5 @@
 @startuml
-title <size:24>Dynamic View: SkillSwap System</size>\n<size:24>Current verifier claim and decision via API client</size>
+title Dynamic Diagram — Review Teaching Skills | FR-004/005
 
 set separator none
 left to right direction
@@ -15,19 +15,39 @@ left to right direction
 !include <C4/C4_Context>
 !include <C4/C4_Container>
 
-System_Boundary("SkillSwapSystem_boundary", "SkillSwap System", $tags="") {
-  ContainerDb(SkillSwapSystem.Database, "Database", $techn="PostgreSQL", $descr="One skillswap database; seven module schemas, per-module credentials; no cross-schema joins/FKs", $tags="", $link="")
-  ContainerQueue(SkillSwapSystem.MessageBroker, "Message Broker", $techn="RabbitMQ", $descr="Topic exchange skillswap.events: transactional outbox relay, idempotent consumers, DLQ (ADR-013)", $tags="", $link="")
-  Container(SkillSwapSystem.Gateway, "Gateway", $techn="NestJS (Node.js)", $descr="Public REST entry point: JWT, trusted identity, rate limiting, HTTP proxy :4000", $tags="", $link="")
-  Container(SkillSwapSystem.BackendAPI, "Backend API", $techn="NestJS (Node.js)", $descr="Private NestJS modular monolith :4001; seven contexts; payment adapter is in-process mock", $tags="", $link="")
+' Presentation only: model elements and relationships come from workspace.dsl.
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam nodesep 35
+skinparam ranksep 45
+skinparam footerFontSize 12
+skinparam titleFontSize 20
+UpdateElementStyle("person", $bgColor="#0F172A", $fontColor="#FFFFFF", $borderColor="#0F172A", $legendText="Person")
+UpdateElementStyle("system", $bgColor="#047857", $fontColor="#FFFFFF", $borderColor="#047857", $legendText="Software system in scope")
+UpdateElementStyle("external_system", $bgColor="#64748B", $fontColor="#FFFFFF", $borderColor="#64748B", $legendText="Supporting software system")
+UpdateElementStyle("container", $bgColor="#047857", $fontColor="#FFFFFF", $borderColor="#047857", $legendText="Application or data store")
+UpdateRelStyle($lineColor="#475569", $textColor="#334155")
+AddElementTag("Demo", $bgColor="#F1F5F9", $fontColor="#0F172A", $borderColor="#64748B", $legendText="Demonstration client (local booking data)")
+
+System_Boundary("SkillSwap_boundary", "SkillSwap", $tags="") {
+  Container(SkillSwap.APIgateway, "API gateway", $techn="Container: NestJS / TypeScript", $descr="Checks sign-in and forwards public requests.", $tags="", $link="")
+  Container(SkillSwap.BackendAPI, "Backend API", $techn="Container: NestJS / TypeScript", $descr="Runs account, verification, class and wallet rules in one application.", $tags="", $link="")
+  ContainerDb(SkillSwap.Businessdatabase, "Business database", $techn="Container: PostgreSQL / TypeORM", $descr="Stores records in seven separately owned business schemas.", $tags="", $link="")
+  ContainerQueue(SkillSwap.Businessmessagebroker, "Business message broker", $techn="Container: RabbitMQ", $descr="Delivers saved business changes for background processing.", $tags="", $link="")
 }
 
-Rel(SkillSwapSystem.Gateway, SkillSwapSystem.BackendAPI, "1: GET /api/verifiers/me/queue (API caller)", $techn="HTTP/JSON", $tags="", $link="")
-Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.Database, "2: Read expertise-filtered queue in skill_verification", $techn="TypeORM", $tags="", $link="")
-Rel(SkillSwapSystem.Gateway, SkillSwapSystem.BackendAPI, "3: POST /api/skill-evidence/:id/claim then /decision", $techn="HTTP/JSON", $tags="", $link="")
-Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.Database, "4: Authorize claim holder; decision, level, audit and outbox transaction", $techn="TypeORM", $tags="", $link="")
-Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.MessageBroker, "5: Relay approval events; Live Class updates own publish-rights projections", $techn="AMQP", $tags="", $link="")
+Person(Verifier, "Verifier", $descr="[Person]\nReviews evidence within assigned expertise.", $tags="", $link="")
 
-SHOW_LEGEND(true)
-hide stereotypes
+Rel(Verifier, SkillSwap.APIgateway, "1: Verifier requests evidence within their expertise", $techn="HTTP / JSON", $tags="", $link="")
+Rel(SkillSwap.APIgateway, SkillSwap.BackendAPI, "2: Forward the review request", $techn="HTTP / JSON", $tags="", $link="")
+Rel(SkillSwap.BackendAPI, SkillSwap.Businessdatabase, "3: Read matching evidence awaiting review", $techn="PostgreSQL protocol / TypeORM", $tags="", $link="")
+Rel(SkillSwap.APIgateway, SkillSwap.BackendAPI, "4: Forward the Verifier claim and decision", $techn="HTTP / JSON", $tags="", $link="")
+Rel(SkillSwap.BackendAPI, SkillSwap.Businessdatabase, "5: Check assigned Verifier and save decision, level and history", $techn="PostgreSQL protocol / TypeORM", $tags="", $link="")
+Rel(SkillSwap.BackendAPI, SkillSwap.Businessmessagebroker, "6: Publish the saved approval change", $techn="AMQP", $tags="", $link="")
+Rel(SkillSwap.Businessmessagebroker, SkillSwap.BackendAPI, "7: Deliver the change to teaching eligibility handlers", $techn="AMQP", $tags="", $link="")
+Rel(SkillSwap.BackendAPI, SkillSwap.Businessdatabase, "8: Update teaching permissions in the class records", $techn="PostgreSQL protocol / TypeORM", $tags="", $link="")
+
+SHOW_LEGEND()
+footer Only the active, expertise-matched assigned Verifier may decide.\nTeaching permission updates run in the background; they may lag behind the saved decision.
 @enduml

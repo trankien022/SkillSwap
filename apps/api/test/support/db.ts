@@ -1,4 +1,27 @@
 import type { Harness } from '../harness';
+import { waitFor } from './api-client';
+
+/**
+ * Waits until the **skill-verification** module's own `verified_students`
+ * projection reflects `approved` for `accountId`.
+ *
+ * The approval event is consumed independently by `account-profile` (into
+ * `account_verification_status`, which `/api/auth/me` reads) and by
+ * `skill-verification` (into `verified_students`, which the FR-003 submit gate
+ * reads). Waiting on `/api/auth/me` therefore only proves the *account-profile*
+ * consumer ran, and the submit call can still race into a spurious 403. Poll the
+ * projection that actually gates the call instead.
+ */
+export async function waitVerifiedStudent(harness: Harness, accountId: string): Promise<void> {
+  await waitFor(async () => {
+    const rows = await harness.query<{ status: string }>(
+      'skill-verification',
+      'SELECT "status" FROM verified_students WHERE "account_id" = $1',
+      [accountId],
+    );
+    return rows[0]?.status === 'approved' ? rows : null;
+  });
+}
 
 /**
  * Empties the schemas the E2E flow touches, keeping migrations. Runs before each
@@ -7,23 +30,23 @@ import type { Harness } from '../harness';
 export async function resetDatabase(harness: Harness): Promise<void> {
   await harness.query(
     'account-profile',
-    'TRUNCATE accounts, account_credentials, sessions, account_verification_status CASCADE',
+    'TRUNCATE accounts, account_credentials, sessions, account_verification_status, outbox_messages, processed_events CASCADE',
   );
   await harness.query(
     'live-class',
-    'TRUNCATE classes, class_skills, bookings, room_access_incidents, teacher_verified, teacher_skill_approval CASCADE',
+    'TRUNCATE classes, class_skills, bookings, room_access_incidents, teacher_verified, teacher_skill_approval, outbox_messages, processed_events CASCADE',
   );
   await harness.query(
     'wallet-ledger',
-    'TRUNCATE wallets, ledger_entries, top_up_intents CASCADE',
+    'TRUNCATE wallets, ledger_entries, top_up_intents, outbox_messages, processed_events CASCADE',
   );
   await harness.query(
     'student-verification',
-    'TRUNCATE student_verifications, verification_documents CASCADE',
+    'TRUNCATE student_verifications, verification_documents, outbox_messages, processed_events CASCADE',
   );
   await harness.query(
     'skill-verification',
-    'TRUNCATE skill_evidence, skill_evidence_audit, profile_skills, skills, verified_students, verifier_expertise, verifiers CASCADE',
+    'TRUNCATE skill_evidence, skill_evidence_audit, profile_skills, skills, verified_students, verifier_expertise, verifiers, outbox_messages, processed_events CASCADE',
   );
 }
 

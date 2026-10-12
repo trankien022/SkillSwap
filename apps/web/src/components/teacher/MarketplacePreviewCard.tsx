@@ -35,67 +35,67 @@ export function MarketplacePreviewCard({ draft, skills }: Props) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between px-1">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-soft">
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
           {t('label')}
         </span>
-        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-success-ink">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 border border-emerald-200">
           <span
             aria-hidden="true"
-            className="h-1.5 w-1.5 animate-pulse rounded-full bg-success-ink"
+            className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-600"
           />
           {t('live')}
         </span>
       </div>
-      <article className="overflow-hidden rounded-xl border border-border bg-surface shadow-md transition-shadow hover:shadow-lg">
-        <div className="relative flex h-44 w-full items-center justify-center overflow-hidden bg-mist">
+      <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md">
+        <div className="relative flex h-40 w-full items-center justify-center overflow-hidden bg-slate-900">
           <CategoryIcon category={skill?.category ?? null} />
-          <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-ink/85 via-ink/30 to-transparent" />
-          <div className="absolute left-3 top-3 flex flex-wrap gap-1">
-            <span className="rounded-md bg-surface/90 px-2 py-0.5 text-[11px] font-semibold text-ink shadow-sm backdrop-blur-md">
+          <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent" />
+          <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
+            <span className="rounded-lg bg-white/90 px-2.5 py-0.5 text-xs font-bold text-slate-900 shadow-xs backdrop-blur-md">
               {skill?.label ?? t('categoryFallback')}
             </span>
             {draft.capacity === 1 && (
-              <span className="rounded-md bg-success-ink px-2 py-0.5 text-[11px] font-semibold text-surface shadow-sm">
+              <span className="rounded-lg bg-emerald-600 px-2 py-0.5 text-xs font-bold text-white shadow-xs">
                 1-1
               </span>
             )}
           </div>
-          <div className="absolute inset-x-3 bottom-3 flex items-center justify-between text-surface">
-            <div className="flex items-center gap-1 text-[11px]">
-              <CalendarTodayIcon className="h-4 w-4 text-success-ink" />
+          <div className="absolute inset-x-3 bottom-3 flex items-center justify-between text-white">
+            <div className="flex items-center gap-1.5 text-xs font-medium">
+              <CalendarTodayIcon className="h-4 w-4 text-emerald-400" />
               <span>
                 {day}/{month}/{year} • {time}
               </span>
             </div>
-            <span className="rounded bg-ink/70 px-2 py-0.5 text-[11px] font-medium backdrop-blur-sm">
+            <span className="rounded-md bg-white/20 px-2 py-0.5 text-xs font-bold backdrop-blur-sm">
               {t('minutes', { count: draft.durationMinutes })}
             </span>
           </div>
         </div>
-        <div className="flex flex-col gap-2 bg-surface p-4">
-          <h4 className="line-clamp-2 text-base font-semibold leading-snug text-ink">
+        <div className="flex flex-col gap-3 bg-white p-4">
+          <h4 className="line-clamp-2 text-sm font-bold leading-snug text-slate-900">
             {draft.title.trim() || t('defaultTitle')}
           </h4>
-          <div className="flex items-center justify-between pt-1">
-            <div className="flex items-center gap-1.5">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-ink text-[11px] font-bold text-surface">
+          <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-[11px] font-bold text-white">
                 GV
               </div>
               <div className="flex flex-col">
-                <span className="text-[11px] font-semibold text-ink">
+                <span className="text-xs font-bold text-slate-900">
                   {t('teacher')}
                 </span>
-                <span className="text-[11px] font-medium text-success-ink">
+                <span className="text-[11px] font-semibold text-emerald-700">
                   {t('verifiedFaculty')}
                 </span>
               </div>
             </div>
             <div className="text-right">
-              <span className="block text-[11px] text-ink-soft">
+              <span className="block text-[10px] font-semibold text-slate-400 uppercase">
                 {t('price')}
               </span>
-              <span className="text-base font-bold text-ink">
-                {draft.priceCredits} {t('priceUnit')}
+              <span className="text-base font-extrabold text-slate-900">
+                {draft.priceCredits} <span className="text-xs font-bold text-emerald-700">{t('priceUnit')}</span>
               </span>
             </div>
           </div>

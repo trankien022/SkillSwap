@@ -11,6 +11,9 @@ coverage/
 .DS_Store
 tmp/
 
+# Expo native projects are regenerated from apps/mobile/app.json.
+apps/mobile/ios/
+apps/mobile/android/
 # Local dev artefacts
 apps/web/dev.err
 # Source assets (work-in-progress logos) — only the curated copy under apps/web/public/ is committed

@@ -7,6 +7,7 @@ import { pinoHttp } from 'pino-http';
 import { AppModule } from './app.module';
 import { ApiConfig } from '../shared/config/api-config';
 import { AppLogger } from '../shared/logger/app-logger';
+import { createHttpLoggerOptions } from './http-logger-options';
 import { buildOpenApiDocument } from './openapi';
 
 async function bootstrap(): Promise<void> {
@@ -18,7 +19,7 @@ async function bootstrap(): Promise<void> {
   const logger = app.get(AppLogger);
 
   app.useLogger(logger);
-  app.use(pinoHttp({ logger: logger.raw }));
+  app.use(pinoHttp(createHttpLoggerOptions(logger.raw)));
   app.setGlobalPrefix('api');
   app.enableShutdownHooks();
 

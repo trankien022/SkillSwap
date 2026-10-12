@@ -158,6 +158,7 @@ describe('bookingConfirmedSchema', () => {
       amountCredits: 25,
     });
     expect(parsed.amountCredits).toBe(25);
+    expect(parsed.settled).toBe(false);
   });
 
   it('rejects zero credits', () => {

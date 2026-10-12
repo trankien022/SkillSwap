@@ -1,5 +1,5 @@
 @startuml
-title <size:24>Deployment View: SkillSwap System - Development</size>\n<size:24>Local development topology; not a proven production deployment</size>
+title Deployment Diagram — SkillSwap (Development)
 
 set separator none
 left to right direction
@@ -16,30 +16,46 @@ left to right direction
 !include <C4/C4_Container>
 !include <C4/C4_Deployment>
 
-Deployment_Node(Development.Developermachine, "Developer machine", $type="Docker / host processes", $descr="Local development; docker-compose.yml", $tags="", $link="") {
-  Deployment_Node(Development.Developermachine.ApplicationTier, "Application Tier", $type="pnpm dev", $descr="Host processes", $tags="", $link="") {
-    Container(Development.Developermachine.ApplicationTier.WebApplication_1, "Web Application", $techn="Next.js (React)", $descr="Web scaffold; HTTP health/status UI; booking UI uses local mock", $tags="", $link="")
-    Container(Development.Developermachine.ApplicationTier.Gateway_1, "Gateway", $techn="NestJS (Node.js)", $descr="Public REST entry point: JWT, trusted identity, rate limiting, HTTP proxy :4000", $tags="", $link="")
-    Container(Development.Developermachine.ApplicationTier.BackendAPI_1, "Backend API", $techn="NestJS (Node.js)", $descr="Private NestJS modular monolith :4001; seven contexts; payment adapter is in-process mock", $tags="", $link="")
+' Presentation only: model elements and relationships come from workspace.dsl.
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam nodesep 35
+skinparam ranksep 45
+skinparam footerFontSize 12
+skinparam titleFontSize 20
+UpdateElementStyle("person", $bgColor="#0F172A", $fontColor="#FFFFFF", $borderColor="#0F172A", $legendText="Person")
+UpdateElementStyle("system", $bgColor="#047857", $fontColor="#FFFFFF", $borderColor="#047857", $legendText="Software system in scope")
+UpdateElementStyle("external_system", $bgColor="#64748B", $fontColor="#FFFFFF", $borderColor="#64748B", $legendText="Supporting software system")
+UpdateElementStyle("container", $bgColor="#047857", $fontColor="#FFFFFF", $borderColor="#047857", $legendText="Application or data store")
+UpdateRelStyle($lineColor="#475569", $textColor="#334155")
+AddElementTag("Demo", $bgColor="#F1F5F9", $fontColor="#0F172A", $borderColor="#64748B", $legendText="Demonstration client (local booking data)")
+
+Deployment_Node(Development.Developermachine, "Developer machine", $type="macOS / Docker", $descr="Local development environment", $tags="", $link="") {
+  Deployment_Node(Development.Developermachine.Applicationprocesses, "Application processes", $type="Node.js / pnpm", $descr="Started on the host", $tags="", $link="") {
+    Container(Development.Developermachine.Applicationprocesses.Webapplication_1, "Web application", $techn="Container: Next.js / TypeScript", $descr="Shows service status and demonstration bookings.", $tags="Demo", $link="")
+    Container(Development.Developermachine.Applicationprocesses.APIgateway_1, "API gateway", $techn="Container: NestJS / TypeScript", $descr="Checks sign-in and forwards public requests.", $tags="", $link="")
+    Container(Development.Developermachine.Applicationprocesses.BackendAPI_1, "Backend API", $techn="Container: NestJS / TypeScript", $descr="Runs account, verification, class and wallet rules in one application.", $tags="", $link="")
   }
 
-  Deployment_Node(Development.Developermachine.MessagingTier, "Messaging Tier", $type="RabbitMQ", $descr="Message broker", $tags="", $link="") {
-    ContainerQueue(Development.Developermachine.MessagingTier.MessageBroker_1, "Message Broker", $techn="RabbitMQ", $descr="Topic exchange skillswap.events: transactional outbox relay, idempotent consumers, DLQ (ADR-013)", $tags="", $link="")
-  }
+  Deployment_Node(Development.Developermachine.Dockerservices, "Docker services", $type="Docker Compose", $descr="Local supporting services", $tags="", $link="") {
+    ContainerDb(Development.Developermachine.Dockerservices.Businessdatabase_1, "Business database", $techn="Container: PostgreSQL / TypeORM", $descr="Stores records in seven separately owned business schemas.", $tags="", $link="")
+    ContainerQueue(Development.Developermachine.Dockerservices.Businessmessagebroker_1, "Business message broker", $techn="Container: RabbitMQ", $descr="Delivers saved business changes for background processing.", $tags="", $link="")
+    ContainerDb(Development.Developermachine.Dockerservices.Privatedocumentstore_1, "Private document store", $techn="Container: MinIO / S3-compatible API", $descr="Stores student proof uploaded through temporary private links.", $tags="", $link="")
+    Deployment_Node(Development.Developermachine.Dockerservices.Jitsiservices, "Jitsi services", $type="Jitsi / Docker", $descr="Web, signaling and video services", $tags="", $link="") {
+      System_Ext(Development.Developermachine.Dockerservices.Jitsiservices.Onlineclassroom_1, "Online classroom", $descr="[Supporting software system]\nHosts live lessons for users who are learning or teaching.", $tags="", $link="")
+    }
 
-  Deployment_Node(Development.Developermachine.MinIOstorage, "MinIO storage", $type="Docker MinIO", $descr="Private document bucket; S3-compatible", $tags="", $link="")
-  Deployment_Node(Development.Developermachine.Jitsivideostack, "Jitsi video stack", $type="Docker Jitsi", $descr="JWT-authenticated web, prosody, jicofo, jvb", $tags="", $link="")
-  Deployment_Node(Development.Developermachine.DataTier, "Data Tier", $type="PostgreSQL", $descr="Docker database", $tags="", $link="") {
-    ContainerDb(Development.Developermachine.DataTier.Database_1, "Database", $techn="PostgreSQL", $descr="One skillswap database; seven module schemas, per-module credentials; no cross-schema joins/FKs", $tags="", $link="")
   }
 
 }
 
-Rel(Development.Developermachine.ApplicationTier.WebApplication_1, Development.Developermachine.ApplicationTier.Gateway_1, "Health/status HTTP calls only; booking uses local mock", $techn="HTTPS/REST", $tags="", $link="")
-Rel(Development.Developermachine.ApplicationTier.Gateway_1, Development.Developermachine.ApplicationTier.BackendAPI_1, "Forwards requests to", $techn="HTTP/JSON", $tags="", $link="")
-Rel(Development.Developermachine.ApplicationTier.BackendAPI_1, Development.Developermachine.MessagingTier.MessageBroker_1, "Publishes integration events via outbox", $techn="AMQP", $tags="", $link="")
-Rel(Development.Developermachine.ApplicationTier.BackendAPI_1, Development.Developermachine.DataTier.Database_1, "Reads from and writes to", $techn="TypeORM", $tags="", $link="")
+Rel(Development.Developermachine.Applicationprocesses.Webapplication_1, Development.Developermachine.Applicationprocesses.APIgateway_1, "Requests service status only", $techn="HTTP / JSON", $tags="", $link="")
+Rel(Development.Developermachine.Applicationprocesses.APIgateway_1, Development.Developermachine.Applicationprocesses.BackendAPI_1, "Forwards authenticated requests", $techn="HTTP / JSON", $tags="", $link="")
+Rel(Development.Developermachine.Applicationprocesses.BackendAPI_1, Development.Developermachine.Dockerservices.Businessdatabase_1, "Reads and saves owned business records", $techn="PostgreSQL protocol / TypeORM", $tags="", $link="")
+Rel(Development.Developermachine.Dockerservices.Businessmessagebroker_1, Development.Developermachine.Applicationprocesses.BackendAPI_1, "Delivers changes to background handlers", $techn="AMQP", $tags="", $link="")
+Rel(Development.Developermachine.Applicationprocesses.BackendAPI_1, Development.Developermachine.Dockerservices.Businessmessagebroker_1, "Publishes saved business changes", $techn="AMQP", $tags="", $link="")
 
-SHOW_LEGEND(true)
-hide stereotypes
+SHOW_LEGEND()
+footer Local development only. Host: web 3000, gateway 4000, API 4001.\nDocker: PostgreSQL 5432, RabbitMQ 5672, MinIO 9000, Jitsi 8443 / UDP 10000.\nNo production hosting or end-to-end success is asserted.
 @enduml

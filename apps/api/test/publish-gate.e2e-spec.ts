@@ -1,6 +1,6 @@
 import { startHarness, type Harness } from './harness';
 import { accountIdFromToken, ApiClient, waitFor } from './support/api-client';
-import { resetDatabase, seedSkill, seedVerifier } from './support/db';
+import { resetDatabase, seedSkill, seedVerifier, waitVerifiedStudent } from './support/db';
 
 jest.setTimeout(60_000);
 
@@ -51,11 +51,7 @@ describe('E2E: publish gate (FR-005 / AC-002)', () => {
   }
 
   async function waitVerified(learnerId: string): Promise<void> {
-    await waitFor(async () => {
-      api.actAs(learnerId, 'user');
-      const me = await api.get('/api/auth/me');
-      return me.json?.studentVerification?.status === 'approved' ? me : null;
-    });
+    await waitVerifiedStudent(harness, learnerId);
   }
 
   /** Drives submit → claim → approve of evidence for a skill, then waits for the projection. */

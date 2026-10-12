@@ -1,49 +1,46 @@
 @startuml
-title Current backend | Booking and asynchronous settlement | FR-007/009
+title Book and pay for a class | FR-007/009 | BR-021–026/033–038/068
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
 skinparam defaultFontName Arial
 skinparam defaultFontSize 14
 skinparam ArrowColor #475569
-skinparam sequenceParticipantBackgroundColor #F1F5F9
-skinparam sequenceParticipantBorderColor #475569
 skinparam activityBackgroundColor #F1F5F9
 skinparam activityBorderColor #475569
+skinparam sequenceParticipantBackgroundColor #F1F5F9
+skinparam sequenceParticipantBorderColor #475569
 skinparam stateBackgroundColor #F1F5F9
 skinparam stateBorderColor #475569
-actor "API caller" as U
-participant Gateway as G
-participant "Live Class use cases" as C
-database "live_class schema" as D
-participant "Shared outbox relay" as E
-queue RabbitMQ as Q
-participant "Wallet consumer / use case" as W
-database "wallet_ledger schema" as WD
-U -> G: POST /api/classes/:id/bookings\nJWT + idempotencyKey
-G -> C: Validated JWT; trusted identity; HTTP proxy
-C -> D: Replay lookup; class read; seat guard under row lock
-alt ineligible / duplicate / full
- C --> U: Reject; no wallet debit
-else eligible
- C -> D: Pending booking; price snapshot; 15-minute expiry
- C --> U: Pending booking
+actor Learner as L
+participant "Class booking" as C
+participant "Background payment processing" as P
+participant Wallet as W
+L -> C: Ask to book a class
+C -> C: Check class timing, duration, seats,\nno self-booking and no existing active booking
+alt Repeat of the same request
+ C --> L: Return the existing booking
+else Booking is not allowed
+ C --> L: Explain why, no payment taken
+else Booking is allowed
+ C -> C: Hold a seat for 15 minutes and keep the agreed price
+ C --> L: Awaiting confirmation
 end
-U -> G: POST /api/classes/bookings/:bookingId/confirm
-G -> C: ConfirmBookingUseCase
-C -> D: Own transaction: Confirmed\n+ booking.confirmed outbox
-C --> U: Confirmation response BEFORE wallet settlement
-E -> D: Poll committed outbox
-E -> Q: booking.confirmed
-Q -> W: Idempotent consumer
-W -> WD: Own transaction: debit Learner available\nTeacher pending + platform fee floor(credits * 1000/10000)
-alt insufficient balance / consumer error
- W --> Q: Retry; eventual DLQ
- note over C,WD
- Current code has no compensating confirmation acknowledgement here.
- AC-005 no-partial-paid-booking guarantee is not demonstrated.
+L -> C: Confirm an awaiting booking
+C -> C: Save confirmation and arrange payment processing
+C --> L: Booking confirmed, payment has not finished yet
+C -> P: Request wallet payment in the background
+P -> W: Deduct full class price and allocate income and fee together
+alt Payment succeeds
+ W -> W: Keep Teacher income on hold and record platform fee
+ W --> P: Payment recorded, repeated processing cannot charge again
+else Payment fails, including insufficient balance
+ W --> P: Payment could not be recorded
+ P -> P: Retry, retain unresolved failures for investigation
+ note over C,W
+ Current gap against BR-022/026:
+ confirmation remains saved when payment fails.
+ Automatic cancellation of that confirmation is not implemented.
  end note
-else settled
- W --> Q: Acknowledge; duplicate settlement is no-op
 end
-note over U,G: Web/mobile booking screens currently use local mocks.\nThis diagram describes the backend API, not integrated client behavior.
+note over L,C: This describes current backend behavior.\nWeb and mobile booking screens still use local demonstrations.
 @enduml

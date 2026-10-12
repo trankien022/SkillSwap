@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
-import { callApi, getTokens, getStoredUser, logout, unwrapEnvelope, type UserProfile } from '../lib/api-client';
+import { callApi, getTokens, getStoredUser, logout, unwrapEnvelope, WALLET_BALANCE_EVENT, getStoredWalletBalance, type UserProfile } from '../lib/api-client';
 
 export type NavbarTab = 'explore' | 'classes' | 'instructor' | 'wallet' | 'verification' | 'notifications';
 
@@ -27,6 +27,22 @@ export function Navbar({
   useEffect(() => {
     setHasTokens(Boolean(getTokens()));
     setStoredUser(getStoredUser());
+
+    // Sync with any stored wallet balance override
+    const storedBal = getStoredWalletBalance();
+    if (storedBal) {
+      setInternalBalance(storedBal);
+    }
+
+    // Listen to real-time wallet balance update events
+    const handleBalanceEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<WalletBalanceView>;
+      if (customEvent.detail) {
+        setInternalBalance(customEvent.detail);
+      }
+    };
+    window.addEventListener(WALLET_BALANCE_EVENT, handleBalanceEvent);
+
     // Only fetch if not supplied via props
     if (propBalance === undefined || propMe === undefined) {
       const load = async () => {
@@ -36,7 +52,9 @@ export function Navbar({
             propMe === undefined ? callApi('/auth/me') : Promise.resolve(null),
           ]);
           if (balRes && balRes.ok) {
-            setInternalBalance(await unwrapEnvelope(balRes));
+            const serverBal = await unwrapEnvelope<WalletBalanceView>(balRes);
+            const latestOverride = getStoredWalletBalance();
+            setInternalBalance(latestOverride ?? serverBal);
           }
           if (meRes && meRes.ok) {
             const meData = await unwrapEnvelope<MeResponse>(meRes);
@@ -55,6 +73,10 @@ export function Navbar({
       };
       load();
     }
+
+    return () => {
+      window.removeEventListener(WALLET_BALANCE_EVENT, handleBalanceEvent);
+    };
   }, [propBalance, propMe]);
 
   const balance = propBalance !== undefined ? propBalance : internalBalance;
@@ -63,10 +85,10 @@ export function Navbar({
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
   const locale = pathname.startsWith('/en') ? 'en' : 'vi';
 
-  const navLinks: { id: NavbarTab; label: string; href: string }[] = [
+  const navLinks: { id: NavbarTab; label: string; tooltip?: string; href: string }[] = [
     { id: 'explore', label: locale === 'vi' ? 'Khám phá' : 'Explore', href: `/${locale}/classes` },
     { id: 'classes', label: locale === 'vi' ? 'Lớp học của tôi' : 'My Bookings', href: `/${locale}/bookings` },
-    { id: 'instructor', label: locale === 'vi' ? 'Studio Giảng dạy' : 'Teaching Studio', href: `/${locale}/instructor` },
+    { id: 'instructor', label: locale === 'vi' ? 'Giảng dạy' : 'Teaching', tooltip: locale === 'vi' ? 'Studio Giảng dạy' : 'Teaching Studio', href: `/${locale}/instructor` },
     { id: 'wallet', label: locale === 'vi' ? 'Ví & Tín dụng' : 'Wallet & Credits', href: `/${locale}/wallet` },
     { id: 'verification', label: locale === 'vi' ? 'Xác minh' : 'Verification', href: `/${locale}/status` },
   ];
@@ -86,9 +108,9 @@ export function Navbar({
 
   return (
     <header className="sticky top-0 bg-white border-b border-slate-200 z-50 h-16 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 xl:px-8 h-full flex items-center justify-between gap-2 sm:gap-4">
         {/* Brand Logo & Main Nav */}
-        <div className="flex items-center gap-4 xl:gap-8 min-w-0">
+        <div className="flex items-center gap-3 xl:gap-8 min-w-0">
           <a href={`/${locale}/classes`} className="flex items-center gap-2.5 group shrink-0">
             <div className="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold text-lg transition-transform group-hover:scale-105 shrink-0">
               S
@@ -96,21 +118,22 @@ export function Navbar({
             <div className="flex flex-col shrink-0">
               <div className="flex items-center gap-1.5 shrink-0">
                 <span className="font-bold text-xl text-slate-900 tracking-tight leading-none whitespace-nowrap">SkillSwap</span>
-                <span className="whitespace-nowrap text-[11px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold leading-none border border-emerald-100">
+                <span className="whitespace-nowrap text-[11px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold leading-none border border-emerald-100 hidden sm:inline-block">
                   Sinh viên
                 </span>
               </div>
             </div>
           </a>
 
-          <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 shrink-0">
+          <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1.5 shrink-0">
             {navLinks.map((link) => {
               const isActive = currentTab === link.id;
               return (
                 <a
                   key={link.id}
                   href={link.href}
-                  className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-sm transition-colors shrink-0 ${
+                  title={link.tooltip || link.label}
+                  className={`whitespace-nowrap px-2.5 xl:px-3 py-1.5 rounded-lg text-xs xl:text-sm transition-colors shrink-0 ${
                     isActive
                       ? 'text-emerald-700 bg-emerald-50 font-semibold'
                       : 'font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -124,9 +147,9 @@ export function Navbar({
         </div>
 
         {/* Right Section: Balance, Notification Bell, User profile */}
-        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-2.5 xl:gap-3 shrink-0">
           {/* Credit balance badge */}
-          <div className="flex items-center gap-2 pl-2.5 pr-1.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-xs font-semibold text-slate-900 shrink-0 whitespace-nowrap">
+          <div className="flex items-center gap-1.5 sm:gap-2 pl-2 sm:pl-2.5 pr-1.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-xs font-semibold text-slate-900 shrink-0 whitespace-nowrap">
             <span className="material-symbols-outlined text-[17px] text-emerald-600">toll</span>
             <span className="whitespace-nowrap">{availableCredits.toLocaleString('vi-VN')} Credits</span>
             <a
@@ -167,14 +190,17 @@ export function Navbar({
                 <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center ring-2 ring-emerald-50 text-emerald-800 font-semibold text-xs shrink-0">
                   {initials}
                 </div>
-                <div className="hidden sm:flex flex-col text-left min-w-0">
+                <div className="hidden sm:flex flex-col text-left min-w-0 max-w-[72px] md:max-w-[85px] lg:max-w-[95px] xl:max-w-[130px]">
                   <span
-                    className="text-xs font-semibold text-slate-900 leading-tight truncate max-w-[120px] sm:max-w-[140px] block"
+                    className="text-xs font-semibold text-slate-900 leading-tight truncate block"
                     title={displayName}
                   >
                     {displayName}
                   </span>
-                  <span className="text-[11px] text-slate-500 whitespace-nowrap">
+                  <span
+                    className="text-[11px] text-slate-500 leading-tight truncate block"
+                    title={isVerified ? (locale === 'vi' ? 'SV đã xác minh' : 'Verified Student') : (locale === 'vi' ? 'Học viên' : 'Learner')}
+                  >
                     {isVerified ? (locale === 'vi' ? 'SV đã xác minh' : 'Verified Student') : (locale === 'vi' ? 'Học viên' : 'Learner')}
                   </span>
                 </div>

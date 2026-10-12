@@ -49,4 +49,18 @@ describe('ConfirmBookingUseCase (FR-009 / API-006)', () => {
     expect(result.confirmed).toBe(false);
     expect(result.booking?.state).toBe('cancelled');
   });
+
+  it('forwards pending confirmation request response with confirmed=false (ADR-032 C3a)', async () => {
+    const useCase = new ConfirmBookingUseCase(repo(false, booking('pending')));
+    const result = await useCase.execute({ bookingId: 'bkg-1', learnerId: 'st-1' });
+    expect(result.confirmed).toBe(false);
+    expect(result.booking).toEqual({
+      bookingId: 'bkg-1',
+      classId: 'cls-1',
+      learnerId: 'st-1',
+      state: 'pending',
+      priceCredits: 100,
+      createdAt: '2026-10-08T00:00:00.000Z',
+    });
+  });
 });

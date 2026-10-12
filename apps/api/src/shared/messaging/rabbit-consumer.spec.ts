@@ -83,6 +83,19 @@ beforeEach(() => {
 });
 
 describe('RabbitConsumer shutdown race', () => {
+  it('reports ready only after queues are bound and consuming', async () => {
+    const consumer = makeConsumer();
+    consumer.onApplicationBootstrap();
+    await flush();
+    expect(consumer.isReady()).toBe(false);
+
+    resolveConnect(makeConnection());
+    await new Promise<void>((resolve) => setImmediate(resolve));
+
+    expect(consumer.isReady()).toBe(true);
+    await consumer.onApplicationShutdown();
+  });
+
   it('closes a connection that resolves after shutdown instead of adopting it', async () => {
     const consumer = makeConsumer();
     consumer.onApplicationBootstrap();

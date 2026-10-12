@@ -124,6 +124,103 @@ describe('BookClassUseCase', () => {
     expect(result.booking.bookingId).toBe('bkg-old');
   });
 
+  it('returns the stored booking on an idempotent replay even if already confirmed', async () => {
+    const replay: PersistedBooking = {
+      id: 'bkg-old',
+      classId: 'cls-1',
+      learnerId: 'learner-1',
+      state: 'confirmed',
+      priceCredits: 100,
+      idempotencyKey: 'key-1',
+      createdAt: NOW,
+      expiresAt: null,
+    };
+    const { useCase, bookings } = setup({ replay });
+    const result = await useCase.execute({
+      classId: 'cls-1',
+      learnerId: 'learner-1',
+      idempotencyKey: 'key-1',
+    });
+    expect(bookings.createWithSeatGuard).not.toHaveBeenCalled();
+    expect(result.created).toBe(false);
+    expect(result.booking.bookingId).toBe('bkg-old');
+    expect(result.booking.state).toBe('confirmed');
+  });
+
+  it('rejects an idempotent replay attempt with a different learner without leaking booking details', async () => {
+    const replay: PersistedBooking = {
+      id: 'bkg-victim',
+      classId: 'cls-1',
+      learnerId: 'victim-learner',
+      state: 'pending',
+      priceCredits: 100,
+      idempotencyKey: 'key-1',
+      createdAt: NOW,
+      expiresAt: new Date(NOW.getTime() + 15 * 60 * 1000),
+    };
+    const { useCase, bookings } = setup({ replay });
+
+    await expect(
+      useCase.execute({
+        classId: 'cls-1',
+        learnerId: 'attacker-learner',
+        idempotencyKey: 'key-1',
+      }),
+    ).rejects.toThrow(BookingNotAllowedError);
+
+    try {
+      await useCase.execute({
+        classId: 'cls-1',
+        learnerId: 'attacker-learner',
+        idempotencyKey: 'key-1',
+      });
+    } catch (error: unknown) {
+      expect(error).toBeInstanceOf(BookingNotAllowedError);
+      const bne = error as BookingNotAllowedError;
+      expect(bne.reason).toBe('duplicate_booking');
+      expect(bne.message).not.toContain('victim-learner');
+      expect(bne.message).not.toContain('bkg-victim');
+    }
+    expect(bookings.createWithSeatGuard).not.toHaveBeenCalled();
+  });
+
+  it('rejects an idempotent replay attempt with a different class without leaking booking details', async () => {
+    const replay: PersistedBooking = {
+      id: 'bkg-other',
+      classId: 'cls-other',
+      learnerId: 'learner-1',
+      state: 'pending',
+      priceCredits: 100,
+      idempotencyKey: 'key-1',
+      createdAt: NOW,
+      expiresAt: new Date(NOW.getTime() + 15 * 60 * 1000),
+    };
+    const { useCase, bookings } = setup({ replay });
+
+    await expect(
+      useCase.execute({
+        classId: 'cls-1',
+        learnerId: 'learner-1',
+        idempotencyKey: 'key-1',
+      }),
+    ).rejects.toThrow(BookingNotAllowedError);
+
+    try {
+      await useCase.execute({
+        classId: 'cls-1',
+        learnerId: 'learner-1',
+        idempotencyKey: 'key-1',
+      });
+    } catch (error: unknown) {
+      expect(error).toBeInstanceOf(BookingNotAllowedError);
+      const bne = error as BookingNotAllowedError;
+      expect(bne.reason).toBe('duplicate_booking');
+      expect(bne.message).not.toContain('cls-other');
+      expect(bne.message).not.toContain('bkg-other');
+    }
+    expect(bookings.createWithSeatGuard).not.toHaveBeenCalled();
+  });
+
   it('fails when the class does not exist', async () => {
     const { useCase } = setup({ classView: null });
     await expect(

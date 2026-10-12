@@ -5,7 +5,6 @@ import { VerificationBanner } from '../../../../../components/teacher/Verificati
 import { PublishHeader } from '../../../../../components/teacher/PublishHeader';
 import { PublishForm } from '../../../../../components/teacher/PublishForm';
 import { MockTeacherPublishGateway } from '../../../../../lib/teacher/mock-gateway';
-import type { ClassDraft } from '../../../../../lib/teacher/types';
 
 type PageProps = {
   params: Promise<{ locale: string }>;
@@ -45,8 +44,6 @@ export default async function PublishClassPage({ params }: PageProps) {
           <PublishForm
             initialDraft={draft}
             skills={skills}
-            publish={(d: ClassDraft) => gateway.publishDraft(d)}
-            saveDraft={(d: ClassDraft) => gateway.saveDraft(d)}
           />
         </div>
       </main>

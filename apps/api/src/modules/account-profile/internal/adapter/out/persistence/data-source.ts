@@ -9,6 +9,7 @@ import { WidenAccountVerificationStatus1791072000003 } from './migrations/179107
 import { WidenAccountRoles1791072000004 } from './migrations/1791072000004-WidenAccountRoles';
 import { CollapseAccountRoles1791072000005 } from './migrations/1791072000005-CollapseAccountRoles';
 import { SCHEMA } from './schema';
+import { CreateNotificationStorage1791072000006 } from './migrations/1791072000006-CreateNotificationStorage';
 
 /** One connection pool per module schema (ARCHITECTURE.md §5). */
 export function createModuleDataSource(config: ApiConfig, schema: string = SCHEMA): DataSource {
@@ -29,6 +30,7 @@ export function createModuleDataSource(config: ApiConfig, schema: string = SCHEM
       WidenAccountVerificationStatus1791072000003,
       WidenAccountRoles1791072000004,
       CollapseAccountRoles1791072000005,
+      CreateNotificationStorage1791072000006,
     ],
     migrationsTableName: MIGRATIONS_TABLE,
     synchronize: false,

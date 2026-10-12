@@ -7,9 +7,11 @@ import type { BookingResource } from './port/in/book-class';
 import type { BookingRepository } from './port/out/booking-repository';
 
 /**
- * FR-009 / API-006 (ADR-018): confirms a pending booking. The state change and
- * the `booking.confirmed` outbox event are written in one transaction, so the
- * wallet-ledger settles exactly the bookings that were confirmed.
+ * FR-009 / API-006 (ADR-018, ADR-032 Phase C3a): initiates the confirmation request
+ * boundary for a pending booking. Emits a durable `booking.confirmed` request event
+ * (`settled: false`) via outbox. The booking remains pending (`confirmed: false`)
+ * until wallet settlement outcome is authoritatively processed in Phase C3b.
+ * There is no synchronous payment claim.
  */
 export class ConfirmBookingUseCase implements ConfirmBookingPort {
   constructor(private readonly bookings: BookingRepository) {}
