@@ -1,0 +1,10 @@
+# T06 marketplace client — 12 October 2026
+
+- Explore uses real protected GET classes and skills via GatewayClient, response contracts, keyword/skill filters, class cursor pagination, catalogue bounded pagination with explicit load-more/completion and duplicate/cursor-cycle protection. No demo classes or invented ratings.
+- Native cards show public teacher name, actual state, localized start time, duration, integer credits and available seats. Unknown skill metadata has a localized loading label. Flat slate/emerald controls, accessible names and minimum44px targets.
+- Supervisor corrections preserved the existing booking ClassCard API by separating MarketplaceCard; removed undeclared direct zod test dependency; guarded unmount/search/account changes, rapid pagination, catalogue failures and truncated catalogues. Session refresh for the same owner does not invalidate current list requests.
+- Independent mobile11 suites96 tests, typecheck and scoped lint passed. Full pnpm verify green: gateway27 + contracts132 + web22 + API469 + mobile96 =746 tests; architecture578 modules1715 dependencies no violations. Log /tmp/skillswap-mobile-marketplace-bookings-verify.log.
+- iPhone17Pro simulator integration invoked actual native handlers against strict Gateway with disposable persisted class. Rendered actual teacher/description/time/price/seats; unmatched keyword showed localized empty state, clear filters restored class. Token rotation completed and list remained visible. Screenshot /tmp/skillswap-mobile-ios-marketplace.png.
+- This verifies native handler/API integration. Manual touch/keyboard/360px/physical-device acceptance and T07 detail/booking route remain pending; do not interpret T06 as complete end-to-end learner flow.
+
+- Corrected unpublished phase history after workers stopped: moved the detail export from the earlier list phase to the detail phase. Final committed tree hash is identical, and each replayed phase export resolves to existing source. Backup branch codex/mobile-rubric-before-phase-export-fix preserves the prior history.

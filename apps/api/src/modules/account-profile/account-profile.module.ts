@@ -1,5 +1,5 @@
 import { Inject, Injectable, Module, type OnModuleInit } from '@nestjs/common';
-import { studentVerificationEventSchema } from '@skillswap/contracts';
+import { bookingCancelledSchema, bookingConfirmedSchema, studentVerificationEventSchema, walletTransactionCompletedEventSchema } from '@skillswap/contracts';
 import { ApiConfig } from '../../shared/config/api-config';
 import { EventHandlerRegistry, type BusMessage } from '../../shared/messaging/event-handler-registry';
 import { ModuleDataSourceRegistry } from '../../shared/messaging/module-registry';
@@ -48,6 +48,15 @@ import { PASSWORD_HASHER, type PasswordHasher } from './internal/application/por
 import { TOKEN_SERVICE, CLOCK, type Clock, type TokenService } from './internal/application/port/out/token-service';
 import { GetModuleStatusQueryHandler } from './internal/application/query/get-module-status.query';
 import { MODULE_NAME } from './internal/domain/module-status';
+import {
+  PUBLIC_PROFILE_READER,
+  type PublicProfileReader,
+} from './api/public-profile-reader';
+import { SqlPublicProfileReader } from './internal/adapter/out/persistence/sql-public-profile-reader';
+import { SqlNotificationManagement } from './internal/adapter/out/persistence/sql-notification-management';
+import { NotificationsController } from './internal/adapter/in/web/notifications.controller';
+import { NotificationDevicesController } from './internal/adapter/in/web/notification-devices.controller';
+import { NOTIFICATION_MANAGEMENT, type NotificationManagementPort } from './internal/application/port/notification-management';
 
 /** Registers this module's DataSource pool and the FR-017 verification consumers. */
 @Injectable()
@@ -57,6 +66,7 @@ export class AccountProfileRegistrar implements OnModuleInit {
     private readonly config: ApiConfig,
     private readonly handlers: EventHandlerRegistry,
     @Inject(VERIFICATION_STATUS_WRITER) private readonly projector: VerificationStatusWriter,
+    @Inject(NOTIFICATION_MANAGEMENT) private readonly notificationManagement: NotificationManagementPort,
   ) {}
 
   onModuleInit(): void {
@@ -80,11 +90,49 @@ export class AccountProfileRegistrar implements OnModuleInit {
         },
       });
     }
+
+    for (const eventType of ['student.verification.approved', 'student.verification.rejected', 'student.verification.revoked']) {
+      this.handlers.register({
+        moduleName: MODULE_NAME,
+        eventType,
+        queue: `account-profile.notification-${eventType.replace(/\./g, '-')}`,
+        handler: async (message: BusMessage): Promise<void> => {
+          const event = studentVerificationEventSchema.parse(message.payload);
+          await this.notificationManagement.recordInboxNotification({
+            eventId: message.id, accountId: event.accountId, type: 'verification_outcome', targetType: 'verification', targetId: event.verificationId,
+          });
+        },
+      });
+    }
+    this.handlers.register({
+      moduleName: MODULE_NAME, eventType: 'booking.confirmed', queue: 'account-profile.notification-booking-confirmed',
+      handler: async (message: BusMessage): Promise<void> => {
+        const event = bookingConfirmedSchema.parse(message.payload);
+        if (!event.settled) return;
+        for (const accountId of new Set([event.studentId, event.teacherId])) {
+          await this.notificationManagement.recordInboxNotification({ eventId: message.id, accountId, type: 'booking_confirmed', targetType: 'booking', targetId: event.bookingId });
+        }
+      },
+    });
+    this.handlers.register({
+      moduleName: MODULE_NAME, eventType: 'booking.cancelled', queue: 'account-profile.notification-booking-cancelled',
+      handler: async (message: BusMessage): Promise<void> => {
+        const event = bookingCancelledSchema.parse(message.payload);
+        await this.notificationManagement.recordInboxNotification({ eventId: message.id, accountId: event.learnerId, type: 'booking_cancelled', targetType: 'booking', targetId: event.bookingId });
+      },
+    });
+    this.handlers.register({
+      moduleName: MODULE_NAME, eventType: 'wallet.transaction.completed', queue: 'account-profile.notification-wallet-completed',
+      handler: async (message: BusMessage): Promise<void> => {
+        const event = walletTransactionCompletedEventSchema.parse(message.payload);
+        await this.notificationManagement.recordInboxNotification({ eventId: message.id, accountId: event.accountId, type: 'wallet_transaction', targetType: 'wallet', targetId: event.transactionId });
+      },
+    });
   }
 }
 
 @Module({
-  controllers: [StatusController, AuthController],
+  controllers: [StatusController, AuthController, NotificationsController, NotificationDevicesController],
   providers: [
     {
       provide: STATUS_READER,
@@ -194,7 +242,19 @@ export class AccountProfileRegistrar implements OnModuleInit {
         new GetMeUseCase(accounts, verificationStatus),
       inject: [ACCOUNT_REPOSITORY, VERIFICATION_STATUS_READER],
     },
+    {
+      provide: PUBLIC_PROFILE_READER,
+      useFactory: (registry: ModuleDataSourceRegistry): PublicProfileReader =>
+        new SqlPublicProfileReader(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
+      provide: NOTIFICATION_MANAGEMENT,
+      useFactory: (registry: ModuleDataSourceRegistry): NotificationManagementPort => new SqlNotificationManagement(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
     AccountProfileRegistrar,
   ],
+  exports: [PUBLIC_PROFILE_READER],
 })
 export class AccountProfileModule {}

@@ -5,6 +5,8 @@ export interface BookingConfirmedInput {
   studentId: string;
   teacherId: string;
   amountCredits: number;
+  settled?: boolean;
+  classId?: string;
 }
 
 export interface RecordBookingConfirmedResult {

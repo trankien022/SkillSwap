@@ -1,0 +1,341 @@
+import { StyleSheet } from 'react-native';
+import { colors, radius, spacing, typography } from '@/design/tokens';
+
+export const classDetailStyles = StyleSheet.create({
+  container: {
+    padding: spacing.lg,
+    paddingBottom: spacing.xxxl,
+    gap: spacing.xl,
+    maxWidth: 560,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.mist,
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  loadingText: {
+    fontSize: typography.body.fontSize,
+    color: colors.inkMuted,
+  },
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.xl,
+    gap: spacing.md,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  title: {
+    fontSize: typography.title.fontSize,
+    fontWeight: typography.title.fontWeight,
+    color: colors.ink,
+    flex: 1,
+  },
+  teacherSection: {
+    gap: 4,
+    paddingTop: spacing.xs,
+  },
+  teacherLabel: {
+    fontSize: typography.body.fontSize,
+    color: colors.inkSoft,
+  },
+  teacherName: {
+    fontWeight: '700',
+    color: colors.ink,
+  },
+  ratingText: {
+    fontSize: typography.caption.fontSize,
+  },
+  ratingPositive: {
+    color: colors.warningInk,
+    fontWeight: '600',
+  },
+  ratingMuted: {
+    color: colors.inkMuted,
+  },
+  sectionTitle: {
+    fontSize: typography.heading.fontSize,
+    fontWeight: typography.heading.fontWeight,
+    color: colors.ink,
+  },
+  descriptionText: {
+    fontSize: typography.body.fontSize,
+    color: colors.inkSoft,
+    lineHeight: 22,
+  },
+  skillsSection: {
+    gap: spacing.xs,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.mist,
+  },
+  fieldSubTitle: {
+    fontSize: typography.caption.fontSize,
+    fontWeight: '600',
+    color: colors.inkMuted,
+    textTransform: 'uppercase',
+  },
+  skillChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  skillChip: {
+    backgroundColor: colors.mist,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  skillChipText: {
+    fontSize: typography.caption.fontSize,
+    color: colors.inkSoft,
+    fontWeight: '500',
+  },
+  gridRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  gridCol: {
+    flex: 1,
+    backgroundColor: colors.mist,
+    padding: spacing.md,
+    borderRadius: radius.control,
+    gap: 2,
+  },
+  gridLabel: {
+    fontSize: typography.caption.fontSize,
+    color: colors.inkMuted,
+  },
+  gridValue: {
+    fontSize: typography.body.fontSize,
+    fontWeight: '700',
+    color: colors.ink,
+  },
+  scheduleRow: {
+    paddingVertical: spacing.xs,
+  },
+  scheduleText: {
+    fontSize: typography.body.fontSize,
+    fontWeight: '600',
+    color: colors.inkSoft,
+  },
+  priceContainer: {
+    backgroundColor: colors.mist,
+    padding: spacing.md,
+    borderRadius: radius.control,
+    gap: 4,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  priceLabel: {
+    fontSize: typography.body.fontSize,
+    fontWeight: '600',
+    color: colors.ink,
+  },
+  priceValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.campusEmerald,
+  },
+  rateHintText: {
+    fontSize: typography.caption.fontSize,
+    color: colors.inkMuted,
+    fontStyle: 'italic',
+  },
+  actionCard: {
+    gap: spacing.sm,
+  },
+  disabledActionBox: {
+    minHeight: 48,
+    backgroundColor: colors.mist,
+    borderRadius: radius.pill,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  disabledActionText: {
+    color: colors.inkMuted,
+    fontSize: typography.body.fontSize,
+    fontWeight: '500',
+  },
+  pendingHoldCard: {
+    backgroundColor: colors.warningTint,
+    borderColor: colors.warningInk,
+    borderWidth: 1,
+    borderRadius: radius.card,
+    padding: spacing.xl,
+    gap: spacing.md,
+  },
+  pendingNoticeText: {
+    fontSize: typography.body.fontSize,
+    color: colors.warningInk,
+    lineHeight: 22,
+    fontWeight: '500',
+  },
+  expiresAtText: {
+    fontSize: typography.caption.fontSize,
+    fontWeight: '700',
+    color: colors.warningInk,
+  },
+  confirmedBox: {
+    backgroundColor: colors.successTint,
+    borderColor: colors.successInk,
+    borderWidth: 1,
+    borderRadius: radius.card,
+    padding: spacing.xl,
+    gap: spacing.sm,
+  },
+  confirmedNoticeText: {
+    fontSize: typography.body.fontSize,
+    color: colors.successInk,
+    lineHeight: 22,
+    fontWeight: '500',
+  },
+  insufficientBox: {
+    backgroundColor: colors.dangerTint,
+    borderRadius: radius.control,
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  insufficientTitle: {
+    fontSize: typography.label.fontSize,
+    fontWeight: '700',
+    color: colors.dangerInk,
+  },
+  insufficientMessage: {
+    fontSize: typography.caption.fontSize,
+    color: colors.dangerInk,
+    lineHeight: 18,
+  },
+  walletLinkBtn: {
+    minHeight: 44,
+    backgroundColor: colors.dangerInk,
+    borderRadius: radius.pill,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  walletLinkText: {
+    color: colors.surface,
+    fontSize: typography.label.fontSize,
+    fontWeight: '600',
+  },
+  reconcileBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.warningTint,
+    borderRadius: radius.control,
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  reconcileText: {
+    color: colors.warningInk,
+    fontSize: typography.caption.fontSize,
+    flex: 1,
+    fontWeight: '600',
+  },
+  errorBox: {
+    backgroundColor: colors.dangerTint,
+    borderRadius: radius.control,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  errorText: {
+    color: colors.dangerInk,
+    fontSize: typography.label.fontSize,
+  },
+  retryActionBtn: {
+    minHeight: 44,
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+  },
+  retryActionText: {
+    color: colors.dangerInk,
+    fontWeight: '700',
+    fontSize: typography.label.fontSize,
+    textDecorationLine: 'underline',
+  },
+  notFoundText: {
+    fontSize: typography.body.fontSize,
+    color: colors.inkSoft,
+  },
+  outlineCta: {
+    minHeight: 44,
+    borderWidth: 1,
+    borderColor: colors.campusEmerald,
+    borderRadius: radius.pill,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: spacing.sm,
+  },
+  outlineCtaText: {
+    color: colors.campusEmerald,
+    fontWeight: '600',
+    fontSize: typography.label.fontSize,
+  },
+  primaryCta: {
+    minHeight: 44,
+    backgroundColor: colors.campusEmerald,
+    borderRadius: radius.pill,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: spacing.sm,
+  },
+  primaryCtaText: {
+    color: colors.surface,
+    fontWeight: '600',
+    fontSize: typography.label.fontSize,
+  },
+  errorBodyText: {
+    fontSize: typography.body.fontSize,
+    color: colors.dangerInk,
+  },
+  reviewsList: {
+    gap: spacing.md,
+  },
+  reviewItem: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.mist,
+    paddingBottom: spacing.sm,
+    gap: 2,
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  reviewAuthor: {
+    fontSize: typography.label.fontSize,
+    fontWeight: '600',
+    color: colors.ink,
+  },
+  reviewStars: {
+    fontSize: typography.caption.fontSize,
+    color: colors.warningInk,
+    fontWeight: '600',
+  },
+  reviewComment: {
+    fontSize: typography.caption.fontSize,
+    color: colors.inkSoft,
+  },
+  noReviewsText: {
+    fontSize: typography.caption.fontSize,
+    color: colors.inkMuted,
+    fontStyle: 'italic',
+  },
+});

@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { createHmac } from 'node:crypto';
 import { startHarness, type Harness } from './harness';
 import { accountIdFromToken, ApiClient, waitFor } from './support/api-client';
@@ -9,29 +10,56 @@ const JITSI_WEB = process.env.JITSI_WEB_URL ?? 'http://localhost:8000';
 const JITSI_APP_ID = process.env.JITSI_APP_ID ?? 'skillswap';
 const JITSI_APP_SECRET = process.env.JITSI_APP_SECRET ?? 'skillswap_jitsi_dev_secret';
 
+function checkJitsiPresence(): boolean {
+  try {
+    const probe = spawnSync('curl', ['-fs', '-k', '-m', '2', `${JITSI_WEB}/config.js`]);
+    if (probe.status === 0) {
+      const body = probe.stdout?.toString('utf8') ?? '';
+      return body.includes('config.hosts');
+    }
+  } catch {
+    return false;
+  }
+  return false;
+}
+
+const jitsiUp = checkJitsiPresence();
+
+if (!jitsiUp) {
+  console.warn(
+    'Skipping Jitsi E2E: provider unavailable (start the local Jitsi stack)',
+  );
+}
+
 /**
- * FR-011 (ADR-020) against the REAL self-hosted Jitsi: the API issues a Jitsi
- * JWT and we assert it is a valid, Prosody-compatible token (HS256 with the
- * shared app secret and the claims Prosody verifies). Skips gracefully if the
- * Jitsi container is not running.
+ * FR-011 (ADR-020) against the REAL self-hosted Jitsi.
+ *
+ * What this test proves:
+ * 1. Web provider configuration: Jitsi Web advertises JWT authentication with
+ *    authdomain configured (meet.jitsi) and NO anonymous domain. Actual JWT
+ *    admission remains a separate client test.
+ * 2. API token issuance contract: The SkillSwap API issues a valid HS256 room JWT
+ *    signed with the shared secret (JITSI_APP_SECRET) carrying expected Prosody claims
+ *    (iss, aud, room, role/moderator, exp) for confirmed bookings within the time window.
+ *
+ * What this test does NOT prove:
+ * - Does not test actual WebRTC media streams, audio/video capture, or mic/camera hardware.
+ * - Does not establish a real two-device participant session.
+ * - Does not perform end-to-end XMPP stanza / Prosody BOSH room admission from a client.
+ *
+ * Execution behavior:
+ * - Visibly skips the suite (describe.skip) if the Jitsi provider is unavailable or not
+ *   advertising authdomain, rather than silent early returns.
+ * - Optional during ordinary unit/baseline runs; intended for validation when the
+ *   local Docker infrastructure stack is active.
  */
-describe('E2E: Jitsi room access (real host)', () => {
+const describeJitsi = jitsiUp || process.env.JITSI_REQUIRED === 'true' ? describe : describe.skip;
+
+describeJitsi('E2E: Jitsi room access (real host)', () => {
   let harness: Harness;
   let api: ApiClient;
-  let jitsiUp = false;
 
   beforeAll(async () => {
-    try {
-      const res = await fetch(`${JITSI_WEB}/config.js`, { signal: AbortSignal.timeout(4000) });
-      const body = await res.text();
-      jitsiUp = res.ok && body.includes('anonymousdomain');
-    } catch {
-      jitsiUp = false;
-    }
-    if (!jitsiUp) {
-      console.warn('Skipping Jitsi E2E: start it with "docker compose up -d jitsi-web jitsi-prosody jitsi-jicofo jitsi-jvb"');
-      return;
-    }
     harness = await startHarness();
     api = new ApiClient(harness.baseUrl);
     await resetDatabase(harness);
@@ -43,15 +71,15 @@ describe('E2E: Jitsi room access (real host)', () => {
     }
   });
 
-  it('Jitsi web advertises JWT auth (anonymous + auth domains)', async () => {
-    if (!jitsiUp) return;
-    const config = await (await fetch(`${JITSI_WEB}/config.js`)).text();
-    expect(config).toContain("config.hosts.anonymousdomain = 'guest.meet.jitsi'");
+  it('Jitsi web advertises JWT auth (authdomain present, no anonymous domain)', async () => {
+    const res = await fetch(`${JITSI_WEB}/config.js`);
+    const config = await res.text();
     expect(config).toContain("config.hosts.authdomain = 'meet.jitsi'");
+    expect(config).not.toContain('anonymousdomain');
+    expect(config).not.toContain('guest.meet.jitsi');
   });
 
   it('the API issues a Prosody-compatible room token for a confirmed booking', async () => {
-    if (!jitsiUp) return;
 
     // Register + top up the learner.
     const learner = await api.post('/api/auth/register', {
@@ -106,6 +134,14 @@ describe('E2E: Jitsi room access (real host)', () => {
     await waitFor(async () => {
       const learner = await walletRow(harness, learnerId);
       return learner && learner.availableCredits === 0 ? learner : null;
+    });
+    await waitFor(async () => {
+      const rows = await harness.query<{ state: string }>(
+        'live-class',
+        'SELECT "state" FROM bookings WHERE "id" = $1',
+        [bookingId],
+      );
+      return rows[0]?.state === 'confirmed' ? rows[0] : null;
     });
 
     // Open the room window by pulling the start time to now.

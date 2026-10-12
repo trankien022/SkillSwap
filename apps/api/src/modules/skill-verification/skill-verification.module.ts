@@ -12,6 +12,7 @@ import { SqlSkillEvidenceRepository } from './internal/adapter/out/persistence/s
 import { SqlVerifierRepository } from './internal/adapter/out/persistence/sql-verifier-repository';
 import { SqlEvidenceAuditRepository } from './internal/adapter/out/persistence/sql-evidence-audit-repository';
 import { SqlVerifiedStudentProjector } from './internal/adapter/out/persistence/sql-verified-student-projector';
+import { SqlSkillCatalogueReader } from './internal/adapter/out/persistence/sql-skill-catalogue-reader';
 import { SystemClock } from './internal/adapter/out/crypto/system-clock';
 import { StatusController } from './internal/adapter/in/web/status.controller';
 import {
@@ -19,6 +20,7 @@ import {
   SkillEvidenceController,
 } from './internal/adapter/in/web/skill-evidence.controller';
 import { VerifierController, SkillEvidenceDecisionController } from './internal/adapter/in/web/verifier.controller';
+import { SkillsController } from './internal/adapter/in/web/skills.controller';
 import { AdvanceStatusUseCase } from './internal/application/advance-status.use-case';
 import { SubmitSkillEvidenceUseCase } from './internal/application/submit-skill-evidence.use-case';
 import { ChangeVerifierStatusUseCase } from './internal/application/change-verifier-status.use-case';
@@ -28,6 +30,7 @@ import { ListVerifierQueueQueryHandler } from './internal/application/list-verif
 import { GetSkillEvidenceHistoryUseCase } from './internal/application/get-skill-evidence-history.use-case';
 import { VerifierAuthority } from './internal/application/verifier-authority';
 import { GetMyProfileSkillsQueryHandler } from './internal/application/query/get-my-profile-skills.query';
+import { ListSkillsQueryHandler } from './internal/application/query/list-skills.query';
 import { GET_MODULE_STATUS } from './internal/application/port/in/get-module-status';
 import { ADVANCE_STATUS } from './internal/application/port/in/advance-status';
 import { SUBMIT_SKILL_EVIDENCE } from './internal/application/port/in/submit-skill-evidence';
@@ -35,6 +38,10 @@ import {
   GET_MY_PROFILE_SKILLS,
   type GetMyProfileSkillsPort,
 } from './internal/application/port/in/get-my-profile-skills';
+import {
+  LIST_SKILLS,
+  type ListSkillsPort,
+} from './internal/application/port/in/list-skills';
 import {
   CHANGE_VERIFIER_STATUS,
   type ChangeVerifierStatusPort,
@@ -73,6 +80,10 @@ import {
   VERIFIED_STUDENT_READER,
   type VerifiedStudentReader,
 } from './internal/application/port/out/verified-student-reader';
+import {
+  SKILL_CATALOGUE_READER,
+  type SkillCatalogueReader,
+} from './internal/application/port/out/skill-catalogue-reader';
 import { GetModuleStatusQueryHandler } from './internal/application/query/get-module-status.query';
 import { MODULE_NAME } from './internal/domain/module-status';
 
@@ -118,6 +129,7 @@ export class SkillVerificationRegistrar implements OnModuleInit {
     ProfileSkillController,
     VerifierController,
     SkillEvidenceDecisionController,
+    SkillsController,
   ],
   providers: [
     {
@@ -271,6 +283,18 @@ export class SkillVerificationRegistrar implements OnModuleInit {
       provide: GET_MODULE_STATUS,
       useFactory: (reader: ModuleStatusReader) => new GetModuleStatusQueryHandler(reader),
       inject: [STATUS_READER],
+    },
+    {
+      provide: SKILL_CATALOGUE_READER,
+      useFactory: (registry: ModuleDataSourceRegistry): SkillCatalogueReader =>
+        new SqlSkillCatalogueReader(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
+      provide: LIST_SKILLS,
+      useFactory: (reader: SkillCatalogueReader): ListSkillsPort =>
+        new ListSkillsQueryHandler(reader),
+      inject: [SKILL_CATALOGUE_READER],
     },
     SkillVerificationRegistrar,
   ],

@@ -19,6 +19,7 @@ export function BookButton({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={busy ? busyLabel : label}
       accessibilityState={{ disabled: isDisabled, busy }}
       disabled={isDisabled}
       onPress={onPress}
@@ -36,6 +37,7 @@ export function BookButton({
 
 const styles = StyleSheet.create({
   button: {
+    minHeight: 44,
     alignItems: 'center',
     borderRadius: radius.pill,
     flexDirection: 'row',
