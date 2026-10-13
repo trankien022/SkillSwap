@@ -14,7 +14,7 @@ Theo `ARCHITECTURE.md` (ADR-005, ADR-007, ADR-014), toàn bộ hệ thống duy 
 | `student-verification` | `student_verification` | Tải lên giấy tờ, nộp đơn xác minh sinh viên, trạng thái/lý do từ chối. |
 | `skill-verification` | `skill_verification` | **Danh mục kỹ năng (`GET /skills`)**, nộp bằng chứng mô tả năng lực, kiểm tra quyền dạy/cấp độ (`profile-skills/me`). |
 | `live-class` | `live_class` | Tạo/sửa/hủy/bắt đầu/kết thúc lớp, **tìm kiếm marketplace (`GET /classes`)**, **chi tiết lớp (`GET /classes/:id`)**, **lịch học của tôi (`GET /classes/bookings/me`)**, **đánh giá sau buổi học (`POST /classes/bookings/:bookingId/rating`)**. |
-| `wallet-ledger` | `wallet_ledger` | Số dư credit, nạp tiền (mock provider HMAC), lịch sử giao dịch ledger, giải ngân thu nhập. |
+| `wallet-ledger` | `wallet_ledger` | Số dư credit, nạp tiền (**SePay Payment Gateway** — hosted checkout + IPN, ADR-033; mock provider HMAC đã bị gỡ 14/10/2026), lịch sử giao dịch ledger, giải ngân thu nhập. |
 | `schedule` | `schedule` | Quản lý lịch biểu, **job quét nhắc nhở trước giờ học 30 phút (`class.reminder.due`)**. |
 | `admin-operation` | `admin_operation` | Quản trị viên phê duyệt xác minh, kiểm soát verifier (phía web/ops). |
 
@@ -432,7 +432,7 @@ Pipeline đảm bảo thông báo không bị mất khi broker gián đoạn và
 3. **Offset nhắc nhở trước giờ học:** Đúng **30 phút** trước giờ bắt đầu của lớp học (`startsAt`).
 4. **Tham số tìm kiếm:** Hỗ trợ tìm kiếm theo từ khóa (`keyword`), kỹ năng (`skillId`), khoảng thời gian (`startDate`, `endDate`), và con trỏ (`cursor`).
 5. **Bằng chứng năng lực kỹ năng:** Hỗ trợ hình thức công nhận năng lực kèm mô tả chi tiết (`description`) và liên kết tài liệu (`documentRef`).
-6. **Mô phỏng thanh toán:** Giữ nguyên mock payment provider hiện có của `wallet-ledger` với chữ ký webhook HMAC phía server.
+6. **Thanh toán:** ~~Giữ nguyên mock payment provider hiện có của `wallet-ledger` với chữ ký webhook HMAC phía server.~~ **Cập nhật 14/10/2026:** lựa chọn này không còn hiệu lực — FR-008 dùng **SePay Payment Gateway** (hosted checkout + IPN) theo ADR-033; mock provider và chữ ký HMAC đã bị gỡ. Xác thực IPN bằng IP allow-list + tra invoice, không dùng chữ ký body.
 
 ## 7. Supervisor implementation clarifications
 

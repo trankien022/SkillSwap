@@ -234,7 +234,7 @@ Exactly the §5 algorithm: allowed fields in fixed order → `k=v` comma-joined 
 - Web `classes/[id]/checkout/page.tsx`: the top-up modal does the same real flow.
 - Mobile `wallet-view.tsx` + `wallet-service.ts`: open the SePay checkout URL (or render the form action), then poll the intent status.
 - New API read endpoint `GET /api/wallet/top-ups/:id` (owner-scoped, authenticated) for the poll.
-- `apps/mobile/src/infrastructure/http/api-evidence.ts`: allowlist `/^\/wallet\/top-ups\/[^/]+$/` (callback stays excluded).
+- `apps/mobile/src/infrastructure/http/api-evidence.ts`: allowlist the poll route. **Corrected during implementation (2026-10-14):** the pattern proposed here, `/^\/wallet\/top-ups\/[^/]+$/`, also matches `.../callback`, so it would have recorded the server-to-server IPN as client evidence. The shipped pattern excludes `callback` explicitly; see [the Phase 7–8 addendum](./2026-10-14-fr008-phases-7-8-addendum.md).
 - **Verify**: web component test (submits form / polls until settled); mobile test (opens URL / polls).
 - **Deliverable**: UI drives a real SePay checkout end to end.
 
