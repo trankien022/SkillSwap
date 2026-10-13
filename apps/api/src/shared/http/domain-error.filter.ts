@@ -100,6 +100,8 @@ const NAME_TO_STATUS: Record<string, number> = {
   SkillLevelInsufficientError: 403,
   NoClassSkillsError: 400,
   InvalidSkillLevelError: 400,
+  // FR-008 wallet top-up read (ADR-033).
+  TopUpIntentNotFoundError: 404,
 };
 
 /** Maps domain errors and unexpected failures onto the failure envelope (NFR-013). */

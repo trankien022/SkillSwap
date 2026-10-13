@@ -264,6 +264,34 @@ export const topUpIntentSchema = z.object({
 export type TopUpIntentView = z.infer<typeof topUpIntentSchema>;
 
 /**
+ * FR-008 / ADR-033: the pending intent as returned by `POST /wallet/top-ups`.
+ *
+ * `paymentUrl` is required here. It is the SePay hosted checkout returned by that
+ * call, and it is *not* persisted, so only this endpoint can supply it.
+ */
+export const topUpIntentCreatedSchema = topUpIntentSchema.extend({
+  paymentUrl: z.string().min(1),
+});
+export type TopUpIntentCreated = z.infer<typeof topUpIntentCreatedSchema>;
+
+/**
+ * FR-008 / ADR-033: the poll result for `GET /wallet/top-ups/:id`.
+ *
+ * Deliberately has **no** `paymentUrl`: the checkout URL carries a SePay-signed
+ * token we cannot re-derive without re-submitting the form, so re-issuing one
+ * here would be a lie. The client already holds the URL from creation; this
+ * endpoint only answers "has it settled yet?". `settledAt`/`paidAmountVnd` are
+ * the provider's own settlement facts, present once an IPN has been applied.
+ */
+export const topUpIntentStatusSchema = topUpIntentSchema
+  .omit({ paymentUrl: true })
+  .extend({
+    paidAmountVnd: z.number().int().nullable(),
+    paidAt: z.string().nullable(),
+  });
+export type TopUpIntentStatusView = z.infer<typeof topUpIntentStatusSchema>;
+
+/**
  * FR-008 / ADR-033: the SePay Payment Gateway IPN payload.
  *
  * Built from real Sandbox deliveries (plan §5a), not the doc sample. SePay is

@@ -1,7 +1,8 @@
 import { createZodDto } from 'nestjs-zod';
 import {
   sepayIpnSchema,
-  topUpIntentSchema,
+  topUpIntentCreatedSchema,
+  topUpIntentStatusSchema,
   topUpRequestSchema,
   walletBalanceSchema,
   walletHistoryPageSchema,
@@ -12,7 +13,10 @@ import {
 export class TopUpRequestDto extends createZodDto(topUpRequestSchema) {}
 
 /** FR-008: the pending top-up intent with a payment URL. */
-export class TopUpIntentDto extends createZodDto(topUpIntentSchema) {}
+export class TopUpIntentDto extends createZodDto(topUpIntentCreatedSchema) {}
+
+/** FR-008 / ADR-033: the poll result for GET /wallet/top-ups/:id (no payment URL). */
+export class TopUpIntentStatusDto extends createZodDto(topUpIntentStatusSchema) {}
 
 /** FR-008 / ADR-033: SePay Payment Gateway IPN. Body for POST /wallet/top-ups/callback. */
 export class SepayIpnDto extends createZodDto(sepayIpnSchema) {}

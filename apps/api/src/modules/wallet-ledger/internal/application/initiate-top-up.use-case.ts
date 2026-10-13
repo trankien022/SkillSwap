@@ -1,4 +1,4 @@
-import type { TopUpIntentView } from '@skillswap/contracts';
+import type { TopUpIntentCreated } from '@skillswap/contracts';
 import { vndToCredits } from '../domain/wallet';
 import { generateInvoiceNumber } from '../domain/invoice-number';
 import type { PaymentGateway } from './port/out/payment-gateway';
@@ -12,7 +12,7 @@ export class InitiateTopUpUseCase implements InitiateTopUpPort {
     private readonly gateway: PaymentGateway,
   ) {}
 
-  async execute(input: InitiateTopUpInput): Promise<TopUpIntentView> {
+  async execute(input: InitiateTopUpInput): Promise<TopUpIntentCreated> {
     const amountCredits = vndToCredits(input.amountVnd);
     // ADR-033: the invoice number is the `provider_ref` and the IPN's only
     // correlation key, so it is generated here rather than by the adapter.
@@ -38,6 +38,5 @@ export class InitiateTopUpUseCase implements InitiateTopUpPort {
       amountCredits: intent.amountCredits,
       status: intent.status,
       paymentUrl: payment.paymentUrl,
-    };
-  }
+    };  }
 }

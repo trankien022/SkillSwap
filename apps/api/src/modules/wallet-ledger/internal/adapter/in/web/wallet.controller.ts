@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Inject,
   Logger,
+  Param,
   Post,
   Query,
   Req,
@@ -18,7 +19,8 @@ import {
 } from '@nestjs/swagger';
 import type {
   SepayIpnAck,
-  TopUpIntentView,
+  TopUpIntentCreated,
+  TopUpIntentStatusView,
   WalletBalanceView,
   WalletHistoryPage,
 } from '@skillswap/contracts';
@@ -26,6 +28,10 @@ import {
   INITIATE_TOP_UP,
   type InitiateTopUpPort,
 } from '../../../application/port/in/initiate-top-up';
+import {
+  GET_TOP_UP_INTENT,
+  type GetTopUpIntentPort,
+} from '../../../application/port/in/get-top-up-intent';
 import {
   GET_WALLET_BALANCE,
   type GetWalletBalancePort,
@@ -48,6 +54,7 @@ import {
 import {
   SepayIpnDto,
   TopUpIntentDto,
+  TopUpIntentStatusDto,
   TopUpRequestDto,
   WalletBalanceDto,
   WalletHistoryPageDto,
@@ -65,6 +72,7 @@ export class WalletController {
     @Inject(GET_WALLET_BALANCE) private readonly getBalance: GetWalletBalancePort,
     @Inject(GET_WALLET_HISTORY) private readonly getHistory: GetWalletHistoryPort,
     @Inject(HANDLE_TOP_UP_CALLBACK) private readonly callback: HandleTopUpCallbackPort,
+    @Inject(GET_TOP_UP_INTENT) private readonly getTopUpIntent: GetTopUpIntentPort,
   ) {}
 
   @Post('top-ups')
@@ -73,8 +81,28 @@ export class WalletController {
   start(
     @Body() body: TopUpRequestDto,
     @Req() request: RequestWithIdentity,
-  ): Promise<TopUpIntentView> {
+  ): Promise<TopUpIntentCreated> {
     return this.initiateTopUp.execute({ ownerId: currentUserId(request), amountVnd: body.amountVnd });
+  }
+
+  /**
+   * FR-008 / ADR-033: poll one top-up intent.
+   *
+   * The SePay IPN settles the intent server-to-server and pushes nothing to the
+   * browser, so the client needs a way to ask whether its payment landed. The
+   * response has no `paymentUrl` (see `topUpIntentStatusSchema`). A missing id
+   * and another owner's id are both 404 — no existence probe.
+   */
+  @Get('top-ups/:id')
+  @ResponseCode('WALLET_TOP_UP_OK')
+  @ResponseMessage('Top-up intent loaded')
+  @ApiOperation({ summary: 'Poll a wallet top-up intent (FR-008 / ADR-033)' })
+  @ApiOkResponse({ type: TopUpIntentStatusDto, description: 'The intent, including settlement facts' })
+  topUpStatus(
+    @Param('id') id: string,
+    @Req() request: RequestWithIdentity,
+  ): Promise<TopUpIntentStatusView> {
+    return this.getTopUpIntent.execute(currentUserId(request), id);
   }
 
   /**

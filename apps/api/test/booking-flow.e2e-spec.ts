@@ -7,9 +7,10 @@ jest.setTimeout(60_000);
 
 /**
  * End-to-end booking flow against REAL Postgres and REAL RabbitMQ (docker).
- * Payment is the mock gateway. Events cross module boundaries through the
- * outbox relay + consumer, exactly as in production, so assertions poll for the
- * downstream effect rather than reading a synchronous return value.
+ * Payment is the SePay Payment Gateway (ADR-033): the specs post an IPN body
+ * directly, so no outbound call to SePay is made. Events cross module boundaries
+ * through the outbox relay + consumer, exactly as in production, so assertions
+ * poll for the downstream effect rather than reading a synchronous return value.
  *
  * Requires: `docker compose up -d postgres rabbitmq` and `pnpm db:migrate`.
  */
@@ -412,11 +413,60 @@ describe('E2E: book → settle → room → complete → release', () => {
     });
     expect(balance.availableCredits).toBe(50);
   });
+
+  describe('GET /api/wallet/top-ups/:id (FR-008 / ADR-033 poll)', () => {
+    it('reports pending, then settled with the provider settlement facts', async () => {
+      api.actAs(learnerId);
+      const start = await api.post('/api/wallet/top-ups', { amountVnd: 80_000 });
+      expect(start.status).toBe(201);
+      const id = start.json.id as string;
+      const providerRef = start.json.providerRef as string;
+
+      const pending = await api.get(`/api/wallet/top-ups/${id}`);
+      expect(pending.status).toBe(200);
+      expect(pending.json.status).toBe('pending');
+      expect(pending.json.paidAmountVnd).toBeNull();
+      // The checkout URL is not persisted, so the poll never re-issues one.
+      expect(pending.json.paymentUrl).toBeUndefined();
+
+      const cb = await api.post('/api/wallet/top-ups/callback', sepayIpn(providerRef, 80_000));
+      expect(cb.status).toBe(200);
+
+      const settled = await waitFor(async () => {
+        const res = await api.get(`/api/wallet/top-ups/${id}`);
+        return res.json.status === 'settled' ? res : null;
+      });
+      expect(settled.json.status).toBe('settled');
+      expect(settled.json.paidAmountVnd).toBe(80_000);
+      expect(settled.json.paidAt).toEqual(expect.any(String));
+    });
+
+    it("hides another owner's intent behind a 404", async () => {
+      api.actAs(learnerId);
+      const start = await api.post('/api/wallet/top-ups', { amountVnd: 30_000 });
+      const id = start.json.id as string;
+
+      api.actAs(teacherId);
+      const foreign = await api.get(`/api/wallet/top-ups/${id}`);
+      expect(foreign.status).toBe(404);
+    });
+
+    it('answers a malformed id with 404, not a 500', async () => {
+      api.actAs(learnerId);
+      const res = await api.get('/api/wallet/top-ups/not-a-uuid');
+      expect(res.status).toBe(404);
+    });
+  });
 });
 
 /**
  * A SePay IPN as it arrives on Sandbox (ADR-033, plan §5a): `ORDER_PAID` with
  * string amounts carrying a fractional part, and no secret header.
+ */
+/**
+ * A SePay IPN as it arrives on Sandbox (ADR-033, plan §5a): `ORDER_PAID` with
+ * string amounts carrying a fractional part, a local-time `transaction_date`,
+ * and no secret header.
  */
 function sepayIpn(invoiceNumber: string, amountVnd: number): Record<string, unknown> {
   return {
@@ -438,6 +488,7 @@ function sepayIpn(invoiceNumber: string, amountVnd: number): Record<string, unkn
       transaction_status: 'APPROVED',
       transaction_amount: String(amountVnd),
       transaction_currency: 'VND',
+      transaction_date: '2026-10-14 09:30:00',
     },
     customer: null,
     agreement: null,

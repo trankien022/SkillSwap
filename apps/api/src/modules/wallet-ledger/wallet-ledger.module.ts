@@ -1,6 +1,7 @@
 import { Inject, Injectable, Module, type OnModuleInit } from '@nestjs/common';
 import { bookingCancelledSchema, bookingConfirmedSchema, classCompletedSchema } from '@skillswap/contracts';
 import { ApiConfig } from '../../shared/config/api-config';
+import { AppLogger } from '../../shared/logger/app-logger';
 import { EventHandlerRegistry, type BusMessage } from '../../shared/messaging/event-handler-registry';
 import { ModuleDataSourceRegistry } from '../../shared/messaging/module-registry';
 import { createModuleDataSource } from './internal/adapter/out/persistence/data-source';
@@ -11,6 +12,8 @@ import { SqlWalletRepository } from './internal/adapter/out/persistence/sql-wall
 import { SqlWalletReader } from './internal/adapter/out/persistence/sql-wallet-reader';
 import { SqlTopUpIntentRepository } from './internal/adapter/out/persistence/sql-top-up-intent-repository';
 import { SepayPaymentGateway } from './internal/adapter/out/payment/sepay-payment-gateway';
+import { SepayRestOrderClient } from './internal/adapter/out/payment/sepay-rest-order-client';
+import { TopUpReconciliationSweeper } from './internal/adapter/in/scheduler/topup-reconciliation.sweeper';
 import { StatusController } from './internal/adapter/in/web/status.controller';
 import { WalletController } from './internal/adapter/in/web/wallet.controller';
 import { AdvanceStatusUseCase } from './internal/application/advance-status.use-case';
@@ -21,6 +24,7 @@ import { ReleaseCompletedClassUseCase } from './internal/application/release-com
 import { InitiateTopUpUseCase } from './internal/application/initiate-top-up.use-case';
 import { HandleTopUpCallbackUseCase } from './internal/application/handle-top-up-callback.use-case';
 import { GetWalletBalanceUseCase } from './internal/application/get-wallet-balance.use-case';
+import { GetTopUpIntentUseCase } from './internal/application/get-top-up-intent.use-case';
 import { GetWalletHistoryQueryHandler } from './internal/application/get-wallet-history.query';
 import { GET_WALLET_HISTORY } from './internal/application/port/in/get-wallet-history';
 import { WALLET_READER, type WalletReader } from './internal/application/port/out/wallet-reader';
@@ -28,7 +32,9 @@ import { GET_MODULE_STATUS } from './internal/application/port/in/get-module-sta
 import { ADVANCE_STATUS } from './internal/application/port/in/advance-status';
 import { INITIATE_TOP_UP } from './internal/application/port/in/initiate-top-up';
 import { HANDLE_TOP_UP_CALLBACK } from './internal/application/port/in/handle-top-up-callback';
+import type { HandleTopUpCallbackPort } from './internal/application/port/in/handle-top-up-callback';
 import { GET_WALLET_BALANCE } from './internal/application/port/in/get-wallet-balance';
+import { GET_TOP_UP_INTENT } from './internal/application/port/in/get-top-up-intent';
 import {
   RECORD_BOOKING_CONFIRMED,
   type RecordBookingConfirmedPort,
@@ -48,6 +54,10 @@ import {
   type TopUpIntentRepository,
 } from './internal/application/port/out/top-up-intent-repository';
 import { PAYMENT_GATEWAY, type PaymentGateway } from './internal/application/port/out/payment-gateway';
+import {
+  SEPAY_ORDER_CLIENT,
+  type SepayOrderClient,
+} from './internal/application/port/out/sepay-order-client';
 import { STATUS_READER, type ModuleStatusReader } from './internal/application/port/out/module-status-reader';
 import { STATUS_WRITER, type ModuleStatusWriter } from './internal/application/port/out/module-status-writer';
 import { GetModuleStatusQueryHandler } from './internal/application/query/get-module-status.query';
@@ -168,6 +178,11 @@ export class WalletLedgerRegistrar implements OnModuleInit {
       inject: [WALLET_REPOSITORY],
     },
     {
+      provide: GET_TOP_UP_INTENT,
+      useFactory: (intents: TopUpIntentRepository) => new GetTopUpIntentUseCase(intents),
+      inject: [TOP_UP_INTENT_REPOSITORY],
+    },
+    {
       provide: WALLET_READER,
       useFactory: (registry: ModuleDataSourceRegistry): WalletReader =>
         new SqlWalletReader(registry, MODULE_NAME),
@@ -192,6 +207,28 @@ export class WalletLedgerRegistrar implements OnModuleInit {
       provide: RELEASE_COMPLETED_CLASS,
       useFactory: (wallets: WalletRepository) => new ReleaseCompletedClassUseCase(wallets),
       inject: [WALLET_REPOSITORY],
+    },
+    {
+      provide: SEPAY_ORDER_CLIENT,
+      useFactory: (config: ApiConfig): SepayOrderClient => new SepayRestOrderClient(config),
+      inject: [ApiConfig],
+    },
+    {
+      provide: TopUpReconciliationSweeper,
+      useFactory: (
+        intents: TopUpIntentRepository,
+        orders: SepayOrderClient,
+        applyCallback: HandleTopUpCallbackPort,
+        config: ApiConfig,
+        logger: AppLogger,
+      ) => new TopUpReconciliationSweeper(intents, orders, applyCallback, config, logger),
+      inject: [
+        TOP_UP_INTENT_REPOSITORY,
+        SEPAY_ORDER_CLIENT,
+        HANDLE_TOP_UP_CALLBACK,
+        ApiConfig,
+        AppLogger,
+      ],
     },
     WalletLedgerRegistrar,
   ],
