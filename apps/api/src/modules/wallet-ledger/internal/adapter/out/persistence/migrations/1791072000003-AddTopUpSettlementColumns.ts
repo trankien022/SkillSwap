@@ -6,7 +6,7 @@ function table(name: string): string {
 }
 
 /**
- * FR-008 (ADR-030): record what the SePay Payment Gateway actually settled.
+ * FR-008 (ADR-033): record what the SePay Payment Gateway actually settled.
  *
  * `provider_ref` stays the SePay `order_invoice_number`, but the provider also
  * issues its own `order_id` and reports the captured amount and time. Those are

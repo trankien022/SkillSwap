@@ -28,7 +28,7 @@ function ipn(overrides: Partial<SepayIpn> = {}): SepayIpn {
   } as SepayIpn;
 }
 
-describe('sepay IPN translation (ADR-030)', () => {
+describe('sepay IPN translation (ADR-033)', () => {
   it('parses string amounts with a fractional part into integer VND', () => {
     expect(parseSepayAmount('10000.00')).toBe(10000);
     expect(parseSepayAmount('50000')).toBe(50000);

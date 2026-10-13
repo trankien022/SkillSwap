@@ -7,7 +7,7 @@ import type {
 import { signSepayFields } from './sepay-signature';
 
 /**
- * FR-008 / ADR-030: the SePay Payment Gateway adapter.
+ * FR-008 / ADR-033: the SePay Payment Gateway adapter.
  *
  * SePay has no "create payment" API — `POST {host}/v1/checkout/init` is a form
  * submission that answers `302` to the hosted checkout page. Design B: we POST

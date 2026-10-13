@@ -51,7 +51,7 @@ Tests: jest (`api`, `gateway`, `contracts`, `mobile`), vitest (`web`). Lint is `
 
 ## Payment tunnel (ngrok)
 
-SePay (FR-008, [ADR-030](docs/adr/ADR-030-wallet-topup-sepay-payment-gateway.md)) can only
+SePay (FR-008, [ADR-033](docs/adr/ADR-033-wallet-topup-sepay-payment-gateway.md)) can only
 deliver its IPN to a **public HTTPS URL**, so local payment testing needs a tunnel. Every
 developer uses the **same reserved domain**, which means the IPN URL is configured in SePay
 once and never changes.

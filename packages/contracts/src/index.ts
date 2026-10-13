@@ -245,7 +245,7 @@ export const meResponseSchema = z.object({
 });
 export type MeResponse = z.infer<typeof meResponseSchema>;
 
-/** FR-008: wallet top-up and callback (ADR-030). Amounts are integer VND. */
+/** FR-008: wallet top-up and callback (ADR-033). Amounts are integer VND. */
 export const topUpRequestSchema = z.object({
   amountVnd: z.number().int().positive().max(100_000_000),
 });
@@ -264,7 +264,7 @@ export const topUpIntentSchema = z.object({
 export type TopUpIntentView = z.infer<typeof topUpIntentSchema>;
 
 /**
- * FR-008 / ADR-030: the SePay Payment Gateway IPN payload.
+ * FR-008 / ADR-033: the SePay Payment Gateway IPN payload.
  *
  * Built from real Sandbox deliveries (plan §5a), not the doc sample. SePay is
  * inconsistent on two points the schema must tolerate:
@@ -303,7 +303,7 @@ export const sepayIpnSchema = z.object({
 });
 export type SepayIpn = z.infer<typeof sepayIpnSchema>;
 
-/** FR-008 / ADR-030: the acknowledgement SePay expects (HTTP 200, this body). */
+/** FR-008 / ADR-033: the acknowledgement SePay expects (HTTP 200, this body). */
 export const sepayIpnAckSchema = z.object({ success: z.literal(true) });
 export type SepayIpnAck = z.infer<typeof sepayIpnAckSchema>;
 

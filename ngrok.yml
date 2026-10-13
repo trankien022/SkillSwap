@@ -1,4 +1,4 @@
-# SkillSwap local payment tunnel (FR-008 / ADR-030).
+# SkillSwap local payment tunnel (FR-008 / ADR-033).
 #
 # Exposes the API (:4001) at a stable ngrok URL so SePay can reach the IPN
 # endpoint at POST /api/wallet/top-ups/callback. The domain must be reserved

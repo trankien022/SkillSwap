@@ -74,24 +74,25 @@ Production) checkout credits the wallet exactly once, driven end to end locally 
 
 **IPN (our callback route):**
 - `POST` to the URL configured at **Payment Gateway → Configuration → IPN** (my.sepay.vn).
-- Headers: `X-Secret-Key: <secret_key>` (present when auth type = `SECRET_KEY`),
-  `Content-Type: application/json`.
+- Headers: as documented, `X-Secret-Key: <secret_key>` (present when auth type = `SECRET_KEY`) and
+  `Content-Type: application/json`. **See §5a — in practice neither the secret header nor a
+  `User-Agent` was sent, so neither can be used as the auth check.**
 - Body: `{ timestamp, notification_type, order{…}, transaction{…}, customer{…} }` where
-  `notification_type ∈ {ORDER_PAID, TRANSACTION_VOID}`.
+  `notification_type ∈ {ORDER_PAID, PAYMENT_SUCCESS, TRANSACTION_VOID}`.
   - `order.order_invoice_number` is our correlation key.
-  - `order.order_amount` is a **string** in the smallest unit (e.g. `"50000.00"`).
+  - `order.order_amount` is a **string** in the smallest unit (e.g. `"50000.00"`) — but see §5a.
   - `transaction.transaction_status` e.g. `APPROVED`, `transaction_type` e.g. `PAYMENT`.
 - Respond **HTTP 200** (`{"success": true}`) to acknowledge.
 - IPN URL must be **public HTTPS** (no localhost / internal IP) → **ngrok** for local dev, exactly as documented by SePay.
 
 ### Design consequence: form-POST, not a REST call
 
-`checkout/init` is **form submission, not an API endpoint**. There are two viable shapes:
+`checkout/init` is **form submission, not an API endpoint**. Two shapes were considered:
 
-- **(chosen) A — the API builds and returns the signed checkout URL + fields**, and our web/mobile client POSTs the form. Keeps `PaymentGateway.initiateTopUp → { paymentUrl }` intact; the client renders a form (web) or opens a hosted link (mobile).
-- **B — the API acts as a proxy**, POSTing the form itself and capturing the 302 `Location`, returning that as `paymentUrl`. Simpler client, but the API makes an outbound HTTP call that follows a redirect, and the checkout page then re-serves content it did not originate. Acceptable fallback if A proves awkward on mobile.
+- **A — the API returns the signed checkout URL + fields**, and the client POSTs the form.
+- **(chosen) B — the API acts as a proxy**, POSTing the form itself, capturing the 302 `Location`, and returning that as `paymentUrl`.
 
-This plan implements **A**, with **B** documented as the fallback.
+**This plan originally chose A and shipped B.** A would push signing material into the browser and force a WebView on mobile; B leaves the unchanged `PaymentGateway` port in place and lets every client just open a link. The reversal is recorded in [ADR-033](../adr/ADR-033-wallet-topup-sepay-payment-gateway.md) §3; A remains documented there as a rejected alternative.
 
 ## 5a. Phase 0 findings — verified against live Sandbox (2026-10-14)
 
@@ -153,11 +154,13 @@ Exactly the §5 algorithm: allowed fields in fixed order → `k=v` comma-joined 
 `payment_method` is omitted so SePay shows its method picker (or is set to `BANK_TRANSFER` if we want to force the QR path in the demo).
 
 ### 7.3 Inbound IPN contract
-- Verify `X-Secret-Key === SEPAY_SECRET_KEY` (constant-time compare) when auth type is `SECRET_KEY`. Optionally also verify SePay source IP against the published allow-list (defense in depth).
-- `notification_type === 'ORDER_PAID'` → credit.
+- **Do not verify `X-Secret-Key`** and do not check `User-Agent`: §5a shows SePay sends neither, so
+  either check rejects every genuine call. Authenticate by the **IP allow-list** (edge) plus the
+  invoice lookup, and rely on idempotency to absorb replays.
+- `notification_type ∈ {ORDER_PAID, PAYMENT_SUCCESS}` → credit (both are emitted in practice).
 - `notification_type === 'TRANSACTION_VOID'` → reverse (offsetting debit), reusing the existing reversal path.
 - Unknown `order_invoice_number` → 200 ack, no state change, no crash.
-- `order_amount` (string, e.g. `"50000.00"`) MUST parse to exactly the intent's `amountVnd`; mismatch → 200 ack, leave `pending`, log.
+- `order_amount` (string **or** number, e.g. `"50000.00"` / `50000`) MUST parse to exactly the intent's `amountVnd`; mismatch → 200 ack, leave `pending`, log.
 - Idempotency owned by the use case (`top_up_intents.status` + unique `provider_ref`), not the IPN alone — SePay may retry.
 - Always answer **200 `{"success": true}`** for recognised protocol shapes, so SePay does not retry into a loop.
 
@@ -242,7 +245,7 @@ Exactly the §5 algorithm: allowed fields in fixed order → `k=v` comma-joined 
 - **Deliverable**: documented, disabled skeleton + ADR risk note.
 
 ### Phase 9 — Docs, diagrams, runbook
-- New ADR `docs/adr/ADR-030-wallet-topup-sepay-payment-gateway.md`: supersede ADR-017 §1; resolve OQ-011 to SePay Payment Gateway; record the rejected QR+webhook alternative, design A vs B, amount validation, idempotency, void reversal, reconciliation-deferred-with-risk, sandbox vs production table.
+- New ADR `docs/adr/ADR-033-wallet-topup-sepay-payment-gateway.md`: supersede ADR-017 §1; resolve OQ-011 to SePay Payment Gateway; record the rejected QR+webhook alternative, design A vs B, amount validation, idempotency, void reversal, reconciliation-deferred-with-risk, sandbox vs production table.
 - `docs/plans/2026-09-15-001-…-requirements-plan.md`: update the OQ-011 row (currently "mock gateway").
 - `docs/api/wallet.md` + `docs/api/FRONTEND-API-GUIDE.md`: regenerate (`pnpm docs:api`) and fix the hand-written callback row.
 - `docs/diagrams/checkpoint/source/sequence-topup.puml`: "Simulated payment provider" → SePay Payment Gateway; re-render.
@@ -256,7 +259,7 @@ Exactly the §5 algorithm: allowed fields in fixed order → `k=v` comma-joined 
 
 `.env.example` (non-secret, committed):
 ```dotenv
-# ── FR-008 (ADR-030): SePay Payment Gateway ──
+# ── FR-008 (ADR-033): SePay Payment Gateway ──
 SEPAY_ENVIRONMENT=sandbox                 # sandbox | production
 SEPAY_CHECKOUT_HOST=https://pay-sandbox.sepay.vn
 SEPAY_REST_BASE_URL=https://pgapi-sandbox.sepay.vn

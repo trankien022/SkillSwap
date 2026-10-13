@@ -108,7 +108,7 @@ export default function WalletPage() {
 
       const intent = await unwrapEnvelope<TopUpIntentView>(res);
 
-      // 2. ADR-030 / design B: the API already submitted the signed checkout
+      // 2. ADR-033 / design B: the API already submitted the signed checkout
       // form to SePay and returned the hosted payment URL. Hand the user off to
       // SePay; settlement arrives server-to-server as an IPN, never from here.
       const paymentUrl = intent.paymentUrl;
@@ -130,7 +130,7 @@ export default function WalletPage() {
     }
   };
 
-  // ADR-030: the IPN settles the intent out of band, so the UI only refreshes
+  // ADR-033: the IPN settles the intent out of band, so the UI only refreshes
   // the server's own numbers. It never computes the new balance locally.
   const handleRefreshBalance = async () => {
     try {

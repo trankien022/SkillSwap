@@ -35,7 +35,7 @@ together {
 }
 
 System_Ext(Onlineclassroom, "Online classroom", $descr="[Supporting software system]\nHosts live lessons for users who are learning or teaching.", $tags="", $link="")
-System_Ext(Paymentgateway, "Third-party payment gateway", $descr="[Supporting software system]\nProcesses cash top-ups and payouts; provider selection is pending.", $tags="", $link="")
+System_Ext(Paymentgateway, "SePay Payment Gateway", $descr="[Supporting software system]\nProcesses cash top-ups through a hosted checkout page and reports the outcome by IPN. Payout is not implemented.", $tags="", $link="")
 System(SkillSwap, "SkillSwap", $descr="[Software system]\nHelps students verify skills, book classes and pay with internal credits.", $tags="", $link="")
 
 Rel(User, SkillSwap, "Learns, books classes and may publish or teach when eligible")
@@ -43,8 +43,8 @@ Rel(Verifier, SkillSwap, "Reviews teaching evidence")
 Rel(Admin, SkillSwap, "Approves students and manages Verifiers")
 Rel(SkillSwap, Onlineclassroom, "Authorizes access to booked lessons")
 Rel(User, Onlineclassroom, "Attends or teaches a booked lesson")
-Rel(SkillSwap, Paymentgateway, "Initiates top-ups and payouts; receives signed payment callbacks")
+Rel(SkillSwap, Paymentgateway, "Starts top-ups and receives the outcome notification")
 
 SHOW_LEGEND()
-footer Current backend capabilities. Web and mobile booking screens post to the real hold and confirm endpoints; the payment provider is still represented as an external dependency.\nBackend currently uses a mock PaymentGateway adapter; a real provider is not selected.
+footer Current backend capabilities. Web and mobile booking screens post to the real hold and confirm endpoints; the payment provider is still represented as an external dependency.\nBackend uses the SePay Payment Gateway adapter (hosted checkout + IPN, ADR-033); payout is not implemented.
 @enduml

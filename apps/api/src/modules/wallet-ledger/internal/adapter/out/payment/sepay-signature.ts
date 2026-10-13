@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 /**
- * FR-008 / ADR-030: the SePay Payment Gateway checkout-form signature.
+ * FR-008 / ADR-033: the SePay Payment Gateway checkout-form signature.
  *
  * SePay signs the *form fields themselves* (not a body) by joining them as
  * `key=value,key=value,...` in a fixed order and base64-encoding an HMAC-SHA256

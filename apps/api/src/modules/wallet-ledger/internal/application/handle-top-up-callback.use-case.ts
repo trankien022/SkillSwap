@@ -9,7 +9,7 @@ import type {
 } from './port/in/handle-top-up-callback';
 
 /**
- * FR-008 / AC-009 (ADR-030): applies a payment callback exactly once and only
+ * FR-008 / AC-009 (ADR-033): applies a payment callback exactly once and only
  * when it moves the intent forward. A settled callback credits the wallet with
  * its ledger entry in one transaction; a reversal posts an offsetting debit.
  *

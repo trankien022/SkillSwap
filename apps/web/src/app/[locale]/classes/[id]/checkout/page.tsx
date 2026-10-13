@@ -179,7 +179,7 @@ export default function BookingCheckoutPage({ params }: PageProps) {
       }
 
       const intent = await unwrapEnvelope<{ paymentUrl?: string }>(res);
-      // ADR-030 / design B: open the hosted SePay checkout. The IPN settles the
+      // ADR-033 / design B: open the hosted SePay checkout. The IPN settles the
       // intent server-to-server, so this handler must not fabricate a success.
       if (!intent.paymentUrl) {
         showToast('Không nhận được đường dẫn thanh toán. Vui lòng thử lại.');

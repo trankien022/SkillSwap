@@ -31,7 +31,7 @@ UpdateRelStyle($lineColor="#475569", $textColor="#334155")
 
 Person(AccountHolder, "Account holder", $descr="[Person]\nUses the web or mobile client, or role-authorized API services.", $tags="", $link="")
 System_Ext(Onlineclassroom, "Online classroom", $descr="[Supporting software system]\nHosts live lessons for users who are learning or teaching.", $tags="", $link="")
-System_Ext(Paymentgateway, "Third-party payment gateway", $descr="[Supporting software system]\nProcesses cash top-ups and payouts; provider selection is pending.", $tags="", $link="")
+System_Ext(Paymentgateway, "SePay Payment Gateway", $descr="[Supporting software system]\nProcesses cash top-ups through a hosted checkout page and reports the outcome by IPN. Payout is not implemented.", $tags="", $link="")
 
 System_Boundary("SkillSwap_boundary", "SkillSwap", $tags="") {
   Container(SkillSwap.APIgateway, "API gateway", $techn="Container: NestJS / TypeScript", $descr="Checks sign-in and forwards public requests.", $tags="", $link="")
@@ -53,8 +53,8 @@ Rel(SkillSwap.APIgateway, SkillSwap.BackendAPI, "Forwards authenticated requests
 Rel(SkillSwap.BackendAPI, SkillSwap.Businessdatabase, "Reads and saves owned business records", $techn="PostgreSQL protocol / TypeORM", $tags="", $link="")
 Rel(SkillSwap.BackendAPI, SkillSwap.Businessmessagebroker, "Publishes saved business changes", $techn="AMQP", $tags="", $link="")
 Rel(SkillSwap.Businessmessagebroker, SkillSwap.BackendAPI, "Delivers changes to background handlers", $techn="AMQP", $tags="", $link="")
-Rel(SkillSwap.BackendAPI, Paymentgateway, "Starts cash payments through the PaymentGateway port", $techn="Provider adapter", $tags="", $link="")
-Rel(Paymentgateway, SkillSwap.APIgateway, "Sends signed payment callbacks", $techn="HTTPS / REST webhook", $tags="", $link="")
+Rel(SkillSwap.BackendAPI, Paymentgateway, "Starts top-ups through the PaymentGateway port", $techn="HTTPS / signed checkout form", $tags="", $link="")
+Rel(Paymentgateway, SkillSwap.APIgateway, "Reports the payment outcome", $techn="HTTPS / IPN (IP allow-list)", $tags="", $link="")
 
 Lay_R(AccountHolder, Onlineclassroom)
 Lay_R(SkillSwap.Webapplication, SkillSwap.Mobileapplication)
@@ -62,5 +62,5 @@ Lay_D(SkillSwap.APIgateway, SkillSwap.BackendAPI)
 Lay_R(SkillSwap.Businessdatabase, SkillSwap.Businessmessagebroker)
 Lay_R(SkillSwap.Privatedocumentstore, Onlineclassroom)
 SHOW_LEGEND()
-footer Current implementation: web and mobile booking screens call the real hold and confirm endpoints and PaymentGateway is backed by a mock adapter; no provider is selected.\nBackend signs classroom invitations and document upload links locally. No network call to Jitsi/MinIO is implied.\nHTTP labels describe local development; production ingress is HTTPS. The web app connects to the API for every feature screen, not only status calls.
+footer Current implementation: web and mobile booking screens call the real hold and confirm endpoints and PaymentGateway is backed by the SePay Payment Gateway adapter (hosted checkout + IPN, ADR-033); payout is not implemented.\nBackend signs classroom invitations and document upload links locally. No network call to Jitsi/MinIO is implied.\nHTTP labels describe local development; production ingress is HTTPS. The web app connects to the API for every feature screen, not only status calls.
 @enduml

@@ -49,7 +49,7 @@ export class ApiConfig {
   readonly jitsiOpenMinutes: number;
   readonly logLevel: string;
 
-  // FR-008 / ADR-030: SePay Payment Gateway (hosted checkout + IPN).
+  // FR-008 / ADR-033: SePay Payment Gateway (hosted checkout + IPN).
   readonly sepayEnvironment: string;
   readonly sepayCheckoutHost: string;
   readonly sepayRestBaseUrl: string;

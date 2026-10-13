@@ -67,7 +67,7 @@ describe('E2E: book → settle → room → complete → release', () => {
     expect(start.status).toBe(201);
     const providerRef = start.json.providerRef as string;
 
-    // ADR-030: the SePay IPN settles the wallet. It carries no secret header,
+    // ADR-033: the SePay IPN settles the wallet. It carries no secret header,
     // so the receiver trusts the invoice lookup; the amount arrives as a
     // string with a fractional part, as on live Sandbox deliveries.
     const cb = await api.post('/api/wallet/top-ups/callback', sepayIpn(providerRef, amountVnd));
@@ -415,7 +415,7 @@ describe('E2E: book → settle → room → complete → release', () => {
 });
 
 /**
- * A SePay IPN as it arrives on Sandbox (ADR-030, plan §5a): `ORDER_PAID` with
+ * A SePay IPN as it arrives on Sandbox (ADR-033, plan §5a): `ORDER_PAID` with
  * string amounts carrying a fractional part, and no secret header.
  */
 function sepayIpn(invoiceNumber: string, amountVnd: number): Record<string, unknown> {

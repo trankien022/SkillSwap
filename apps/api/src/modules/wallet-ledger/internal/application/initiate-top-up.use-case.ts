@@ -14,7 +14,7 @@ export class InitiateTopUpUseCase implements InitiateTopUpPort {
 
   async execute(input: InitiateTopUpInput): Promise<TopUpIntentView> {
     const amountCredits = vndToCredits(input.amountVnd);
-    // ADR-030: the invoice number is the `provider_ref` and the IPN's only
+    // ADR-033: the invoice number is the `provider_ref` and the IPN's only
     // correlation key, so it is generated here rather than by the adapter.
     const providerRef = generateInvoiceNumber();
     const payment = await this.gateway.initiateTopUp({

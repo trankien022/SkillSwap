@@ -106,7 +106,7 @@ describeJitsi('E2E: Jitsi room access (real host)', () => {
     api.actAs(learnerId);
     const topUp = await api.post('/api/wallet/top-ups', { amountVnd: 100_000 });
     const providerRef = topUp.json.providerRef as string;
-    // ADR-030: settle via a SePay IPN (no secret header; invoice correlation).
+    // ADR-033: settle via a SePay IPN (no secret header; invoice correlation).
     await api.post('/api/wallet/top-ups/callback', {
       notification_type: 'ORDER_PAID',
       order: {

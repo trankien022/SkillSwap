@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 /**
- * FR-008 / ADR-030: the invoice number handed to SePay as
+ * FR-008 / ADR-033: the invoice number handed to SePay as
  * `order_invoice_number`. It is our `provider_ref` and the only correlation
  * key the IPN carries, so it must be unique and opaque.
  *

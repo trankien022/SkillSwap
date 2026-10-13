@@ -14,7 +14,7 @@ export class TopUpRequestDto extends createZodDto(topUpRequestSchema) {}
 /** FR-008: the pending top-up intent with a payment URL. */
 export class TopUpIntentDto extends createZodDto(topUpIntentSchema) {}
 
-/** FR-008 / ADR-030: SePay Payment Gateway IPN. Body for POST /wallet/top-ups/callback. */
+/** FR-008 / ADR-033: SePay Payment Gateway IPN. Body for POST /wallet/top-ups/callback. */
 export class SepayIpnDto extends createZodDto(sepayIpnSchema) {}
 
 /** FR-008/FR-010: available and pending credits. */

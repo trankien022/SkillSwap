@@ -1,7 +1,7 @@
 import { buildSepaySigningString, signSepayFields, verifySepayFields } from './sepay-signature';
 
 /**
- * FR-008 / ADR-030: the signing string and signature.
+ * FR-008 / ADR-033: the signing string and signature.
  *
  * The expected value in the first test was produced against SePay's own
  * algorithm on Sandbox: fields joined in `SEPAY_SIGNED_FIELDS` order, then

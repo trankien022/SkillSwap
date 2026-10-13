@@ -3,7 +3,7 @@ import { SepayPaymentGateway } from './sepay-payment-gateway';
 import { signSepayFields } from './sepay-signature';
 
 /**
- * FR-008 / ADR-030 (design B): the API submits the signed checkout form and
+ * FR-008 / ADR-033 (design B): the API submits the signed checkout form and
  * returns the `302` `Location` as the payment URL. These tests pin that
  * contract without touching the network.
  */

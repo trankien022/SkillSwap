@@ -1,6 +1,6 @@
 import { generateInvoiceNumber } from './invoice-number';
 
-/** FR-008 / ADR-030: the invoice number is the IPN's only correlation key. */
+/** FR-008 / ADR-033: the invoice number is the IPN's only correlation key. */
 describe('generateInvoiceNumber', () => {
   it('shapes the number as SS-<epoch>-<6 hex>', () => {
     expect(generateInvoiceNumber(1791913994784)).toMatch(/^SS-1791913994784-[0-9A-F]{6}$/);

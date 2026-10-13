@@ -137,11 +137,22 @@ export class FakeTopUpIntentRepository implements TopUpIntentRepository {
   }
 }
 
+/**
+ * Test double for the PaymentGateway port. It mirrors the real adapter's shape —
+ * provider `sepay` and a hosted checkout URL — so a unit test cannot pass while
+ * asserting against a URL the real gateway would never produce.
+ */
 export class FakePaymentGateway implements PaymentGateway {
-  readonly provider = 'mock';
+  readonly provider = 'sepay';
+
+  /** Requests seen, so tests can assert the invoice number the adapter was given. */
+  readonly requests: InitiatePaymentRequest[] = [];
 
   async initiateTopUp(request: InitiatePaymentRequest): Promise<InitiatePaymentResult> {
-    return { paymentUrl: `https://mock.pay.local/checkout?ref=${request.providerRef}` };
+    this.requests.push(request);
+    return {
+      paymentUrl: `https://pay-sandbox.sepay.vn/v1/checkout?order_invoice_number=${request.providerRef}`,
+    };
   }
 }
 

@@ -2,7 +2,7 @@ import type { SepayIpn } from '@skillswap/contracts';
 import type { HandleTopUpCallbackInput } from '../../../application/port/in/handle-top-up-callback';
 
 /**
- * FR-008 / ADR-030: translates a SePay IPN into the application's normalised
+ * FR-008 / ADR-033: translates a SePay IPN into the application's normalised
  * callback shape. It lives with the inbound adapter because the provider's wire
  * format is an HTTP concern, not a domain rule.
  *

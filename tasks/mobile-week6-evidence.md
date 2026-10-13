@@ -2,6 +2,14 @@
 
 Ngày nghiệm thu: 13/10/2026. Android Google Play AVD `Medium_Phone_API_37.0`.
 
+> **Cập nhật 14/10/2026 — mock provider đã bị gỡ.** Tài liệu này ghi lại checkpoint 13/10,
+> khi top-up còn dùng mock provider ký HMAC. FR-008 nay chạy thật qua **SePay Payment
+> Gateway** (hosted checkout + IPN), `scripts/mock-topup-callback.mjs` đã bị xoá và không
+> còn tồn tại. Mọi câu ở đây nói "callback mock" / "provider mock" chỉ còn giá trị lịch sử;
+> xem [ADR-033](../docs/adr/ADR-033-wallet-topup-sepay-payment-gateway.md) và
+> [runbook](../docs/runbooks/sepay-ngrok-local-demo.md). Con số 26 route vẫn đúng: callback
+> chưa bao giờ được tính vào đó.
+
 ## API thực từ app
 
 26 method + route templates được ghi từ app; tất cả có ít nhất một response thành công. Log đã loại body, token, query và định danh riêng: `~/Downloads/skillswap-mobile-evidence-20261013/mobile-requests.jsonl`. `traceId` có phạm vi **client-request**, không phải trace xuyên backend. Status 0 biểu thị mất kết nối thử nghiệm. Callback mock và thao tác ops không tính vào 26 routes; storage PUT ghi riêng.

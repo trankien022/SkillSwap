@@ -1,5 +1,5 @@
 @startuml
-title Top up a wallet | FR-008/010 | BR-027–032 | Simulated payment
+title Top up a wallet | FR-008/010 | BR-027–032 | SePay Payment Gateway
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
 skinparam defaultFontName Arial
@@ -13,26 +13,29 @@ skinparam stateBackgroundColor #F1F5F9
 skinparam stateBorderColor #475569
 actor "Wallet owner" as U
 participant SkillSwap as S
-participant "Simulated payment provider" as P
+participant "SePay Payment Gateway" as P
 participant Wallet as W
 U -> S: Choose an amount in VND to add to the wallet
-S -> P: Prepare a demonstration checkout
-P --> S: Payment reference and demonstration checkout link
-S -> S: Save the top-up request
-S --> U: Demonstration checkout details
-P -> S: Report the simulated payment outcome
-S -> S: Check payment authenticity and find the top-up request
-alt Unknown payment or already processed outcome
+S -> S: Create the top-up request with a unique invoice number
+S -> P: Submit the signed checkout form
+P --> S: Redirect to the hosted checkout page
+S --> U: Return the hosted checkout URL
+U -> P: Open the checkout page and pay
+P -> S: IPN: order paid (invoice number correlates the request)
+S -> S: Authenticate by source IP and find the top-up request
+alt Unknown invoice, replayed, or amount does not match
  S --> P: Acknowledge without changing the wallet again
 else Payment completed
  S -> W: Add credits once and record the wallet history
- S -> S: Update the top-up status
+ S -> S: Update the top-up status and record the provider's settlement facts
  S --> P: Top-up applied
 else Payment reversed
  S -> W: Record an offsetting wallet deduction once
  S -> S: Update the top-up status
  S --> P: Reversal applied
 end
+P -> S: Browser returns to the success URL
+S --> U: Acknowledge only, credits nothing
 note over S,W: 1 credit = 1,000 VND.\nWallet changes and top-up status are saved separately in current code.
-note over U,P: Demonstration provider only, no real-money checkout is integrated.
+note over S,P: Authenticity is the payment provider's IP allow-list plus the invoice lookup;\nthe notification carries no signature and no secret header (ADR-033).
 @enduml

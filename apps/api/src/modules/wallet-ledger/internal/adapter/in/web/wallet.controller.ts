@@ -78,7 +78,7 @@ export class WalletController {
   }
 
   /**
-   * FR-008 / ADR-030: the SePay Payment Gateway IPN.
+   * FR-008 / ADR-033: the SePay Payment Gateway IPN.
    *
    * SePay expects exactly `200 {"success": true}` and retries on anything else,
    * so every *recognised* notification is acknowledged even when it applies
@@ -92,7 +92,7 @@ export class WalletController {
   @Post('top-ups/callback')
   @HttpCode(HttpStatus.OK)
   @RawResponse()
-  @ApiOperation({ summary: 'SePay Payment Gateway IPN (ADR-030)' })
+  @ApiOperation({ summary: 'SePay Payment Gateway IPN (ADR-033)' })
   @ApiOkResponse({ description: 'SePay acknowledgement: { success: true }' })
   async onCallback(@Body() body: SepayIpnDto): Promise<SepayIpnAck> {
     const input = toCallbackInput(body);
@@ -113,7 +113,7 @@ export class WalletController {
    */
   @Get('top-ups/callback')
   @RawResponse()
-  @ApiOperation({ summary: 'Browser return from the SePay hosted checkout (ADR-030)' })
+  @ApiOperation({ summary: 'Browser return from the SePay hosted checkout (ADR-033)' })
   returnFromCheckout(): SepayIpnAck {
     return { success: true };
   }
