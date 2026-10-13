@@ -46,10 +46,10 @@
     "nav": {
       "explore": "Explore classes",
       "standard": "Verification standard",
-      "signIn": "Sign in"
+      "signIn": "Sign in",
+      "myBookings": "My bookings"
     },
     "hero": {
-      "badge": "Academic verification • Peer-to-peer knowledge exchange",
       "headline1": "An online skill marketplace",
       "headline2": "vouched for by students",
       "subline": "A peer-to-peer skill network that connects students with domain experts whose identity has been independently verified.",
@@ -59,54 +59,38 @@
         "escrow": "Protected payment funds"
       }
     },
-    "trust": {
-      "eyebrow": "Independent assurance",
-      "heading": "Every Teacher is reviewed by a domain expert",
-      "pillars": [
+    "assurance": {
+      "eyebrow": "Verified people, transparent money",
+      "heading": "Trust you can check, not just read",
+      "items": [
         {
           "tag": "Review board",
-          "title": "Reviewed by domain experts",
-          "body": "Skill evidence and teaching plans are assessed by experts in the matching domain before a Teacher is allowed to publish a class.",
-          "proof": "1:1 hands-on skill check"
+          "title": "Every Teacher is reviewed by a domain expert",
+          "body": "Skill evidence and teaching plans are assessed by experts in the matching domain before a Teacher can publish a class."
         },
         {
           "tag": "Audit trail",
-          "title": "Decisions are recorded immutably",
-          "body": "Each evidence submission is timestamped and kept as-is, so every approval and rejection is traceable across versions.",
-          "proof": "Full history per version"
+          "title": "Verification decisions are recorded immutably",
+          "body": "Each submission is timestamped and kept as-is, so every approval and rejection stays traceable across versions."
         },
         {
-          "tag": "Verified identity",
-          "title": "Manual student verification",
-          "body": "Student IDs and enrollment confirmations are reviewed by hand using a standardized list of rejection reasons.",
-          "proof": "Reviewed each term"
+          "tag": "Fixed rate",
+          "title": "1 Credit = 1,000 VND",
+          "body": "Direct 1:1 conversion with no hidden markup and no slippage on top-ups or withdrawals."
+        },
+        {
+          "tag": "Revenue split",
+          "title": "90% to the Teacher, 10% platform fee",
+          "body": "The Teacher keeps 90% of every completed class; the platform takes a flat 10% for verification and operations."
+        },
+        {
+          "tag": "Atomic ledger",
+          "title": "Payment is held until completion",
+          "body": "The learner's payment stays in the platform ledger and only moves to the Teacher's wallet once the class is recorded as completed. Every transaction carries a trace ID."
         }
       ]
     },
-    "money": {
-      "eyebrow": "Transparent finance",
-      "intro": "No hidden fees, no volatile exchange rate. Money is recorded in an atomic ledger and reconciled automatically.",
-      "rate": {
-        "label": "Fixed exchange rate",
-        "value": "1 Credit",
-        "equals": "= 1,000 VND",
-        "body": "Direct 1:1 conversion with no hidden markup, no slippage on top-ups or withdrawals to your bank account."
-      },
-      "split": {
-        "label": "Revenue allocation",
-        "teacher": { "pct": "90%", "caption": "Teacher net payout" },
-        "platform": { "pct": "10%", "caption": "Platform & verification fee" },
-        "note": "Designed to respect the work of student teachers."
-      },
-      "escrow": {
-        "label": "Atomic ledger",
-        "title": "Held safely until completion",
-        "body": "The learner's payment is held in the platform ledger. It only moves into the Teacher's wallet when the class is recorded as completed.",
-        "proof": "Every transaction carries an end-to-end trace ID"
-      }
-    },
     "cta": {
-      "eyebrow": "Ready to join the network",
       "heading": "Start learning or teaching today",
       "subline": "Join students across universities who learn together, mentor each other, and earn transparently.",
       "learner": {
@@ -122,11 +106,6 @@
     },
     "footer": {
       "tagline": "A peer-to-peer skill ecosystem for students.",
-      "links": {
-        "escrow": "Protection standard",
-        "terms": "Terms of service",
-        "transparency": "Transparency report"
-      },
       "langLabel": "Language",
       "vi": "Vietnamese",
       "en": "English"
@@ -175,6 +154,15 @@
         "popular": "Most learners enrolled"
       }
     },
+    "states": {
+      "loading": "Loading classes…",
+      "signInTitle": "Sign in to browse classes",
+      "signInBody": "Class listings are only shown to signed-in students so we can protect teacher contact details and your booking rights.",
+      "signInCta": "Sign in now",
+      "errorTitle": "We couldn't load classes",
+      "errorBody": "Something went wrong while fetching open classes. Please try again.",
+      "retry": "Try again"
+    },
     "filters": {
       "title": "Advanced filters",
       "reset": "Reset",
@@ -211,6 +199,7 @@
       },
       "duration": "{minutes} min",
       "rating": "{avg} ({count})",
+      "noRating": "No ratings yet",
       "startsAt": "{when} • {time}",
       "deadline": "Booking closes in {hours}h",
       "seats": {
@@ -255,6 +244,7 @@
       "rating": "Rating",
       "reviewsCount": "{count} verified student reviews",
       "completedLabel": "Completed {count} sessions",
+      "noRating": "No reviews yet",
       "profileLink": "View full profile",
       "mockBadge": "Demo data"
     },
@@ -294,7 +284,8 @@
     "reviews": {
       "title": "Recent learner reviews",
       "all": "All {count} reviews",
-      "autoVerified": "Auto-verified review"
+      "autoVerified": "Auto-verified review",
+      "empty": "No reviews yet. Reviews appear here once a learner completes this class."
     },
     "escrow": {
       "title": "Ledger escrow protection",
@@ -321,6 +312,15 @@
     "notFound": {
       "title": "Class not found",
       "body": "This class may have been cancelled or the link is wrong.",
+      "back": "Back to class list"
+    },
+    "states": {
+      "loading": "Loading class details…",
+      "signInTitle": "Sign in to view this class",
+      "signInBody": "Class details are only shown to signed-in students so we can protect teacher contact details and your booking rights.",
+      "signInCta": "Sign in now",
+      "errorTitle": "We couldn't load this class",
+      "errorBody": "Something went wrong while fetching the class. Please try again.",
       "back": "Back to class list"
     }
   },
@@ -485,7 +485,7 @@
         "durationStandard": "Standard academic format",
         "platform": {
           "name": "End-to-end encrypted online room",
-          "caption": "End-to-end encryption • auto-minted per-class room code",
+          "caption": "End-to-end encryption • room link is issued per booking",
           "onlineOnly": "Online only"
         }
       },
@@ -527,13 +527,21 @@
       "actions": {
         "warning": "Teaching commitment: once the first learner registers, schedule and content edits lock automatically.",
         "publish": "Publish class now",
-        "saveDraft": "Save draft",
         "cancel": "Cancel"
       },
       "toast": {
         "title": "Class published",
         "body": "Your class is live on the marketplace. The platform stands ready to lock edits as soon as the first booking arrives."
       },
+      "loading": "Loading your verified skills…",
+      "loadingBody": "Reading your approved skills from the server.",
+      "loadError": "Could not load your verified skills",
+      "signedOutTitle": "Sign in to publish a class",
+      "signedOutBody": "Publishing requires a verified teacher account. Sign in to continue.",
+      "signIn": "Sign in",
+      "noSkillsTitle": "No verified skill yet",
+      "noSkillsBody": "Per the verification standard, you can only open a class for a skill that has passed the academic review board. Submit a skill for verification first.",
+      "goToVerification": "Go to skill verification",
       "stepDuration": "{count} min",
       "monthNames": [
         "January",
@@ -552,38 +560,39 @@
       "stepNumber": "Step {n}",
       "steps": {
         "step1Title": "Choose Teaching Subject",
-        "step1VerifiedBadge": "2 approved subjects",
+        "step1VerifiedBadge": "{count, plural, =0 {No approved subjects} one {# approved subject} other {# approved subjects}}",
         "step2Title": "Class Title & Syllabus Roadmap",
         "syllabusLabel": "Session Roadmap Summary (Syllabus)",
-        "syllabus1": "First 15m: Diagnostic pronunciation & natural warm-up",
-        "syllabus2": "Middle 30m: 1-on-1 Mock Test & live PEEL correction",
-        "syllabus3": "Final 15m: In-depth feedback & 7-day practice roadmap",
+        "syllabusHint": "This is an example roadmap only. The platform stores a single class description, so rewrite it into the description field above in your own words — nothing here is submitted as your syllabus.",
         "step3Title": "Format & Class Scale",
         "format1to1Title": "1-on-1 Mentoring (Private)",
         "format1to1Desc": "Max 1 learner. In-depth interaction, personalized skill coaching.",
-        "format1to1Completion": "99.4% Completion Rate",
         "formatGroupTitle": "Small Group",
-        "formatGroupDesc": "Capacity 4 - 6 learners. Group discussions, debate practice.",
-        "formatGroupSave": "Cost-effective credit sharing",
+        "formatGroupDesc": "Capacity 2 - 15 learners, adjustable after you pick this option.",
+        "formatGroupSave": "Shared tuition across seats",
         "step4Title": "Schedule & Class Duration",
         "leadTimeBadge": "Schedule >=24h in advance",
         "leadTimeValid": "Valid (>=24h lead time)",
         "autoRoom": "Automatic virtual classroom connection",
-        "autoRoomDesc": "SkillSwap Video Room (End-to-End Encrypted)",
-        "autoRoomPill": "Auto-generated link",
+        "autoRoomDesc": "SkillSwap Video Room (self-hosted Jitsi)",
+        "autoRoomPill": "Generated when the class is booked",
         "step5Title": "Tuition Credits & Escrow Payout"
       },
       "checklist": {
         "title": "Class Publishing Checklist",
         "badge": "Eligible",
+        "badgeIncomplete": "Not yet eligible",
+        "ok": "Valid",
+        "notMet": "Not met",
         "item1": "Subject verified by academic panel",
-        "item1Status": "Valid",
         "item2": "Scheduled at least 24 hours in advance",
-        "item2Status": "Ready",
         "item3": "Transparent 90/10 Escrow Settlement",
-        "item3Status": "Ready",
         "pledgeTitle": "SkillSwap Protection Commitment",
         "pledgeDesc": "Learners receive full policy-backed credit refunds if a session is cancelled or technical faults occur."
+      },
+      "result": {
+        "successTitle": "Class created",
+        "classIdLabel": "Class ID:"
       }
     }
   },
@@ -631,6 +640,44 @@
     "switchToRegister": "Don't have an account?",
     "validationError": "Please provide valid information (password at least 8 characters).",
     "pledgeError": "You must agree to the academic integrity pledge."
+  },
+  "Skills": {
+    "title": "My skills",
+    "pageSubtitle": "See the skills you are approved for and submit evidence for the review board.",
+    "loading": "Loading your skills and evidence…",
+    "loadError": "Could not load the catalogue or your skills",
+    "retry": "Try again",
+    "signedOutTitle": "Sign in to view your skills",
+    "signedOutBody": "Your skills and evidence belong to your account. Sign in to continue.",
+    "signIn": "Sign in",
+    "approved": "Approved skills",
+    "approvedBody": "These are the skills the review board has approved. You can open a class for any of them.",
+    "noneApproved": "No approved skills yet.",
+    "pending": "Pending review",
+    "submitTitle": "Submit skill evidence",
+    "submitBody": "Pick a catalogue skill, the level you are claiming and a description of your ability. There is no file-upload channel for evidence, so the description is what the review board reads.",
+    "chooseSkill": "Choose a skill",
+    "noCatalogue": "The skill catalogue is empty.",
+    "requestedLevel": "Level you are claiming",
+    "description": "Describe your experience or ability (up to 1000 characters)",
+    "descriptionHint": "State your method, your results and the academic or professional proof you can provide.",
+    "submit": "Submit evidence",
+    "submitting": "Submitting…",
+    "submitted": "Evidence submitted for {skill}. The review board will respond once it is assessed.",
+    "submitError": "Evidence submission failed. Try again.",
+    "history": "View decision history",
+    "historyTitle": "Decision history",
+    "noHistory": "No decision history yet.",
+    "historyError": "Could not load evidence history.",
+    "level_beginner": "Beginner",
+    "level_intermediate": "Intermediate",
+    "level_advanced": "Advanced",
+    "level_expert": "Expert",
+    "state_pending": "Pending",
+    "state_claimed": "In review",
+    "state_approved": "Approved",
+    "state_rejected": "Rejected",
+    "state_superseded": "Superseded"
   },
   "Verification": {
     "badge": "Verified Student Profile",
@@ -707,21 +754,17 @@
     "banner": {
       "badge": "Online Session Completed",
       "title": "Session Completed Successfully!",
-      "subtitle": "The 60-minute virtual session via Jitsi Meet has been recorded safely.",
+      "subtitle": "Your virtual session has finished. Review it to close out the escrow settlement.",
       "bookingCode": "BOOKING CODE: #{code}",
-      "duration": "Duration: 60 minutes (Complete)"
+      "duration": "Duration: {minutes} minutes"
     },
     "sessionInfo": {
       "title": "Session Overview",
       "tag": "1-on-1 Mentoring Session",
-      "classTitle": "IELTS Speaking 6.5+ Mock Interview 1-1",
-      "tutor": "Lan Anh",
-      "university": "Partner University",
-      "verifiedBadge": "Verified Student Card • Subject Certified",
-      "topicLabel": "Discussion Topic",
-      "topicValue": "Part 2 & 3 Education",
-      "jitsiLabel": "Jitsi Connection",
-      "jitsiValue": "1080p Clear Video"
+      "peerStudent": "Peer student",
+      "startsAtLabel": "Scheduled start",
+      "durationLabel": "Duration",
+      "durationValue": "{minutes} minutes"
     },
     "escrow": {
       "title": "Escrow Payout Settlement",
@@ -732,16 +775,11 @@
       "tutorShare": "Instructor Wallet (90%)",
       "platformShare": "Platform Operations (10%)",
       "availableBalance": "Current Available Balance:",
-      "viewWallet": "View Wallet →"
+      "viewWallet": "View Wallet →",
+      "vndNote": "≈ {vnd} VNĐ at the platform rate (1 Credit = 1,000 VNĐ)"
     },
     "materials": {
-      "title": "Session Files & Notes",
-      "count": "2 files",
-      "desc": "Download critique notes and audio summaries from the session.",
-      "file1Name": "Speaking_Critique_SS8821.pdf",
-      "file1Meta": "2.4 MB • Grammar & vocabulary review",
-      "file2Name": "Audio_Sample_Intonation.mp3",
-      "file2Meta": "5.1 MB • Sample intonation audio Part 3"
+      "title": "Session Files & Notes"
     },
     "form": {
       "badge": "Learner Review",
@@ -770,18 +808,32 @@
       "chip3": "Exam-relevant practice questions",
       "chip4": "Comfortable, encouraging atmosphere",
       "commentPlaceholder": "Share your experience with the session...",
-      "defaultComment": "The mentor was very attentive, correcting pronunciation and helping structure answers clearly. Highly recommend!",
-      "crossMatchTitle": "Skill Swap Cross-Matching Opportunity",
-      "crossMatchSub": "Compatibility Suggestion",
-      "crossMatchDesc": "The mentor wants to learn other subjects. Propose a 1-1 skill swap for upcoming sessions?",
-      "crossMatchOpt1": "Propose 1-1 peer skill swap",
-      "crossMatchOpt2": "Save to Mentoring Directory",
       "btnBack": "Back to My Bookings",
       "btnSubmit": "Submit Review & Finalize",
       "btnSubmitting": "Synchronizing Escrow...",
       "btnSuccess": "Submitted Successfully!",
       "toastSuccessTitle": "Review recorded in system ledger!",
-      "toastSuccessBody": "Thank you! The instructor trust score has been updated. Redirecting to your bookings..."
+      "toastSuccessBody": "Thank you! The instructor trust score has been updated. Redirecting to your bookings...",
+      "criteriaNote": "These four pillars are your private self-assessment. Only the overall score above is shared with the instructor.",
+      "commentRequired": "Please write a review before submitting.",
+      "errorTitle": "Could not submit your review",
+      "errorAlreadyRated": "You have already reviewed this class.",
+      "errorNotEligible": "This class is not open for review yet."
+    },
+    "states": {
+      "loading": "Loading session details…",
+      "loadingBody": "Reading your booking from the server.",
+      "signedOutTitle": "Sign in to review this session",
+      "signedOutBody": "Session details and reviews are only shown to the learner who booked the class.",
+      "notFoundTitle": "Session not found",
+      "notFoundBody": "We could not find this booking in your account. It may belong to a different learner.",
+      "notEligibleTitle": "Review not available yet",
+      "notEligibleBody": "A session can be reviewed once it is marked complete. If the class has already finished, it may still be completing its escrow settlement.",
+      "ratedTitle": "You have reviewed this session",
+      "ratedBody": "Each booking can be reviewed once. Your review is already recorded."
+    },
+    "unavailable": {
+      "materials": "Session files and notes are not available yet. There is no shared-materials feature in the system at this time."
     }
   },
   "LiveClassroom": {

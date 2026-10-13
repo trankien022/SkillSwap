@@ -11,7 +11,7 @@ import {
   computeNetCredits,
   computePlatformFee,
   computeVndEstimate,
-} from '../../lib/teacher/mock-data';
+} from '../../lib/teacher/money';
 
 interface Props {
   draft: ClassDraft;

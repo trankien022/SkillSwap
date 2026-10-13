@@ -1,101 +1,74 @@
-import { callApi, unwrapEnvelope } from '../api-client';
-import type { MyBookingsPageView, LearnerBookingItemView } from '@skillswap/contracts';
+import type { LearnerBookingItemView } from '@skillswap/contracts';
 import type { LearnerBookingView, BookingState } from './types';
 
 /**
- * Maps a backend LearnerBookingItemView (Route 22) into the UI presentation model LearnerBookingView.
+ * Maps a backend `LearnerBookingItemView` (Route 22, `GET /classes/bookings/me`)
+ * into the dashboard's presentation model.
+ *
+ * This is the single place that shape conversion lives; the live dashboard
+ * gateway (`http-gateway.ts`) and any adapter built on top of it both use it so
+ * the two can never drift.
+ *
+ * The dashboard does not keep its own copy of these bookings in `localStorage`:
+ * a booking created in the checkout flow is already persisted server-side, so it
+ * appears on the next read. Caching it client-side only risked showing entries
+ * the ledger had rejected.
  */
 export function mapContractBookingToView(item: LearnerBookingItemView): LearnerBookingView {
-  let mappedState: BookingState = 'upcoming';
-  if (item.state === 'cancelled') {
-    mappedState = 'cancelled';
-  } else if (item.state === 'completed') {
-    mappedState = 'completed';
-  } else if (item.classSummary.classState === 'in_progress') {
-    mappedState = 'in_progress';
-  } else if (item.state === 'pending') {
-    mappedState = 'upcoming';
-  }
-
   const teacherName = item.classSummary.teacherDisplayName;
-  const teacherInitial = teacherName ? teacherName.charAt(0).toUpperCase() : 'T';
-
   return {
     id: item.bookingId,
     classId: item.classId,
     classTitle: item.classSummary.description,
     skillIcon: 'code',
     teacherName,
-    teacherInitial,
-    teacherSchoolLabel: 'Đại học Quốc gia',
+    teacherInitial: teacherName.charAt(0).toUpperCase() || 'T',
+    teacherSchoolLabel: 'Peer student',
     startsAt: item.classSummary.startsAt,
     durationMinutes: item.classSummary.durationMinutes,
     priceCredits: item.priceCredits,
-    state: mappedState,
+    state: toPresentationState(item),
+    // derived: the backend exposes the escrow deadline, not a live countdown.
+    autoReleaseCountdownSeconds:
+      item.state === 'completed' && item.expiresAt !== null
+        ? secondsUntil(item.expiresAt)
+        : undefined,
     roomCode: item.roomAccessEligible ? `ROOM-${item.bookingId.slice(0, 8)}` : undefined,
-    receiptId: `REC-${item.bookingId.slice(0, 8)}`,
+    // Review bodies and star counts are per-class (`GET /classes/:id`), which the
+    // dashboard does not fetch, so the review block is intentionally omitted
+    // rather than rendered with a fabricated "0 / 5".
+    // derived: receipts are numbered from the booking id until a receipt route exists.
+    receiptId: item.state === 'completed' ? `REC-${item.bookingId.slice(0, 8)}` : undefined,
   };
 }
 
-export const USER_BOOKINGS_STORAGE_KEY = 'skillswap_user_bookings';
-export const USER_BOOKINGS_EVENT = 'skillswap:bookings-updated';
-
-export function getLocalUserBookings(): LearnerBookingView[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(USER_BOOKINGS_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-export function saveUserBooking(booking: LearnerBookingView): void {
-  if (typeof window === 'undefined') return;
-  try {
-    const existing = getLocalUserBookings();
-    const updated = [booking, ...existing.filter((b) => b.id !== booking.id)];
-    localStorage.setItem(USER_BOOKINGS_STORAGE_KEY, JSON.stringify(updated));
-  } catch (err) {
-    console.warn('Failed to save user booking to localStorage', err);
-  }
-}
-
-export function dispatchUserBookingsUpdate(booking: LearnerBookingView): void {
-  saveUserBooking(booking);
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent(USER_BOOKINGS_EVENT, { detail: booking }));
-  }
-}
-
 /**
- * Queries `GET /api/classes/bookings/me` for current authenticated user's real bookings.
- * Merges local browser-stored bookings so newly created bookings appear immediately.
+ * Collapses the four-value backend booking state into the richer presentation
+ * state. A `confirmed` booking whose class has already ended is what the learner
+ * must act on, so it surfaces as `pending_learner_confirmation`.
  */
-export async function fetchMyBookings(): Promise<LearnerBookingView[] | null> {
-  const localBookings = getLocalUserBookings();
-
-  try {
-    const res = await callApi('/classes/bookings/me');
-    if (res.ok) {
-      const page = await unwrapEnvelope<MyBookingsPageView>(res);
-      if (page && Array.isArray(page.items)) {
-        const mapped = page.items.map(mapContractBookingToView);
-        const existingIds = new Set(mapped.map((m) => m.id));
-        return [
-          ...localBookings.filter((lb) => !existingIds.has(lb.id)),
-          ...mapped,
-        ];
-      }
+export function toPresentationState(item: LearnerBookingItemView): BookingState {
+  switch (item.state) {
+    case 'completed':
+      return 'completed';
+    case 'cancelled':
+      return 'cancelled';
+    case 'disputed':
+      return 'no_show_reported';
+    case 'confirmed':
+    default: {
+      const startsAt = new Date(item.classSummary.startsAt);
+      const endsAt = new Date(startsAt.getTime() + item.classSummary.durationMinutes * 60_000);
+      const now = Date.now();
+      if (now < startsAt.getTime()) return 'upcoming';
+      if (now <= endsAt.getTime()) return 'in_progress';
+      return 'pending_learner_confirmation';
     }
-  } catch (err) {
-    console.warn('Failed to fetch /api/classes/bookings/me:', err);
   }
+}
 
-  if (localBookings.length > 0) {
-    return localBookings;
-  }
-  return null;
+function secondsUntil(iso: string | null): number | undefined {
+  if (iso === null) return undefined;
+  const diff = Math.floor((new Date(iso).getTime() - Date.now()) / 1000);
+  return diff > 0 ? diff : undefined;
 }

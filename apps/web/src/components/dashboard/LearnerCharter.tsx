@@ -1,4 +1,6 @@
-import { getTranslations } from 'next-intl/server';
+'use client';
+
+import { useTranslations } from 'next-intl';
 import type { CharterEntry } from '../../lib/dashboard/types';
 
 /**
@@ -9,13 +11,16 @@ import type { CharterEntry } from '../../lib/dashboard/types';
  * plus a 'Get academic help' button. No '5-minute response' SLA,
  * no 'Voucher 10 Credits' compensation, no 'SkillSwap Escrow'
  * branding.
+ *
+ * Client component so it can render inside the dashboard shell alongside the
+ * other live widgets.
  */
-export async function LearnerCharter({
+export function LearnerCharter({
   entries,
 }: {
   entries: CharterEntry[];
 }) {
-  const t = await getTranslations('Dashboard.charter');
+  const t = useTranslations('Dashboard.charter');
   return (
     <article className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-6 shadow-sm">
       <div className="flex items-center gap-2">

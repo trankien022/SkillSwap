@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { MockMarketplaceGateway, DEFAULT_QUERY } from './mock-gateway';
+import { MockMarketplaceGateway } from './mock-gateway';
+import { DEFAULT_QUERY } from './types';
 
 describe('MockMarketplaceGateway', () => {
   it('returns the first page with six demo classes by default', async () => {
@@ -53,7 +54,7 @@ describe('MockMarketplaceGateway', () => {
     const gateway = new MockMarketplaceGateway();
     const result = await gateway.search({ ...DEFAULT_QUERY, sort: 'rating' });
     const ratings = result.items.map((item) => item.ratingAvg);
-    expect(ratings).toEqual([...ratings].sort((a, b) => b - a));
+    expect(ratings).toEqual([...ratings].sort((a, b) => (b ?? -1) - (a ?? -1)));
   });
 
   it('returns an empty page when no class matches the filter', async () => {

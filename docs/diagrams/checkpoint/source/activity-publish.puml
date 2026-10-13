@@ -1,49 +1,45 @@
 @startuml
-title Current backend | Publish decisions | FR-005 / ADR-024/030
+title Publish a class | FR-005 | BR-008/015–017
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
 skinparam defaultFontName Arial
 skinparam defaultFontSize 14
 skinparam ArrowColor #475569
-skinparam sequenceParticipantBackgroundColor #F1F5F9
-skinparam sequenceParticipantBorderColor #475569
 skinparam activityBackgroundColor #F1F5F9
 skinparam activityBorderColor #475569
+skinparam sequenceParticipantBackgroundColor #F1F5F9
+skinparam sequenceParticipantBorderColor #475569
 skinparam stateBackgroundColor #F1F5F9
 skinparam stateBorderColor #475569
 start
-:POST /api/classes from authenticated user;
-:Validate future start, 30-180 minutes,\npositive integer price and capacity;
-:Read own teacher_verified and teacher_skill_approval;
-if (At least one skill supplied?) then (yes)
-else (no)
- :Reject NoClassSkillsError;
+:Teacher submits skills, description,\nschedule, price and number of seats;
+if (Future start, 30–180 minutes,\npositive whole-credit price and valid seat count?) then (Yes)
+else (No)
+ :Reject the class details and explain the problem;
  stop
 endif
-if (Projected student verification approved?) then (yes)
-else (no)
- :Reject UnverifiedTeacherError;
+if (Has the Teacher selected at least one skill?) then (Yes)
+else (No)
+ :Ask the Teacher to select a skill;
  stop
 endif
-while (More class skill IDs?) is (yes)
- :Read projected approval for next skill;
- if (Skill has an approved level?) then (yes)
- else (no)
-  :Reject SkillNotApprovedError;
+if (Is the Teacher a verified student?) then (Yes)
+else (No)
+ :Refuse publication until student status is approved;
+ stop
+endif
+while (Another selected skill to check?) is (Yes)
+ if (Is the Teacher approved to teach this skill\nat the required level?) then (Yes)
+ else (No)
+  :Refuse publication and explain the missing approval;
   stop
  endif
- if (Approval covers beginner?) then (yes)
- else (no)
-  :Reject SkillLevelInsufficientError;
-  stop
- endif
-endwhile (no)
-:Persist Published class + class_skills;
-:Return created class;
+endwhile (No)
+:Save and publish the class;
+:Return the published class details;
 note right
- Current create contract contains skill IDs only.
- Domain required level defaults to beginner.
- Higher target levels are not supplied by this endpoint.
+ Current class creation checks beginner-level approval.
+ A higher teaching level cannot yet be selected.
 end note
 stop
 @enduml

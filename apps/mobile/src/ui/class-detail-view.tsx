@@ -1,21 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  RefreshControl,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import type { SkillCatalogueItemView } from '@skillswap/contracts';
 import { colors } from '@/design/tokens';
 import { BookingHttpGateway } from '@/infrastructure/http/booking-http-gateway';
 import { ClassReadGateway } from '@/infrastructure/http/class-read-gateway';
 import { BookButton } from './book-button';
-import {
-  ClassDetailCoordinator,
-  type CoordinatorState,
-} from './class-detail-coordinator';
+import { ClassDetailCoordinator, type CoordinatorState } from './class-detail-coordinator';
 import { classDetailStyles as styles } from './class-detail-styles';
 import { useSession } from './session-context';
 import { StatusPill, type PillTone } from './status-pill';
@@ -187,6 +178,8 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
         return t('ClassDetail.errorReadReconcileFailed');
       case 'confirm_unconfirmed':
         return t('ClassDetail.confirmUnconfirmedNotice');
+      case 'settlement_pending':
+        return t('ClassDetail.settlementPending');
       case 'confirm_failed':
         return t('ClassDetail.confirmFailed');
       case 'hold_expired':
@@ -256,14 +249,16 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
 
   // Date and Time formatting
   const startsAtDate = new Date(detail.startsAt);
-  const localizedDate = startsAtDate.toLocaleDateString(
-    locale === 'vi' ? 'vi-VN' : 'en-US',
-    { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' },
-  );
-  const localizedTime = startsAtDate.toLocaleTimeString(
-    locale === 'vi' ? 'vi-VN' : 'en-US',
-    { hour: '2-digit', minute: '2-digit' },
-  );
+  const localizedDate = startsAtDate.toLocaleDateString(locale === 'vi' ? 'vi-VN' : 'en-US', {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+  const localizedTime = startsAtDate.toLocaleTimeString(locale === 'vi' ? 'vi-VN' : 'en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
   // Status mapping
   let statusTone: PillTone = 'neutral';
@@ -487,6 +482,8 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
               coordinatorState.isBusy ||
               coordinatorState.isInsufficientBalance ||
               coordinatorState.phase === 'submitting_confirm' ||
+              coordinatorState.phase === 'settling' ||
+              coordinatorState.phase === 'settlement_unknown' ||
               isHoldExpired
             }
             onPress={() => void coordinator?.confirmBooking()}
@@ -511,6 +508,22 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
       )}
 
       {/* 5. Uncertainty & Reconciliation Banner */}
+      {coordinatorState.phase === 'settling' && (
+        <View style={styles.reconcileBox}>
+          <ActivityIndicator size="small" color={colors.warningInk} />
+          <Text style={styles.reconcileText}>{t('ClassDetail.settling')}</Text>
+        </View>
+      )}
+      {coordinatorState.phase === 'settlement_unknown' && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('ClassDetail.checkSettlement')}
+          style={styles.retryActionBtn}
+          onPress={() => void coordinator?.checkConfirmation()}
+        >
+          <Text style={styles.retryActionText}>{t('ClassDetail.checkSettlement')}</Text>
+        </Pressable>
+      )}
       {coordinatorState.phase === 'reconciling_session' && (
         <View style={styles.reconcileBox}>
           <ActivityIndicator size="small" color={colors.warningInk} />

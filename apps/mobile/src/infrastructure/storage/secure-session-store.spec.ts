@@ -4,11 +4,16 @@ jest.mock('expo-secure-store', () => ({
   deleteItemAsync: jest.fn(),
 }));
 
+// `react-native` ships untranspiled Flow, which a node-environment jest cannot
+// parse. Only `Platform.OS` is used here, so the mock is the whole surface.
+jest.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
+
 import {
   CorruptSessionError,
   type ActiveSession,
 } from '@/application/port/session-types';
 import {
+  InMemorySessionBackend,
   SecureSessionStore,
   SecureStoreError,
   type SecureStoreBackend,
@@ -136,5 +141,66 @@ describe('SecureSessionStore', () => {
     backend.shouldFailDelete = true;
 
     await expect(store.load()).rejects.toThrow(SecureStoreError);
+  });
+});
+
+/**
+ * Expo Web has no SecureStore. The mocked `expo-secure-store` above hides that,
+ * so these cases exercise the platform selection and the web backend directly.
+ *
+ * Before this, boot on Expo Web always failed: `load()` called a method that does
+ * not exist in the browser, and `restoreSession` correctly refuses to treat a
+ * non-401 failure as "signed out", so the app showed the connection-error screen
+ * instead of a login form.
+ */
+describe('SecureSessionStore on Expo Web', () => {
+  const validSession: ActiveSession = {
+    tokens: {
+      accessToken: 'access-123',
+      refreshToken: 'refresh-abc',
+      expiresAt: 1770000000000,
+      tokenType: 'Bearer',
+    },
+    user: {
+      id: 'user-1',
+      email: 'user@example.com',
+      displayName: 'Test User',
+      role: 'user',
+      status: 'active',
+    },
+  } as ActiveSession;
+
+  it('round-trips a session in memory without touching SecureStore', async () => {
+    const backend = new InMemorySessionBackend();
+    const store = new SecureSessionStore(backend);
+
+    await store.save(validSession);
+    await expect(store.load()).resolves.toEqual(validSession);
+  });
+
+  it('returns null before anything is stored, so boot is a signed-out user and not an error', async () => {
+    // This is the exact case the browser hit on a fresh page: no stored session.
+    // It must resolve null (show the login form), never reject.
+    const store = new SecureSessionStore(new InMemorySessionBackend());
+
+    await expect(store.load()).resolves.toBeNull();
+  });
+
+  it('clears the session so logout is not silently ignored', async () => {
+    const store = new SecureSessionStore(new InMemorySessionBackend());
+    await store.save(validSession);
+    await store.clear();
+
+    await expect(store.load()).resolves.toBeNull();
+  });
+
+  it('does not persist across backend instances, which is the documented web trade-off', async () => {
+    // A reload builds a new store, so the session is gone by design: the
+    // alternative would be localStorage, readable by any script on the origin.
+    const first = new SecureSessionStore(new InMemorySessionBackend());
+    await first.save(validSession);
+
+    const afterReload = new SecureSessionStore(new InMemorySessionBackend());
+    await expect(afterReload.load()).resolves.toBeNull();
   });
 });

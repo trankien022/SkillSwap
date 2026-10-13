@@ -1,17 +1,20 @@
-import { getLocale, getTranslations } from 'next-intl/server';
+'use client';
+
+import { useLocale, useTranslations } from 'next-intl';
 import type { CalendarDay } from '../../lib/dashboard/types';
 
 /**
  * Mini academic calendar (FR-021 dashboard).
  *
- * Server-rendered 42-cell grid (6 weeks x 7 days, Monday-first).
- * Today's cell is highlighted with the primary background;
- * 'live today' and 'booked' cells are decorated with status dots.
- * The prev/next arrows are plain <a href> links carrying
+ * 42-cell grid (6 weeks x 7 days, Monday-first). Today's cell is highlighted
+ * with the primary background; 'live today' and 'booked' cells are decorated
+ * with status dots. The prev/next arrows are plain <a href> links carrying
  * ?month=X&year=Y in the URL so navigation works without JS.
- * Legend below the grid explains the two status dots.
+ *
+ * Client component: the day flags are derived from the live bookings fetched by
+ * `DashboardShell`, so the grid cannot be built on the server.
  */
-export async function MiniCalendar({
+export function MiniCalendar({
   month,
   year,
   days,
@@ -20,8 +23,8 @@ export async function MiniCalendar({
   year: number; // e.g. 2025
   days: CalendarDay[];
 }) {
-  const t = await getTranslations('Dashboard.calendar');
-  const locale = (await getLocale()) as 'vi' | 'en';
+  const t = useTranslations('Dashboard.calendar');
+  const locale = useLocale() as 'vi' | 'en';
   const monthLabel = new Date(Date.UTC(year, month, 1)).toLocaleDateString(
     locale,
     { month: 'long', year: 'numeric' },

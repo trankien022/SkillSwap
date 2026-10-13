@@ -22,4 +22,23 @@ export class TeachingGateway {
   async complete(classId: string): Promise<void> {
     await this.gateway.authenticatedRequest<unknown>(`/classes/${encodeURIComponent(classId)}/complete`, { method: 'POST' });
   }
+  /**
+   * Declares that the **teacher** never joined this booking's class, which
+   * cancels the booking and refunds the learner (FR-007 / AC-024).
+   *
+   * This is learner protection, not a teacher marking a learner absent: the
+   * server only cancels once the first 15 minutes of the class have elapsed with
+   * no teacher join (`isTeacherNoShow`). Before that window closes it answers
+   * `{ cancelled: false }` — a refusal, not a failure — so the result is returned
+   * to the caller rather than discarded.
+   *
+   * The endpoint takes the booking id because the claim is about one booking,
+   * not the class as a whole.
+   */
+  async reportTeacherNoShow(bookingId: string): Promise<{ cancelled: boolean }> {
+    return this.gateway.authenticatedRequest<{ cancelled: boolean }>(
+      `/classes/bookings/${encodeURIComponent(bookingId)}/no-show`,
+      { method: 'POST' },
+    );
+  }
 }

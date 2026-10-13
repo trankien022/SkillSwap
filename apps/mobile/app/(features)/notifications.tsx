@@ -1,18 +1,18 @@
 import React, { useCallback, useState } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect } from 'expo-router';
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
-import * as SecureStore from 'expo-secure-store';
-import Constants from 'expo-constants';
+import { Pressable, StyleSheet, Text } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { defaultKeyValueStore } from '@/infrastructure/storage/key-value-store';
 import type { NotificationItem } from '@skillswap/contracts';
 import { colors, spacing, typography } from '@/design/tokens';
 import { NotificationGateway } from '@/infrastructure/http/notification-gateway';
+import { PUSH_DEVICE_ID_KEY, PUSH_OPT_IN_KEY, registerPushDevice, unregisterPushDevice } from '@/infrastructure/push/notification-device-lifecycle';
+import { notificationRoute } from '@/infrastructure/push/notification-target';
 import { useSession } from '@/ui/session-context';
 import { AppButton, FeedbackBanner, ScreenScroll, SurfaceCard } from '@/ui/primitives';
 
 export default function NotificationsScreen() {
-  const { t, gatewayClient } = useSession();
+  const router = useRouter();
+  const { t, locale, gatewayClient } = useSession();
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [unread, setUnread] = useState(0);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -30,6 +30,7 @@ export default function NotificationsScreen() {
   }, [gatewayClient, busy, cursor, t]);
   useFocusEffect(useCallback(() => {
     let active = true;
+    void defaultKeyValueStore().getItemAsync(PUSH_DEVICE_ID_KEY).then((id) => { if (active) setDeviceId(id); });
     if (gatewayClient) {
       setBusy(true);
       void new NotificationGateway(gatewayClient).list({ limit: 20 }).then((page) => {
@@ -44,26 +45,22 @@ export default function NotificationsScreen() {
     if (!gatewayClient || busy) return;
     setBusy(true); setError(null);
     try {
-      if (!Device.isDevice) throw new Error('physical device required');
-      const permission = await Notifications.getPermissionsAsync();
-      const finalPermission = permission.granted ? permission : await Notifications.requestPermissionsAsync();
-      if (!finalPermission.granted) throw new Error('permission denied');
-      const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-      const token = (await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined)).data;
-      let installationId = await SecureStore.getItemAsync('skillswap.installation-id');
-      if (!installationId) {
-        installationId = `install-${Date.now()}-${Math.random().toString(36).slice(2, 14)}`;
-        await SecureStore.setItemAsync('skillswap.installation-id', installationId);
+      const id = await registerPushDevice(gatewayClient, true, locale);
+      if (id) {
+        await defaultKeyValueStore().setItemAsync(PUSH_OPT_IN_KEY, 'true');
+        setDeviceId(id);
       }
-      const device = await new NotificationGateway(gatewayClient).registerDevice({ token, platform: Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'web', installationId });
-      setDeviceId(device.id);
     } catch { setError(t('Notifications.pushError')); }
     finally { setBusy(false); }
   };
   const disablePush = async () => {
     if (!gatewayClient || !deviceId || busy) return;
     setBusy(true);
-    try { await new NotificationGateway(gatewayClient).removeDevice(deviceId); setDeviceId(null); }
+    try {
+      await unregisterPushDevice(gatewayClient);
+      await defaultKeyValueStore().setItemAsync(PUSH_OPT_IN_KEY, 'false');
+      setDeviceId(null);
+    }
     catch { setError(t('Notifications.pushError')); }
     finally { setBusy(false); }
   };
@@ -73,11 +70,11 @@ export default function NotificationsScreen() {
       <Text style={styles.body}>{t('Notifications.unread', { count: unread })}</Text>
       <AppButton tone="secondary" onPress={() => void (deviceId ? disablePush() : enablePush())} busy={busy} label={deviceId ? t('Notifications.disablePush') : t('Notifications.enablePush')} />
       {error && <FeedbackBanner tone="danger">{error}</FeedbackBanner>}
-      {items.length === 0 && !busy ? <Text style={styles.body}>{t('Notifications.empty')}</Text> : items.map((item) => <View key={item.id} style={styles.item}>
+      {items.length === 0 && !busy ? <Text style={styles.body}>{t('Notifications.empty')}</Text> : items.map((item) => <Pressable key={item.id} style={styles.item} onPress={() => router.push(notificationRoute(item.targetType, item.targetId))} accessibilityRole="button">
         <Text style={styles.itemTitle}>{t(`Notifications.type_${item.type}`)}</Text>
         <Text style={styles.body}>{t(`Notifications.body_${item.type}`)}</Text>
-        <Text style={styles.meta}>{new Date(item.createdAt).toLocaleString()}</Text>
-      </View>)}
+        <Text style={styles.meta}>{new Date(item.createdAt).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}</Text>
+      </Pressable>)}
       {cursor && <AppButton tone="quiet" onPress={() => void load(true)} busy={busy} label={t('Notifications.loadMore')} />}
     </SurfaceCard>
   </ScreenScroll>;

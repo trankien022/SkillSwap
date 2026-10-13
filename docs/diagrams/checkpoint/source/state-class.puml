@@ -1,41 +1,44 @@
 @startuml
-title Current implementation | Class lifecycle
+title Class status | FR-005/007/020 | BR-042–047
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
 skinparam defaultFontName Arial
 skinparam defaultFontSize 14
 skinparam ArrowColor #475569
-skinparam sequenceParticipantBackgroundColor #F1F5F9
-skinparam sequenceParticipantBorderColor #475569
 skinparam activityBackgroundColor #F1F5F9
 skinparam activityBorderColor #475569
+skinparam sequenceParticipantBackgroundColor #F1F5F9
+skinparam sequenceParticipantBorderColor #475569
 skinparam stateBackgroundColor #F1F5F9
 skinparam stateBorderColor #475569
-[*] --> published : createClass / publishClass [verified + every skill approved]
-published --> in_progress : startClass
-full --> in_progress : startClass
-published --> completed : completion / scheduled-end sweep
-full --> completed : completion / scheduled-end sweep
-in_progress --> completed : completion / scheduled-end sweep
-published --> cancelled : Teacher cancellation / no-show
-full --> cancelled : Teacher cancellation / no-show
-in_progress --> cancelled : cancellation outcome
-completed --> cancelled : current cancel endpoint / markCancelled
+state "Published" as published
+state "In progress" as progress
+state "Completed" as completed
+state "Cancelled" as cancelled
+[*] --> published : Eligible Teacher creates and publishes the class
+published --> progress : Teacher starts the class
+published --> completed : Completion is recorded or scheduled end is processed
+progress --> completed : Completion is recorded or scheduled end is processed
+published --> cancelled : Teacher cancellation or recorded no-show
+progress --> cancelled : Cancellation is recorded
+completed --> cancelled : Current backend also permits cancellation after completion
 cancelled --> [*]
-state draft
+state "Full (accepted by backend)" as full
+full --> progress : Teacher starts the class
+full --> completed : Completion is recorded or scheduled end is processed
+full --> cancelled : Teacher cancellation or recorded no-show
 note right of full
- Declared state and accepted by start/complete handlers.
- No automatic Published -> Full writer found.
+ No automatic change from Published to Full is implemented.
+ Seat availability is still checked when booking.
 end note
-note right of draft
- Declared domain state.
- Current create endpoint publishes directly.
+note left of published
+ A Draft status is named in code.
+ Current creation publishes directly, with no draft step.
 end note
 note right of completed
- Completion time and basis stored.
- Domain transition table declares Completed terminal,
- but current cancel endpoint/repository permits cancellation.
- class.completed drives wallet release.
- Rating eligibility helper is not a rating API.
+ Completion records its time and reason.
+ Current backend allows later cancellation,
+ although the domain rules treat Completed as final.
+ Income release is processed in the background.
 end note
 @enduml

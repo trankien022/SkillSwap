@@ -1,5 +1,6 @@
 import { ApiResponseError, unwrapEnvelope } from '@skillswap/contracts';
 import { API_BASE_URL } from './api-config';
+import { evidenceFetch } from './api-evidence';
 
 /**
  * Thin envelope-aware HTTP client for the mobile app (NFR-013).
@@ -24,12 +25,17 @@ export interface HttpRequestOptions {
 
 /** Sends a request to the gateway and returns the unwrapped `data` payload. */
 export async function requestJson<T>(path: string, options: HttpRequestOptions = {}): Promise<T> {
-  const doFetch = options.fetchImpl ?? fetch;
+  // Call `fetch` through its owning global. The browser's `fetch` throws
+  // "Illegal invocation" when the receiver is anything other than `window`, and
+  // both `fetchImpl` (passed in as a bare value) and a stored `fetch` reference
+  // would otherwise be invoked with `undefined` as the receiver.
+  const impl = options.fetchImpl ?? globalThis.fetch;
+  const doFetch = impl.bind(globalThis);
   const base = options.baseUrl ?? API_BASE_URL;
   if (base.length === 0) {
     throw new Error('EXPO_PUBLIC_API_BASE_URL is not set; the HTTP API is disabled.');
   }
-  const res = await doFetch(`${base}/api${path}`, {
+  const res = await evidenceFetch(doFetch, `${base}/api${path}`, {
     method: options.method ?? 'GET',
     signal: options.signal,
     headers: {

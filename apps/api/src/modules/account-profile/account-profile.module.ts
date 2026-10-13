@@ -1,6 +1,7 @@
 import { Inject, Injectable, Module, type OnModuleInit } from '@nestjs/common';
 import { bookingCancelledSchema, bookingConfirmedSchema, studentVerificationEventSchema, walletTransactionCompletedEventSchema } from '@skillswap/contracts';
 import { ApiConfig } from '../../shared/config/api-config';
+import { AppLogger } from '../../shared/logger/app-logger';
 import { EventHandlerRegistry, type BusMessage } from '../../shared/messaging/event-handler-registry';
 import { ModuleDataSourceRegistry } from '../../shared/messaging/module-registry';
 import { createModuleDataSource } from './internal/adapter/out/persistence/data-source';
@@ -57,6 +58,12 @@ import { SqlNotificationManagement } from './internal/adapter/out/persistence/sq
 import { NotificationsController } from './internal/adapter/in/web/notifications.controller';
 import { NotificationDevicesController } from './internal/adapter/in/web/notification-devices.controller';
 import { NOTIFICATION_MANAGEMENT, type NotificationManagementPort } from './internal/application/port/notification-management';
+import { PushDeliveryWorker } from './internal/application/push-delivery-worker';
+import { PUSH_DELIVERY_STORE, type PushDeliveryStorePort } from './internal/application/port/push-delivery-store';
+import { PUSH_DELIVERY_LOGGER, type PushDeliveryLoggerPort } from './internal/application/port/push-delivery-logger';
+import { PUSH_PROVIDER, type PushProviderPort } from './internal/application/port/push-provider';
+import { SqlPushDeliveryStore } from './internal/adapter/out/persistence/sql-push-delivery-store';
+import { ExpoPushProvider } from './internal/adapter/out/push/expo-push-provider';
 
 /** Registers this module's DataSource pool and the FR-017 verification consumers. */
 @Injectable()
@@ -252,6 +259,26 @@ export class AccountProfileRegistrar implements OnModuleInit {
       provide: NOTIFICATION_MANAGEMENT,
       useFactory: (registry: ModuleDataSourceRegistry): NotificationManagementPort => new SqlNotificationManagement(registry, MODULE_NAME),
       inject: [ModuleDataSourceRegistry],
+    },
+    {
+      provide: PUSH_DELIVERY_STORE,
+      useFactory: (registry: ModuleDataSourceRegistry): PushDeliveryStorePort => new SqlPushDeliveryStore(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    { provide: PUSH_PROVIDER, useFactory: (): PushProviderPort => new ExpoPushProvider() },
+    {
+      provide: PUSH_DELIVERY_LOGGER,
+      useFactory: (logger: AppLogger): PushDeliveryLoggerPort => {
+        const scoped = logger.child('account-profile.push-delivery');
+        return { error: (error, message) => scoped.error(error, message) };
+      },
+      inject: [AppLogger],
+    },
+    {
+      provide: PushDeliveryWorker,
+      useFactory: (store: PushDeliveryStorePort, provider: PushProviderPort, logger: PushDeliveryLoggerPort) =>
+        new PushDeliveryWorker(store, provider, logger),
+      inject: [PUSH_DELIVERY_STORE, PUSH_PROVIDER, PUSH_DELIVERY_LOGGER],
     },
     AccountProfileRegistrar,
   ],

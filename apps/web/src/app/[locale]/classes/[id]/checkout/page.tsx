@@ -2,7 +2,8 @@
 
 import { use, useState, useEffect } from 'react';
 import { Navbar } from '../../../../../components/navbar';
-import { callApi, unwrapEnvelope, dispatchWalletBalanceUpdate, getStoredWalletBalance } from '../../../../../lib/api-client';
+import { callApi, unwrapEnvelope, dispatchWalletBalanceUpdate } from '../../../../../lib/api-client';
+import { simulatePaymentCallback } from '../../../wallet/actions';
 import { ClassDetailApiGateway } from '../../../../../lib/marketplace/api-class-detail';
 import type { ClassDetailView } from '../../../../../lib/marketplace/types';
 import type { WalletBalanceView } from '@skillswap/contracts';
@@ -24,12 +25,13 @@ export default function BookingCheckoutPage({ params }: PageProps) {
   const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
-  const [bookingId, setBookingId] = useState<string>('SS-VN-8821');
+  const [bookingId, setBookingId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
     const loadData = async () => {
-      // 1. Load wallet balance
+      // 1. Load wallet balance from the server (never a cached copy)
       try {
         const storedBal = getStoredWalletBalance();
         if (storedBal) {
@@ -38,59 +40,31 @@ export default function BookingCheckoutPage({ params }: PageProps) {
         const res = await callApi('/wallet/balance');
         if (res.ok) {
           const remoteBal = await unwrapEnvelope<WalletBalanceView>(res);
-          const override = getStoredWalletBalance();
-          if (isMounted) setBalance(override ?? remoteBal);
+          if (isMounted) setBalance(remoteBal);
+        } else if (res.status === 401) {
+          if (isMounted) setLoadError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
         }
       } catch (e) {
         console.warn('Failed to load wallet balance for checkout', e);
       }
 
-      // 2. Load class details
+      // 2. Load class details from the server. There is deliberately no local
+      // fallback: a class that the API cannot resolve is not a class, and
+      // synthesising one here (with a placeholder teacher name, a 5.0 rating and
+      // invented stats) let learners reach checkout for classes that did not
+      // exist. The empty state below handles a missing class instead.
       try {
         const gateway = new ClassDetailApiGateway();
-        let item = await gateway.getById(id);
-        if (!item) {
-          try {
-            const stored = JSON.parse(localStorage.getItem('skillswap_created_classes') || '[]');
-            const found = stored.find((c: { id: string }) => c.id === id);
-            if (found) {
-              item = {
-                id: found.id,
-                teacherId: 'teacher-local',
-                state: 'published',
-                startsAt: found.startsAt,
-                durationMinutes: found.durationMinutes,
-                priceCredits: found.priceCredits,
-                capacity: found.capacity,
-                teacherName: 'Giảng viên',
-                schoolCode: 'bk',
-                schoolName: 'Đại học Quốc gia',
-                skillName: found.skillName || found.title,
-                skillCategory: 'programming',
-                level: 'intermediate',
-                format: found.capacity <= 1 ? 'one-on-one' : 'group-2-4',
-                ratingAvg: 5.0,
-                ratingCount: 1,
-                verified: true,
-                coverGradient: { from: '#0f766e', to: '#14b8a6' },
-                description: found.title,
-                syllabus: [],
-                prerequisites: [],
-                teacherBio: 'Hồ sơ giảng viên xác thực bởi SkillSwap',
-                teacherStats: { hoursTaught: 12, responseRatePct: 100, learnersHelped: 8 },
-                teacherCredentials: [],
-                reviews: [],
-              };
-            }
-          } catch {
-            // Ignore local storage parsing error
-          }
-        }
+        const item = await gateway.getById(id);
         if (isMounted && item) {
           setClassDetail(item);
+        } else if (isMounted) {
+          setLoadError('Không tìm thấy lớp học này. Có thể lớp đã bị hủy hoặc đường dẫn không đúng.');
         }
       } catch (e) {
-        console.warn('Failed to load class detail for checkout', e);
+        if (isMounted) {
+          setLoadError(e instanceof Error ? e.message : 'Không tải được thông tin lớp học.');
+        }
       }
     };
     loadData();
@@ -106,30 +80,14 @@ export default function BookingCheckoutPage({ params }: PageProps) {
     }, 4000);
   };
 
-  const currentCredits = balance ? balance.availableCredits : 100;
-  const priceCredits = classDetail ? classDetail.priceCredits : 90;
-  const remainingCredits = Math.max(0, currentCredits - priceCredits);
-  const lockedPercentage = currentCredits > 0 ? Math.min(100, (priceCredits / currentCredits) * 100) : 66.7;
-
-  const classTitle = classDetail?.description || classDetail?.skillName || 'Luyện Speaking IELTS 6.5+ Mock Interview 1-1';
-  const skillBadge = classDetail?.skillName || 'IELTS Speaking Mock 1-1';
-  const teacherName = classDetail?.teacherName || 'ThS. Lan Anh';
-  const teacherInitials = teacherName
-    .split(' ')
-    .filter(Boolean)
-    .slice(-2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase() || 'GV';
-  const schoolName = classDetail?.schoolName || 'Đại học Ngoại thương Hà Nội (FTU)';
-  const ratingAvg = (classDetail?.ratingAvg ?? 4.98).toFixed(2);
-  const hoursTaught = classDetail?.teacherStats?.hoursTaught ?? 48;
-
-  const startsAtDate = classDetail?.startsAt ? new Date(classDetail.startsAt) : new Date(Date.now() + 48 * 3600 * 1000);
-  const timeFormatted = `${startsAtDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - ${new Date(startsAtDate.getTime() + (classDetail?.durationMinutes || 60) * 60000).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
-  const dateFormatted = startsAtDate.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
-  const durationMin = classDetail?.durationMinutes ?? 60;
-  const formatText = classDetail?.format === 'one-on-one' ? '1-on-1 Cá nhân' : (classDetail?.capacity && classDetail.capacity > 1 ? `Nhóm nhỏ (${classDetail.capacity} học viên)` : '1-on-1 Cá nhân');
+  // All display values are derived in this one place from the resolved class and
+  // wallet. Nothing here invents a fallback for a missing field: a class the API
+  // cannot resolve renders the error state below, not a placeholder price,
+  // title, teacher or rating.
+  const display =
+    classDetail !== null && balance !== null
+      ? buildDisplayModel(classDetail, balance)
+      : null;
 
   const handleConfirmBooking = async () => {
     if (!agreementChecked) {
@@ -139,121 +97,117 @@ export default function BookingCheckoutPage({ params }: PageProps) {
 
     setIsProcessing(true);
     try {
-      let finalBookingId = 'SS-VN-8821';
-      let isRealSettled = false;
-
       // 1. Hold booking via POST /api/classes/:id/bookings
-      try {
-        const idempotencyKey =
-          typeof crypto !== 'undefined' && crypto.randomUUID
-            ? crypto.randomUUID()
-            : `idemp-${Date.now()}`;
-        const res = await callApi(
-          `/classes/${id}/bookings`,
-          {
-            method: 'POST',
-            body: JSON.stringify({ idempotencyKey }),
-          },
-          false,
-        );
+      const idempotencyKey =
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `idemp-${Date.now()}`;
 
-        if (res.ok) {
-          const bookResult = await unwrapEnvelope<{
-            booking: { bookingId: string; priceCredits: number };
-            created: boolean;
-          }>(res);
-          finalBookingId = bookResult.booking.bookingId;
-          setBookingId(finalBookingId);
+      const res = await callApi(
+        `/classes/${id}/bookings`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ idempotencyKey }),
+        },
+        false,
+      );
 
-          // 2. Settle payment via POST /api/classes/bookings/:bookingId/confirm
-          const confirmRes = await callApi(
-            `/classes/bookings/${finalBookingId}/confirm`,
-            {
-              method: 'POST',
-            },
-            false,
-          );
-
-          if (confirmRes.ok) {
-            isRealSettled = true;
-          } else {
-            const err = (await confirmRes.json().catch(() => ({}))) as { message?: string };
-            showToast(err.message || 'Số dư ví không đủ để thanh toán giữ chỗ.');
-            return;
-          }
-        }
-      } catch (err) {
-        console.warn('Real booking API fallback to simulated escrow', err);
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { message?: string };
+        showToast(err.message || 'Không thể giữ chỗ cho lớp này. Vui lòng thử lại.');
+        return;
       }
 
-      await new Promise((r) => setTimeout(r, 600));
+      const bookResult = await unwrapEnvelope<{
+        booking: { bookingId: string; priceCredits: number };
+        created: boolean;
+      }>(res);
+      const finalBookingId = bookResult.booking.bookingId;
+      setBookingId(finalBookingId);
 
+      // 2. Settle payment via POST /api/classes/bookings/:bookingId/confirm
+      const confirmRes = await callApi(
+        `/classes/bookings/${finalBookingId}/confirm`,
+        {
+          method: 'POST',
+        },
+        false,
+      );
+
+      if (!confirmRes.ok) {
+        const err = (await confirmRes.json().catch(() => ({}))) as { message?: string };
+        showToast(err.message || 'Số dư ví không đủ để thanh toán giữ chỗ.');
+        return;
+      }
+
+      // Both calls succeeded, so the booking and the escrow hold are real.
       setBookingConfirmed(true);
       setIsSuccessModalOpen(true);
 
-      // Deduct balance locally and dispatch update across the app
-      const newAvailable = Math.max(0, currentCredits - priceCredits);
-      const newPending = (balance?.pendingCredits ?? 0) + priceCredits;
-      const updatedBalance: WalletBalanceView = {
-        availableCredits: newAvailable,
-        pendingCredits: newPending,
-      };
-      setBalance(updatedBalance);
-      dispatchWalletBalanceUpdate(updatedBalance);
-
-      // Persist newly booked class in skillswap_user_bookings so it appears in /bookings ("Lớp học của tôi")
+      // The confirm call settled the escrow on the server, so the balance is
+      // refetched rather than calculated. Subtracting the price locally would
+      // ignore the escrow hold vs. debit distinction and any server-side fee,
+      // and would persist that guess across reloads.
       try {
-        const newBookingItem: LearnerBookingView = {
-          id: finalBookingId,
-          classId: classDetail?.id || id,
-          classTitle: classTitle,
-          skillIcon: 'code',
-          teacherName: teacherName,
-          teacherInitial: teacherInitials,
-          teacherSchoolLabel: schoolName,
-          startsAt: classDetail?.startsAt || startsAtDate.toISOString(),
-          durationMinutes: durationMin,
-          priceCredits: priceCredits,
-          state: 'upcoming',
-          roomCode: `ROOM-${finalBookingId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toUpperCase()}`,
-          receiptId: `REC-${finalBookingId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toUpperCase()}`,
-        };
-        dispatchUserBookingsUpdate(newBookingItem);
-      } catch (storageErr) {
-        console.warn('Failed to save user booking to localStorage', storageErr);
-      }
-
-      // Refresh wallet balance if backend settled
-      if (isRealSettled) {
-        try {
-          const balRes = await callApi('/wallet/balance');
-          if (balRes.ok) {
-            const remote = await unwrapEnvelope<WalletBalanceView>(balRes);
-            if (remote.availableCredits < currentCredits) {
-              setBalance(remote);
-              dispatchWalletBalanceUpdate(remote);
-            }
-          }
-        } catch (e) {
-          console.warn('Failed to refresh balance after settlement', e);
+        const balRes = await callApi('/wallet/balance');
+        if (balRes.ok) {
+          const remote = await unwrapEnvelope<WalletBalanceView>(balRes);
+          setBalance(remote);
+          dispatchWalletBalanceUpdate(remote);
         }
+      } catch (e) {
+        console.warn('Failed to refresh balance after settlement', e);
       }
+    } catch (err) {
+      // The previous version caught this and fell through to a "simulated
+      // escrow" success, so a booking that never happened still showed the
+      // confirmation modal. Failures are now surfaced instead.
+      showToast('Lỗi: ' + (err instanceof Error ? err.message : 'Không thể hoàn tất đặt lớp.'));
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleConfirmTopUp = () => {
-    setIsTopUpModalOpen(false);
-    const currentAvail = balance?.availableCredits ?? getStoredWalletBalance()?.availableCredits ?? 0;
-    const currentPending = balance?.pendingCredits ?? getStoredWalletBalance()?.pendingCredits ?? 0;
-    const newBal: WalletBalanceView = {
-      availableCredits: currentAvail + 100,
-      pendingCredits: currentPending,
-    };
-    setBalance(newBal);
-    dispatchWalletBalanceUpdate(newBal);
-    showToast('Nạp thành công 100 Credits! Phiên đặt chỗ vẫn được bảo toàn nguyên vẹn.');
+  const handleConfirmTopUp = async () => {
+    try {
+      setIsProcessing(true);
+      // Real top-up: create the intent, settle it, then read the balance back
+      // from the server. The previous version added 100 credits to local state
+      // and reported success without contacting the API at all.
+      const res = await callApi('/wallet/top-ups', {
+        method: 'POST',
+        body: JSON.stringify({ amountVnd: 100_000 }),
+      });
+
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { message?: string };
+        showToast(err.message || 'Không thể tạo yêu cầu nạp tiền.');
+        return;
+      }
+
+      const intent = await unwrapEnvelope<{ providerRef: string; amountVnd: number }>(res);
+      const settled = await simulatePaymentCallback(intent.providerRef, intent.amountVnd);
+      if (!settled.success) {
+        showToast(settled.message);
+        return;
+      }
+
+      const balRes = await callApi('/wallet/balance');
+      if (balRes.ok) {
+        const remote = await unwrapEnvelope<WalletBalanceView>(balRes);
+        setBalance(remote);
+        dispatchWalletBalanceUpdate(remote);
+        setIsTopUpModalOpen(false);
+        showToast('Nạp thành công 100 Credits. Số dư đã cập nhật.');
+      } else {
+        showToast('Nạp tiền đã xử lý nhưng chưa đọc được số dư. Vui lòng tải lại trang.');
+      }
+    } catch (e) {
+      console.warn('Top-up failed', e);
+      showToast('Không thể nạp tiền. Vui lòng thử lại.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -262,22 +216,38 @@ export default function BookingCheckoutPage({ params }: PageProps) {
       <Navbar currentTab="explore" balance={balance} />
 
       <main className="w-full flex-1">
+        {display === null ? (
+          <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 px-4 py-24 text-center">
+            <h1 className="text-lg font-bold text-slate-900">
+              {loadError !== null ? 'Không tải được thông tin lớp học' : 'Đang tải thông tin lớp học…'}
+            </h1>
+            <p className="max-w-md text-sm leading-relaxed text-slate-600">
+              {loadError ??
+                'Hệ thống đang đọc lớp học và số dư ví từ máy chủ. Thao tác đặt lớp chỉ khả dụng khi có đủ dữ liệu.'}
+            </p>
+            {loadError !== null && (
+              <a
+                href={`/${locale}/classes`}
+                className="mt-2 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700"
+              >
+                Về trang khám phá lớp
+              </a>
+            )}
+          </div>
+        ) : (
+          <>
         {/* Dynamic Notification Banner / Top Flow Signal */}
         <div className="w-full bg-emerald-50 border-b border-emerald-100 px-4 sm:px-6 lg:px-8 py-2.5">
           <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs text-slate-700">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <span className="font-semibold text-emerald-800">
-                Bảo vệ Ký quỹ Escrow v2.4 Active
-              </span>
-              <span className="text-slate-300">•</span>
-              <span>
-                Mã phiên giữ chỗ: <span className="font-mono text-slate-900 font-medium">SS-BK-20251028-984</span>
+                Bảo vệ Ký quỹ Escrow
               </span>
             </div>
             <div className="flex items-center gap-1.5 text-slate-600">
               <span className="material-symbols-outlined text-[16px] text-emerald-600">verified_user</span>
-              <span>Hợp đồng đào tạo ngang hàng theo điều khoản BR-021 &amp; AC-022</span>
+              <span>Khoản thanh toán được giữ trong ví ký quỹ đến khi buổi học hoàn tất</span>
             </div>
           </div>
         </div>
@@ -295,7 +265,7 @@ export default function BookingCheckoutPage({ params }: PageProps) {
               <li className="text-slate-300">/</li>
               <li>
                 <a href={`/${locale}/classes/${id}`} className="hover:text-emerald-700 transition-colors">
-                  {skillBadge}
+                  {display.skillBadge}
                 </a>
               </li>
               <li className="text-slate-300">/</li>
@@ -337,7 +307,7 @@ export default function BookingCheckoutPage({ params }: PageProps) {
                 <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-100">
                   <div className="flex items-center gap-2.5">
                     <span className="px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-100">
-                      {skillBadge}
+                      {display.skillBadge}
                     </span>
                     <span className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-medium flex items-center gap-1">
                       <span className="material-symbols-outlined text-[14px] text-emerald-600">lock_clock</span>
@@ -351,7 +321,7 @@ export default function BookingCheckoutPage({ params }: PageProps) {
                 </div>
 
                 <h2 className="text-xl font-bold text-slate-900 mt-4 mb-4 leading-snug">
-                  {classTitle}
+                  {display.classTitle}
                 </h2>
 
                 {/* Mentor Profile Card */}
@@ -359,7 +329,7 @@ export default function BookingCheckoutPage({ params }: PageProps) {
                   <div className="flex items-center gap-3.5">
                     <div className="relative">
                       <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xl ring-2 ring-white">
-                        {teacherInitials}
+                        {display.teacherInitials}
                       </div>
                       <span className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-white flex items-center justify-center">
                         <span
@@ -372,22 +342,40 @@ export default function BookingCheckoutPage({ params }: PageProps) {
                     </div>
                     <div className="flex flex-col">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-base text-slate-900">{teacherName}</span>
-                        <span className="text-[11px] px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 font-semibold border border-emerald-100">
-                          {skillBadge}
-                        </span>
+                        <span className="font-bold text-base text-slate-900">{display.teacherName}</span>
+                        {display.skillBadge !== null && (
+                          <span className="text-[11px] px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 font-semibold border border-emerald-100">
+                            {display.skillBadge}
+                          </span>
+                        )}
                       </div>
-                      <p className="text-xs text-slate-600">
-                        {schoolName}
-                      </p>
+                      {display.schoolName !== null && (
+                        <p className="text-xs text-slate-600">
+                          {display.schoolName}
+                        </p>
+                      )}
                       <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500">
-                        <span className="text-emerald-700 font-semibold flex items-center gap-0.5">
-                          <span className="material-symbols-outlined text-[14px]">shield</span> Đã xác minh bằng cấp
-                        </span>
-                        <span>•</span>
-                        <span>{hoursTaught} buổi đã dạy</span>
-                        <span>•</span>
-                        <span className="text-slate-800 font-medium">Đánh giá {ratingAvg}/5.0</span>
+                        {/* The credential claim appears only when the API
+                            actually asserts it; no such flag on this route. */}
+                        {display.credentialsVerified && (
+                          <>
+                            <span className="text-emerald-700 font-semibold flex items-center gap-0.5">
+                              <span className="material-symbols-outlined text-[14px]">shield</span> Đã xác minh bằng cấp
+                            </span>
+                            <span>•</span>
+                          </>
+                        )}
+                        {display.hoursTaught !== null && (
+                          <>
+                            <span>{display.hoursTaught} buổi đã dạy</span>
+                            <span>•</span>
+                          </>
+                        )}
+                        {display.ratingAvg === null ? (
+                          <span>Chưa có đánh giá</span>
+                        ) : (
+                          <span className="text-slate-800 font-medium">Đánh giá {display.ratingAvg}/5.0</span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -407,8 +395,8 @@ export default function BookingCheckoutPage({ params }: PageProps) {
                     </div>
                     <div>
                       <span className="text-[11px] text-slate-500 block">Thời gian học</span>
-                      <span className="text-sm font-semibold text-slate-900">{timeFormatted}</span>
-                      <span className="text-[11px] text-slate-500 block">{dateFormatted}</span>
+                      <span className="text-sm font-semibold text-slate-900">{display.timeFormatted}</span>
+                      <span className="text-[11px] text-slate-500 block">{display.dateFormatted}</span>
                     </div>
                   </div>
 
@@ -429,7 +417,7 @@ export default function BookingCheckoutPage({ params }: PageProps) {
                     </div>
                     <div>
                       <span className="text-[11px] text-slate-500 block">Quy mô lớp</span>
-                      <span className="text-sm font-semibold text-slate-900">{formatText}</span>
+                      <span className="text-sm font-semibold text-slate-900">{display.formatText}</span>
                       <span className="text-[11px] text-slate-500 block">Dành riêng cho bạn</span>
                     </div>
                   </div>
@@ -600,35 +588,35 @@ export default function BookingCheckoutPage({ params }: PageProps) {
                 <div className="mb-5">
                   <div className="flex items-center justify-between text-xs text-slate-600 mb-1.5">
                     <span>
-                      Phân bổ số dư: <span className="text-slate-900 font-semibold">100 / {currentCredits} Credits</span>
+                      Phân bổ số dư: <span className="text-slate-900 font-semibold">{display.priceCredits} / {display.currentCredits} Credits</span>
                     </span>
-                    <span className="text-emerald-700 font-semibold">{lockedPercentage.toFixed(1)}% Khóa</span>
+                    <span className="text-emerald-700 font-semibold">{display.lockedPercentage.toFixed(1)}% Khóa</span>
                   </div>
                   <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden flex border border-slate-200">
                     <div
                       className="h-full bg-emerald-600 rounded-full transition-all duration-500"
-                      style={{ width: `${lockedPercentage}%` }}
+                      style={{ width: `${display.lockedPercentage}%` }}
                     ></div>
                     <div
                       className="h-full bg-slate-200 rounded-full"
-                      style={{ width: `${Math.max(0, 100 - lockedPercentage)}%` }}
+                      style={{ width: `${Math.max(0, 100 - display.lockedPercentage)}%` }}
                     ></div>
                   </div>
                   <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
-                    <span>{priceCredits} Credits (Ký quỹ khóa)</span>
-                    <span>{remainingCredits} Credits (Khả dụng còn lại)</span>
+                    <span>{display.priceCredits} Credits (Ký quỹ khóa)</span>
+                    <span>{display.remainingCredits} Credits (Khả dụng còn lại)</span>
                   </div>
                 </div>
 
                 {/* Chi tiết bảng giá */}
                 <div className="space-y-3 pb-5 border-b border-slate-100 text-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-600">Học phí buổi học ({durationMin} phút)</span>
-                    <span className="font-mono font-semibold text-slate-900">{priceCredits} Credits</span>
+                    <span className="text-slate-600">Học phí buổi học ({display.durationMin} phút)</span>
+                    <span className="font-mono font-semibold text-slate-900">{display.priceCredits} Credits</span>
                   </div>
                   <div className="flex items-center justify-between text-[11px] text-slate-400 -mt-1 pl-2">
                     <span>Tương đương quy đổi</span>
-                    <span className="font-mono">{(priceCredits * 1000).toLocaleString('vi-VN')} VNĐ</span>
+                    <span className="font-mono">{(display.priceCredits * 1000).toLocaleString('vi-VN')} VNĐ</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
@@ -647,7 +635,7 @@ export default function BookingCheckoutPage({ params }: PageProps) {
                   <div className="flex items-center justify-between pt-1">
                     <span className="text-sm font-semibold text-slate-900">Tổng thanh toán ký quỹ</span>
                     <div className="text-right">
-                      <span className="text-2xl font-bold text-emerald-700 font-mono leading-none">{priceCredits}</span>
+                      <span className="text-2xl font-bold text-emerald-700 font-mono leading-none">{display.priceCredits}</span>
                       <span className="text-xs font-semibold text-emerald-700 ml-1">Credits</span>
                     </div>
                   </div>
@@ -657,13 +645,13 @@ export default function BookingCheckoutPage({ params }: PageProps) {
                 <div className="bg-slate-50 rounded-xl p-4 my-5 space-y-2.5 border border-slate-100 text-xs">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-600">Số dư khả dụng hiện tại:</span>
-                    <span className="font-mono font-semibold text-slate-900">{currentCredits} Credits</span>
+                    <span className="font-mono font-semibold text-slate-900">{display.currentCredits} Credits</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-600">Số dư sau khi khóa Escrow:</span>
                     <span className="font-mono font-semibold text-emerald-700 flex items-center gap-1">
                       <span className="material-symbols-outlined text-[15px]">check_circle</span>
-                      {remainingCredits} Credits
+                      {display.remainingCredits} Credits
                     </span>
                   </div>
                   <div className="p-2 rounded-lg bg-white border border-slate-200 text-emerald-800 text-[11px] flex items-center gap-1.5 font-medium">
@@ -698,13 +686,13 @@ export default function BookingCheckoutPage({ params }: PageProps) {
                       <span className="material-symbols-outlined text-[20px] group-hover:rotate-12 transition-transform">
                         lock
                       </span>
-                      <span>Xác nhận Đặt lớp &amp; Khóa Escrow ({priceCredits} Credits)</span>
+                      <span>Xác nhận Đặt lớp &amp; Khóa Escrow ({display.priceCredits} Credits)</span>
                     </>
                   )}
                 </button>
 
                 <p className="text-[11px] text-slate-500 text-center mt-3">
-                  Bằng việc bấm xác nhận, {priceCredits} Credits sẽ được giữ trong ví Escrow trung lập.
+                  Bằng việc bấm xác nhận, {display.priceCredits} Credits sẽ được giữ trong ví Escrow trung lập.
                 </p>
 
                 {/* Security Badges Footer */}
@@ -758,9 +746,15 @@ export default function BookingCheckoutPage({ params }: PageProps) {
             </div>
           </div>
         </div>
+          </>
+        )}
       </main>
 
-      {/* SUCCESS MODAL */}
+      {/* Success / top-up modals read derived values from `classDetail` and
+          `balance`, so they render only once both are loaded. */}
+      {display !== null && (
+        <>
+          {/* SUCCESS MODAL */}
       {isSuccessModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl text-center border border-slate-200">
@@ -769,39 +763,43 @@ export default function BookingCheckoutPage({ params }: PageProps) {
                 check_circle
               </span>
             </div>
-            <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-[11px] font-mono font-semibold">
-              Mã giữ chỗ: {bookingId}
-            </span>
+            {bookingId !== null && (
+              <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-[11px] font-mono font-semibold">
+                Mã giữ chỗ: {bookingId}
+              </span>
+            )}
             <h3 className="text-xl font-bold text-slate-900 mt-3 mb-2">Đặt lớp &amp; Ký quỹ Thành công!</h3>
             <p className="text-xs text-slate-600 mb-5 leading-relaxed">
-              Hệ thống đã khóa <strong className="text-slate-900 font-semibold">{priceCredits} Credits</strong> vào ví Escrow bảo chứng. Bạn có thể vào phòng học trực tuyến ngay khi mở cửa lớp học.
+              Hệ thống đã khóa <strong className="text-slate-900 font-semibold">{display.priceCredits} Credits</strong> vào ví Escrow bảo chứng. Bạn có thể vào phòng học trực tuyến ngay khi mở cửa lớp học.
             </p>
             <div className="bg-slate-50 rounded-xl p-3.5 text-left text-xs space-y-2 mb-6 border border-slate-100">
               <div className="flex justify-between">
                 <span className="text-slate-500">Lớp học:</span>
-                <span className="font-semibold text-slate-900 text-right">{skillBadge}</span>
+                <span className="font-semibold text-slate-900 text-right">{display.skillBadge}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Mentor:</span>
-                <span className="font-semibold text-slate-900">{teacherName}</span>
+                <span className="font-semibold text-slate-900">{display.teacherName}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Giờ học:</span>
-                <span className="font-semibold text-emerald-700">{timeFormatted}, {dateFormatted}</span>
+                <span className="font-semibold text-emerald-700">{display.timeFormatted}, {display.dateFormatted}</span>
               </div>
               <div className="flex justify-between border-t border-slate-200 pt-2 font-semibold">
                 <span className="text-slate-500">Số dư ví còn lại:</span>
-                <span className="font-mono text-emerald-700">{balance ? balance.availableCredits : remainingCredits} Credits</span>
+                <span className="font-mono text-emerald-700">{display.currentCredits} Credits</span>
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-2.5">
-              <a
-                href={`/${locale}/bookings/${bookingId}/live`}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors text-center flex items-center justify-center gap-1.5"
-              >
-                <span className="material-symbols-outlined text-[16px]">videocam</span>
-                Vào phòng học ngay
-              </a>
+              {bookingId !== null && (
+                <a
+                  href={`/${locale}/bookings/${bookingId}/live`}
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors text-center flex items-center justify-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-[16px]">videocam</span>
+                  Vào phòng học ngay
+                </a>
+              )}
               <a
                 href={`/${locale}/bookings`}
                 className="py-2.5 px-4 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors text-center"
@@ -858,13 +856,16 @@ export default function BookingCheckoutPage({ params }: PageProps) {
             </div>
             <button
               type="button"
-              onClick={handleConfirmTopUp}
-              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-all shadow-sm"
+              onClick={() => void handleConfirmTopUp()}
+              disabled={isProcessing}
+              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-semibold transition-all shadow-sm"
             >
-              Giả lập Xác nhận Nạp tiền Thành công
+              {isProcessing ? 'Đang xử lý…' : 'Xác nhận nạp 100.000 VNĐ'}
             </button>
           </div>
         </div>
+      )}
+        </>
       )}
 
       {/* Floating Toast Feedback */}
@@ -897,4 +898,66 @@ export default function BookingCheckoutPage({ params }: PageProps) {
       </footer>
     </div>
   );
+}
+
+/**
+ * Derived display values for the checkout screen.
+ *
+ * Takes the resolved class and wallet (not nullable there) and computes every
+ * figure the UI shows, so the JSX never reaches for a fallback constant. The
+ * previous version read `classDetail?.priceCredits ?? 90`,
+ * `teacherName ?? 'ThS. Lan Anh'`, `ratingAvg ?? 4.98` and similar, which meant
+ * a class that failed to load still rendered a plausible-looking checkout page
+ * with someone else's name and an invented rating on it.
+ */
+function buildDisplayModel(classDetail: ClassDetailView, balance: WalletBalanceView) {
+  const currentCredits = balance.availableCredits;
+  const priceCredits = classDetail.priceCredits;
+  const remainingCredits = Math.max(0, currentCredits - priceCredits);
+  const lockedPercentage =
+    currentCredits > 0 ? Math.min(100, (priceCredits / currentCredits) * 100) : 100;
+
+  const teacherName = classDetail.teacherName;
+  const teacherInitials =
+    teacherName
+      .split(' ')
+      .filter(Boolean)
+      .slice(-2)
+      .map((w) => w[0])
+      .join('')
+      .toUpperCase() || 'GV';
+
+  const startsAtDate = new Date(classDetail.startsAt);
+
+  return {
+    currentCredits,
+    priceCredits,
+    remainingCredits,
+    lockedPercentage,
+    classTitle: classDetail.description || classDetail.skillName || '',
+    skillBadge: classDetail.skillName,
+    teacherName,
+    teacherInitials,
+    schoolName: classDetail.schoolName,
+    // Null when the teacher has no ratings; the view says so instead of "5.00".
+    ratingAvg: classDetail.ratingAvg === null ? null : classDetail.ratingAvg.toFixed(2),
+    hoursTaught: classDetail.teacherStats?.hoursTaught ?? null,
+    // The API sends no credential flag on this route; only an explicit `true`
+    // may be shown as verified.
+    credentialsVerified: classDetail.verified === true,
+    timeFormatted: `${startsAtDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - ${new Date(startsAtDate.getTime() + classDetail.durationMinutes * 60000).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`,
+    dateFormatted: startsAtDate.toLocaleDateString('vi-VN', {
+      weekday: 'long',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }),
+    durationMin: classDetail.durationMinutes,
+    formatText:
+      classDetail.format === 'one-on-one'
+        ? '1-on-1 Cá nhân'
+        : classDetail.capacity > 1
+          ? `Nhóm nhỏ (${classDetail.capacity} học viên)`
+          : '1-on-1 Cá nhân',
+  };
 }

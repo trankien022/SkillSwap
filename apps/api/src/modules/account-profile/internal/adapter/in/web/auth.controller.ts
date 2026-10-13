@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Post, Req, UnauthorizedException } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type {
   LoginInput,
@@ -78,6 +78,14 @@ export class AuthController {
     description: 'The current account with its projected student verification status',
   })
   me(@Req() request: RequestWithIdentity): Promise<MeResponse> {
-    return this.getMe.execute(currentUserId(request));
+    // ADR-016: `me` is intentionally not a public route — it reads the trusted
+    // identity. In AUTH_MODE=off the guard still admits the request as the
+    // `anonymous` identity, so the controller must reject it here. Without this
+    // the literal 'anonymous' reached a uuid column and surfaced as a 500.
+    const accountId = currentUserId(request);
+    if (!accountId || accountId === 'anonymous') {
+      throw new UnauthorizedException('Authentication required');
+    }
+    return this.getMe.execute(accountId);
   }
 }

@@ -1,5 +1,5 @@
 @startuml
-title Current checkpoint | Implemented backend actor goals
+title What people can do in SkillSwap | Current backend support
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
 skinparam defaultFontName Arial
@@ -12,21 +12,21 @@ skinparam activityBorderColor #475569
 skinparam stateBackgroundColor #F1F5F9
 skinparam stateBorderColor #475569
 left to right direction
-actor "User as Learner\n(account role=user)" as L
-actor "User as Teacher\n(account role=user)" as T
-actor "Verifier\n(provisioned role=verifier)" as V
-actor "Administrator\n(provisioned role=admin)" as A
-rectangle "SkillSwap backend through Gateway (API access)" {
- usecase "Register / login / refresh / account\nFR-001/017" as AUTH
- usecase "Upload / submit / view student verification\nFR-002" as STUDENT
- usecase "Decide / revoke student verification\nFR-002/019" as REVIEW
- usecase "Submit skill evidence / view history\nFR-003/018" as EVIDENCE
- usecase "Expertise queue / claim / decision\nFR-004" as SKILL
- usecase "Create / edit / cancel / start / complete class\nFR-005/007/020" as CLASS
- usecase "Book / confirm class\nFR-007/009" as BOOK
- usecase "Mock top-up / wallet balance / history\nFR-008/010" as WALLET
- usecase "Authorized room-token access\nFR-011" as ROOM
- usecase "Suspend / revoke Verifier\nFR-004" as VERIFIER
+actor "Learner" as L
+actor "Teacher" as T
+actor "Verifier" as V
+actor "Administrator" as A
+rectangle "SkillSwap — available through backend requests" {
+ usecase "Create an account, sign in and manage access\nFR-001/017" as AUTH
+ usecase "Submit student proof and view student status\nFR-002" as STUDENT
+ usecase "Approve, reject or revoke student status\nFR-002/019" as REVIEW
+ usecase "Submit skill evidence and view decision history\nFR-003/018" as EVIDENCE
+ usecase "Review matching skill evidence and give a decision\nFR-004" as SKILL
+ usecase "Publish and manage an online class\nFR-005/007/020" as CLASS
+ usecase "Book and confirm a class\nFR-007/009" as BOOK
+ usecase "Try a simulated top-up, view wallet balance and history\nFR-008/010" as WALLET
+ usecase "Join the booked online classroom\nBR-039–041\nFR-011" as ROOM
+ usecase "Suspend or revoke Verifier access\nFR-004" as VERIFIER
 }
 L --> AUTH
 T --> AUTH
@@ -42,9 +42,9 @@ T --> WALLET
 L --> ROOM
 T --> ROOM
 A --> VERIFIER
-note bottom of BOOK: Web/mobile booking uses mocks; backend flow accessed via API.
-note bottom of AUTH: Public registration accepts only user; privileged roles are provisioned.
-note bottom of WALLET: No implemented payout endpoint is claimed.
-note left of T: Learner and Teacher are capabilities of the same user account.
-note right of CLASS: Chat, ratings, dashboard and push are not shown as implemented goals.
+note bottom of BOOK: Web and mobile both book through the real API.
+note bottom of AUTH: Verifier and Administrator accounts are assigned by operators.
+note bottom of WALLET: Teacher withdrawals are not available yet.
+note left of T: The same student account can learn and teach.
+note right of CLASS: Chat, ratings, dashboard and push notifications are not implemented here.
 @enduml

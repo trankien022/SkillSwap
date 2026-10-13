@@ -58,7 +58,7 @@ export class StudentVerificationGateway {
       fetchFn?: typeof fetch;
     },
   ) {
-    this.fetchFn = options?.fetchFn ?? globalThis.fetch;
+    this.fetchFn = options?.fetchFn ?? globalThis.fetch.bind(globalThis);
   }
 
   /**

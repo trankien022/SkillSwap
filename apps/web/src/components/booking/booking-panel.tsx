@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BookingError, type BookingView, type ClassView } from '../../lib/booking/domain';
 import { BookClassService } from '../../lib/booking/service';
-import { MockBookingGateway } from '../../lib/booking/mock-gateway';
+import { HttpBookingGateway } from '../../lib/booking/http-gateway';
 import { newIdempotencyKey } from '../../lib/booking/idempotency';
 import { BookButton } from './book-button';
 import { ClassCard } from './class-card';
@@ -43,7 +43,7 @@ type State =
 /**
  * Container for the learner booking flow. Owns the service, the copy and the
  * state machine; rendering is delegated to presentational components. `service`
- * is injectable for tests; the page relies on the default mock.
+ * is injectable for tests; the page relies on the real HTTP gateway.
  */
 export function BookingPanel({
   classId,
@@ -55,7 +55,7 @@ export function BookingPanel({
   service?: BookClassService;
 }) {
   const service = useMemo(
-    () => injected ?? new BookClassService(new MockBookingGateway()),
+    () => injected ?? new BookClassService(new HttpBookingGateway()),
     [injected],
   );
   const [state, setState] = useState<State>({ phase: 'loading' });

@@ -109,6 +109,68 @@ The software stack is fixed for the MVP: **Next.js (React)** web frontend, **Exp
 
 All accounts share one model with a **single `role`** per account from `user`, `verifier`, `admin` (ADR-030). Learner and Teacher are **capabilities, not roles**: any `user` learns, and a `user` who is a verified student with an approved skill may submit evidence and teach (BR-063/BR-065, enforced by FR-005). Self-registration creates only `user`; `verifier`/`admin` accounts are operator-provisioned (ADR-029). The PRD §6.1 "role view switch" is therefore obsolete.
 
+#### 2.3.1 User stories
+
+The requirements above are stated as `FR`/`BR`/`NFR` clauses. This section restates the same scope as user stories so the value each screen delivers is traceable to an actor and a benefit. Stories are grouped by capability and each cites the requirement IDs that govern it; a story adds no scope of its own, and an unconfirmed FR stays unimplementable regardless of how its story reads.
+
+**US-T — Trusted identity**
+
+| ID | Story | Requirements |
+|---|---|---|
+| US-T1 | As a prospective user, I want to register an ordinary account with my email, so that I can explore classes before I am verified. | FR-001, UC-006 |
+| US-T2 | As a returning user, I want to sign in and have my session persist across reloads, so that I do not re-authenticate on every visit. | FR-001, FR-019, UC-007 |
+| US-T3 | As a learner, I want to submit my student documents and see the approval or rejection reason, so that I know whether my account is active. | FR-002, FR-017, UC-001 |
+| US-T4 | As a learner, I want to view and edit my profile and read my account status, so that my identity stays accurate. | FR-001, UC-008 |
+
+**US-S — Trusted teaching capability**
+
+| ID | Story | Requirements |
+|---|---|---|
+| US-S1 | As a teacher candidate, I want to browse the skill catalogue and submit evidence for one skill at a level, so that I can be assessed for that skill. | FR-003, UC-002 |
+| US-S2 | As a teacher candidate, I want to see which skills are approved, pending or rejected with their level, so that I know what I may teach. | FR-003, FR-018 |
+| US-S3 | As a teacher candidate, I want to read the decision history of my evidence, so that I understand how a level was reached. | FR-018, UC-002 |
+| US-S4 | As a verifier, I want to see only the requests matching my expertise and claim one to lock it to me, so that two verifiers cannot decide the same case. | FR-004, UC-002, ADR-027 |
+| US-S5 | As a verifier, I want to approve or reject with a structured reason, so that the candidate can act on the decision. | FR-004, UC-002 |
+| US-S6 | As an administrator, I want to suspend or revoke a verifier, so that a compromised reviewer stops deciding cases. | FR-004, UC-009 |
+
+**US-M — Discover and book online learning**
+
+| ID | Story | Requirements |
+|---|---|---|
+| US-M1 | As a teacher, I want to publish a class for an approved skill, so that learners can find and book it. | FR-005, UC-010 |
+| US-M2 | As a learner, I want to search and filter classes by skill, schedule and price, so that I can find one that fits. | FR-006, UC-011 |
+| US-M3 | As a learner, I want to read a class detail page with the teacher, syllabus and reviews, so that I can judge whether it is worth booking. | FR-006, UC-011 |
+| US-M4 | As a learner, I want a booking to be rejected clearly when I lack balance, the seat is gone or I am too late, so that I never hold a seat I cannot pay for. | FR-007, BR-024/BR-025, UC-003 |
+| US-M5 | As a learner, I want my booking and its payment to either both happen or neither, so that wallet and bookings never disagree. | FR-007, FR-009, AC-003–AC-005, AC-010 |
+
+**US-W — Traceable wallet**
+
+| ID | Story | Requirements |
+|---|---|---|
+| US-W1 | As a learner, I want to top up credits through the gateway, so that I can pay for classes. | FR-008, UC-012 |
+| US-W2 | As a user, I want to see my balance split into available and held, so that I know what I can spend versus what is escrowed. | FR-010, UC-013 |
+| US-W3 | As a user, I want a ledger history with references and payout trace ids, so that every movement is explainable. | FR-010, FR-020, UC-013 |
+| US-W4 | As a teacher, I want to withdraw my available balance exactly once, so that a retry never pays me twice. | FR-014, UC-005 |
+
+**US-L — Secure class participation**
+
+| ID | Story | Requirements |
+|---|---|---|
+| US-L1 | As a learner with a valid booking, I want a time-bound room link, so that only participants can join the class. | FR-011, FR-016, UC-004 |
+| US-L2 | As a participant, I want in-class chat while the class runs, so that we can coordinate without leaving the platform. | FR-012, UC-004 |
+| US-L3 | As a learner, I want to rate and comment once after the class ends, so that my feedback is trustworthy and cannot be edited later. | FR-013, UC-004 |
+
+**US-O — Operations**
+
+| ID | Story | Requirements |
+|---|---|---|
+| US-O1 | As an administrator, I want an operations view over the audit trail, so that I can resolve exceptions and see platform health. | FR-015, UC-014 |
+
+**Honest gaps.** The following are recorded because a story above implies them but the implementation does not yet enforce them; they are not claims that the story is met:
+- there is no withdrawal endpoint, so US-W4 cannot be exercised (see §3.7 and Appendix C.3);
+- `BookClassUseCase` does not check that the learner is a verified student, so US-M4's eligibility gate is partial;
+- class completion commits before wallet settlement and does not check booking expiry, so US-M5's atomicity holds for booking but not for completion.
+
 ### 2.4 Constraints
 
 | ID | Constraint | Source |
@@ -590,16 +652,46 @@ FR-007 (booking eligibility) is implemented in the `live-class` module. Test loc
 
 Lifecycle ACs resolved from OQ-003 (AC-022–AC-027) are documented but not implemented in this increment.
 
-#### Frontend (web + mobile), mock-only
+#### Frontend (web + mobile), API-backed
 
-The learner booking screen is built on both clients against a mock gateway that reproduces the API-004/API-005 response shapes and rejection reasons; no backend call is made. Class and booking view types come from `@skillswap/contracts`.
+**Superseded (2026-10-12).** This subsection originally described the booking screen as built "against a mock gateway … no backend call is made". That stopped being true: the Web path now posts to the real `POST /classes/:id/bookings` then `POST /classes/bookings/:bookingId/confirm` through `apps/web/src/lib/booking/http-gateway.ts`, and mobile does the same through `apps/mobile/src/infrastructure/http/`. The mock gateways survive only as an unconfigured-build fallback on mobile. The table below is kept for the port/view-type layout, with the gateway rows corrected.
+
+Class and booking view types come from `@skillswap/contracts`.
 
 | Concern | Web (`apps/web`) | Mobile (`apps/mobile`) |
 |---|---|---|
 | Booking view types (contract) | `src/lib/booking/domain.ts` (re-exports) | `src/domain/booking/booking.ts` (re-exports) |
-| Gateway port + mock | `src/lib/booking/gateway` (`mock-gateway.ts`) | `src/application/port/booking-gateway.ts`, `src/infrastructure/mock/mock-booking-gateway.ts` |
+| Gateway port + adapters | `src/lib/booking/http-gateway.ts` (real); `mock-gateway.ts` (tests only) | `src/application/port/booking-gateway.ts`, `src/infrastructure/http/` (real), `src/infrastructure/mock/mock-booking-gateway.ts` (fallback when `EXPO_PUBLIC_API_BASE_URL` is unset) |
 | Application service | `src/lib/booking/service.ts` | `src/application/book-class-service.ts` |
 | Screen / route | `src/components/booking/booking-panel.tsx`, `app/[locale]/classes/[id]/page.tsx` | `src/ui/booking-screen.tsx`, `app/classes/[id].tsx` |
-| Tests | `src/lib/booking/mock-gateway.test.ts`, `src/components/booking/booking-panel.test.tsx` | `src/infrastructure/mock/mock-booking-gateway.spec.ts`, `src/application/book-class-service.spec.ts` |
+| Tests | `src/lib/booking/http-gateway.test.ts`, `src/lib/booking/mock-gateway.test.ts`, `src/components/booking/booking-panel.test.tsx` | `src/infrastructure/mock/mock-booking-gateway.spec.ts`, `src/application/book-class-service.spec.ts` |
 
 UI states covered: loading, ready, submitting, booked (pending pill + hint), not-found, and error per rejection reason. Status is always a tinted pill with text (NFR-007); en/vi parity is enforced by each app's messages test.
+
+---
+
+## Appendix D — Screen inventory and client parity
+
+The product is delivered on two clients (web, mobile) that must show the same feature set with the same data source. The authoritative per-screen audit is [`docs/plans/2026-10-12-screen-parity-matrix.md`](2026-10-12-screen-parity-matrix.md); this appendix records the resulting inventory so the SRS and the code agree.
+
+| # | Screen | Capability | Web route | Mobile route | Backing endpoint |
+|---|---|---|---|---|---|
+| S1 | Landing / home | — | `/{locale}` | `app/index.tsx` | none (static) |
+| S2 | Learner dashboard | US-L1, US-L3 | `/{locale}/bookings` | `(tabs)/index.tsx` | `GET /classes/bookings/me`, `GET /wallet/balance` |
+| S3 | Marketplace | US-M2 | `/{locale}/classes` | `(tabs)/explore.tsx` | `GET /classes`, `GET /skills` |
+| S4 | Class detail | US-M3 | `/{locale}/classes/[id]` | `classes/[id].tsx` | `GET /classes/{id}` |
+| S5 | Login | US-T2 | `/{locale}/auth` | `(auth)/login.tsx` | `POST /auth/login` |
+| S6 | Register | US-T1 | `/{locale}/auth` | `(auth)/register.tsx` | `POST /auth/register` |
+| S7 | Wallet | US-W2, US-W3 | `/{locale}/wallet` | `(tabs)/wallet.tsx` | `GET /wallet/balance`, `GET /wallet/history` |
+| S8 | Top-up / checkout | US-W1, US-M4, US-M5 | `/{locale}/classes/[id]/checkout` | `wallet-view.tsx` | `POST /wallet/top-ups`, `POST /classes/{id}/bookings`, `POST /classes/bookings/{bookingId}/confirm` |
+| S9 | Student verification | US-T3 | `/{locale}/verification` | `(features)/verification.tsx` | `GET/POST /student-verifications` |
+| S10 | Skills / evidence | US-S1–US-S3 | `/{locale}/skills` | `(features)/skills.tsx` | `GET /skills`, `GET /profile-skills/me`, `POST /skill-evidence`, `GET /skill-evidence/:id/history` |
+| S11 | Withdrawal | US-W4 | `/{locale}/wallet/withdrawal` | — | **none — honest unavailable state** |
+| S12 | Teaching / my classes | US-M1 | `/{locale}/instructor`, `/{locale}/teach/classes/new` | `(features)/teaching.tsx` | `POST /classes`, `POST /classes/{id}/complete` |
+| S13 | Post-class rating | US-L3 | `/{locale}/bookings/[id]/review` | `my-bookings-view.tsx` | `POST /classes/bookings/{bookingId}/rating` |
+| S14 | Live room | US-L1, US-L2 | `/{locale}/bookings/[id]/live` | `bookings/[id]/live` | `POST /classes/bookings/{bookingId}/room-access` |
+| S15 | Verifier queue | US-S4, US-S5 | none | none | `GET /verifier/me/queue` (API-only; no client screen) |
+| S16 | Notifications | — | `/{locale}/notifications` | `(features)/notifications.tsx` | `GET /notifications` |
+| S17 | Admin operations | US-O1 | none | none | `GET /audit` (API-only) |
+
+Both clients are API-backed after the 2026-10-12 parity pass. Two screens have no browser route (S15, S17) because they are operator/verifier surfaces with no requirement for a client screen; S11 is deliberately rendered as an honest "unavailable" state rather than a form that cannot submit, because no withdrawal endpoint exists (§3.7, Appendix C.3). Mobile falls back to fixtures when `EXPO_PUBLIC_API_BASE_URL` is unset (ADR-015, update 2026-10-12); the demo must set it.

@@ -1,36 +1,40 @@
 @startuml
-title Current backend | Manual student verification | FR-002/019
+title Verify student status | FR-002/019 | BR-002/003/005/070
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
 skinparam defaultFontName Arial
 skinparam defaultFontSize 14
 skinparam ArrowColor #475569
-skinparam sequenceParticipantBackgroundColor #F1F5F9
-skinparam sequenceParticipantBorderColor #475569
 skinparam activityBackgroundColor #F1F5F9
 skinparam activityBorderColor #475569
+skinparam sequenceParticipantBackgroundColor #F1F5F9
+skinparam sequenceParticipantBorderColor #475569
 skinparam stateBackgroundColor #F1F5F9
 skinparam stateBorderColor #475569
 start
-:Create owned document metadata and presigned URL;
-:Caller uploads bytes to private MinIO;
-:Submit verification referencing document;
-if (Effective Pending/Approved already exists?) then (yes)
- :Reject duplicate;
+:Student requests a private document upload link;
+:Student uploads proof of student status;
+:Student submits the document, school name and major;
+if (Already awaiting review or approved?) then (Yes)
+ :Refuse another active submission;
  stop
 endif
-if (Document metadata belongs to caller?) then (yes)
- :Create Pending; attach document metadata;
-else (no)
- :Reject missing / foreign document;
+if (Is the document registered to this Student?) then (Yes)
+ :Save the submission as Awaiting review;
+else (No)
+ :Refuse a missing document or another person's document;
  stop
 endif
-:Administrator reviews;
-if (Approve?) then (yes)
- :Commit Approved + decision outbox;
-else (no)
- :Require reason; commit Rejected + outbox;
+:Administrator reviews the submitted proof;
+if (Approve student status?) then (Yes)
+ :Save the approval;
+else (No)
+ :Save the rejection with a reason;
 endif
-:Relay events; update own module projections;
+:Update the student's eligibility\nin the relevant parts of SkillSwap;
+note right
+ The current submission checks document ownership.
+ It does not verify that the uploaded file actually exists.
+end note
 stop
 @enduml

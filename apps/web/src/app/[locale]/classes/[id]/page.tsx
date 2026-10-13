@@ -8,11 +8,12 @@ type PageProps = {
 };
 
 /**
- * Class detail page (FR-006 detail, mock layer).
+ * Class detail page (FR-006 detail).
  *
- * Server component. Fetches the detail view through the gateway
- * (mock today) and composes the page. Re-uses `MarketplaceHeader` and
- * `SiteFooter` for chrome consistency with the marketplace list.
+ * Server component. Renders the chrome and mounts the client
+ * `ClassDetailContent` shell, which fetches the class from the live API
+ * after mount (the endpoint is authenticated). Re-uses `MarketplaceHeader`
+ * and `SiteFooter` for chrome consistency with the marketplace list.
  */
 export default async function ClassDetailPage({ params }: PageProps) {
   const { locale, id } = await params;

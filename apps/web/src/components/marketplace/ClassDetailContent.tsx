@@ -1,4 +1,10 @@
-import { ClassDetailApiGateway } from '../../lib/marketplace/api-class-detail';
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useLocale, useTranslations } from 'next-intl';
+import { HttpMarketplaceGateway } from '../../lib/marketplace/http-gateway';
+import { toClassDetailView } from '../../lib/marketplace/api-mapping';
 import { DetailHeader } from './DetailHeader';
 import { ScheduleSection } from './ScheduleSection';
 import { SyllabusSection } from './SyllabusSection';
@@ -10,18 +16,52 @@ import { StickyBookingCard } from './StickyBookingCard';
 import { ClientClassDetailFallback } from './ClientClassDetailFallback';
 import type { ClassDetailView } from '../../lib/marketplace/types';
 
+const gateway = new HttpMarketplaceGateway();
+
+type LoadState =
+  | { phase: 'loading' }
+  | { phase: 'unauth' }
+  | { phase: 'error' }
+  | { phase: 'not_found' }
+  | { phase: 'ready'; item: ClassDetailView };
+
 /**
- * Server-side composition of the class detail page (FR-006 detail).
+ * Class detail composition (FR-006 detail).
  *
- * Pulls the detail view from `ClassDetailApiGateway` (which queries GET /api/classes/:id
- * and falls back gracefully to MockClassDetailGateway for demo IDs). If unknown on server,
- * falls back to ClientClassDetailFallback to resolve browser-created classes before rendering 404.
+ * `GET /classes` is an authenticated endpoint, so the class is fetched
+ * after mount (the bearer token lives in localStorage). The fetch drives
+ * four honest states: loading skeleton, sign-in prompt when the session
+ * is missing/expired, a retryable error, and the composed body once real
+ * data arrives. The detail-only sections are derived from the real class
+ * by `toClassDetailView` — never mocked.
  */
-export async function ClassDetailContent({ id }: { id: string }) {
-  const gateway = new ClassDetailApiGateway();
-  const item = await gateway.getById(id);
-  if (!item) return <ClientClassDetailFallback id={id} />;
-  return <ClassDetailBody item={item} />;
+export function ClassDetailContent({ id }: { id: string }) {
+  const [state, setState] = useState<LoadState>({ phase: 'loading' });
+
+  useEffect(() => {
+    let active = true;
+    setState({ phase: 'loading' });
+    gateway
+      .findById(id)
+      .then((item) => {
+        if (!active) return;
+        setState(item === null ? { phase: 'not_found' } : { phase: 'ready', item: toClassDetailView(item) });
+      })
+      .catch((error) => {
+        if (!active) return;
+        const status = (error as { status?: number }).status;
+        setState({ phase: status === 401 ? 'unauth' : 'error' });
+      });
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  if (state.phase === 'loading') return <LoadingPanel />;
+  if (state.phase === 'unauth') return <UnauthPanel />;
+  if (state.phase === 'error') return <ErrorPanel />;
+  if (state.phase === 'not_found') return <NotFoundPanel />;
+  return <ClassDetailBody item={state.item} />;
 }
 
 function ClassDetailBody({ item }: { item: ClassDetailView }) {
@@ -44,5 +84,141 @@ function ClassDetailBody({ item }: { item: ClassDetailView }) {
         </div>
       </div>
     </div>
+  );
+}
+
+/** Skeleton mirroring the hero + content column so nothing jumps on load. */
+function LoadingPanel() {
+  const t = useTranslations('ClassDetail.states');
+  return (
+    <div role="status" aria-live="polite" className="flex flex-col gap-6">
+      <span className="sr-only">{t('loading')}</span>
+      <div aria-hidden="true" className="h-48 animate-pulse rounded-xl border border-border bg-surface shadow-sm" />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div aria-hidden="true" className="flex flex-col gap-6 lg:col-span-8">
+          <div className="h-40 animate-pulse rounded-xl border border-border bg-surface shadow-sm" />
+          <div className="h-56 animate-pulse rounded-xl border border-border bg-surface shadow-sm" />
+        </div>
+        <div aria-hidden="true" className="lg:col-span-4">
+          <div className="h-72 animate-pulse rounded-xl border border-border bg-surface shadow-sm" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UnauthPanel() {
+  const t = useTranslations('ClassDetail.states');
+  const locale = useLocale();
+  return (
+    <Panel
+      tone="info"
+      icon={<LockIcon className="h-6 w-6" />}
+      title={t('signInTitle')}
+      body={t('signInBody')}
+      cta={{ href: `/${locale}/auth?tab=login`, label: t('signInCta') }}
+    />
+  );
+}
+
+function ErrorPanel() {
+  const t = useTranslations('ClassDetail.states');
+  const locale = useLocale();
+  return (
+    <Panel
+      tone="error"
+      icon={<AlertIcon className="h-6 w-6" />}
+      title={t('errorTitle')}
+      body={t('errorBody')}
+      cta={{ href: `/${locale}/classes`, label: t('back') }}
+    />
+  );
+}
+
+function Panel({
+  tone,
+  icon,
+  title,
+  body,
+  cta,
+}: {
+  tone: 'info' | 'error';
+  icon: React.ReactNode;
+  title: string;
+  body: string;
+  cta: { href: string; label: string };
+}) {
+  const iconTone =
+    tone === 'error'
+      ? 'bg-error-tint text-error-ink'
+      : 'bg-campus-emerald-tint text-campus-emerald-deep';
+  return (
+    <div
+      role={tone === 'error' ? 'alert' : undefined}
+      className="mx-auto flex max-w-xl flex-col items-center gap-3 rounded-xl border border-border bg-surface p-12 text-center shadow-sm"
+    >
+      <span className={`flex h-12 w-12 items-center justify-center rounded-full ${iconTone}`}>
+        {icon}
+      </span>
+      <h1 className="text-xl font-bold text-ink">{title}</h1>
+      <p className="text-sm text-ink-soft">{body}</p>
+      <Link
+        href={cta.href}
+        className="mt-2 inline-flex items-center gap-1 rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-surface transition-colors hover:bg-ink-soft"
+      >
+        {cta.label}
+      </Link>
+    </div>
+  );
+}
+
+function NotFoundPanel() {
+  const t = useTranslations('ClassDetail.notFound');
+  const locale = useLocale();
+  return (
+    <div className="mx-auto flex max-w-xl flex-col items-center gap-3 rounded-xl border border-border bg-surface p-12 text-center shadow-sm">
+      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-mist text-ink">
+        <SearchOffIcon className="h-7 w-7" />
+      </span>
+      <h1 className="text-xl font-bold text-ink">{t('title')}</h1>
+      <p className="text-sm text-ink-soft">{t('body')}</p>
+      <Link
+        href={`/${locale}/classes`}
+        className="mt-2 inline-flex items-center gap-1 rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-surface transition-colors hover:bg-ink-soft"
+      >
+        {t('back')}
+      </Link>
+    </div>
+  );
+}
+
+/* --- Inline SVG glyphs --- */
+
+function SearchOffIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="M21 21l-4.3-4.3" />
+      <line x1="8" y1="8" x2="14" y2="14" />
+    </svg>
+  );
+}
+
+function LockIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+      <rect x="4" y="11" width="16" height="10" rx="2" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </svg>
+  );
+}
+
+function AlertIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <line x1="12" y1="8" x2="12" y2="13" />
+      <line x1="12" y1="16" x2="12" y2="16.01" />
+    </svg>
   );
 }

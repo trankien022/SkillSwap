@@ -18,6 +18,7 @@ import {
   type SessionUser,
 } from '@/application/port/session-types';
 import type { MobileConfig } from '../config';
+import { evidenceFetch } from './api-evidence';
 
 export interface SessionTokenProvider {
   getAccessToken(): Promise<string>;
@@ -123,7 +124,10 @@ export class GatewayClient implements AuthApiPort {
       tokenProvider?: SessionTokenProvider;
     },
   ) {
-    this.fetchFn = options?.fetchFn ?? globalThis.fetch;
+    // Bind to the global object: the browser's `fetch` throws
+    // "Illegal invocation" when called with any other receiver, and storing the
+    // bare reference makes the call site's receiver `this` (the client).
+    this.fetchFn = options?.fetchFn ?? globalThis.fetch.bind(globalThis);
     this.tokenProvider = options?.tokenProvider;
   }
 
@@ -277,7 +281,7 @@ export class GatewayClient implements AuthApiPort {
 
     let response: Response;
     try {
-      response = await this.fetchFn(url, {
+      response = await evidenceFetch(this.fetchFn, url, {
         method: options.method ?? 'GET',
         headers,
         body: requestBody,

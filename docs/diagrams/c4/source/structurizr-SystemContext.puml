@@ -1,8 +1,8 @@
 @startuml
-title <size:24>System Context View: SkillSwap System</size>\n<size:24>System Context diagram for SkillSwap</size>
+title C4-L0 System Context — SkillSwap (C4 standard Level 1)
 
 set separator none
-left to right direction
+top to bottom direction
 
 <style>
   root {
@@ -14,24 +14,37 @@ left to right direction
 !include <C4/C4>
 !include <C4/C4_Context>
 
-Person(Learner, "Learner", $descr="User acting as Learner (role=user): booking, wallet, verification; booking UI mocked", $tags="", $link="")
-System(Privatedocumentstorage, "Private document storage", $descr="S3-compatible MinIO in Docker; presigned uploads", $tags="", $link="")
-System(Jitsiselfhosted, "Jitsi (self-hosted)", $descr="Self-hosted Jitsi Docker stack; room-scoped JWT; WebRTC media", $tags="", $link="")
-Person(Teacher, "Teacher", $descr="User acting as Teacher (role=user): verified student + approved skills to publish; no payout API", $tags="", $link="")
-Person(Verifier, "Verifier", $descr="Provisioned role=verifier; active matching expertise and claim required", $tags="", $link="")
-Person(Administrator, "Administrator", $descr="Provisioned role=admin; student decisions, Verifier access status", $tags="", $link="")
-System(SkillSwapSystem, "SkillSwap System", $descr="Student marketplace backend; client booking mock; top-up uses in-process mock adapter", $tags="", $link="")
+' Presentation only: model elements and relationships come from workspace.dsl.
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam nodesep 35
+skinparam ranksep 45
+skinparam footerFontSize 12
+skinparam titleFontSize 20
+UpdateElementStyle("person", $bgColor="#0F172A", $fontColor="#FFFFFF", $borderColor="#0F172A", $legendText="Person")
+UpdateElementStyle("system", $bgColor="#047857", $fontColor="#FFFFFF", $borderColor="#047857", $legendText="Software system in scope")
+UpdateElementStyle("external_system", $bgColor="#64748B", $fontColor="#FFFFFF", $borderColor="#64748B", $legendText="Supporting software system")
+UpdateElementStyle("container", $bgColor="#047857", $fontColor="#FFFFFF", $borderColor="#047857", $legendText="Application or data store")
+UpdateRelStyle($lineColor="#475569", $textColor="#334155")
 
-Rel(Learner, SkillSwapSystem, "Booking, wallet, student verification and room-token APIs", $techn="", $tags="", $link="")
-Rel(Teacher, SkillSwapSystem, "Evidence, class lifecycle and room-token APIs", $techn="", $tags="", $link="")
-Rel(Verifier, SkillSwapSystem, "Review and verify teacher skills", $techn="", $tags="", $link="")
-Rel(Administrator, SkillSwapSystem, "Verify students, manage verifiers, handle operations", $techn="", $tags="", $link="")
-Rel(Learner, Privatedocumentstorage, "Upload document bytes using API-issued URL", $techn="Presigned HTTPS PUT", $tags="", $link="")
-Rel(Teacher, Jitsiselfhosted, "Teaches live class", $techn="HTTPS/WebRTC", $tags="", $link="")
-Rel(Learner, Jitsiselfhosted, "Attends live class", $techn="HTTPS/WebRTC", $tags="", $link="")
-Rel(SkillSwapSystem, Jitsiselfhosted, "Online classroom access via", $techn="HTTPS/WebRTC", $tags="", $link="")
-Rel(SkillSwapSystem, Privatedocumentstorage, "Private verification documents", $techn="Presigned HTTPS PUT", $tags="", $link="")
+together {
+  Person(User, "User", $descr="[Person]\nA student account that can learn and, when eligible, teach.", $tags="", $link="")
+  Person(Verifier, "Verifier", $descr="[Person]\nReviews teaching evidence within assigned expertise.", $tags="", $link="")
+  Person(Admin, "Admin", $descr="[Person]\nReviews student proof and manages Verifier access.", $tags="", $link="")
+}
 
-SHOW_LEGEND(true)
-hide stereotypes
+System_Ext(Onlineclassroom, "Online classroom", $descr="[Supporting software system]\nHosts live lessons for users who are learning or teaching.", $tags="", $link="")
+System_Ext(Paymentgateway, "Third-party payment gateway", $descr="[Supporting software system]\nProcesses cash top-ups and payouts; provider selection is pending.", $tags="", $link="")
+System(SkillSwap, "SkillSwap", $descr="[Software system]\nHelps students verify skills, book classes and pay with internal credits.", $tags="", $link="")
+
+Rel(User, SkillSwap, "Learns, books classes and may publish or teach when eligible")
+Rel(Verifier, SkillSwap, "Reviews teaching evidence")
+Rel(Admin, SkillSwap, "Approves students and manages Verifiers")
+Rel(SkillSwap, Onlineclassroom, "Authorizes access to booked lessons")
+Rel(User, Onlineclassroom, "Attends or teaches a booked lesson")
+Rel(SkillSwap, Paymentgateway, "Initiates top-ups and payouts; receives signed payment callbacks")
+
+SHOW_LEGEND()
+footer Current backend capabilities. Web and mobile booking screens post to the real hold and confirm endpoints; the payment provider is still represented as an external dependency.\nBackend currently uses a mock PaymentGateway adapter; a real provider is not selected.
 @enduml

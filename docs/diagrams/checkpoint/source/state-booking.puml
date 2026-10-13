@@ -1,35 +1,35 @@
 @startuml
-title Current implementation | Booking
+title Booking status | FR-007/009 | BR-024–026/044–047
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
 skinparam defaultFontName Arial
 skinparam defaultFontSize 14
 skinparam ArrowColor #475569
-skinparam sequenceParticipantBackgroundColor #F1F5F9
-skinparam sequenceParticipantBorderColor #475569
 skinparam activityBackgroundColor #F1F5F9
 skinparam activityBorderColor #475569
+skinparam sequenceParticipantBackgroundColor #F1F5F9
+skinparam sequenceParticipantBorderColor #475569
 skinparam stateBackgroundColor #F1F5F9
 skinparam stateBorderColor #475569
-[*] --> pending : bookClass; hold seat 15 min
-pending --> confirmed : confirmAndEmit; outbox in same transaction
-pending --> cancelled : expiry / class cancellation
-confirmed --> cancelled : Teacher cancellation / no-show
+state "Awaiting confirmation" as pending
+state "Confirmed" as confirmed
+state "Cancelled" as cancelled
+[*] --> pending : Eligible Learner books, seat held for 15 minutes
+pending --> confirmed : Learner confirms, payment processed afterward
+pending --> cancelled : Hold expires or class is cancelled
+confirmed --> cancelled : Teacher cancels or Teacher no-show is recorded
+cancelled --> [*]
 note right of confirmed
- Confirmation precedes asynchronous wallet settlement.
- No Learner self-cancellation endpoint.
+ Current gap: confirmation can exist before payment succeeds.
+ Learners cannot cancel their own booking in the MVP.
 end note
 note bottom of cancelled
- Confirmed cancellation emits refund trigger.
- Pending cancellation releases seat without refund.
+ Cancel an unpaid hold: release the seat.
+ Cancel a confirmed booking: request an internal-credit refund.
 end note
-state "Declared domain states" as Declared {
- state completed
- state disputed
-}
-note right of Declared
- Declared in BOOKING_STATES.
- No transition handler to these states is claimed here.
- Class completion is a separate lifecycle.
+note left of pending
+ Completed and Disputed booking statuses are named in code,
+ but no implemented transitions to them are shown.
+ Class completion has its own lifecycle.
 end note
 @enduml

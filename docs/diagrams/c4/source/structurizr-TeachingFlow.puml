@@ -1,5 +1,5 @@
 @startuml
-title <size:24>Dynamic View: SkillSwap System</size>\n<size:24>Current backend publishing and room access</size>
+title Dynamic Diagram — Join a Class | FR-011
 
 set separator none
 left to right direction
@@ -15,22 +15,34 @@ left to right direction
 !include <C4/C4_Context>
 !include <C4/C4_Container>
 
-System_Boundary("SkillSwapSystem_boundary", "SkillSwap System", $tags="") {
-  ContainerDb(SkillSwapSystem.Database, "Database", $techn="PostgreSQL", $descr="One skillswap database; seven module schemas, per-module credentials; no cross-schema joins/FKs", $tags="", $link="")
-  Container(SkillSwapSystem.Gateway, "Gateway", $techn="NestJS (Node.js)", $descr="Public REST entry point: JWT, trusted identity, rate limiting, HTTP proxy :4000", $tags="", $link="")
-  Container(SkillSwapSystem.BackendAPI, "Backend API", $techn="NestJS (Node.js)", $descr="Private NestJS modular monolith :4001; seven contexts; payment adapter is in-process mock", $tags="", $link="")
+' Presentation only: model elements and relationships come from workspace.dsl.
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam nodesep 35
+skinparam ranksep 45
+skinparam footerFontSize 12
+skinparam titleFontSize 20
+UpdateElementStyle("person", $bgColor="#0F172A", $fontColor="#FFFFFF", $borderColor="#0F172A", $legendText="Person")
+UpdateElementStyle("system", $bgColor="#047857", $fontColor="#FFFFFF", $borderColor="#047857", $legendText="Software system in scope")
+UpdateElementStyle("external_system", $bgColor="#64748B", $fontColor="#FFFFFF", $borderColor="#64748B", $legendText="Supporting software system")
+UpdateElementStyle("container", $bgColor="#047857", $fontColor="#FFFFFF", $borderColor="#047857", $legendText="Application or data store")
+UpdateRelStyle($lineColor="#475569", $textColor="#334155")
+
+System_Boundary("SkillSwap_boundary", "SkillSwap", $tags="") {
+  Container(SkillSwap.APIgateway, "API gateway", $techn="Container: NestJS / TypeScript", $descr="Checks sign-in and forwards public requests.", $tags="", $link="")
+  Container(SkillSwap.BackendAPI, "Backend API", $techn="Container: NestJS / TypeScript", $descr="Runs account, verification, class and wallet rules in one application.", $tags="", $link="")
+  ContainerDb(SkillSwap.Businessdatabase, "Business database", $techn="Container: PostgreSQL / TypeORM", $descr="Stores records in seven separately owned business schemas.", $tags="", $link="")
 }
 
-Person(Teacher, "Teacher", $descr="User acting as Teacher (role=user): verified student + approved skills to publish; no payout API", $tags="", $link="")
-System(Jitsiselfhosted, "Jitsi (self-hosted)", $descr="Self-hosted Jitsi Docker stack; room-scoped JWT; WebRTC media", $tags="", $link="")
+Person(User, "User", $descr="[Person]\nAttends or teaches using the same account, when eligible.", $tags="", $link="")
+System_Ext(Onlineclassroom, "Online classroom", $descr="[Supporting software system]\nHosts live lessons for authorized users.", $tags="", $link="")
 
-Rel(SkillSwapSystem.Gateway, SkillSwapSystem.BackendAPI, "1: POST /api/classes; authenticated user acting as Teacher", $techn="HTTP/JSON", $tags="", $link="")
-Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.Database, "2: Read own teacher_verified + teacher_skill_approval; require verified and every skill approved; persist Published", $techn="TypeORM", $tags="", $link="")
-Rel(SkillSwapSystem.Gateway, SkillSwapSystem.BackendAPI, "3: POST /api/classes/bookings/:bookingId/room-access", $techn="HTTP/JSON", $tags="", $link="")
-Rel(SkillSwapSystem.BackendAPI, SkillSwapSystem.Database, "4: Check confirmed booking, party and time window", $techn="TypeORM", $tags="", $link="")
-Rel(SkillSwapSystem.BackendAPI, Jitsiselfhosted, "5: Issue locally signed short-lived room JWT", $techn="HS256 JWT", $tags="", $link="")
-Rel(Teacher, Jitsiselfhosted, "6: Join using issued room URL and JWT", $techn="HTTPS/WebRTC", $tags="", $link="")
+Rel(User, SkillSwap.APIgateway, "1: Participant asks to join a booked class", $techn="HTTP / JSON", $tags="", $link="")
+Rel(SkillSwap.APIgateway, SkillSwap.BackendAPI, "2: Forward the verified participant identity", $techn="HTTP / JSON", $tags="", $link="")
+Rel(SkillSwap.BackendAPI, SkillSwap.Businessdatabase, "3: Read booking and class for participant and joining-time checks", $techn="PostgreSQL protocol / TypeORM", $tags="", $link="")
+Rel(User, Onlineclassroom, "4: Enter the booked classroom using the invitation", $techn="HTTPS / WebRTC", $tags="", $link="")
 
-SHOW_LEGEND(true)
-hide stereotypes
+SHOW_LEGEND()
+footer Backend prepares the private invitation locally and returns it through the gateway.\nAccess requires the correct participant, a confirmed booking and the permitted joining time.
 @enduml
