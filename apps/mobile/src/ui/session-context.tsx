@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import * as SecureStore from 'expo-secure-store';
 import type {
   ActiveSession,
   LoginCredentials,
@@ -26,6 +27,7 @@ import {
 } from '@/infrastructure/http/gateway-client';
 import { SecureSessionStore } from '@/infrastructure/storage/secure-session-store';
 import { createCoordinatedTokenProvider } from './coordinated-token-provider';
+import { PUSH_DEVICE_ID_KEY, unregisterPushDevice } from '@/infrastructure/push/notification-device-lifecycle';
 
 export interface SessionContextValue {
   readonly session: ActiveSession | null;
@@ -35,6 +37,7 @@ export interface SessionContextValue {
   readonly bootError: Error | null;
   readonly configError: ConfigurationError | null;
   readonly locale: Locale;
+  readonly localeReady: boolean;
   readonly setLocale: (locale: Locale) => void;
   readonly t: (key: string, vars?: Record<string, string | number>) => string;
   readonly login: (credentials: LoginCredentials) => Promise<void>;
@@ -61,7 +64,23 @@ export function SessionProvider({
   injectedGateway,
   injectedSessionService,
 }: SessionProviderProps) {
-  const [locale, setLocale] = useState<Locale>(initialLocale);
+  const [locale, updateLocale] = useState<Locale>(initialLocale);
+  const [localeReady, setLocaleReady] = useState(false);
+  const localeChanged = useRef(false);
+  const localeWrite = useRef<Promise<unknown>>(Promise.resolve());
+  const setLocale = useCallback((next: Locale) => {
+    localeChanged.current = true;
+    updateLocale(next);
+    localeWrite.current = localeWrite.current.catch(() => undefined).then(() => SecureStore.setItemAsync('skillswap.locale', next));
+    void localeWrite.current.catch(() => undefined);
+  }, []);
+  useEffect(() => {
+    let active = true;
+    void SecureStore.getItemAsync('skillswap.locale').then((saved) => {
+      if (active && !localeChanged.current && (saved === 'vi' || saved === 'en')) updateLocale(saved);
+    }).catch(() => undefined).finally(() => { if (active) setLocaleReady(true); });
+    return () => { active = false; };
+  }, []);
   const [session, setSession] = useState<ActiveSession | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [bootError, setBootError] = useState<Error | null>(null);
@@ -186,10 +205,16 @@ export function SessionProvider({
 
   const logout = useCallback(async () => {
     if (!sessionService) return;
+    const pushDeviceId = await SecureStore.getItemAsync(PUSH_DEVICE_ID_KEY);
+    if (pushDeviceId) {
+      if (!gatewayClient) throw new Error('Cannot deactivate push device without an authenticated Gateway');
+      // Keep the session active if server-side deactivation fails so the user can retry.
+      await unregisterPushDevice(gatewayClient);
+    }
     ++uiGenerationRef.current;
     setSession(null);
     await sessionService.logout();
-  }, [sessionService]);
+  }, [gatewayClient, sessionService]);
 
   const refreshMe = useCallback(async () => {
     if (!sessionService) throw new Error('SessionService not initialized');
@@ -216,6 +241,7 @@ export function SessionProvider({
       bootError,
       configError,
       locale,
+      localeReady,
       setLocale,
       t,
       login,
@@ -232,6 +258,7 @@ export function SessionProvider({
       bootError,
       configError,
       locale,
+      localeReady,
       t,
       login,
       register,

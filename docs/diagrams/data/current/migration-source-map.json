@@ -1,0 +1,122 @@
+[
+  {
+    "module": "account-profile",
+    "migration": "1791072000000-CreateModuleTables.ts"
+  },
+  {
+    "module": "account-profile",
+    "migration": "1791072000001-CreateAccountTables.ts"
+  },
+  {
+    "module": "account-profile",
+    "migration": "1791072000002-CreateAccountVerificationStatus.ts"
+  },
+  {
+    "module": "account-profile",
+    "migration": "1791072000003-WidenAccountVerificationStatus.ts"
+  },
+  {
+    "module": "account-profile",
+    "migration": "1791072000004-WidenAccountRoles.ts"
+  },
+  {
+    "module": "account-profile",
+    "migration": "1791072000005-CollapseAccountRoles.ts"
+  },
+  {
+    "module": "account-profile",
+    "migration": "1791072000006-CreateNotificationStorage.ts"
+  },
+  {
+    "module": "admin-operation",
+    "migration": "1791072000000-CreateModuleTables.ts"
+  },
+  {
+    "module": "live-class",
+    "migration": "1791072000000-CreateModuleTables.ts"
+  },
+  {
+    "module": "live-class",
+    "migration": "1791072000001-CreateClassBookingTables.ts"
+  },
+  {
+    "module": "live-class",
+    "migration": "1791072000002-AddBookingLifecycleColumns.ts"
+  },
+  {
+    "module": "live-class",
+    "migration": "1791072000003-CreateRoomAccessIncidents.ts"
+  },
+  {
+    "module": "live-class",
+    "migration": "1791072000004-AddClassCompletionColumns.ts"
+  },
+  {
+    "module": "live-class",
+    "migration": "1791072000005-CreateTeacherTrustProjection.ts"
+  },
+  {
+    "module": "live-class",
+    "migration": "1791072000006-CreateClassRatings.ts"
+  },
+  {
+    "module": "schedule",
+    "migration": "1791072000000-CreateModuleTables.ts"
+  },
+  {
+    "module": "skill-verification",
+    "migration": "1791072000000-CreateModuleTables.ts"
+  },
+  {
+    "module": "skill-verification",
+    "migration": "1791072000600-CreateSkillEvidence.ts"
+  },
+  {
+    "module": "skill-verification",
+    "migration": "1791072000601-CreateVerifiedStudentProjection.ts"
+  },
+  {
+    "module": "skill-verification",
+    "migration": "1791072000602-CreateVerifiersAndEvidenceClaim.ts"
+  },
+  {
+    "module": "skill-verification",
+    "migration": "1791072000603-CreateSkillEvidenceAudit.ts"
+  },
+  {
+    "module": "skill-verification",
+    "migration": "1791072000604-AddVerifierQueueIndex.ts"
+  },
+  {
+    "module": "student-verification",
+    "migration": "1791072000000-CreateModuleTables.ts"
+  },
+  {
+    "module": "student-verification",
+    "migration": "1791072000100-CreateStudentVerifications.ts"
+  },
+  {
+    "module": "student-verification",
+    "migration": "1791072000101-DropVerificationExpiryAndSuperseded.ts"
+  },
+  {
+    "module": "student-verification",
+    "migration": "1791072000102-CreateVerificationDocuments.ts"
+  },
+  {
+    "module": "student-verification",
+    "migration": "1791072000103-AddVerificationRevocation.ts"
+  },
+  {
+    "module": "wallet-ledger",
+    "migration": "1791072000000-CreateModuleTables.ts"
+  },
+  {
+    "module": "wallet-ledger",
+    "migration": "1791072000001-CreateWalletTopUpTables.ts"
+  },
+  {
+    "module": "wallet-ledger",
+    "migration": "1791072000002-AddSettlementIdempotency.ts"
+  }
+]

@@ -6,6 +6,8 @@ import prettier from 'eslint-config-prettier';
 export default tseslint.config(
   {
     ignores: [
+      '.agents/**',
+      '.codex/**',
       '**/node_modules/**',
       '**/dist/**',
       '**/.next/**',

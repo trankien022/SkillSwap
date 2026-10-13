@@ -18,6 +18,7 @@ import {
   type SessionUser,
 } from '@/application/port/session-types';
 import type { MobileConfig } from '../config';
+import { evidenceFetch } from './api-evidence';
 
 export interface SessionTokenProvider {
   getAccessToken(): Promise<string>;
@@ -280,7 +281,7 @@ export class GatewayClient implements AuthApiPort {
 
     let response: Response;
     try {
-      response = await this.fetchFn(url, {
+      response = await evidenceFetch(this.fetchFn, url, {
         method: options.method ?? 'GET',
         headers,
         body: requestBody,

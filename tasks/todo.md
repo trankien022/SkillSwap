@@ -1,6 +1,20 @@
 # Mobile rubric — task checklist
 
-Tham chiếu: [plan](plan.md). Checkpoint 12/10/2026: **30/30 unique route templates được app gọi qua Gateway**, kèm contracts/adapters/UI; rating và inbox/device APIs có backend routes, persistence và focused tests. `pnpm verify` xanh: 532 API, 177 mobile, 143 contracts, 27 Gateway, 22 web tests; arch gate xanh. Hai migration mới đã apply vào database development local. E2E sau migration: booking-flow pass; publish-gate fail khi chờ trạng thái xác minh, cần điều tra và chạy lại. Push inbox records hiện nhận event verification/booking/wallet; Expo push dispatcher/receipt lifecycle và class reminder còn mở. Native iPhone upload/Jitsi/push acceptance còn mở; user chưa có Apple Developer/EAS. T09 concurrency/restart/late-cancellation và T22 vẫn mở; không đánh dấu checkpoint cuối.
+Checkpoint Android 13/10/2026. [Kế hoạch nghiệm thu](mobile-week6-acceptance.md) · [Ma trận 26 API và evidence](mobile-week6-evidence.md).
+
+| Hạng mục | Có code | Test/build | Runtime |
+|---|---|---|---|
+| App/session/Dashboard | Có; error/retry và refresh | Mobile212 tests/28 suites, typecheck; full verify xanh | Login/register/refresh/logout, restart, account switch, offline/retry đã quan sát |
+| API/resources | 30 routes phạm vi code; 26 trong checkpoint | Contracts/adapters pass | 26 route templates có request thành công, 7 resource groups dùng thật |
+| Booking/payment | Pending/Processing/Confirmed, GET reconcile tối đa30s | Backoff và no command replay tests pass | Funded, poor UI chặn thiếu tiền, topup callback mock, ledger100/90/10 và cancellation refunds |
+| Teaching | List/detail/create/edit/cancel, localize và confirm | Typecheck/tests pass | Create>=48h, edit80→85, cancel, edit lock409; ownership403 ops |
+| Upload/skill | Picker/storage/submit/history | Adapter tests pass | PDF bytes MinIO match SHA256; admin/verifier approve và mobile đọc lại |
+| Remote push | Worker lease/ticket/receipt, device lifecycle, tap; locale theo Cài đặt | Provider/worker/copy/device tests pass | Backend cancellation remote tray nhận và tap mở lịch; receiptok/refund; heads-up tiếng Việt và cold start preview tap đúng lịch đã pass; dev launcher vẫn cần Metro |
+| Đóng gói | Development APK đã build/cài, Metro/backend chạy | Full `pnpm verify` exit0; arch warning orphan cũ | APK ARM64 có JS build/cài thành công; APK preview cold start/banner pass; hai diễn tập toàn bộ liên tục rút gọn theo yêu cầu mới; đã có hai lượt booking/push |
+
+Firebase/EAS/FCM v1 đã cấu hình cho `com.skillswap.app`; migration push và locale additive đã apply sau backup. Không seed/reset database. Topup **mô phỏng provider**, intent/ledger/backend thật. S3 object readback đã chứng minh; Jitsi không nghiệm thu. E2E DB test riêng pass6/6 (không forceExit; còn teardown logs). Upload failure/retry và push permission denial/inbox đã pass. Event replay inbox/delivery/refund đúng một lần; đã đối chiếu heads-up/cold start preview; đã chạy2 booking/push loops; còn giới hạn video full rehearsal và foreground heads-up.
+
+Các task dưới đây thuộc kế hoạch mobile đầy đủ, không mặc định hoàn tất chỉ vì checkpoint có code/tests/runtime subset. Reminder/Jitsi/rating/iPhone ngoài đợt này.
 
 ## Phase 0 — contract/risk
 
@@ -118,3 +132,5 @@ Tham chiếu: [plan](plan.md). Checkpoint 12/10/2026: **30/30 unique route templ
   - Verify: clean install against staging/dev HTTPS; git diff --check; graphify update . sau code.
   - Depends: T21. Files: build config + docs acceptance matrix/demo guide. Scope: M.
 - [ ] Checkpoint final: full gate green, device evidence đủ, limitations mock payment/remaining SRS FR ghi rõ.
+
+Thông báo: VI/EN theo cài đặt đã pass remote push; APK cuối tự retry đồng bộ locale sau mất mạng, mobile212 tests/28 suites và full verify xanh.

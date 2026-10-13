@@ -25,12 +25,12 @@ describe('TeachingGateway', () => {
   });
 
   it('uses the documented lifecycle routes and PATCH contract', async () => {
-    const updated = { id: 'class/1', teacherId: 'teacher-1', state: 'published', startsAt: '2026-10-20T10:00:00.000Z', durationMinutes: 60, priceCredits: 11, capacity: 1 };
+    const updated = { id: 'class/1', teacherId: 'teacher-1', state: 'published', startsAt: '2026-10-21T10:00:00.000Z', durationMinutes: 60, priceCredits: 25, capacity: 3 };
     fetchMock.mockResolvedValueOnce(response(updated));
     fetchMock.mockResolvedValueOnce(response({ cancelled: true }));
     fetchMock.mockResolvedValueOnce(response({ started: true }));
     fetchMock.mockResolvedValueOnce(response({ completed: true }));
-    await gateway.update('class/1', { priceCredits: 11 });
+    await gateway.update('class/1', { description: 'Updated class', startsAt: updated.startsAt, priceCredits: 25, capacity: 3 });
     await gateway.cancel('class-1');
     await gateway.start('class-1');
     await gateway.complete('class-1');
@@ -40,6 +40,7 @@ describe('TeachingGateway', () => {
       ['http://localhost:4000/api/classes/class-1/start', 'POST'],
       ['http://localhost:4000/api/classes/class-1/complete', 'POST'],
     ]);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ description: 'Updated class', startsAt: updated.startsAt, priceCredits: 25, capacity: 3 });
   });
 
   it('declares a teacher no-show against the booking resource, not the class', async () => {

@@ -1,0 +1,18 @@
+{
+  "conceptual": {
+    "entities": 20,
+    "relationships": 35
+  },
+  "logical": {
+    "tables": 26,
+    "nativeForeignKeys": 10,
+    "applicationAssociations": 33,
+    "totalRelationships": 43
+  },
+  "database": {
+    "tables": 47,
+    "schemas": 7,
+    "nativeForeignKeys": 10
+  },
+  "source": "Repository migrations replayed in isolated PGlite; not a live production database inspection"
+}

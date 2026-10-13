@@ -20,6 +20,7 @@ export default function FeatureStackLayout() {
       <Stack.Screen name="verification" options={{ title: t('Verification.title') }} />
       <Stack.Screen name="skills" options={{ title: t('Skills.title') }} />
       <Stack.Screen name="teaching" options={{ title: t('Teaching.title') }} />
+      <Stack.Screen name="teaching/[id]" options={{ title: t('Teaching.detailTitle') }} />
       <Stack.Screen name="notifications" options={{ title: t('Notifications.title') }} />
     </Stack>
   );

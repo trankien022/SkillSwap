@@ -6,6 +6,8 @@ coverage/
 *.tsbuildinfo
 .env
 .env.local
+apps/mobile/google-services.json
+apps/mobile/*service-account*.json
 .secrets/
 *.log
 .DS_Store
@@ -21,3 +23,12 @@ logo/
 # This repo uses pnpm. A stray `npm install` writes a lockfile the project does
 # not consume; ignore it rather than leave it as untracked noise.
 package-lock.json
+
+# Locally installed agent tools and generated code graphs.
+.agents/
+.codex/
+**/graphify-out/
+
+# Local Android build output and Office lock files.
+apps/mobile/build-*.apk
+~$*.pptx

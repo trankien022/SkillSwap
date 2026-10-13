@@ -77,6 +77,14 @@
     "refresh": "Refresh data"
   },
   "Wallet": {
+    "type_top_up": "Credit top-up",
+    "type_learner_debit": "Class payment",
+    "type_teacher_pending": "Pending teaching income",
+    "type_platform_fee": "Platform fee",
+    "type_refund": "Credit refund",
+    "type_release": "Income release",
+    "type_teacher_credit": "Teaching income",
+    "type_transaction": "Wallet transaction",
     "title": "Wallet & Balance",
     "balanceCard": "Current Balance",
     "available": "{credits} credits available",
@@ -148,7 +156,7 @@
     "state_pending": "Pending", "state_claimed": "In review", "state_approved": "Approved", "state_rejected": "Rejected", "state_superseded": "Superseded"
   },
   "Teaching": {
-    "title": "Teaching", "createTitle": "Create a class", "description": "Class description", "startsAt": "Start time (ISO 8601)", "duration": "Minutes", "price": "Credits", "capacity": "Seats", "publish": "Publish class", "myClasses": "Classes I created", "empty": "You have no classes yet.", "editPrice": "Raise price by 1 credit", "cancel": "Cancel class", "start": "Start", "complete": "Complete", "loadError": "Could not load class data.", "actionError": "Action failed. Reload to check the current state."
+    "title": "Teaching", "createTitle": "Create a class", "detailTitle": "Class details", "description": "Class description", "startsAt": "Start time (ISO 8601)", "duration": "Minutes", "price": "Credits", "capacity": "Seats", "publish": "Publish class", "myClasses": "Classes I created", "empty": "You have no classes yet.", "openDetail": "View details", "save": "Save changes", "cancel": "Cancel class", "cancelTitle": "Confirm cancellation", "cancelConfirm": "Are you sure you want to cancel this class?", "invalidForm": "Check the description, time, price, and seat count.", "notFound": "Class was not found in your teaching list.", "start": "Start", "complete": "Complete", "loadError": "Could not load class data.", "actionError": "Action failed. The server may have locked editing; reload the class to check its state.", "state": { "draft": "Draft", "published": "Open", "full": "Full", "in_progress": "In progress", "completed": "Completed", "cancelled": "Cancelled" }
   },
   "Notifications": {
     "title":"Notifications", "unread":"{count} unread notifications", "enablePush":"Enable push notifications on this device", "disablePush":"Disable push notifications on this device", "empty":"No notifications yet.", "loadMore":"Load more", "loadError":"Could not load your inbox.", "pushError":"Could not register this device. Check notification permission and retry.",
@@ -194,6 +202,7 @@
     "retrySkills": "Retry"
   },
   "Common": {
+    "cancel": "Cancel",
     "loading": "Loading data…",
     "errorTitle": "Something went wrong",
     "errorMessage": "Unable to connect to gateway. Please check connection and try again.",
@@ -234,6 +243,9 @@
     "reconcilingSession": "Session expired. Reconciling transaction state…",
     "reconcilingNetwork": "Network connection interrupted. Checking booking status…",
     "manualRetry": "Retry action",
+    "settling": "Processing payment…",
+    "settlementPending": "Payment status is not confirmed yet. Please check again.",
+    "checkSettlement": "Check payment status",
     "reviewsTitle": "Recent Reviews",
     "noReviews": "No reviews for this class yet.",
     "cannotBook": "Class is currently not accepting new bookings.",
