@@ -132,3 +132,24 @@ migrated module.
    `key-value-store.ts` (plus specs).
 3. Each migrated module has a red/green proof.
 4. Mobile suite green; `pnpm lint` and `apps/mobile` typecheck clean.
+
+## Outcome (2026-10-13)
+
+Done. Four commits: `83894bd`, `a1e2d6e`, `86111aa`, `29bb1b4`.
+
+Measured: `expo-secure-store` is now imported by exactly one production file
+(`key-value-store.ts`; the second match is a spec). Live bundle confirmed the
+sign-out line compiles to `defaultKeyValueStore().getItemAsync(…)` with no
+`SecureStore.getItemAsync` on either the session or locale path. Mobile suite
+217 → 223 tests, 28 → 29 suites; `pnpm verify` green.
+
+**A second, unrelated fault was found while verifying this one** and is recorded
+here because it blocked the same demo. The API was logging
+`column "receipt_status" does not exist` on a recurring sweep. Cause: two
+migrations added on `main` — `1791072000007-AddPushDeliveryLeasesAndReceipts` and
+`1791072000008-AddNotificationDeviceLocale` — were in the code but absent from
+`schema_migrations`, so `push_deliveries` still had 10 columns instead of 14.
+`pnpm db:migrate` applied both; the app code was never wrong. This is a pull-
+versus-run hazard, not a defect: **pull `main`, then run `pnpm db:migrate`,
+before starting the stack.**
+
