@@ -5,6 +5,7 @@ import type {
   NewTopUpIntent,
   TopUpIntent,
   TopUpIntentRepository,
+  TopUpSettlement,
 } from '../../../application/port/out/top-up-intent-repository';
 
 interface IntentRow {
@@ -12,10 +13,16 @@ interface IntentRow {
   owner_id: string;
   provider: string;
   provider_ref: string;
+  provider_order_id: string | null;
   amount_vnd: number;
   amount_credits: number;
+  paid_amount_vnd: number | null;
+  paid_at: Date | null;
   status: string;
 }
+
+const COLUMNS = `"id", "owner_id", "provider", "provider_ref", "provider_order_id",
+   "amount_vnd", "amount_credits", "paid_amount_vnd", "paid_at", "status"`;
 
 function toIntent(row: IntentRow): TopUpIntent {
   return {
@@ -23,8 +30,11 @@ function toIntent(row: IntentRow): TopUpIntent {
     ownerId: row.owner_id,
     provider: row.provider,
     providerRef: row.provider_ref,
+    providerOrderId: row.provider_order_id,
     amountVnd: row.amount_vnd,
     amountCredits: row.amount_credits,
+    paidAmountVnd: row.paid_amount_vnd,
+    paidAt: row.paid_at,
     status: row.status as TopUpStatus,
   };
 }
@@ -45,7 +55,7 @@ export class SqlTopUpIntentRepository implements TopUpIntentRepository {
       `INSERT INTO ${this.table}
          ("owner_id", "provider", "provider_ref", "amount_vnd", "amount_credits")
        VALUES ($1, $2, $3, $4, $5)
-       RETURNING "id", "owner_id", "provider", "provider_ref", "amount_vnd", "amount_credits", "status"`,
+       RETURNING ${COLUMNS}`,
       [input.ownerId, input.provider, input.providerRef, input.amountVnd, input.amountCredits],
     )) as IntentRow[];
     return toIntent(rows[0]);
@@ -54,9 +64,18 @@ export class SqlTopUpIntentRepository implements TopUpIntentRepository {
   async findByProviderRef(provider: string, providerRef: string): Promise<TopUpIntent | null> {
     const source = this.registry.get(this.moduleName);
     const rows = (await source.query(
-      `SELECT "id", "owner_id", "provider", "provider_ref", "amount_vnd", "amount_credits", "status"
+      `SELECT ${COLUMNS}
        FROM ${this.table} WHERE "provider" = $1 AND "provider_ref" = $2 LIMIT 1`,
       [provider, providerRef],
+    )) as IntentRow[];
+    return rows[0] === undefined ? null : toIntent(rows[0]);
+  }
+
+  async findById(id: string): Promise<TopUpIntent | null> {
+    const source = this.registry.get(this.moduleName);
+    const rows = (await source.query(
+      `SELECT ${COLUMNS} FROM ${this.table} WHERE "id" = $1 LIMIT 1`,
+      [id],
     )) as IntentRow[];
     return rows[0] === undefined ? null : toIntent(rows[0]);
   }
@@ -66,6 +85,30 @@ export class SqlTopUpIntentRepository implements TopUpIntentRepository {
     await source.query(
       `UPDATE ${this.table} SET "status" = $2, "updated_at" = now() WHERE "id" = $1`,
       [id, status],
+    );
+  }
+
+  async recordSettlement(
+    id: string,
+    status: TopUpStatus,
+    settlement: TopUpSettlement,
+  ): Promise<void> {
+    const source = this.registry.get(this.moduleName);
+    await source.query(
+      `UPDATE ${this.table}
+         SET "status" = $2,
+             "provider_order_id" = COALESCE($3, "provider_order_id"),
+             "paid_amount_vnd" = COALESCE($4, "paid_amount_vnd"),
+             "paid_at" = COALESCE($5, "paid_at"),
+             "updated_at" = now()
+       WHERE "id" = $1`,
+      [
+        id,
+        status,
+        settlement.providerOrderId,
+        settlement.paidAmountVnd,
+        settlement.paidAt,
+      ],
     );
   }
 }

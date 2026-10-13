@@ -15,6 +15,7 @@ import type {
   NewTopUpIntent,
   TopUpIntent,
   TopUpIntentRepository,
+  TopUpSettlement,
 } from '../port/out/top-up-intent-repository';
 import type { InitiatePaymentRequest, InitiatePaymentResult, PaymentGateway } from '../port/out/payment-gateway';
 import type { HistoryQuery, WalletReader } from '../port/out/wallet-reader';
@@ -91,7 +92,14 @@ export class FakeTopUpIntentRepository implements TopUpIntentRepository {
   readonly intents = new Map<string, TopUpIntent>();
 
   async create(input: NewTopUpIntent): Promise<TopUpIntent> {
-    const intent: TopUpIntent = { id: randomUUID(), ...input, status: 'pending' };
+    const intent: TopUpIntent = {
+      id: randomUUID(),
+      ...input,
+      providerOrderId: null,
+      paidAmountVnd: null,
+      paidAt: null,
+      status: 'pending',
+    };
     this.intents.set(intent.id, intent);
     return intent;
   }
@@ -103,9 +111,29 @@ export class FakeTopUpIntentRepository implements TopUpIntentRepository {
     return null;
   }
 
+  async findById(id: string): Promise<TopUpIntent | null> {
+    return this.intents.get(id) ?? null;
+  }
+
   async updateStatus(id: string, status: TopUpStatus): Promise<void> {
     const intent = this.intents.get(id);
     if (intent !== undefined) this.intents.set(id, { ...intent, status });
+  }
+
+  async recordSettlement(
+    id: string,
+    status: TopUpStatus,
+    settlement: TopUpSettlement,
+  ): Promise<void> {
+    const intent = this.intents.get(id);
+    if (intent === undefined) return;
+    this.intents.set(id, {
+      ...intent,
+      status,
+      providerOrderId: settlement.providerOrderId ?? intent.providerOrderId,
+      paidAmountVnd: settlement.paidAmountVnd ?? intent.paidAmountVnd,
+      paidAt: settlement.paidAt ?? intent.paidAt,
+    });
   }
 }
 
