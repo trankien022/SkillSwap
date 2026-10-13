@@ -57,8 +57,8 @@ import {
   submitSkillEvidenceSchema,
   submitStudentVerificationSchema,
   successEnvelopeSchema,
+  sepayIpnSchema,
   tokenResponseSchema,
-  topUpCallbackSchema,
   topUpIntentSchema,
   topUpRequestSchema,
   updateClassSchema,
@@ -702,12 +702,25 @@ describe('top-up schemas (FR-008)', () => {
     expect(() => topUpRequestSchema.parse({ amountVnd: 1.5 })).toThrow();
   });
 
-  it('accepts only settled/failed/reversed callbacks', () => {
-    expect(topUpCallbackSchema.parse({ providerRef: 'r', amountVnd: 1000, status: 'settled' }).status).toBe(
-      'settled',
-    );
+  it('accepts a SePay IPN whose amounts are strings or numbers', () => {
+    const base = {
+      notification_type: 'ORDER_PAID',
+      order: { order_invoice_number: 'SS-1-A1B2C3' },
+    };
+    // Live Sandbox delivery: string amounts with a fractional part.
+    expect(
+      sepayIpnSchema.parse({ ...base, order: { ...base.order, order_amount: '10000.00' } }).order
+        .order_amount,
+    ).toBe('10000.00');
+    // SePay's own test send: numeric amounts.
+    expect(
+      sepayIpnSchema.parse({
+        ...base,
+        order: { ...base.order, order_amount: 50000 },
+      }).order.order_amount,
+    ).toBe(50000);
     expect(() =>
-      topUpCallbackSchema.parse({ providerRef: 'r', amountVnd: 1000, status: 'pending' }),
+      sepayIpnSchema.parse({ notification_type: 'ORDER_PAID', order: {} }),
     ).toThrow();
   });
 
@@ -715,7 +728,7 @@ describe('top-up schemas (FR-008)', () => {
     const intent = {
       id: 'i1',
       ownerId: 'u1',
-      provider: 'mock',
+      provider: 'sepay',
       providerRef: 'r1',
       amountVnd: 100_000,
       amountCredits: 100,
