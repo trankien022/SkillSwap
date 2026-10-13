@@ -18,6 +18,7 @@ import type {
   TopUpSettlement,
 } from '../port/out/top-up-intent-repository';
 import type { InitiatePaymentRequest, InitiatePaymentResult, PaymentGateway } from '../port/out/payment-gateway';
+import type { SepayOrderClient, SepayOrderStatus } from '../port/out/sepay-order-client';
 import type { HistoryQuery, WalletReader } from '../port/out/wallet-reader';
 import type { WalletHistoryItemView, WalletHistoryPage } from '@skillswap/contracts';
 
@@ -134,6 +135,37 @@ export class FakeTopUpIntentRepository implements TopUpIntentRepository {
       paidAmountVnd: settlement.paidAmountVnd ?? intent.paidAmountVnd,
       paidAt: settlement.paidAt ?? intent.paidAt,
     });
+  }
+
+  /**
+   * FR-008 / ADR-033 reconciliation. Every fake intent starts at the current
+   * instant, so a test that wants a sweepable row sets `ages` explicitly rather
+   * than depending on wall-clock time.
+   */
+  readonly ages = new Map<string, number>();
+
+  async findStalePending(olderThanMs: number, limit: number): Promise<TopUpIntent[]> {
+    return [...this.intents.values()]
+      .filter((intent) => intent.status === 'pending')
+      .filter((intent) => (this.ages.get(intent.id) ?? 0) >= olderThanMs)
+      .slice(0, limit);
+  }
+}
+
+/** Test double for the reconciliation order lookup. No network is touched. */
+export class FakeSepayOrderClient implements SepayOrderClient {
+  private readonly orders = new Map<string, SepayOrderStatus>();
+
+  set(order: SepayOrderStatus): void {
+    this.orders.set(order.providerRef, order);
+  }
+
+  /** Invoice numbers looked up, so a test can assert the sweep's reach. */
+  readonly queries: string[] = [];
+
+  async findByInvoiceNumber(providerRef: string): Promise<SepayOrderStatus | null> {
+    this.queries.push(providerRef);
+    return this.orders.get(providerRef) ?? null;
   }
 }
 

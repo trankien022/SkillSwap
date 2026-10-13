@@ -56,6 +56,14 @@ export class ApiConfig {
   readonly sepayMerchantId: string;
   readonly sepaySecretKey: string;
   readonly sepayReturnUrl: string;
+  /**
+   * FR-008 / ADR-033 reconciliation (deliberately incomplete, see the sweeper).
+   * Off by default so no dev, test or CI run ever calls SePay.
+   */
+  readonly sepayReconEnabled: boolean;
+  readonly sepayReconIntervalMs: number;
+  /** Only intents older than this are re-queried, so a live checkout is left alone. */
+  readonly sepayReconMinAgeMs: number;
 
   // FR-002 / ADR-023: document storage (S3-compatible object storage).
   readonly s3Endpoint: string;
@@ -96,6 +104,12 @@ export class ApiConfig {
     this.sepayMerchantId = readString('SEPAY_MERCHANT_ID', '');
     this.sepaySecretKey = readString('SEPAY_SECRET_KEY', '');
     this.sepayReturnUrl = readString('SEPAY_RETURN_URL', '');
+
+    // FR-008 / ADR-033: reconciliation is off unless explicitly enabled, so a
+    // test or local run never reaches out to SePay.
+    this.sepayReconEnabled = readString('SEPAY_RECON_ENABLED', 'false') === 'true';
+    this.sepayReconIntervalMs = readInt('SEPAY_RECON_INTERVAL_MS', 5 * 60 * 1000);
+    this.sepayReconMinAgeMs = readInt('SEPAY_RECON_MIN_AGE_MS', 15 * 60 * 1000);
 
     this.jitsiAppId = readString('JITSI_APP_ID', 'skillswap');
     this.jitsiAppSecret = readString('JITSI_APP_SECRET', 'skillswap_jitsi_dev_secret');

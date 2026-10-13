@@ -4,7 +4,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
- * Starts the SkillSwap ngrok tunnel alongside `pnpm dev` (FR-008 / ADR-030).
+ * Starts the SkillSwap ngrok tunnel alongside `pnpm dev` (FR-008 / ADR-033).
  *
  * The API exposes the SePay IPN at POST /api/wallet/top-ups/callback, and SePay
  * can only reach it through a public HTTPS URL. This script is the dev-stack

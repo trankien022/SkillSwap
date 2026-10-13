@@ -42,4 +42,10 @@ export interface TopUpIntentRepository {
    * a callback is applied, so a replay cannot overwrite the original capture.
    */
   recordSettlement(id: string, status: TopUpStatus, settlement: TopUpSettlement): Promise<void>;
+  /**
+   * FR-008 / ADR-033 reconciliation: intents still awaiting a callback that are
+   * older than `olderThanMs`, oldest first. A live checkout is left alone
+   * because its age is below the threshold.
+   */
+  findStalePending(olderThanMs: number, limit: number): Promise<TopUpIntent[]>;
 }

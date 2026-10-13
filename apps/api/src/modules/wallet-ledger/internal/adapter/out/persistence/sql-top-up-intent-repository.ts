@@ -111,4 +111,17 @@ export class SqlTopUpIntentRepository implements TopUpIntentRepository {
       ],
     );
   }
+
+  async findStalePending(olderThanMs: number, limit: number): Promise<TopUpIntent[]> {
+    const source = this.registry.get(this.moduleName);
+    const rows = (await source.query(
+      `SELECT ${COLUMNS}
+       FROM ${this.table}
+       WHERE "status" = 'pending' AND "created_at" < now() - ($1::bigint * interval '1 millisecond')
+       ORDER BY "created_at" ASC
+       LIMIT $2`,
+      [olderThanMs, limit],
+    )) as IntentRow[];
+    return rows.map(toIntent);
+  }
 }

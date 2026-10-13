@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Start the SkillSwap ngrok tunnel for the SePay payment gateway (FR-008 / ADR-030).
+  Start the SkillSwap ngrok tunnel for the SePay payment gateway (FR-008 / ADR-033).
 
 .DESCRIPTION
   Exposes the local API (:4001) at the team's reserved ngrok domain so SePay can

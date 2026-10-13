@@ -30,7 +30,7 @@ Two constraints shape the answer. Money is integer VND and 1 credit = 1,000 VND,
 
 9. **The `success_url` browser GET is tolerated.** Completing a checkout also fires a plain `GET` on the callback path from the payer's browser. It carries no IPN and credits nothing; the route answers it with the same ack.
 
-10. **Reconciliation is deferred, with the gap stated.** A sweeper stub exists but is **disabled by default** (`SEPAY_RECON_ENABLED=false`). It is explicitly *not* production reconciliation: there is no backfill for an outage longer than the retry window and no manual-resolution workflow. Production cannot ship on this stub.
+10. **Reconciliation is deferred, with the gap stated.** A sweeper exists (`TopUpReconciliationSweeper`) but is **disabled by default** (`SEPAY_RECON_ENABLED=false`), so no dev, test or CI run calls SePay. It re-queries intents still `pending` after `SEPAY_RECON_MIN_AGE_MS` and feeds the answer through the *same* `HandleTopUpCallbackUseCase` as an IPN, so the exactly-once rule is not reimplemented. Its order lookup (`SepayRestOrderClient`) is **not exercised against SePay in any test** and parses the documented field names, not observed ones — a shape divergence degrades to "still pending" rather than a wrong credit. It is explicitly *not* production reconciliation: there is no backfill for an outage longer than the retry window, a `settled`/`reversed` answer it applies is not reviewed by a human, and it alerts only by logging. Production cannot ship on this stub.
 
 **Observed divergences from the documentation.** The implementation follows what Sandbox actually sends, which differs from the published contract in ways that would each have caused a silent failure:
 
@@ -56,7 +56,9 @@ Translation of these quirks lives in the **inbound web adapter**, because the pr
 - (+) Sandbox → Production is a configuration change, not a code change; the same adapter and the same tests cover both.
 - (−) **The app must run behind an IP allow-list.** Removed the signature check means an unauthenticated, un-proxied deployment would accept forged IPNs. This is the single largest operational obligation this ADR creates.
 - (−) The invoice lookup is the only correlation key, so an invoice number must never be guessable or reused; both are enforced but are load-bearing.
-- (−) Reconciliation is a documented stub. A payment that succeeds while the process is down will not self-heal; a human must reconcile from the SePay dashboard until Phase 8's full version exists.
+- (−) Reconciliation is a stub that must be enabled deliberately. A payment that succeeds while the process is down will not self-heal; a human must reconcile from the SePay dashboard until a full version exists.
+- (−) The reconciliation order lookup has never been run against SePay, so its response parsing is a documented-contract guess. It is only reached when `SEPAY_RECON_ENABLED=true`.
+- (−) Three phases of this work sat on an **unapplied migration** and no gate caught it, because `pnpm verify` does not start Docker and so does not run the e2e suite. Prefer the e2e suite locally before claiming an integration is done.
 - (−) Local development now depends on a public HTTPS tunnel and a reserved ngrok domain, so the dev stack has a new external dependency that CI does not exercise.
 
 **Alternatives considered.**
