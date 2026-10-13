@@ -203,7 +203,9 @@ export default function WalletPage() {
 
       // ADR-033 / design B: the API already submitted the signed checkout form
       // to SePay and returned the hosted payment URL. Hand the user off and let
-      // the IPN do the settling; this handler never fabricates a success.
+      // the IPN do the settling; this handler never fabricates a success and
+      // never computes the new balance locally — the poll reads it from the
+      // server, which is the only authority on whether a top-up settled.
       window.open(intent.paymentUrl, '_blank', 'noopener,noreferrer');
       void pollIntent(intent.id);
     } catch (e: unknown) {

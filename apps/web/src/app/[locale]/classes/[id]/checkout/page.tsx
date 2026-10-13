@@ -235,7 +235,8 @@ export default function BookingCheckoutPage({ params }: PageProps) {
 
       const intent = await unwrapEnvelope<TopUpIntentCreated>(res);
       // ADR-033 / design B: open the hosted SePay checkout. The IPN settles the
-      // intent server-to-server, so this handler must not fabricate a success.
+      // intent server-to-server, so this handler must not fabricate a success,
+      // and the balance is only ever read back from the server by the poll.
       window.open(intent.paymentUrl, '_blank', 'noopener,noreferrer');
       setIsTopUpModalOpen(false);
       showToast('Đã mở trang thanh toán SePay. Số dư sẽ cập nhật ngay khi SePay xác nhận.');
