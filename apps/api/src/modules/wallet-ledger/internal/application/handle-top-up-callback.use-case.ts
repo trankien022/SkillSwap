@@ -9,9 +9,13 @@ import type {
 } from './port/in/handle-top-up-callback';
 
 /**
- * FR-008 / AC-009 (ADR-017): applies a payment callback exactly once and only
+ * FR-008 / AC-009 (ADR-030): applies a payment callback exactly once and only
  * when it moves the intent forward. A settled callback credits the wallet with
  * its ledger entry in one transaction; a reversal posts an offsetting debit.
+ *
+ * SePay retries IPNs, so idempotency is not optional: `canAdvanceTopUp` makes a
+ * replay of a terminal transition a no-op, and a caller that has already
+ * recognised the callback as a duplicate never reaches the credit path.
  */
 export class HandleTopUpCallbackUseCase implements HandleTopUpCallbackPort {
   constructor(
@@ -51,7 +55,11 @@ export class HandleTopUpCallbackUseCase implements HandleTopUpCallbackPort {
       });
     }
 
-    await this.intents.updateStatus(intent.id, next);
+    await this.intents.recordSettlement(intent.id, next, {
+      providerOrderId: input.providerOrderId ?? null,
+      paidAmountVnd: input.paidAmountVnd ?? null,
+      paidAt: input.paidAt ?? null,
+    });
     return { applied: true, status: next };
   }
 }

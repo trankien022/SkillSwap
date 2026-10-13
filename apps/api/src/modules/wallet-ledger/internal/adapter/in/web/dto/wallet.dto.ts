@@ -1,6 +1,6 @@
 import { createZodDto } from 'nestjs-zod';
 import {
-  topUpCallbackSchema,
+  sepayIpnSchema,
   topUpIntentSchema,
   topUpRequestSchema,
   walletBalanceSchema,
@@ -14,8 +14,8 @@ export class TopUpRequestDto extends createZodDto(topUpRequestSchema) {}
 /** FR-008: the pending top-up intent with a payment URL. */
 export class TopUpIntentDto extends createZodDto(topUpIntentSchema) {}
 
-/** FR-008 / ADR-017: payment provider callback. Body for POST /wallet/top-ups/callback. */
-export class TopUpCallbackDto extends createZodDto(topUpCallbackSchema) {}
+/** FR-008 / ADR-030: SePay Payment Gateway IPN. Body for POST /wallet/top-ups/callback. */
+export class SepayIpnDto extends createZodDto(sepayIpnSchema) {}
 
 /** FR-008/FR-010: available and pending credits. */
 export class WalletBalanceDto extends createZodDto(walletBalanceSchema) {}

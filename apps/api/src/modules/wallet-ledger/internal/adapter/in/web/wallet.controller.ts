@@ -2,23 +2,22 @@ import {
   Body,
   Controller,
   Get,
-  Headers,
   HttpCode,
   HttpStatus,
   Inject,
+  Logger,
   Post,
   Query,
   Req,
-  UnauthorizedException,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
-  ApiHeader,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 import type {
+  SepayIpnAck,
   TopUpIntentView,
   WalletBalanceView,
   WalletHistoryPage,
@@ -39,17 +38,15 @@ import {
   HANDLE_TOP_UP_CALLBACK,
   type HandleTopUpCallbackPort,
 } from '../../../application/port/in/handle-top-up-callback';
-import {
-  WEBHOOK_SIGNATURE_VERIFIER,
-  type WebhookSignatureVerifier,
-} from '../../../application/port/out/webhook-signature-verifier';
+import { toCallbackInput } from './sepay-ipn';
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
 import {
+  RawResponse,
   ResponseCode,
   ResponseMessage,
 } from '../../../../../../shared/http/response-code.decorator';
 import {
-  TopUpCallbackDto,
+  SepayIpnDto,
   TopUpIntentDto,
   TopUpRequestDto,
   WalletBalanceDto,
@@ -57,21 +54,17 @@ import {
   WalletHistoryQueryDto,
 } from './dto/wallet.dto';
 
-/** Express request with the raw body captured by Nest (for HMAC verification). */
-interface RequestWithRawBody extends RequestWithIdentity {
-  rawBody?: Buffer;
-}
-
 @Controller('wallet')
 @ApiTags('wallet')
 @ApiBearerAuth('bearer')
 export class WalletController {
+  private readonly logger = new Logger(WalletController.name);
+
   constructor(
     @Inject(INITIATE_TOP_UP) private readonly initiateTopUp: InitiateTopUpPort,
     @Inject(GET_WALLET_BALANCE) private readonly getBalance: GetWalletBalancePort,
     @Inject(GET_WALLET_HISTORY) private readonly getHistory: GetWalletHistoryPort,
     @Inject(HANDLE_TOP_UP_CALLBACK) private readonly callback: HandleTopUpCallbackPort,
-    @Inject(WEBHOOK_SIGNATURE_VERIFIER) private readonly verifier: WebhookSignatureVerifier,
   ) {}
 
   @Post('top-ups')
@@ -84,21 +77,45 @@ export class WalletController {
     return this.initiateTopUp.execute({ ownerId: currentUserId(request), amountVnd: body.amountVnd });
   }
 
+  /**
+   * FR-008 / ADR-030: the SePay Payment Gateway IPN.
+   *
+   * SePay expects exactly `200 {"success": true}` and retries on anything else,
+   * so every *recognised* notification is acknowledged even when it applies
+   * nothing (unknown invoice, replay). Only a malformed body is rejected, since
+   * retrying it would never help.
+   *
+   * Authentication is by IP allow-list at the edge plus the invoice lookup: the
+   * IPN carries no secret header and SePay does not send a `User-Agent`, so
+   * neither can be used as a check.
+   */
   @Post('top-ups/callback')
   @HttpCode(HttpStatus.OK)
-  @ApiHeader({ name: 'x-signature', description: 'HMAC signature of the raw body (ADR-017)' })
-  @ApiOperation({ summary: 'Payment provider callback (signature verified)' })
-  @ApiOkResponse({ description: 'Whether the callback was applied' })
-  async onCallback(
-    @Body() body: TopUpCallbackDto,
-    @Headers('x-signature') signature: string | undefined,
-    @Req() request: RequestWithRawBody,
-  ): Promise<{ applied: boolean; status: string }> {
-    const rawBody = request.rawBody?.toString('utf8') ?? JSON.stringify(body);
-    if (!this.verifier.verify(rawBody, signature ?? '')) {
-      throw new UnauthorizedException('Invalid payment signature');
+  @RawResponse()
+  @ApiOperation({ summary: 'SePay Payment Gateway IPN (ADR-030)' })
+  @ApiOkResponse({ description: 'SePay acknowledgement: { success: true }' })
+  async onCallback(@Body() body: SepayIpnDto): Promise<SepayIpnAck> {
+    const input = toCallbackInput(body);
+    if (input === null) {
+      this.logger.log(`Ignoring SePay notification type ${body.notification_type}`);
+      return { success: true };
     }
-    return this.callback.execute(body);
+    const result = await this.callback.execute(input);
+    this.logger.log(
+      `SePay IPN ${body.notification_type} for ${input.providerRef}: applied=${result.applied} status=${result.status}`,
+    );
+    return { success: true };
+  }
+
+  /**
+   * The browser lands here after `success_url` / `error_url` / `cancel_url`.
+   * It is a plain GET and must never credit anything; the IPN above does that.
+   */
+  @Get('top-ups/callback')
+  @RawResponse()
+  @ApiOperation({ summary: 'Browser return from the SePay hosted checkout (ADR-030)' })
+  returnFromCheckout(): SepayIpnAck {
+    return { success: true };
   }
 
   @Get('balance')
