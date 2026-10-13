@@ -1,9 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { callApi, unwrapEnvelope, dispatchWalletBalanceUpdate } from '../../../lib/api-client';
 import { Navbar } from '../../../components/navbar';
-import type { WalletBalanceView, WalletHistoryItemView, MeResponse, TopUpIntentView } from '@skillswap/contracts';
+import type {
+  WalletBalanceView,
+  WalletHistoryItemView,
+  MeResponse,
+  TopUpIntentCreated,
+  TopUpIntentStatusView,
+} from '@skillswap/contracts';
 
 function getCombinedHistory(serverItems: WalletHistoryItemView[]): WalletHistoryItemView[] {
   // The server ledger is the only source of wallet history. An earlier version
@@ -14,15 +20,49 @@ function getCombinedHistory(serverItems: WalletHistoryItemView[]): WalletHistory
   return serverItems;
 }
 
+/** Terminal states: polling stops as soon as the intent can no longer change. */
+const TERMINAL_TOP_UP_STATUSES = new Set(['settled', 'failed', 'reversed']);
+const POLL_INTERVAL_MS = 3_000;
+const POLL_TIMEOUT_MS = 120_000;
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'Đang chờ SePay xác nhận',
+  settled: 'Đã cộng vào ví',
+  failed: 'Thanh toán không thành công',
+  reversed: 'Giao dịch đã bị hoàn',
+};
+
 export default function WalletPage() {
   const [balance, setBalance] = useState<WalletBalanceView | null>(null);
   const [history, setHistory] = useState<WalletHistoryItemView[]>([]);
   const [me, setMe] = useState<MeResponse | null>(null);
 
   const [amount, setAmount] = useState(100);
-  const [bank, setBank] = useState('VCB');
   const [filter, setFilter] = useState('all');
   const [isPending, setIsPending] = useState(false);
+  const [activeIntent, setActiveIntent] = useState<TopUpIntentCreated | null>(null);
+  const [intentStatus, setIntentStatus] = useState<TopUpIntentStatusView | null>(null);
+  const [pollExpired, setPollExpired] = useState(false);
+  const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /** Refreshes balance + history from the server (never computed locally). */
+  const refreshWallet = useCallback(async () => {
+    const [balRes, histRes] = await Promise.all([
+      callApi('/wallet/balance'),
+      callApi('/wallet/history'),
+    ]);
+
+    if (balRes.ok) {
+      const newBal = await unwrapEnvelope<WalletBalanceView>(balRes);
+      setBalance(newBal);
+      dispatchWalletBalanceUpdate(newBal);
+    }
+
+    if (histRes.ok) {
+      const data = await unwrapEnvelope<{ items: WalletHistoryItemView[] }>(histRes);
+      setHistory(getCombinedHistory(data.items || []));
+    }
+  }, []);
 
   useEffect(() => {
     setHistory(getCombinedHistory([]));
@@ -83,14 +123,66 @@ export default function WalletPage() {
     }
   };
 
+  /**
+   * Polls the intent until it settles, the user's time budget runs out, or we
+   * stop. The SePay IPN settles the intent server-to-server and pushes nothing
+   * to the browser, so polling the server's own record is the only honest way
+   * for this screen to learn the outcome.
+   */
+  const pollIntent = useCallback(
+    async (intentId: string) => {
+      const deadline = Date.now() + POLL_TIMEOUT_MS;
+
+      const tick = async () => {
+        // A new run or an unmount clears the timer, so a late tick is a no-op.
+        pollTimer.current = null;
+        try {
+          const res = await callApi(`/wallet/top-ups/${intentId}`);
+          if (res.ok) {
+            const status = await unwrapEnvelope<TopUpIntentStatusView>(res);
+            setIntentStatus(status);
+            if (TERMINAL_TOP_UP_STATUSES.has(status.status)) {
+              await refreshWallet();
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn('Top-up poll failed', e);
+        }
+
+        if (Date.now() >= deadline) {
+          setPollExpired(true);
+          return;
+        }
+        pollTimer.current = setTimeout(() => void tick(), POLL_INTERVAL_MS);
+      };
+
+      await tick();
+    },
+    [refreshWallet],
+  );
+
+  // Stop polling when the screen goes away; a timer outliving the component
+  // would keep hitting the API and warn on a dead component.
+  useEffect(() => {
+    return () => {
+      if (pollTimer.current !== null) {
+        clearTimeout(pollTimer.current);
+        pollTimer.current = null;
+      }
+    };
+  }, []);
+
   const handleTopUp = async () => {
     if (amount <= 0) {
-      alert('Số tiền nạp tối thiểu là 10 Credit (10.000 VNĐ)');
+      alert('Số tiền nạp tối thiểu là 1 Credit (1.000 VNĐ)');
       return;
     }
     try {
       setIsPending(true);
-      // 1. Create top up intent via authenticated API
+      setPollExpired(false);
+      setIntentStatus(null);
+
       const res = await callApi('/wallet/top-ups', {
         method: 'POST',
         body: JSON.stringify({ amountVnd: amount * 1000 }),
@@ -106,21 +198,14 @@ export default function WalletPage() {
         return;
       }
 
-      const intent = await unwrapEnvelope<TopUpIntentView>(res);
+      const intent = await unwrapEnvelope<TopUpIntentCreated>(res);
+      setActiveIntent(intent);
 
-      // 2. ADR-033 / design B: the API already submitted the signed checkout
-      // form to SePay and returned the hosted payment URL. Hand the user off to
-      // SePay; settlement arrives server-to-server as an IPN, never from here.
-      const paymentUrl = intent.paymentUrl;
-      if (!paymentUrl) {
-        alert('Không nhận được đường dẫn thanh toán từ cổng thanh toán. Vui lòng thử lại.');
-        return;
-      }
-
-      window.open(paymentUrl, '_blank', 'noopener,noreferrer');
-      alert(
-        'Đã mở trang thanh toán SePay trong tab mới. Sau khi thanh toán xong, quay lại đây và bấm "Tôi đã thanh toán" để cập nhật số dư.',
-      );
+      // ADR-033 / design B: the API already submitted the signed checkout form
+      // to SePay and returned the hosted payment URL. Hand the user off and let
+      // the IPN do the settling; this handler never fabricates a success.
+      window.open(intent.paymentUrl, '_blank', 'noopener,noreferrer');
+      void pollIntent(intent.id);
     } catch (e: unknown) {
       console.error(e);
       const errMsg = e instanceof Error ? e.message : 'Vui lòng thử lại sau.';
@@ -130,39 +215,18 @@ export default function WalletPage() {
     }
   };
 
-  // ADR-033: the IPN settles the intent out of band, so the UI only refreshes
-  // the server's own numbers. It never computes the new balance locally.
+  /** The manual escape hatch when the poll window has lapsed. */
   const handleRefreshBalance = async () => {
     try {
-      const [balRes, histRes] = await Promise.all([
-        callApi('/wallet/balance'),
-        callApi('/wallet/history'),
-      ]);
-
-      if (balRes.ok) {
-        const newBal = await unwrapEnvelope<WalletBalanceView>(balRes);
-        setBalance(newBal);
-        dispatchWalletBalanceUpdate(newBal);
-      } else {
-        alert('Chưa đọc được số dư mới. Vui lòng tải lại trang.');
-      }
-
-      if (histRes.ok) {
-        const data = await unwrapEnvelope<{ items: WalletHistoryItemView[] }>(histRes);
-        setHistory(getCombinedHistory(data.items || []));
+      await refreshWallet();
+      if (activeIntent !== null) {
+        setPollExpired(false);
+        await pollIntent(activeIntent.id);
       }
     } catch (e: unknown) {
       console.error(e);
       alert('Không thể cập nhật số dư. Vui lòng tải lại trang.');
     }
-  };
-
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      alert('Đã sao chép: ' + text);
-    }).catch(() => {
-      alert('Sao chép: ' + text);
-    });
   };
 
   return (
@@ -313,17 +377,17 @@ export default function WalletPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-slate-100 mb-6 gap-3">
             <div>
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-emerald-600 text-[20px]">qr_code_2</span>
-                <h2 className="text-lg font-bold text-slate-900">Nạp Credit nhanh qua Chuyển khoản QR</h2>
+                <span className="material-symbols-outlined text-emerald-600 text-[20px]">credit_card</span>
+                <h2 className="text-lg font-bold text-slate-900">Nạp Credit qua cổng thanh toán SePay</h2>
               </div>
-              <p className="text-xs text-slate-600 mt-0.5">Chọn gói tín dụng phù hợp, quét mã VietQR tự động cộng số dư chỉ sau 3 giây</p>
+              <p className="text-xs text-slate-600 mt-0.5">Chọn số credit cần nạp, thanh toán trên trang SePay, ví được cộng ngay khi SePay xác nhận</p>
             </div>
             <div className="flex items-center gap-2 self-start sm:self-auto">
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
                 <span className="material-symbols-outlined text-[14px]">bolt</span> 0% Phí
               </span>
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
-                Napas 247 • VietQR
+                SePay • Sandbox/Production
               </span>
             </div>
           </div>
@@ -385,10 +449,11 @@ export default function WalletPage() {
                   <div className="relative w-full max-w-xs">
                     <input
                       type="number"
-                      min="10"
-                      step="10"
+                      min="1"
+                      step="1"
                       value={amount}
                       onChange={handleAmountChange}
+                      data-testid="topup-amount"
                       className="w-full h-11 px-3.5 pr-16 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent transition-all"
                     />
                     <span className="absolute right-3.5 top-3 text-xs font-semibold text-slate-500 pointer-events-none">Credit</span>
@@ -400,95 +465,92 @@ export default function WalletPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
-                  2. Kênh đối soát ngân hàng
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <label className={`flex items-center gap-2.5 p-3 rounded-xl border-2 cursor-pointer transition-colors ${bank === 'VCB' ? 'border-emerald-600 bg-emerald-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
-                    <input type="radio" name="bank" checked={bank === 'VCB'} onChange={() => setBank('VCB')} className="w-4 h-4 text-emerald-600 accent-emerald-600" />
-                    <div>
-                      <p className="text-xs font-bold text-slate-900 leading-tight">Vietcombank</p>
-                      <p className="text-[11px] text-slate-500">Napas 247 Pro</p>
-                    </div>
-                  </label>
-                  <label className={`flex items-center gap-2.5 p-3 rounded-xl border-2 cursor-pointer transition-colors ${bank === 'MB' ? 'border-emerald-600 bg-emerald-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
-                    <input type="radio" name="bank" checked={bank === 'MB'} onChange={() => setBank('MB')} className="w-4 h-4 text-emerald-600 accent-emerald-600" />
-                    <div>
-                      <p className="text-xs font-bold text-slate-900 leading-tight">MBBank</p>
-                      <p className="text-[11px] text-slate-500">Quét tức thì</p>
-                    </div>
-                  </label>
-                  <label className={`flex items-center gap-2.5 p-3 rounded-xl border-2 cursor-pointer transition-colors ${bank === 'MOMO' ? 'border-emerald-600 bg-emerald-50' : 'border-slate-200 bg-white hover:border-slate-300'} col-span-2 sm:col-span-1`}>
-                    <input type="radio" name="bank" checked={bank === 'MOMO'} onChange={() => setBank('MOMO')} className="w-4 h-4 text-emerald-600 accent-emerald-600" />
-                    <div>
-                      <p className="text-xs font-bold text-slate-900 leading-tight">Ví MoMo</p>
-                      <p className="text-[11px] text-slate-500">Ví điện tử</p>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-center gap-2.5">
-                <span className="material-symbols-outlined text-[20px] text-emerald-600">security</span>
-                <span>Mỗi mã QR chỉ liên kết với tài khoản sinh viên Minh Nguyễn (ID: SSWAP-3928). Hệ thống webhook tự động mở khóa credit ngay sau khi nhận tiền.</span>
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-start gap-2.5">
+                <span className="material-symbols-outlined text-[20px] text-emerald-600 shrink-0">security</span>
+                <span>
+                  Bạn thanh toán trên trang của SePay. SkillSwap không nhận và không lưu thông tin
+                  thẻ hay tài khoản ngân hàng của bạn. Ví chỉ được cộng khi SePay xác nhận giao dịch.
+                </span>
               </div>
             </div>
 
-            {/* Right Column: QR Code */}
+            {/* Right Column: hosted checkout hand-off + live status */}
             <div className="lg:col-span-5 bg-slate-50 border border-slate-200 rounded-2xl p-6 flex flex-col items-center text-center shadow-sm">
               <div className="w-full flex items-center justify-between pb-3 mb-4 border-b border-slate-200">
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-                  <span className="text-xs font-bold text-slate-900">VietQR Napas 24/7</span>
+                  <span className="material-symbols-outlined text-[18px] text-emerald-600">lock</span>
+                  <span className="text-xs font-bold text-slate-900">Cổng thanh toán SePay</span>
                 </div>
-                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">VCB • MBBank Auto</span>
+                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                  Hosted checkout
+                </span>
               </div>
 
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm max-w-[220px] w-full flex flex-col items-center">
-                <div className="relative w-44 h-44 flex items-center justify-center bg-slate-100 rounded-lg">
-                  {/* Placeholder QR */}
-                  <span className="material-symbols-outlined text-5xl text-slate-300">qr_code_2</span>
+              <div className="w-full bg-white rounded-xl border border-slate-200 p-4 text-left space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-slate-600">Số tiền nạp:</span>
+                  <span className="font-bold text-emerald-600 text-sm">
+                    {(amount * 1000).toLocaleString('vi-VN')} VNĐ
+                  </span>
                 </div>
-                <span className="text-[10px] text-slate-500 font-medium mt-2">Quét bằng Mobile Banking bất kỳ</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-slate-600">Quy đổi:</span>
+                  <span className="font-bold text-slate-900 text-xs">{amount} Credit</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-slate-600">Tỷ giá:</span>
+                  <span className="text-slate-900 text-xs font-medium">1 Credit = 1.000 VNĐ</span>
+                </div>
               </div>
 
-              <div className="w-full mt-4 bg-white rounded-xl border border-slate-200 p-3.5 text-left text-xs space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600">Ngân hàng:</span>
-                  <span className="font-bold text-slate-900">Vietcombank CN TP.HCM</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600">Số tài khoản:</span>
-                  <div className="flex items-center gap-1">
-                    <span className="font-mono font-bold text-slate-900">1049281772</span>
-                    <button onClick={() => handleCopy('1049281772')} className="text-emerald-600 hover:text-emerald-800 p-0.5">
-                      <span className="material-symbols-outlined text-[14px]">content_copy</span>
-                    </button>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600">Số tiền nạp:</span>
-                  <span className="font-bold text-emerald-600 text-sm">{(amount * 1000).toLocaleString('vi-VN')} VNĐ</span>
-                </div>
-                <div className="flex justify-between items-center pt-1 border-t border-slate-100">
-                  <span className="text-slate-600">Nội dung CK:</span>
-                  <div className="flex items-center gap-1">
-                    <span className="font-mono font-bold text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded">SSWAP 3928</span>
-                    <button onClick={() => handleCopy('SSWAP 3928')} className="text-emerald-600 hover:text-emerald-800 p-0.5">
-                      <span className="material-symbols-outlined text-[14px]">content_copy</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <p className="text-[11px] text-slate-600 mt-3 leading-relaxed">
+                Bấm nút bên dưới để mở trang thanh toán của SePay trong tab mới. Chọn phương thức
+                thanh toán ngay trên trang đó. Sau khi hoàn tất, quay lại tab này — số dư sẽ tự cập nhật.
+              </p>
 
               <button disabled={isPending} onClick={handleTopUp} className="w-full mt-4 py-2.5 px-4 rounded-full bg-slate-900 hover:bg-slate-800 disabled:opacity-70 disabled:cursor-not-allowed text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2">
-                <span className={`material-symbols-outlined text-[16px] ${isPending ? 'animate-spin' : ''}`}>sync</span>
-                {isPending ? 'Đang tạo thanh toán...' : 'Nạp tiền qua SePay'}
+                <span className={`material-symbols-outlined text-[16px] ${isPending ? 'animate-spin' : ''}`}>
+                  {isPending ? 'sync' : 'open_in_new'}
+                </span>
+                {isPending ? 'Đang tạo thanh toán...' : 'Mở trang thanh toán SePay'}
               </button>
+
+              {activeIntent !== null && intentStatus !== null && (
+                <div
+                  data-testid="topup-status"
+                  className={`w-full mt-3 p-3 rounded-xl border text-left text-xs flex items-start gap-2 ${
+                    intentStatus.status === 'settled'
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                      : intentStatus.status === 'pending'
+                        ? 'bg-amber-50 border-amber-200 text-amber-800'
+                        : 'bg-slate-100 border-slate-200 text-slate-700'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[16px] shrink-0">
+                    {intentStatus.status === 'settled'
+                      ? 'check_circle'
+                      : intentStatus.status === 'pending'
+                        ? 'hourglass_top'
+                        : 'info'}
+                  </span>
+                  <div>
+                    <p className="font-bold">{STATUS_LABELS[intentStatus.status] ?? intentStatus.status}</p>
+                    <p className="text-[11px] mt-0.5 opacity-90">Mã đơn: {intentStatus.providerRef}</p>
+                    {intentStatus.status === 'pending' && !pollExpired && (
+                      <p className="text-[11px] mt-0.5 opacity-90">Đang tự động kiểm tra...</p>
+                    )}
+                    {intentStatus.status === 'pending' && pollExpired && (
+                      <p className="text-[11px] mt-0.5 opacity-90">
+                        Chưa nhận được xác nhận. Nếu bạn đã thanh toán, hãy bấm kiểm tra lại.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <button onClick={handleRefreshBalance} className="w-full mt-2 py-2.5 px-4 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2">
                 <span className="material-symbols-outlined text-[16px]">refresh</span>
-                Tôi đã thanh toán - Cập nhật số dư
+                Kiểm tra lại số dư
               </button>
               <p className="text-[11px] text-slate-500 mt-2 flex items-center gap-1">
                 <span className="material-symbols-outlined text-[13px] text-emerald-600">verified</span>

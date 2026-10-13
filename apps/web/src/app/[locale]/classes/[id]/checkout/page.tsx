@@ -1,15 +1,20 @@
 'use client';
 
-import { use, useState, useEffect } from 'react';
+import { use, useState, useEffect, useRef, useCallback } from 'react';
 import { Navbar } from '../../../../../components/navbar';
 import { callApi, unwrapEnvelope, dispatchWalletBalanceUpdate } from '../../../../../lib/api-client';
 import { ClassDetailApiGateway } from '../../../../../lib/marketplace/api-class-detail';
 import type { ClassDetailView } from '../../../../../lib/marketplace/types';
-import type { WalletBalanceView } from '@skillswap/contracts';
+import type { WalletBalanceView, TopUpIntentCreated, TopUpIntentStatusView } from '@skillswap/contracts';
 
 interface PageProps {
   params: Promise<{ locale: string; id: string }>;
 }
+
+/** Terminal states: once reached, the intent can no longer change. */
+const TERMINAL_TOP_UP_STATUSES = new Set(['settled', 'failed', 'reversed']);
+const POLL_INTERVAL_MS = 3_000;
+const POLL_TIMEOUT_MS = 120_000;
 
 export default function BookingCheckoutPage({ params }: PageProps) {
   const { id, locale } = use(params);
@@ -24,6 +29,19 @@ export default function BookingCheckoutPage({ params }: PageProps) {
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [topUpSettled, setTopUpSettled] = useState(false);
+  const topUpPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // A timer that outlives the modal would keep calling the API and warn on a
+  // dead component, so it is cleared on unmount.
+  useEffect(() => {
+    return () => {
+      if (topUpPollTimer.current !== null) {
+        clearTimeout(topUpPollTimer.current);
+        topUpPollTimer.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -161,12 +179,49 @@ export default function BookingCheckoutPage({ params }: PageProps) {
     }
   };
 
+  /**
+   * Polls until the intent settles, the budget runs out, or we stop. The SePay
+   * IPN settles server-to-server, so the client's only honest source of truth is
+   * the server's own record of the intent.
+   */
+  const pollTopUp = useCallback((intentId: string) => {
+    const deadline = Date.now() + POLL_TIMEOUT_MS;
+
+    const tick = async () => {
+      topUpPollTimer.current = null;
+      try {
+        const res = await callApi(`/wallet/top-ups/${intentId}`);
+        if (res.ok) {
+          const status = await unwrapEnvelope<TopUpIntentStatusView>(res);
+          if (TERMINAL_TOP_UP_STATUSES.has(status.status)) {
+            setTopUpSettled(status.status === 'settled');
+            const balRes = await callApi('/wallet/balance');
+            if (balRes.ok) {
+              const remote = await unwrapEnvelope<WalletBalanceView>(balRes);
+              setBalance(remote);
+              dispatchWalletBalanceUpdate(remote);
+            }
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Top-up poll failed', e);
+      }
+
+      if (Date.now() >= deadline) return;
+      topUpPollTimer.current = setTimeout(() => void tick(), POLL_INTERVAL_MS);
+    };
+
+    void tick();
+  }, []);
+
   const handleConfirmTopUp = async () => {
     try {
       setIsProcessing(true);
-      // Real top-up: create the intent, settle it, then read the balance back
-      // from the server. The previous version added 100 credits to local state
-      // and reported success without contacting the API at all.
+      setTopUpSettled(false);
+      // Real top-up: create the intent, then let the SePay IPN settle it. The
+      // previous version added 100 credits to local state and reported success
+      // without contacting the API at all.
       const res = await callApi('/wallet/top-ups', {
         method: 'POST',
         body: JSON.stringify({ amountVnd: 100_000 }),
@@ -178,16 +233,13 @@ export default function BookingCheckoutPage({ params }: PageProps) {
         return;
       }
 
-      const intent = await unwrapEnvelope<{ paymentUrl?: string }>(res);
+      const intent = await unwrapEnvelope<TopUpIntentCreated>(res);
       // ADR-033 / design B: open the hosted SePay checkout. The IPN settles the
       // intent server-to-server, so this handler must not fabricate a success.
-      if (!intent.paymentUrl) {
-        showToast('Không nhận được đường dẫn thanh toán. Vui lòng thử lại.');
-        return;
-      }
       window.open(intent.paymentUrl, '_blank', 'noopener,noreferrer');
       setIsTopUpModalOpen(false);
-      showToast('Đã mở trang thanh toán SePay. Số dư sẽ cập nhật khi SePay xác nhận.');
+      showToast('Đã mở trang thanh toán SePay. Số dư sẽ cập nhật ngay khi SePay xác nhận.');
+      pollTopUp(intent.id);
     } catch (e) {
       console.warn('Top-up failed', e);
       showToast('Không thể nạp tiền. Vui lòng thử lại.');
@@ -691,19 +743,19 @@ export default function BookingCheckoutPage({ params }: PageProps) {
                 </div>
               </div>
 
-              {/* Thẻ mô phỏng trường hợp dự phòng: Nạp nhanh qua VietQR */}
+              {/* Không đủ số dư → nạp qua cổng thanh toán SePay */}
               <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[20px] text-emerald-600">qr_code_2</span>
+                    <span className="material-symbols-outlined text-[20px] text-emerald-600">add_card</span>
                     <h4 className="text-xs font-bold text-slate-900">Trường hợp số dư không đủ?</h4>
                   </div>
                   <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-mono">
-                    Dự phòng UX
+                    SePay
                   </span>
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Cơ chế <strong className="text-slate-900">Modal Nạp nhanh VietQR</strong> tích hợp trực tiếp, giúp bạn nạp thêm Credit tức thì mà <strong className="text-slate-900">không làm mất lựa chọn lớp hay phiên đặt trước</strong>.
+                  Nạp thêm Credit qua <strong className="text-slate-900">cổng thanh toán SePay</strong> ngay tại đây mà <strong className="text-slate-900">không làm mất lựa chọn lớp hay phiên đặt trước</strong>.
                 </p>
                 <button
                   type="button"
@@ -711,7 +763,7 @@ export default function BookingCheckoutPage({ params }: PageProps) {
                   className="w-full py-2.5 px-3 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors text-xs font-semibold flex items-center justify-center gap-1.5"
                 >
                   <span className="material-symbols-outlined text-[16px] text-emerald-600">add_circle</span>
-                  Mô phỏng Nạp nhanh VietQR (PRD §6.6)
+                  Nạp thêm Credit
                 </button>
               </div>
 
@@ -804,14 +856,14 @@ export default function BookingCheckoutPage({ params }: PageProps) {
         </div>
       )}
 
-      {/* TOP-UP MODAL (VietQR Simulation) */}
+      {/* TOP-UP MODAL — real SePay hosted checkout (ADR-033) */}
       {isTopUpModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl text-center border border-slate-200">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[22px] text-emerald-600">qr_code_scanner</span>
-                <h3 className="text-base font-bold text-slate-900">Nạp nhanh Credits qua VietQR</h3>
+                <span className="material-symbols-outlined text-[22px] text-emerald-600">credit_card</span>
+                <h3 className="text-base font-bold text-slate-900">Nạp 100.000 VNĐ qua SePay</h3>
               </div>
               <button
                 type="button"
@@ -822,31 +874,37 @@ export default function BookingCheckoutPage({ params }: PageProps) {
               </button>
             </div>
             <p className="text-xs text-slate-600 text-left my-3 leading-relaxed">
-              Quét mã thanh toán ngân hàng tự động 24/7. Số dư được cập nhật tức thì vào phiên đặt lớp của bạn.
+              Bạn sẽ được chuyển sang <strong>trang thanh toán của SePay</strong> trong một tab mới để
+              chọn phương thức thanh toán và hoàn tất giao dịch. Số dư được cộng ngay khi SePay xác
+              nhận, không cần quét mã thủ công.
             </p>
-            {/* Simulated QR Card */}
-            <div className="bg-slate-50 rounded-xl p-5 flex flex-col items-center justify-center mb-4 border border-slate-100">
-              <div className="w-44 h-44 bg-white p-2 rounded-xl shadow-inner flex items-center justify-center border border-slate-200">
-                <svg className="w-full h-full text-slate-900" fill="currentColor" viewBox="0 0 100 100">
-                  <path d="M10 10h30v30h-30zM15 15v20h20v-20zM20 20h10v10h-10zM60 10h30v30h-30zM65 15v20h20v-20zM70 20h10v10h-10zM10 60h30v30h-30zM15 65v20h20v-20zM20 70h10v10h-10zM50 15h5v15h-5zM45 35h15v5h-15zM55 50h5v10h-5zM65 55h15v5h-15zM75 65h15v15h-15zM50 70h10v20h-10zM65 85h25v5h-25zM45 50h5v5h-5z" />
-                </svg>
+            <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 text-left space-y-2 mb-4">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-600">Số tiền nạp:</span>
+                <span className="font-bold text-emerald-700">100.000 VNĐ</span>
               </div>
-              <span className="font-mono text-base font-bold text-emerald-700 mt-3">100.000 VNĐ = 100 Credits</span>
-              <span className="text-[11px] text-slate-500 mt-0.5">
-                Nội dung CK: <strong className="text-slate-900 font-mono">SS NAP 894 MINH</strong>
-              </span>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-600">Quy đổi:</span>
+                <span className="font-bold text-slate-900">100 Credit</span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-600">Cổng thanh toán:</span>
+                <span className="font-medium text-slate-900">SePay Payment Gateway</span>
+              </div>
             </div>
-            <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-100 text-left text-[11px] text-emerald-800 mb-4">
-              <span className="font-semibold block mb-0.5">Bảo toàn phiên đặt chỗ:</span>
-              Phiên đặt lớp với Mentor Lan Anh vẫn được giữ trong 10:00 phút đếm ngược.
-            </div>
+            {topUpSettled && (
+              <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-100 text-left text-[11px] text-emerald-800 mb-4">
+                <span className="font-semibold block mb-0.5">Đã cộng vào ví.</span>
+                Số dư đã được cập nhật. Giờ bạn có thể tiếp tục xác nhận đặt lớp.
+              </div>
+            )}
             <button
               type="button"
               onClick={() => void handleConfirmTopUp()}
               disabled={isProcessing}
               className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-semibold transition-all shadow-sm"
             >
-              {isProcessing ? 'Đang xử lý…' : 'Xác nhận nạp 100.000 VNĐ'}
+              {isProcessing ? 'Đang xử lý…' : 'Mở trang thanh toán SePay'}
             </button>
           </div>
         </div>
