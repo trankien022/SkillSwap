@@ -49,6 +49,65 @@ pnpm verify            # lint && build && typecheck && test && test:arch
 
 Tests: jest (`api`, `gateway`, `contracts`, `mobile`), vitest (`web`). Lint is `--max-warnings=0`. CI runs `pnpm verify` on every push/PR (`.github/workflows/ci.yml`).
 
+## Payment tunnel (ngrok)
+
+SePay (FR-008, [ADR-030](docs/adr/ADR-030-wallet-topup-sepay-payment-gateway.md)) can only
+deliver its IPN to a **public HTTPS URL**, so local payment testing needs a tunnel. Every
+developer uses the **same reserved domain**, which means the IPN URL is configured in SePay
+once and never changes.
+
+### One-time setup
+
+1. **Install ngrok Agent v3** — <https://ngrok.com/download> (`ngrok version` should print `3.x`).
+2. **Get an auth token** — <https://dashboard.ngrok.com/get-started/your-authtoken>.
+3. **Reserve a domain** — <https://dashboard.ngrok.com/domains>. On the free plan a static
+   domain is reserved once and stays the same on every run.
+4. **Configure your environment:**
+   ```bash
+   cp .env.example .env
+   ```
+   Then set, in `.env`:
+   ```dotenv
+   NGROK_AUTHTOKEN=<your own ngrok token>
+   NGROK_DOMAIN=<team reserved domain, no scheme, e.g. discuss-showbiz-octagon.ngrok-free.dev>
+   SEPAY_RETURN_URL=https://<same domain>
+   ```
+5. **Point `ngrok.yml` at the same domain.** Replace the `url:` under the `api` endpoint with
+   `https://<NGROK_DOMAIN>`. The file holds the domain only — **never** a token.
+6. **Configure the IPN in SePay:** my.sepay.vn → Payment Gateway → Configuration → IPN →
+   `https://<NGROK_DOMAIN>/api/wallet/top-ups/callback`.
+
+### Daily use
+
+```bash
+pnpm dev        # gateway :4000, api :4001, web :3000, and the ngrok tunnel in parallel
+```
+
+`pnpm dev` starts the tunnel alongside the apps. If ngrok or the token is missing it says so
+and continues — only payment testing needs the tunnel. On Windows you can also start (or
+re-start) the tunnel on its own:
+
+```powershell
+.\scripts\start-ngrok.ps1
+```
+
+The script finds the repo root from anywhere, reads `NGROK_AUTHTOKEN` from `.env` without
+printing it, checks ngrok is installed, and starts the `api` endpoint from `ngrok.yml`.
+Verify it is up at <http://127.0.0.1:4040> (the ngrok inspector).
+
+### Notes
+
+- The stable URL comes from the **ngrok account/domain reservation**, not from the project
+  file: `ngrok.yml` only records which domain and which local port to use.
+- `agent.authtoken: ${NGROK_AUTHTOKEN}` does **not** work — ngrok passes the literal string
+  through instead of expanding it (`ERR_NGROK_105`). The token is therefore passed at start
+  time (the launcher uses `--authtoken`, the PowerShell script exports it).
+- **Concurrent use of one reserved domain** depends on your ngrok plan. Two developers running
+  the same endpoint at once get `ERR_NGROK_334` unless the plan supports endpoint pooling
+  (`--pooling-enabled`); otherwise take turns, or reserve a domain per developer.
+- The token is a secret: it stays in `.env` (git-ignored). Never commit `.env`, and never add
+  an authtoken to `ngrok.yml`.
+
 ## Repository layout
 
 ```

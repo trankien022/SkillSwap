@@ -32,3 +32,9 @@ package-lock.json
 # Local Android build output and Office lock files.
 apps/mobile/build-*.apk
 ~$*.pptx
+
+# ngrok: keep the committed ngrok.yml (config only) and ignore any local copies
+# that might hold an authtoken. The token itself lives in .env (already ignored).
+ngrok.local.yml
+*.ngrok.yml
+!ngrok.yml

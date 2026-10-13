@@ -5,20 +5,26 @@
 # once (https://dashboard.ngrok.com/domains) so it never changes — the IPN URL
 # is configured in SePay once and stays valid for every teammate and every run.
 #
-# Usage (started automatically by `pnpm dev`):
+# Start it (also started automatically by `pnpm dev`):
 #   ngrok start api --config <global-ngrok-config> --config ./ngrok.yml
+#   — or, on Windows, PowerShell:  .\scripts\start-ngrok.ps1
 #
-# The authtoken is NOT here. ngrok does not expand ${VAR} inside this file;
-# keep the token in your global ngrok config (`ngrok config add-authtoken ...`)
-# or the environment, and merge the two configs with the --config flag above.
+# The authtoken is NOT committed and NOT referenced here: ngrok passes
+# `${NGROK_AUTHTOKEN}` through literally rather than expanding it, so a
+# `${...}` line fails with ERR_NGROK_105. The token is supplied at start time:
+#   * `pnpm dev` runs scripts/dev-ngrok.mjs, which reads `.env` and passes it
+#     through the environment to `ngrok start` (without printing it);
+#   * on Windows, `.\scripts\start-ngrok.ps1` does the same;
+#   * or keep it in your global ngrok config (`ngrok config add-authtoken ...`).
 #
 # Replace REPLACE-WITH-RESERVED-DEV-DOMAIN with your reserved domain (no scheme),
 # e.g. "skillswap-api-ab12.ngrok-free.app", and keep it in sync with NGROK_DOMAIN
 # in `.env`.
 
 version: "3"
-tunnels:
-  api:
-    proto: http
-    addr: 4001
-    domain: discuss-showbiz-octagon.ngrok-free.dev
+
+endpoints:
+  - name: api
+    url: https://discuss-showbiz-octagon.ngrok-free.dev
+    upstream:
+      url: http://localhost:4001
