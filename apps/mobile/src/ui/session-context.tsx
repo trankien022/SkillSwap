@@ -7,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import * as SecureStore from 'expo-secure-store';
+import { defaultKeyValueStore } from '@/infrastructure/storage/key-value-store';
 import type {
   ActiveSession,
   LoginCredentials,
@@ -71,12 +71,12 @@ export function SessionProvider({
   const setLocale = useCallback((next: Locale) => {
     localeChanged.current = true;
     updateLocale(next);
-    localeWrite.current = localeWrite.current.catch(() => undefined).then(() => SecureStore.setItemAsync('skillswap.locale', next));
+    localeWrite.current = localeWrite.current.catch(() => undefined).then(() => defaultKeyValueStore().setItemAsync('skillswap.locale', next));
     void localeWrite.current.catch(() => undefined);
   }, []);
   useEffect(() => {
     let active = true;
-    void SecureStore.getItemAsync('skillswap.locale').then((saved) => {
+    void defaultKeyValueStore().getItemAsync('skillswap.locale').then((saved) => {
       if (active && !localeChanged.current && (saved === 'vi' || saved === 'en')) updateLocale(saved);
     }).catch(() => undefined).finally(() => { if (active) setLocaleReady(true); });
     return () => { active = false; };
@@ -205,7 +205,7 @@ export function SessionProvider({
 
   const logout = useCallback(async () => {
     if (!sessionService) return;
-    const pushDeviceId = await SecureStore.getItemAsync(PUSH_DEVICE_ID_KEY);
+    const pushDeviceId = await defaultKeyValueStore().getItemAsync(PUSH_DEVICE_ID_KEY);
     if (pushDeviceId) {
       if (!gatewayClient) throw new Error('Cannot deactivate push device without an authenticated Gateway');
       // Keep the session active if server-side deactivation fails so the user can retry.

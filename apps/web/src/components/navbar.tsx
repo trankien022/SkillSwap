@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useLocale } from 'next-intl';
+import { BrandMark } from './BrandMark';
 import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
-import { callApi, getTokens, getStoredUser, logout, unwrapEnvelope, WALLET_BALANCE_EVENT, getStoredWalletBalance, type UserProfile } from '../lib/api-client';
+import { callApi, getTokens, getStoredUser, logout, unwrapEnvelope, WALLET_BALANCE_EVENT, type UserProfile } from '../lib/api-client';
 
-export type NavbarTab = 'explore' | 'classes' | 'instructor' | 'wallet' | 'verification' | 'notifications';
+export type NavbarTab = 'explore' | 'classes' | 'instructor' | 'wallet' | 'verification' | 'skills' | 'notifications';
 
 export interface NavbarProps {
   currentTab?: NavbarTab;
@@ -28,13 +30,8 @@ export function Navbar({
     setHasTokens(Boolean(getTokens()));
     setStoredUser(getStoredUser());
 
-    // Sync with any stored wallet balance override
-    const storedBal = getStoredWalletBalance();
-    if (storedBal) {
-      setInternalBalance(storedBal);
-    }
-
-    // Listen to real-time wallet balance update events
+    // Listen for in-page balance updates (e.g. after a top-up or booking) so the
+    // badge reflects the change without a refetch.
     const handleBalanceEvent = (e: Event) => {
       const customEvent = e as CustomEvent<WalletBalanceView>;
       if (customEvent.detail) {
@@ -52,9 +49,8 @@ export function Navbar({
             propMe === undefined ? callApi('/auth/me') : Promise.resolve(null),
           ]);
           if (balRes && balRes.ok) {
-            const serverBal = await unwrapEnvelope<WalletBalanceView>(balRes);
-            const latestOverride = getStoredWalletBalance();
-            setInternalBalance(latestOverride ?? serverBal);
+            // The server is the single source of truth for the balance.
+            setInternalBalance(await unwrapEnvelope<WalletBalanceView>(balRes));
           }
           if (meRes && meRes.ok) {
             const meData = await unwrapEnvelope<MeResponse>(meRes);
@@ -82,14 +78,18 @@ export function Navbar({
   const balance = propBalance !== undefined ? propBalance : internalBalance;
   const me = propMe !== undefined ? propMe : internalMe;
 
-  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-  const locale = pathname.startsWith('/en') ? 'en' : 'vi';
-
+  // The locale comes from next-intl, which resolves it identically on the server
+  // and the client. This previously read `window.location.pathname`, falling back
+  // to 'vi' whenever `window` was undefined — so the server rendered Vietnamese
+  // hrefs/labels while the client rendered English ones and every page with this
+  // navbar failed hydration on the /en tree.
+  const locale = useLocale();
   const navLinks: { id: NavbarTab; label: string; tooltip?: string; href: string }[] = [
     { id: 'explore', label: locale === 'vi' ? 'Khám phá' : 'Explore', href: `/${locale}/classes` },
     { id: 'classes', label: locale === 'vi' ? 'Lớp học của tôi' : 'My Bookings', href: `/${locale}/bookings` },
     { id: 'instructor', label: locale === 'vi' ? 'Giảng dạy' : 'Teaching', tooltip: locale === 'vi' ? 'Studio Giảng dạy' : 'Teaching Studio', href: `/${locale}/instructor` },
     { id: 'wallet', label: locale === 'vi' ? 'Ví & Tín dụng' : 'Wallet & Credits', href: `/${locale}/wallet` },
+    { id: 'skills', label: locale === 'vi' ? 'Kỹ năng' : 'Skills', tooltip: locale === 'vi' ? 'Kỹ năng & Bằng chứng' : 'Skills & Evidence', href: `/${locale}/skills` },
     { id: 'verification', label: locale === 'vi' ? 'Xác minh' : 'Verification', tooltip: locale === 'vi' ? 'Trung tâm Thẩm định & Xác minh' : 'Verification Center', href: `/${locale}/verification` },
   ];
 
@@ -112,17 +112,10 @@ export function Navbar({
         {/* Brand Logo & Main Nav */}
         <div className="flex items-center gap-3 xl:gap-8 min-w-0">
           <a href={`/${locale}/classes`} className="flex items-center gap-2.5 group shrink-0">
-            <div className="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold text-lg transition-transform group-hover:scale-105 shrink-0">
-              S
-            </div>
-            <div className="flex flex-col shrink-0">
-              <div className="flex items-center gap-1.5 shrink-0">
-                <span className="font-bold text-xl text-slate-900 tracking-tight leading-none whitespace-nowrap">SkillSwap</span>
-                <span className="whitespace-nowrap text-[11px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold leading-none border border-emerald-100 hidden sm:inline-block">
-                  Sinh viên
-                </span>
-              </div>
-            </div>
+            <BrandMark />
+            <span className="whitespace-nowrap text-[11px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold leading-none border border-emerald-100 hidden sm:inline-block">
+              {locale === 'vi' ? 'Sinh viên' : 'Students'}
+            </span>
           </a>
 
           <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1.5 shrink-0">

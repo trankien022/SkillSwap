@@ -14,13 +14,10 @@ import type { MarketplaceClass } from '../../lib/marketplace/types';
  * Client component so it can be rendered inside the `MarketplaceClient`
  * shell without breaking the server/client boundary. The cover area is
  * a slate-to-mist gradient placeholder; no third-party CDN images.
- *
- * The 'Dữ liệu minh họa' badge renders only outside production builds.
  */
 export function ClassCard({ item }: { item: MarketplaceClass }) {
   const t = useTranslations('Marketplace.card');
   const locale = useLocale() as 'vi' | 'en';
-  const isDev = process.env.NODE_ENV !== 'production';
 
   const weekday = formatStartsAt(item.startsAt, locale);
   const time = new Date(item.startsAt).toLocaleTimeString(locale, {
@@ -42,7 +39,7 @@ export function ClassCard({ item }: { item: MarketplaceClass }) {
           backgroundImage: `linear-gradient(135deg, ${item.coverGradient.from}, ${item.coverGradient.to})`,
         }}
         role="img"
-        aria-label={item.skillName}
+        aria-label={item.skillName ?? undefined}
       >
         {/* Top-left chips */}
         <div className="absolute left-3 top-3 flex flex-wrap gap-1">
@@ -55,23 +52,23 @@ export function ClassCard({ item }: { item: MarketplaceClass }) {
           </span>
         </div>
 
-        {/* Top-right rating pill */}
+        {/* Top-right rating pill. A class with no ratings shows an explicit
+            "chưa có đánh giá" instead of a fabricated 5.00. */}
         <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded border border-border bg-surface/95 px-2 py-0.5 text-[11px] font-semibold text-ink shadow-sm backdrop-blur-sm">
           <StarIcon className="h-3.5 w-3.5 text-warning-ink" />
-          <span className="font-bold text-ink">
-            {item.ratingAvg.toFixed(2)}
-          </span>
-          <span className="font-normal text-ink-soft">
-            ({item.ratingCount})
-          </span>
+          {item.ratingAvg === null ? (
+            <span className="font-normal text-ink-soft">{t('noRating')}</span>
+          ) : (
+            <>
+              <span className="font-bold text-ink">
+                {item.ratingAvg.toFixed(2)}
+              </span>
+              <span className="font-normal text-ink-soft">
+                ({item.ratingCount})
+              </span>
+            </>
+          )}
         </div>
-
-        {/* Dev-only mock badge */}
-        {isDev && (
-          <span className="absolute right-3 top-3 rounded-full bg-warning-tint px-2 py-0.5 text-[10px] font-semibold text-warning-ink shadow-sm">
-            {t('mockDataBadge')}
-          </span>
-        )}
       </div>
 
       {/* Body */}
@@ -88,10 +85,13 @@ export function ClassCard({ item }: { item: MarketplaceClass }) {
           </span>
         </div>
 
-        {/* Title */}
-        <h3 className="line-clamp-2 text-base font-semibold text-ink transition-colors group-hover:text-campus-emerald">
-          {item.skillName}
-        </h3>
+        {/* Title. Absent when the API is the class-detail route, which does not
+            return a skill name; the description below stands on its own. */}
+        {item.skillName !== null && (
+          <h3 className="line-clamp-2 text-base font-semibold text-ink transition-colors group-hover:text-campus-emerald">
+            {item.skillName}
+          </h3>
+        )}
 
         {/* Teacher card */}
         <div className="flex items-center gap-2 rounded-lg border border-border bg-mist p-2">
@@ -106,18 +106,26 @@ export function ClassCard({ item }: { item: MarketplaceClass }) {
               <span className="truncate text-sm font-medium text-ink">
                 {item.teacherName}
               </span>
-              {item.verified && (
+              {item.verified === true && (
                 <CheckIcon className="h-4 w-4 shrink-0 text-success-ink" />
               )}
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="truncate text-[11px] text-ink-soft">
-                {item.schoolName}
-              </span>
-              <span className="shrink-0 rounded border border-success-tint bg-success-tint px-1.5 py-0.5 text-[10px] font-semibold text-success-ink">
-                {item.level}
-              </span>
-            </div>
+            {/* School and level are omitted when absent; the catalogue sends
+                them, the class-detail route does not. */}
+            {(item.schoolName !== null || item.level !== null) && (
+              <div className="flex items-center gap-1.5">
+                {item.schoolName !== null && (
+                  <span className="truncate text-[11px] text-ink-soft">
+                    {item.schoolName}
+                  </span>
+                )}
+                {item.level !== null && (
+                  <span className="shrink-0 rounded border border-success-tint bg-success-tint px-1.5 py-0.5 text-[10px] font-semibold text-success-ink">
+                    {item.level}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

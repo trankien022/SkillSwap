@@ -1,10 +1,8 @@
 import { setRequestLocale } from 'next-intl/server';
 import { MarketplaceHeader } from '../../../components/marketplace/MarketplaceHeader';
 import { SiteFooter } from '../../../components/landing/SiteFooter';
-import { DashboardHeader, MetricTiles } from '../../../components/dashboard/DashboardHeader';
+import { DashboardHeader } from '../../../components/dashboard/DashboardHeader';
 import { DashboardShell } from '../../../components/dashboard/DashboardShell';
-import { RightSidebar } from '../../../components/dashboard/RightSidebar';
-import { MockLearnerDashboardGateway } from '../../../lib/dashboard/mock-gateway';
 
 type PageProps = {
   params: Promise<{ locale: string }>;
@@ -12,18 +10,20 @@ type PageProps = {
 
 /**
  * Learner dashboard page (FR-021 booking lifecycle, FR-013 review,
- * FR-038 escrow release). Server component. Fetches the snapshot
- * through the gateway (mock today) and composes the page.
- * Re-uses `MarketplaceHeader` and `SiteFooter` for chrome.
+ * FR-038 escrow release).
+ *
+ * The two endpoints behind this screen (`GET /classes/bookings/me`,
+ * `GET /wallet/balance`) are authenticated, so the snapshot cannot be read on
+ * the server — the bearer token lives in the browser. The server component
+ * renders only the chrome; `DashboardShell` performs the session-aware fetch
+ * after mount and owns the metric tiles, the booking list, the calendar/wallet
+ * sidebar and the loading, signed-out and error states. There is no demo data:
+ * an unauthenticated visitor sees a sign-in prompt rather than fabricated
+ * bookings.
  */
 export default async function DashboardPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-
-  const gateway = new MockLearnerDashboardGateway();
-  const snapshot = await gateway.getSnapshot();
-  const isAuthed = gateway.isAuthenticated();
-  const now = new Date();
 
   return (
     <div className="flex min-h-dvh flex-col bg-mist text-ink">
@@ -31,27 +31,7 @@ export default async function DashboardPage({ params }: PageProps) {
       <main className="flex-1">
         <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 lg:px-8">
           <DashboardHeader />
-          <MetricTiles metrics={snapshot.metrics} />
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-            <div className="flex flex-col gap-6 lg:col-span-8">
-              <DashboardShell
-                initial={snapshot}
-                calendar={snapshot.calendar}
-                charter={snapshot.charter}
-                isAuthed={isAuthed}
-              />
-            </div>
-            <div className="lg:col-span-4">
-              <RightSidebar
-                month={now.getUTCMonth()}
-                year={now.getUTCFullYear()}
-                days={snapshot.calendar}
-                wallet={snapshot.wallet}
-                charter={snapshot.charter}
-                isAuthed={isAuthed}
-              />
-            </div>
-          </div>
+          <DashboardShell initial={null} />
         </div>
       </main>
       <SiteFooter />

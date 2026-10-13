@@ -87,26 +87,18 @@ export function GeneralDetailsSection({ draft, onChange }: Props) {
             {tSteps('syllabusLabel')}
           </span>
         </div>
-        <div className="space-y-2 pt-1">
-          <div className="flex items-start gap-2.5 rounded-lg border border-slate-100 bg-white p-2.5 shadow-xs">
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-800">
-              1
-            </span>
-            <span className="text-xs text-slate-700">{tSteps('syllabus1')}</span>
-          </div>
-          <div className="flex items-start gap-2.5 rounded-lg border border-slate-100 bg-white p-2.5 shadow-xs">
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-800">
-              2
-            </span>
-            <span className="text-xs text-slate-700">{tSteps('syllabus2')}</span>
-          </div>
-          <div className="flex items-start gap-2.5 rounded-lg border border-slate-100 bg-white p-2.5 shadow-xs">
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-800">
-              3
-            </span>
-            <span className="text-xs text-slate-700">{tSteps('syllabus3')}</span>
-          </div>
-        </div>
+        {/*
+          This block previously listed three fixed roadmap bullets
+          ("First 15m: Diagnostic pronunciation…") that were rendered as if they
+          were the teacher's own syllabus. Nothing on this form submits them:
+          `POST /classes` accepts a single `description` field. Showing invented
+          lesson content as the class's roadmap is a fabricated value, so the
+          bullets are gone and the hint points back at the description the API
+          actually stores.
+        */}
+        <p className="pt-1 text-xs leading-relaxed text-slate-500">
+          {tSteps('syllabusHint')}
+        </p>
       </div>
     </section>
   );

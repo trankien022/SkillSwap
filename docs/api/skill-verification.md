@@ -6,7 +6,7 @@
 
 Proving a specific skill at a level (FR-003/FR-004/FR-018, ADR-026/ADR-027/ADR-028). Evidence is submitted, claimed by a Verifier with matching expertise, then approved or rejected; the decision history is append-only.
 
-9 endpoints.
+10 endpoints.
 
 Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
 
@@ -260,6 +260,12 @@ Read every version and its audit trail (FR-018).
 |---|---|---|---|
 | `previousState` | string | yes | min 1 chars |
 | `newState` | string | yes | min 1 chars |
+
+### `GET /api/skills`
+
+**List available skills catalogue (mobile / T12)**
+
+- Auth: Public
 
 ### `POST /api/verifiers/{accountId}/status`
 

@@ -3,36 +3,34 @@ import { MarketplaceHeader } from '../../../../../components/marketplace/Marketp
 import { SiteFooter } from '../../../../../components/landing/SiteFooter';
 import { VerificationBanner } from '../../../../../components/teacher/VerificationBanner';
 import { PublishHeader } from '../../../../../components/teacher/PublishHeader';
-import { PublishForm } from '../../../../../components/teacher/PublishForm';
-import { MockTeacherPublishGateway } from '../../../../../lib/teacher/mock-gateway';
+import { PublishWorkspace } from '../../../../../components/teacher/PublishWorkspace';
 
 type PageProps = {
   params: Promise<{ locale: string }>;
 };
 
 /**
- * Force dynamic rendering: the page passes the gateway's
- * publishDraft / saveDraft closures into a Client Component
- * (PublishForm), which is not allowed at SSG time. The page
- * is cheap to render on demand.
+ * Force dynamic rendering: the page mounts a Client Component that fetches its
+ * own data (the endpoints it needs are auth-gated, so they cannot be read during
+ * a static render).
  */
 export const dynamic = 'force-dynamic';
 
 /**
- * Teacher "publish a class" page (FR-022). Server component.
- * Loads the verified skills + draft through the mock gateway,
- * then mounts the client `PublishForm` which owns the rest of
- * the workspace (sections + pricing + preview + actions + toast).
+ * Teacher "publish a class" page (FR-022 / FR-005). Server component that
+ * renders the chrome and mounts `PublishWorkspace`.
+ *
+ * The workspace is a client component because both of its data sources require
+ * the caller's session:
+ *  - verified skills come from `GET /profile-skills/me` (BR-008/BR-010: only an
+ *    approved skill can open a class);
+ *  - publishing is the real `POST /classes`.
+ * A previous version pre-loaded "verified skills" from a mock fixture, so the
+ * picker offered skills the server had never verified.
  */
 export default async function PublishClassPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-
-  const gateway = new MockTeacherPublishGateway();
-  const [skills, draft] = await Promise.all([
-    gateway.getVerifiedSkills(),
-    gateway.getDraft(),
-  ]);
 
   return (
     <div className="flex min-h-dvh flex-col bg-mist text-ink">
@@ -41,10 +39,7 @@ export default async function PublishClassPage({ params }: PageProps) {
         <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 lg:px-8">
           <VerificationBanner />
           <PublishHeader />
-          <PublishForm
-            initialDraft={draft}
-            skills={skills}
-          />
+          <PublishWorkspace />
         </div>
       </main>
       <SiteFooter />

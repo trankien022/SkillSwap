@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
-import * as SecureStore from 'expo-secure-store';
+import { defaultKeyValueStore } from '@/infrastructure/storage/key-value-store';
 import Constants from 'expo-constants';
 import { NotificationGateway } from '@/infrastructure/http/notification-gateway';
 import type { GatewayClient } from '@/infrastructure/http/gateway-client';
@@ -10,10 +10,11 @@ export const PUSH_OPT_IN_KEY = 'skillswap.notification.enabled';
 export const INSTALLATION_ID_KEY = 'skillswap.installation-id';
 
 async function installationId(): Promise<string> {
-  let value = await SecureStore.getItemAsync(INSTALLATION_ID_KEY);
+  const store = defaultKeyValueStore();
+  let value = await store.getItemAsync(INSTALLATION_ID_KEY);
   if (!value) {
     value = `install-${Date.now()}-${Math.random().toString(36).slice(2, 14)}`;
-    await SecureStore.setItemAsync(INSTALLATION_ID_KEY, value);
+    await store.setItemAsync(INSTALLATION_ID_KEY, value);
   }
   return value;
 }
@@ -47,15 +48,16 @@ async function performRegistration(client: GatewayClient, requestPermission: boo
     platform: Platform.OS,
     installationId: await installationId(),
   });
-  await SecureStore.setItemAsync(PUSH_DEVICE_ID_KEY, device.id);
+  await defaultKeyValueStore().setItemAsync(PUSH_DEVICE_ID_KEY, device.id);
   return device.id;
 }
 
 /** Deactivates the backend subscription before logout clears authenticated credentials. */
 async function performUnregistration(client: GatewayClient): Promise<void> {
-  const deviceId = await SecureStore.getItemAsync(PUSH_DEVICE_ID_KEY);
+  const store = defaultKeyValueStore();
+  const deviceId = await store.getItemAsync(PUSH_DEVICE_ID_KEY);
   if (deviceId) await new NotificationGateway(client).removeDevice(deviceId);
-  await SecureStore.deleteItemAsync(PUSH_DEVICE_ID_KEY);
+  await store.deleteItemAsync(PUSH_DEVICE_ID_KEY);
 }
 
 let deviceMutation: Promise<unknown> = Promise.resolve();

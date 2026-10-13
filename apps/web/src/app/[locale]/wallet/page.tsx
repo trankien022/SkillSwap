@@ -2,31 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import { simulatePaymentCallback } from './actions';
-import { callApi, unwrapEnvelope, dispatchWalletBalanceUpdate, getStoredWalletBalance } from '../../../lib/api-client';
+import { callApi, unwrapEnvelope, dispatchWalletBalanceUpdate } from '../../../lib/api-client';
 import { Navbar } from '../../../components/navbar';
 import type { WalletBalanceView, WalletHistoryItemView, MeResponse, TopUpIntentView } from '@skillswap/contracts';
 
 function getCombinedHistory(serverItems: WalletHistoryItemView[]): WalletHistoryItemView[] {
-  const localBookingsRaw = typeof window !== 'undefined' ? localStorage.getItem('skillswap_user_bookings') : null;
-  let localBookingItems: WalletHistoryItemView[] = [];
-  if (localBookingsRaw) {
-    try {
-      const bookings = JSON.parse(localBookingsRaw);
-      localBookingItems = bookings.map((b: { id: string; classTitle: string; priceCredits: number; startsAt?: string }) => ({
-        id: b.id || 'booking-local',
-        type: 'Thanh toán giữ chỗ (Escrow)',
-        direction: 'debit' as const,
-        amountCredits: b.priceCredits || 90,
-        status: 'completed' as const,
-        reference: b.classTitle || 'Lớp học kỹ năng',
-        createdAt: b.startsAt || new Date().toISOString(),
-      }));
-    } catch {
-      // Ignore
-    }
-  }
-  const combined = [...localBookingItems, ...serverItems];
-  return Array.from(new Map(combined.map((item) => [item.id, item])).values());
+  // The server ledger is the only source of wallet history. An earlier version
+  // merged in entries parsed from a `skillswap_user_bookings` localStorage key,
+  // inventing a debit (`amountCredits: 90` when the stored value was missing)
+  // for each cached booking. That key has no writers left, and a synthesised
+  // ledger entry is indistinguishable from a real one to the learner.
+  return serverItems;
 }
 
 export default function WalletPage() {
@@ -40,10 +26,6 @@ export default function WalletPage() {
   const [isPending, setIsPending] = useState(false);
 
   useEffect(() => {
-    const initialOverride = getStoredWalletBalance();
-    if (initialOverride) {
-      setBalance(initialOverride);
-    }
     setHistory(getCombinedHistory([]));
 
     const fetchWallet = async () => {
@@ -55,9 +37,8 @@ export default function WalletPage() {
         ]);
 
         if (balRes.ok) {
-          const bal = await unwrapEnvelope<WalletBalanceView>(balRes);
-          const override = getStoredWalletBalance();
-          setBalance(override ?? bal);
+          // Read the balance straight from the server; it is never cached.
+          setBalance(await unwrapEnvelope<WalletBalanceView>(balRes));
         } else {
           console.warn('Wallet balance not found or error');
         }
@@ -135,31 +116,23 @@ export default function WalletPage() {
         return;
       }
 
-      // 3. Re-fetch balance & history
+      // 3. Re-fetch balance & history. The top-up has already settled on the
+      // server, so the refetched balance is authoritative — the UI must not
+      // compute the new total itself, or it could show a figure the ledger
+      // does not agree with (e.g. a different fee or a rejected settlement).
       await new Promise((r) => setTimeout(r, 600));
       const [balRes, histRes] = await Promise.all([
         callApi('/wallet/balance'),
         callApi('/wallet/history'),
       ]);
-      const currentAvail = balance?.availableCredits ?? getStoredWalletBalance()?.availableCredits;
-      const currentPending = balance?.pendingCredits ?? (getStoredWalletBalance()?.pendingCredits ?? 0);
 
-      let newBal: WalletBalanceView;
-      if (currentAvail !== undefined) {
-        newBal = {
-          availableCredits: currentAvail + intent.amountCredits,
-          pendingCredits: currentPending,
-        };
-      } else if (balRes.ok) {
-        newBal = await unwrapEnvelope<WalletBalanceView>(balRes);
+      if (balRes.ok) {
+        const newBal = await unwrapEnvelope<WalletBalanceView>(balRes);
+        setBalance(newBal);
+        dispatchWalletBalanceUpdate(newBal);
       } else {
-        newBal = {
-          availableCredits: intent.amountCredits,
-          pendingCredits: 0,
-        };
+        alert('Nạp tiền đã xử lý nhưng chưa đọc được số dư mới. Vui lòng tải lại trang.');
       }
-      setBalance(newBal);
-      dispatchWalletBalanceUpdate(newBal);
 
       if (histRes.ok) {
         const data = await unwrapEnvelope<{ items: WalletHistoryItemView[] }>(histRes);

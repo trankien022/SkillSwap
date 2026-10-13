@@ -1,4 +1,6 @@
-import { getTranslations } from 'next-intl/server';
+'use client';
+
+import { useTranslations } from 'next-intl';
 import type {
   ClassDetailView,
   SyllabusStep,
@@ -11,8 +13,8 @@ import type {
  * steps. Each step shows a numbered circle, a title, a minutes badge,
  * and a body paragraph. The target-band caption is generic.
  */
-export async function SyllabusSection({ item }: { item: ClassDetailView }) {
-  const t = await getTranslations('ClassDetail.syllabus');
+export function SyllabusSection({ item }: { item: ClassDetailView }) {
+  const t = useTranslations('ClassDetail.syllabus');
 
   return (
     <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
@@ -41,8 +43,8 @@ export async function SyllabusSection({ item }: { item: ClassDetailView }) {
   );
 }
 
-async function SyllabusStepRow({ step }: { step: SyllabusStep }) {
-  const t = await getTranslations('ClassDetail.syllabus');
+function SyllabusStepRow({ step }: { step: SyllabusStep }) {
+  const t = useTranslations('ClassDetail.syllabus');
   return (
     <div className="flex items-start gap-3 rounded-xl border border-border bg-mist p-4 transition-colors hover:bg-neutral-tint">
       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ink text-xs font-bold text-surface">

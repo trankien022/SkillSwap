@@ -35,7 +35,7 @@ export function SkillSelectSection({ skills, draft, onChange }: Props) {
         </label>
         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 border border-emerald-200">
           <CheckCircleIcon className="h-3.5 w-3.5" />
-          <span>{tSteps('step1VerifiedBadge')}</span>
+          <span>{tSteps('step1VerifiedBadge', { count: skills.length })}</span>
         </span>
       </div>
       <div className="relative">
@@ -50,8 +50,10 @@ export function SkillSelectSection({ skills, draft, onChange }: Props) {
           ) : (
             skills.map((skill) => (
               <option key={skill.id} value={skill.id}>
-                {skill.label} ({t('verifiedTag')}: {skill.verifierLabel} —{' '}
-                {skill.verifierFaculty})
+                {skill.label}
+                {skill.approvedLevel !== null
+                  ? ` (${t('verifiedTag')}: ${skill.approvedLevel})`
+                  : ''}
               </option>
             ))
           )}

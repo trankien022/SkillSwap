@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ClassDetailApiGateway, mapContractDetailToWeb, mapCreatedClassToDetail } from './api-class-detail';
+import { ClassDetailApiGateway, mapContractDetailToWeb } from './api-class-detail';
 import type { ClassDetailView as ContractClassDetailView } from '@skillswap/contracts';
 
 describe('ClassDetailApiGateway', () => {
@@ -31,38 +31,48 @@ describe('ClassDetailApiGateway', () => {
     ],
   };
 
-  it('maps backend ClassDetailView contract to web presentation view', () => {
+  it('maps only the fields the API actually returns, inventing nothing', () => {
     const webView = mapContractDetailToWeb(sampleContractDetail);
+
+    // Real fields pass through unchanged.
     expect(webView.id).toBe(sampleContractDetail.id);
     expect(webView.teacherName).toBe('Lê Minh');
     expect(webView.priceCredits).toBe(80);
     expect(webView.format).toBe('group-2-4');
+    expect(webView.description).toBe('Cấu trúc dữ liệu và giải thuật nâng cao');
     expect(webView.reviews).toHaveLength(1);
     expect(webView.reviews[0]?.authorName).toBe('Học viên A');
-    expect(webView.syllabus.length).toBeGreaterThan(0);
-    expect(webView.prerequisites.length).toBeGreaterThan(0);
+
+    // Fields the API does NOT return stay absent. This test previously asserted
+    // a non-empty syllabus and prerequisites — i.e. it locked in the fabricated
+    // three-step outline and the invented school/rating/bio. Absence is the
+    // honest state, so it is what is asserted now.
+    expect(webView.syllabus).toEqual([]);
+    expect(webView.prerequisites).toEqual([]);
+    expect(webView.teacherCredentials).toEqual([]);
+    expect(webView.teacherBio).toBeNull();
+    expect(webView.teacherStats).toBeNull();
+    expect(webView.schoolCode).toBeNull();
+    expect(webView.schoolName).toBeNull();
+    expect(webView.skillName).toBeNull();
+    expect(webView.skillCategory).toBeNull();
+    expect(webView.level).toBeNull();
+    expect(webView.verified).toBeNull();
+    // The reviewer's school is not returned, so none is claimed.
+    expect(webView.reviews[0]?.schoolName).toBeNull();
   });
 
-  it('maps locally stored created class to complete ClassDetailView', () => {
-    const local = {
-      id: 'cls-demo-56h3hb',
-      title: 'Luyện đề IELTS Speaking cấp tốc',
-      skillName: 'IELTS Speaking',
-      description: 'Luyện nói 1-1 phản xạ cùng cựu học sinh chuyên Anh.',
-      startsAt: '2026-10-28T10:00:00.000Z',
-      durationMinutes: 60,
-      priceCredits: 50,
-      capacity: 1,
-    };
-    const detail = mapCreatedClassToDetail(local);
-    expect(detail.id).toBe('cls-demo-56h3hb');
-    expect(detail.skillName).toBe('IELTS Speaking');
-    expect(detail.description).toBe('Luyện nói 1-1 phản xạ cùng cựu học sinh chuyên Anh.');
-    expect(detail.format).toBe('one-on-one');
-    expect(detail.priceCredits).toBe(50);
-    expect(detail.syllabus.length).toBe(3);
-    expect(detail.prerequisites.length).toBe(2);
-    expect(detail.teacherCredentials.length).toBeGreaterThanOrEqual(1);
+  it('keeps a real rating and does not coerce an absent one to 5.0', () => {
+    expect(mapContractDetailToWeb(sampleContractDetail).ratingAvg).toBe(4.9);
+
+    const unrated = mapContractDetailToWeb({
+      ...sampleContractDetail,
+      teacher: { ...sampleContractDetail.teacher, averageRating: null, ratingsCount: 0 },
+      recentRatings: [],
+    });
+    // The old mapper wrote `?? 5.0`, turning "no ratings" into a perfect score.
+    expect(unrated.ratingAvg).toBeNull();
+    expect(unrated.ratingCount).toBe(0);
   });
 
   it('resolves demo class IDs seamlessly from fallback fixture', async () => {

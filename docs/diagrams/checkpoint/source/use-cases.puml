@@ -42,7 +42,7 @@ T --> WALLET
 L --> ROOM
 T --> ROOM
 A --> VERIFIER
-note bottom of BOOK: Web/mobile booking is a local demonstration.
+note bottom of BOOK: Web and mobile both book through the real API.
 note bottom of AUTH: Verifier and Administrator accounts are assigned by operators.
 note bottom of WALLET: Teacher withdrawals are not available yet.
 note left of T: The same student account can learn and teach.

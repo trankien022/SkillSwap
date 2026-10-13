@@ -1,18 +1,28 @@
-import * as SecureStore from 'expo-secure-store';
 import type { SessionStorePort } from '@/application/port/session-store';
 import {
   CorruptSessionError,
   type ActiveSession,
   type SessionTokens,
 } from '@/application/port/session-types';
+import {
+  defaultKeyValueStore,
+  InMemoryKeyValueStore,
+  type KeyValueStore,
+} from './key-value-store';
 
 export const DEFAULT_SESSION_STORAGE_KEY = 'skillswap.mobile.session';
 
-export interface SecureStoreBackend {
-  getItemAsync(key: string, options?: SecureStore.SecureStoreOptions): Promise<string | null>;
-  setItemAsync(key: string, value: string, options?: SecureStore.SecureStoreOptions): Promise<void>;
-  deleteItemAsync(key: string, options?: SecureStore.SecureStoreOptions): Promise<void>;
-}
+/**
+ * @deprecated Use `KeyValueStore` from `./key-value-store`. Kept as an alias so
+ * existing specs and call sites keep compiling while the platform switch lives
+ * in exactly one module.
+ */
+export type SecureStoreBackend = KeyValueStore;
+
+/**
+ * @deprecated Use `InMemoryKeyValueStore` from `./key-value-store`.
+ */
+export class InMemorySessionBackend extends InMemoryKeyValueStore {}
 
 export class SecureStoreError extends Error {
   constructor(message: string, override readonly cause?: unknown) {
@@ -28,10 +38,18 @@ export class SecureStoreError extends Error {
  * - Structural corruption detection (evicts invalid JSON/schema and throws CorruptSessionError).
  * - Direct visibility into hardware/keychain failures (surfaces SecureStoreError).
  * - Injectable backend for testing without native mobile bindings.
+ *
+ * On web the default backend is in-memory, chosen by `defaultKeyValueStore()`
+ * in `./key-value-store` — the single place the platform switch lives. Before
+ * that, boot on Expo Web always failed and showed the "LỖI KẾT NỐI" screen:
+ * `load()` called a missing native method, the TypeError was wrapped as a
+ * SecureStoreError, and `restoreSession` correctly refuses to treat a non-401
+ * failure as a signed-out user. The screen was honest — it was the storage
+ * layer that could not work.
  */
 export class SecureSessionStore implements SessionStorePort {
   constructor(
-    private readonly backend: SecureStoreBackend = SecureStore,
+    private readonly backend: KeyValueStore = defaultKeyValueStore(),
     private readonly storageKey: string = DEFAULT_SESSION_STORAGE_KEY,
   ) {}
 
@@ -111,3 +129,4 @@ export class SecureSessionStore implements SessionStorePort {
     );
   }
 }
+

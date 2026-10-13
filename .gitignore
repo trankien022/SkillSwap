@@ -20,6 +20,9 @@ apps/mobile/android/
 apps/web/dev.err
 # Source assets (work-in-progress logos) — only the curated copy under apps/web/public/ is committed
 logo/
+# This repo uses pnpm. A stray `npm install` writes a lockfile the project does
+# not consume; ignore it rather than leave it as untracked noise.
+package-lock.json
 
 # Locally installed agent tools and generated code graphs.
 .agents/

@@ -64,6 +64,28 @@ describe('GatewayConfig', () => {
     expect(config.jwtPublicKeyPath).toBe(resolve(process.cwd(), '../../.secrets/jwt-public.pem'));
   });
 
+  it('disables CORS when CORS_ORIGINS is absent or blank', () => {
+    expect(new GatewayConfig({}).corsOrigins).toEqual([]);
+    expect(new GatewayConfig({ CORS_ORIGINS: '   ' }).corsOrigins).toEqual([]);
+  });
+
+  it('parses a comma-separated CORS_ORIGINS allow-list, trimming blanks', () => {
+    const config = new GatewayConfig({
+      CORS_ORIGINS: 'http://localhost:8081, http://localhost:3000 ,',
+    });
+
+    expect(config.corsOrigins).toEqual(['http://localhost:8081', 'http://localhost:3000']);
+  });
+
+  it('rejects a wildcard CORS_ORIGINS', () => {
+    expect(() => new GatewayConfig({ CORS_ORIGINS: '*' })).toThrow(
+      'CORS_ORIGINS must list explicit origins',
+    );
+    expect(() => new GatewayConfig({ CORS_ORIGINS: 'http://localhost:8081,*' })).toThrow(
+      'CORS_ORIGINS must list explicit origins',
+    );
+  });
+
   it('keeps an absolute JWT_PUBLIC_KEY_PATH untouched', () => {
     const absolute = process.platform === 'win32' ? 'C:\\keys\\jwt-public.pem' : '/keys/jwt-public.pem';
 

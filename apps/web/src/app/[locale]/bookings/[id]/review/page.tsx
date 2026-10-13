@@ -8,14 +8,11 @@ type PageProps = {
 };
 
 /**
- * Post-session settlement and peer review page (FR-013 peer review rating,
- * FR-038 escrow release, post-Jitsi milestone).
+ * Post-session settlement and peer review page (FR-013 review, FR-038 escrow
+ * release).
  *
- * Displays:
- * 1. 3-step progress stepper (Leave Jitsi -> Escrow Settlement -> Peer Rating)
- * 2. Celebration completion banner with session code
- * 3. Left column: Session dossier, 90/10 escrow settlement breakdown, notes download
- * 4. Right column: 4-criteria rating, suggestion chips, skill-swap cross-matching
+ * The booking id comes from the route; the client component resolves it against
+ * the learner's own bookings, so the server component only renders the chrome.
  */
 export default async function BookingReviewPage({ params }: PageProps) {
   const { locale, id } = await params;

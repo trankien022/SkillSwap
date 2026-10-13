@@ -8,61 +8,43 @@ import {
   TITLE_MAX_CHARS,
   VND_PER_CREDIT,
   type ClassDraft,
-  type VerifiedSkill,
 } from './types';
 
-/** Two verified skills, no real names, no real faculties. */
-export const demoVerifiedSkills: VerifiedSkill[] = [
-  {
-    id: 'skill-ielts-speaking-75',
-    category: 'language',
-    label: 'IELTS Speaking 7.5+',
-    verifierLabel: 'Demo verifier',
-    verifierFaculty: 'Demo faculty',
-    approvedOn: '2025-08-12',
-  },
-  {
-    id: 'skill-algo-dsa-advanced',
-    category: 'code',
-    label: 'Thuật toán & Cấu trúc dữ liệu nâng cao',
-    verifierLabel: 'Demo verifier',
-    verifierFaculty: 'Demo faculty',
-    approvedOn: '2025-09-04',
-  },
-];
+/**
+ * Pure pricing and draft-validation helpers for the teacher surfaces (BR-034,
+ * BR-017, AC-028).
+ *
+ * These lived in `mock-data.ts` alongside the demo fixtures, which made them look
+ * like mock behavior even though they are the real money rules: the publish
+ * preview (`PricingRevenueCard`), the publish form's validity gate and the
+ * post-session settlement all depend on them. Keeping them here means there is
+ * one arithmetic source, so the 90/10 split cannot drift between screens.
+ *
+ * Money is integer credits throughout (1 credit = 1,000 VND). No floats.
+ */
 
-/** Default draft state, matches the demo card on the template. */
-export function buildDemoDraft(now: Date = new Date()): ClassDraft {
-  const startDate = new Date(now);
-  startDate.setUTCDate(startDate.getUTCDate() + 7);
-  const isoDate = startDate.toISOString().slice(0, 10);
-  return {
-    skillId: 'skill-ielts-speaking-75',
-    title: 'Luyện Mock Test IELTS Speaking 1-1 chuyên sâu phản xạ',
-    description:
-      'Học viên chuẩn bị sẵn bài nói Part 2 theo đề quý gần nhất. Yêu cầu trang bị tai nghe có mic chống ồn, camera bật suốt buổi học. Lớp tập trung sửa phát âm, ngắt nhịp và mở rộng vốn từ C1.',
-    durationMinutes: 60,
-    startsOn: isoDate,
-    startsAt: '20:00',
-    capacity: 1,
-    priceCredits: 100,
-  };
-}
+/* --- Platform fee (BR-034) --- */
 
-/* --- Pure helpers (tested in mock-gateway.test.ts) --- */
-
+/**
+ * The platform's cut of a class price: 1000 bps (10%), rounded half-up to an
+ * integer credit. An odd price rounds to the nearest credit rather than
+ * truncating, so `fee + net === price` always holds.
+ */
 export function computePlatformFee(priceCredits: number): number {
-  // BR-034: 1000 bps (10%) integer, rounded half-up.
   return Math.round((priceCredits * PLATFORM_FEE_BPS) / 10_000);
 }
 
+/** The teacher's net, i.e. the price minus the platform fee. Never negative. */
 export function computeNetCredits(priceCredits: number): number {
   return Math.max(0, priceCredits - computePlatformFee(priceCredits));
 }
 
+/** Credits to VND (1 credit = 1,000 VND). Used for the "≈ VNĐ" estimates. */
 export function computeVndEstimate(credits: number): number {
   return credits * VND_PER_CREDIT;
 }
+
+/* --- Draft clamps and predicates --- */
 
 export function clampPrice(price: number): number {
   if (!Number.isFinite(price)) return MIN_PRICE_CREDITS;

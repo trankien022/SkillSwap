@@ -29,31 +29,9 @@ export class MockBookingGateway implements BookingGateway {
       return found;
     }
 
-    if (typeof window !== 'undefined') {
-      try {
-        const raw = localStorage.getItem('skillswap_created_classes');
-        if (raw) {
-          const stored = JSON.parse(raw);
-          if (Array.isArray(stored)) {
-            const local = stored.find((c: { id: string }) => c.id === classId);
-            if (local) {
-              return {
-                id: local.id,
-                teacherId: 'teacher-local',
-                state: 'published',
-                startsAt: local.startsAt || new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
-                durationMinutes: local.durationMinutes || 60,
-                priceCredits: local.priceCredits || 50,
-                capacity: local.capacity || 2,
-              };
-            }
-          }
-        }
-      } catch {
-        // ignore
-      }
-    }
-
+    // No localStorage fallback: the cache key it read has no writers, and the
+    // reconstructed class invented a teacher, price and capacity. An unknown id
+    // is an error.
     throw new Error(`Class not found: ${classId}`);
   }
 

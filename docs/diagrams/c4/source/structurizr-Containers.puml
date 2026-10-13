@@ -28,9 +28,8 @@ UpdateElementStyle("system", $bgColor="#047857", $fontColor="#FFFFFF", $borderCo
 UpdateElementStyle("external_system", $bgColor="#64748B", $fontColor="#FFFFFF", $borderColor="#64748B", $legendText="Supporting software system")
 UpdateElementStyle("container", $bgColor="#047857", $fontColor="#FFFFFF", $borderColor="#047857", $legendText="Application or data store")
 UpdateRelStyle($lineColor="#475569", $textColor="#334155")
-AddElementTag("Demo", $bgColor="#F1F5F9", $fontColor="#0F172A", $borderColor="#64748B", $legendText="Demonstration client (local booking data)")
 
-Person(AccountHolder, "Account holder", $descr="[Person]\nUses demonstration clients or role-authorized API services.", $tags="", $link="")
+Person(AccountHolder, "Account holder", $descr="[Person]\nUses the web or mobile client, or role-authorized API services.", $tags="", $link="")
 System_Ext(Onlineclassroom, "Online classroom", $descr="[Supporting software system]\nHosts live lessons for users who are learning or teaching.", $tags="", $link="")
 System_Ext(Paymentgateway, "Third-party payment gateway", $descr="[Supporting software system]\nProcesses cash top-ups and payouts; provider selection is pending.", $tags="", $link="")
 
@@ -40,16 +39,16 @@ System_Boundary("SkillSwap_boundary", "SkillSwap", $tags="") {
   ContainerDb(SkillSwap.Businessdatabase, "Business database", $techn="Container: PostgreSQL / TypeORM", $descr="Stores records in seven separately owned business schemas.", $tags="", $link="")
   ContainerQueue(SkillSwap.Businessmessagebroker, "Business message broker", $techn="Container: RabbitMQ", $descr="Delivers saved business changes for background processing.", $tags="", $link="")
   ContainerDb(SkillSwap.Privatedocumentstore, "Private document store", $techn="Container: MinIO / S3-compatible API", $descr="Stores student proof uploaded through temporary private links.", $tags="", $link="")
-  Container(SkillSwap.Webapplication, "Web application", $techn="Container: Next.js / TypeScript", $descr="Shows service status and demonstration bookings.", $tags="Demo", $link="")
-  Container(SkillSwap.Mobileapplication, "Mobile application", $techn="Container: Expo / React Native", $descr="Shows demonstration bookings using local data.", $tags="Demo", $link="")
+  Container(SkillSwap.Webapplication, "Web application", $techn="Container: Next.js / TypeScript", $descr="Learns, publishes classes, manages the wallet and submits verification evidence.", $tags="", $link="")
+  Container(SkillSwap.Mobileapplication, "Mobile application", $techn="Container: Expo / React Native", $descr="The same learner and teacher screens as the web client.", $tags="", $link="")
 }
 
-Rel(AccountHolder, SkillSwap.Webapplication, "Views status and demo bookings", $techn="Browser", $tags="", $link="")
-Rel(AccountHolder, SkillSwap.Mobileapplication, "Tries demo bookings", $techn="Native UI", $tags="", $link="")
+Rel(AccountHolder, SkillSwap.Webapplication, "Learns, teaches and manages the wallet", $techn="Browser", $tags="", $link="")
+Rel(AccountHolder, SkillSwap.Mobileapplication, "Uses the same learner and teacher screens", $techn="Native UI", $tags="", $link="")
 Rel(AccountHolder, SkillSwap.APIgateway, "Requests services allowed for their account", $techn="HTTP / JSON", $tags="", $link="")
 Rel(AccountHolder, SkillSwap.Privatedocumentstore, "Uploads owned student proof using a temporary link", $techn="HTTP PUT", $tags="", $link="")
 Rel(AccountHolder, Onlineclassroom, "Joins a booked lesson with a private invitation", $techn="HTTPS / WebRTC", $tags="", $link="")
-Rel(SkillSwap.Webapplication, SkillSwap.APIgateway, "Requests service status only", $techn="HTTP / JSON", $tags="", $link="")
+Rel(SkillSwap.Webapplication, SkillSwap.APIgateway, "Sends every feature request", $techn="HTTP / JSON", $tags="", $link="")
 Rel(SkillSwap.APIgateway, SkillSwap.BackendAPI, "Forwards authenticated requests", $techn="HTTP / JSON", $tags="", $link="")
 Rel(SkillSwap.BackendAPI, SkillSwap.Businessdatabase, "Reads and saves owned business records", $techn="PostgreSQL protocol / TypeORM", $tags="", $link="")
 Rel(SkillSwap.BackendAPI, SkillSwap.Businessmessagebroker, "Publishes saved business changes", $techn="AMQP", $tags="", $link="")
@@ -63,5 +62,5 @@ Lay_D(SkillSwap.APIgateway, SkillSwap.BackendAPI)
 Lay_R(SkillSwap.Businessdatabase, SkillSwap.Businessmessagebroker)
 Lay_R(SkillSwap.Privatedocumentstore, Onlineclassroom)
 SHOW_LEGEND()
-footer Current implementation: booking screens use local data and PaymentGateway is backed by a mock adapter; no provider is selected.\nBackend signs classroom invitations and document upload links locally. No network call to Jitsi/MinIO is implied.\nHTTP labels describe local development; production ingress is HTTPS. Only status calls are connected from the web app.
+footer Current implementation: web and mobile booking screens call the real hold and confirm endpoints and PaymentGateway is backed by a mock adapter; no provider is selected.\nBackend signs classroom invitations and document upload links locally. No network call to Jitsi/MinIO is implied.\nHTTP labels describe local development; production ingress is HTTPS. The web app connects to the API for every feature screen, not only status calls.
 @enduml

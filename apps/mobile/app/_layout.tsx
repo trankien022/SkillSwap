@@ -5,7 +5,7 @@ import { AppState } from 'react-native';
 import { startPushPreferenceSync } from '@/infrastructure/push/notification-preference-sync';
 import { StatusBar } from 'expo-status-bar';
 import * as Notifications from 'expo-notifications';
-import * as SecureStore from 'expo-secure-store';
+import { defaultKeyValueStore } from '@/infrastructure/storage/key-value-store';
 import { colors } from '@/design/tokens';
 import { BootErrorView } from '@/ui/boot-error-view';
 import { ConfigErrorView } from '@/ui/config-error-view';
@@ -29,8 +29,8 @@ function RootNavigation() {
     const onResponse = async (response: Notifications.NotificationResponse) => {
       const responseId = response.notification.request.identifier;
       const key = 'skillswap.notification.last-opened';
-      if (await SecureStore.getItemAsync(key) === responseId) return;
-      await SecureStore.setItemAsync(key, responseId);
+      if (await defaultKeyValueStore().getItemAsync(key) === responseId) return;
+      await defaultKeyValueStore().setItemAsync(key, responseId);
       if (!mounted) return;
       const data = response.notification.request.content.data;
       setPendingPushOpen(notificationRoute(data?.targetType, data?.targetId));
@@ -56,7 +56,7 @@ function RootNavigation() {
     if (!gatewayClient || !user?.id || isLoading || !localeReady) return;
     let active = true;
     const sync = startPushPreferenceSync(async () => {
-      const enabled = await SecureStore.getItemAsync(PUSH_OPT_IN_KEY);
+      const enabled = await defaultKeyValueStore().getItemAsync(PUSH_OPT_IN_KEY);
       if (active && enabled === 'true') await registerPushDevice(gatewayClient, false, locale);
     });
     const foreground = AppState.addEventListener('change', (state) => {

@@ -3,12 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BookingError, type BookingView, type ClassView } from '../../lib/booking/domain';
 import { BookClassService } from '../../lib/booking/service';
-import { MockBookingGateway } from '../../lib/booking/mock-gateway';
+import { HttpBookingGateway } from '../../lib/booking/http-gateway';
 import { newIdempotencyKey } from '../../lib/booking/idempotency';
 import { BookButton } from './book-button';
 import { ClassCard } from './class-card';
 import { StatusPill } from './status-pill';
-import { dispatchUserBookingsUpdate } from '../../lib/dashboard/api-my-bookings';
 
 /** Plain, serializable messages passed from the server component. */
 export interface BookingMessages {
@@ -43,7 +42,7 @@ type State =
 /**
  * Container for the learner booking flow. Owns the service, the copy and the
  * state machine; rendering is delegated to presentational components. `service`
- * is injectable for tests; the page relies on the default mock.
+ * is injectable for tests; the page relies on the real HTTP gateway.
  */
 export function BookingPanel({
   classId,
@@ -55,7 +54,7 @@ export function BookingPanel({
   service?: BookClassService;
 }) {
   const service = useMemo(
-    () => injected ?? new BookClassService(new MockBookingGateway()),
+    () => injected ?? new BookClassService(new HttpBookingGateway()),
     [injected],
   );
   const [state, setState] = useState<State>({ phase: 'loading' });
@@ -88,30 +87,6 @@ export function BookingPanel({
     try {
       const { booking } = await service.book(classId, key);
       setState({ phase: 'booked', classView, booking });
-      try {
-        const raw = localStorage.getItem('skillswap_created_classes');
-        const createdClasses = raw ? JSON.parse(raw) : [];
-        const foundClass = Array.isArray(createdClasses)
-          ? createdClasses.find((c: { id: string; title?: string; skillName?: string }) => c.id === classId)
-          : null;
-        dispatchUserBookingsUpdate({
-          id: booking.bookingId,
-          classId: booking.classId,
-          classTitle: foundClass?.title || foundClass?.skillName || 'Lớp học kỹ năng chuyên đề',
-          skillIcon: 'code',
-          teacherName: 'Giảng viên',
-          teacherInitial: 'G',
-          teacherSchoolLabel: 'Đại học Quốc gia',
-          startsAt: classView.startsAt,
-          durationMinutes: classView.durationMinutes,
-          priceCredits: booking.priceCredits,
-          state: 'upcoming',
-          roomCode: `ROOM-${booking.bookingId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toUpperCase()}`,
-          receiptId: `REC-${booking.bookingId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toUpperCase()}`,
-        });
-      } catch {
-        // ignore
-      }
     } catch (error) {
       const reason = error instanceof BookingError ? error.reason : 'unknown';
       setState({ phase: 'error', message: errorText(reason) });

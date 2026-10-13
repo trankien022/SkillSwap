@@ -42,5 +42,5 @@ else Payment fails, including insufficient balance
  Automatic cancellation of that confirmation is not implemented.
  end note
 end
-note over L,C: This describes current backend behavior.\nWeb and mobile booking screens still use local demonstrations.
+note over L,C: This describes current backend behavior.\nWeb and mobile booking screens call the same endpoints.
 @enduml

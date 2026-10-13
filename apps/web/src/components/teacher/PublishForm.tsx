@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { SkillSelectSection } from './SkillSelectSection';
 import { GeneralDetailsSection } from './GeneralDetailsSection';
 import { ClassFormatSection } from './ClassFormatSection';
@@ -14,57 +15,59 @@ import {
   capacityIsValid,
   priceIsValid,
   titleOver,
-} from '../../lib/teacher/mock-data';
-import { MockTeacherPublishGateway } from '../../lib/teacher/mock-gateway';
+} from '../../lib/teacher/money';
+import {
+  HttpTeacherPublishGateway,
+  TeacherPublishAuthError,
+} from '../../lib/teacher/http-gateway';
 import {
   TITLE_MAX_CHARS,
   type ClassDraft,
   type PublishResult,
   type VerifiedSkill,
 } from '../../lib/teacher/types';
-import { callApi, unwrapEnvelope } from '../../lib/api-client';
 
 interface Props {
   initialDraft: ClassDraft;
   skills: VerifiedSkill[];
+  /**
+   * Publishes the draft. Defaults to the live gateway; injected only by tests.
+   * The return value is what actually happened on the server.
+   */
   publish?: (draft: ClassDraft) => Promise<PublishResult>;
-  saveDraft?: (draft: ClassDraft) => Promise<ClassDraft>;
 }
 
 /**
- * Top-level client orchestrator for the 'Publish a class'
- * workspace (FR-022). Owns:
- *  - the draft state (initialized from the server-loaded draft);
- *  - the live validity check for the publish button;
- *  - the publish / saveDraft / cancel transitions;
- *  - the success toast state.
+ * Top-level client orchestrator for the 'Publish a class' workspace (FR-022).
+ * Owns the draft state, the live validity check for the publish button, the
+ * publish transition and the success/error banner.
  *
- * The page (server) is only responsible for loading the
- * gateway data and the verified skills. Everything else
- * happens here.
+ * Publishing has exactly one implementation (`HttpTeacherPublishGateway`), which
+ * posts to the real `POST /classes`. There is no mock fallback: if the API
+ * rejects the draft, the screen shows the rejection instead of a fabricated
+ * success with a room code the backend never issued.
  */
 export function PublishForm({
   initialDraft,
   skills,
   publish,
-  saveDraft,
 }: Props) {
   const [draft, setDraft] = useState<ClassDraft>(initialDraft);
-  const [toastOpen, setToastOpen] = useState(false);
-  const [publishing, startPublishing] = useTransition();
+  const [isPublishing, startPublishing] = useTransition();
   const [lastResult, setLastResult] = useState<PublishResult | null>(null);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [toastOpen, setToastOpen] = useState(false);
+  const tResult = useTranslations('Teacher.publish.result');
 
-  const defaultGateway = useMemo(
-    () => new MockTeacherPublishGateway(initialDraft),
-    [initialDraft],
-  );
+  const gateway = useMemo(() => new HttpTeacherPublishGateway(), []);
   const doPublish = useMemo(
-    () => publish ?? ((d: ClassDraft) => defaultGateway.publishDraft(d)),
-    [publish, defaultGateway],
-  );
-  const doSaveDraft = useMemo(
-    () => saveDraft ?? ((d: ClassDraft) => defaultGateway.saveDraft(d)),
-    [saveDraft, defaultGateway],
+    () =>
+      publish ??
+      ((d: ClassDraft) => {
+        const skill = skills.find((s) => s.id === d.skillId);
+        return gateway.publishDraft(d, skill?.label ?? '');
+      }),
+    [publish, gateway, skills],
   );
 
   const isValid = useMemo(() => validateDraft(draft, skills), [draft, skills]);
@@ -75,88 +78,30 @@ export function PublishForm({
 
   const handlePublish = useCallback(() => {
     if (!isValid) return;
+    setPublishError(null);
     startPublishing(async () => {
       try {
-        let startsAtIso: string;
-        try {
-          const combined = new Date(`${draft.startsOn}T${draft.startsAt}:00`);
-          startsAtIso = isNaN(combined.getTime())
-            ? new Date(Date.now() + 48 * 3600 * 1000).toISOString()
-            : combined.toISOString();
-        } catch {
-          startsAtIso = new Date(Date.now() + 48 * 3600 * 1000).toISOString();
-        }
-
-        let realClassId = '';
-        try {
-          const res = await callApi('/classes', {
-            method: 'POST',
-            body: JSON.stringify({
-              skillIds: [draft.skillId || 'skill-ielts'],
-              description: draft.title ? `${draft.title}\n\n${draft.description}` : draft.description,
-              startsAt: startsAtIso,
-              durationMinutes: draft.durationMinutes,
-              priceCredits: draft.priceCredits,
-              capacity: draft.capacity,
-            }),
-          });
-          if (res.ok) {
-            const data = await unwrapEnvelope<{ id: string }>(res);
-            realClassId = data.id;
-          }
-        } catch (apiErr) {
-          console.warn('Backend POST /classes fallback to mock result', apiErr);
-        }
-
         const result = await doPublish(draft);
-        if (realClassId) {
-          result.classId = realClassId;
-          result.classroomCode = `SS-${realClassId.slice(-4).toUpperCase()}`;
-        }
-
-        // Store published class in skillswap_created_classes so it appears in instructor dashboard & explore
-        try {
-          const selectedSkill = skills.find((s) => s.id === draft.skillId);
-          const skillName = selectedSkill?.label || 'Kỹ năng chuyên đề';
-          const newClassItem = {
-            id: result.classId || realClassId || `cls-${Date.now()}`,
-            title: draft.title || skillName,
-            skillName,
-            description: draft.description,
-            startsAt: startsAtIso,
-            durationMinutes: draft.durationMinutes,
-            priceCredits: draft.priceCredits,
-            capacity: draft.capacity,
-          };
-          const existing = JSON.parse(localStorage.getItem('skillswap_created_classes') || '[]');
-          const updated = [newClassItem, ...existing.filter((c: { id: string }) => c.id !== newClassItem.id)];
-          localStorage.setItem('skillswap_created_classes', JSON.stringify(updated));
-        } catch (storageErr) {
-          console.warn('Failed to save published class to localStorage', storageErr);
-        }
-
         setLastResult(result);
         setToastOpen(true);
       } catch (err) {
-        console.error(err);
+        setLastResult(null);
+        setPublishError(
+          err instanceof TeacherPublishAuthError
+            ? 'Bạn cần đăng nhập để công bố lớp học.'
+            : err instanceof Error
+              ? err.message
+              : 'Không công bố được lớp học.',
+        );
       }
     });
-  }, [draft, isValid, doPublish, skills]);
-
-  const handleSaveDraft = useCallback(() => {
-    startPublishing(async () => {
-      try {
-        await doSaveDraft(draft);
-      } catch {
-        // ignored for the mock
-      }
-    });
-  }, [draft, doSaveDraft]);
+  }, [draft, isValid, doPublish]);
 
   const handleCancel = useCallback(() => {
-    // Pilot: just reset to the initial draft. The real cancel
-    // flow would route back to /[locale]/teach/classes.
+    // Resets to the draft loaded from the server. This is a single workspace, so
+    // "cancel" discards edits rather than navigating away.
     setDraft(initialDraft);
+    setPublishError(null);
   }, [initialDraft]);
 
   return (
@@ -183,15 +128,31 @@ export function PublishForm({
         {/* Right Column: Sticky Live Preview, Eligibility Checklist & Actions */}
         <div className="flex flex-col gap-6 lg:col-span-5 lg:sticky lg:top-24">
           <MarketplacePreviewCard draft={draft} skills={skills} />
-          <EligibilityChecklistCard />
+          <EligibilityChecklistCard draft={draft} skills={skills} />
           <PublishActions
             onPublish={handlePublish}
-            onSaveDraft={handleSaveDraft}
             onCancel={handleCancel}
-            publishing={publishing}
-            canPublish={isValid && !publishing}
+            publishing={isPublishing}
+            canPublish={isValid && !isPublishing}
           />
-          {lastResult && (
+
+          {/* A rejected publish is shown as a rejection. The API's own message is
+              surfaced so the teacher can act on it. */}
+          {publishError !== null && (
+            <p
+              role="alert"
+              className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs font-medium text-rose-700 shadow-sm"
+            >
+              {publishError}
+            </p>
+          )}
+
+          {/* Success shows only what the server actually returned: the class id.
+              The old "Mã phòng học" line displayed a code this screen made up —
+              the video room is minted later, per booking, by the backend. The
+              labels are translated: this panel used to be hardcoded Vietnamese,
+              so it read in Vietnamese on the English site. */}
+          {lastResult !== null && (
             <div
               role="status"
               aria-live="polite"
@@ -199,15 +160,13 @@ export function PublishForm({
             >
               <div className="flex items-center gap-1.5 font-bold text-emerald-800 pb-1">
                 <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                <span>Lớp học đã được tạo thành công</span>
+                <span>{tResult('successTitle')}</span>
               </div>
               <div>
-                <span className="font-semibold text-slate-800">Mã lớp:</span>{' '}
-                <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-slate-700">{lastResult.classId}</code>
-              </div>
-              <div className="pt-1">
-                <span className="font-semibold text-slate-800">Mã phòng học:</span>{' '}
-                <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-slate-700">{lastResult.classroomCode}</code>
+                <span className="font-semibold text-slate-800">{tResult('classIdLabel')}</span>{' '}
+                <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-slate-700">
+                  {lastResult.classId}
+                </code>
               </div>
             </div>
           )}

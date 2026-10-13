@@ -4,21 +4,22 @@ import { useTranslations } from 'next-intl';
 
 interface Props {
   onPublish: () => void;
-  onSaveDraft: () => void;
   onCancel: () => void;
   publishing: boolean;
   canPublish: boolean;
 }
 
 /**
- * Sticky footer with the 3 publish actions. The Publish button
- * is disabled while the form is invalid or a publish call is
- * already in flight. The Save Draft and Cancel buttons are
- * always available.
+ * Sticky footer with the publish actions. The Publish button is disabled while
+ * the form is invalid or a publish call is already in flight.
+ *
+ * There is deliberately no "save draft" button: the API has no draft endpoint —
+ * `POST /classes` publishes immediately (state becomes `published`) — so a draft
+ * button could only pretend to persist something. The teacher keeps the form on
+ * screen and publishes when ready.
  */
 export function PublishActions({
   onPublish,
-  onSaveDraft,
   onCancel,
   publishing,
   canPublish,
@@ -41,13 +42,6 @@ export function PublishActions({
         >
           <RocketLaunchIcon className="h-4 w-4" />
           <span>{publishing ? '…' : t('publish')}</span>
-        </button>
-        <button
-          type="button"
-          onClick={onSaveDraft}
-          className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-100"
-        >
-          {t('saveDraft')}
         </button>
         <button
           type="button"

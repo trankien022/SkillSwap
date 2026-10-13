@@ -1,5 +1,7 @@
 /* --- Teacher "publish a class" types (FR-022) --- */
 
+import type { SkillLevel } from '@skillswap/contracts';
+
 /**
  * Coarse category key for the skill and its marketplace icon.
  * Re-uses the dashboard's set so the marketplace preview can
@@ -14,21 +16,21 @@ export type SkillCategory =
   | 'science';
 
 /**
- * A skill the teacher has already been verified on (BR-008 /
- * BR-010). Only these may be used to open a new class — pending
- * or rejected skills do not surface in the picker.
+ * A skill the teacher has already been verified on (BR-008 / BR-010).
+ * Only these may be used to open a new class — pending or rejected skills do
+ * not surface in the picker.
+ *
+ * Populated from `GET /profile-skills/me`. That view carries no verifier name
+ * and no approval date, so neither is modelled here: the picker shows the
+ * skill, its category and the approved level only.
  */
 export interface VerifiedSkill {
   id: string;
   category: SkillCategory;
   /** Short display label, e.g. "IELTS Speaking 7.5+". */
   label: string;
-  /** Verifier identity (mock-only; the real BE returns a UUID). */
-  verifierLabel: string;
-  /** Faculty that ran the verification (mock-only). */
-  verifierFaculty: string;
-  /** ISO date the skill was approved. */
-  approvedOn: string;
+  /** The level the verifier approved, e.g. "advanced"; null until approved. */
+  approvedLevel: SkillLevel | null;
 }
 
 /**
@@ -49,15 +51,17 @@ export interface ClassDraft {
 }
 
 /**
- * The result returned by `publishDraft`. Mirrors what the
- * marketplace gateway will return after a successful POST.
- * `classroomCode` is the auto-minted room code the BE will
- * generate when the class is published (BR-018).
+ * The result of a successful publish. This is what `POST /classes` returns that
+ * the screen can use: the new class id and the instant the class starts.
+ *
+ * There is deliberately **no** `classroomCode`. The API does not issue one at
+ * publish time — the video room is minted later, per booking, at
+ * `POST /classes/bookings/:bookingId/room-access`. The screen previously
+ * displayed a locally-fabricated code, which no part of the system recognised.
  */
 export interface PublishResult {
   classId: string;
   publishedAt: string; // ISO
-  classroomCode: string; // mock-minted
 }
 
 /** Mirrors the BR-034 split: 1000 bps (10%) to the platform, 90% to

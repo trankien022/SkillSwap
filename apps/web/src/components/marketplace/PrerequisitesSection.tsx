@@ -1,18 +1,20 @@
-import { getTranslations } from 'next-intl/server';
+'use client';
+
+import { useTranslations } from 'next-intl';
 import type { ClassDetailView } from '../../lib/marketplace/types';
 
 /**
  * Prerequisites section (FR-006 detail).
  *
  * Three icon cards (devices / focus area / conduct). Copy is shared
- * across all demo classes — no class-specific PR language is fabricated.
+ * across all classes — no class-specific PR language is fabricated.
  */
-export async function PrerequisitesSection({
+export function PrerequisitesSection({
   item,
 }: {
   item: ClassDetailView;
 }) {
-  const t = await getTranslations('ClassDetail.prerequisites');
+  const t = useTranslations('ClassDetail.prerequisites');
 
   return (
     <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">

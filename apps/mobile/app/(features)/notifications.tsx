@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
+import { defaultKeyValueStore } from '@/infrastructure/storage/key-value-store';
 import type { NotificationItem } from '@skillswap/contracts';
 import { colors, spacing, typography } from '@/design/tokens';
 import { NotificationGateway } from '@/infrastructure/http/notification-gateway';
@@ -30,7 +30,7 @@ export default function NotificationsScreen() {
   }, [gatewayClient, busy, cursor, t]);
   useFocusEffect(useCallback(() => {
     let active = true;
-    void SecureStore.getItemAsync(PUSH_DEVICE_ID_KEY).then((id) => { if (active) setDeviceId(id); });
+    void defaultKeyValueStore().getItemAsync(PUSH_DEVICE_ID_KEY).then((id) => { if (active) setDeviceId(id); });
     if (gatewayClient) {
       setBusy(true);
       void new NotificationGateway(gatewayClient).list({ limit: 20 }).then((page) => {
@@ -47,7 +47,7 @@ export default function NotificationsScreen() {
     try {
       const id = await registerPushDevice(gatewayClient, true, locale);
       if (id) {
-        await SecureStore.setItemAsync(PUSH_OPT_IN_KEY, 'true');
+        await defaultKeyValueStore().setItemAsync(PUSH_OPT_IN_KEY, 'true');
         setDeviceId(id);
       }
     } catch { setError(t('Notifications.pushError')); }
@@ -58,7 +58,7 @@ export default function NotificationsScreen() {
     setBusy(true);
     try {
       await unregisterPushDevice(gatewayClient);
-      await SecureStore.setItemAsync(PUSH_OPT_IN_KEY, 'false');
+      await defaultKeyValueStore().setItemAsync(PUSH_OPT_IN_KEY, 'false');
       setDeviceId(null);
     }
     catch { setError(t('Notifications.pushError')); }

@@ -3,42 +3,54 @@
 import { useState, useEffect } from 'react';
 import { useLocale } from 'next-intl';
 import { callApi, unwrapEnvelope } from '../../../lib/api-client';
+import { capacityIsValid, priceIsValid } from '../../../lib/teacher/money';
+import {
+  readApiMessage,
+  toTeacherClassItem,
+  toUpdateClassInput,
+  type ClassEditDraft,
+  type TeacherClassItem,
+} from '../../../lib/teacher/dashboard-view-model';
 import { Navbar } from '../../../components/navbar';
-import type { ProfileSkillView, WalletBalanceView, MeResponse, ListClassesPageView } from '@skillswap/contracts';
+import type {
+  ProfileSkillView,
+  WalletBalanceView,
+  MeResponse,
+  ListClassesPageView,
+} from '@skillswap/contracts';
 
-export interface CreatedClassItem {
-  id: string;
-  title: string;
-  skillName: string;
-  startsAt: string;
-  durationMinutes: number;
-  priceCredits: number;
-  capacity: number;
-}
+/** The class lifecycle states that mean "this class is over". */
+const COMPLETED_CLASS_STATES = new Set(['completed', 'cancelled']);
+
+/**
+ * The states from which `POST /classes/:id/start` is legal on the server
+ * (`published|full -> in_progress`). The button is gated on this so the common
+ * case does not rely on a 409 to be told the class cannot start yet.
+ */
+const STARTABLE_CLASS_STATES = new Set(['published', 'full']);
 
 export default function InstructorDashboard() {
   const locale = useLocale();
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [skillSelect, setSkillSelect] = useState('IELTS Speaking');
-  const [classTitle, setClassTitle] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
   const [skills, setSkills] = useState<ProfileSkillView[]>([]);
   const [balance, setBalance] = useState<WalletBalanceView | null>(null);
   const [me, setMe] = useState<MeResponse | null>(null);
-  const [newClasses, setNewClasses] = useState<CreatedClassItem[]>([]);
+  const [classes, setClasses] = useState<TeacherClassItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [classFilter, setClassFilter] = useState<'all' | 'upcoming' | 'open' | 'completed'>('all');
+  /** The class whose inline edit panel is open, or null. */
+  const [editingClassId, setEditingClassId] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem('skillswap_created_classes') || '[]');
-      if (Array.isArray(stored)) setNewClasses(stored);
-    } catch (e) {
-      console.warn('Failed to load created classes from localStorage', e);
-    }
+    let active = true;
 
-    const loadData = async () => {
+    async function loadData() {
+      setIsLoading(true);
+      setLoadError(null);
+
       try {
         const [skillsRes, balRes, meRes, classesRes] = await Promise.all([
           callApi('/profile-skills/me'),
@@ -47,48 +59,47 @@ export default function InstructorDashboard() {
           callApi('/classes?teacherId=me'),
         ]);
 
+        if (!active) return;
+
         if (skillsRes.ok) {
-          const data = await unwrapEnvelope<{ items: typeof skills }>(skillsRes);
+          const data = await unwrapEnvelope<{ items: ProfileSkillView[] }>(skillsRes);
           if (Array.isArray(data.items)) setSkills(data.items);
         }
 
         if (balRes.ok) {
-          setBalance(await unwrapEnvelope(balRes));
+          setBalance(await unwrapEnvelope<WalletBalanceView>(balRes));
         }
 
         if (meRes.ok) {
-          setMe(await unwrapEnvelope(meRes));
+          setMe(await unwrapEnvelope<MeResponse>(meRes));
         }
 
         if (classesRes.ok) {
-          const classesPage = await unwrapEnvelope<ListClassesPageView>(classesRes);
-          if (classesPage && Array.isArray(classesPage.items)) {
-            const backendClasses: CreatedClassItem[] = classesPage.items.map((item) => ({
-              id: item.id,
-              title: item.description,
-              skillName: item.description.length > 25 ? `${item.description.slice(0, 22)}...` : item.description,
-              startsAt: item.startsAt,
-              durationMinutes: item.durationMinutes,
-              priceCredits: item.priceCredits,
-              capacity: item.capacity,
-            }));
-            setNewClasses((prev) => {
-              const existingIds = new Set(backendClasses.map((b) => b.id));
-              const combined = [...backendClasses, ...prev.filter((p) => !existingIds.has(p.id))];
-              try {
-                localStorage.setItem('skillswap_created_classes', JSON.stringify(combined));
-              } catch {
-                // Ignore storage write error
-              }
-              return combined;
-            });
+          const page = await unwrapEnvelope<ListClassesPageView>(classesRes);
+          if (page && Array.isArray(page.items)) {
+            // Read straight from the server. There is deliberately no localStorage
+            // cache: the list is server-owned, and a local copy is how this screen
+            // and the publish screen came to disagree about which classes existed.
+            setClasses(page.items.map(toTeacherClassItem));
           }
+        } else if (classesRes.status === 401) {
+          setLoadError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        } else {
+          setLoadError('Không tải được danh sách lớp giảng dạy.');
         }
       } catch (err) {
-        console.error('Failed to load instructor data:', err);
+        if (active) {
+          setLoadError(err instanceof Error ? err.message : 'Không tải được dữ liệu giảng dạy.');
+        }
+      } finally {
+        if (active) setIsLoading(false);
       }
+    }
+
+    void loadData();
+    return () => {
+      active = false;
     };
-    loadData();
   }, []);
 
   const showToast = (message: string) => {
@@ -96,19 +107,36 @@ export default function InstructorDashboard() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  /**
+   * Re-reads the class list and wallet from the server and repaints from that
+   * response. Used after every lifecycle command so the screen shows server
+   * truth rather than an optimistically mutated local copy.
+   */
+  const refreshServerState = async () => {
+    const [balRes, classesRes] = await Promise.all([
+      callApi('/wallet/balance'),
+      callApi('/classes?teacherId=me'),
+    ]);
+    if (balRes.ok) setBalance(await unwrapEnvelope<WalletBalanceView>(balRes));
+    if (classesRes.ok) {
+      const page = await unwrapEnvelope<ListClassesPageView>(classesRes);
+      if (Array.isArray(page?.items)) setClasses(page.items.map(toTeacherClassItem));
+    }
+  };
 
-  const handleCompleteClass = async (classId: string) => {
+  /**
+   * Starts a class. The server answers `{ started }`: `false` means the class was
+   * already in progress, which is a truthful no-op rather than a new success, so
+   * the two are reported differently instead of both claiming "đã bắt đầu".
+   */
+  const handleStartClass = async (classId: string) => {
     try {
       setIsProcessing(true);
-      const res = await callApi(`/classes/${classId}/complete`, { method: 'POST' });
-      if (!res.ok) {
-        if (res.status === 409) throw new Error('Lớp này đã hoàn thành hoặc chưa đủ điều kiện');
-        throw new Error('Lỗi hệ thống');
-      }
-      showToast(`Đã hoàn thành lớp! Doanh thu đã được giải ngân vào ví.`);
-      // Refresh balance
-      const balRes = await callApi('/wallet/balance');
-      if (balRes.ok) setBalance(await unwrapEnvelope(balRes));
+      const res = await callApi(`/classes/${classId}/start`, { method: 'POST' });
+      if (!res.ok) throw new Error(await readApiMessage(res, 'Không bắt đầu được lớp'));
+      const result = await unwrapEnvelope<{ started: boolean }>(res);
+      showToast(result?.started ? 'Đã bắt đầu lớp học.' : 'Lớp này đã bắt đầu trước đó.');
+      await refreshServerState();
     } catch (e) {
       showToast('Lỗi: ' + (e as Error).message);
     } finally {
@@ -116,106 +144,87 @@ export default function InstructorDashboard() {
     }
   };
 
-  const openNewSkillModal = () => {
-    showToast('Mở biểu mẫu xác minh kỹ năng mới...');
-  };
-
-  const openClassChat = (clsCode: string) => {
-    showToast(`Đang mở cuộc trò chuyện với học viên lớp ${clsCode}...`);
-  };
-
-  const showClassDetails = (clsCode: string) => {
-    showToast(`Đang tải danh sách học viên đăng ký lớp ${clsCode}...`);
-  };
-
-  const copyShareLink = (clsCode: string) => {
-    navigator.clipboard?.writeText(window.location.origin + '/lop-hoc/' + clsCode);
-    showToast(`Đã sao chép link lớp ${clsCode}!`);
-  };
-
-  const showClassReview = (clsCode: string) => {
-    showToast(`Đánh giá cho lớp ${clsCode}: 5/5 sao - Tuyệt vời!`);
-  };
-
-  const prefillCreateClass = (skillName: string) => {
-    setSkillSelect(skillName);
-    setClassTitle('Chuyên đề: ' + skillName);
-    setIsModalOpen(true);
-  };
-
-  const handleCreateClassSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  /**
+   * Completes a class and releases the teacher's income. The server answers
+   * `{ completed, basis }`: `completed: false` means nothing was settled (the
+   * class was already completed, or it had not started), so the income message is
+   * only shown when money actually moved — `basis` is the server's own reason.
+   */
+  const handleCompleteClass = async (classId: string) => {
     try {
       setIsProcessing(true);
-      const form = e.currentTarget;
-      const duration = parseInt((form.elements.namedItem('class-duration') as HTMLInputElement)?.value || '60', 10);
-      const capacity = parseInt((form.elements.namedItem('class-capacity') as HTMLInputElement)?.value || '1', 10);
-      const price = parseInt((form.elements.namedItem('class-price') as HTMLInputElement)?.value || '90', 10);
-      const datetime = (form.elements.namedItem('class-datetime') as HTMLInputElement)?.value;
+      const res = await callApi(`/classes/${classId}/complete`, { method: 'POST' });
+      if (!res.ok) throw new Error(await readApiMessage(res, 'Không hoàn thành được lớp'));
+      const result = await unwrapEnvelope<{ completed: boolean; basis: string | null }>(res);
+      showToast(
+        result?.completed
+          ? 'Đã hoàn thành lớp. Doanh thu đã được giải ngân vào ví.'
+          : 'Lớp này không còn gì để hoàn thành.',
+      );
 
-      const selectedSkill = skills.find(s => s.skillName === skillSelect);
-      const skillId = selectedSkill ? selectedSkill.skillId : '00000000-0000-0000-0000-000000000001';
-      const startsAt = datetime ? new Date(datetime).toISOString() : new Date(Date.now() + 86400000).toISOString();
-
-      const res = await callApi('/classes', {
-        method: 'POST',
-        body: JSON.stringify({
-          skillIds: [skillId],
-          description: classTitle,
-          startsAt,
-          durationMinutes: duration,
-          priceCredits: price,
-          capacity,
-        }),
-      });
-
-      // NFR-013: unwrapEnvelope throws an ApiError (with the domain `code`) on failure.
-      const created = await unwrapEnvelope<{ id: string }>(res);
-      const newClassItem: CreatedClassItem = {
-        id: created.id,
-        title: classTitle,
-        skillName: skillSelect,
-        startsAt,
-        durationMinutes: duration,
-        priceCredits: price,
-        capacity,
-      };
-
-      setNewClasses(prev => {
-        const next = [newClassItem, ...prev];
-        try {
-          localStorage.setItem('skillswap_created_classes', JSON.stringify(next));
-        } catch (e) {
-          console.warn('Failed to save created class to localStorage', e);
-        }
-        return next;
-      });
-
-      setIsModalOpen(false);
-      showToast(`Đã xuất bản lớp học "${classTitle}" thành công lên hệ thống!`);
-      setClassTitle('');
-    } catch (err) {
-      showToast('Lỗi: ' + (err as Error).message);
+      // Re-read the wallet and the class list, so the screen shows server truth
+      // after the money moved.
+      await refreshServerState();
+    } catch (e) {
+      showToast('Lỗi: ' + (e as Error).message);
     } finally {
       setIsProcessing(false);
     }
   };
 
+  /**
+   * Saves an edit to price and capacity. Only changed fields are sent, so an
+   * unrelated field is never overwritten with the same value. A `409` means the
+   * class is locked by a confirmed booking; the panel closes without changing
+   * anything and the server's own message is shown.
+   */
+  const handleSaveEdit = async (classId: string, draft: ClassEditDraft) => {
+    const payload = toUpdateClassInput(draft);
+    if (Object.keys(payload).length === 0) {
+      setEditingClassId(null);
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      const res = await callApi(`/classes/${classId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(await readApiMessage(res, 'Không lưu được thay đổi'));
+      showToast('Đã lưu thay đổi.');
+      setEditingClassId(null);
+      await refreshServerState();
+    } catch (e) {
+      showToast('Lỗi: ' + (e as Error).message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const approvedSkills = skills.filter((s) => s.approvedLevel !== null);
+  const upcomingCount = classes.filter((c) => !COMPLETED_CLASS_STATES.has(c.state)).length;
+  const completedCount = classes.filter((c) => COMPLETED_CLASS_STATES.has(c.state)).length;
+
+  const visibleClasses = classes.filter((c) => {
+    if (classFilter === 'all') return true;
+    if (classFilter === 'completed') return COMPLETED_CLASS_STATES.has(c.state);
+    return !COMPLETED_CLASS_STATES.has(c.state);
+  });
+
   return (
     <div className="flex flex-col w-full min-h-screen bg-slate-50 relative">
-      {/* Header */}
       <Navbar currentTab="instructor" balance={balance} me={me} />
 
-      {/* Main Content */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="w-full">
-
-          {/* 1. Header: Profile Summary */}
+          {/* 1. Profile summary — name and avatar come from the session, with a
+              neutral placeholder while they load. No invented identity. */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-slate-200">
             <div className="flex items-center gap-4">
               <div className="relative">
                 <div className="w-16 h-16 rounded-2xl bg-slate-200 shadow-sm ring-1 ring-slate-200 flex items-center justify-center text-slate-600 font-bold text-2xl">
-                  {(me?.displayName || 'LA').slice(0, 2).toUpperCase()}
+                  {(me?.displayName ?? '').slice(0, 2).toUpperCase() || '—'}
                 </div>
                 <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center ring-2 ring-white">
                   <span className="material-symbols-outlined text-[12px]">verified</span>
@@ -223,508 +232,528 @@ export default function InstructorDashboard() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="font-bold text-2xl text-slate-900 tracking-tight">{me?.displayName || 'Lan Anh'}</h1>
+                  <h1 className="font-bold text-2xl text-slate-900 tracking-tight">
+                    {me?.displayName ?? 'Đang tải…'}
+                  </h1>
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> {me?.studentVerification?.status === 'approved' ? 'Giảng viên đã xác minh' : (me?.studentVerification?.status === 'pending' ? 'Đang xét duyệt' : 'Chưa xác minh sinh viên')}
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>{' '}
+                    {me?.studentVerification?.status === 'approved'
+                      ? 'Giảng viên đã xác minh'
+                      : me?.studentVerification?.status === 'pending'
+                        ? 'Đang xét duyệt'
+                        : 'Chưa xác minh sinh viên'}
                   </span>
                 </div>
-                <p className="text-sm text-slate-600 mt-0.5 font-normal">
-                  {me?.email ? `${me.email} • ` : ''}Khoa Ngôn Ngữ Anh • Đại học Quốc Gia Hà Nội • Mã SV: <span className="font-semibold text-slate-900">VNU-2021-0988</span>
-                </p>
+                {me?.email !== undefined && (
+                  <p className="text-sm text-slate-600 mt-0.5 font-normal">{me.email}</p>
+                )}
               </div>
             </div>
 
-            {/* Primary Action */}
             <div className="flex items-center gap-3">
-              <a href={`/${locale}/wallet`} className="px-4 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition-all shadow-sm">
+              <a
+                href={`/${locale}/wallet`}
+                className="px-4 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition-all shadow-sm"
+              >
                 Lịch sử giao dịch
               </a>
-              <a href={`/${locale}/teach/classes/new`} className="bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-semibold text-sm px-5 py-2.5 rounded-full shadow-sm transition-all flex items-center gap-2">
+              <a
+                href={`/${locale}/teach/classes/new`}
+                className="bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-semibold text-sm px-5 py-2.5 rounded-full shadow-sm transition-all flex items-center gap-2"
+              >
                 <span className="material-symbols-outlined text-[19px]">add_circle</span>
                 Công bố Lớp học mới
               </a>
             </div>
           </div>
 
-          {/* 2. KPI Summary (4 Metric Cards) */}
+          {/* 2. KPI summary. Each tile shows a value the server actually reports.
+              The previous version also showed a completion rate, a 4.9/5 rating
+              and a review count; those came from nowhere (the schema marks the
+              rating fields as provisional) so they are omitted rather than
+              made up. */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-8">
-            {/* Metric 1 */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between text-slate-600 text-xs font-medium mb-2">
-                  <span>Doanh thu khả dụng</span>
-                  <span className="material-symbols-outlined text-slate-400 text-[18px]">account_balance_wallet</span>
-                </div>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="font-bold text-2xl text-slate-900">{balance ? balance.availableCredits.toLocaleString('vi-VN') : '0'}</span>
-                  <span className="text-xs font-semibold text-slate-600">Credit</span>
-                </div>
-                <span className="text-xs text-slate-500 font-normal">≈ {(balance ? balance.availableCredits * 1000 : 0).toLocaleString('vi-VN')} VNĐ</span>
-              </div>
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                <a href="/vi/wallet/withdrawal" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 inline-flex items-center gap-1">
-                  Rút về ngân hàng <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+            <MetricCard
+              label="Doanh thu khả dụng"
+              icon="account_balance_wallet"
+              value={balance ? balance.availableCredits.toLocaleString('vi-VN') : '—'}
+              unit="Credit"
+              sub={
+                balance
+                  ? `≈ ${(balance.availableCredits * 1000).toLocaleString('vi-VN')} VNĐ`
+                  : undefined
+              }
+              footer={
+                <a
+                  href={`/${locale}/wallet/withdrawal`}
+                  className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 inline-flex items-center gap-1"
+                >
+                  Rút về ngân hàng{' '}
+                  <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
                 </a>
-              </div>
-            </div>
+              }
+            />
 
-            {/* Metric 2 */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between text-slate-600 text-xs font-medium mb-2">
-                  <span>Tạm giữ theo lớp</span>
-                  <span className="material-symbols-outlined text-slate-400 text-[18px]">lock_clock</span>
-                </div>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="font-bold text-2xl text-slate-900">{balance ? balance.pendingCredits.toLocaleString('vi-VN') : '0'}</span>
-                  <span className="text-xs font-semibold text-slate-600">Credit</span>
-                </div>
-                <span className="text-xs text-slate-500 font-normal">Doanh thu Escrow chờ kết thúc lớp</span>
-              </div>
-              <div className="mt-4 pt-3 border-t border-slate-100">
+            <MetricCard
+              label="Tạm giữ theo lớp"
+              icon="lock_clock"
+              value={balance ? balance.pendingCredits.toLocaleString('vi-VN') : '—'}
+              unit="Credit"
+              sub="Doanh thu Escrow chờ kết thúc lớp"
+              footer={
                 <span className="text-xs text-slate-600 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Giải ngân sau khi kết thúc buổi dạy
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Giải ngân sau
+                  khi kết thúc buổi dạy
                 </span>
-              </div>
-            </div>
+              }
+            />
 
-            {/* Metric 3 */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between text-slate-600 text-xs font-medium mb-2">
-                  <span>Đã hoàn thành</span>
-                  <span className="material-symbols-outlined text-slate-400 text-[18px]">school</span>
-                </div>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="font-bold text-2xl text-slate-900">35</span>
-                  <span className="text-xs font-semibold text-slate-600">buổi học</span>
-                </div>
-                <span className="text-xs text-emerald-700 font-medium">100% hoàn thành đúng giờ</span>
-              </div>
-              <div className="mt-4 pt-3 border-t border-slate-100">
-                <span className="text-xs text-slate-600">Không có tranh chấp hoặc khiếu nại</span>
-              </div>
-            </div>
+            <MetricCard
+              label="Lớp đang mở"
+              icon="school"
+              value={isLoading ? '—' : String(upcomingCount)}
+              unit="lớp"
+              sub="Lớp đã công bố và chưa kết thúc"
+            />
 
-            {/* Metric 4 */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between text-slate-600 text-xs font-medium mb-2">
-                  <span>Đánh giá trung bình</span>
-                  <span className="material-symbols-outlined text-amber-500 text-[18px]">star</span>
-                </div>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="font-bold text-2xl text-slate-900">4.9</span>
-                  <span className="text-xs font-semibold text-slate-600">/ 5.0</span>
-                </div>
-                <span className="text-xs text-slate-500 font-normal">Dựa trên 31 nhận xét học viên</span>
-              </div>
-              <div className="mt-4 pt-3 border-t border-slate-100">
-                <span className="text-xs text-emerald-700 font-medium flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[14px]">thumb_up</span> 98% học viên hài lòng tuyệt đối
-                </span>
-              </div>
-            </div>
+            <MetricCard
+              label="Đã xong"
+              icon="task_alt"
+              value={isLoading ? '—' : String(completedCount)}
+              unit="lớp"
+              sub="Lớp đã hoàn thành hoặc đã hủy"
+            />
           </div>
 
-          {/* 3. Approved Skills Section */}
+          {/* 3. Approved skills — real list, or an honest empty state. The old
+              demo fallback cards named a verifier ("Thầy Hùng") who is not in
+              the system. */}
           <div className="mb-10">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="font-bold text-lg text-slate-900">Kỹ năng được duyệt giảng dạy</h2>
-                <p className="text-xs text-slate-600">Các chủ đề bạn đã hoàn tất kiểm định và có thể mở lớp bất kỳ lúc nào</p>
+                <p className="text-xs text-slate-600">
+                  Các chủ đề bạn đã hoàn tất kiểm định và có thể mở lớp bất kỳ lúc nào
+                </p>
               </div>
-              <button onClick={openNewSkillModal} type="button" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
+              <a
+                href={`/${locale}/verification`}
+                className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+              >
                 <span className="material-symbols-outlined text-[16px]">add</span> Thêm kỹ năng mới
-              </button>
+              </a>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {skills.length > 0 ? (
-                skills.map((s) => (
-                  <div key={s.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+            {approvedSkills.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {approvedSkills.map((s) => (
+                  <div
+                    key={s.id}
+                    className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between"
+                  >
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md ${s.approvedLevel ? 'text-emerald-700 bg-emerald-50' : 'text-amber-700 bg-amber-50'}`}>
-                          <span className="material-symbols-outlined text-[12px]">{s.approvedLevel ? 'verified' : 'schedule'}</span>
-                          {s.approvedLevel ? 'Đã duyệt' : 'Đang xét duyệt'}
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md text-emerald-700 bg-emerald-50">
+                          <span className="material-symbols-outlined text-[12px]">verified</span>
+                          Đã duyệt
                         </span>
-                        <span className="text-[11px] font-medium text-slate-500 capitalize">{s.approvedLevel || 'Chờ duyệt'}</span>
+                        <span className="text-[11px] font-medium text-slate-500 capitalize">
+                          {s.approvedLevel}
+                        </span>
                       </div>
                       <h3 className="font-bold text-slate-900 text-sm mb-1">{s.skillName}</h3>
-                      <p className="text-xs text-slate-600 line-clamp-2 mb-3">Danh mục: {s.category}</p>
+                      <p className="text-xs text-slate-600 line-clamp-2 mb-3">
+                        Danh mục: {s.category}
+                      </p>
                     </div>
                     <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                       <span className="text-[11px] text-slate-500">Mã: {s.skillId.slice(0, 8)}</span>
-                      <button onClick={() => prefillCreateClass(s.skillName)} type="button" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700">
+                      <a
+                        href={`/${locale}/teach/classes/new`}
+                        className="text-xs font-semibold text-emerald-600 hover:text-emerald-700"
+                      >
                         Mở lớp →
-                      </button>
+                      </a>
                     </div>
                   </div>
-                ))
-              ) : (
-                <>
-                  {/* Demo Skill 1 */}
-                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                          <span className="material-symbols-outlined text-[12px]">verified</span> Đã duyệt
-                        </span>
-                        <span className="text-[11px] font-medium text-slate-500">C1 Advanced</span>
-                      </div>
-                      <h3 className="font-bold text-slate-900 text-sm mb-1">IELTS Speaking</h3>
-                      <p className="text-xs text-slate-600 line-clamp-2 mb-3">Phát âm IPA, phản xạ Part 1-3 và mở rộng từ vựng chủ đề học thuật.</p>
-                    </div>
-                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                      <span className="text-[11px] text-slate-500">Được duyệt bởi Thầy Hùng (8.5)</span>
-                      <button onClick={() => prefillCreateClass('IELTS Speaking')} type="button" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700">
-                        Mở lớp →
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Demo Skill 2 */}
-                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                          <span className="material-symbols-outlined text-[12px]">verified</span> Đã duyệt
-                        </span>
-                        <span className="text-[11px] font-medium text-slate-500">Intermediate</span>
-                      </div>
-                      <h3 className="font-bold text-slate-900 text-sm mb-1">Tiếng Anh Giao Tiếp Doanh Nghiệp</h3>
-                      <p className="text-xs text-slate-600 line-clamp-2 mb-3">Soạn email chuyên nghiệp, thuyết trình số liệu và giao tiếp văn phòng.</p>
-                    </div>
-                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                      <span className="text-[11px] text-slate-500">Chứng chỉ TOEIC 920</span>
-                      <button onClick={() => prefillCreateClass('Tiếng Anh Giao Tiếp Doanh Nghiệp')} type="button" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700">
-                        Mở lớp →
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Demo Skill 3 */}
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-dashed border-slate-300 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">
-                          <span className="material-symbols-outlined text-[12px]">schedule</span> Đang xét duyệt
-                        </span>
-                        <span className="text-[11px] font-medium text-slate-500">Professional</span>
-                      </div>
-                      <h3 className="font-bold text-slate-900 text-sm mb-1">Dịch thuật Anh – Việt</h3>
-                      <p className="text-xs text-slate-600 line-clamp-2 mb-3">Biên dịch văn bản tài chính &amp; thương mại, đối chiếu ngữ nghĩa.</p>
-                    </div>
-                    <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
-                      <span className="text-[11px] text-slate-500">Đã nộp hồ sơ • Đang chờ duyệt</span>
-                      <span className="text-xs text-slate-500 italic">Chờ duyệt</span>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white p-6 rounded-2xl border border-dashed border-slate-300 text-center">
+                <p className="text-sm font-semibold text-slate-800">
+                  Chưa có kỹ năng nào được duyệt
+                </p>
+                <p className="mt-1 text-xs text-slate-600">
+                  Theo quy chuẩn kiểm định, bạn chỉ có thể mở lớp cho kỹ năng đã qua hội đồng
+                  chuyên môn.
+                </p>
+                <a
+                  href={`/${locale}/verification`}
+                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-emerald-700"
+                >
+                  Gửi kỹ năng để xác thực
+                </a>
+              </div>
+            )}
           </div>
 
-          {/* 4. Upcoming Classes & Schedule */}
+          {/* 4. Classes — the teacher's own list, straight from the server. The
+              previous version appended three hardcoded demo cards with fake
+              booking links. */}
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
               <div>
                 <h2 className="font-bold text-lg text-slate-900">Lịch giảng dạy &amp; Lớp học</h2>
-                <p className="text-xs text-slate-600">Các buổi học sắp diễn ra và danh sách lớp đã công bố</p>
+                <p className="text-xs text-slate-600">
+                  Các lớp bạn đã công bố trên hệ thống
+                </p>
               </div>
               <div className="inline-flex items-center p-1 bg-white border border-slate-200 rounded-xl text-xs font-semibold">
-                <button
-                  type="button"
+                <FilterButton
+                  active={classFilter === 'all'}
                   onClick={() => setClassFilter('all')}
-                  className={`px-3 py-1.5 rounded-lg transition-colors ${classFilter === 'all' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
-                >
-                  Tất cả ({newClasses.length + 3})
-                </button>
-                <button
-                  type="button"
+                  label={`Tất cả (${classes.length})`}
+                />
+                <FilterButton
+                  active={classFilter === 'upcoming'}
                   onClick={() => setClassFilter('upcoming')}
-                  className={`px-3 py-1.5 rounded-lg transition-colors ${classFilter === 'upcoming' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
-                >
-                  Sắp diễn ra (1)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setClassFilter('open')}
-                  className={`px-3 py-1.5 rounded-lg transition-colors ${classFilter === 'open' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
-                >
-                  Đang mở ({newClasses.length + 1})
-                </button>
-                <button
-                  type="button"
+                  label={`Sắp diễn ra (${upcomingCount})`}
+                />
+                <FilterButton
+                  active={classFilter === 'completed'}
                   onClick={() => setClassFilter('completed')}
-                  className={`px-3 py-1.5 rounded-lg transition-colors ${classFilter === 'completed' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
-                >
-                  Đã xong (1)
-                </button>
+                  label={`Đã xong (${completedCount})`}
+                />
               </div>
             </div>
 
-            <div className="space-y-4">
-              {/* Dynamic Newly Created Classes */}
-              {(classFilter === 'all' || classFilter === 'open') && newClasses.map((item) => (
-                <div key={item.id} className="bg-white p-5 rounded-2xl border-2 border-emerald-400 shadow-sm transition-all hover:border-emerald-500">
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Đang mở đăng ký
-                        </span>
-                        <span className="text-xs text-slate-500 font-medium">Lớp mới tạo</span>
-                        <span className="text-xs text-slate-300">•</span>
-                        <span className="text-xs text-slate-600 font-medium">{item.skillName}</span>
+            {isLoading ? (
+              <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center text-sm text-slate-500">
+                Đang tải danh sách lớp…
+              </div>
+            ) : loadError !== null ? (
+              <div
+                role="alert"
+                className="bg-white p-8 rounded-2xl border border-rose-200 text-center text-sm font-medium text-rose-700"
+              >
+                {loadError}
+              </div>
+            ) : visibleClasses.length === 0 ? (
+              <div className="bg-white p-8 rounded-2xl border border-dashed border-slate-300 text-center">
+                <p className="text-sm font-semibold text-slate-800">Chưa có lớp học nào</p>
+                <p className="mt-1 text-xs text-slate-600">
+                  Các lớp bạn công bố sẽ xuất hiện ở đây.
+                </p>
+                <a
+                  href={`/${locale}/teach/classes/new`}
+                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-emerald-700"
+                >
+                  Công bố lớp học đầu tiên
+                </a>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {visibleClasses.map((item) => {
+                  const isCompleted = COMPLETED_CLASS_STATES.has(item.state);
+                  return (
+                    <div
+                      key={item.id}
+                      className={`bg-white p-5 rounded-2xl border shadow-sm transition-all ${
+                        isCompleted
+                          ? 'border-slate-200 opacity-90 hover:opacity-100'
+                          : 'border-emerald-200 hover:border-emerald-300'
+                      }`}
+                    >
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                                isCompleted
+                                  ? 'bg-slate-100 text-slate-600'
+                                  : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              }`}
+                            >
+                              {isCompleted ? 'Đã kết thúc' : 'Đang mở đăng ký'}
+                            </span>
+                            <span className="text-xs text-slate-600 font-medium">
+                              {item.availableSeats} chỗ trống
+                            </span>
+                          </div>
+                          <h3 className="font-bold text-slate-900 text-base">{item.description}</h3>
+                          <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-600">
+                            <span className="flex items-center gap-1 text-slate-900 font-medium">
+                              <span className="material-symbols-outlined text-[16px] text-emerald-600">
+                                calendar_today
+                              </span>{' '}
+                              {new Date(item.startsAt).toLocaleDateString('vi-VN')}{' '}
+                              {new Date(item.startsAt).toLocaleTimeString('vi-VN', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}{' '}
+                              • {item.durationMinutes} phút
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[16px] text-slate-500">
+                                group
+                              </span>{' '}
+                              {item.confirmedBookingsCount}/{item.capacity} học viên
+                            </span>
+                            <span className="flex items-center gap-1 text-slate-900 font-semibold">
+                              <span className="material-symbols-outlined text-[16px] text-emerald-600">
+                                payments
+                              </span>{' '}
+                              {item.priceCredits} Credit / học viên
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2.5 shrink-0 pt-2 lg:pt-0">
+                          <span className="text-[11px] text-slate-500 font-mono">
+                            {item.id.slice(0, 8)}
+                          </span>
+                          {!isCompleted && (
+                            <button
+                              onClick={() => setEditingClassId(
+                                editingClassId === item.id ? null : item.id,
+                              )}
+                              type="button"
+                              className="px-4 py-2 rounded-full text-xs font-semibold border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-60"
+                              disabled={isProcessing}
+                            >
+                              <span className="material-symbols-outlined text-[16px]">edit</span>{' '}
+                              Sửa
+                            </button>
+                          )}
+                          {STARTABLE_CLASS_STATES.has(item.state) && (
+                            <button
+                              onClick={() => handleStartClass(item.id)}
+                              type="button"
+                              className="px-4 py-2 rounded-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-60"
+                              disabled={isProcessing}
+                            >
+                              <span className="material-symbols-outlined text-[16px]">
+                                play_arrow
+                              </span>{' '}
+                              Bắt đầu
+                            </button>
+                          )}
+                          {!isCompleted && (
+                            <button
+                              onClick={() => handleCompleteClass(item.id)}
+                              type="button"
+                              className="px-4 py-2 rounded-full text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-60"
+                              disabled={isProcessing}
+                            >
+                              <span className="material-symbols-outlined text-[16px]">
+                                check_circle
+                              </span>{' '}
+                              Hoàn thành
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <h3 className="font-bold text-slate-900 text-base">{item.title}</h3>
-                      <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-600">
-                        <span className="flex items-center gap-1 text-slate-900 font-medium">
-                          <span className="material-symbols-outlined text-[16px] text-emerald-600">calendar_today</span> {new Date(item.startsAt).toLocaleDateString('vi-VN')} {new Date(item.startsAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} • {item.durationMinutes} phút
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[16px] text-slate-500">group</span> Sức chứa: {item.capacity} học viên
-                        </span>
-                        <span className="flex items-center gap-1 text-slate-900 font-semibold">
-                          <span className="material-symbols-outlined text-[16px] text-emerald-600">payments</span> {item.priceCredits} Credit / học viên
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2.5 shrink-0 pt-2 lg:pt-0">
-                      <button onClick={() => copyShareLink(item.id.slice(0, 8))} type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 transition-all flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-[16px] text-slate-500">share</span> Chia sẻ
-                      </button>
-                      <button onClick={() => handleCompleteClass(item.id)} type="button" className="px-4 py-2 rounded-full text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all flex items-center gap-1.5" disabled={isProcessing}>
-                        <span className="material-symbols-outlined text-[16px]">check_circle</span> Hoàn thành
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
 
-              {/* Item 1: Sắp diễn ra */}
-              {(classFilter === 'all' || classFilter === 'upcoming') && (
-                <div className="bg-white p-5 rounded-2xl border border-emerald-200 shadow-sm hover:border-emerald-300 transition-all">
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Sắp diễn ra
-                        </span>
-                        <span className="text-xs text-slate-500 font-medium">1:1 Session</span>
-                        <span className="text-xs text-slate-300">•</span>
-                        <span className="text-xs text-slate-600 font-medium">IELTS Speaking</span>
-                      </div>
-                      <h3 className="font-bold text-slate-900 text-base">Luyện Speaking IELTS 6.5+ (Mock Test &amp; Phản hồi chi tiết)</h3>
-                      <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-600">
-                        <span className="flex items-center gap-1 text-slate-900 font-medium">
-                          <span className="material-symbols-outlined text-[16px] text-emerald-600">calendar_today</span> 19:30 – 20:30 ngày mai (Thứ Năm, 24/10)
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[16px] text-slate-500">person</span> Học viên: Nguyễn Bảo Long (NEU)
-                        </span>
-                        <span className="flex items-center gap-1 text-slate-900 font-semibold">
-                          <span className="material-symbols-outlined text-[16px] text-emerald-600">payments</span> 90 Credit (Đã tạm giữ an toàn)
-                        </span>
-                      </div>
+                      {/* Inline edit — price and capacity only. A 409 means the
+                          class is locked by a confirmed booking; the panel stays
+                          open and the server's own message is shown. */}
+                      {editingClassId === item.id && (
+                        <ClassEditPanel
+                          item={item}
+                          disabled={isProcessing}
+                          onCancel={() => setEditingClassId(null)}
+                          onSave={(draft) => handleSaveEdit(item.id, draft)}
+                        />
+                      )}
                     </div>
-                    <div className="flex items-center gap-2.5 shrink-0 pt-2 lg:pt-0">
-                      <button onClick={() => openClassChat('CLS-8821')} type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 transition-all flex items-center gap-1.5" disabled={isProcessing}>
-                        <span className="material-symbols-outlined text-[16px] text-slate-500">chat</span> Chat với học viên
-                      </button>
-                      <a href={`/${locale}/bookings/SS-VN-8821/live`} className="px-4 py-2 rounded-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-[16px]">video_call</span> Vào phòng Live Class
-                      </a>
-                      <button onClick={() => handleCompleteClass('00000000-0000-0000-0000-000000000002')} type="button" className="px-4 py-2 rounded-full text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all flex items-center gap-1.5" disabled={isProcessing}>
-                        <span className="material-symbols-outlined text-[16px]">check_circle</span> Hoàn thành
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Item 2: Đang mở */}
-              {(classFilter === 'all' || classFilter === 'open') && (
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm transition-all">
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
-                          Đang mở đăng ký
-                        </span>
-                        <span className="text-xs text-slate-500 font-medium">Lớp nhóm (Max 5)</span>
-                        <span className="text-xs text-slate-300">•</span>
-                        <span className="text-xs text-slate-600 font-medium">Chiến lược IELTS</span>
-                      </div>
-                      <h3 className="font-bold text-slate-900 text-base">Chiến lược làm bài Reading &amp; Listening 7.0+</h3>
-                      <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-600">
-                        <span className="flex items-center gap-1 text-slate-900 font-medium">
-                          <span className="material-symbols-outlined text-[16px] text-slate-600">calendar_today</span> 20:00 Thứ Sáu (25/10) • 90 phút
-                        </span>
-                        <span className="flex items-center gap-1 font-medium text-emerald-700">
-                          <span className="material-symbols-outlined text-[16px]">group</span> 4/5 học viên đã đăng ký (Còn 1 chỗ)
-                        </span>
-                        <span className="flex items-center gap-1 text-slate-900 font-semibold">
-                          <span className="material-symbols-outlined text-[16px] text-emerald-600">payments</span> 45 Credit / học viên
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2.5 shrink-0 pt-2 lg:pt-0">
-                      <button onClick={() => copyShareLink('CLS-9014')} type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 transition-all flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-[16px] text-slate-500">share</span> Chia sẻ
-                      </button>
-                      <button onClick={() => showClassDetails('CLS-9014')} type="button" className="px-4 py-2 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all flex items-center gap-1.5">
-                        Quản lý lớp
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Item 3: Đã xong */}
-              {(classFilter === 'all' || classFilter === 'completed') && (
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm opacity-90 hover:opacity-100 transition-all">
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
-                          Đã hoàn thành
-                        </span>
-                        <span className="text-xs text-slate-500 font-medium">Phát âm &amp; Ngữ điệu</span>
-                      </div>
-                      <h3 className="font-bold text-slate-900 text-base">Pronunciation Workshop: Intonation in British Accent</h3>
-                      <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-600">
-                        <span className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[16px] text-slate-400">check_circle</span> Hoàn tất tối qua (19:30 – 20:30)
-                        </span>
-                        <span className="flex items-center gap-1 text-emerald-700 font-semibold">
-                          <span className="material-symbols-outlined text-[16px]">payments</span> +81 Credit đã nhận vào ví
-                        </span>
-                        <span className="flex items-center gap-1 text-amber-600 font-medium">
-                          <span className="material-symbols-outlined text-[15px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span> 5.0 (Học viên đánh giá 5 sao)
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2.5 shrink-0 pt-2 lg:pt-0">
-                      <button onClick={() => showClassReview('CLS-8742')} type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 transition-all">
-                        Xem đánh giá
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="w-full border-t border-slate-200 bg-white py-6 mt-12">
-        <div className="max-w-6xl mx-auto px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-600">
-          <div>© 2026 SkillSwap Vietnam. Trao đổi tri thức, kết nối sinh viên.</div>
-          <div className="flex items-center gap-6">
-            <a href="#" className="hover:text-slate-900 transition-colors">Trợ giúp</a>
-            <a href="#" className="hover:text-slate-900 transition-colors">Quy định &amp; Điều khoản</a>
-            <a href="#" className="hover:text-slate-900 transition-colors">Bảo mật</a>
-            <span className="text-slate-300">|</span>
-            <button type="button" className="flex items-center gap-1 hover:text-slate-900 font-medium transition-colors">
-              <span className="material-symbols-outlined text-[15px]">language</span> Tiếng Việt
-            </button>
-          </div>
-        </div>
-      </footer>
-
-      {/* Modal Create Class */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden flex flex-col">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-lg text-slate-900">Tạo lớp học mới</h3>
-                <p className="text-xs text-slate-600">Thiết lập thời gian và học phí cho buổi dạy</p>
-              </div>
-              <button onClick={() => setIsModalOpen(false)} type="button" className="w-8 h-8 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-colors">
-                <span className="material-symbols-outlined text-[20px]">close</span>
-              </button>
-            </div>
-            <div className="px-6 py-2.5 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between text-xs">
-              <span className="text-emerald-800 font-medium">Bạn muốn thiết lập chi tiết giáo trình &amp; xem trước thẻ?</span>
-              <a href={`/${locale}/teach/classes/new`} className="font-bold text-emerald-700 hover:text-emerald-800 hover:underline flex items-center gap-0.5">
-                Mở Không gian 5 bước <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-              </a>
-            </div>
-            <form onSubmit={handleCreateClassSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="skill-select">Kỹ năng giảng dạy *</label>
-                <select
-                  id="skill-select"
-                  value={skillSelect}
-                  onChange={(e) => setSkillSelect(e.target.value)}
-                  className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600" required>
-                  {skills.length > 0 ? (
-                    skills.map((s) => (
-                      <option key={s.id} value={s.skillName}>
-                        {s.skillName} ({s.approvedLevel ? `Đã duyệt • ${s.approvedLevel.toUpperCase()}` : 'Chờ duyệt'})
-                      </option>
-                    ))
-                  ) : (
-                    <>
-                      <option value="IELTS Speaking">IELTS Speaking (Đã xác minh • C1 Advanced)</option>
-                      <option value="Tiếng Anh Giao Tiếp Doanh Nghiệp">Tiếng Anh Giao Tiếp Doanh Nghiệp (Đã xác minh)</option>
-                    </>
-                  )}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="class-title">Tiêu đề buổi học *</label>
-                <input
-                  id="class-title"
-                  value={classTitle}
-                  onChange={(e) => setClassTitle(e.target.value)}
-                  type="text"
-                  placeholder="VD: Luyện phản xạ IELTS Speaking Part 2"
-                  className="w-full h-10 px-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600" required />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="class-duration">Thời lượng (phút) *</label>
-                  <input id="class-duration" type="number" min="30" max="180" step="15" defaultValue="60" className="w-full h-10 px-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="class-capacity">Số học viên tối đa *</label>
-                  <input id="class-capacity" type="number" min="1" max="10" defaultValue="1" className="w-full h-10 px-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="class-price">Credit / Học viên *</label>
-                  <input id="class-price" type="number" min="10" step="5" defaultValue="90" className="w-full h-10 px-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="class-datetime">Thời gian bắt đầu *</label>
-                  <input id="class-datetime" type="datetime-local" required className="w-full h-10 px-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600" />
-                </div>
-              </div>
-              <div className="p-3 bg-slate-50 rounded-xl text-xs text-slate-600 flex items-start gap-2 border border-slate-200">
-                <span className="material-symbols-outlined text-[18px] text-emerald-600 shrink-0">info</span>
-                <span>Phòng học Jitsi mã hóa bảo mật sẽ được tự động tạo và gửi cho học viên đã đăng ký.</span>
-              </div>
-              <div className="pt-2 flex items-center justify-end gap-2">
-                <button onClick={() => setIsModalOpen(false)} type="button" className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100">Hủy</button>
-                <button type="submit" className="px-4 py-2 rounded-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">Xuất bản lớp học</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Toast Alert */}
-      <div className={`fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2.5 transition-all duration-300 ${toastMessage ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}`}>
+      {/* Toast */}
+      <div
+        className={`fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2.5 transition-all duration-300 ${
+          toastMessage ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'
+        }`}
+      >
         <span className="material-symbols-outlined text-[18px] text-emerald-400">check_circle</span>
         <span className="text-xs font-medium">{toastMessage}</span>
       </div>
     </div>
+  );
+}
+
+/* --- Small presentational helpers --- */
+
+/**
+ * The inline price/capacity editor for one class card.
+ *
+ * It edits a local copy and refuses to submit values the API would reject, using
+ * the same validators the publish form uses so the two cannot disagree. Capacity
+ * is additionally not allowed below the seats already confirmed, which the
+ * server would reject anyway — catching it here avoids a round trip that can
+ * only fail.
+ */
+function ClassEditPanel({
+  item,
+  disabled,
+  onCancel,
+  onSave,
+}: {
+  item: TeacherClassItem;
+  disabled: boolean;
+  onCancel: () => void;
+  onSave: (draft: ClassEditDraft) => void;
+}) {
+  const [price, setPrice] = useState(String(item.priceCredits));
+  const [capacity, setCapacity] = useState(String(item.capacity));
+
+  const priceNumber = Number(price);
+  const capacityNumber = Number(capacity);
+
+  const priceOk = priceIsValid(priceNumber);
+  const capacityOk =
+    capacityIsValid(capacityNumber) && capacityNumber >= item.confirmedBookingsCount;
+
+  const canSave = priceOk && capacityOk && !disabled;
+
+  return (
+    <div className="mt-4 pt-4 border-t border-slate-100">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-semibold text-slate-700">
+            Giá mỗi học viên (Credit)
+          </span>
+          <input
+            type="number"
+            inputMode="numeric"
+            min={1}
+            step={1}
+            value={price}
+            disabled={disabled}
+            onChange={(e) => setPrice(e.target.value)}
+            className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none disabled:bg-slate-50"
+          />
+          {!priceOk && (
+            <span className="text-[11px] text-rose-600">
+              Giá không hợp lệ (số nguyên Credit trong giới hạn cho phép).
+            </span>
+          )}
+        </label>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-semibold text-slate-700">Số chỗ tối đa</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            min={1}
+            step={1}
+            value={capacity}
+            disabled={disabled}
+            onChange={(e) => setCapacity(e.target.value)}
+            className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none disabled:bg-slate-50"
+          />
+          {!capacityOk && (
+            <span className="text-[11px] text-rose-600">
+              {capacityIsValid(capacityNumber)
+                ? `Không thể nhỏ hơn ${item.confirmedBookingsCount} chỗ đã xác nhận.`
+                : 'Sức chứa không hợp lệ (số nguyên trong giới hạn cho phép).'}
+            </span>
+          )}
+        </label>
+      </div>
+
+      <div className="mt-4 flex items-center gap-2.5">
+        <button
+          type="button"
+          onClick={() => onSave({ priceCredits: priceNumber, capacity: capacityNumber })}
+          disabled={!canSave}
+          className="px-4 py-2 rounded-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all disabled:opacity-50"
+        >
+          Lưu thay đổi
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={disabled}
+          className="px-4 py-2 rounded-full text-xs font-semibold border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-sm transition-all disabled:opacity-50"
+        >
+          Hủy
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The editable subset of a class. Only price and capacity are exposed: they are
+ * the fields a teacher changes in practice and the only two with local
+ * validators already (`priceIsValid`, `capacityIsValid`). Schedule changes
+ * interact with the 24 h booking lead time and are deferred.
+ */
+/**
+ * Reads the API's own failure message from a non-2xx response, falling back to
+ * a caller-supplied string when the body carries none. The uniform envelope
+ * puts the human message on `message`.
+ */
+function MetricCard({
+  label,
+  icon,
+  value,
+  unit,
+  sub,
+  footer,
+}: {
+  label: string;
+  icon: string;
+  value: string;
+  unit: string;
+  sub?: string;
+  footer?: React.ReactNode;
+}) {
+  return (
+    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+      <div>
+        <div className="flex items-center justify-between text-slate-600 text-xs font-medium mb-2">
+          <span>{label}</span>
+          <span className="material-symbols-outlined text-slate-400 text-[18px]">{icon}</span>
+        </div>
+        <div className="flex items-baseline gap-1.5">
+          <span className="font-bold text-2xl text-slate-900">{value}</span>
+          <span className="text-xs font-semibold text-slate-600">{unit}</span>
+        </div>
+        {sub !== undefined && (
+          <span className="text-xs text-slate-500 font-normal">{sub}</span>
+        )}
+      </div>
+      {footer !== undefined && (
+        <div className="mt-4 pt-3 border-t border-slate-100">{footer}</div>
+      )}
+    </div>
+  );
+}
+
+function FilterButton({
+  active,
+  onClick,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded-lg transition-colors ${
+        active ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+      }`}
+    >
+      {label}
+    </button>
   );
 }

@@ -57,11 +57,6 @@ export function ClassFormatSection({ draft, onChange }: Props) {
               {tSteps('format1to1Desc')}
             </p>
           </div>
-          <div className="pt-3">
-            <span className="inline-block rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800">
-              {tSteps('format1to1Completion')}
-            </span>
-          </div>
         </button>
 
         {/* Small Group Option Card */}

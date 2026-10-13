@@ -1,4 +1,6 @@
-import { getTranslations } from 'next-intl/server';
+'use client';
+
+import { useTranslations } from 'next-intl';
 import type {
   ClassDetailView,
   TeacherCredential,
@@ -8,17 +10,16 @@ import type {
  * Teacher dossier (FR-006 detail).
  *
  * Shows the teacher avatar (initial placeholder, no real image), bio,
- * mock teaching stats (hours taught / response rate / learners
- * helped), and a credentials block. Credentials come from
- * `teacherCredentials` — never from a fabricated score, real name,
- * or named Verifier.
+ * teaching stats (hours taught / response rate / learners helped),
+ * and a credentials block. Credentials come from `teacherCredentials` —
+ * never from a fabricated score, real name, or named Verifier.
  */
-export async function TeacherDossierSection({
+export function TeacherDossierSection({
   item,
 }: {
   item: ClassDetailView;
 }) {
-  const t = await getTranslations('ClassDetail.dossier');
+  const t = useTranslations('ClassDetail.dossier');
   const stats = item.teacherStats;
 
   return (
@@ -45,15 +46,20 @@ export async function TeacherDossierSection({
           <div className="flex h-28 w-28 items-center justify-center rounded-xl bg-ink text-3xl font-semibold text-surface shadow-sm">
             {item.teacherName.charAt(0).toUpperCase()}
           </div>
-          <div className="absolute -bottom-2 -right-2 rounded bg-surface px-1.5 py-0.5 text-xs font-bold text-ink shadow-sm">
-            {item.level === 'beginner'
-              ? 'B1'
-              : item.level === 'intermediate'
-                ? 'B2'
-                : item.level === 'advanced'
-                  ? 'C1'
-                  : 'C2'}
-          </div>
+          {/* The level badge is a proficiency claim. It appears only when the
+              API actually reports a level; the previous `: 'C2'` fallback
+              awarded the highest band to a class with no stated level. */}
+          {item.level !== null && (
+            <div className="absolute -bottom-2 -right-2 rounded bg-surface px-1.5 py-0.5 text-xs font-bold text-ink shadow-sm">
+              {item.level === 'beginner'
+                ? 'B1'
+                : item.level === 'intermediate'
+                  ? 'B2'
+                  : item.level === 'advanced'
+                    ? 'C1'
+                    : 'C2'}
+            </div>
+          )}
         </div>
         <div className="flex flex-1 flex-col gap-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -61,22 +67,28 @@ export async function TeacherDossierSection({
               <h3 className="text-base font-semibold text-ink">
                 {item.teacherName}
               </h3>
-              <p className="text-sm text-ink-soft">{item.schoolName}</p>
+              <p className="text-sm text-ink-soft">{item.schoolName ?? ''}</p>
             </div>
-            <div className="flex items-center gap-2 text-right">
-              <div className="flex flex-col">
-                <span className="text-base font-bold text-ink">
-                  {t('students', { count: stats.hoursTaught })}
-                </span>
-                <span className="text-[11px] text-ink-soft">
-                  {t('response', { pct: stats.responseRatePct })}
-                </span>
+            {/* The API returns no teaching stats on this route, so the block is
+                omitted rather than showing invented numbers. */}
+            {stats !== null && (
+              <div className="flex items-center gap-2 text-right">
+                <div className="flex flex-col">
+                  <span className="text-base font-bold text-ink">
+                    {t('students', { count: stats.hoursTaught })}
+                  </span>
+                  <span className="text-[11px] text-ink-soft">
+                    {t('response', { pct: stats.responseRatePct })}
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
           </div>
-          <p className="text-sm leading-relaxed text-ink-soft">
-            {item.teacherBio}
-          </p>
+          {item.teacherBio !== null && (
+            <p className="text-sm leading-relaxed text-ink-soft">
+              {item.teacherBio}
+            </p>
+          )}
         </div>
       </div>
 

@@ -7,10 +7,13 @@ import { getTranslations } from 'next-intl/server';
  *  - Display 700 / tracking -0.025em (Tight-Head Rule).
  *  - Status text + color, never color alone (No-Color-Only Rule).
  *  - Mobile-first 360 px, no horizontal scroll.
- *  - Emerald rationing ≤10%: emerald only on the pulsing badge dot.
+ *  - Emerald rationing ≤10%: emerald only on the second headline line.
  *
  * Copy is faithful to intent.md + PRODUCT.md (peer-to-peer, verified,
  * transparent). No fabricated user counts, no SSO claims.
+ *
+ * Density: one headline, one subline, one row of proof pills. The previous
+ * eyebrow badge repeated the subline verbatim and has been dropped.
  */
 export async function HeroSection() {
   const t = await getTranslations('Landing.hero');
@@ -19,30 +22,20 @@ export async function HeroSection() {
     <section
       id="hero"
       aria-labelledby="hero-heading"
-      className="mx-auto w-full max-w-7xl px-4 pb-16 pt-12 lg:px-8"
+      className="mx-auto w-full max-w-7xl px-4 pb-8 pt-10 lg:px-8"
     >
       <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
-        {/* Eyebrow badge — color + text (DESIGN.md No-Color-Only Rule) */}
-        <span className="mb-6 inline-flex items-center gap-2 rounded-full bg-neutral-tint px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-ink-soft shadow-sm">
-          <span
-            aria-hidden="true"
-            className="h-2 w-2 animate-pulse rounded-full bg-campus-emerald"
-          />
-          <span>{t('badge')}</span>
-        </span>
-
         {/* Headline — system sans, tight tracking, display weight */}
         <h1
           id="hero-heading"
-          className="mb-5 text-4xl font-bold leading-tight tracking-tight text-ink sm:text-5xl lg:text-[3.25rem]"
+          className="mb-4 text-4xl font-bold leading-tight tracking-tight text-ink sm:text-5xl lg:text-[3.25rem]"
         >
           <span className="block">{t('headline1')}</span>
-          <span className="hidden sm:inline"> </span>
           <span className="block text-campus-emerald">{t('headline2')}</span>
         </h1>
 
         {/* Subline */}
-        <p className="mx-auto mb-8 max-w-2xl text-base leading-relaxed text-ink-soft sm:text-lg">
+        <p className="mx-auto mb-6 max-w-2xl text-base leading-relaxed text-ink-soft sm:text-lg">
           {t('subline')}
         </p>
 

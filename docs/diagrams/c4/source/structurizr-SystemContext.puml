@@ -27,7 +27,6 @@ UpdateElementStyle("system", $bgColor="#047857", $fontColor="#FFFFFF", $borderCo
 UpdateElementStyle("external_system", $bgColor="#64748B", $fontColor="#FFFFFF", $borderColor="#64748B", $legendText="Supporting software system")
 UpdateElementStyle("container", $bgColor="#047857", $fontColor="#FFFFFF", $borderColor="#047857", $legendText="Application or data store")
 UpdateRelStyle($lineColor="#475569", $textColor="#334155")
-AddElementTag("Demo", $bgColor="#F1F5F9", $fontColor="#0F172A", $borderColor="#64748B", $legendText="Demonstration client (local booking data)")
 
 together {
   Person(User, "User", $descr="[Person]\nA student account that can learn and, when eligible, teach.", $tags="", $link="")
@@ -47,5 +46,5 @@ Rel(User, Onlineclassroom, "Attends or teaches a booked lesson")
 Rel(SkillSwap, Paymentgateway, "Initiates top-ups and payouts; receives signed payment callbacks")
 
 SHOW_LEGEND()
-footer Current backend capabilities. Web/mobile booking is demonstrated; the payment provider is represented as an external dependency.\nBackend currently uses a mock PaymentGateway adapter; a real provider is not selected.
+footer Current backend capabilities. Web and mobile booking screens post to the real hold and confirm endpoints; the payment provider is still represented as an external dependency.\nBackend currently uses a mock PaymentGateway adapter; a real provider is not selected.
 @enduml
