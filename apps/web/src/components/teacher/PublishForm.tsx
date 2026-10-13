@@ -95,7 +95,7 @@ export function PublishForm({
         );
       }
     });
-  }, [draft, isValid, doPublish, skills]);
+  }, [draft, isValid, doPublish]);
 
   const handleCancel = useCallback(() => {
     // Resets to the draft loaded from the server. This is a single workspace, so

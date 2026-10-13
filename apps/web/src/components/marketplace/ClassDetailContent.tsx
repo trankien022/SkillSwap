@@ -13,7 +13,6 @@ import { TeacherDossierSection } from './TeacherDossierSection';
 import { ReviewsSection } from './ReviewsSection';
 import { EscrowInlineBanner } from './EscrowInlineBanner';
 import { StickyBookingCard } from './StickyBookingCard';
-import { ClientClassDetailFallback } from './ClientClassDetailFallback';
 import type { ClassDetailView } from '../../lib/marketplace/types';
 
 const gateway = new HttpMarketplaceGateway();

@@ -87,31 +87,6 @@ export default function InstructorDashboard() {
         } else {
           setLoadError('Không tải được danh sách lớp giảng dạy.');
         }
-
-        if (classesRes.ok) {
-          const classesPage = await unwrapEnvelope<ListClassesPageView>(classesRes);
-          if (classesPage && Array.isArray(classesPage.items)) {
-            const backendClasses: CreatedClassItem[] = classesPage.items.map((item) => ({
-              id: item.id,
-              title: item.description,
-              skillName: item.description.length > 25 ? `${item.description.slice(0, 22)}...` : item.description,
-              startsAt: item.startsAt,
-              durationMinutes: item.durationMinutes,
-              priceCredits: item.priceCredits,
-              capacity: item.capacity,
-            }));
-            setNewClasses((prev) => {
-              const existingIds = new Set(backendClasses.map((b) => b.id));
-              const combined = [...backendClasses, ...prev.filter((p) => !existingIds.has(p.id))];
-              try {
-                localStorage.setItem('skillswap_created_classes', JSON.stringify(combined));
-              } catch {
-                // Ignore storage write error
-              }
-              return combined;
-            });
-          }
-        }
       } catch (err) {
         if (active) {
           setLoadError(err instanceof Error ? err.message : 'Không tải được dữ liệu giảng dạy.');

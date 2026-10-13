@@ -7,8 +7,6 @@ import { simulatePaymentCallback } from '../../../wallet/actions';
 import { ClassDetailApiGateway } from '../../../../../lib/marketplace/api-class-detail';
 import type { ClassDetailView } from '../../../../../lib/marketplace/types';
 import type { WalletBalanceView } from '@skillswap/contracts';
-import { dispatchUserBookingsUpdate } from '../../../../../lib/dashboard/api-my-bookings';
-import type { LearnerBookingView } from '../../../../../lib/dashboard/types';
 
 interface PageProps {
   params: Promise<{ locale: string; id: string }>;
@@ -33,10 +31,6 @@ export default function BookingCheckoutPage({ params }: PageProps) {
     const loadData = async () => {
       // 1. Load wallet balance from the server (never a cached copy)
       try {
-        const storedBal = getStoredWalletBalance();
-        if (storedBal) {
-          setBalance(storedBal);
-        }
         const res = await callApi('/wallet/balance');
         if (res.ok) {
           const remoteBal = await unwrapEnvelope<WalletBalanceView>(res);
