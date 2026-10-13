@@ -21,4 +21,4 @@ tunnels:
   api:
     proto: http
     addr: 4001
-    domain: REPLACE-WITH-RESERVED-DEV-DOMAIN.ngrok-free.app
+    domain: discuss-showbiz-octagon.ngrok-free.dev

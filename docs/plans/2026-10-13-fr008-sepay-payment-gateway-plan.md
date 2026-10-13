@@ -93,6 +93,28 @@ Production) checkout credits the wallet exactly once, driven end to end locally 
 
 This plan implements **A**, with **B** documented as the fallback.
 
+## 5a. Phase 0 findings — verified against live Sandbox (2026-10-14)
+
+The spike passed: a signed form returned `302` → hosted `/v1/checkout`, and a completed
+Sandbox payment delivered a real IPN to the ngrok tunnel. Observed facts that override the docs:
+
+| Fact | Doc says | Observed |
+|---|---|---|
+| Successful-payment `notification_type` | `ORDER_PAID` | **Both `ORDER_PAID` and `PAYMENT_SUCCESS` are emitted** (live checkout used `ORDER_PAID`; the integration-guide test send used `PAYMENT_SUCCESS`). The receiver MUST accept both. |
+| `X-Secret-Key` header | present when auth type = `SECRET_KEY` | **Absent on both deliveries** — not enabled by default. Do not require it; verify via IP allow-list and/or enable the header in the dashboard. |
+| `order.order_amount` type | string (`"50000.00"`) | **Inconsistent**: live = `"10000.00"` (string), test send = `50000` (number). Parser must accept both. |
+| `transaction.transaction_amount` type | string | **Inconsistent**: `"10000"` vs `50000`. Accept both. |
+| `order.order_status` | — | `CAPTURED` for a paid order. |
+| `custom_data` | array | `[]` **or an object** — never assume a shape. |
+| `customer`, `agreement` | objects | **Can be `null`.** |
+| IPN source IPv4/IPv6 | published allow-list | `171.244.35.2` and `2600:3c15::2000:8aff:fedd:874b` — both on SePay's published list. |
+| Browser follow-up | — | The `success_url` also triggers a browser **`GET`** to the callback URL; the route must tolerate a GET (no credit) and only credit on the signed POST. |
+| Checkout `302` echoes | `order_id, transaction_id, branch_code, timestamp, signature` | Confirmed, plus `trace_id` and `choose_payment_method=0`. |
+
+Structural note: SePay's IPN POST has **no `User-Agent` and no `X-Secret-Key`** — so an auth
+check based on either would reject every genuine call. Prefer the IP allow-list plus invoice
+lookup; treat the secret-header check as opt-in.
+
 ## 6. Target design
 
 ```
