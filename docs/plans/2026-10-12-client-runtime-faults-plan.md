@@ -55,8 +55,11 @@ taking down a screen that does not need it.
 - `apps/mobile/app/(features)/notifications.tsx`: remove the module-scope
   `expo-notifications` / `expo-device` imports; load both with `await import(…)`
   inside `enablePush`, which is the only place they are used. `expo-secure-store`
-  and `expo-constants` stay top-level (they are used by the inbox path too and
-  are present in Expo Go).
+  and `expo-constants` stay top-level at the time of this phase.
+  **Corrected 2026-10-13:** the `expo-secure-store` half of that sentence was
+  wrong for Expo Web — see the parity matrix §14. The import was fine in Expo Go
+  on a device, but every direct call throws in a browser, and this screen was one
+  of five call sites affected. All now route through `defaultKeyValueStore()`.
 - No behaviour change when push *is* enabled: same permission request, same
   token, same registration call.
 

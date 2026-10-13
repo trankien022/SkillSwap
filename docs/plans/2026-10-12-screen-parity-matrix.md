@@ -572,4 +572,39 @@ recorded limitation, not parity, and no asset was invented to close it. If the
 presentation shows the mobile app, say this rather than implying the three
 clients are visually identical.
 
+## 14. Secure storage on Expo Web (2026-10-13)
+
+Reported as a sign-out crash after the Expo Web blockers were cleared:
+
+```
+ExpoSecureStore.default.getValueWithKeyAsync is not a function
+  at getItemAsync (expo-secure-store/build/SecureStore.js:87)
+  at logout (src/ui/session-context.tsx:208)
+  at handleSignOut (src/ui/profile-view.tsx:39)
+```
+
+Verdict: **real, and under-scoped by the earlier fix.** `7b3abdc` repaired the
+session *token* store and the plan recorded the web storage problem as closed; the
+platform switch lived inside `SecureSessionStore` alone, so every other module that
+imported `expo-secure-store` directly still crashed on web.
+
+| Fact | Detail |
+|---|---|
+| Root cause | `expo-secure-store` is a native module (Android Keystore / iOS Keychain). Its web build is an empty object, so **any** direct call rejects. Not a SecureStore bug: the mistake was calling a native-only module from shared code. |
+| Call sites affected | 11, across 5 modules: `session-context.tsx` (3), `app/_layout.tsx` (3), `app/(features)/notifications.tsx` (3), `notification-device-lifecycle.ts` (2), `native-client.ts` (3). |
+| Why only sign-out was seen | Locale reads/writes swallow errors in `.catch()`; the push paths are guarded to `android`/`ios`; `_layout.tsx`'s fire only on a notification response. `logout()` is the first unguarded awaited call a user can reach. The rest were latent, and some silently wrong. |
+| Fix | One `key-value-store.ts` owning the platform switch, cached as a singleton; every call site routed through `defaultKeyValueStore()`. `expo-secure-store` is now imported in exactly one production file. |
+| Proof | `key-value-store.web.spec.ts` mocks the real web shim (`{}`), so any direct call throws the browser error. Verified red against pre-change behaviour: `TypeError: SecureStore.setItemAsync is not a function`. |
+
+**The general rule, which this defect existed to teach:** a native module must be
+reached through a platform-aware adapter, never imported at a call site. The
+existing push spec missed this because it mocked `expo-secure-store` with *working*
+methods — a mock of a device, not of a browser. A double must reproduce the shape
+the failing platform actually has, or it certifies code that cannot run.
+
+Recorded consequence, unchanged from the session store: on web these values are
+in-memory, so a reload resets the locale and push opt-in. Deliberate — `localStorage`
+is readable by any script on the origin.
+
+
 
