@@ -45,6 +45,36 @@ describe('SepayPaymentGateway', () => {
     expect(gateway.provider).toBe('sepay');
   });
 
+  it('fails fast without calling the checkout host when the merchant id is missing', async () => {
+    const fetchMock = stubFetch(new Response(null, { status: 302 }));
+
+    await expect(
+      new SepayPaymentGateway(config({ sepayMerchantId: '' })).initiateTopUp({
+        providerRef: 'SS-3-C3D4E5',
+        amountVnd: 10000,
+        description: 'SkillSwap wallet top-up SS-3-C3D4E5',
+      }),
+    ).rejects.toThrow(/SEPAY_MERCHANT_ID/);
+
+    // The point of the guard: an unconfigured gateway must not reach SePay,
+    // where an unknown merchant reads as a 404 indistinguishable from an outage.
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('fails fast without calling the checkout host when the secret key is missing', async () => {
+    const fetchMock = stubFetch(new Response(null, { status: 302 }));
+
+    await expect(
+      new SepayPaymentGateway(config({ sepaySecretKey: '' })).initiateTopUp({
+        providerRef: 'SS-4-D4E5F6',
+        amountVnd: 10000,
+        description: 'SkillSwap wallet top-up SS-4-D4E5F6',
+      }),
+    ).rejects.toThrow(/SEPAY_SECRET_KEY/);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('posts a correctly signed form to the checkout host', async () => {
     const fetchMock = stubFetch(
       new Response(null, { status: 302, headers: { location: 'https://pay-sandbox.sepay.vn/v1/checkout' } }),

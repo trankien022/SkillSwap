@@ -8,7 +8,8 @@ jest.setTimeout(60_000);
 /**
  * End-to-end booking flow against REAL Postgres and REAL RabbitMQ (docker).
  * Payment is the SePay Payment Gateway (ADR-033): the specs post an IPN body
- * directly, so no outbound call to SePay is made. Events cross module boundaries
+ * directly, and the harness replaces the outbound checkout redirect with a stub,
+ * so no live call to SePay is made. Events cross module boundaries
  * through the outbox relay + consumer, exactly as in production, so assertions
  * poll for the downstream effect rather than reading a synchronous return value.
  *

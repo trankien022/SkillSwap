@@ -1,12 +1,14 @@
 import 'reflect-metadata';
 import { config as loadEnv } from 'dotenv';
 import { resolve } from 'node:path';
-import { NestFactory } from '@nestjs/core';
+import { Test } from '@nestjs/testing';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import type { DataSource } from 'typeorm';
 import { AppModule } from '../src/bootstrap/app.module';
 import { ModuleDataSourceRegistry } from '../src/shared/messaging/module-registry';
 import { RabbitConsumer } from '../src/shared/messaging/rabbit-consumer';
+import { PAYMENT_GATEWAY } from '../src/modules/wallet-ledger/internal/application/port/out/payment-gateway';
+import { StubPaymentGateway } from './support/stub-payment-gateway';
 import { waitFor } from './support/api-client';
 
 // Load the repo-root `.env` exactly like the real bootstrap does.
@@ -22,6 +24,8 @@ export interface Harness {
   moduleForSchema(schema: string): string;
   /** Resolve a provider/token from the running Nest container (test-only nudges). */
   resolve<T>(token: unknown): T;
+  /** The stub standing in for SePay's outbound checkout redirect. */
+  paymentGateway: StubPaymentGateway;
   close(): Promise<void>;
 }
 
@@ -40,11 +44,22 @@ const SCHEMA_TO_MODULE: Record<string, string> = {
  * `pnpm db:migrate` beforehand (the integration jest project gates on this).
  */
 export async function startHarness(): Promise<Harness> {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+  const stub = new StubPaymentGateway();
+  // `overrideProvider` only takes effect before the instance graph is built, so
+  // the app is composed through the testing module rather than NestFactory.
+  const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+    .overrideProvider(PAYMENT_GATEWAY)
+    .useValue(stub)
+    .compile();
+
+  const app = moduleRef.createNestApplication<NestExpressApplication>({
     bufferLogs: true,
     rawBody: true,
     logger: ['error', 'warn'],
   });
+  // Replace only the outbound SePay redirect: the IPN receiver, the wallet
+  // settlement, the outbox and the consumers all stay real, so the suite runs
+  // offline without a sandbox merchant.
   app.setGlobalPrefix('api');
   await app.listen(0);
 
@@ -59,6 +74,7 @@ export async function startHarness(): Promise<Harness> {
 
   return {
     baseUrl,
+    paymentGateway: stub,
     dataSource: (moduleName) => registry.get(moduleName),
     moduleForSchema: (schema) => {
       const moduleName = SCHEMA_TO_MODULE[schema];

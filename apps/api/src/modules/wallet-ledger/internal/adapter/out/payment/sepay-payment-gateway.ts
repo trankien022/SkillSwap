@@ -24,6 +24,18 @@ export class SepayPaymentGateway implements PaymentGateway {
   constructor(private readonly config: ApiConfig) {}
 
   async initiateTopUp(request: InitiatePaymentRequest): Promise<InitiatePaymentResult> {
+    // Fail before the network call. Without a merchant id and secret the signed
+    // form is guaranteed to be rejected (live SePay answers 404 for an unknown
+    // merchant), and a 404 from the provider is indistinguishable from a real
+    // outage. Naming the missing configuration here keeps that ambiguity out of
+    // the error the caller sees.
+    if (this.config.sepayMerchantId === '' || this.config.sepaySecretKey === '') {
+      throw new Error(
+        'SePay is not configured: set SEPAY_MERCHANT_ID and SEPAY_SECRET_KEY. ' +
+          'Refusing to call the checkout host without credentials.',
+      );
+    }
+
     const { checkoutUrl, fields } = this.buildCheckoutForm(request);
     const response = await fetch(checkoutUrl, {
       method: 'POST',
