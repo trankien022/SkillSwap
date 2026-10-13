@@ -194,7 +194,7 @@ The requirements above are stated as `FR`/`BR`/`NFR` clauses. This section resta
 
 | ID | Dependency | Status |
 |---|---|---|
-| DEP-001 | Payment gateway supporting top-up and payout in Vietnam. | Open (OQ-011) |
+| DEP-001 | Payment gateway supporting top-up and payout in Vietnam. | **Selected for top-up** — SePay Payment Gateway (ADR-033). Payout (FR-014) still Open (OQ-011). |
 | DEP-002 | Jitsi self-hosted or as-a-service with secure domain/JWT. | Open |
 | DEP-003 | Initial Verifier headcount. | Open |
 
@@ -219,7 +219,7 @@ None. The clients are browser-based web plus a native mobile app; the only clien
 
 | Interface | Direction | Contract |
 |---|---|---|
-| Payment gateway | Outbound (REST), inbound webhook `POST /api/webhooks/payment` (EVT-001) | Signature verification, timestamp/replay protection, monotonic status matrix, one application per provider event ID. Specific gateway is OQ-011 (excluded — Appendix A). |
+| Payment gateway | Outbound (REST/form POST), inbound IPN `POST /api/wallet/top-ups/callback` (EVT-001) | Authenticity is an **IP allow-list plus the invoice lookup**, not a body signature (ADR-033 §6); idempotency is owned by the intent status and a unique provider ref, so a replayed IPN applies once. Settlement status is monotonic; an amount that does not match the intent is acknowledged and left pending. Gateway selected for top-up by OQ-011 / ADR-033; payout remains excluded (Appendix A). |
 | Jitsi | Outbound room provisioning + token issuance (`POST /api/bookings/{id}/room-token`, API-008) | Short-lived authorization for booking participants only; no discoverable public room link. Deployment choice (self-hosted vs. service) is DEP-002. |
 | PostgreSQL | Internal persistence | TypeORM data access; financial writes are transactional. |
 | Email service | Outbound | Standard password-recovery flow (PRD §6.1). Provider not fixed at MVP scope level. |
@@ -247,7 +247,7 @@ Priority follows MoSCoW from the PRD (`Must` / `Should`). Status preserves the P
 | FR-005 | Only a verified Teacher shall be able to create and publish an online class with skill, description, schedule, duration, price and approved capacity rules. | Must | intent.md | Confirmed core; price resolved (OQ-002, self-price); capacity resolved (OQ-007, AC-028–AC-030) |
 | FR-006 | The system shall let a Learner browse and search open classes by class information and Teacher profile. | Must | intent.md | Confirmed core; taxonomy resolved (OQ-001, ADR-026); search granularity open (FR-006 Phase 0) |
 | FR-007 | The system shall only allow booking a class that has capacity, starts at least 24 hours from now, and lasts 30 minutes to 3 hours. | Must | intent.md | Confirmed core; capacity resolved (OQ-007, AC-028–AC-030); refund/cancellation resolved (OQ-003, AC-022–AC-027) |
-| FR-008 | The system shall allow top-up through a payment gateway at the applied rate, with exactly-once callback processing. | Must | intent.md | Confirmed core; gateway open (OQ-011) |
+| FR-008 | The system shall allow top-up through a payment gateway at the applied rate, with exactly-once callback processing. | Must | intent.md | Confirmed core; gateway selected (OQ-011 / ADR-033) |
 | FR-009 | When a Learner buys a class, the system shall atomically debit the full price and allocate 90% to the Teacher and 10% platform fee. | Must | intent.md | Confirmed split; release timing open (OQ-006) |
 | FR-010 | The system shall let a wallet owner view balance and history of top-ups, payments, income, fees and withdrawals. | Must | intent.md | Confirmed core |
 | FR-011 | The system shall grant the Learner and Teacher of a booking access to the correct Jitsi room within the permitted time window. | Must | intent.md | Confirmed core |
@@ -544,7 +544,7 @@ Confirmed cores of these requirements appear in §3.2.1; the following **depende
 | OQ-008 | Verification validity period, document retention/deletion, expiry cascade. | Product Owner + Security | FR-002–FR-005, FR-007, FR-011, FR-014, NFR-004 | **Room-access clause resolved (2026-10-10):** room access is re-checked per request (party + confirmed booking + window) against a short-lived JWT, so a cancelled/rescheduled class or changed user status cascades immediately; no grandfather exception in MVP (ADR-020). **Storage/validity clause resolved by the developer (2026-10-10, FR-002 scope, ADR-023):** (1) **no expiry** — an approved verification does not expire in the MVP; (2) **block** — a new submission is refused while a `pending`/`approved` verification exists (SR-BR-011), no supersede; (3) **keep** — verification records are retained, no deletion in the MVP; (4) **upload** — documents are uploaded and stored via **S3 object storage with Postgres metadata**, validated by type/size, never logged (NFR-004/008). **Cascade clause resolved by the developer (2026-10-10, FR-019 scope, ADR-025):** demotion is triggered by **admin revocation only** (no time-based expiry); rights **cascade immediately with no grandfather** (consistent with ADR-020) via the `student.verification.revoked` event; re-verification reuses the FR-002 submission path. |
 | OQ-009 | Chat handling of detected personal contact info: block / warn+log / log only. | Product Owner | FR-012 | Enforcement mechanism behind SR-BR-008. |
 | OQ-010 | Target values for success metrics and pilot scope. | Product Owner | Product rollout | Quantified performance/availability targets for NFR-011/NFR-012. |
-| OQ-011 | Payment gateway selection (top-up, payout, webhook, reconciliation, reversal). | Engineering + Finance | FR-008, FR-014 | **Resolved (2026-10-09, MVP scope):** integrate a development/mock gateway behind a `PaymentGateway` port with an HMAC-SHA256 signed webhook, idempotent `top_up_intents` and monotonic status; vendor selection deferred to a later adapter swap. See ADR-017. Payout (FR-014) still pending. |
+| OQ-011 | Payment gateway selection (top-up, payout, webhook, reconciliation, reversal). | Engineering + Finance | FR-008, FR-014 | **Resolved for top-up (2026-10-14):** the **SePay Payment Gateway** (hosted checkout + IPN) replaces the mock adapter behind the unchanged `PaymentGateway` port; `top_up_intents` stay idempotent on a unique provider ref and settlement status. Authenticity is an IP allow-list plus the invoice lookup, not a body signature. Reconciliation is a documented, disabled stub. See ADR-033 (supersedes ADR-017 §1–§2). Payout (FR-014) still pending. |
 | OQ-012 | Commission rounding method and precision. | Product Owner + Finance | FR-009, FR-014 | **Resolved (2026-10-09):** `fee = floor(price × feeBps / 10000)`, `teacher = price − fee` (remainder to the Teacher); invariant `teacher + fee == price` holds with integers. See ADR-018. |
 
 ## Appendix B — Data dictionary

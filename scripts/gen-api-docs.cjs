@@ -49,12 +49,12 @@ const MODULE_NOTES = {
   },
   wallet: {
     purpose:
-      'Money in and out (FR-008/FR-010, ADR-017/ADR-022). Credits are integer VND, 1 credit = 1,000 VND. Top-ups go through a payment provider; the callback settles them.',
+      'Money in and out (FR-008/FR-010, ADR-033/ADR-022). Credits are integer VND, 1 credit = 1,000 VND. Top-ups go through the SePay Payment Gateway (hosted checkout); the IPN settles them.',
     endpoints: {
       'POST /api/wallet/top-ups':
-        'Start a top-up and get a payment URL to redirect the learner to. Use from the "Add funds" screen.',
+        'Start a top-up and get a hosted SePay checkout URL to open. Use from the "Add funds" screen.',
       'POST /api/wallet/top-ups/callback':
-        'Provider → server webhook that settles/fails a top-up. Not called by the frontend; signature-verified via the x-signature header.',
+        'SePay IPN receiver. Not called by the frontend; authenticated by IP allow-list and the invoice lookup, and acknowledged with {"success": true}. The same path also answers the browser GET back from checkout, which credits nothing.',
       'GET /api/wallet/balance':
         'Read available + pending credits. Use to show the wallet balance and to pre-check affordability before booking.',
       'GET /api/wallet/history':

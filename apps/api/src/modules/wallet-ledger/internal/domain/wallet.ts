@@ -24,7 +24,7 @@ export function canWithdraw(state: ModuleStatusState): boolean {
   return state === 'active';
 }
 
-// ── FR-008 wallet top-up (ADR-017) ──────────────────────────────────────────
+// ── FR-008 wallet top-up (ADR-017 §3–§5, ADR-033) ───────────────────────────
 
 export const TOP_UP_STATUSES = ['pending', 'settled', 'failed', 'reversed'] as const;
 export type TopUpStatus = (typeof TOP_UP_STATUSES)[number];

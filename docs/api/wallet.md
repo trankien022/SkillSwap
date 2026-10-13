@@ -4,9 +4,9 @@
 
 ## What it is for
 
-Money in and out (FR-008/FR-010, ADR-017/ADR-022). Credits are integer VND, 1 credit = 1,000 VND. Top-ups go through a payment provider; the callback settles them.
+Money in and out (FR-008/FR-010, ADR-033/ADR-022). Credits are integer VND, 1 credit = 1,000 VND. Top-ups go through the SePay Payment Gateway (hosted checkout); the IPN settles them.
 
-4 endpoints.
+5 endpoints.
 
 Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
 
@@ -71,7 +71,7 @@ Paginated ledger entries (newest first). Use on the wallet activity screen; foll
 
 **Start a wallet top-up (FR-008 / API-006)**
 
-Start a top-up and get a payment URL to redirect the learner to. Use from the "Add funds" screen.
+Start a top-up and get a hosted SePay checkout URL to open. Use from the "Add funds" screen.
 
 - Auth: 🔒 Bearer token required
 - Request body: `TopUpRequestDto`
@@ -96,25 +96,54 @@ Start a top-up and get a payment URL to redirect the learner to. Use from the "A
 | `status` | string | yes | min 1 chars |
 | `paymentUrl` | string | no | min 1 chars |
 
-### `POST /api/wallet/top-ups/callback`
+### `GET /api/wallet/top-ups/callback`
 
-**Payment provider callback (signature verified)**
-
-Provider → server webhook that settles/fails a top-up. Not called by the frontend; signature-verified via the x-signature header.
+**Browser return from the SePay hosted checkout (ADR-033)**
 
 - Auth: 🔒 Bearer token required
-- Request body: `TopUpCallbackDto`
 
-**Headers**
+### `POST /api/wallet/top-ups/callback`
 
-| Header | Required | Description |
-|---|---|---|
-| `x-signature` | no | HMAC signature of the raw body (ADR-017) |
+**SePay Payment Gateway IPN (ADR-033)**
 
-**Request body — `TopUpCallbackDto`**
+SePay IPN receiver. Not called by the frontend; authenticated by IP allow-list and the invoice lookup, and acknowledged with {"success": true}. The same path also answers the browser GET back from checkout, which credits nothing.
+
+- Auth: 🔒 Bearer token required
+- Request body: `SepayIpnDto`
+
+**Request body — `SepayIpnDto`**
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `providerRef` | string | yes | min 1 chars |
-| `amountVnd` | integer | yes | > 0 |
-| `status` | enum | yes | one of `settled`, `failed`, `reversed` |
+| `timestamp` | integer | no |  |
+| `notification_type` | string | yes | min 1 chars |
+| `order` | object | yes |  |
+| `transaction` | object | no |  |
+| `customer` | any | no | nullable |
+| `agreement` | any | no | nullable |
+
+**`order`** — SepayIpnDto.order fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | no |  |
+| `order_id` | string | no |  |
+| `order_status` | string | no |  |
+| `order_currency` | string | no |  |
+| `order_amount` | any | yes |  |
+| `order_invoice_number` | string | yes | min 1 chars |
+| `order_description` | string | no |  |
+| `custom_data` | object | no | `null` for a bounded list (no pagination) |
+
+**`transaction`** — SepayIpnDto.transaction fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | no |  |
+| `payment_method` | string | no |  |
+| `transaction_id` | string | no |  |
+| `transaction_type` | string | no |  |
+| `transaction_date` | string | no |  |
+| `transaction_status` | string | no |  |
+| `transaction_amount` | any | no |  |
+| `transaction_currency` | string | no |  |

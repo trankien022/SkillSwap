@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import {
   ActivityIndicator,
@@ -12,7 +12,8 @@ import {
   View,
 } from 'react-native';
 import type {
-  TopUpIntentView,
+  TopUpIntentCreated,
+  TopUpIntentStatusView,
   WalletBalanceView,
   WalletHistoryItemView,
 } from '@skillswap/contracts';
@@ -20,6 +21,11 @@ import { colors, radius, spacing, typography } from '@/design/tokens';
 import { AppButton, ScreenScroll, SurfaceCard } from './primitives';
 import { useSession } from './session-context';
 import { WalletService } from './wallet-service';
+
+/** Terminal states: once reached the intent can no longer change. */
+const TERMINAL_TOP_UP_STATUSES = new Set(['settled', 'failed', 'reversed']);
+const POLL_INTERVAL_MS = 3_000;
+const POLL_TIMEOUT_MS = 120_000;
 
 export function WalletView() {
   const { t, locale, gatewayClient } = useSession();
@@ -37,7 +43,9 @@ export function WalletView() {
   const [amountInput, setAmountInput] = useState<string>('100000');
   const [isSubmittingTopUp, setIsSubmittingTopUp] = useState<boolean>(false);
   const [topUpError, setTopUpError] = useState<string | null>(null);
-  const [topUpIntent, setTopUpIntent] = useState<TopUpIntentView | null>(null);
+  const [topUpIntent, setTopUpIntent] = useState<TopUpIntentCreated | null>(null);
+  const [topUpStatus, setTopUpStatus] = useState<TopUpIntentStatusView | null>(null);
+  const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const parsedAmount = parseInt(amountInput.trim(), 10);
   const isValidAmount =
@@ -97,6 +105,51 @@ export function WalletView() {
     }
   };
 
+  /**
+   * Polls the intent until it settles or the budget runs out (FR-008 / ADR-033).
+   * The SePay IPN settles server-to-server and pushes nothing to the app, so
+   * polling the server's record is the only honest way to learn the outcome.
+   */
+  const pollTopUp = useCallback(
+    (intentId: string) => {
+      if (!gatewayClient) return;
+      const walletService = new WalletService(gatewayClient);
+      const deadline = Date.now() + POLL_TIMEOUT_MS;
+
+      const tick = async () => {
+        pollTimer.current = null;
+        try {
+          const status = await walletService.getTopUpIntent(intentId);
+          setTopUpStatus(status);
+          if (TERMINAL_TOP_UP_STATUSES.has(status.status)) {
+            await loadWalletData();
+            return;
+          }
+        } catch {
+          // A transient poll failure is not worth surfacing; the next tick or
+          // the manual refresh recovers.
+        }
+
+        if (Date.now() >= deadline) return;
+        pollTimer.current = setTimeout(() => void tick(), POLL_INTERVAL_MS);
+      };
+
+      void tick();
+    },
+    [gatewayClient, loadWalletData],
+  );
+
+  // A timer outliving the screen would keep hitting the API and set state on an
+  // unmounted component.
+  useEffect(() => {
+    return () => {
+      if (pollTimer.current !== null) {
+        clearTimeout(pollTimer.current);
+        pollTimer.current = null;
+      }
+    };
+  }, []);
+
   const handleTopUp = async () => {
     if (!gatewayClient) return;
     if (!isValidAmount) {
@@ -106,14 +159,15 @@ export function WalletView() {
 
     setIsSubmittingTopUp(true);
     setTopUpError(null);
+    setTopUpStatus(null);
 
     try {
       const walletService = new WalletService(gatewayClient);
       const intent = await walletService.initiateTopUp(parsedAmount);
       setTopUpIntent(intent);
-      // Refresh balance in background
-      const updatedBalance = await walletService.getBalance();
-      setBalance(updatedBalance);
+      // The balance has not changed yet: the SePay IPN settles the intent
+      // out of band. Poll instead of assuming a credit.
+      pollTopUp(intent.id);
     } catch {
       setTopUpError(t('Common.errorMessage'));
     } finally {
@@ -227,6 +281,31 @@ export function WalletView() {
               >
                 <Text style={styles.paymentLinkText}>{t('Wallet.openPaymentLink')}</Text>
               </Pressable>
+            ) : null}
+
+            {topUpStatus ? (
+              <View style={styles.statusBox} accessibilityRole="summary">
+                <Text
+                  style={[
+                    styles.statusTitle,
+                    topUpStatus.status === 'settled' ? styles.statusSettled : null,
+                  ]}
+                >
+                  {topUpStatus.status === 'settled'
+                    ? t('Wallet.statusSettled')
+                    : topUpStatus.status === 'pending'
+                      ? t('Wallet.statusPending')
+                      : topUpStatus.status === 'reversed'
+                        ? t('Wallet.statusReversed')
+                        : t('Wallet.statusFailed')}
+                </Text>
+                <Text style={styles.statusDetail}>
+                  {t('Wallet.orderCode', { ref: topUpStatus.providerRef })}
+                </Text>
+                {topUpStatus.status === 'pending' ? (
+                  <Text style={styles.statusDetail}>{t('Wallet.polling')}</Text>
+                ) : null}
+              </View>
             ) : null}
 
             <Pressable
@@ -493,6 +572,24 @@ const styles = StyleSheet.create({
     fontSize: typography.caption.fontSize,
     color: colors.inkSoft,
     lineHeight: 18,
+  },
+  statusBox: {
+    backgroundColor: colors.mist,
+    borderRadius: radius.small,
+    padding: spacing.sm,
+    gap: 2,
+  },
+  statusTitle: {
+    fontSize: typography.label.fontSize,
+    fontWeight: '600',
+    color: colors.ink,
+  },
+  statusSettled: {
+    color: colors.campusEmerald,
+  },
+  statusDetail: {
+    fontSize: typography.caption.fontSize,
+    color: colors.inkSoft,
   },
   paymentLinkBtn: {
     minHeight: 44,

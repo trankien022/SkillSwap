@@ -16,12 +16,18 @@ function build() {
 }
 
 describe('InitiateTopUpUseCase', () => {
-  it('creates a pending intent and returns a payment URL', async () => {
-    const { initiate } = build();
+  it('creates a pending intent and returns a hosted SePay checkout URL', async () => {
+    const { initiate, gateway } = build();
     const view = await initiate.execute({ ownerId: 'u1', amountVnd: 100_000 });
     expect(view.status).toBe('pending');
     expect(view.amountCredits).toBe(100);
-    expect(view.paymentUrl).toContain('ref=');
+    // The URL is SePay's hosted checkout, and it carries our invoice number as
+    // the correlation key (ADR-033 §4).
+    expect(view.paymentUrl).toContain('pay-sandbox.sepay.vn');
+    expect(view.paymentUrl).toContain(`order_invoice_number=${view.providerRef}`);
+    expect(gateway.requests).toHaveLength(1);
+    expect(gateway.requests[0].amountVnd).toBe(100_000);
+    expect(gateway.requests[0].providerRef).toBe(view.providerRef);
   });
 
   it('rejects an amount that is not a whole number of credits', async () => {

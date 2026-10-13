@@ -1,8 +1,10 @@
 import {
-  topUpIntentSchema,
+  topUpIntentCreatedSchema,
+  topUpIntentStatusSchema,
   walletBalanceSchema,
   walletHistoryPageSchema,
-  type TopUpIntentView,
+  type TopUpIntentCreated,
+  type TopUpIntentStatusView,
   type WalletBalanceView,
   type WalletHistoryPage,
 } from '@skillswap/contracts';
@@ -43,7 +45,7 @@ export class WalletService {
     return walletHistoryPageSchema.parse(raw);
   }
 
-  async initiateTopUp(amountVnd: number): Promise<TopUpIntentView> {
+  async initiateTopUp(amountVnd: number): Promise<TopUpIntentCreated> {
     if (!Number.isInteger(amountVnd) || amountVnd <= 0) {
       throw new WalletValidationError('Top-up amount must be a positive integer in VND');
     }
@@ -57,6 +59,18 @@ export class WalletService {
       body: { amountVnd },
     });
 
-    return topUpIntentSchema.parse(raw);
+    return topUpIntentCreatedSchema.parse(raw);
+  }
+
+  /**
+   * Polls one intent (FR-008 / ADR-033). The response carries no checkout URL:
+   * the IPN settles server-to-server, so this only answers "has it settled yet?".
+   */
+  async getTopUpIntent(intentId: string): Promise<TopUpIntentStatusView> {
+    const raw = await this.gateway.authenticatedRequest<unknown>(
+      `/wallet/top-ups/${encodeURIComponent(intentId)}`,
+      { method: 'GET' },
+    );
+    return topUpIntentStatusSchema.parse(raw);
   }
 }

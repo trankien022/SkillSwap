@@ -15,8 +15,10 @@ import type {
   NewTopUpIntent,
   TopUpIntent,
   TopUpIntentRepository,
+  TopUpSettlement,
 } from '../port/out/top-up-intent-repository';
 import type { InitiatePaymentRequest, InitiatePaymentResult, PaymentGateway } from '../port/out/payment-gateway';
+import type { SepayOrderClient, SepayOrderStatus } from '../port/out/sepay-order-client';
 import type { HistoryQuery, WalletReader } from '../port/out/wallet-reader';
 import type { WalletHistoryItemView, WalletHistoryPage } from '@skillswap/contracts';
 
@@ -91,7 +93,14 @@ export class FakeTopUpIntentRepository implements TopUpIntentRepository {
   readonly intents = new Map<string, TopUpIntent>();
 
   async create(input: NewTopUpIntent): Promise<TopUpIntent> {
-    const intent: TopUpIntent = { id: randomUUID(), ...input, status: 'pending' };
+    const intent: TopUpIntent = {
+      id: randomUUID(),
+      ...input,
+      providerOrderId: null,
+      paidAmountVnd: null,
+      paidAt: null,
+      status: 'pending',
+    };
     this.intents.set(intent.id, intent);
     return intent;
   }
@@ -103,17 +112,79 @@ export class FakeTopUpIntentRepository implements TopUpIntentRepository {
     return null;
   }
 
+  async findById(id: string): Promise<TopUpIntent | null> {
+    return this.intents.get(id) ?? null;
+  }
+
   async updateStatus(id: string, status: TopUpStatus): Promise<void> {
     const intent = this.intents.get(id);
     if (intent !== undefined) this.intents.set(id, { ...intent, status });
   }
+
+  async recordSettlement(
+    id: string,
+    status: TopUpStatus,
+    settlement: TopUpSettlement,
+  ): Promise<void> {
+    const intent = this.intents.get(id);
+    if (intent === undefined) return;
+    this.intents.set(id, {
+      ...intent,
+      status,
+      providerOrderId: settlement.providerOrderId ?? intent.providerOrderId,
+      paidAmountVnd: settlement.paidAmountVnd ?? intent.paidAmountVnd,
+      paidAt: settlement.paidAt ?? intent.paidAt,
+    });
+  }
+
+  /**
+   * FR-008 / ADR-033 reconciliation. Every fake intent starts at the current
+   * instant, so a test that wants a sweepable row sets `ages` explicitly rather
+   * than depending on wall-clock time.
+   */
+  readonly ages = new Map<string, number>();
+
+  async findStalePending(olderThanMs: number, limit: number): Promise<TopUpIntent[]> {
+    return [...this.intents.values()]
+      .filter((intent) => intent.status === 'pending')
+      .filter((intent) => (this.ages.get(intent.id) ?? 0) >= olderThanMs)
+      .slice(0, limit);
+  }
 }
 
+/** Test double for the reconciliation order lookup. No network is touched. */
+export class FakeSepayOrderClient implements SepayOrderClient {
+  private readonly orders = new Map<string, SepayOrderStatus>();
+
+  set(order: SepayOrderStatus): void {
+    this.orders.set(order.providerRef, order);
+  }
+
+  /** Invoice numbers looked up, so a test can assert the sweep's reach. */
+  readonly queries: string[] = [];
+
+  async findByInvoiceNumber(providerRef: string): Promise<SepayOrderStatus | null> {
+    this.queries.push(providerRef);
+    return this.orders.get(providerRef) ?? null;
+  }
+}
+
+/**
+ * Test double for the PaymentGateway port. It mirrors the real adapter's shape —
+ * provider `sepay` and a hosted checkout URL — so a unit test cannot pass while
+ * asserting against a URL the real gateway would never produce.
+ */
 export class FakePaymentGateway implements PaymentGateway {
-  readonly provider = 'mock';
+  readonly provider = 'sepay';
+
+  /** Requests seen, so tests can assert the invoice number the adapter was given. */
+  readonly requests: InitiatePaymentRequest[] = [];
 
   async initiateTopUp(request: InitiatePaymentRequest): Promise<InitiatePaymentResult> {
-    return { paymentUrl: `https://mock.pay.local/checkout?ref=${request.providerRef}` };
+    this.requests.push(request);
+    return {
+      paymentUrl: `https://pay-sandbox.sepay.vn/v1/checkout?order_invoice_number=${request.providerRef}`,
+    };
   }
 }
 

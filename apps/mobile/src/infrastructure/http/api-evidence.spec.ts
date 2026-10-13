@@ -14,6 +14,16 @@ describe('mobile API evidence', () => {
       '/api/classes/bookings/me',
     );
   });
+  it('templates the top-up poll route but keeps the server-to-server callback out', () => {
+    // FR-008 / ADR-033: the poll is a real client call, so it is evidence.
+    expect(
+      evidenceRoute('http://gateway/api/wallet/top-ups/11111111-2222-4333-8444-555555555555'),
+    ).toBe('/api/wallet/top-ups/:id');
+    // The callback is posted by SePay, never by this client. It must not match
+    // the `:id` template above, which would record a server-to-server call as
+    // client evidence; it is simply not client evidence at all.
+    expect(evidenceRoute('http://gateway/api/wallet/top-ups/callback')).toBeNull();
+  });
   it('logs no credentials, request body, response payload, or query values', async () => {
     process.env.EXPO_PUBLIC_API_EVIDENCE = '1';
     const log = jest.spyOn(console, 'info').mockImplementation(() => undefined);

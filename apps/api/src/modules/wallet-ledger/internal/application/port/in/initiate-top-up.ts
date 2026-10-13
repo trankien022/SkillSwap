@@ -1,4 +1,4 @@
-import type { TopUpIntentView } from '@skillswap/contracts';
+import type { TopUpIntentCreated } from '@skillswap/contracts';
 
 export const INITIATE_TOP_UP = Symbol('InitiateTopUp');
 
@@ -8,5 +8,5 @@ export interface InitiateTopUpInput {
 }
 
 export interface InitiateTopUpPort {
-  execute(input: InitiateTopUpInput): Promise<TopUpIntentView>;
+  execute(input: InitiateTopUpInput): Promise<TopUpIntentCreated>;
 }

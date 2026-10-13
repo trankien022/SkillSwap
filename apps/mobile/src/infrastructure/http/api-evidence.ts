@@ -13,6 +13,10 @@ const routes = [
 
 export function evidenceRoute(url: string): string | null {
   const path = new URL(url).pathname.replace(/^\/api/, '');
+  // The poll route (FR-008 / ADR-033). `callback` is excluded explicitly: it is
+  // server-to-server, is never posted by this client, and would otherwise match
+  // the `:id` template and be recorded as client evidence.
+  if (/^\/wallet\/top-ups\/(?!callback$)[^/]+$/.test(path)) return '/api/wallet/top-ups/:id';
   if (routes.some((route) => route.test(path))) return `/api${path}`;
   if (/^\/classes\/bookings\/[^/]+\/confirm$/.test(path))
     return '/api/classes/bookings/:bookingId/confirm';
