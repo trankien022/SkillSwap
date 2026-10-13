@@ -10,8 +10,7 @@ import { SqlModuleStatusWriter } from './internal/adapter/out/persistence/sql-mo
 import { SqlWalletRepository } from './internal/adapter/out/persistence/sql-wallet-repository';
 import { SqlWalletReader } from './internal/adapter/out/persistence/sql-wallet-reader';
 import { SqlTopUpIntentRepository } from './internal/adapter/out/persistence/sql-top-up-intent-repository';
-import { MockPaymentGateway } from './internal/adapter/out/payment/mock-payment-gateway';
-import { HmacWebhookSignatureVerifier } from './internal/adapter/out/payment/hmac-webhook-signature-verifier';
+import { SepayPaymentGateway } from './internal/adapter/out/payment/sepay-payment-gateway';
 import { StatusController } from './internal/adapter/in/web/status.controller';
 import { WalletController } from './internal/adapter/in/web/wallet.controller';
 import { AdvanceStatusUseCase } from './internal/application/advance-status.use-case';
@@ -49,10 +48,6 @@ import {
   type TopUpIntentRepository,
 } from './internal/application/port/out/top-up-intent-repository';
 import { PAYMENT_GATEWAY, type PaymentGateway } from './internal/application/port/out/payment-gateway';
-import {
-  WEBHOOK_SIGNATURE_VERIFIER,
-  type WebhookSignatureVerifier,
-} from './internal/application/port/out/webhook-signature-verifier';
 import { STATUS_READER, type ModuleStatusReader } from './internal/application/port/out/module-status-reader';
 import { STATUS_WRITER, type ModuleStatusWriter } from './internal/application/port/out/module-status-writer';
 import { GetModuleStatusQueryHandler } from './internal/application/query/get-module-status.query';
@@ -150,11 +145,9 @@ export class WalletLedgerRegistrar implements OnModuleInit {
         new SqlTopUpIntentRepository(registry, MODULE_NAME),
       inject: [ModuleDataSourceRegistry],
     },
-    { provide: PAYMENT_GATEWAY, useFactory: (): PaymentGateway => new MockPaymentGateway() },
     {
-      provide: WEBHOOK_SIGNATURE_VERIFIER,
-      useFactory: (config: ApiConfig): WebhookSignatureVerifier =>
-        new HmacWebhookSignatureVerifier(config.paymentWebhookSecret),
+      provide: PAYMENT_GATEWAY,
+      useFactory: (config: ApiConfig): PaymentGateway => new SepayPaymentGateway(config),
       inject: [ApiConfig],
     },
     {

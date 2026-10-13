@@ -3,7 +3,6 @@
 import { use, useState, useEffect } from 'react';
 import { Navbar } from '../../../../../components/navbar';
 import { callApi, unwrapEnvelope, dispatchWalletBalanceUpdate } from '../../../../../lib/api-client';
-import { simulatePaymentCallback } from '../../../wallet/actions';
 import { ClassDetailApiGateway } from '../../../../../lib/marketplace/api-class-detail';
 import type { ClassDetailView } from '../../../../../lib/marketplace/types';
 import type { WalletBalanceView } from '@skillswap/contracts';
@@ -179,23 +178,16 @@ export default function BookingCheckoutPage({ params }: PageProps) {
         return;
       }
 
-      const intent = await unwrapEnvelope<{ providerRef: string; amountVnd: number }>(res);
-      const settled = await simulatePaymentCallback(intent.providerRef, intent.amountVnd);
-      if (!settled.success) {
-        showToast(settled.message);
+      const intent = await unwrapEnvelope<{ paymentUrl?: string }>(res);
+      // ADR-030 / design B: open the hosted SePay checkout. The IPN settles the
+      // intent server-to-server, so this handler must not fabricate a success.
+      if (!intent.paymentUrl) {
+        showToast('Không nhận được đường dẫn thanh toán. Vui lòng thử lại.');
         return;
       }
-
-      const balRes = await callApi('/wallet/balance');
-      if (balRes.ok) {
-        const remote = await unwrapEnvelope<WalletBalanceView>(balRes);
-        setBalance(remote);
-        dispatchWalletBalanceUpdate(remote);
-        setIsTopUpModalOpen(false);
-        showToast('Nạp thành công 100 Credits. Số dư đã cập nhật.');
-      } else {
-        showToast('Nạp tiền đã xử lý nhưng chưa đọc được số dư. Vui lòng tải lại trang.');
-      }
+      window.open(intent.paymentUrl, '_blank', 'noopener,noreferrer');
+      setIsTopUpModalOpen(false);
+      showToast('Đã mở trang thanh toán SePay. Số dư sẽ cập nhật khi SePay xác nhận.');
     } catch (e) {
       console.warn('Top-up failed', e);
       showToast('Không thể nạp tiền. Vui lòng thử lại.');

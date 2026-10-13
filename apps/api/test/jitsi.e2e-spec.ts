@@ -106,9 +106,21 @@ describeJitsi('E2E: Jitsi room access (real host)', () => {
     api.actAs(learnerId);
     const topUp = await api.post('/api/wallet/top-ups', { amountVnd: 100_000 });
     const providerRef = topUp.json.providerRef as string;
-    const cbBody = { providerRef, amountVnd: 100_000, status: 'settled' as const };
-    await api.request('POST', '/api/wallet/top-ups/callback', cbBody, {
-      signature: createHmac('sha256', 'dev-webhook-secret').update(JSON.stringify(cbBody)).digest('hex'),
+    // ADR-030: settle via a SePay IPN (no secret header; invoice correlation).
+    await api.post('/api/wallet/top-ups/callback', {
+      notification_type: 'ORDER_PAID',
+      order: {
+        order_id: `PAY-${providerRef}`,
+        order_status: 'CAPTURED',
+        order_currency: 'VND',
+        order_amount: '100000.00',
+        order_invoice_number: providerRef,
+      },
+      transaction: {
+        payment_method: 'BANK_TRANSFER',
+        transaction_status: 'APPROVED',
+        transaction_amount: '100000',
+      },
     });
     await waitFor(async () => {
       const b = await walletRow(harness, learnerId);

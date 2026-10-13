@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { simulatePaymentCallback } from './actions';
 import { callApi, unwrapEnvelope, dispatchWalletBalanceUpdate } from '../../../lib/api-client';
 import { Navbar } from '../../../components/navbar';
 import type { WalletBalanceView, WalletHistoryItemView, MeResponse, TopUpIntentView } from '@skillswap/contracts';
@@ -84,7 +83,7 @@ export default function WalletPage() {
     }
   };
 
-  const handleVerify = async () => {
+  const handleTopUp = async () => {
     if (amount <= 0) {
       alert('Số tiền nạp tối thiểu là 10 Credit (10.000 VNĐ)');
       return;
@@ -109,18 +108,32 @@ export default function WalletPage() {
 
       const intent = await unwrapEnvelope<TopUpIntentView>(res);
 
-      // 2. Simulate payment settlement via HMAC-signed webhook in dev
-      const callbackResult = await simulatePaymentCallback(intent.providerRef, intent.amountVnd);
-      if (!callbackResult.success) {
-        alert(callbackResult.message);
+      // 2. ADR-030 / design B: the API already submitted the signed checkout
+      // form to SePay and returned the hosted payment URL. Hand the user off to
+      // SePay; settlement arrives server-to-server as an IPN, never from here.
+      const paymentUrl = intent.paymentUrl;
+      if (!paymentUrl) {
+        alert('Không nhận được đường dẫn thanh toán từ cổng thanh toán. Vui lòng thử lại.');
         return;
       }
 
-      // 3. Re-fetch balance & history. The top-up has already settled on the
-      // server, so the refetched balance is authoritative — the UI must not
-      // compute the new total itself, or it could show a figure the ledger
-      // does not agree with (e.g. a different fee or a rejected settlement).
-      await new Promise((r) => setTimeout(r, 600));
+      window.open(paymentUrl, '_blank', 'noopener,noreferrer');
+      alert(
+        'Đã mở trang thanh toán SePay trong tab mới. Sau khi thanh toán xong, quay lại đây và bấm "Tôi đã thanh toán" để cập nhật số dư.',
+      );
+    } catch (e: unknown) {
+      console.error(e);
+      const errMsg = e instanceof Error ? e.message : 'Vui lòng thử lại sau.';
+      alert(`Không thể hoàn tất nạp tiền: ${errMsg}`);
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  // ADR-030: the IPN settles the intent out of band, so the UI only refreshes
+  // the server's own numbers. It never computes the new balance locally.
+  const handleRefreshBalance = async () => {
+    try {
       const [balRes, histRes] = await Promise.all([
         callApi('/wallet/balance'),
         callApi('/wallet/history'),
@@ -131,23 +144,16 @@ export default function WalletPage() {
         setBalance(newBal);
         dispatchWalletBalanceUpdate(newBal);
       } else {
-        alert('Nạp tiền đã xử lý nhưng chưa đọc được số dư mới. Vui lòng tải lại trang.');
+        alert('Chưa đọc được số dư mới. Vui lòng tải lại trang.');
       }
 
       if (histRes.ok) {
         const data = await unwrapEnvelope<{ items: WalletHistoryItemView[] }>(histRes);
         setHistory(getCombinedHistory(data.items || []));
-      } else {
-        setHistory(getCombinedHistory([]));
       }
-
-      alert(`Nạp thành công ${intent.amountCredits} Credit vào ví!`);
     } catch (e: unknown) {
       console.error(e);
-      const errMsg = e instanceof Error ? e.message : 'Vui lòng thử lại sau.';
-      alert(`Không thể hoàn tất nạp tiền: ${errMsg}`);
-    } finally {
-      setIsPending(false);
+      alert('Không thể cập nhật số dư. Vui lòng tải lại trang.');
     }
   };
 
@@ -476,13 +482,17 @@ export default function WalletPage() {
                 </div>
               </div>
 
-              <button disabled={isPending} onClick={handleVerify} className="w-full mt-4 py-2.5 px-4 rounded-full bg-slate-900 hover:bg-slate-800 disabled:opacity-70 disabled:cursor-not-allowed text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2">
+              <button disabled={isPending} onClick={handleTopUp} className="w-full mt-4 py-2.5 px-4 rounded-full bg-slate-900 hover:bg-slate-800 disabled:opacity-70 disabled:cursor-not-allowed text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2">
                 <span className={`material-symbols-outlined text-[16px] ${isPending ? 'animate-spin' : ''}`}>sync</span>
-                {isPending ? 'Đang tạo thanh toán...' : 'Đã chuyển khoản - Kiểm tra tức thì'}
+                {isPending ? 'Đang tạo thanh toán...' : 'Nạp tiền qua SePay'}
+              </button>
+              <button onClick={handleRefreshBalance} className="w-full mt-2 py-2.5 px-4 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2">
+                <span className="material-symbols-outlined text-[16px]">refresh</span>
+                Tôi đã thanh toán - Cập nhật số dư
               </button>
               <p className="text-[11px] text-slate-500 mt-2 flex items-center gap-1">
                 <span className="material-symbols-outlined text-[13px] text-emerald-600">verified</span>
-                Bảo mật SSL 256-bit • Tiền vào ví sau 3s
+                Thanh toán an toàn qua cổng SePay • Ví cập nhật ngay khi SePay xác nhận
               </p>
             </div>
           </div>

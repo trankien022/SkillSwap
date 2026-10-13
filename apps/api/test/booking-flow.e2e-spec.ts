@@ -67,12 +67,12 @@ describe('E2E: book → settle → room → complete → release', () => {
     expect(start.status).toBe(201);
     const providerRef = start.json.providerRef as string;
 
-    // Provider callback settles the wallet. Signature: HMAC over the raw body
-    // with PAYMENT_WEBHOOK_SECRET (the api computes it the same way).
-    const body = { providerRef, amountVnd, status: 'settled' as const };
-    const signature = hmacSignature(JSON.stringify(body), 'dev-webhook-secret');
-    const cb = await api.request('POST', '/api/wallet/top-ups/callback', body, { signature });
+    // ADR-030: the SePay IPN settles the wallet. It carries no secret header,
+    // so the receiver trusts the invoice lookup; the amount arrives as a
+    // string with a fractional part, as on live Sandbox deliveries.
+    const cb = await api.post('/api/wallet/top-ups/callback', sepayIpn(providerRef, amountVnd));
     expect(cb.status).toBe(200);
+    expect(cb.json).toEqual({ success: true });
 
     const balance = await waitFor(async () => {
       const b = await walletRow(harness, learnerId);
@@ -396,14 +396,15 @@ describe('E2E: book → settle → room → complete → release', () => {
     api.actAs(learnerId);
     const start = await api.post('/api/wallet/top-ups', { amountVnd: 50_000 });
     const providerRef = start.json.providerRef as string;
-    const body = { providerRef, amountVnd: 50_000, status: 'settled' as const };
-    const signature = hmacSignature(JSON.stringify(body), 'dev-webhook-secret');
+    const body = sepayIpn(providerRef, 50_000);
 
-    const first = await api.request('POST', '/api/wallet/top-ups/callback', body, { signature });
-    const second = await api.request('POST', '/api/wallet/top-ups/callback', body, { signature });
+    const first = await api.post('/api/wallet/top-ups/callback', body);
+    const second = await api.post('/api/wallet/top-ups/callback', body);
     expect(first.status).toBe(200);
     expect(second.status).toBe(200);
-    expect(second.json.applied).toBe(false); // replay acknowledged, not re-applied
+    // SePay is always acknowledged; the replay is a no-op.
+    expect(first.json).toEqual({ success: true });
+    expect(second.json).toEqual({ success: true });
 
     const balance = await waitFor(async () => {
       const b = await walletRow(harness, learnerId);
@@ -413,9 +414,32 @@ describe('E2E: book → settle → room → complete → release', () => {
   });
 });
 
-/** HMAC-SHA256 hex over the raw body (mirrors HmacWebhookSignatureVerifier). */
-function hmacSignature(body: string, secret: string): string {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { createHmac } = require('node:crypto') as typeof import('node:crypto');
-  return createHmac('sha256', secret).update(body).digest('hex');
+/**
+ * A SePay IPN as it arrives on Sandbox (ADR-030, plan §5a): `ORDER_PAID` with
+ * string amounts carrying a fractional part, and no secret header.
+ */
+function sepayIpn(invoiceNumber: string, amountVnd: number): Record<string, unknown> {
+  return {
+    timestamp: Math.floor(Date.now() / 1000),
+    notification_type: 'ORDER_PAID',
+    order: {
+      order_id: `PAY-${invoiceNumber}`,
+      order_status: 'CAPTURED',
+      order_currency: 'VND',
+      order_amount: `${amountVnd}.00`,
+      order_invoice_number: invoiceNumber,
+      order_description: `SkillSwap wallet top-up ${invoiceNumber}`,
+      custom_data: [],
+    },
+    transaction: {
+      payment_method: 'BANK_TRANSFER',
+      transaction_id: `txn-${invoiceNumber}`,
+      transaction_type: 'PAYMENT',
+      transaction_status: 'APPROVED',
+      transaction_amount: String(amountVnd),
+      transaction_currency: 'VND',
+    },
+    customer: null,
+    agreement: null,
+  };
 }
