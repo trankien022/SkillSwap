@@ -202,7 +202,7 @@ export class SqlSkillEvidenceRepository implements SkillEvidenceRepository {
       let statusClause = `e."status" = 'pending'`;
       if (query.verifierId !== undefined) {
         params.push(query.verifierId);
-        statusClause = `(e."status" = 'pending' OR (e."status" = 'claimed' AND e."claimed_by" = $${params.length}::uuid))`;
+        statusClause = `(e."status" = 'pending' OR (e."status" = 'claimed' AND e."claimed_by" = $${params.length}))`;
       }
       let where = `${statusClause} AND s."id" = ANY($1::uuid[])`;
       if (query.level !== undefined) {
