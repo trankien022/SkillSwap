@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import type { ClassDetailView } from '@skillswap/contracts';
 import { BookingHttpGateway } from '@/infrastructure/http/booking-http-gateway';
@@ -20,10 +20,16 @@ export default function TeachingClassDetailScreen() {
   const [price, setPrice] = useState('');
   const [capacity, setCapacity] = useState('');
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const load = useCallback(async () => {
-    if (!gatewayClient || !classId) return;
+    if (!gatewayClient || !classId) {
+      setLoading(false);
+      return;
+    }
 
+    setLoading(true);
+    setError(null);
     try {
       const found = await new BookingHttpGateway(gatewayClient).getClassDetail(classId);
       setItem(found);
@@ -33,11 +39,14 @@ export default function TeachingClassDetailScreen() {
       setCapacity(String(found.capacity));
       setError(null);
     } catch (loadError) {
+      setItem(null);
       setError(
         loadError instanceof GatewayHttpError && loadError.statusCode === 404
           ? t('Teaching.notFound')
           : t('Teaching.loadError'),
       );
+    } finally {
+      setLoading(false);
     }
   }, [gatewayClient, classId, t]);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
@@ -63,6 +72,7 @@ export default function TeachingClassDetailScreen() {
 
   return <ScreenScroll contentContainerStyle={styles.container}><SurfaceCard style={styles.card}>
     <Text style={styles.title}>{t('Teaching.detailTitle')}</Text>
+    {loading && !item ? <View style={styles.loading}><ActivityIndicator color={colors.campusEmerald} /><Text style={styles.meta}>{t('Common.loading')}</Text></View> : null}
     {item ? <>
     <Text style={styles.meta}>{t(`Teaching.state.${item.state}`)} · {new Date(item.startsAt).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}</Text>
       <Text style={styles.meta}>{item.priceCredits} {t('Teaching.price')} · {item.capacity} {t('Teaching.capacity')}</Text>
@@ -82,4 +92,4 @@ export default function TeachingClassDetailScreen() {
   </SurfaceCard></ScreenScroll>;
 }
 
-const styles = StyleSheet.create({ container: { padding: spacing.lg, paddingBottom: spacing.xxxl, gap: spacing.lg, maxWidth: 560, width: '100%', alignSelf: 'center' }, card: { gap: spacing.md }, title: { color: colors.ink, fontSize: typography.heading.fontSize, fontWeight: '700' }, meta: { color: colors.inkMuted, fontSize: typography.caption.fontSize }, input: { minHeight: 52, paddingHorizontal: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: 12, color: colors.ink }, row: { flexDirection: 'row', gap: spacing.sm }, small: { flex: 1 } });
+const styles = StyleSheet.create({ container: { padding: spacing.lg, paddingBottom: spacing.xxxl, gap: spacing.lg, maxWidth: 560, width: '100%', alignSelf: 'center' }, card: { gap: spacing.md }, title: { color: colors.ink, fontSize: typography.heading.fontSize, fontWeight: '700' }, meta: { color: colors.inkMuted, fontSize: typography.caption.fontSize }, loading: { minHeight: 120, alignItems: 'center', justifyContent: 'center', gap: spacing.sm }, input: { minHeight: 52, paddingHorizontal: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: 12, color: colors.ink }, row: { flexDirection: 'row', gap: spacing.sm }, small: { flex: 1 } });
