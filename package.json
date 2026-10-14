@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "pnpm -r build",
-    "dev": "pnpm --filter @skillswap/contracts build && pnpm run dev:ngrok & pnpm -r --parallel dev",
+    "dev": "pnpm --filter @skillswap/contracts build && node scripts/dev.mjs",
     "dev:ngrok": "node scripts/dev-ngrok.mjs",
     "dev:stop": "node scripts/dev-stop.mjs",
     "lint": "eslint . --max-warnings=0",
