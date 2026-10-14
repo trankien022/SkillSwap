@@ -136,9 +136,10 @@ export function VerifierQueueView() {
     setErrorMessage(null);
     setSuccessMessage(null);
     try {
-      await gateway.claim(evidenceId);
+      const updated = await gateway.claim(evidenceId);
       if (!isMountedRef.current) return;
       setSuccessMessage(t('Verifier.claimSuccess'));
+      setItems((prev) => prev.map((item) => (item.id === evidenceId ? updated : item)));
       await loadQueue(true);
     } catch (err) {
       if (!isMountedRef.current) return;
