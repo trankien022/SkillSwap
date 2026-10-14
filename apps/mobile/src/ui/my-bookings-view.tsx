@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -292,9 +293,20 @@ export function MyBookingsView() {
   };
 
   const confirmReportNoShow = (bookingId: string) => {
+    const title = t('MyBookings.noShowConfirmTitle');
+    const message = t('MyBookings.noShowConfirmMessage');
+
+    if (Platform.OS === 'web') {
+      const ok = typeof window !== 'undefined' ? window.confirm(`${title}\n\n${message}`) : true;
+      if (ok) {
+        void handleReportNoShow(bookingId);
+      }
+      return;
+    }
+
     Alert.alert(
-      t('MyBookings.noShowConfirmTitle'),
-      t('MyBookings.noShowConfirmMessage'),
+      title,
+      message,
       [
         { text: t('Common.cancel'), style: 'cancel' },
         {
