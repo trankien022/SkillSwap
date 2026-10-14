@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -15,6 +16,7 @@ import { colors } from '@/design/tokens';
 import { MyBookingsGateway } from '@/infrastructure/http/my-bookings-gateway';
 import { RoomAccessGateway } from '@/infrastructure/http/room-access-gateway';
 import { RatingGateway } from '@/infrastructure/http/rating-gateway';
+import { TeachingGateway } from '@/infrastructure/http/teaching-gateway';
 import {
   MyBookingsCoordinator,
   type BookingFilter,
@@ -23,7 +25,7 @@ import {
 import { myBookingsStyles as styles } from './my-bookings-styles';
 import { useSession } from './session-context';
 import { StatusPill, type PillTone } from './status-pill';
-import { ScreenScroll } from './primitives';
+import { FeedbackBanner, ScreenScroll } from './primitives';
 
 /**
  * Real authenticated learner bookings view (Route 22, FR-007, FR-009).
@@ -49,6 +51,10 @@ export function MyBookingsView() {
   const [ratingStars, setRatingStars] = useState(5);
   const [ratingComment, setRatingComment] = useState('');
   const [ratingError, setRatingError] = useState(false);
+  const [reportingNoShowId, setReportingNoShowId] = useState<string | null>(null);
+  const [noShowNotices, setNoShowNotices] = useState<Record<string, string>>({});
+  const [noShowSuccesses, setNoShowSuccesses] = useState<Record<string, string>>({});
+  const [noShowErrors, setNoShowErrors] = useState<Record<string, string>>({});
 
   const isMountedRef = useRef(true);
   const [coordinatorState, setCoordinatorState] = useState<MyBookingsState>({
@@ -238,6 +244,66 @@ export function MyBookingsView() {
       await new RatingGateway(gatewayClient).submit(bookingId, { stars: ratingStars, comment: ratingComment.trim() });
       setRatingComment(''); setRatingBookingId(null); await coordinator?.reload();
     } catch { setRatingError(true); setRatingBookingId(null); }
+  };
+
+  const handleReportNoShow = async (bookingId: string) => {
+    if (!gatewayClient || reportingNoShowId !== null) return;
+    setReportingNoShowId(bookingId);
+    setNoShowNotices((prev) => {
+      const next = { ...prev };
+      delete next[bookingId];
+      return next;
+    });
+    setNoShowSuccesses((prev) => {
+      const next = { ...prev };
+      delete next[bookingId];
+      return next;
+    });
+    setNoShowErrors((prev) => {
+      const next = { ...prev };
+      delete next[bookingId];
+      return next;
+    });
+    try {
+      const teachingGateway = new TeachingGateway(gatewayClient);
+      const result = await teachingGateway.reportTeacherNoShow(bookingId);
+      if (result.cancelled) {
+        setNoShowSuccesses((prev) => ({
+          ...prev,
+          [bookingId]: t('MyBookings.noShowSuccess'),
+        }));
+        await coordinator?.reload();
+      } else {
+        setNoShowNotices((prev) => ({
+          ...prev,
+          [bookingId]: t('MyBookings.noShowRefused'),
+        }));
+      }
+    } catch {
+      setNoShowErrors((prev) => ({
+        ...prev,
+        [bookingId]: t('MyBookings.noShowError'),
+      }));
+    } finally {
+      if (isMountedRef.current) {
+        setReportingNoShowId(null);
+      }
+    }
+  };
+
+  const confirmReportNoShow = (bookingId: string) => {
+    Alert.alert(
+      t('MyBookings.noShowConfirmTitle'),
+      t('MyBookings.noShowConfirmMessage'),
+      [
+        { text: t('Common.cancel'), style: 'cancel' },
+        {
+          text: t('MyBookings.noShowConfirmBtn'),
+          style: 'destructive',
+          onPress: () => void handleReportNoShow(bookingId),
+        },
+      ],
+    );
   };
 
   return (
@@ -445,15 +511,66 @@ export function MyBookingsView() {
                 </View>
               ) : null}
 
-              {/* Card Footer: Real Route Link */}
+              {/* Card Footer: Real Route Link & Actions */}
               <View style={styles.cardFooter}>
                 <Text style={styles.viewDetailText}>
                   {t('MyBookings.viewClass')} →
                 </Text>
-                {item.roomAccessEligible ? <Pressable style={styles.loadMoreButton} disabled={openingBookingId !== null} onPress={() => void openRoom(item.bookingId)} accessibilityRole="button">
-                  {openingBookingId === item.bookingId ? <ActivityIndicator size="small" color={colors.campusEmerald} /> : <Text style={styles.loadMoreText}>{t('MyBookings.joinRoom')}</Text>}
-                </Pressable> : null}
+                <View style={styles.cardFooterActions}>
+                  {item.state === 'confirmed' ? (
+                    <Pressable
+                      style={styles.noShowButton}
+                      disabled={reportingNoShowId !== null}
+                      onPress={() => confirmReportNoShow(item.bookingId)}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('MyBookings.reportNoShow')}
+                    >
+                      {reportingNoShowId === item.bookingId ? (
+                        <ActivityIndicator size="small" color={colors.inkSoft} />
+                      ) : (
+                        <Text style={styles.noShowButtonText}>
+                          {t('MyBookings.reportNoShow')}
+                        </Text>
+                      )}
+                    </Pressable>
+                  ) : null}
+                  {item.roomAccessEligible ? (
+                    <Pressable
+                      style={styles.loadMoreButton}
+                      disabled={openingBookingId !== null}
+                      onPress={() => void openRoom(item.bookingId)}
+                      accessibilityRole="button"
+                    >
+                      {openingBookingId === item.bookingId ? (
+                        <ActivityIndicator size="small" color={colors.campusEmerald} />
+                      ) : (
+                        <Text style={styles.loadMoreText}>{t('MyBookings.joinRoom')}</Text>
+                      )}
+                    </Pressable>
+                  ) : null}
+                </View>
               </View>
+              {noShowSuccesses[item.bookingId] ? (
+                <View style={styles.feedbackArea}>
+                  <FeedbackBanner tone="success">
+                    {noShowSuccesses[item.bookingId]}
+                  </FeedbackBanner>
+                </View>
+              ) : null}
+              {noShowNotices[item.bookingId] ? (
+                <View style={styles.feedbackArea}>
+                  <FeedbackBanner tone="neutral">
+                    {noShowNotices[item.bookingId]}
+                  </FeedbackBanner>
+                </View>
+              ) : null}
+              {noShowErrors[item.bookingId] ? (
+                <View style={styles.feedbackArea}>
+                  <FeedbackBanner tone="danger">
+                    {noShowErrors[item.bookingId]}
+                  </FeedbackBanner>
+                </View>
+              ) : null}
               {roomError && openingBookingId === null ? <Text style={styles.errorText}>{t('MyBookings.roomError')}</Text> : null}
               {item.ratingEligible && !item.hasRated ? <View style={ratingStyles.form}>
                 <Text style={styles.metaLabel}>{t('MyBookings.rateClass')}</Text>
