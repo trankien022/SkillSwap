@@ -1,8 +1,9 @@
 import React, { useCallback, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import type { ClassListItemView } from '@skillswap/contracts';
-import { ClassReadGateway } from '@/infrastructure/http/class-read-gateway';
+import type { ClassDetailView } from '@skillswap/contracts';
+import { BookingHttpGateway } from '@/infrastructure/http/booking-http-gateway';
+import { GatewayHttpError } from '@/infrastructure/http/gateway-client';
 import { TeachingGateway } from '@/infrastructure/http/teaching-gateway';
 import { colors, spacing, typography } from '@/design/tokens';
 import { useSession } from '@/ui/session-context';
@@ -13,7 +14,7 @@ export default function TeachingClassDetailScreen() {
   const classId = Array.isArray(id) ? id[0] : id;
   const router = useRouter();
   const { t, locale, gatewayClient } = useSession();
-  const [item, setItem] = useState<ClassListItemView | null>(null);
+  const [item, setItem] = useState<ClassDetailView | null>(null);
   const [description, setDescription] = useState('');
   const [startsAt, setStartsAt] = useState('');
   const [price, setPrice] = useState('');
@@ -22,16 +23,22 @@ export default function TeachingClassDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const load = useCallback(async () => {
     if (!gatewayClient || !classId) return;
+
     try {
-      const page = await new ClassReadGateway(gatewayClient).getClassesPage({ teacherId: 'me', limit: 50 });
-      const found = page.items.find((candidate) => candidate.id === classId) ?? null;
+      const found = await new BookingHttpGateway(gatewayClient).getClassDetail(classId);
       setItem(found);
-      if (found) {
-        setDescription(found.description); setStartsAt(found.startsAt);
-        setPrice(String(found.priceCredits)); setCapacity(String(found.capacity));
-      }
-      setError(found ? null : t('Teaching.notFound'));
-    } catch { setError(t('Teaching.loadError')); }
+      setDescription(found.description);
+      setStartsAt(found.startsAt);
+      setPrice(String(found.priceCredits));
+      setCapacity(String(found.capacity));
+      setError(null);
+    } catch (loadError) {
+      setError(
+        loadError instanceof GatewayHttpError && loadError.statusCode === 404
+          ? t('Teaching.notFound')
+          : t('Teaching.loadError'),
+      );
+    }
   }, [gatewayClient, classId, t]);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
   const run = async (action: () => Promise<unknown>) => {
