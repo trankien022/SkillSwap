@@ -390,7 +390,8 @@
       "materials": "Materials",
       "chat": "Chat",
       "receipt": "Receipt",
-      "receiptId": "Receipt #{id}",
+      "receiptUnavailable": "Receipt not available yet",
+      "roomUnavailable": "Room code will be issued when the room opens",
       "rebook": "Rebook with the same teacher",
       "downloadNotes": "Download notes",
       "ruleTitle": "Escrow protection",
@@ -449,6 +450,62 @@
       "body": "If the teacher did not join within 15 minutes of the start time, your report will be recorded and held escrow credits will automatically return to your wallet.",
       "cancel": "Cancel",
       "confirm": "Confirm No-Show Report"
+    }
+  },
+  "Wallet": {
+    "withdrawal": {
+      "notice": "Withdrawal is not available yet",
+      "body": "The payout gateway integration is still in progress. The backend has not shipped this feature yet, so you cannot submit a withdrawal request at this time. Please come back after the backend ships it.",
+      "cta": "Not yet available",
+      "rulesTitle": "Payout & Escrow Protection Rules",
+      "rulesBody": "Once the feature ships: the withdrawal amount cannot exceed your available balance. When you submit the request, credits move to a payout_hold state and stay locked while the gateway reconciles. If the gateway rejects the payout, the held credits are returned to your wallet immediately."
+    }
+  },
+  "Admin": {
+    "verifiers": {
+      "breadcrumb": "Admin",
+      "pageTitle": "Verifier administration",
+      "pageSubtitle": "Suspend or revoke a Verifier account. The change is applied immediately and recorded in the audit log.",
+      "formLabel": "Update Verifier status",
+      "title": "Change Verifier status",
+      "subtitle": "Every change is recorded in the audit log. The Verifier is notified by email after the status update.",
+      "accountIdLabel": "Verifier account id",
+      "accountIdHint": "Deep link from a notification email or the audit log. There is no Verifier list yet.",
+      "statusLabel": "New status",
+      "option": {
+        "active": {
+          "label": "Active",
+          "body": "May receive new evidence requests and process pending ones."
+        },
+        "suspended": {
+          "label": "Suspended",
+          "body": "Will not receive new requests; pending requests remain visible but cannot be processed."
+        },
+        "revoked": {
+          "label": "Revoked",
+          "body": "Permanently revoked. The Verifier can no longer access the evidence queue. This action cannot be undone from this UI."
+        }
+      },
+      "applyCta": "Apply",
+      "applying": "Applying…",
+      "confirmSuspend": "Suspend this Verifier? They will not receive new requests until you reactivate them.",
+      "confirmRevoke": "Revoke this Verifier? This action cannot be undone from this UI.",
+      "currentStateTitle": "Current state",
+      "currentStateEmpty": "No data yet. Apply a status to see the Verifier information.",
+      "currentAccountId": "Account id",
+      "currentStatus": "Status",
+      "currentExpertise": "Expertise",
+      "success": "Verifier status updated.",
+      "notAuthorizedTitle": "You do not have access to this page",
+      "notAuthorizedBody": "This page is restricted to administrators. If you need access, please contact the platform admins.",
+      "signInTitle": "Sign in required",
+      "signInBody": "You need to sign in with an administrator account to access this page.",
+      "loading": "Checking your access…",
+      "errors": {
+        "accountIdRequired": "Please enter the account id.",
+        "forbidden": "You are not allowed to perform this action. Please sign in with an admin account.",
+        "generic": "Could not update the Verifier status. Please try again."
+      }
     }
   },
   "Teacher": {

@@ -44,18 +44,20 @@ export interface LearnerBookingView {
   /** Seconds until the escrow auto-releases (PENDING only). */
   autoReleaseCountdownSeconds?: number;
 
-  /** Generated room code (mock; the real backend mints per booking). */
-  roomCode?: string;
-
-  /** When the learner already submitted a review after completion. */
+  /**
+   * When the learner already submitted a review after completion.
+   *
+   * The room code and receipt id are deliberately **not** part of the
+   * presentation model: the room is minted on demand by
+   * `POST /classes/bookings/{bookingId}/room-access` (the live page calls it),
+   * and a receipt endpoint does not exist yet. Both render as an explicit
+   * "not yet available" state rather than a synthetic value.
+   */
   reviewSubmitted?: {
     rating: number;
     body: string;
     submittedOn: string;
   };
-
-  /** When the booking is past, the receipt id is shown. */
-  receiptId?: string;
 }
 
 /** The four big metric tiles at the top of the dashboard. */
