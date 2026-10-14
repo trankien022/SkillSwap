@@ -36,6 +36,7 @@ export class ListVerifierQueueQueryHandler implements ListVerifierQueuePort {
 
     const limit = request.limit ?? DEFAULT_QUEUE_LIMIT;
     const page = await this.evidence.listPendingForExpertise({
+      verifierId: verifier.accountId,
       expertise: verifier.expertise,
       limit,
       cursor: request.cursor,

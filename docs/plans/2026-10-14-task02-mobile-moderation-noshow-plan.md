@@ -106,6 +106,23 @@ Two mobile gaps are addressed in this task:
   `feat(mobile): add verifier queue and evidence decision UI`
   `Implement verifier gateway, queue screen, and claim/decision mutations.`
 
+### Phase 2.1: Verifier Queue Claim Visibility & Decision Parity (FR-004, BR-071)
+- **Problem statement:**
+  When a Verifier claims a pending item via `POST /api/skill-evidence/:id/claim`, the item transitions to `status = 'claimed'` and is locked to that Verifier. Previously, `GET /api/verifiers/me/queue` executed `WHERE e."status" = 'pending' AND s."id" = ANY(expertise)`. Once claimed, the item was excluded from subsequent queue queries, causing it to disappear immediately from the screen on reload and preventing the Verifier from reviewing the claim to approve or reject it.
+- **Backend enhancements:**
+  - In `PendingQueueQuery` (`skill-evidence-repository.ts`): add `verifierId?: string`.
+  - In `ListVerifierQueueQueryHandler`: pass `verifierId: verifier.accountId`.
+  - In `SqlSkillEvidenceRepository.listPendingForExpertise`: filter `(e."status" = 'pending' OR (e."status" = 'claimed' AND e."claimed_by" = $verifierId)) AND s."id" = ANY(expertise)`. Maintain exclusion of items claimed by other verifiers (`e."claimed_by" != $verifierId`) and already decided items (`approved`/`rejected`).
+  - In `InMemorySkillEvidenceRepository`: mirror the status filter for in-memory unit tests.
+  - In `list-verifier-queue.query.spec.ts`: add unit test verifying caller-claimed items appear in the queue while other verifiers' claimed items do not.
+- **Mobile client enhancements:**
+  - In `apps/mobile/src/ui/verifier-queue-view.tsx`:
+    - Immediately update local state on `handleClaim` with returned `SkillEvidenceView` (`status: 'claimed'`).
+    - Queue reloads now retain claimed items so "Chấp thuận" / "Từ chối" buttons and decision form remain accessible.
+- Land commits:
+  1. `fix(skill-verification): retain caller-claimed items in verifier queue`
+  2. `fix(mobile): preserve claimed items in verifier queue view`
+
 ### Phase 3: Parity & Quality Gates
 - Run `pnpm verify` (linting, typechecking, tests across all workspaces, dependency cruiser arch rules).
 - Ensure 0 warnings and full message parity (`messages-parity.spec.ts`).
