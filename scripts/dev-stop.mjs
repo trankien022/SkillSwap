@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 /**
  * Stops every SkillSwap dev process, regardless of how many times it respawned.
  *
- *   pnpm dev:stop        # kill api/gateway/web/mobile dev trees, free their ports
+ *   pnpm dev:stop        # kill api/gateway/web/mobile dev trees + the ngrok tunnel
  *   pnpm dev:stop -- -n  # dry run: only show what would be killed
  *
  * Why this exists: `nest start --watch`, `next dev` and Metro are supervisors.
@@ -13,6 +13,13 @@ import { fileURLToPath } from 'node:url';
  * one, so killing the listener on :4000 just produces a fresh listener seconds
  * later. Killing a single PID therefore looks like "the process always comes
  * back". The only reliable stop is to kill every matching tree at once.
+ *
+ * The ngrok tunnel is included because it outlives the app processes and holds
+ * a *reserved* domain. `ngrok.yml` pins one endpoint, so a leaked tunnel from a
+ * previous run occupies it and the next `pnpm dev` dies with ERR_NGROK_334
+ * ("The endpoint ... is already online"). `ngrok.exe start api ...` also
+ * matches none of the dev-server entry points, so the tunnel was previously
+ * invisible to this script.
  *
  * Postgres and RabbitMQ are left alone (use `pnpm db:down` for those).
  */
@@ -22,6 +29,13 @@ const IS_WINDOWS = process.platform === 'win32';
 
 /** Ports the dev stack listens on. Nothing else should hold these. */
 const PORTS = [3000, 3001, 3002, 4000, 4001, 4100, 8081, 8082];
+
+/**
+ * ngrok's local agent API. Listening here is what distinguishes a live tunnel
+ * from an installed-but-idle ngrok binary, and it is how the tunnel is verified
+ * free after stopping.
+ */
+const NGROK_PORTS = [4040];
 
 /**
  * Entry points that identify a SkillSwap dev process. A match must be a real
@@ -45,6 +59,17 @@ const ENTRY_POINTS = [
   /expo[\\/]bin[\\/]cli/,
   /[\\/]metro[\\/]/,
 ];
+
+/**
+ * The repo's own ngrok tunnel, matched on the `start api` subcommand rather
+ * than on the binary name.
+ *
+ * `isSkillSwapProcess` additionally requires the command line to contain this
+ * checkout's path, and this script always starts ngrok with `--config
+ * <ROOT>/ngrok.yml` — so a developer's unrelated `ngrok http 3000` is never a
+ * match. The binary name alone would have been too broad.
+ */
+const NGROK_ENTRY_POINT = /ngrok(\.exe)?\b.*\bstart\s+api\b/i;
 
 /**
  * Processes that mark the top of the sandbox. The ancestry walk stops here —
@@ -85,7 +110,9 @@ function isSkillSwapProcess(commandLine) {
   const normalized = cmd.replace(/\\/g, '/').toLowerCase();
   const root = ROOT.replace(/\\/g, '/').toLowerCase();
 
-  if (!ENTRY_POINTS.some((pattern) => pattern.test(cmd))) return false;
+  if (!ENTRY_POINTS.some((pattern) => pattern.test(cmd)) && !NGROK_ENTRY_POINT.test(cmd)) {
+    return false;
+  }
 
   // Must be running out of this repo — not a global pnpm, not a stray browser.
   return normalized.includes(root);
@@ -148,8 +175,24 @@ function listProcesses() {
 
 /** Maps each dev port to the PID listening on it. */
 function portHolders() {
+  return listenersOn(PORTS);
+}
+
+/**
+ * Maps PIDs to the ngrok agent-API ports they listen on.
+ *
+ * Scanned separately from the dev ports so a leaked tunnel is reported and
+ * stopped as a tunnel, rather than being heuristically classified as a port
+ * "held by something that is NOT a node dev server" and left running.
+ */
+function ngrokListeners() {
+  return listenersOn(NGROK_PORTS);
+}
+
+/** Maps each port in `wanted` to the PID listening on it. */
+function listenersOn(wanted) {
   const holders = new Map();
-  const want = new Set(PORTS);
+  const want = new Set(wanted);
   const add = (pid, port) => {
     if (!holders.has(pid)) holders.set(pid, new Set());
     holders.get(pid).add(port);
@@ -183,8 +226,11 @@ function portHolders() {
 function findTargets() {
   const processes = listProcesses();
   const { holders, error } = portHolders();
+  const { holders: tunnelsHeld, error: tunnelError } = ngrokListeners();
   const byPid = new Map(processes.map((p) => [p.pid, p]));
 
+  // Kill deepest roots first: killing a parent with /T tears down its children,
+  // which would make a later child PID look like a failure.
   const roots = new Set();
   const depthOf = new Map();
 
@@ -213,6 +259,18 @@ function findTargets() {
     depthOf.set(root, Math.max(depthOf.get(root) ?? 0, depth));
   }
 
+  // The tunnel is found by its agent port, which is the only thing that proves a
+  // tunnel is *live*: ngrok holds :4040 for as long as it runs. Matching the
+  // command line alone would be defeated by the process doing the holding being
+  // a child of a `node scripts/dev-ngrok.mjs` that has since exited.
+  const tunnels = [];
+  for (const [pid, portSet] of tunnelsHeld) {
+    // Already covered if it was picked up as a process root; no need to list twice.
+    if (roots.has(pid)) continue;
+    const proc = byPid.get(pid);
+    tunnels.push({ pid, ports: [...portSet].sort((a, b) => a - b), cmd: proc?.cmd ?? '(unknown)' });
+  }
+
   // A listener whose tree we failed to identify may still block a dev port.
   // Only an obvious node process is treated as ours; anything else (a real
   // system service, a database, another app) is reported, never killed.
@@ -230,11 +288,17 @@ function findTargets() {
     }
   }
 
-  // Kill deepest roots first: killing a parent with /T tears down its children,
-  // which would make a later child PID look like a failure.
+  // Deepest first, so a tunnel that is a child of the dev tree dies with it.
   const orderedRoots = [...roots].sort((a, b) => (depthOf.get(b) ?? 0) - (depthOf.get(a) ?? 0));
 
-  return { roots: orderedRoots, portOnly, blockedPorts, processes, portError: error };
+  return {
+    roots: orderedRoots,
+    tunnels,
+    portOnly,
+    blockedPorts,
+    processes,
+    portError: error ?? tunnelError,
+  };
 }
 
 function killTree(pid) {
@@ -261,10 +325,10 @@ function main() {
   const dryRun = process.argv.slice(2).some((arg) => arg === '-n' || arg === '--dry-run');
 
   console.log(`SkillSwap dev-stop  (repo: ${ROOT})\n`);
-  const { roots, portOnly, blockedPorts, processes, portError } = findTargets();
+  const { roots, tunnels, portOnly, blockedPorts, processes, portError } = findTargets();
   const byPid = new Map(processes.map((p) => [p.pid, p]));
 
-  if (!roots.length && !portOnly.length && !blockedPorts.length) {
+  if (!roots.length && !tunnels.length && !portOnly.length && !blockedPorts.length) {
     console.log('Nothing to stop — no SkillSwap dev processes found.');
     if (portError) console.log(`(port scan unavailable: ${portError})`);
     return;
@@ -275,6 +339,15 @@ function main() {
     const proc = byPid.get(pid);
     const label = proc ? proc.cmd.slice(0, 88) : '(unknown)';
     console.log(`  pid ${String(pid).padEnd(7)} ${label}`);
+  }
+
+  if (tunnels.length) {
+    console.log(dryRun ? '\nWould stop the ngrok tunnel:' : '\nStopping the ngrok tunnel:');
+    for (const entry of tunnels) {
+      console.log(
+        `  pid ${String(entry.pid).padEnd(7)} :${entry.ports.join(', :')}  ${entry.cmd.slice(0, 64)}`,
+      );
+    }
   }
 
   if (portOnly.length) {
@@ -309,6 +382,12 @@ function main() {
     if (ok) killed.add(pid);
     console.log(`  ${ok ? 'killed' : 'MISS  '}  pid ${pid}`);
   }
+  for (const entry of tunnels) {
+    if (killed.has(entry.pid)) continue;
+    const ok = killTree(entry.pid);
+    if (ok) killed.add(entry.pid);
+    console.log(`  ${ok ? 'killed' : 'lost  '}  pid ${entry.pid} (ngrok tunnel)`);
+  }
   for (const entry of portOnly) {
     if (killed.has(entry.pid)) continue;
     const ok = killTree(entry.pid);
@@ -319,9 +398,20 @@ function main() {
   // Give the OS a moment to release the sockets, then verify.
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 750);
   const { holders } = portHolders();
+  const { holders: lingeringTunnels } = ngrokListeners();
   const stillHeld = [...holders.entries()];
+  const tunnelHeld = [...lingeringTunnels.entries()];
 
   console.log('');
+  if (tunnelHeld.length) {
+    console.log('The ngrok tunnel is still up:');
+    for (const [pid, ports] of tunnelHeld) {
+      console.log(`  :${[...ports].sort((a, b) => a - b).join(', :')} pid ${pid}`);
+    }
+    console.log('The reserved domain stays occupied until it exits — re-run `pnpm dev:stop`.');
+    process.exitCode = 1;
+  }
+
   if (stillHeld.length) {
     console.log('Ports still held (something restarted itself):');
     for (const [pid, ports] of stillHeld) {
@@ -329,8 +419,9 @@ function main() {
     }
     console.log('Re-run `pnpm dev:stop`.');
     process.exitCode = 1;
-  } else {
+  } else if (!tunnelHeld.length) {
     console.log(`All dev ports free: ${PORTS.join(', ')}`);
+    console.log('ngrok tunnel stopped — the reserved domain is free for the next run.');
   }
 }
 
