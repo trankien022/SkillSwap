@@ -416,6 +416,10 @@ export const verificationDecisionSchema = z
   });
 export type VerificationDecisionInput = z.infer<typeof verificationDecisionSchema>;
 
+// Alias for student-verification request shape (same as VerificationDecisionDto in docs/api)
+export const studentVerificationDecisionSchema = verificationDecisionSchema;
+export type StudentVerificationDecisionInput = z.infer<typeof studentVerificationDecisionSchema>;
+
 /** FR-019 / ADR-025: revoke a verification (admin only, reason required). */
 export const verificationRevocationSchema = z.object({
   reason: z.string().min(1).max(500),

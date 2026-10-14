@@ -1,8 +1,20 @@
 import {
   verifierSchema,
   verifierStatusChangeSchema,
+  verifierQueuePageSchema,
+  skillEvidenceViewSchema,
+  skillEvidenceDecisionSchema,
+  verificationDecisionSchema,
+  verificationRevocationSchema,
+  studentVerificationSchema,
   type VerifierStatusChangeInput,
   type VerifierView,
+  type VerifierQueuePage,
+  type SkillEvidenceView,
+  type SkillEvidenceDecisionInput,
+  type StudentVerificationDecisionInput,
+  type VerificationRevocationInput,
+  type StudentVerificationView,
 } from '@skillswap/contracts';
 import { callApi, getTokens } from '../api-client';
 
@@ -31,6 +43,13 @@ export class AdminAuthError extends Error {
   constructor(message = 'Admin session required to call this endpoint') {
     super(message);
     this.name = 'AdminAuthError';
+  }
+}
+
+export class VerifierAuthError extends Error {
+  constructor(message = 'Verifier session required to call this endpoint') {
+    super(message);
+    this.name = 'VerifierAuthError';
   }
 }
 
@@ -83,6 +102,104 @@ export class HttpVerificationGateway {
 
     const body = (await res.json().catch(() => null)) as { data?: unknown } | null;
     return verifierSchema.parse(body?.data);
+  }
+
+  /** GET /verifiers/me/queue */
+  async getVerifierQueue(query: {
+    limit?: number;
+    cursor?: string;
+    level?: string;
+    type?: string;
+    q?: string;
+    sort?: string;
+  }): Promise<VerifierQueuePage> {
+    const params = new URLSearchParams();
+    if (query.limit !== undefined) params.set('limit', String(query.limit));
+    if (query.cursor) params.set('cursor', query.cursor);
+    if (query.level) params.set('level', query.level);
+    if (query.type) params.set('type', query.type);
+    if (query.q) params.set('q', query.q);
+    if (query.sort) params.set('sort', query.sort);
+
+    const path = `/verifiers/me/queue${params.toString() ? `?${params.toString()}` : ''}`;
+    const res = await callApi(path);
+    if (res.status === 401) throw new VerifierAuthError();
+    if (!res.ok) throw new Error(await readErrorMessage(res, 'Could not load verifier queue'));
+
+    const body = (await res.json().catch(() => null)) as { data?: unknown } | null;
+    return verifierQueuePageSchema.parse(body?.data);
+  }
+
+  /** POST /skill-evidence/{id}/claim */
+  async claimEvidence(evidenceId: string): Promise<SkillEvidenceView> {
+    if (!evidenceId || !evidenceId.trim()) throw new Error('Evidence id is required');
+
+    const res = await callApi(`/skill-evidence/${encodeURIComponent(evidenceId.trim())}/claim`, {
+      method: 'POST',
+    });
+
+    if (res.status === 401) throw new VerifierAuthError();
+    if (!res.ok) throw new Error(await readErrorMessage(res, 'Could not claim evidence'));
+
+    const body = (await res.json().catch(() => null)) as { data?: unknown } | null;
+    return skillEvidenceViewSchema.parse(body?.data);
+  }
+
+  /** POST /skill-evidence/{id}/decision */
+  async decideEvidence(evidenceId: string, input: SkillEvidenceDecisionInput): Promise<SkillEvidenceView> {
+    if (!evidenceId || !evidenceId.trim()) throw new Error('Evidence id is required');
+
+    const payload = skillEvidenceDecisionSchema.parse(input);
+
+    const res = await callApi(`/skill-evidence/${encodeURIComponent(evidenceId.trim())}/decision`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    if (res.status === 401) throw new VerifierAuthError();
+    if (!res.ok) throw new Error(await readErrorMessage(res, 'Could not decide evidence'));
+
+    const body = (await res.json().catch(() => null)) as { data?: unknown } | null;
+    return skillEvidenceViewSchema.parse(body?.data);
+  }
+
+  /** POST /student-verifications/{id}/decision */
+  async decideStudentVerification(
+    verificationId: string,
+    input: StudentVerificationDecisionInput,
+  ): Promise<StudentVerificationView> {
+    if (!verificationId || !verificationId.trim()) throw new Error('Verification id is required');
+
+    const payload = verificationDecisionSchema.parse(input);
+
+    const res = await callApi(`/student-verifications/${encodeURIComponent(verificationId.trim())}/decision`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    if (res.status === 401 || res.status === 403) throw new AdminAuthError();
+    if (!res.ok) throw new Error(await readErrorMessage(res, 'Could not decide student verification'));
+
+    const body = (await res.json().catch(() => null)) as { data?: unknown } | null;
+    return studentVerificationSchema.parse(body?.data);
+  }
+
+  /** POST /student-verifications/{id}/revocation */
+  async revokeStudentVerification(verificationId: string, input: VerificationRevocationInput): Promise<StudentVerificationView> {
+    if (!verificationId || !verificationId.trim()) throw new Error('Verification id is required');
+
+    const payload = verificationRevocationSchema.parse(input);
+
+    const res = await callApi(`/student-verifications/${encodeURIComponent(verificationId.trim())}/revocation`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    if (res.status === 401 || res.status === 403) throw new AdminAuthError();
+    if (!res.ok) throw new Error(await readErrorMessage(res, 'Could not revoke student verification'));
+
+    const body = (await res.json().catch(() => null)) as { data?: unknown } | null;
+    return studentVerificationSchema.parse(body?.data);
   }
 }
 

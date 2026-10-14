@@ -23,6 +23,9 @@ export function VerificationContent() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadedMessage, setUploadedMessage] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     setUser(getStoredUser());
@@ -67,7 +70,10 @@ export function VerificationContent() {
     if (!e.target.files || !e.target.files[0]) return;
     const file = e.target.files[0];
     setIsSubmitting(true);
-    setUploadedMessage('Đang tải lên tài liệu xác minh sinh viên...');
+    setUploadedMessage(null);
+    setUploadError(null);
+    setUploadProgress(0);
+
     try {
       // 1. Request upload target from backend
       const docRes = await callApi('/student-verifications/documents', {
@@ -79,13 +85,49 @@ export function VerificationContent() {
         }),
       });
 
-      let documentId = `doc-${Date.now()}`;
-      if (docRes.ok) {
-        const target = await unwrapEnvelope<DocumentUploadTargetView>(docRes);
-        documentId = target.documentId;
+      if (!docRes.ok) {
+        const err = (await docRes.json().catch(() => ({}))) as { message?: string };
+        throw new Error(err.message || 'Could not request upload target');
       }
 
-      // 2. Submit student verification
+      const target = await unwrapEnvelope<DocumentUploadTargetView>(docRes);
+      const { documentId, uploadUrl } = target;
+
+      // 2. PUT raw file bytes to the pre-signed uploadUrl (no auth header)
+      setIsUploading(true);
+      setUploadProgress(0);
+
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', uploadUrl);
+        // Do not set authorization header — pre-signed URL should be used without bearer token.
+        if (file.type) {
+          try {
+            xhr.setRequestHeader('content-type', file.type);
+          } catch {
+            // some environments disallow setting content-type on presigned PUT, ignore
+          }
+        }
+        xhr.upload.onprogress = (ev) => {
+          if (ev.lengthComputable) {
+            const p = Math.round((ev.loaded / ev.total) * 100);
+            setUploadProgress(p);
+          }
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            reject(new Error(`Upload failed with status ${xhr.status}`));
+          }
+        };
+        xhr.onerror = () => reject(new Error('Network error while uploading file'));
+        xhr.send(file);
+      });
+
+      setIsUploading(false);
+
+      // 3. Only after successful PUT, create the verification record
       const submitRes = await callApi('/student-verifications', {
         method: 'POST',
         body: JSON.stringify({
@@ -103,16 +145,19 @@ export function VerificationContent() {
         const err = (await submitRes.json().catch(() => ({}))) as { message?: string };
         setUploadedMessage(`Thông báo: ${err.message || 'Hồ sơ đã được tiếp nhận.'}`);
       }
+
       setTimeout(() => {
         setIsUploadOpen(false);
       }, 3000);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      setUploadedMessage(`Đã tiếp nhận tệp: ${file.name}. Ban thư ký đang đối soát hồ sơ.`);
-      setTimeout(() => {
-        setIsUploadOpen(false);
-      }, 2500);
+      // If upload failed, never call POST /student-verifications — we ensure that by sequencing
+      const message = err instanceof Error ? err.message : String(err);
+      setUploadError(message || 'Upload failed');
+      setUploadedMessage(null);
+      // do not close immediately so user can see the error
     } finally {
+      setIsUploading(false);
       setIsSubmitting(false);
     }
   };
@@ -313,7 +358,23 @@ export function VerificationContent() {
                       className="block w-full text-xs text-slate-500 file:mr-3 file:rounded-full file:border-0 file:bg-emerald-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-emerald-700 disabled:opacity-50"
                     />
                   </div>
-                  {uploadedMessage && (
+                  {isUploading && (
+                    <div className="mt-2">
+                      <div className="w-full rounded-full bg-slate-200 h-2 overflow-hidden">
+                        <div
+                          className="h-2 bg-emerald-600"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-slate-600 mt-1">Đang tải lên: {uploadProgress}%</p>
+                    </div>
+                  )}
+
+                  {uploadError && (
+                    <p className="text-xs font-semibold text-red-700">{uploadError}</p>
+                  )}
+
+                  {uploadedMessage && !uploadError && (
                     <p className="text-xs font-semibold text-emerald-800">{uploadedMessage}</p>
                   )}
                 </div>
