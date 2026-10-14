@@ -5,6 +5,7 @@ import { MIGRATIONS_TABLE } from '../../../../../../shared/messaging/constants';
 import { CreateModuleTables1791072000000 } from './migrations/1791072000000-CreateModuleTables';
 import { CreateWalletTopUpTables1791072000001 } from './migrations/1791072000001-CreateWalletTopUpTables';
 import { AddSettlementIdempotency1791072000002 } from './migrations/1791072000002-AddSettlementIdempotency';
+import { AddTopUpSettlementColumns1791072000003 } from './migrations/1791072000003-AddTopUpSettlementColumns';
 import { SCHEMA } from './schema';
 
 /** One connection pool per module schema (ARCHITECTURE.md §5). */
@@ -23,6 +24,7 @@ export function createModuleDataSource(config: ApiConfig, schema: string = SCHEM
       CreateModuleTables1791072000000,
       CreateWalletTopUpTables1791072000001,
       AddSettlementIdempotency1791072000002,
+      AddTopUpSettlementColumns1791072000003,
     ],
     migrationsTableName: MIGRATIONS_TABLE,
     synchronize: false,

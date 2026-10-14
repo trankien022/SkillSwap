@@ -11,8 +11,9 @@ export interface InitiatePaymentResult {
 }
 
 /**
- * Outbound port for the payment provider. The MVP ships a mock adapter
- * (ADR-017); a real vendor swaps this adapter only.
+ * Outbound port for the payment provider. The adapter behind it is the SePay
+ * Payment Gateway (ADR-033); Sandbox and Production differ only by
+ * configuration, and a further vendor swap replaces this adapter alone.
  */
 export interface PaymentGateway {
   readonly provider: string;

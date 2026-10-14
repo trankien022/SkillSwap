@@ -19,5 +19,5 @@ All routes are prefixed with `/api`. Authenticated routes need `Authorization: B
 | [schedule](./schedule.md) | 2 | Schedule module lifecycle probe. |
 | [skill-verification](./skill-verification.md) | 10 | Proving a specific skill at a level (FR-003/FR-004/FR-018, ADR-026/ADR-027/ADR-028) |
 | [student-verification](./student-verification.md) | 7 | Proving a learner is a real student (FR-002/FR-019, ADR-023/ADR-025) |
-| [wallet](./wallet.md) | 4 | Money in and out (FR-008/FR-010, ADR-017/ADR-022) |
+| [wallet](./wallet.md) | 5 | Money in and out (FR-008/FR-010, ADR-033/ADR-022) |
 | [wallet-ledger](./wallet-ledger.md) | 2 | Wallet ledger module lifecycle probe. |

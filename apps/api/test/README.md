@@ -13,7 +13,11 @@ end to end against real infrastructure:
 - **S3/MinIO** (optional; `docker compose up -d minio minio-init`) — the S3 spec
   uploads to the real bucket via the API's pre-signed URL and **self-skips**
   when no S3 endpoint is reachable. Objects persist in the `minio-data` volume.
-- **Payment** is the mock gateway (per ADR-017).
+- **Payment** needs no external service: the specs post a **SePay IPN body** directly
+  to `POST /api/wallet/top-ups/callback` and let the wallet settle it (ADR-033). The
+  harness also replaces the outbound checkout redirect with a stub, so no live call
+  to SePay is made and the suite runs offline. The IPN receiver, the settlement and
+  the ledger effects stay real.
 
 ## Running
 

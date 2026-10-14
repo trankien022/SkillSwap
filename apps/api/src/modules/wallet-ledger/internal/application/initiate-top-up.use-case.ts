@@ -1,6 +1,6 @@
-import { randomUUID } from 'node:crypto';
-import type { TopUpIntentView } from '@skillswap/contracts';
+import type { TopUpIntentCreated } from '@skillswap/contracts';
 import { vndToCredits } from '../domain/wallet';
+import { generateInvoiceNumber } from '../domain/invoice-number';
 import type { PaymentGateway } from './port/out/payment-gateway';
 import type { TopUpIntentRepository } from './port/out/top-up-intent-repository';
 import type { InitiateTopUpInput, InitiateTopUpPort } from './port/in/initiate-top-up';
@@ -12,13 +12,15 @@ export class InitiateTopUpUseCase implements InitiateTopUpPort {
     private readonly gateway: PaymentGateway,
   ) {}
 
-  async execute(input: InitiateTopUpInput): Promise<TopUpIntentView> {
+  async execute(input: InitiateTopUpInput): Promise<TopUpIntentCreated> {
     const amountCredits = vndToCredits(input.amountVnd);
-    const providerRef = randomUUID();
+    // ADR-033: the invoice number is the `provider_ref` and the IPN's only
+    // correlation key, so it is generated here rather than by the adapter.
+    const providerRef = generateInvoiceNumber();
     const payment = await this.gateway.initiateTopUp({
       providerRef,
       amountVnd: input.amountVnd,
-      description: 'SkillSwap wallet top-up',
+      description: `SkillSwap wallet top-up ${providerRef}`,
     });
     const intent = await this.intents.create({
       ownerId: input.ownerId,
@@ -36,6 +38,5 @@ export class InitiateTopUpUseCase implements InitiateTopUpPort {
       amountCredits: intent.amountCredits,
       status: intent.status,
       paymentUrl: payment.paymentUrl,
-    };
-  }
+    };  }
 }

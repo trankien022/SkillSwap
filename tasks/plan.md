@@ -16,12 +16,12 @@ Giả định resources là đối tượng nghiệp vụ có dữ liệu/API/m�
 
 - Mobile dùng Expo + Expo Router với HTTP integration qua Gateway, session an toàn, dashboard learner, marketplace, lịch, ví, xác minh, kỹ năng, teaching, room access, rating và notifications.
 - 30/30 method + route template trong ma trận có backend handler, contract, mobile adapter và caller UI. `tasks/todo.md` ghi rõ phần native/runtime acceptance còn mở.
-- Top-up dùng mock provider (ADR-017), không phải cổng thanh toán thật. Đã thêm harness ký callback HMAC tại `scripts/mock-topup-callback.mjs`; sau khi app tạo intent, chạy trên Mac `node --env-file=.env scripts/mock-topup-callback.mjs --providerRef=<providerRef> --amountVnd=<amountVnd> --status=settled`. Secret chỉ đọc từ `.env`, không nhập vào app hoặc commit. Harness chưa được chạy trên intent/backend runtime trong checkpoint này.
+- Top-up **không còn dùng mock provider**. **Cập nhật 14/10/2026:** FR-008 nay chạy qua **SePay Payment Gateway** (hosted checkout + IPN); `scripts/mock-topup-callback.mjs` và mock gateway đã bị xoá, xem ADR-033 và `docs/runbooks/sepay-ngrok-local-demo.md`. Đoạn dưới chỉ còn giá trị lịch sử: ~~Top-up dùng mock provider (ADR-017), không phải cổng thanh toán thật. Đã thêm harness ký callback HMAC tại `scripts/mock-topup-callback.mjs`; sau khi app tạo intent, chạy trên Mac `node --env-file=.env scripts/mock-topup-callback.mjs --providerRef=<providerRef> --amountVnd=<amountVnd> --status=settled`. Secret chỉ đọc từ `.env`, không nhập vào app hoặc commit. Harness chưa được chạy trên intent/backend runtime trong checkpoint này.~~
 - Jitsi có quyết định self-hosted JWT (ADR-020); endpoint room access tồn tại không chứng minh cuộc gọi trên điện thoại hoạt động. Cần spike mạng/TLS/mic/camera sớm.
 - Inbox bền vững và APIs đăng ký/hủy thiết bị đã có; một số sự kiện xác minh/booking/wallet được ghi vào inbox. Đã thêm Expo push dispatcher, leased delivery worker, ticket/receipt polling/retry và mobile tap routing; migration mới chưa apply và remote push chưa được runtime nghiệm thu do thiếu EAS/Firebase config. Class-start reminder vẫn backlog.
 - Role là `user | verifier | admin` (ADR-030). Cùng một `user` học và dạy; khả năng dạy phụ thuộc xác minh và approved skills. Không tạo role teacher/learner.
 
-Phạm vi checkpoint này thu hẹp nghiệm thu còn ba luồng nghiệp vụ chạy được, ≥5 resources có dữ liệu lưu thật, 20–30 route có request evidence và một scenario remote push booking cancellation. Các số lượng source-level không được xem là runtime acceptance. Payment dùng mock provider theo ADR-017; Android upload cần xác minh bytes đọc lại được từ MinIO. Reminder 30 phút, Jitsi end-to-end, rating readback đầy đủ và iOS acceptance tiếp tục ở backlog.
+Phạm vi checkpoint này thu hẹp nghiệm thu còn ba luồng nghiệp vụ chạy được, ≥5 resources có dữ liệu lưu thật, 20–30 route có request evidence và một scenario remote push booking cancellation. Các số lượng source-level không được xem là runtime acceptance. **Cập nhật 14/10/2026:** payment dùng mock provider theo ADR-017 không còn đúng — FR-008 nay là SePay Payment Gateway (ADR-033). Android upload cần xác minh bytes đọc lại được từ MinIO. Reminder 30 phút, Jitsi end-to-end, rating readback đầy đủ và iOS acceptance tiếp tục ở backlog.
 
 Các nhận định trên là kiểm tra source, chưa chạy backend/devices hoặc `pnpm verify` trong bước lập plan.
 
@@ -179,7 +179,7 @@ Checkpoint mỗi phase: focused tests cho behavior đổi + build/typecheck/arch
 | Push optional trong SRS, rubric bắt buộc | Document scope và ADR trước code; FR-016 vẫn giữ stable ID |
 | Resource/API cách đếm chưa được giải thích | Dùng 30 method+route và entity matrix; xác minh rubric trước tăng CRUD |
 | Credentials/mạng/TLS/Jitsi fail cuối kỳ | Spike phase 0, device build sớm; tiêu chí live call rõ |
-| Top-up mock URL chưa có checkout chạy được | Server-only harness có HMAC; ghi rõ mô phỏng; real provider là increment riêng |
+| Top-up mock URL chưa có checkout chạy được | **Đã giải quyết 14/10/2026:** FR-008 chuyển sang SePay Payment Gateway — hosted checkout thật (ADR-033), không còn mock/harness HMAC. |
 | Notification boundary / event thiếu | ADR ownership và contracts trước consumer, giữ 7-schema rule |
 | Dashboard count sai vì pagination | Aggregate tại data owner; không lấy length của trang đầu |
 | Publish response không khớp read model | Kiểm tra contract/source; expose approved skill/Teacher public fields qua read projection |

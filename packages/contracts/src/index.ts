@@ -245,7 +245,7 @@ export const meResponseSchema = z.object({
 });
 export type MeResponse = z.infer<typeof meResponseSchema>;
 
-/** FR-008: wallet top-up and callback (ADR-017). Amounts are integer VND. */
+/** FR-008: wallet top-up and callback (ADR-033). Amounts are integer VND. */
 export const topUpRequestSchema = z.object({
   amountVnd: z.number().int().positive().max(100_000_000),
 });
@@ -263,12 +263,77 @@ export const topUpIntentSchema = z.object({
 });
 export type TopUpIntentView = z.infer<typeof topUpIntentSchema>;
 
-export const topUpCallbackSchema = z.object({
-  providerRef: z.string().min(1),
-  amountVnd: z.number().int().positive(),
-  status: z.enum(['settled', 'failed', 'reversed']),
+/**
+ * FR-008 / ADR-033: the pending intent as returned by `POST /wallet/top-ups`.
+ *
+ * `paymentUrl` is required here. It is the SePay hosted checkout returned by that
+ * call, and it is *not* persisted, so only this endpoint can supply it.
+ */
+export const topUpIntentCreatedSchema = topUpIntentSchema.extend({
+  paymentUrl: z.string().min(1),
 });
-export type TopUpCallbackInput = z.infer<typeof topUpCallbackSchema>;
+export type TopUpIntentCreated = z.infer<typeof topUpIntentCreatedSchema>;
+
+/**
+ * FR-008 / ADR-033: the poll result for `GET /wallet/top-ups/:id`.
+ *
+ * Deliberately has **no** `paymentUrl`: the checkout URL carries a SePay-signed
+ * token we cannot re-derive without re-submitting the form, so re-issuing one
+ * here would be a lie. The client already holds the URL from creation; this
+ * endpoint only answers "has it settled yet?". `settledAt`/`paidAmountVnd` are
+ * the provider's own settlement facts, present once an IPN has been applied.
+ */
+export const topUpIntentStatusSchema = topUpIntentSchema
+  .omit({ paymentUrl: true })
+  .extend({
+    paidAmountVnd: z.number().int().nullable(),
+    paidAt: z.string().nullable(),
+  });
+export type TopUpIntentStatusView = z.infer<typeof topUpIntentStatusSchema>;
+
+/**
+ * FR-008 / ADR-033: the SePay Payment Gateway IPN payload.
+ *
+ * Built from real Sandbox deliveries (plan §5a), not the doc sample. SePay is
+ * inconsistent on two points the schema must tolerate:
+ *  - a successful payment arrives as `ORDER_PAID` or `PAYMENT_SUCCESS`;
+ *  - `order_amount` / `transaction_amount` are strings in one delivery and
+ *    numbers in another.
+ * `customer` and `agreement` may be null; `custom_data` is an array or object.
+ */
+export const sepayIpnSchema = z.object({
+  timestamp: z.number().int().optional(),
+  notification_type: z.string().min(1),
+  order: z.object({
+    id: z.string().optional(),
+    order_id: z.string().optional(),
+    order_status: z.string().optional(),
+    order_currency: z.string().optional(),
+    order_amount: z.union([z.string(), z.number()]),
+    order_invoice_number: z.string().min(1),
+    order_description: z.string().optional(),
+    custom_data: z.unknown().optional(),
+  }),
+  transaction: z
+    .object({
+      id: z.string().optional(),
+      payment_method: z.string().optional(),
+      transaction_id: z.string().optional(),
+      transaction_type: z.string().optional(),
+      transaction_date: z.string().optional(),
+      transaction_status: z.string().optional(),
+      transaction_amount: z.union([z.string(), z.number()]).optional(),
+      transaction_currency: z.string().optional(),
+    })
+    .optional(),
+  customer: z.unknown().nullable().optional(),
+  agreement: z.unknown().nullable().optional(),
+});
+export type SepayIpn = z.infer<typeof sepayIpnSchema>;
+
+/** FR-008 / ADR-033: the acknowledgement SePay expects (HTTP 200, this body). */
+export const sepayIpnAckSchema = z.object({ success: z.literal(true) });
+export type SepayIpnAck = z.infer<typeof sepayIpnAckSchema>;
 
 export const walletBalanceSchema = z.object({
   availableCredits: z.number().int(),

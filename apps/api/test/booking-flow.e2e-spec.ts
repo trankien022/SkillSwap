@@ -7,9 +7,11 @@ jest.setTimeout(60_000);
 
 /**
  * End-to-end booking flow against REAL Postgres and REAL RabbitMQ (docker).
- * Payment is the mock gateway. Events cross module boundaries through the
- * outbox relay + consumer, exactly as in production, so assertions poll for the
- * downstream effect rather than reading a synchronous return value.
+ * Payment is the SePay Payment Gateway (ADR-033): the specs post an IPN body
+ * directly, and the harness replaces the outbound checkout redirect with a stub,
+ * so no live call to SePay is made. Events cross module boundaries
+ * through the outbox relay + consumer, exactly as in production, so assertions
+ * poll for the downstream effect rather than reading a synchronous return value.
  *
  * Requires: `docker compose up -d postgres rabbitmq` and `pnpm db:migrate`.
  */
@@ -67,12 +69,12 @@ describe('E2E: book → settle → room → complete → release', () => {
     expect(start.status).toBe(201);
     const providerRef = start.json.providerRef as string;
 
-    // Provider callback settles the wallet. Signature: HMAC over the raw body
-    // with PAYMENT_WEBHOOK_SECRET (the api computes it the same way).
-    const body = { providerRef, amountVnd, status: 'settled' as const };
-    const signature = hmacSignature(JSON.stringify(body), 'dev-webhook-secret');
-    const cb = await api.request('POST', '/api/wallet/top-ups/callback', body, { signature });
+    // ADR-033: the SePay IPN settles the wallet. It carries no secret header,
+    // so the receiver trusts the invoice lookup; the amount arrives as a
+    // string with a fractional part, as on live Sandbox deliveries.
+    const cb = await api.post('/api/wallet/top-ups/callback', sepayIpn(providerRef, amountVnd));
     expect(cb.status).toBe(200);
+    expect(cb.json).toEqual({ success: true });
 
     const balance = await waitFor(async () => {
       const b = await walletRow(harness, learnerId);
@@ -396,14 +398,15 @@ describe('E2E: book → settle → room → complete → release', () => {
     api.actAs(learnerId);
     const start = await api.post('/api/wallet/top-ups', { amountVnd: 50_000 });
     const providerRef = start.json.providerRef as string;
-    const body = { providerRef, amountVnd: 50_000, status: 'settled' as const };
-    const signature = hmacSignature(JSON.stringify(body), 'dev-webhook-secret');
+    const body = sepayIpn(providerRef, 50_000);
 
-    const first = await api.request('POST', '/api/wallet/top-ups/callback', body, { signature });
-    const second = await api.request('POST', '/api/wallet/top-ups/callback', body, { signature });
+    const first = await api.post('/api/wallet/top-ups/callback', body);
+    const second = await api.post('/api/wallet/top-ups/callback', body);
     expect(first.status).toBe(200);
     expect(second.status).toBe(200);
-    expect(second.json.applied).toBe(false); // replay acknowledged, not re-applied
+    // SePay is always acknowledged; the replay is a no-op.
+    expect(first.json).toEqual({ success: true });
+    expect(second.json).toEqual({ success: true });
 
     const balance = await waitFor(async () => {
       const b = await walletRow(harness, learnerId);
@@ -411,11 +414,84 @@ describe('E2E: book → settle → room → complete → release', () => {
     });
     expect(balance.availableCredits).toBe(50);
   });
+
+  describe('GET /api/wallet/top-ups/:id (FR-008 / ADR-033 poll)', () => {
+    it('reports pending, then settled with the provider settlement facts', async () => {
+      api.actAs(learnerId);
+      const start = await api.post('/api/wallet/top-ups', { amountVnd: 80_000 });
+      expect(start.status).toBe(201);
+      const id = start.json.id as string;
+      const providerRef = start.json.providerRef as string;
+
+      const pending = await api.get(`/api/wallet/top-ups/${id}`);
+      expect(pending.status).toBe(200);
+      expect(pending.json.status).toBe('pending');
+      expect(pending.json.paidAmountVnd).toBeNull();
+      // The checkout URL is not persisted, so the poll never re-issues one.
+      expect(pending.json.paymentUrl).toBeUndefined();
+
+      const cb = await api.post('/api/wallet/top-ups/callback', sepayIpn(providerRef, 80_000));
+      expect(cb.status).toBe(200);
+
+      const settled = await waitFor(async () => {
+        const res = await api.get(`/api/wallet/top-ups/${id}`);
+        return res.json.status === 'settled' ? res : null;
+      });
+      expect(settled.json.status).toBe('settled');
+      expect(settled.json.paidAmountVnd).toBe(80_000);
+      expect(settled.json.paidAt).toEqual(expect.any(String));
+    });
+
+    it("hides another owner's intent behind a 404", async () => {
+      api.actAs(learnerId);
+      const start = await api.post('/api/wallet/top-ups', { amountVnd: 30_000 });
+      const id = start.json.id as string;
+
+      api.actAs(teacherId);
+      const foreign = await api.get(`/api/wallet/top-ups/${id}`);
+      expect(foreign.status).toBe(404);
+    });
+
+    it('answers a malformed id with 404, not a 500', async () => {
+      api.actAs(learnerId);
+      const res = await api.get('/api/wallet/top-ups/not-a-uuid');
+      expect(res.status).toBe(404);
+    });
+  });
 });
 
-/** HMAC-SHA256 hex over the raw body (mirrors HmacWebhookSignatureVerifier). */
-function hmacSignature(body: string, secret: string): string {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { createHmac } = require('node:crypto') as typeof import('node:crypto');
-  return createHmac('sha256', secret).update(body).digest('hex');
+/**
+ * A SePay IPN as it arrives on Sandbox (ADR-033, plan §5a): `ORDER_PAID` with
+ * string amounts carrying a fractional part, and no secret header.
+ */
+/**
+ * A SePay IPN as it arrives on Sandbox (ADR-033, plan §5a): `ORDER_PAID` with
+ * string amounts carrying a fractional part, a local-time `transaction_date`,
+ * and no secret header.
+ */
+function sepayIpn(invoiceNumber: string, amountVnd: number): Record<string, unknown> {
+  return {
+    timestamp: Math.floor(Date.now() / 1000),
+    notification_type: 'ORDER_PAID',
+    order: {
+      order_id: `PAY-${invoiceNumber}`,
+      order_status: 'CAPTURED',
+      order_currency: 'VND',
+      order_amount: `${amountVnd}.00`,
+      order_invoice_number: invoiceNumber,
+      order_description: `SkillSwap wallet top-up ${invoiceNumber}`,
+      custom_data: [],
+    },
+    transaction: {
+      payment_method: 'BANK_TRANSFER',
+      transaction_id: `txn-${invoiceNumber}`,
+      transaction_type: 'PAYMENT',
+      transaction_status: 'APPROVED',
+      transaction_amount: String(amountVnd),
+      transaction_currency: 'VND',
+      transaction_date: '2026-10-14 09:30:00',
+    },
+    customer: null,
+    agreement: null,
+  };
 }
