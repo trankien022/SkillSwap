@@ -461,6 +461,53 @@
       "rulesBody": "Khi tính năng được phát hành: số tiền rút không được vượt quá số dư khả dụng. Ngay khi bạn gửi yêu cầu, credits sẽ được chuyển sang trạng thái payout_hold để khóa an toàn trong khi đối soát. Nếu cổng thanh toán từ chối, khoản này sẽ hoàn trả ngay về ví."
     }
   },
+  "Admin": {
+    "verifiers": {
+      "breadcrumb": "Quản trị",
+      "pageTitle": "Quản trị Verifier",
+      "pageSubtitle": "Tạm ngưng hoặc thu hồi tài khoản Verifier. Hành động được áp dụng ngay và ghi nhận vào nhật ký kiểm định.",
+      "formLabel": "Cập nhật trạng thái Verifier",
+      "title": "Thay đổi trạng thái Verifier",
+      "subtitle": "Mỗi lần thay đổi sẽ được lưu lại trong nhật ký kiểm định. Verifier sẽ nhận được thông báo qua email sau khi trạng thái cập nhật.",
+      "accountIdLabel": "Account ID của Verifier",
+      "accountIdHint": "Đường dẫn sâu từ email thông báo hoặc nhật ký kiểm định. Hệ thống chưa có danh sách Verifier.",
+      "statusLabel": "Trạng thái mới",
+      "option": {
+        "active": {
+          "label": "Đang hoạt động",
+          "body": "Có thể nhận yêu cầu thẩm định mới và xử lý các yêu cầu đang chờ."
+        },
+        "suspended": {
+          "label": "Tạm ngưng",
+          "body": "Không nhận yêu cầu mới; các yêu cầu đang chờ vẫn hiển thị nhưng không thể xử lý."
+        },
+        "revoked": {
+          "label": "Thu hồi",
+          "body": "Thu hồi vĩnh viễn. Verifier không thể truy cập hàng đợi thẩm định nữa. Hành động không thể hoàn tác từ giao diện này."
+        }
+      },
+      "applyCta": "Áp dụng",
+      "applying": "Đang áp dụng…",
+      "confirmSuspend": "Tạm ngưng Verifier này? Họ sẽ không nhận được yêu cầu mới cho tới khi bạn kích hoạt lại.",
+      "confirmRevoke": "Thu hồi Verifier này? Hành động này không thể hoàn tác từ giao diện này.",
+      "currentStateTitle": "Trạng thái hiện tại",
+      "currentStateEmpty": "Chưa có dữ liệu. Áp dụng một trạng thái để xem thông tin Verifier.",
+      "currentAccountId": "Account ID",
+      "currentStatus": "Trạng thái",
+      "currentExpertise": "Chuyên môn",
+      "success": "Đã cập nhật trạng thái Verifier.",
+      "notAuthorizedTitle": "Bạn không có quyền truy cập trang này",
+      "notAuthorizedBody": "Trang này chỉ dành cho quản trị viên. Nếu bạn cần truy cập, hãy liên hệ quản trị hệ thống.",
+      "signInTitle": "Cần đăng nhập",
+      "signInBody": "Bạn cần đăng nhập bằng tài khoản quản trị để truy cập trang này.",
+      "loading": "Đang kiểm tra quyền truy cập…",
+      "errors": {
+        "accountIdRequired": "Vui lòng nhập Account ID.",
+        "forbidden": "Bạn không có quyền thực hiện thao tác này. Vui lòng đăng nhập với tài khoản quản trị.",
+        "generic": "Không thể cập nhật trạng thái Verifier. Vui lòng thử lại."
+      }
+    }
+  },
   "Teacher": {
     "nav": {
       "explore": "Khám phá lớp học",
