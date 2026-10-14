@@ -206,14 +206,14 @@
 
 ## 5. Definition of done (mapped từ TASK-03 §7)
 
-- [ ] Phase 0 plan landed.
-- [ ] `POST /verifiers/{accountId}/status` reachable từ admin control (action-by-id + deep link, lý do + limitation đã record).
-- [ ] Không còn `roomCode`/`receiptId` fabricated trên dashboard; live join vẫn chạy end-to-end qua `/bookings/[id]/live`.
-- [ ] Withdrawal screen không còn imply working flow; banner giải thích FR-014 = backend gap.
-- [ ] `SkillSwap-WEB-FE-API-Mapping.md` §3/§4 cập nhật trung thực.
-- [ ] `pnpm verify` xanh.
-- [ ] Không mock data, không compute status local, không replay POST.
-- [ ] Commits theo `type(scope): msg`, một cho mỗi phase.
+- [x] Phase 0 plan landed (`3bec7ee`).
+- [x] `POST /verifiers/{accountId}/status` reachable từ admin control (action-by-id + deep link, lý do + limitation đã record). Route: `/[locale]/admin/verifiers/[accountId]` (`d2760d0`).
+- [x] Không còn `roomCode`/`receiptId` fabricated trên dashboard; live join vẫn chạy end-to-end qua `/bookings/[id]/live` (`1b04752`).
+- [x] Withdrawal screen không còn imply working flow; banner giải thích backend gap (`7f5b399`).
+- [x] `tasks/taskbyrole/TASKS-INDEX.md` §2 rows #8, #10, #11 → ✅ (record ở đây vì `SkillSwap-WEB-FE-API-Mapping.md` tham chiếu trong index không tồn tại trong repo — không tự tạo file mapping mới theo AGENTS.md).
+- [ ] `pnpm verify` xanh tổng thể (sẽ chạy cuối).
+- [x] Không mock data, không compute status local, không replay POST (TASK-03 không touch POST/auto-replay).
+- [x] Commits theo `type(scope): msg`, một cho mỗi phase: `3bec7ee` (docs), `d2760d0` (feat), `1b04752` (fix), `7f5b399` (fix).
 
 ---
 
