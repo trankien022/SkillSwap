@@ -75,6 +75,10 @@ export const myBookingsStyles = StyleSheet.create({
     gap: spacing.sm,
     minHeight: 44,
   },
+  cardBody: {
+    gap: spacing.sm,
+    borderRadius: radius.control,
+  },
   cardPressed: {
     backgroundColor: colors.mist,
   },

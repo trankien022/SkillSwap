@@ -445,77 +445,85 @@ export function MyBookingsView() {
         coordinatorState.items.map((item) => {
           const isPendingHold = item.state === 'pending' && Boolean(item.expiresAt);
           return (
-            <Pressable
-              key={item.bookingId}
-              style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-              onPress={() => handleCardPress(item.classId)}
-              accessibilityRole="button"
-              accessibilityLabel={`${item.classSummary.description}, ${getBookingStatusLabel(item.state)}`}
-            >
-              {/* Card Header: Description & Booking Status */}
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle} numberOfLines={2}>
-                  {item.classSummary.description}
-                </Text>
-                <View style={styles.statusRow}>
-                  <StatusPill
-                    tone={getBookingStatusTone(item.state)}
-                    label={getBookingStatusLabel(item.state)}
-                  />
-                  {item.classSummary.classState ? (
+            <View key={item.bookingId} style={styles.card}>
+              {/* Tappable Card Body (navigates to class details) */}
+              <Pressable
+                onPress={() => handleCardPress(item.classId)}
+                accessibilityRole="button"
+                accessibilityLabel={`${item.classSummary.description}, ${getBookingStatusLabel(item.state)}`}
+                style={({ pressed }) => [styles.cardBody, pressed && styles.cardPressed]}
+              >
+                {/* Card Header: Description & Booking Status */}
+                <View style={styles.cardHeader}>
+                  <Text style={styles.cardTitle} numberOfLines={2}>
+                    {item.classSummary.description}
+                  </Text>
+                  <View style={styles.statusRow}>
                     <StatusPill
-                      tone={getClassStatusTone(item.classSummary.classState)}
-                      label={getClassStatusLabel(item.classSummary.classState)}
+                      tone={getBookingStatusTone(item.state)}
+                      label={getBookingStatusLabel(item.state)}
                     />
-                  ) : null}
+                    {item.classSummary.classState ? (
+                      <StatusPill
+                        tone={getClassStatusTone(item.classSummary.classState)}
+                        label={getClassStatusLabel(item.classSummary.classState)}
+                      />
+                    ) : null}
+                  </View>
                 </View>
-              </View>
 
-              {/* Teacher Display Name */}
-              <View style={styles.metaRow}>
-                <Text style={styles.metaLabel}>
-                  {t('MyBookings.teacherLabel', { name: item.classSummary.teacherDisplayName })}
-                </Text>
-              </View>
+                {/* Teacher Display Name */}
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>
+                    {t('MyBookings.teacherLabel', { name: item.classSummary.teacherDisplayName })}
+                  </Text>
+                </View>
 
-              {/* Starts At and Duration */}
-              <View style={styles.metaRow}>
-                <Text style={styles.metaLabel}>
-                  {t('MyBookings.startsAtLabel', {
-                    when: formatStartsAt(item.classSummary.startsAt),
-                  })}
-                </Text>
-                <Text style={styles.metaLabel}>•</Text>
-                <Text style={styles.metaLabel}>
-                  {t('MyBookings.durationLabel', {
-                    minutes: item.classSummary.durationMinutes,
-                  })}
-                </Text>
-              </View>
-
-              {/* Tuition / Price in Credits */}
-              <View style={styles.metaRow}>
-                <Text style={styles.priceText}>
-                  {t('MyBookings.priceCreditsLabel', { credits: item.priceCredits })}
-                </Text>
-              </View>
-
-              {/* Pending Expiry Timestamp Notice */}
-              {isPendingHold && item.expiresAt ? (
-                <View style={styles.expiryNotice}>
-                  <Text style={styles.expiryNoticeText}>
-                    {t('MyBookings.expiresAtNotice', {
-                      time: formatExpiryTime(item.expiresAt),
+                {/* Starts At and Duration */}
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>
+                    {t('MyBookings.startsAtLabel', {
+                      when: formatStartsAt(item.classSummary.startsAt),
+                    })}
+                  </Text>
+                  <Text style={styles.metaLabel}>•</Text>
+                  <Text style={styles.metaLabel}>
+                    {t('MyBookings.durationLabel', {
+                      minutes: item.classSummary.durationMinutes,
                     })}
                   </Text>
                 </View>
-              ) : null}
+
+                {/* Tuition / Price in Credits */}
+                <View style={styles.metaRow}>
+                  <Text style={styles.priceText}>
+                    {t('MyBookings.priceCreditsLabel', { credits: item.priceCredits })}
+                  </Text>
+                </View>
+
+                {/* Pending Expiry Timestamp Notice */}
+                {isPendingHold && item.expiresAt ? (
+                  <View style={styles.expiryNotice}>
+                    <Text style={styles.expiryNoticeText}>
+                      {t('MyBookings.expiresAtNotice', {
+                        time: formatExpiryTime(item.expiresAt),
+                      })}
+                    </Text>
+                  </View>
+                ) : null}
+              </Pressable>
 
               {/* Card Footer: Real Route Link & Actions */}
               <View style={styles.cardFooter}>
-                <Text style={styles.viewDetailText}>
-                  {t('MyBookings.viewClass')} →
-                </Text>
+                <Pressable
+                  onPress={() => handleCardPress(item.classId)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${t('MyBookings.viewClass')}: ${item.classSummary.description}`}
+                >
+                  <Text style={styles.viewDetailText}>
+                    {t('MyBookings.viewClass')} →
+                  </Text>
+                </Pressable>
                 <View style={styles.cardFooterActions}>
                   {item.state === 'confirmed' ? (
                     <Pressable
@@ -579,7 +587,7 @@ export function MyBookingsView() {
                 {ratingError && <Text style={styles.errorText}>{t('MyBookings.ratingError')}</Text>}
                 <Pressable style={styles.loadMoreButton} disabled={!ratingComment.trim() || ratingBookingId !== null} onPress={() => void submitRating(item.bookingId)} accessibilityRole="button"><Text style={styles.loadMoreText}>{ratingBookingId === item.bookingId ? t('Common.loading') : t('MyBookings.submitRating')}</Text></Pressable>
               </View> : item.hasRated ? <Text style={styles.metaLabel}>{t('MyBookings.alreadyRated')}</Text> : null}
-            </Pressable>
+            </View>
           );
         })
       )}
