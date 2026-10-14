@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import type {
@@ -173,23 +172,10 @@ function UpcomingCard({
           </span>
         </div>
         <CardBody booking={booking} tCard={tCard} startText={startText} />
-        {booking.roomCode && (
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-mist px-4 py-2.5 text-sm text-ink-soft">
-            <div className="flex items-center gap-2 text-xs">
-              <LinkIcon className="h-4 w-4 text-ink" />
-              <span>
-                Room:{' '}
-                <code className="rounded border border-slate-200 bg-surface px-1.5 py-0.5 font-mono text-xs font-bold text-ink">
-                  {booking.roomCode}
-                </code>
-              </span>
-            </div>
-            <span className="inline-flex items-center gap-1 rounded-md border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800">
-              <PolicyIcon className="h-3.5 w-3.5 text-emerald-600" />
-              <span>{tCard('ruleTitle')}</span>
-            </span>
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-mist px-4 py-2.5 text-xs text-ink-soft">
+          <LinkIcon className="h-4 w-4 text-ink" />
+          <span>{tCard('roomUnavailable')}</span>
+        </div>
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -282,13 +268,7 @@ function CompletedCard({
               className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-mist px-3 py-1.5 text-sm font-semibold text-ink-soft transition-colors hover:bg-surface"
             >
               <ReceiptIcon className="h-4 w-4" />
-              <span>
-                {booking.receiptId
-                  ? tCard('receiptId', {
-                      id: booking.receiptId.split('-').slice(-1)[0] ?? booking.receiptId,
-                    })
-                  : tCard('receipt')}
-              </span>
+              <span>{tCard('receiptUnavailable')}</span>
             </button>
             <button
               type="button"
@@ -697,7 +677,6 @@ function LiveCard({
     hour: '2-digit',
     minute: '2-digit',
   });
-  const [copied, setCopied] = useState(false);
 
   return (
     <article className="relative overflow-hidden rounded-2xl border-2 border-emerald-500 bg-surface p-6 shadow-md transition-shadow">
@@ -759,27 +738,7 @@ function LiveCard({
         </div>
 
         <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
-          {booking.roomCode && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-ink-soft">Mã phòng:</span>
-              <code className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-xs font-bold text-slate-900">
-                {booking.roomCode}
-              </code>
-              <button
-                type="button"
-                onClick={() => {
-                  if (typeof navigator !== 'undefined' && navigator.clipboard) {
-                    navigator.clipboard.writeText(booking.roomCode ?? '');
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
-                  }
-                }}
-                className="text-xs text-emerald-700 hover:text-emerald-800 font-medium"
-              >
-                {copied ? 'Đã sao chép!' : 'Sao chép'}
-              </button>
-            </div>
-          )}
+          <span className="text-xs text-ink-soft">{tCard('roomUnavailable')}</span>
 
           <div className="flex items-center gap-2">
             <Link

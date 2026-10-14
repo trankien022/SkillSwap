@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { callApi, unwrapEnvelope } from '../../../../lib/api-client';
 import { Navbar } from '../../../../components/navbar';
 import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
 
 export default function WithdrawalPage() {
+  const tUnavailable = useTranslations('Wallet.withdrawal');
   const [balance, setBalance] = useState<WalletBalanceView | null>(null);
   const [me, setMe] = useState<MeResponse | null>(null);
   const [amount, setAmount] = useState(100);
@@ -290,21 +292,39 @@ export default function WithdrawalPage() {
                 </div>
               </div>
 
-              {/* 5. Primary Action */}
+              {/* 5. Primary Action — disabled until FR-014 ships (no backend endpoint yet). */}
               <div className="space-y-3 pt-2">
-                <button type="button" className="w-full py-4 px-6 rounded-full bg-emerald-600 text-white text-base font-bold hover:bg-emerald-700 active:scale-[0.99] transition-all flex items-center justify-center gap-3">
-                  <span className="material-symbols-outlined text-[20px]">payments</span>
-                  Xác nhận Yêu cầu Rút {(amount * 1000).toLocaleString('vi-VN')} VNĐ
+                <div
+                  role="status"
+                  aria-live="polite"
+                  data-testid="withdrawal-unavailable-notice"
+                  className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+                >
+                  <span className="material-symbols-outlined text-[20px] flex-shrink-0 mt-0.5" aria-hidden="true">info</span>
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold leading-snug">{tUnavailable('notice')}</p>
+                    <p className="text-[13px] leading-relaxed text-amber-800">
+                      {tUnavailable('body')}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled
+                  aria-disabled="true"
+                  className="w-full cursor-not-allowed py-4 px-6 rounded-full bg-slate-200 text-slate-500 text-base font-bold flex items-center justify-center gap-3"
+                >
+                  <span className="material-symbols-outlined text-[20px]" aria-hidden="true">payments</span>
+                  {tUnavailable('cta')}
                 </button>
                 <div className="p-3.5 bg-slate-100 rounded-xl flex items-start gap-3 border border-slate-200">
                   <span className="material-symbols-outlined text-slate-500 text-[20px] flex-shrink-0 mt-0.5">info</span>
                   <div className="space-y-1">
                     <p className="text-xs text-slate-900 font-semibold leading-snug">
-                      Quy tắc nghiệp vụ Payout &amp; Bảo vệ Escrow (BR-058, BR-062):
+                      {tUnavailable('rulesTitle')}
                     </p>
                     <p className="text-[13px] text-slate-600 leading-relaxed">
-                      Số tiền rút không được vượt quá số dư khả dụng (1.260 Credits). Ngay khi bạn gửi yêu cầu, {amount} Credits sẽ được tự động chuyển sang trạng thái
-                      <span className="font-mono text-emerald-700 font-semibold mx-1">payout_hold</span> để khóa an toàn trong khi đối soát Napas. Nếu ngân hàng từ chối, khoản này sẽ hoàn trả ngay về ví.
+                      {tUnavailable('rulesBody')}
                     </p>
                   </div>
                 </div>
