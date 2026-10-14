@@ -452,6 +452,15 @@
       "confirm": "Xác nhận báo vắng mặt"
     }
   },
+  "Wallet": {
+    "withdrawal": {
+      "notice": "Tính năng rút tiền chưa khả dụng",
+      "body": "Hệ thống đang hoàn thiện quy trình rút tiền qua cổng payout. Backend chưa phát hành tính năng này, nên bạn không thể gửi yêu cầu rút vào lúc này. Vui lòng quay lại khi backend phát hành.",
+      "cta": "Chưa khả dụng",
+      "rulesTitle": "Quy tắc nghiệp vụ Payout & Bảo vệ Escrow",
+      "rulesBody": "Khi tính năng được phát hành: số tiền rút không được vượt quá số dư khả dụng. Ngay khi bạn gửi yêu cầu, credits sẽ được chuyển sang trạng thái payout_hold để khóa an toàn trong khi đối soát. Nếu cổng thanh toán từ chối, khoản này sẽ hoàn trả ngay về ví."
+    }
+  },
   "Teacher": {
     "nav": {
       "explore": "Khám phá lớp học",
