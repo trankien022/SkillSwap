@@ -99,6 +99,16 @@ export function ProfileView() {
         <Pressable style={styles.linkButton} onPress={() => router.push('/(features)/notifications')} accessibilityRole="button">
           <Text style={styles.linkButtonText}>{t('Profile.notifications')}</Text>
         </Pressable>
+        {user?.role === 'verifier' ? (
+          <Pressable
+            style={styles.linkButton}
+            onPress={() => router.push('/(features)/verifier' as never)}
+            accessibilityRole="button"
+            accessibilityLabel={t('Profile.verifierQueue')}
+          >
+            <Text style={styles.linkButtonText}>{t('Profile.verifierQueue')}</Text>
+          </Pressable>
+        ) : null}
       </SurfaceCard>
 
       {/* 2. Language Selection Card */}
