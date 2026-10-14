@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -15,6 +17,7 @@ import { colors } from '@/design/tokens';
 import { MyBookingsGateway } from '@/infrastructure/http/my-bookings-gateway';
 import { RoomAccessGateway } from '@/infrastructure/http/room-access-gateway';
 import { RatingGateway } from '@/infrastructure/http/rating-gateway';
+import { TeachingGateway } from '@/infrastructure/http/teaching-gateway';
 import {
   MyBookingsCoordinator,
   type BookingFilter,
@@ -23,7 +26,7 @@ import {
 import { myBookingsStyles as styles } from './my-bookings-styles';
 import { useSession } from './session-context';
 import { StatusPill, type PillTone } from './status-pill';
-import { ScreenScroll } from './primitives';
+import { FeedbackBanner, ScreenScroll } from './primitives';
 
 /**
  * Real authenticated learner bookings view (Route 22, FR-007, FR-009).
@@ -49,6 +52,10 @@ export function MyBookingsView() {
   const [ratingStars, setRatingStars] = useState(5);
   const [ratingComment, setRatingComment] = useState('');
   const [ratingError, setRatingError] = useState(false);
+  const [reportingNoShowId, setReportingNoShowId] = useState<string | null>(null);
+  const [noShowNotices, setNoShowNotices] = useState<Record<string, string>>({});
+  const [noShowSuccesses, setNoShowSuccesses] = useState<Record<string, string>>({});
+  const [noShowErrors, setNoShowErrors] = useState<Record<string, string>>({});
 
   const isMountedRef = useRef(true);
   const [coordinatorState, setCoordinatorState] = useState<MyBookingsState>({
@@ -240,6 +247,77 @@ export function MyBookingsView() {
     } catch { setRatingError(true); setRatingBookingId(null); }
   };
 
+  const handleReportNoShow = async (bookingId: string) => {
+    if (!gatewayClient || reportingNoShowId !== null) return;
+    setReportingNoShowId(bookingId);
+    setNoShowNotices((prev) => {
+      const next = { ...prev };
+      delete next[bookingId];
+      return next;
+    });
+    setNoShowSuccesses((prev) => {
+      const next = { ...prev };
+      delete next[bookingId];
+      return next;
+    });
+    setNoShowErrors((prev) => {
+      const next = { ...prev };
+      delete next[bookingId];
+      return next;
+    });
+    try {
+      const teachingGateway = new TeachingGateway(gatewayClient);
+      const result = await teachingGateway.reportTeacherNoShow(bookingId);
+      if (result.cancelled) {
+        setNoShowSuccesses((prev) => ({
+          ...prev,
+          [bookingId]: t('MyBookings.noShowSuccess'),
+        }));
+        await coordinator?.reload();
+      } else {
+        setNoShowNotices((prev) => ({
+          ...prev,
+          [bookingId]: t('MyBookings.noShowRefused'),
+        }));
+      }
+    } catch {
+      setNoShowErrors((prev) => ({
+        ...prev,
+        [bookingId]: t('MyBookings.noShowError'),
+      }));
+    } finally {
+      if (isMountedRef.current) {
+        setReportingNoShowId(null);
+      }
+    }
+  };
+
+  const confirmReportNoShow = (bookingId: string) => {
+    const title = t('MyBookings.noShowConfirmTitle');
+    const message = t('MyBookings.noShowConfirmMessage');
+
+    if (Platform.OS === 'web') {
+      const ok = typeof window !== 'undefined' ? window.confirm(`${title}\n\n${message}`) : true;
+      if (ok) {
+        void handleReportNoShow(bookingId);
+      }
+      return;
+    }
+
+    Alert.alert(
+      title,
+      message,
+      [
+        { text: t('Common.cancel'), style: 'cancel' },
+        {
+          text: t('MyBookings.noShowConfirmBtn'),
+          style: 'destructive',
+          onPress: () => void handleReportNoShow(bookingId),
+        },
+      ],
+    );
+  };
+
   return (
     <ScreenScroll
       contentContainerStyle={styles.container}
@@ -379,81 +457,140 @@ export function MyBookingsView() {
         coordinatorState.items.map((item) => {
           const isPendingHold = item.state === 'pending' && Boolean(item.expiresAt);
           return (
-            <Pressable
-              key={item.bookingId}
-              style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-              onPress={() => handleCardPress(item.classId)}
-              accessibilityRole="button"
-              accessibilityLabel={`${item.classSummary.description}, ${getBookingStatusLabel(item.state)}`}
-            >
-              {/* Card Header: Description & Booking Status */}
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle} numberOfLines={2}>
-                  {item.classSummary.description}
-                </Text>
-                <View style={styles.statusRow}>
-                  <StatusPill
-                    tone={getBookingStatusTone(item.state)}
-                    label={getBookingStatusLabel(item.state)}
-                  />
-                  {item.classSummary.classState ? (
+            <View key={item.bookingId} style={styles.card}>
+              {/* Tappable Card Body (navigates to class details) */}
+              <Pressable
+                onPress={() => handleCardPress(item.classId)}
+                accessibilityRole="button"
+                accessibilityLabel={`${item.classSummary.description}, ${getBookingStatusLabel(item.state)}`}
+                style={({ pressed }) => [styles.cardBody, pressed && styles.cardPressed]}
+              >
+                {/* Card Header: Description & Booking Status */}
+                <View style={styles.cardHeader}>
+                  <Text style={styles.cardTitle} numberOfLines={2}>
+                    {item.classSummary.description}
+                  </Text>
+                  <View style={styles.statusRow}>
                     <StatusPill
-                      tone={getClassStatusTone(item.classSummary.classState)}
-                      label={getClassStatusLabel(item.classSummary.classState)}
+                      tone={getBookingStatusTone(item.state)}
+                      label={getBookingStatusLabel(item.state)}
                     />
-                  ) : null}
+                    {item.classSummary.classState ? (
+                      <StatusPill
+                        tone={getClassStatusTone(item.classSummary.classState)}
+                        label={getClassStatusLabel(item.classSummary.classState)}
+                      />
+                    ) : null}
+                  </View>
                 </View>
-              </View>
 
-              {/* Teacher Display Name */}
-              <View style={styles.metaRow}>
-                <Text style={styles.metaLabel}>
-                  {t('MyBookings.teacherLabel', { name: item.classSummary.teacherDisplayName })}
-                </Text>
-              </View>
+                {/* Teacher Display Name */}
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>
+                    {t('MyBookings.teacherLabel', { name: item.classSummary.teacherDisplayName })}
+                  </Text>
+                </View>
 
-              {/* Starts At and Duration */}
-              <View style={styles.metaRow}>
-                <Text style={styles.metaLabel}>
-                  {t('MyBookings.startsAtLabel', {
-                    when: formatStartsAt(item.classSummary.startsAt),
-                  })}
-                </Text>
-                <Text style={styles.metaLabel}>•</Text>
-                <Text style={styles.metaLabel}>
-                  {t('MyBookings.durationLabel', {
-                    minutes: item.classSummary.durationMinutes,
-                  })}
-                </Text>
-              </View>
-
-              {/* Tuition / Price in Credits */}
-              <View style={styles.metaRow}>
-                <Text style={styles.priceText}>
-                  {t('MyBookings.priceCreditsLabel', { credits: item.priceCredits })}
-                </Text>
-              </View>
-
-              {/* Pending Expiry Timestamp Notice */}
-              {isPendingHold && item.expiresAt ? (
-                <View style={styles.expiryNotice}>
-                  <Text style={styles.expiryNoticeText}>
-                    {t('MyBookings.expiresAtNotice', {
-                      time: formatExpiryTime(item.expiresAt),
+                {/* Starts At and Duration */}
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>
+                    {t('MyBookings.startsAtLabel', {
+                      when: formatStartsAt(item.classSummary.startsAt),
+                    })}
+                  </Text>
+                  <Text style={styles.metaLabel}>•</Text>
+                  <Text style={styles.metaLabel}>
+                    {t('MyBookings.durationLabel', {
+                      minutes: item.classSummary.durationMinutes,
                     })}
                   </Text>
                 </View>
-              ) : null}
 
-              {/* Card Footer: Real Route Link */}
+                {/* Tuition / Price in Credits */}
+                <View style={styles.metaRow}>
+                  <Text style={styles.priceText}>
+                    {t('MyBookings.priceCreditsLabel', { credits: item.priceCredits })}
+                  </Text>
+                </View>
+
+                {/* Pending Expiry Timestamp Notice */}
+                {isPendingHold && item.expiresAt ? (
+                  <View style={styles.expiryNotice}>
+                    <Text style={styles.expiryNoticeText}>
+                      {t('MyBookings.expiresAtNotice', {
+                        time: formatExpiryTime(item.expiresAt),
+                      })}
+                    </Text>
+                  </View>
+                ) : null}
+              </Pressable>
+
+              {/* Card Footer: Real Route Link & Actions */}
               <View style={styles.cardFooter}>
-                <Text style={styles.viewDetailText}>
-                  {t('MyBookings.viewClass')} →
-                </Text>
-                {item.roomAccessEligible ? <Pressable style={styles.loadMoreButton} disabled={openingBookingId !== null} onPress={() => void openRoom(item.bookingId)} accessibilityRole="button">
-                  {openingBookingId === item.bookingId ? <ActivityIndicator size="small" color={colors.campusEmerald} /> : <Text style={styles.loadMoreText}>{t('MyBookings.joinRoom')}</Text>}
-                </Pressable> : null}
+                <Pressable
+                  onPress={() => handleCardPress(item.classId)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${t('MyBookings.viewClass')}: ${item.classSummary.description}`}
+                >
+                  <Text style={styles.viewDetailText}>
+                    {t('MyBookings.viewClass')} →
+                  </Text>
+                </Pressable>
+                <View style={styles.cardFooterActions}>
+                  {item.state === 'confirmed' ? (
+                    <Pressable
+                      style={styles.noShowButton}
+                      disabled={reportingNoShowId !== null}
+                      onPress={() => confirmReportNoShow(item.bookingId)}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('MyBookings.reportNoShow')}
+                    >
+                      {reportingNoShowId === item.bookingId ? (
+                        <ActivityIndicator size="small" color={colors.inkSoft} />
+                      ) : (
+                        <Text style={styles.noShowButtonText}>
+                          {t('MyBookings.reportNoShow')}
+                        </Text>
+                      )}
+                    </Pressable>
+                  ) : null}
+                  {item.roomAccessEligible ? (
+                    <Pressable
+                      style={styles.loadMoreButton}
+                      disabled={openingBookingId !== null}
+                      onPress={() => void openRoom(item.bookingId)}
+                      accessibilityRole="button"
+                    >
+                      {openingBookingId === item.bookingId ? (
+                        <ActivityIndicator size="small" color={colors.campusEmerald} />
+                      ) : (
+                        <Text style={styles.loadMoreText}>{t('MyBookings.joinRoom')}</Text>
+                      )}
+                    </Pressable>
+                  ) : null}
+                </View>
               </View>
+              {noShowSuccesses[item.bookingId] ? (
+                <View style={styles.feedbackArea}>
+                  <FeedbackBanner tone="success">
+                    {noShowSuccesses[item.bookingId]}
+                  </FeedbackBanner>
+                </View>
+              ) : null}
+              {noShowNotices[item.bookingId] ? (
+                <View style={styles.feedbackArea}>
+                  <FeedbackBanner tone="neutral">
+                    {noShowNotices[item.bookingId]}
+                  </FeedbackBanner>
+                </View>
+              ) : null}
+              {noShowErrors[item.bookingId] ? (
+                <View style={styles.feedbackArea}>
+                  <FeedbackBanner tone="danger">
+                    {noShowErrors[item.bookingId]}
+                  </FeedbackBanner>
+                </View>
+              ) : null}
               {roomError && openingBookingId === null ? <Text style={styles.errorText}>{t('MyBookings.roomError')}</Text> : null}
               {item.ratingEligible && !item.hasRated ? <View style={ratingStyles.form}>
                 <Text style={styles.metaLabel}>{t('MyBookings.rateClass')}</Text>
@@ -462,7 +599,7 @@ export function MyBookingsView() {
                 {ratingError && <Text style={styles.errorText}>{t('MyBookings.ratingError')}</Text>}
                 <Pressable style={styles.loadMoreButton} disabled={!ratingComment.trim() || ratingBookingId !== null} onPress={() => void submitRating(item.bookingId)} accessibilityRole="button"><Text style={styles.loadMoreText}>{ratingBookingId === item.bookingId ? t('Common.loading') : t('MyBookings.submitRating')}</Text></Pressable>
               </View> : item.hasRated ? <Text style={styles.metaLabel}>{t('MyBookings.alreadyRated')}</Text> : null}
-            </Pressable>
+            </View>
           );
         })
       )}

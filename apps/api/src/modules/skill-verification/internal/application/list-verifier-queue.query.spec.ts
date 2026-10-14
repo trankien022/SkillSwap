@@ -125,4 +125,28 @@ describe('ListVerifierQueueQueryHandler (FR-004 / NFR-014)', () => {
     expect(page.items).toEqual([]);
     expect(page.page.total).toBe(0);
   });
+
+  it('returns pending requests plus items claimed by the caller, but excludes items claimed by others', async () => {
+    const evidence = await seedQueue();
+    await evidence.claim({
+      evidenceId: 'ev-a',
+      verifierId: 'vf-1',
+      skillId: 'sk-1',
+      ownerId: 'u1',
+      claimedAt: NOW,
+    });
+    await evidence.claim({
+      evidenceId: 'ev-b',
+      verifierId: 'vf-2',
+      skillId: 'sk-1',
+      ownerId: 'u2',
+      claimedAt: NOW,
+    });
+
+    const handler = new ListVerifierQueueQueryHandler(evidence, verifierRepo(['sk-1']));
+    const page = await handler.execute({ verifierId: 'vf-1' });
+
+    expect(page.items.map((i) => i.id)).toEqual(['ev-a', 'ev-c']);
+    expect(page.page.total).toBe(2);
+  });
 });

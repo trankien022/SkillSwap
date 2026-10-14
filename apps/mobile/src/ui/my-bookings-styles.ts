@@ -75,6 +75,10 @@ export const myBookingsStyles = StyleSheet.create({
     gap: spacing.sm,
     minHeight: 44,
   },
+  cardBody: {
+    gap: spacing.sm,
+    borderRadius: radius.control,
+  },
   cardPressed: {
     backgroundColor: colors.mist,
   },
@@ -125,11 +129,38 @@ export const myBookingsStyles = StyleSheet.create({
   },
   cardFooter: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingTop: spacing.xs,
     borderTopWidth: 1,
     borderTopColor: colors.neutralTint,
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  cardFooterActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    flexWrap: 'wrap',
+  },
+  noShowButton: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.pill,
+    minHeight: 44,
+    paddingHorizontal: spacing.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noShowButtonText: {
+    fontSize: typography.caption.fontSize,
+    color: colors.inkSoft,
+    fontWeight: '600',
+  },
+  feedbackArea: {
+    gap: spacing.xs,
+    paddingTop: spacing.xs,
   },
   viewDetailText: {
     fontSize: typography.caption.fontSize,

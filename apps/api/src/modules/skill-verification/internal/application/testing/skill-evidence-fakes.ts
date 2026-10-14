@@ -183,7 +183,13 @@ export class InMemorySkillEvidenceRepository implements SkillEvidenceRepository 
 
   async listPendingForExpertise(query: PendingQueueQuery): Promise<PendingQueuePage> {
     const matched = this.rows
-      .filter((row) => row.status === 'pending')
+      .filter(
+        (row) =>
+          row.status === 'pending' ||
+          (query.verifierId !== undefined &&
+            row.status === 'claimed' &&
+            row.claimedBy === query.verifierId),
+      )
       .filter((row) => {
         const ctx = this.profileSkillContext.get(row.profileSkillId);
         return ctx !== undefined && query.expertise.includes(ctx.skillId);

@@ -199,8 +199,12 @@ export class SqlSkillEvidenceRepository implements SkillEvidenceRepository {
 
     return source.transaction(async (manager) => {
       const params: unknown[] = [query.expertise];
-      // Shared filtered WHERE (filters only; the cursor is added for the page query only).
-      let where = `e."status" = 'pending' AND s."id" = ANY($1::uuid[])`;
+      let statusClause = `e."status" = 'pending'`;
+      if (query.verifierId !== undefined) {
+        params.push(query.verifierId);
+        statusClause = `(e."status" = 'pending' OR (e."status" = 'claimed' AND e."claimed_by" = $${params.length}))`;
+      }
+      let where = `${statusClause} AND s."id" = ANY($1::uuid[])`;
       if (query.level !== undefined) {
         params.push(query.level);
         where += ` AND e."requested_level" = $${params.length}`;

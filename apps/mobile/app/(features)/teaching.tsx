@@ -158,7 +158,7 @@ export default function TeachingScreen() {
               </Text>
               <Pressable
                 style={styles.action}
-                onPress={() => router.push(`/(features)/teaching/${item.id}`)}
+                onPress={() => router.push(`/(features)/teaching/${item.id}` as never)}
                 accessibilityRole="button"
                 accessibilityLabel={`${t('Teaching.openDetail')}: ${item.description}`}
               >

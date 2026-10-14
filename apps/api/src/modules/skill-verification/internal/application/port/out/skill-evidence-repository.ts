@@ -65,6 +65,7 @@ export interface PendingEvidenceForVerifier {
 
 /** FR-004 / NFR-014: filters, sort and keyset window for the verifier queue. */
 export interface PendingQueueQuery {
+  readonly verifierId?: string;
   readonly expertise: readonly string[];
   readonly limit: number;
   /** Opaque cursor from a previous page. */
