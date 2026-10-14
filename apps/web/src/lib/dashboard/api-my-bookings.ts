@@ -33,12 +33,11 @@ export function mapContractBookingToView(item: LearnerBookingItemView): LearnerB
       item.state === 'completed' && item.expiresAt !== null
         ? secondsUntil(item.expiresAt)
         : undefined,
-    roomCode: item.roomAccessEligible ? `ROOM-${item.bookingId.slice(0, 8)}` : undefined,
-    // Review bodies and star counts are per-class (`GET /classes/:id`), which the
-    // dashboard does not fetch, so the review block is intentionally omitted
-    // rather than rendered with a fabricated "0 / 5".
-    // derived: receipts are numbered from the booking id until a receipt route exists.
-    receiptId: item.state === 'completed' ? `REC-${item.bookingId.slice(0, 8)}` : undefined,
+    // Room code and receipt id are not fabricated here. The room is minted on
+    // demand by `POST /classes/class/bookings/{bookingId}/room-access` (the live
+    // page already calls it), and a receipt endpoint does not exist yet. The
+    // dashboard renders an explicit "not yet available" state for both rather
+    // than a synthetic value (FR-011 honesty, TASK-03 Phase 2).
   };
 }
 

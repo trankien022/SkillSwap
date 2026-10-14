@@ -35,7 +35,9 @@ describe('mapContractBookingToView', () => {
     expect(view.teacherName).toBe('Nguyễn Thành Nam');
     expect(view.teacherInitial).toBe('N');
     expect(view.priceCredits).toBe(60);
-    expect(view.roomCode).toBe('ROOM-bkg-1234');
+    // No fabricated room code — the room is minted on demand by
+    // `POST /classes/bookings/{bookingId}/room-access` (TASK-03 Phase 2).
+    expect(view).not.toHaveProperty('roomCode');
   });
 
   it('falls back to a neutral teacher initial when the display name is blank', () => {
@@ -45,9 +47,11 @@ describe('mapContractBookingToView', () => {
     expect(view.teacherInitial).toBe('T');
   });
 
-  it('hides the room code when the learner is not yet eligible to join', () => {
-    const view = mapContractBookingToView(item({ roomAccessEligible: false }));
-    expect(view.roomCode).toBeUndefined();
+  it('does not fabricate a receipt id for completed bookings', () => {
+    // No receipt endpoint exists yet (FR-014 family). The dashboard renders an
+    // explicit "not yet available" state instead of a synthetic value.
+    const view = mapContractBookingToView(item({ state: 'completed' }));
+    expect(view).not.toHaveProperty('receiptId');
   });
 });
 
