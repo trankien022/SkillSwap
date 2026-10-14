@@ -962,5 +962,90 @@
       "notice": "Sau khi lớp kết thúc, bạn có 24 giờ để đánh giá buổi học trước khi hệ thống chính thức giải ngân số credits cho giảng viên.",
       "btnEndAndReview": "Kết thúc lớp & Chấm điểm đánh giá"
     }
+  },
+  "Verifier": {
+    "errors": {
+      "auth": "Không có quyền xem hàng đợi kiểm duyệt."
+    },
+    "title": "Hàng đợi kiểm duyệt",
+    "filters": {
+      "levelAll": "Tất cả cấp độ",
+      "typeAll": "Tất cả loại",
+      "sortDefault": "Mặc định",
+      "sortOldest": "Cũ nhất",
+      "sortNewest": "Mới nhất",
+      "qPlaceholder": "Tìm kiếm…"
+    },
+    "loading": "Đang tải…",
+    "empty": "Không có yêu cầu",
+    "pagination": {
+      "total": "Tổng: {total}",
+      "next": "Tiếp",
+      "end": "Hết"
+    },
+    "row": {
+      "requestedLevel": "Cấp yêu cầu",
+      "evidenceType": "Loại chứng cứ",
+      "owner": "Người gửi",
+      "submittedAt": "Ngày nộp"
+    },
+    "actions": {
+      "claim": "Nhận",
+      "decide": "Quyết định",
+      "approve": "Phê duyệt",
+      "reject": "Từ chối"
+    },
+    "decision": {
+      "approvedLevelPlaceholder": "Chọn cấp được duyệt",
+      "reasonPlaceholder": "Lý do (không bắt buộc)"
+    },
+    "levels": {
+      "beginner": "Sơ cấp",
+      "intermediate": "Trung cấp",
+      "advanced": "Nâng cao",
+      "expert": "Chuyên gia"
+    },
+    "evidence": {
+      "certificate": "Chứng chỉ",
+      "verifier_assessment": "Đánh giá chuyên môn"
+    },
+    "status": {
+      "pending": "Đang chờ",
+      "claimed": "Đã nhận",
+      "approved": "Đã phê duyệt",
+      "rejected": "Bị từ chối",
+      "superseded": "Bị thay thế"
+    }
+  },
+  "Admin": {
+    "StudentVerification": {
+      "title": "Duyệt xác minh sinh viên",
+      "notice": "Xem xét hồ sơ xác minh sinh viên theo id. Admin cần biết id xác minh.",
+      "label": {
+        "id": "Id xác minh",
+        "decision": "Quyết định",
+        "approvedMajor": "Ngành được duyệt",
+        "reason": "Lý do"
+      },
+      "placeholders": {
+        "approvedMajor": "Ngành được duyệt (không bắt buộc)",
+        "reason": "Lý do (bắt buộc khi từ chối)"
+      },
+      "actions": {
+        "approve": "Phê duyệt",
+        "reject": "Từ chối",
+        "submitDecision": "Gửi quyết định",
+        "revoke": "Thu hồi"
+      },
+      "revokeConfirm": "Thu hồi xác minh này? Hành động không thể hoàn tác.",
+      "messages": {
+        "decided": "Quyết định đã được ghi nhận.",
+        "revoked": "Xác minh đã bị thu hồi."
+      },
+      "errors": {
+        "auth": "Không có quyền thực hiện hành động này."
+      },
+      "note": "Quyết định được ghi lại không thể thay đổi."
+    }
   }
 }

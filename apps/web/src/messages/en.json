@@ -962,5 +962,90 @@
       "notice": "Once the session concludes, you have 24 hours to review before escrow credits are released to the instructor.",
       "btnEndAndReview": "Finish Class & Proceed to Review"
     }
+  },
+  "Verifier": {
+    "errors": {
+      "auth": "Not authorized to view verifier queue."
+    },
+    "title": "Verifier queue",
+    "filters": {
+      "levelAll": "All levels",
+      "typeAll": "All types",
+      "sortDefault": "Default",
+      "sortOldest": "Oldest",
+      "sortNewest": "Newest",
+      "qPlaceholder": "Search…"
+    },
+    "loading": "Loading…",
+    "empty": "No submissions",
+    "pagination": {
+      "total": "Total: {total}",
+      "next": "Next",
+      "end": "End"
+    },
+    "row": {
+      "requestedLevel": "Requested level",
+      "evidenceType": "Evidence",
+      "owner": "Submitter",
+      "submittedAt": "Submitted"
+    },
+    "actions": {
+      "claim": "Claim",
+      "decide": "Decide",
+      "approve": "Approve",
+      "reject": "Reject"
+    },
+    "decision": {
+      "approvedLevelPlaceholder": "Select approved level",
+      "reasonPlaceholder": "Reason (optional)"
+    },
+    "levels": {
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced",
+      "expert": "Expert"
+    },
+    "evidence": {
+      "certificate": "Certificate",
+      "verifier_assessment": "Verifier assessment"
+    },
+    "status": {
+      "pending": "Pending",
+      "claimed": "Claimed",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "superseded": "Superseded"
+    }
+  },
+  "Admin": {
+    "StudentVerification": {
+      "title": "Student verification review",
+      "notice": "Review a student verification by id. Admin must know the verification id.",
+      "label": {
+        "id": "Verification id",
+        "decision": "Decision",
+        "approvedMajor": "Approved major",
+        "reason": "Reason"
+      },
+      "placeholders": {
+        "approvedMajor": "Approved major (optional)",
+        "reason": "Reason (required for rejection)"
+      },
+      "actions": {
+        "approve": "Approve",
+        "reject": "Reject",
+        "submitDecision": "Submit decision",
+        "revoke": "Revoke"
+      },
+      "revokeConfirm": "Revoke this verification? This action is irreversible.",
+      "messages": {
+        "decided": "Decision recorded.",
+        "revoked": "Verification revoked."
+      },
+      "errors": {
+        "auth": "Not authorized to perform this action."
+      },
+      "note": "Decisions are recorded immutably."
+    }
   }
 }
