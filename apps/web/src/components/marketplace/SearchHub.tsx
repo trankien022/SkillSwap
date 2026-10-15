@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { MarketplaceQuery, UniversityCode } from '../../lib/marketplace/types';
 import { UNIVERSITY_CODES } from '../../lib/marketplace/types';
@@ -23,12 +23,19 @@ export function SearchHub({
     initialQuery.university ?? 'all',
   );
 
+  // Reflect reset/filter changes made by the parent in the visible controls.
+  useEffect(() => {
+    setKeyword(initialQuery.keyword ?? '');
+    setUniversity(initialQuery.university ?? 'all');
+  }, [initialQuery.keyword, initialQuery.university]);
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     onSubmit({
       ...initialQuery,
       keyword: keyword.trim() === '' ? undefined : keyword.trim(),
       university,
+      page: 1,
     });
   }
 
