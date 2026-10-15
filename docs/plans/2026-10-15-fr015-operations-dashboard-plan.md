@@ -1,10 +1,10 @@
 # Plan — FR-015 Operations Dashboard (API + Web + Mobile)
 
-Status: **In progress** — approved to implement; decisions through §9 resolved below
-Owner: (agent) · Created: 2026-10-15 · Updated: 2026-10-15 (API phases 0–5 landed)
+Status: **Complete (phases 0–6, W1–W4, M2)** — approved to implement; decisions through §9 resolved below
+Owner: (agent) · Created: 2026-10-15 · Updated: 2026-10-16 (phases 0–6, W1–W4 and M2 landed; FR-015 remains partially implemented — Phase 7 deferred)
 
 > **Resolved before coding.** Q1 (**No** — admins are web-only): §6 **M1 is closed as not
-> applicable** and recorded here rather than silently skipped; M2 still ships. Q2: audit the
+> applicable** and recorded here rather than silently skipped; M2 ships in the form the device allows (see §6). Q2: audit the
 > privileged actions the SRS §5 list names (verification decisions, verifier status changes, role
 > changes, financial transitions) — see Phase 4. Q3: retain, no pruning in the MVP (OQ-008 /
 > ADR-023 precedent). Q4: keep `total`. Q5: disputes/account-lock stay in deferred Phase 7.
@@ -345,6 +345,27 @@ Regardless of M1's outcome: add a spec pinning that the verifier/admin links are
 non-privileged roles and present for the privileged one — the same protection Phase 2 gave web.
 This closes the "Phase 4" open item from the honesty work.
 Commit: `test(mobile): pin role-gated navigation`
+
+**M2 outcome (recorded, not silently skipped).** Half of M2 was already on `main` before this
+plan was implemented: `apps/mobile/src/ui/profile-view.spec.tsx` (added in `527261e`) pins that the
+Verifier queue link is offered to a verifier and withheld from a learner, an admin and a signed-out
+visitor. So the link half needed no new work, and a second copy of it would have been a test that
+duplicates an existing one.
+
+The admin half of M2 is **not applicable**, for the same reason §6 M1 was closed: mobile has no
+admin navigation surface at all. There is no `admin` route under `apps/mobile/app/`, no
+`router.push` to an admin path, and `admin` appears only as a non-interactive role label
+(`dashboard-view.tsx` and `profile-view.tsx` render `Dashboard.adminRole` as text) — consistent
+with Q1, admins are web-only. There is nothing to gate, so nothing is pinned.
+
+What *was* missing is the other end of the verifier gate: `profile-view.spec.tsx` pins that the
+link is only offered, but nothing pinned that the queue **screen** refuses a non-verifier who
+reaches it anyway (deep link, stale route, hand-typed URL). `verifier-queue-view.tsx` implements
+that refusal — a data-load guard at lines 72–76 and a render guard at lines 224–233 — and it was
+implemented but untested. `apps/mobile/src/ui/verifier-queue-view.spec.tsx` now pins it, including
+the part that actually matters: the guard returns **before** `gateway.getQueue` is called, so a
+leaked link cannot fire a request the server would reject. A refused learner, admin and signed-out
+visitor each assert both the forbidden banner and that no request was issued.
 
 ## 7. Commit sequence (one line per commit)
 
