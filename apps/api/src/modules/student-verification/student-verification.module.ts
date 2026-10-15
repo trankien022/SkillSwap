@@ -17,6 +17,11 @@ import { DecideStudentVerificationUseCase } from './internal/application/decide-
 import { RevokeStudentVerificationUseCase } from './internal/application/revoke-student-verification.use-case';
 import { GetMyVerificationQueryHandler } from './internal/application/get-my-verification.query';
 import { ListAdminVerificationsQueryHandler } from './internal/application/list-admin-verifications.query';
+import {
+  VERIFICATION_SUMMARY_READER,
+  type VerificationSummaryReader,
+} from './api/verification-summary-reader';
+import { SqlVerificationSummaryReader } from './internal/adapter/out/persistence/sql-verification-summary-reader';
 import { GET_MODULE_STATUS } from './internal/application/port/in/get-module-status';
 import { ADVANCE_STATUS } from './internal/application/port/in/advance-status';
 import { SUBMIT_STUDENT_VERIFICATION } from './internal/application/port/in/submit-student-verification';
@@ -151,7 +156,16 @@ export class StudentVerificationRegistrar implements OnModuleInit {
         new ListAdminVerificationsQueryHandler(verifications),
       inject: [VERIFICATION_REPOSITORY],
     },
+    {
+      // FR-015 / ADR-034 §7: the counts the operations dashboard composes. Exported so
+      // `admin-operation` can ask this module rather than read its schema.
+      provide: VERIFICATION_SUMMARY_READER,
+      useFactory: (registry: ModuleDataSourceRegistry): VerificationSummaryReader =>
+        new SqlVerificationSummaryReader(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
     StudentVerificationRegistrar,
   ],
+  exports: [VERIFICATION_SUMMARY_READER],
 })
 export class StudentVerificationModule {}

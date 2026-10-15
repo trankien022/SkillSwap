@@ -13,6 +13,11 @@ import { SqlVerifierRepository } from './internal/adapter/out/persistence/sql-ve
 import { SqlEvidenceAuditRepository } from './internal/adapter/out/persistence/sql-evidence-audit-repository';
 import { SqlVerifiedStudentProjector } from './internal/adapter/out/persistence/sql-verified-student-projector';
 import { SqlSkillCatalogueReader } from './internal/adapter/out/persistence/sql-skill-catalogue-reader';
+import {
+  EVIDENCE_SUMMARY_READER,
+  type EvidenceSummaryReader,
+} from './api/evidence-summary-reader';
+import { SqlEvidenceSummaryReader } from './internal/adapter/out/persistence/sql-evidence-summary-reader';
 import { SystemClock } from './internal/adapter/out/crypto/system-clock';
 import { StatusController } from './internal/adapter/in/web/status.controller';
 import {
@@ -241,6 +246,14 @@ export class SkillVerificationRegistrar implements OnModuleInit {
       inject: [SKILL_EVIDENCE_REPOSITORY],
     },
     {
+      // FR-015 / ADR-034 §7: the counts the operations dashboard composes. Exported so
+      // `admin-operation` can ask this module rather than read its schema.
+      provide: EVIDENCE_SUMMARY_READER,
+      useFactory: (registry: ModuleDataSourceRegistry): EvidenceSummaryReader =>
+        new SqlEvidenceSummaryReader(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
       provide: GET_SKILL_EVIDENCE_HISTORY,
       useFactory: (
         evidence: SkillEvidenceRepository,
@@ -309,5 +322,6 @@ export class SkillVerificationRegistrar implements OnModuleInit {
     },
     SkillVerificationRegistrar,
   ],
+  exports: [EVIDENCE_SUMMARY_READER],
 })
 export class SkillVerificationModule {}

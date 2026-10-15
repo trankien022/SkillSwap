@@ -1,4 +1,8 @@
 import {
+  adminDashboardSchema,
+  adminVerificationPageSchema,
+  adminVerifierQueuePageSchema,
+  auditLogPageSchema,
   verifierSchema,
   verifierStatusChangeSchema,
   verifierQueuePageSchema,
@@ -7,6 +11,10 @@ import {
   verificationDecisionSchema,
   verificationRevocationSchema,
   studentVerificationSchema,
+  type AdminDashboard,
+  type AdminVerificationPage,
+  type AdminVerifierQueuePage,
+  type AuditLogPage,
   type VerifierStatusChangeInput,
   type VerifierView,
   type VerifierQueuePage,
@@ -201,6 +209,107 @@ export class HttpVerificationGateway {
     const body = (await res.json().catch(() => null)) as { data?: unknown } | null;
     return studentVerificationSchema.parse(body?.data);
   }
+
+  // ---------------------------------------------------------------------------
+  // FR-015 / ADR-034: the admin operations reads.
+  //
+  // All three are `admin`-only, so they share `AdminAuthError` with the decisions
+  // above: a 401/403 is one UI state ("not an admin session"), not two.
+  //
+  // Each method builds its query string from the caller's filters rather than
+  // sending undefined params, because an empty `?status=` is a 400 (the contract
+  // validates `status` as an enum) whereas an omitted param is the unfiltered
+  // query. Response shapes are parsed with the shared Zod schema, so a backend
+  // that changed a field name fails here instead of rendering `undefined`.
+  // ---------------------------------------------------------------------------
+
+  /** GET /student-verifications — the admin-wide student-verification queue. */
+  async listAdminVerifications(query: {
+    limit?: number;
+    cursor?: string;
+    status?: string;
+    q?: string;
+    sort?: string;
+  } = {}): Promise<AdminVerificationPage> {
+    const path = `/student-verifications${buildQuery(query)}`;
+    const res = await callApi(path);
+    if (res.status === 401 || res.status === 403) throw new AdminAuthError();
+    if (!res.ok) {
+      throw new Error(await readErrorMessage(res, 'Could not load student verifications'));
+    }
+
+    const body = (await res.json().catch(() => null)) as { data?: unknown } | null;
+    return adminVerificationPageSchema.parse(body?.data);
+  }
+
+  /** GET /verifiers/admin/queue — the admin-wide Verifier queue, by domain. */
+  async listAdminVerifierQueue(query: {
+    limit?: number;
+    cursor?: string;
+    domain?: string;
+    status?: string;
+    q?: string;
+    sort?: string;
+  } = {}): Promise<AdminVerifierQueuePage> {
+    const path = `/verifiers/admin/queue${buildQuery(query)}`;
+    const res = await callApi(path);
+    if (res.status === 401 || res.status === 403) throw new AdminAuthError();
+    if (!res.ok) {
+      throw new Error(await readErrorMessage(res, 'Could not load the verifier queue'));
+    }
+
+    const body = (await res.json().catch(() => null)) as { data?: unknown } | null;
+    return adminVerifierQueuePageSchema.parse(body?.data);
+  }
+
+  /** GET /audit-log — the admin audit log, filterable by actor, time and action. */
+  async listAuditLog(query: {
+    limit?: number;
+    cursor?: string;
+    actorId?: string;
+    action?: string;
+    targetType?: string;
+    targetId?: string;
+    from?: string;
+    to?: string;
+    q?: string;
+    sort?: string;
+  } = {}): Promise<AuditLogPage> {
+    const path = `/audit-log${buildQuery(query)}`;
+    const res = await callApi(path);
+    if (res.status === 401 || res.status === 403) throw new AdminAuthError();
+    if (!res.ok) throw new Error(await readErrorMessage(res, 'Could not load the audit log'));
+
+    const body = (await res.json().catch(() => null)) as { data?: unknown } | null;
+    return auditLogPageSchema.parse(body?.data);
+  }
+
+  /** GET /admin-operation/dashboard — the counts-only operations aggregate. */
+  async getAdminDashboard(): Promise<AdminDashboard> {
+    const res = await callApi('/admin-operation/dashboard');
+    if (res.status === 401 || res.status === 403) throw new AdminAuthError();
+    if (!res.ok) throw new Error(await readErrorMessage(res, 'Could not load the dashboard'));
+
+    const body = (await res.json().catch(() => null)) as { data?: unknown } | null;
+    return adminDashboardSchema.parse(body?.data);
+  }
+}
+
+/**
+ * Turns a filter object into a query string, skipping absent values.
+ *
+ * Deliberately drops empty strings as well as `undefined`: a form field the
+ * admin left blank must mean "no filter", not `?q=` (which the contract rejects
+ * as too short and would surface as a confusing 400).
+ */
+function buildQuery(query: Record<string, string | number | undefined>): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined || value === '') continue;
+    params.set(key, String(value));
+  }
+  const qs = params.toString();
+  return qs ? `?${qs}` : '';
 }
 
 async function readErrorMessage(res: Response, fallback: string): Promise<string> {
