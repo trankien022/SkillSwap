@@ -1,3 +1,4 @@
+import '../../components/landing/learning-home.css';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { SiteHeader } from '../../components/landing/SiteHeader';
 import { HeroSection } from '../../components/landing/HeroSection';
@@ -17,7 +18,7 @@ export default async function HomePage({ params }: PageProps) {
   await getTranslations('Landing.nav');
 
   return (
-    <div className="flex min-h-dvh flex-col bg-mist text-ink">
+    <div className="learning-home flex min-h-dvh flex-col text-ink">
       <SiteHeader locale={locale} />
       <main className="flex-1">
         <HeroSection />

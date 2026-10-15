@@ -55,18 +55,18 @@
       "myBookings": "Buổi học của tôi"
     },
     "hero": {
-      "headline1": "Bạn biết một điều hay.",
-      "headline2": "Ai đó đang muốn học.",
-      "subline": "Tìm người cùng trường, cùng thế hệ để học kỹ năng mới. Xem hồ sơ đã xác minh, chọn buổi học phù hợp và thanh toán bằng credit.",
+      "headline1": "Học cùng bạn.",
+      "headline2": "Giỏi thêm mỗi ngày.",
+      "subline": "Học trực tuyến cùng sinh viên có kỹ năng đã được xác minh. Từ dòng code đầu tiên đến một cuộc trò chuyện tự tin hơn.",
       "pills": {
         "school": "Hồ sơ sinh viên được duyệt thủ công",
         "antiFake": "Kỹ năng được chuyên gia đánh giá",
         "escrow": "Thanh toán được ghi vào sổ cái"
       },
       "intro": "Sinh viên dạy. Sinh viên học.",
-      "explore": "Tìm lớp học",
-      "howItWorks": "Cách SkillSwap hoạt động",
-      "note": "Các lớp học diễn ra trực tuyến · Đặt trước ít nhất 24 giờ",
+      "explore": "Khám phá lớp học",
+      "howItWorks": "Bắt đầu thế nào?",
+      "note": "Học từ bất cứ đâu · Đặt lớp trước ít nhất 24 giờ",
       "journeyTitle": "Từ một kỹ năng đến một buổi học",
       "creditLabel": "Tỷ giá credit",
       "creditValue": "1 credit = 1.000 VNĐ",
@@ -83,7 +83,10 @@
           "title": "Gặp nhau trong lớp trực tuyến",
           "body": "Vào lớp từ lịch học của bạn. Để lại đánh giá sau buổi học."
         }
-      ]
+      ],
+      "imageAlt": "Minh họa hai sinh viên cùng trao đổi kiến thức bên máy tính và sổ học tập",
+      "imageCaption": "Sinh viên dạy. Sinh viên học.",
+      "sessionLength": "30–180 phút / buổi"
     },
     "assurance": {
       "eyebrow": "Trước khi bạn đặt lớp",
@@ -442,7 +445,15 @@
       "title": "Lịch theo tháng",
       "prev": "Tháng trước",
       "next": "Tháng sau",
-      "weekdays": ["T2", "T3", "T4", "T5", "T6", "T7", "CN"],
+      "weekdays": [
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "CN"
+      ],
       "legendLive": "Lớp đang diễn ra",
       "legendBooked": "Lớp đã chốt slot",
       "noMonth": "Chưa có lịch cho tháng này"

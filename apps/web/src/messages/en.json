@@ -55,18 +55,18 @@
       "myBookings": "My bookings"
     },
     "hero": {
-      "headline1": "You know something good.",
-      "headline2": "Someone wants to learn it.",
-      "subline": "Learn a skill from another student. Check their verified profile, find a time that works, and pay with credit.",
+      "headline1": "Learn together.",
+      "headline2": "Grow every day.",
+      "subline": "Learn online with students whose skills have been verified. From your first line of code to a more confident conversation.",
       "pills": {
         "school": "Manually reviewed student documents",
         "antiFake": "Expert-reviewed skill evidence",
         "escrow": "Payments recorded in the ledger"
       },
       "intro": "Students teach. Students learn.",
-      "explore": "Find a class",
-      "howItWorks": "How SkillSwap works",
-      "note": "Online classes · Book at least 24 hours ahead",
+      "explore": "Explore classes",
+      "howItWorks": "How do I start?",
+      "note": "Learn from anywhere · Book at least 24 hours ahead",
       "journeyTitle": "From a skill to a shared lesson",
       "creditLabel": "Credit exchange rate",
       "creditValue": "1 credit = 1,000 VND",
@@ -83,7 +83,10 @@
           "title": "Meet in your online classroom",
           "body": "Join from your bookings. Leave a review after the lesson."
         }
-      ]
+      ],
+      "imageAlt": "Illustration of two students sharing ideas with laptops and study notes",
+      "imageCaption": "Taught by students. For students.",
+      "sessionLength": "30–180 min / session"
     },
     "assurance": {
       "eyebrow": "Before you book",
@@ -442,7 +445,15 @@
       "title": "Month view",
       "prev": "Previous month",
       "next": "Next month",
-      "weekdays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      "weekdays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri",
+        "Sat",
+        "Sun"
+      ],
       "legendLive": "Live today",
       "legendBooked": "Booked",
       "noMonth": "No events this month"
