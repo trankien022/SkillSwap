@@ -117,6 +117,16 @@ services:
     image: jitsi/prosody:stable
     container_name: skillswap-jitsi-prosody
     restart: unless-stopped
+    # nginx (jitsi-web) proxies signaling to http://xmpp.<XMPP_DOMAIN>:5280 —
+    # i.e. the literal hostname `xmpp.meet.jitsi` (see /config/nginx/meet.conf).
+    # Without this alias Docker DNS cannot resolve it, nginx answers 502 on
+    # /xmpp-websocket, and every call dies at "You have been disconnected" right
+    # after join. The official jitsi/docker-jitsi-meet compose defines the same
+    # alias; the default `jitsi-prosody` alias alone is not enough.
+    networks:
+      default:
+        aliases:
+          - xmpp.meet.jitsi
     expose:
       - '5222'
       - '5269'
