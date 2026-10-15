@@ -45,3 +45,13 @@ check reduced motion, image loading, focus and overflow. Run Taste lint and
 inspector (document conflicts with the mandatory product design system), look
 at screenshots, fix visible problems. Run pnpm verify and commit validation.
 Do not push. Preserve unrelated untracked deliverables.
+
+## Completion
+
+All three phases are complete and committed independently. The first screen now
+shows an illustrated online video lesson. Subject discovery carries its category
+through guest authentication and initializes the actual catalogue filter.
+Native disclosures retain the complete learning and assurance content.
+`pnpm verify` passed: 1,364 tests plus lint/build/typecheck and architecture rules.
+See [validation](2026-10-15-homepage-learning-validation.md) for screenshots,
+Taste critique, imagery provenance and production/browser evidence boundaries.
