@@ -85,6 +85,33 @@ describe('BookingHttpGateway', () => {
       expect(result).toEqual(sampleClassDetail);
     });
 
+    it('URL-encodes the class id when requesting dedicated detail', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => sampleClassDetail,
+      });
+
+      await bookingHttpGateway.getClassDetail('class/id');
+
+      expect(mockFetch.mock.calls[0][0]).toBe('http://localhost:4000/api/classes/class%2Fid');
+      expect(mockFetch.mock.calls[0][1].method).toBe('GET');
+    });
+
+    it('preserves the backend draft state and booking eligibility in the parsed detail', async () => {
+      const draft = { ...sampleClassDetail, state: 'draft' as const, canBook: false };
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => draft,
+      });
+
+      const result = await bookingHttpGateway.getClassDetail(draft.id);
+
+      expect(result.state).toBe('draft');
+      expect(result.canBook).toBe(false);
+    });
+
     it('rejects with ZodError when backend response violates classDetailViewSchema', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,

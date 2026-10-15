@@ -1,8 +1,9 @@
 import React, { useCallback, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import type { ClassListItemView } from '@skillswap/contracts';
-import { ClassReadGateway } from '@/infrastructure/http/class-read-gateway';
+import type { ClassDetailView } from '@skillswap/contracts';
+import { BookingHttpGateway } from '@/infrastructure/http/booking-http-gateway';
+import { GatewayHttpError } from '@/infrastructure/http/gateway-client';
 import { TeachingGateway } from '@/infrastructure/http/teaching-gateway';
 import { colors, spacing, typography } from '@/design/tokens';
 import { useSession } from '@/ui/session-context';
@@ -13,25 +14,40 @@ export default function TeachingClassDetailScreen() {
   const classId = Array.isArray(id) ? id[0] : id;
   const router = useRouter();
   const { t, locale, gatewayClient } = useSession();
-  const [item, setItem] = useState<ClassListItemView | null>(null);
+  const [item, setItem] = useState<ClassDetailView | null>(null);
   const [description, setDescription] = useState('');
   const [startsAt, setStartsAt] = useState('');
   const [price, setPrice] = useState('');
   const [capacity, setCapacity] = useState('');
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const load = useCallback(async () => {
-    if (!gatewayClient || !classId) return;
+    if (!gatewayClient || !classId) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
     try {
-      const page = await new ClassReadGateway(gatewayClient).getClassesPage({ teacherId: 'me', limit: 50 });
-      const found = page.items.find((candidate) => candidate.id === classId) ?? null;
+      const found = await new BookingHttpGateway(gatewayClient).getClassDetail(classId);
       setItem(found);
-      if (found) {
-        setDescription(found.description); setStartsAt(found.startsAt);
-        setPrice(String(found.priceCredits)); setCapacity(String(found.capacity));
-      }
-      setError(found ? null : t('Teaching.notFound'));
-    } catch { setError(t('Teaching.loadError')); }
+      setDescription(found.description);
+      setStartsAt(found.startsAt);
+      setPrice(String(found.priceCredits));
+      setCapacity(String(found.capacity));
+      setError(null);
+    } catch (loadError) {
+      setItem(null);
+      setError(
+        loadError instanceof GatewayHttpError && loadError.statusCode === 404
+          ? t('Teaching.notFound')
+          : t('Teaching.loadError'),
+      );
+    } finally {
+      setLoading(false);
+    }
   }, [gatewayClient, classId, t]);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
   const run = async (action: () => Promise<unknown>) => {
@@ -56,6 +72,7 @@ export default function TeachingClassDetailScreen() {
 
   return <ScreenScroll contentContainerStyle={styles.container}><SurfaceCard style={styles.card}>
     <Text style={styles.title}>{t('Teaching.detailTitle')}</Text>
+    {loading && !item ? <View style={styles.loading}><ActivityIndicator color={colors.campusEmerald} /><Text style={styles.meta}>{t('Common.loading')}</Text></View> : null}
     {item ? <>
     <Text style={styles.meta}>{t(`Teaching.state.${item.state}`)} · {new Date(item.startsAt).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}</Text>
       <Text style={styles.meta}>{item.priceCredits} {t('Teaching.price')} · {item.capacity} {t('Teaching.capacity')}</Text>
@@ -75,4 +92,4 @@ export default function TeachingClassDetailScreen() {
   </SurfaceCard></ScreenScroll>;
 }
 
-const styles = StyleSheet.create({ container: { padding: spacing.lg, paddingBottom: spacing.xxxl, gap: spacing.lg, maxWidth: 560, width: '100%', alignSelf: 'center' }, card: { gap: spacing.md }, title: { color: colors.ink, fontSize: typography.heading.fontSize, fontWeight: '700' }, meta: { color: colors.inkMuted, fontSize: typography.caption.fontSize }, input: { minHeight: 52, paddingHorizontal: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: 12, color: colors.ink }, row: { flexDirection: 'row', gap: spacing.sm }, small: { flex: 1 } });
+const styles = StyleSheet.create({ container: { padding: spacing.lg, paddingBottom: spacing.xxxl, gap: spacing.lg, maxWidth: 560, width: '100%', alignSelf: 'center' }, card: { gap: spacing.md }, title: { color: colors.ink, fontSize: typography.heading.fontSize, fontWeight: '700' }, meta: { color: colors.inkMuted, fontSize: typography.caption.fontSize }, loading: { minHeight: 120, alignItems: 'center', justifyContent: 'center', gap: spacing.sm }, input: { minHeight: 52, paddingHorizontal: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: 12, color: colors.ink }, row: { flexDirection: 'row', gap: spacing.sm }, small: { flex: 1, minWidth: 0 } });

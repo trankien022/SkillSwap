@@ -80,6 +80,21 @@ describe('ClassDetailCoordinator', () => {
     expect(key3).toBe(key1);
   });
 
+  it('surfaces a failed dedicated detail read without creating fallback class data', async () => {
+    mockGateway.getClassDetail.mockRejectedValueOnce(new GatewayHttpError(404, 'Class not found'));
+    const coordinator = new ClassDetailCoordinator({
+      gateway: mockGateway,
+      accountId: 'account-1',
+      classId: 'class-1',
+    });
+
+    await coordinator.loadDetail();
+
+    expect(mockGateway.getClassDetail).toHaveBeenCalledWith('class-1');
+    expect(coordinator.getState().phase).toBe('not_found');
+    expect(coordinator.getState().classDetail).toBeNull();
+  });
+
   it('rotates the reserve key after a hold expires and the server reports its cancellation', async () => {
     const coordinator = new ClassDetailCoordinator({
       gateway: mockGateway,
