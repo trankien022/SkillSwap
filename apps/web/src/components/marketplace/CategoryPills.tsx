@@ -25,7 +25,7 @@ export function CategoryPills({
       aria-label={t('all')}
       className="flex flex-wrap items-center gap-x-2 gap-y-1"
     >
-      <span className="mr-1 shrink-0 text-[11px] font-semibold uppercase tracking-wider text-ink-soft">
+      <span className="mr-1 shrink-0 text-sm font-semibold r text-ink-soft">
         {/* caption for the pills row */}
         <span className="sr-only">Categories</span>
       </span>

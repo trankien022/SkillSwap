@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
+import { PageIntro } from '../ui/PageIntro';
+import { StatePanel as WorkspaceState } from '../ui/StatePanel';
 import { SearchHub } from './SearchHub';
 import { CategoryPills } from './CategoryPills';
 import { FilterSidebar } from './FilterSidebar';
@@ -71,14 +73,9 @@ export function MarketplaceClient({ initialCategory }: { initialCategory?: Skill
   return (
     <>
       {/* Search + categories */}
-      <section className="border-b border-border bg-mist">
-        <div className="mx-auto max-w-7xl px-4 py-10 lg:px-8">
-          <div className="mb-6 max-w-3xl">
-            <h1 className="text-3xl font-bold leading-tight tracking-tight text-ink sm:text-4xl">
-              {t('title')}
-            </h1>
-            <p className="mt-2 text-base text-ink-soft sm:text-lg">{t('description')}</p>
-          </div>
+      <section className="bg-mist">
+        <div className="workspace-page">
+          <PageIntro title={t('title')} description={t('description')} art="programming" artAlt={t('artAlt')} />
           <SearchHub
             initialQuery={query}
             filterOpen={filterOpen}
@@ -98,7 +95,7 @@ export function MarketplaceClient({ initialCategory }: { initialCategory?: Skill
       </section>
 
       {/* Results layout */}
-      <section className="mx-auto max-w-7xl px-4 py-10 lg:px-8">
+      <section className="workspace-page">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           {filterOpen && (
             <div className="lg:col-span-3">
@@ -111,7 +108,7 @@ export function MarketplaceClient({ initialCategory }: { initialCategory?: Skill
           )}
 
           <div className={filterOpen ? 'lg:col-span-9' : 'lg:col-span-12'}>
-            <div className="mb-5 flex flex-col items-start justify-between gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:flex-row sm:items-center">
+            <div className="mb-5 flex flex-col items-start justify-between gap-3 border-b border-border pb-4 sm:flex-row sm:items-center">
               <div className="flex items-center gap-2">
                 <span className="text-base font-bold text-ink">{t('title')}</span>
                 {state.phase === 'ready' && (
@@ -220,7 +217,7 @@ function LoadingGrid({ label }: { label: string }) {
           <div
             key={idx}
             aria-hidden="true"
-            className="h-72 animate-pulse rounded-2xl border border-border bg-surface shadow-sm"
+            className="h-72 animate-pulse rounded-2xl border border-border bg-surface "
           />
         ))}
       </div>
@@ -241,31 +238,9 @@ function StatePanel({
   body: string;
   cta: { href: string; label: string; onClick?: () => void };
 }) {
-  const iconTone =
-    tone === 'error' ? 'bg-danger-tint text-danger-ink' : 'bg-neutral-tint text-ink-soft';
-  return (
-    <div
-      role={tone === 'error' ? 'alert' : undefined}
-      className="flex flex-col items-start gap-3 rounded-xl border border-border bg-surface p-8 shadow-sm sm:flex-row sm:items-center"
-    >
-      <span
-        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${iconTone}`}
-      >
-        {icon}
-      </span>
-      <div className="flex flex-1 flex-col gap-1">
-        <h2 className="text-base font-semibold text-ink">{title}</h2>
-        <p className="text-sm text-ink-soft">{body}</p>
-      </div>
-      <Link
-        href={cta.href}
-        onClick={cta.onClick}
-        className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-surface transition-colors hover:bg-ink-soft"
-      >
-        {cta.label}
-      </Link>
-    </div>
-  );
+  void icon;
+  return <WorkspaceState title={title} tone={tone === 'error' ? 'error' : 'neutral'} action={cta.onClick ? <button type="button" onClick={cta.onClick} className="workspace-primary">{cta.label}</button> : <Link href={cta.href} className="workspace-primary">{cta.label}</Link>}>{body}</WorkspaceState>;
+
 }
 
 /* --- Inline SVG glyphs --- */

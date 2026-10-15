@@ -227,7 +227,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
       {/* 1. Milestone stepper */}
       <nav
         aria-label={t('steps.step1')}
-        className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3 text-xs font-medium"
+        className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3 text-sm font-medium"
       >
         <div className="flex items-center gap-2 font-semibold text-emerald-700">
           <span className="material-symbols-outlined text-[18px] text-emerald-600">
@@ -252,10 +252,10 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
       </nav>
 
       {/* 2. Session summary banner (real booking data) */}
-      <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 p-6 text-white shadow-sm sm:p-7">
+      <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 p-6 text-white  sm:p-7">
         <div className="relative z-10 flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-300">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/20 px-3 py-1 text-sm font-semibold text-emerald-300">
               <span className="material-symbols-outlined text-[15px]">task_alt</span>
               <span>{t('banner.badge')}</span>
             </div>
@@ -266,12 +266,12 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
           </div>
 
           <div className="flex shrink-0 flex-col items-start gap-2.5 sm:flex-row md:flex-col md:items-end">
-            <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-3.5 py-1.5 backdrop-blur-md">
-              <span className="text-[11px] font-medium text-slate-300">
+            <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-3.5 py-1.5 ">
+              <span className="text-sm font-medium text-slate-300">
                 {t('banner.bookingCode', { code: booking.bookingId.slice(0, 12) })}
               </span>
             </div>
-            <div className="flex items-center gap-1.5 text-xs font-medium text-slate-300">
+            <div className="flex items-center gap-1.5 text-sm font-medium text-slate-300">
               <span className="material-symbols-outlined text-[16px] text-emerald-400">
                 schedule
               </span>
@@ -285,22 +285,22 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
         <div className="space-y-5 lg:col-span-5">
           {/* Card 1: session info */}
-          <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 ">
             <div className="flex items-center justify-between border-b border-slate-100 pb-1">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <span className="text-sm font-semibold r text-slate-400">
                 {t('sessionInfo.title')}
               </span>
-              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
+              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-sm font-semibold text-slate-700">
                 {t('sessionInfo.tag')}
               </span>
             </div>
 
             <div className="flex items-start gap-4">
-              <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-100 text-emerald-800 shadow-sm">
+              <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-100 text-emerald-800 ">
                 <span className="material-symbols-outlined text-[26px]">
                   {skillIcon(booking)}
                 </span>
-                <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-white shadow">
+                <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-campus-emerald-deep text-white shadow">
                   <span className="material-symbols-outlined text-[12px]">check</span>
                 </div>
               </div>
@@ -314,17 +314,17 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
                     {booking.classSummary.teacherDisplayName}
                   </span>
                   <span className="h-1 w-1 rounded-full bg-slate-300" />
-                  <span className="text-xs text-slate-500">{t('sessionInfo.peerStudent')}</span>
+                  <span className="text-sm text-slate-500">{t('sessionInfo.peerStudent')}</span>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
               <div className="rounded-lg border border-slate-200/60 bg-white p-2.5">
-                <div className="text-[11px] font-medium text-slate-500">
+                <div className="text-sm font-medium text-slate-500">
                   {t('sessionInfo.startsAtLabel')}
                 </div>
-                <div className="mt-0.5 truncate text-xs font-bold text-slate-900">
+                <div className="mt-0.5 truncate text-sm font-bold text-slate-900">
                   {startsAt.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-GB', {
                     day: '2-digit',
                     month: '2-digit',
@@ -335,10 +335,10 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
                 </div>
               </div>
               <div className="rounded-lg border border-slate-200/60 bg-white p-2.5">
-                <div className="text-[11px] font-medium text-slate-500">
+                <div className="text-sm font-medium text-slate-500">
                   {t('sessionInfo.durationLabel')}
                 </div>
-                <div className="mt-0.5 text-xs font-bold text-emerald-700">
+                <div className="mt-0.5 text-sm font-bold text-emerald-700">
                   {t('sessionInfo.durationValue', { minutes: durationMinutes })}
                 </div>
               </div>
@@ -346,7 +346,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
           </div>
 
           {/* Card 2: escrow settlement, derived from the real price */}
-          <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 ">
             <div className="flex items-center justify-between border-b border-slate-100 pb-1">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[22px] text-emerald-600">
@@ -354,12 +354,12 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
                 </span>
                 <h3 className="text-base font-bold text-slate-900">{t('escrow.title')}</h3>
               </div>
-              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800">
+              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-sm font-bold text-emerald-800">
                 {t('escrow.status')}
               </span>
             </div>
 
-            <p className="text-xs leading-relaxed text-slate-600">{t('escrow.desc')}</p>
+            <p className="text-sm leading-relaxed text-slate-600">{t('escrow.desc')}</p>
 
             <div className="space-y-3 rounded-xl border border-slate-100 bg-slate-50 p-4">
               <div className="flex items-center justify-between text-slate-900">
@@ -371,7 +371,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
 
               <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
                 <div
-                  className="h-full bg-emerald-600"
+                  className="h-full bg-campus-emerald-deep"
                   style={{ width: `${teacherPct}%` }}
                   title={t('escrow.tutorShare')}
                 />
@@ -382,10 +382,10 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
                 />
               </div>
 
-              <div className="space-y-1.5 pt-1 text-xs">
+              <div className="space-y-1.5 pt-1 text-sm">
                 <div className="flex items-center justify-between text-slate-800">
                   <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-emerald-600" />
+                    <span className="h-2 w-2 rounded-full bg-campus-emerald-deep" />
                     <span>{t('escrow.tutorShare')}</span>
                   </div>
                   <span className="font-bold text-emerald-700">
@@ -403,7 +403,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
                 </div>
               </div>
 
-              <p className="border-t border-slate-200 pt-2 text-[11px] text-slate-500">
+              <p className="border-t border-slate-200 pt-2 text-sm text-slate-500">
                 {t('escrow.vndNote', { vnd: computeVndEstimate(price).toLocaleString('vi-VN') })}
               </p>
             </div>
@@ -414,7 +414,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
                   <span className="material-symbols-outlined text-[18px] text-emerald-600">
                     account_balance_wallet
                   </span>
-                  <span className="text-xs text-slate-800">
+                  <span className="text-sm text-slate-800">
                     {t('escrow.availableBalance')}{' '}
                     <strong className="font-bold text-emerald-800">
                       {t('escrow.credits', { n: availableCredits })}
@@ -423,7 +423,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
                 </div>
                 <Link
                   href={`/${locale}/wallet`}
-                  className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
+                  className="text-sm font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
                 >
                   {t('escrow.viewWallet')}
                 </Link>
@@ -432,7 +432,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
           </div>
 
           {/* Card 3: materials — honestly unavailable */}
-          <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-6 ">
             <div className="flex items-center justify-between border-b border-slate-100 pb-1">
               <h3 className="flex items-center gap-2 text-base font-bold text-slate-900">
                 <span className="material-symbols-outlined text-[20px] text-slate-400">
@@ -441,7 +441,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
                 <span>{t('materials.title')}</span>
               </h3>
             </div>
-            <p className="text-xs leading-relaxed text-slate-500">
+            <p className="text-sm leading-relaxed text-slate-500">
               {t('unavailable.materials')}
             </p>
           </div>
@@ -451,15 +451,15 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
         <div className="space-y-5 lg:col-span-7">
           <form
             onSubmit={handleSubmit}
-            className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+            className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 "
           >
             <div className="space-y-1.5 border-b border-slate-100 pb-2">
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1 text-xs font-semibold text-emerald-700">
+                <span className="flex items-center gap-1 text-sm font-semibold text-emerald-700">
                   <span className="material-symbols-outlined text-[16px]">verified</span>
                   {t('form.badge')}
                 </span>
-                <span className="text-xs text-slate-400">{t('form.counterpart')}</span>
+                <span className="text-sm text-slate-400">{t('form.counterpart')}</span>
               </div>
               <h2 className="text-xl font-bold tracking-tight text-slate-900">{t('form.title')}</h2>
               <p className="text-sm text-slate-600">{t('form.subtitle')}</p>
@@ -480,7 +480,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
                       onClick={() => setOverallRating(star)}
                       aria-label={`${star} star`}
                       aria-pressed={isActive}
-                      className="group p-1 transition-transform hover:scale-125 focus:outline-none"
+                      className="group p-1 transition-colors hover:scale-125 focus:outline-none"
                     >
                       <span
                         className={`material-symbols-outlined text-[38px] transition-colors ${
@@ -499,7 +499,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
             {/* Private self-assessment criteria */}
             <div className="space-y-3">
               <h3 className="text-sm font-bold text-slate-900">{t('form.criteriaTitle')}</h3>
-              <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] leading-relaxed text-slate-500">
+              <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm leading-relaxed text-slate-500">
                 {t('form.criteriaNote')}
               </p>
 
@@ -510,7 +510,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
                     className="space-y-1.5 rounded-xl border border-slate-200 bg-slate-50 p-3.5"
                   >
                     <div className="flex items-center justify-between text-slate-900">
-                      <span className="text-xs font-semibold">
+                      <span className="text-sm font-semibold">
                         {t(`form.crit${criterion}` as 'form.crit1')}
                       </span>
                       <div className="flex items-center gap-1">
@@ -546,11 +546,11 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
                       <div
-                        className="h-full rounded-full bg-emerald-600 transition-colors duration-300"
+                        className="h-full rounded-full bg-campus-emerald-deep transition-colors duration-300"
                         style={{ width: `${((criteriaRatings[criterion] ?? 5) / 5) * 100}%` }}
                       />
                     </div>
-                    <span className="block text-[11px] text-slate-500">
+                    <span className="block text-sm text-slate-500">
                       {t(`form.crit${criterion}Desc` as 'form.crit1Desc')}
                     </span>
                   </div>
@@ -563,7 +563,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
               <label htmlFor="reviewComment" className="block text-sm font-bold text-slate-900">
                 {t('form.commentLabel')}
               </label>
-              <p className="text-xs text-slate-500">{t('form.commentHint')}</p>
+              <p className="text-sm text-slate-500">{t('form.commentHint')}</p>
 
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {[1, 2, 3, 4].map((chip) => {
@@ -577,7 +577,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
                           prev.includes(chipText) ? prev : prev ? `${prev}. ${chipText}` : chipText,
                         )
                       }
-                      className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800"
+                      className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700 transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800"
                     >
                       + {chipText}
                     </button>
@@ -595,9 +595,9 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
                 aria-required="true"
                 className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-sm text-slate-900 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-600"
               />
-              <p className="text-right text-[11px] text-slate-400">{comment.length}/1000</p>
+              <p className="text-right text-sm text-slate-400">{comment.length}/1000</p>
               {trimmedComment.length === 0 && (
-                <p className="text-xs font-medium text-slate-500">{t('form.commentRequired')}</p>
+                <p className="text-sm font-medium text-slate-500">{t('form.commentRequired')}</p>
               )}
             </div>
 
@@ -621,13 +621,13 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-7 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors sm:w-auto ${
+                className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-7 py-2.5 text-sm font-semibold text-white  transition-colors sm:w-auto ${
                   submit.phase === 'success'
-                    ? 'cursor-default bg-emerald-600'
+                    ? 'cursor-default bg-campus-emerald-deep'
                     : submit.phase === 'submitting'
                       ? 'cursor-wait bg-emerald-700 opacity-80'
                       : canSubmit
-                        ? 'bg-emerald-600 hover:bg-emerald-700'
+                        ? 'bg-campus-emerald-deep hover:bg-ink'
                         : 'cursor-not-allowed bg-slate-300'
                 }`}
               >
@@ -654,15 +654,15 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
           </form>
 
           {submit.phase === 'success' && (
-            <div className="flex items-center gap-3 rounded-2xl border border-emerald-300 bg-emerald-50 p-4 text-emerald-900 shadow-sm">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white">
+            <div className="flex items-center gap-3 rounded-2xl border border-emerald-300 bg-emerald-50 p-4 text-emerald-900 ">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-campus-emerald-deep text-white">
                 <span className="material-symbols-outlined text-[24px]">verified</span>
               </div>
               <div className="flex-1">
                 <div className="text-sm font-bold text-emerald-900">
                   {t('form.toastSuccessTitle')}
                 </div>
-                <div className="mt-0.5 text-xs text-emerald-700">{t('form.toastSuccessBody')}</div>
+                <div className="mt-0.5 text-sm text-emerald-700">{t('form.toastSuccessBody')}</div>
               </div>
             </div>
           )}
@@ -710,13 +710,13 @@ function ReviewStateBlock({
   const entry = map[state.phase];
 
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-sm">
+    <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white p-12 text-center ">
       <h2 className="text-base font-bold text-slate-900">{entry.title}</h2>
       <p className="max-w-md text-sm leading-relaxed text-slate-600">{entry.body}</p>
       {entry.href !== null && (
         <Link
           href={entry.href}
-          className="mt-2 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
+          className="mt-2 inline-flex items-center gap-2 rounded-full bg-campus-emerald-deep px-6 py-2.5 text-sm font-semibold text-white  transition-colors hover:bg-ink"
         >
           {t('form.btnBack')}
         </Link>

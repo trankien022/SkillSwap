@@ -122,14 +122,14 @@ function LoadingPanel() {
   return (
     <div role="status" aria-live="polite" className="flex flex-col gap-6">
       <span className="sr-only">{t('loading')}</span>
-      <div aria-hidden="true" className="h-48 animate-pulse rounded-xl border border-border bg-surface shadow-sm" />
+      <div aria-hidden="true" className="h-48 animate-pulse rounded-xl border border-border bg-surface " />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div aria-hidden="true" className="flex flex-col gap-6 lg:col-span-8">
-          <div className="h-40 animate-pulse rounded-xl border border-border bg-surface shadow-sm" />
-          <div className="h-56 animate-pulse rounded-xl border border-border bg-surface shadow-sm" />
+          <div className="h-40 animate-pulse rounded-xl border border-border bg-surface " />
+          <div className="h-56 animate-pulse rounded-xl border border-border bg-surface " />
         </div>
         <div aria-hidden="true" className="lg:col-span-4">
-          <div className="h-72 animate-pulse rounded-xl border border-border bg-surface shadow-sm" />
+          <div className="h-72 animate-pulse rounded-xl border border-border bg-surface " />
         </div>
       </div>
     </div>
@@ -184,7 +184,7 @@ function Panel({
   return (
     <div
       role={tone === 'error' ? 'alert' : undefined}
-      className="mx-auto flex max-w-xl flex-col items-center gap-3 rounded-xl border border-border bg-surface p-12 text-center shadow-sm"
+      className="mx-auto flex max-w-xl flex-col items-center gap-3 rounded-xl border border-border bg-surface p-12 text-center "
     >
       <span className={`flex h-12 w-12 items-center justify-center rounded-full ${iconTone}`}>
         {icon}
@@ -205,7 +205,7 @@ function NotFoundPanel() {
   const t = useTranslations('ClassDetail.notFound');
   const locale = useLocale();
   return (
-    <div className="mx-auto flex max-w-xl flex-col items-center gap-3 rounded-xl border border-border bg-surface p-12 text-center shadow-sm">
+    <div className="mx-auto flex max-w-xl flex-col items-center gap-3 rounded-xl border border-border bg-surface p-12 text-center ">
       <span className="flex h-12 w-12 items-center justify-center rounded-full bg-mist text-ink">
         <SearchOffIcon className="h-7 w-7" />
       </span>

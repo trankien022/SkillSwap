@@ -18,7 +18,7 @@ export function ReviewsSection({ item }: { item: ClassDetailView }) {
   const count = item.ratingCount;
 
   return (
-    <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+    <section className="workspace-panel rounded-xl border border-border bg-surface p-6 ">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-mist text-ink">
@@ -69,7 +69,7 @@ function ReviewCard({
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface text-[11px] font-bold text-ink">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface text-sm font-bold text-ink">
               {review.authorName
                 .split(' ')
                 .slice(-1)[0]
@@ -83,7 +83,7 @@ function ReviewCard({
               {/* The API returns no school for a reviewer, so the line is
                   omitted rather than filled with a stand-in. */}
               {review.schoolName !== null && (
-                <span className="text-[11px] text-ink-soft">
+                <span className="text-sm text-ink-soft">
                   {review.schoolName}
                 </span>
               )}
@@ -93,7 +93,7 @@ function ReviewCard({
         </div>
         <p className="text-sm italic text-ink-soft">"{review.body}"</p>
       </div>
-      <span className="text-[11px] text-ink-soft">
+      <span className="text-sm text-ink-soft">
         {dateText} • {autoVerifiedLabel}
       </span>
     </article>

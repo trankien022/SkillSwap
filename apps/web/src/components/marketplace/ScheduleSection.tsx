@@ -32,7 +32,7 @@ export function ScheduleSection({ item }: { item: ClassDetailView }) {
   });
 
   return (
-    <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+    <section className="workspace-panel rounded-xl border border-border bg-surface p-6 ">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-mist text-ink">
@@ -40,14 +40,14 @@ export function ScheduleSection({ item }: { item: ClassDetailView }) {
           </span>
           <h2 className="text-base font-semibold text-ink">{t('title')}</h2>
         </div>
-        <span className="rounded-lg border border-campus-emerald/20 bg-success-tint px-2 py-1 text-[11px] font-semibold text-campus-emerald-deep">
+        <span className="rounded-lg border border-campus-emerald/20 bg-success-tint px-2 py-1 text-sm font-semibold text-campus-emerald-deep">
           {t('policyBadge')}
         </span>
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {/* Time card */}
         <article className="flex flex-col justify-between gap-3 rounded-xl border border-border bg-mist p-4">
-          <div className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-ink-soft">
+          <div className="flex items-center gap-1 text-sm font-semibold r text-ink-soft">
             <ScheduleIcon className="h-4 w-4" />
             <span>{t('kickoff')}</span>
           </div>
@@ -60,8 +60,8 @@ export function ScheduleSection({ item }: { item: ClassDetailView }) {
           <div
             className={
               hoursLeft <= 0
-                ? 'inline-flex w-fit items-center gap-1.5 rounded-lg bg-danger-tint px-2 py-1 text-[11px] font-semibold text-danger-ink shadow-sm'
-                : 'inline-flex w-fit items-center gap-1.5 rounded-lg bg-surface px-2 py-1 text-[11px] font-semibold text-success-ink shadow-sm'
+                ? 'inline-flex w-fit items-center gap-1.5 rounded-lg bg-danger-tint px-2 py-1 text-sm font-semibold text-danger-ink '
+                : 'inline-flex w-fit items-center gap-1.5 rounded-lg bg-surface px-2 py-1 text-sm font-semibold text-success-ink '
             }
           >
             <TimerIcon className="h-3.5 w-3.5" />
@@ -73,7 +73,7 @@ export function ScheduleSection({ item }: { item: ClassDetailView }) {
 
         {/* Capacity + room card */}
         <article className="flex flex-col justify-between gap-3 rounded-xl border border-border bg-mist p-4">
-          <div className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-ink-soft">
+          <div className="flex items-center gap-1 text-sm font-semibold r text-ink-soft">
             <GroupIcon className="h-4 w-4" />
             <span>{t('capacity')}</span>
           </div>
@@ -85,8 +85,8 @@ export function ScheduleSection({ item }: { item: ClassDetailView }) {
               <span
                 className={
                   isFull
-                    ? 'rounded-full bg-danger-tint px-2 py-0.5 text-[11px] font-bold text-danger-ink'
-                    : 'rounded-full border border-success-tint bg-success-tint px-2 py-0.5 text-[11px] font-bold text-success-ink'
+                    ? 'rounded-full bg-danger-tint px-2 py-0.5 text-sm font-bold text-danger-ink'
+                    : 'rounded-full border border-success-tint bg-success-tint px-2 py-0.5 text-sm font-bold text-success-ink'
                 }
               >
                 {t('seatsLeft', { taken, capacity })}

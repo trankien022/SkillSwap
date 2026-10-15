@@ -212,7 +212,8 @@
         "priceLow": "Credits: Thấp đến cao",
         "popular": "Lớp đông học viên nhất"
       },
-      "description": "Tìm kỹ năng bạn cần, chọn lịch và mức giá phù hợp."
+      "description": "Tìm kỹ năng bạn cần, chọn lịch và mức giá phù hợp.",
+      "artAlt": "Minh họa góc học kỹ năng trực tuyến"
     },
     "states": {
       "loading": "Đang tải danh sách lớp học…",
@@ -278,7 +279,8 @@
         "intermediate": "Trung cấp",
         "advanced": "Nâng cao",
         "expert": "Chuyên sâu"
-      }
+      },
+      "illustration": "Minh họa chủ đề học"
     },
     "pagination": {
       "showing": "Hiển thị {from} - {to} trong tổng số {total} lớp học đang tuyển sinh",
@@ -374,7 +376,9 @@
       "ctaBook": "Tiến hành đặt lớp",
       "ctaSave": "Lưu vào danh sách quan tâm",
       "supportTitle": "Hỗ trợ sinh viên 24/7",
-      "supportSubtitle": "Hệ thống hỗ trợ trực tuyến"
+      "supportSubtitle": "Hệ thống hỗ trợ trực tuyến",
+      "releaseHint": "Credit được giữ tới khi buổi học được ghi nhận hoàn tất.",
+      "policyLink": "Xem quy tắc thanh toán"
     },
     "notFound": {
       "title": "Không tìm thấy lớp học",
@@ -396,10 +400,11 @@
       "roleChip": "Học viên SkillSwap",
       "termChip": "Kỳ học hiện tại",
       "title": "Lớp học của tôi",
-      "subtitle": "Theo dõi tiến độ các buổi học đã đặt, kiểm soát quy trình ký quỹ, truy cập phòng học và phê duyệt giải ngân credits sau mỗi ca học.",
+      "subtitle": "Lịch học, phòng học trực tuyến và những kỹ năng bạn đang tích lũy — tất cả ở một nơi.",
       "ctaCalendar": "Đồng bộ lịch",
       "ctaExplore": "Khám phá lớp mới",
-      "mockBadge": "Dữ liệu minh họa"
+      "mockBadge": "Dữ liệu minh họa",
+      "artAlt": "Minh họa sinh viên học trực tuyến qua video"
     },
     "empty": {
       "title": "Chưa có buổi học nào",
@@ -469,7 +474,9 @@
       "cancelledBody": "Lớp học đã được huỷ. Số credits ký quỹ đã hoàn về ví của bạn.",
       "completedReview": "Đánh giá bạn đã gửi",
       "endedAt": "Đã kết thúc lúc {when}",
-      "startsAt": "{when} • {duration} phút"
+      "startsAt": "{when} • {duration} phút",
+      "chatHint": "Trò chuyện trong phòng học khi bạn được cấp quyền vào lớp.",
+      "materialsHint": "Người dạy chia sẻ tài liệu trong buổi học. Kiểm tra với người dạy khi vào lớp."
     },
     "calendar": {
       "title": "Lịch theo tháng",
@@ -508,7 +515,16 @@
       "noShowBody": "Nếu giảng viên không vào phòng sau 15 phút tính từ giờ bắt đầu, hệ thống tự động hoàn credits ký quỹ về ví của bạn.",
       "contactRule": "Liên lạc an toàn qua nền tảng",
       "contactBody": "Mọi trao đổi, gửi mã nguồn và cuộc gọi video đều diễn ra nội bộ trong SkillSwap để bảo đảm căn cứ giải quyết tranh chấp học thuật.",
-      "support": "Cần trợ giúp học vụ"
+      "support": "Cần trợ giúp học vụ",
+      "policyLink": "Xem quy tắc học và thanh toán",
+      "noShow": {
+        "title": "Nếu người dạy vắng mặt",
+        "body": "Bạn có thể báo vắng mặt khi đủ điều kiện. Hệ thống xử lý theo trạng thái buổi học và chính sách hoàn credit."
+      },
+      "contact": {
+        "title": "Trao đổi trong nền tảng",
+        "body": "Dùng phòng học và công cụ trao đổi của SkillSwap để giữ đầy đủ thông tin buổi học."
+      }
     },
     "reviewModal": {
       "title": "Đánh giá buổi học & Giải ngân ký quỹ",

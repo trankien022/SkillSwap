@@ -36,7 +36,7 @@ export function WalletLedgerWidget({
 
   if (!authed || !wallet) {
     return (
-      <article className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
+      <article className="workspace-panel rounded-2xl border border-border bg-surface p-6 ">
         <div className="flex items-center gap-2">
           <AccountBalanceIcon className="h-5 w-5 text-emerald-700" />
           <h3 className="text-base font-bold text-ink">{t('title')}</h3>
@@ -44,7 +44,7 @@ export function WalletLedgerWidget({
         <p className="mt-3 text-sm text-ink-soft leading-relaxed">{t('signInToView')}</p>
         <Link
           href={`/${locale}/auth?tab=login`}
-          className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
+          className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-campus-emerald-deep px-4 py-2.5 text-sm font-semibold text-white  transition-colors hover:bg-ink"
         >
           <span>{t('signInCta')}</span>
         </Link>
@@ -58,7 +58,7 @@ export function WalletLedgerWidget({
     Math.round((wallet.heldCredits / Math.max(1, wallet.totalCredits)) * 100),
   );
   return (
-    <article className="relative overflow-hidden rounded-2xl border border-border bg-surface p-6 shadow-sm">
+    <article className="workspace-panel relative overflow-hidden rounded-2xl border border-border bg-surface p-6 ">
       <div className="mb-4 flex items-center gap-2">
         <AccountBalanceIcon className="h-5 w-5 text-emerald-700" />
         <h3 className="text-base font-bold text-ink">{t('title')}</h3>
@@ -78,11 +78,11 @@ export function WalletLedgerWidget({
         </div>
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
           <div
-            className="h-full rounded-full bg-emerald-600"
+            className="h-full rounded-full bg-campus-emerald-deep"
             style={{ width: `${heldPct}%` }}
           />
         </div>
-        <div className="flex items-center justify-between text-xs text-ink-soft">
+        <div className="flex items-center justify-between text-sm text-ink-soft">
           <span>{t('total')}</span>
           <span>
             {wallet.totalCredits} credits{' '}
@@ -110,7 +110,7 @@ export function WalletLedgerWidget({
       </div>
       <Link
         href={`/${locale}/wallet`}
-        className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 py-2.5 text-xs font-semibold text-emerald-800 transition-colors hover:bg-emerald-100"
+        className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 py-2.5 text-sm font-semibold text-emerald-800 transition-colors hover:bg-emerald-100"
       >
         <AccountBalanceWalletIcon className="h-4 w-4 text-emerald-700" />
         <span>{t('details')}</span>

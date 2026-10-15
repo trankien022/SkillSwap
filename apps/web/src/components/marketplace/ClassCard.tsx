@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   formatSeats,
@@ -23,9 +24,11 @@ export function ClassCard({ item }: { item: MarketplaceClass }) {
     .split('/')
     .map((n) => Number(n));
 
+  const art = item.skillCategory === 'programming' ? 'programming' : item.skillCategory === 'design' ? 'design' : item.skillCategory === 'language' ? 'languages' : 'peer-learning';
+
   return (
-    <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3 text-xs text-ink-soft">
+    <article className="workspace-class-card">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3 text-sm text-ink-soft">
         <span className="font-medium">
           {t(item.format === 'one-on-one' ? 'format.oneOnOne' : 'format.group')}
         </span>
@@ -34,10 +37,11 @@ export function ClassCard({ item }: { item: MarketplaceClass }) {
           {t('duration', { minutes: item.durationMinutes })}
         </span>
       </div>
+      <figure className="workspace-class-art"><Image src={`/learning/${art}.webp`} alt="" width={800} height={533} sizes="(max-width: 767px) 100vw, 50vw" /><figcaption>{t('illustration')}</figcaption></figure>
       {/* Body */}
       <div className="flex flex-1 flex-col gap-4 p-5">
         {/* Schedule row */}
-        <div className="flex flex-wrap items-center gap-1.5 text-xs font-medium text-ink-soft">
+        <div className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-ink-soft">
           <CalendarIcon className="h-4 w-4" />
           <span>{t('startsAt', { when: weekday, time })}</span>
           <span className="text-ink-muted">•</span>
@@ -64,7 +68,7 @@ export function ClassCard({ item }: { item: MarketplaceClass }) {
             <div className="flex flex-wrap items-center gap-2">
               <span className="truncate text-sm font-medium text-ink">{item.teacherName}</span>
               {item.verified === true && (
-                <span className="inline-flex items-center gap-1 text-xs text-success-ink">
+                <span className="inline-flex items-center gap-1 text-sm text-success-ink">
                   <CheckIcon className="h-4 w-4 shrink-0" />
                   <span>{t('verified')}</span>
                 </span>
@@ -75,10 +79,10 @@ export function ClassCard({ item }: { item: MarketplaceClass }) {
             {(item.schoolName !== null || item.level !== null) && (
               <div className="flex items-center gap-1.5">
                 {item.schoolName !== null && (
-                  <span className="truncate text-[11px] text-ink-soft">{item.schoolName}</span>
+                  <span className="truncate text-sm text-ink-soft">{item.schoolName}</span>
                 )}
                 {item.level !== null && (
-                  <span className="shrink-0 rounded bg-neutral-tint px-1.5 py-0.5 text-[10px] font-semibold text-ink-soft">
+                  <span className="shrink-0 rounded bg-neutral-tint px-1.5 py-0.5 text-sm font-semibold text-ink-soft">
                     {t(`levels.${item.level}`)}
                   </span>
                 )}
@@ -87,7 +91,7 @@ export function ClassCard({ item }: { item: MarketplaceClass }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 text-xs text-ink-soft">
+        <div className="flex items-center gap-1.5 text-sm text-ink-soft">
           <StarIcon className="h-3.5 w-3.5 text-ink-muted" />
           {item.ratingAvg === null ? (
             t('noRating')
@@ -102,7 +106,7 @@ export function ClassCard({ item }: { item: MarketplaceClass }) {
         {/* Footer */}
         <div className="mt-auto flex flex-wrap items-end justify-between gap-4 border-t border-border pt-4">
           <div className="flex flex-col">
-            <div className="flex items-center gap-1 text-xs font-medium text-ink-soft">
+            <div className="flex items-center gap-1 text-sm font-medium text-ink-soft">
               <GroupIcon className="h-3.5 w-3.5" />
               <span>{t('seats.format', { taken, capacity })}</span>
             </div>
@@ -110,7 +114,7 @@ export function ClassCard({ item }: { item: MarketplaceClass }) {
               <span className="text-lg font-bold text-ink">
                 {t('price.credits', { credits: item.priceCredits })}
               </span>
-              <span className="text-[11px] text-ink-soft">
+              <span className="text-sm text-ink-soft">
                 {item.format === 'group-2-4'
                   ? t('pricePerLearner', {
                       vnd: ((item.priceCredits * 1000) / item.capacity).toLocaleString(locale),
@@ -121,7 +125,7 @@ export function ClassCard({ item }: { item: MarketplaceClass }) {
           </div>
           <a
             href={`/${locale}/classes/${item.id}`}
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-ink transition-colors hover:bg-mist"
+            className="workspace-secondary"
           >
             <span>{t('viewClass')}</span>
             <ArrowForwardIcon className="h-4 w-4" />

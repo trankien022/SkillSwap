@@ -51,7 +51,7 @@ export function FilterSidebar({
     <aside
       id="filter-sidebar"
       aria-label={t('title')}
-      className="sticky top-24 flex flex-col gap-6 rounded-xl border border-border bg-surface p-6 shadow-sm"
+      className="workspace-panel sticky top-24 flex flex-col gap-6 rounded-xl border border-border bg-surface p-6 "
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -61,7 +61,7 @@ export function FilterSidebar({
         <button
           type="button"
           onClick={onReset}
-          className="text-xs font-semibold text-campus-emerald hover:underline"
+          className="text-sm font-semibold text-campus-emerald hover:underline"
         >
           {t('reset')}
         </button>
@@ -121,7 +121,7 @@ export function FilterSidebar({
           onChange={(e) => setPriceMax(Number(e.target.value))}
           className="mt-2 w-full cursor-pointer accent-[#0f172a]"
         />
-        <div className="mt-1 flex justify-between text-[11px] text-ink-soft">
+        <div className="mt-1 flex justify-between text-sm text-ink-soft">
           <span>30 Cr</span>
           <span>120 Cr</span>
           <span>250+ Cr</span>
@@ -177,12 +177,12 @@ function FilterGroup({
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-ink">{label}</span>
         {rightLabel && (
-          <span className="text-xs font-bold text-campus-emerald">
+          <span className="text-sm font-bold text-campus-emerald">
             {rightLabel}
           </span>
         )}
       </div>
-      {hint && <p className="text-[11px] text-ink-soft">{hint}</p>}
+      {hint && <p className="text-sm text-ink-soft">{hint}</p>}
       <div className="flex flex-col gap-1">{children}</div>
     </div>
   );
@@ -253,8 +253,8 @@ function RatingOption({
       onClick={onClick}
       className={
         active
-          ? 'flex items-center justify-center gap-1 rounded-lg border border-campus-emerald/30 bg-mist px-3 py-1.5 text-xs font-semibold text-ink'
-          : 'flex items-center justify-center gap-1 rounded-lg border border-border bg-mist px-3 py-1.5 text-xs font-semibold text-ink-soft transition-colors hover:border-campus-emerald/30 hover:text-ink'
+          ? 'flex items-center justify-center gap-1 rounded-lg border border-campus-emerald/30 bg-mist px-3 py-1.5 text-sm font-semibold text-ink'
+          : 'flex items-center justify-center gap-1 rounded-lg border border-border bg-mist px-3 py-1.5 text-sm font-semibold text-ink-soft transition-colors hover:border-campus-emerald/30 hover:text-ink'
       }
     >
       <StarIcon className="h-3.5 w-3.5 text-warning-ink" />

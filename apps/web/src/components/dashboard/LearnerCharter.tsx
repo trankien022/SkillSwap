@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import type { CharterEntry } from '../../lib/dashboard/types';
 
 /**
@@ -21,8 +21,9 @@ export function LearnerCharter({
   entries: CharterEntry[];
 }) {
   const t = useTranslations('Dashboard.charter');
+  const locale = useLocale();
   return (
-    <article className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-6 shadow-sm">
+    <article className="workspace-panel flex flex-col gap-4 rounded-2xl border border-border bg-surface p-6 ">
       <div className="flex items-center gap-2">
         <GavelIcon className="h-5 w-5 text-ink" />
         <h3 className="text-base font-bold text-ink">{t('title')}</h3>
@@ -32,26 +33,21 @@ export function LearnerCharter({
           <CharterRule key={idx} entry={entry} />
         ))}
       </div>
-      <button
-        type="button"
-        aria-disabled="true"
-        className="flex w-full items-center justify-center gap-2 rounded-xl border border-danger-ink bg-mist py-2.5 text-sm font-semibold text-danger-ink transition-colors hover:bg-danger-tint"
-      >
-        <SupportAgentIcon className="h-4 w-4" />
-        <span>{t('support')}</span>
-      </button>
+      <a href={`/${locale}#trust`} className="workspace-link">{t('policyLink')}<span aria-hidden="true">↗</span></a>
     </article>
   );
 }
 
 function CharterRule({ entry }: { entry: CharterEntry }) {
+  const t = useTranslations('Dashboard.charter');
+  const key = entry.icon === 'timer_off' ? 'noShow' : entry.icon === 'lock_person' ? 'contact' : null;
   return (
     <div className="flex flex-col gap-1 rounded-xl border border-border bg-mist p-3">
       <span className="flex items-center gap-1 text-sm font-bold text-ink">
         <CharterIcon icon={entry.icon} className="h-4 w-4" />
-        <span>{entry.title}</span>
+        <span>{key ? t(`${key}.title`) : entry.title}</span>
       </span>
-      <p className="text-xs leading-relaxed text-ink-soft">{entry.body}</p>
+      <p className="text-sm leading-relaxed text-ink-soft">{key ? t(`${key}.body`) : entry.body}</p>
     </div>
   );
 }
@@ -108,10 +104,3 @@ function GavelIcon({ className = '' }: { className?: string }) {
   );
 }
 
-function SupportAgentIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
-      <path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 21l1.4-4.7A8.5 8.5 0 1 1 21 11.5z" />
-    </svg>
-  );
-}

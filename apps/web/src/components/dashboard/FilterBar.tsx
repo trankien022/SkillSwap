@@ -63,7 +63,7 @@ export function FilterBar({
               onClick={() => setFilterAndNotify(key)}
               className={
                 active
-                  ? 'inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-ink px-3 py-1.5 text-sm font-semibold text-surface shadow-sm transition-colors'
+                  ? 'inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-ink px-3 py-1.5 text-sm font-semibold text-surface  transition-colors'
                   : 'inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium text-ink-soft transition-colors hover:bg-mist'
               }
             >
@@ -71,8 +71,8 @@ export function FilterBar({
               <span
                 className={
                   active
-                    ? 'rounded-full bg-surface/20 px-1.5 py-0.5 text-[11px] font-semibold'
-                    : 'rounded-full bg-mist px-1.5 py-0.5 text-[11px] font-semibold text-ink'
+                    ? 'rounded-full bg-surface/20 px-1.5 py-0.5 text-sm font-semibold'
+                    : 'rounded-full bg-mist px-1.5 py-0.5 text-sm font-semibold text-ink'
                 }
               >
                 {t('count', { count: counts[key] })}

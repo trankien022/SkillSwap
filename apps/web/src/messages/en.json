@@ -212,7 +212,8 @@
         "priceLow": "Credits: low to high",
         "popular": "Most learners enrolled"
       },
-      "description": "Find a skill you need, at a time and price that work for you."
+      "description": "Find a skill you need, at a time and price that work for you.",
+      "artAlt": "Illustrated online skills study workspace"
     },
     "states": {
       "loading": "Loading classes…",
@@ -278,7 +279,8 @@
         "intermediate": "Intermediate",
         "advanced": "Advanced",
         "expert": "Expert"
-      }
+      },
+      "illustration": "Subject illustration"
     },
     "pagination": {
       "showing": "Showing {from} - {to} of {total} open classes",
@@ -374,7 +376,9 @@
       "ctaBook": "Book this class",
       "ctaSave": "Save to wishlist",
       "supportTitle": "Student support 24/7",
-      "supportSubtitle": "Always-on helpdesk"
+      "supportSubtitle": "Always-on helpdesk",
+      "releaseHint": "Credits are held until the session is recorded as complete.",
+      "policyLink": "Read the payment rules"
     },
     "notFound": {
       "title": "Class not found",
@@ -396,10 +400,11 @@
       "roleChip": "SkillSwap Learner",
       "termChip": "Current term",
       "title": "My Bookings",
-      "subtitle": "Track every booked session, monitor held escrow, join virtual classrooms, and approve credit release upon completion.",
+      "subtitle": "Your schedule, online classrooms and the skills you are building, together in one place.",
       "ctaCalendar": "Sync calendar",
       "ctaExplore": "Find new classes",
-      "mockBadge": "Demo data"
+      "mockBadge": "Demo data",
+      "artAlt": "Illustration of a student learning through a video call"
     },
     "empty": {
       "title": "No sessions found",
@@ -469,7 +474,9 @@
       "cancelledBody": "This class has been cancelled. The held credits have been returned to your wallet.",
       "completedReview": "Your review",
       "endedAt": "Ended at {when}",
-      "startsAt": "{when} • {duration} min"
+      "startsAt": "{when} • {duration} min",
+      "chatHint": "Chat in the classroom once you have access to the session.",
+      "materialsHint": "The teacher shares materials during the session. Check with them when you join."
     },
     "calendar": {
       "title": "Month view",
@@ -508,7 +515,16 @@
       "noShowBody": "If the teacher has not joined the room 15 minutes after the start time, the system automatically returns the held credits to your wallet.",
       "contactRule": "Keep all contact inside the platform",
       "contactBody": "Every message, file share and video call stays inside SkillSwap so the support team has a full record if a dispute is opened.",
-      "support": "Get academic help"
+      "support": "Get academic help",
+      "policyLink": "Read the learning and payment rules",
+      "noShow": {
+        "title": "If the teacher is absent",
+        "body": "Report a no-show when eligible. The system uses the session state and refund policy to process it."
+      },
+      "contact": {
+        "title": "Keep communication on the platform",
+        "body": "Use the SkillSwap classroom and communication tools to keep the session information together."
+      }
     },
     "reviewModal": {
       "title": "Review Session & Release Escrow",

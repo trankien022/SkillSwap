@@ -38,9 +38,9 @@ export function MetricTiles({ metrics }: { metrics: LearnerMetrics }) {
           <dt className="text-sm font-medium text-ink-soft">{item.label}</dt>
           <dd className="mt-2 flex flex-wrap items-baseline gap-1.5">
             <span className="text-3xl font-bold tracking-tight text-ink">{item.value}</span>
-            <span className="text-xs text-ink-muted">{item.unit}</span>
+            <span className="text-sm text-ink-muted">{item.unit}</span>
           </dd>
-          <dd className="mt-2 text-xs leading-relaxed text-ink-soft">{item.hint}</dd>
+          <dd className="mt-2 text-sm leading-relaxed text-ink-soft">{item.hint}</dd>
         </div>
       ))}
     </dl>

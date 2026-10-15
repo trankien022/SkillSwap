@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import type { ClassDetailView } from '../../lib/marketplace/types';
-import { SKILL_CATEGORIES } from '../../lib/marketplace/types';
+
 
 /**
  * Detail page hero (FR-006 detail).
@@ -79,7 +79,7 @@ export function DetailHeader({ item }: { item: ClassDetailView }) {
       </div>
 
       {/* Hero card */}
-      <section className="relative overflow-hidden rounded-xl border border-border bg-surface p-6 shadow-sm">
+      <section className="workspace-panel workspace-class-detail-intro">
 
         <div className="relative flex flex-col gap-4">
           {/* Tags */}
@@ -92,20 +92,13 @@ export function DetailHeader({ item }: { item: ClassDetailView }) {
                 )}
               </span>
             </Chip>
-            <Chip variant="ink">
-              <PsychologyIcon className="h-3.5 w-3.5" />
-              <span>{t('levelBadge')}</span>
-            </Chip>
-            <Chip variant="success">
-              <LockIcon className="h-3.5 w-3.5" />
-              <span>{t('security')}</span>
-            </Chip>
+
           </div>
 
           {/* Title. The class-detail route returns no skill name, so the
               description — which it does return — is used instead of printing
               a placeholder that would read as the real subject. */}
-          <h1 className="text-2xl font-bold leading-tight tracking-tight text-ink sm:text-3xl">
+          <h1 className="workspace-title">
             {item.skillName ?? item.description}
           </h1>
 
@@ -148,7 +141,7 @@ export function DetailHeader({ item }: { item: ClassDetailView }) {
               >
                 {item.teacherName.charAt(0).toUpperCase()}
                 {item.verified === true && (
-                  <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-surface shadow-sm">
+                  <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-surface ">
                     <CheckIcon className="h-3.5 w-3.5 text-success-ink" />
                   </span>
                 )}
@@ -159,7 +152,7 @@ export function DetailHeader({ item }: { item: ClassDetailView }) {
                     {item.teacherName}
                   </span>
                   {item.verified === true && item.schoolName !== null && (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-success-tint bg-success-tint px-2 py-0.5 text-[11px] font-semibold text-success-ink">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-success-tint bg-success-tint px-2 py-0.5 text-sm font-semibold text-success-ink">
                       <SchoolIcon className="h-3 w-3" />
                       <span>{item.schoolName}</span>
                     </span>
@@ -168,7 +161,7 @@ export function DetailHeader({ item }: { item: ClassDetailView }) {
                 {/* No bio is returned on the detail route; the line is omitted
                     rather than filled with a generated description. */}
                 {item.teacherBio !== null && (
-                  <p className="mt-0.5 flex items-center gap-1 text-xs text-ink-soft">
+                  <p className="mt-0.5 flex items-center gap-1 text-sm text-ink-soft">
                     <WorkspacePremiumIcon className="h-4 w-4 text-campus-emerald" />
                     <span>{item.teacherBio}</span>
                   </p>
@@ -206,7 +199,7 @@ function Chip({
   };
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 text-xs font-semibold ${map[variant]}`}
+      className={`inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 text-sm font-semibold ${map[variant]}`}
     >
       {children}
     </span>
@@ -236,8 +229,7 @@ function categoryI18nKey(
 }
 
 const categoryKey = categoryI18nKey;
-// Reference SKILL_CATEGORIES to keep the import live for future derivations.
-void SKILL_CATEGORIES;
+
 
 /* --- Inline SVG glyphs --- */
 
@@ -267,23 +259,7 @@ function PersonIcon({ className = '' }: { className?: string }) {
   );
 }
 
-function PsychologyIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
-      <path d="M9 4a4 4 0 0 0-4 4v2a3 3 0 0 0-2 3 3 3 0 0 0 2 3 4 4 0 0 0 4 4h1v-2" />
-      <path d="M15 4a4 4 0 0 1 4 4v2a3 3 0 0 1 2 3 3 3 0 0 1-2 3 4 4 0 0 1-4 4h-1v-2" />
-    </svg>
-  );
-}
 
-function LockIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
-      <rect x="4" y="11" width="16" height="10" rx="2" />
-      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
-    </svg>
-  );
-}
 
 function StarIcon({ className = '' }: { className?: string }) {
   return (

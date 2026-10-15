@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import type {
   BookingState,
@@ -82,7 +83,7 @@ function PendingCard({
   const hours = Math.floor(countdown / 3600);
   const minutes = Math.floor((countdown % 3600) / 60);
   return (
-    <article className="relative overflow-hidden rounded-2xl border border-border bg-surface p-6 shadow-sm transition-shadow hover:shadow-sm">
+    <article className="workspace-panel relative overflow-hidden rounded-2xl border border-border bg-surface p-6  transition-shadow hover:">
       <div className="absolute inset-x-0 top-0 h-1.5 bg-warning-ink" />
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -92,7 +93,7 @@ function PendingCard({
               <span>{tCard('pending')}</span>
             </Chip>
           </div>
-          <span className="inline-flex items-center gap-1 text-xs font-semibold text-danger-ink">
+          <span className="inline-flex items-center gap-1 text-sm font-semibold text-danger-ink">
             <AlarmIcon className="h-3.5 w-3.5" />
             <span>{tCard('autoRelease', { time: `${hours}h:${String(minutes).padStart(2, '0')}m` })}</span>
           </span>
@@ -103,7 +104,7 @@ function PendingCard({
           <button
             type="button"
             onClick={() => onAction?.({ type: 'reportNoShow', bookingId: booking.id })}
-            className="inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-rose-200 bg-rose-50/60 px-4 py-2 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-100 sm:w-auto"
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-rose-200 bg-rose-50/60 px-4 py-2 text-sm font-semibold text-rose-700 transition-colors hover:bg-rose-100 sm:w-auto"
           >
             <ReportIcon className="h-4 w-4" />
             <span>{tCard('noShow')}</span>
@@ -111,7 +112,7 @@ function PendingCard({
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href={`/${locale}/bookings/${booking.id}/review`}
-              className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+              className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
             >
               <span>{locale === 'vi' ? 'Nghiệm thu chi tiết' : 'Detailed Settlement'}</span>
               <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
@@ -119,7 +120,7 @@ function PendingCard({
             <button
               type="button"
               onClick={() => onAction?.({ type: 'confirm', bookingId: booking.id })}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-campus-emerald-deep px-6 py-2.5 text-sm font-semibold text-white  transition-colors hover:bg-ink sm:w-auto"
             >
               <CheckCircleIcon className="h-4 w-4" />
               <span>{tCard('confirmReview')}</span>
@@ -139,6 +140,7 @@ function UpcomingCard({
   tCard: CardTranslator;
 }) {
   const locale = useLocale() as 'vi' | 'en';
+  const [notice, setNotice] = useState<string | null>(null);
   const start = new Date(booking.startsAt);
   const hoursLeft = Math.max(
     0,
@@ -152,7 +154,7 @@ function UpcomingCard({
     minute: '2-digit',
   });
   return (
-    <article className="rounded-2xl border border-border bg-surface p-6 shadow-sm transition-shadow hover:shadow-sm">
+    <article className="workspace-panel rounded-2xl border border-border bg-surface p-6  transition-shadow hover:">
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -162,34 +164,35 @@ function UpcomingCard({
                 {tCard('confirmedSlot')} - {tCard('confirmedSlotHint', { hours: hoursLeft })}
               </span>
             </Chip>
-            <span className="text-xs text-ink-soft">
+            <span className="text-sm text-ink-soft">
               {tCard('bookingId', { id: booking.id.split('-').slice(-1)[0] ?? booking.id })}
             </span>
           </div>
-          <span className="inline-flex items-center gap-1 text-xs font-semibold text-success-ink">
+          <span className="inline-flex items-center gap-1 text-sm font-semibold text-success-ink">
             <LockIcon className="h-3.5 w-3.5" />
             <span>{tCard('escrowHeld', { credits: booking.priceCredits })}</span>
           </span>
         </div>
         <CardBody booking={booking} tCard={tCard} startText={startText} />
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-mist px-4 py-2.5 text-xs text-ink-soft">
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-mist px-4 py-2.5 text-sm text-ink-soft">
           <LinkIcon className="h-4 w-4 text-ink" />
           <span>{tCard('roomUnavailable')}</span>
         </div>
+        {notice && <p role="status" className="workspace-feedback bg-neutral-tint text-ink-soft">{notice}</p>}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() => alert(locale === 'vi' ? 'Kênh chat nội bộ sẽ mở trước buổi học 15 phút cùng phòng Jitsi.' : 'Internal chat will be enabled with the Jitsi room.')}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-mist px-3 py-1.5 text-xs font-semibold text-ink-soft transition-colors hover:bg-surface"
+              onClick={() => setNotice(tCard('chatHint'))}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-mist px-3 py-1.5 text-sm font-semibold text-ink-soft transition-colors hover:bg-surface"
             >
               <ChatIcon className="h-4 w-4" />
               <span>{tCard('chat')}</span>
             </button>
             <button
               type="button"
-              onClick={() => alert(locale === 'vi' ? 'Tài liệu buổi học sẽ được chia sẻ bởi giảng viên trong phòng học.' : 'Class materials will be provided by mentor in session.')}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-mist px-3 py-1.5 text-xs font-semibold text-ink-soft transition-colors hover:bg-surface"
+              onClick={() => setNotice(tCard('materialsHint'))}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-mist px-3 py-1.5 text-sm font-semibold text-ink-soft transition-colors hover:bg-surface"
             >
               <DownloadIcon className="h-4 w-4" />
               <span>{tCard('downloadNotes')}</span>
@@ -197,7 +200,7 @@ function UpcomingCard({
           </div>
           <Link
             href={`/${locale}/bookings/${booking.id}/live`}
-            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-surface px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-surface px-4 py-2 text-sm font-semibold text-slate-700  transition-colors hover:border-slate-300 hover:bg-slate-50"
           >
             <LockClockIcon className="h-4 w-4 text-emerald-600" />
             <span>{tCard('joinRoomSoon')}</span>
@@ -228,7 +231,7 @@ function CompletedCard({
       })
     : '';
   return (
-    <article className="rounded-2xl border border-border bg-surface p-6 shadow-sm transition-shadow hover:shadow-sm">
+    <article className="workspace-panel rounded-2xl border border-border bg-surface p-6  transition-shadow hover:">
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -238,11 +241,11 @@ function CompletedCard({
                 {tCard('completed')} - {tCard('completedReleased')}
               </span>
             </Chip>
-            <span className="text-xs text-ink-soft">
+            <span className="text-sm text-ink-soft">
               {tCard('bookingId', { id: booking.id.split('-').slice(-1)[0] ?? booking.id })}
             </span>
           </div>
-          <span className="text-xs text-ink-soft">
+          <span className="text-sm text-ink-soft">
             {tCard('completedOn', { when: completedOn })}
           </span>
         </div>
@@ -251,7 +254,7 @@ function CompletedCard({
           <div className="flex flex-col gap-1 rounded-xl border border-border bg-mist p-3">
             <div className="flex items-center gap-1 text-ink">
               <Stars filled={5} className="h-4 w-4" />
-              <span className="text-xs font-bold text-ink">
+              <span className="text-sm font-bold text-ink">
                 {tCard('reviewStars', { rating: booking.reviewSubmitted.rating })}
               </span>
             </div>
@@ -282,7 +285,7 @@ function CompletedCard({
           <button
             type="button"
             onClick={() => onAction?.({ type: 'rebook', bookingId: booking.id })}
-            className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-xs font-semibold text-emerald-800 transition-colors hover:bg-emerald-100"
+            className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-sm font-semibold text-emerald-800 transition-colors hover:bg-emerald-100"
           >
             <ReplayIcon className="h-4 w-4" />
             <span>{tCard('rebook')}</span>
@@ -318,7 +321,7 @@ function ClosedCard({
           <Chip tone="neutral">
             <span>{tFilters('canceled')}</span>
           </Chip>
-          <span className="text-xs text-ink-soft">{date}</span>
+          <span className="text-sm text-ink-soft">{date}</span>
         </div>
       </div>
       <h3 className="mt-3 text-base font-semibold text-ink">
@@ -367,12 +370,12 @@ function CardBody({
         </div>
       </div>
       <div className="flex shrink-0 flex-row items-end justify-between gap-1 text-right md:flex-col">
-        <span className="text-xs text-ink-soft">{tCard('cost', { credits: booking.priceCredits })}</span>
+        <span className="text-sm text-ink-soft">{tCard('cost', { credits: booking.priceCredits })}</span>
         <div className="flex items-baseline gap-1">
           <span className="text-lg font-bold text-ink">{booking.priceCredits}</span>
-          <span className="text-xs font-semibold text-slate-500">Credits</span>
+          <span className="text-sm font-semibold text-slate-500">Credits</span>
         </div>
-        <span className="text-[11px] text-slate-400 font-medium">
+        <span className="text-sm text-slate-400 font-medium">
           ~{(booking.priceCredits * 1000).toLocaleString('vi-VN')}đ
         </span>
       </div>
@@ -409,7 +412,7 @@ function Chip({
   };
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold ${map[tone]}`}
+      className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm font-semibold ${map[tone]}`}
     >
       {children}
     </span>
@@ -680,24 +683,24 @@ function LiveCard({
 
   return (
     <article className="relative overflow-hidden rounded-2xl border-2 border-emerald-500 bg-surface p-6 shadow-md transition-shadow">
-      <div className="absolute inset-x-0 top-0 h-1.5 bg-emerald-600" />
+      <div className="absolute inset-x-0 top-0 h-1.5 bg-campus-emerald-deep" />
       <div className="flex flex-col gap-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <span className="relative flex h-3 w-3">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-600" />
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-campus-emerald-deep" />
             </span>
             <Chip tone="success">
               <VideocamIcon className="h-4 w-4" />
               <span className="font-bold tracking-wide">{tLive('badge')}</span>
             </Chip>
-            <span className="text-xs text-ink-soft">
+            <span className="text-sm text-ink-soft">
               {tCard('bookingId', { id: booking.id.split('-').slice(-1)[0] ?? booking.id })}
             </span>
           </div>
 
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 border border-emerald-200">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-800 border border-emerald-200">
             <LockIcon className="h-3.5 w-3.5 text-emerald-600" />
             <span>{tCard('escrowHeld', { credits: booking.priceCredits })}</span>
           </span>
@@ -707,9 +710,9 @@ function LiveCard({
           <h3 className="text-xl font-bold text-ink tracking-tight mb-2">
             {booking.classTitle}
           </h3>
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-ink-soft">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-ink-soft">
             <span className="inline-flex items-center gap-1.5 font-semibold text-ink">
-              <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px]">
+              <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-sm">
                 {booking.teacherInitial}
               </span>
               <span>{booking.teacherName}</span>
@@ -723,7 +726,7 @@ function LiveCard({
         </div>
 
         <div className="space-y-1.5 rounded-xl border border-slate-100 bg-slate-50/80 p-3.5">
-          <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center justify-between text-sm">
             <span className="font-medium text-slate-700">
               {tLive('progress')}: <strong className="text-emerald-700">{elapsedMin}/{booking.durationMinutes} phút</strong>
             </span>
@@ -731,19 +734,19 @@ function LiveCard({
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
             <div
-              className="h-full rounded-full bg-emerald-600 transition-colors duration-500"
+              className="h-full rounded-full bg-campus-emerald-deep transition-colors duration-500"
               style={{ width: `${pct}%` }}
             />
           </div>
         </div>
 
         <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-xs text-ink-soft">{tCard('roomUnavailable')}</span>
+          <span className="text-sm text-ink-soft">{tCard('roomUnavailable')}</span>
 
           <div className="flex items-center gap-2">
             <Link
               href={`/${locale}/bookings/${booking.id}/live`}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-campus-emerald-deep px-6 py-2.5 text-sm font-semibold text-white  transition-colors hover:bg-ink sm:w-auto"
             >
               <VideocamIcon className="h-4 w-4" />
               <span>{tLive('join')}</span>

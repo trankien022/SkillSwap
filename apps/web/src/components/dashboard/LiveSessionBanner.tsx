@@ -41,7 +41,7 @@ export async function LiveSessionBanner({
   });
 
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-border bg-surface p-6 shadow-md md:p-8">
+    <section className="workspace-panel relative overflow-hidden rounded-2xl border border-border bg-surface p-6 shadow-md md:p-8">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-mist blur-3xl"
@@ -51,7 +51,7 @@ export async function LiveSessionBanner({
           <div className="relative shrink-0">
             <div className="flex h-20 w-20 flex-col items-center justify-center rounded-2xl bg-ink text-surface shadow-lg">
               <VideocamIcon className="h-7 w-7 animate-pulse" />
-              <span className="mt-0.5 text-[11px] font-bold tracking-wider text-surface">
+              <span className="mt-0.5 text-sm font-bold tracking-wider text-surface">
                 {t('badge')}
               </span>
             </div>
@@ -62,7 +62,7 @@ export async function LiveSessionBanner({
           </div>
           <div className="flex max-w-2xl flex-col gap-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-danger-ink bg-danger-ink px-2.5 py-0.5 text-xs font-bold text-surface">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-danger-ink bg-danger-ink px-2.5 py-0.5 text-sm font-bold text-surface">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-surface" />
                 <span>{t('badge')}</span>
               </span>
@@ -95,7 +95,7 @@ export async function LiveSessionBanner({
                   })})
                 </span>
               </span>
-              <span className="rounded bg-mist px-2 py-0.5 text-xs font-semibold text-ink">
+              <span className="rounded bg-mist px-2 py-0.5 text-sm font-semibold text-ink">
                 {tCard('escrowHeld', { credits: booking.priceCredits })}
               </span>
             </div>
@@ -114,7 +114,7 @@ export async function LiveSessionBanner({
             <button
               type="button"
               aria-disabled="true"
-              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-mist px-3 py-2 text-xs font-semibold text-ink-soft transition-colors hover:bg-surface sm:flex-initial"
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-mist px-3 py-2 text-sm font-semibold text-ink-soft transition-colors hover:bg-surface sm:flex-initial"
             >
               <FolderIcon className="h-4 w-4" />
               <span>{t('materials')}</span>
@@ -122,7 +122,7 @@ export async function LiveSessionBanner({
             <button
               type="button"
               aria-disabled="true"
-              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-mist px-3 py-2 text-xs font-semibold text-ink-soft transition-colors hover:bg-surface sm:flex-initial"
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-mist px-3 py-2 text-sm font-semibold text-ink-soft transition-colors hover:bg-surface sm:flex-initial"
             >
               <ChatIcon className="h-4 w-4" />
               <span>{t('chat')}</span>
@@ -131,7 +131,7 @@ export async function LiveSessionBanner({
         </div>
       </div>
       <div className="mt-5 flex flex-col gap-1.5 border-t border-border pt-3">
-        <div className="flex items-center justify-between text-xs text-ink-soft">
+        <div className="flex items-center justify-between text-sm text-ink-soft">
           <span>{t('progress')}</span>
           <span className="font-semibold text-ink">
             {t('pct', { pct })} ({t('elapsed', {

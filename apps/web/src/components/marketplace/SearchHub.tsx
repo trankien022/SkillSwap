@@ -33,7 +33,7 @@ export function SearchHub({
   }
 
   return (
-    <div className="w-full rounded-2xl border border-border bg-surface p-3 shadow-sm">
+    <div className="w-full rounded-2xl border border-border bg-surface p-3 ">
       <form
         onSubmit={handleSubmit}
         className="grid grid-cols-1 items-center gap-1 md:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_auto_auto]"
@@ -44,7 +44,7 @@ export function SearchHub({
         <div className="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-mist ">
           <SearchIcon className="h-5 w-5 shrink-0 text-ink" />
           <div className="flex w-full min-w-0 flex-col">
-            <label htmlFor="search-keyword" className="text-[11px] font-medium text-ink-soft">
+            <label htmlFor="search-keyword" className="text-sm font-medium text-ink-soft">
               {t('keywordLabel')}
             </label>
             <input
@@ -62,7 +62,7 @@ export function SearchHub({
         <div className="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-mist ">
           <SchoolIcon className="h-5 w-5 shrink-0 text-ink-soft" />
           <div className="flex w-full min-w-0 flex-col">
-            <label htmlFor="university-select" className="text-[11px] font-medium text-ink-soft">
+            <label htmlFor="university-select" className="text-sm font-medium text-ink-soft">
               {t('universityLabel')}
             </label>
             <select
@@ -91,7 +91,7 @@ export function SearchHub({
         >
           <TuneIcon className="h-5 w-5 shrink-0 text-ink-soft" />
           <div className="flex flex-col">
-            <span className="text-[11px] font-medium text-ink-soft">{t('filterButton')}</span>
+            <span className="text-sm font-medium text-ink-soft">{t('filterButton')}</span>
             <span className="text-sm font-semibold text-ink">{t('filterTitle')}</span>
           </div>
         </button>
@@ -100,7 +100,7 @@ export function SearchHub({
         <div className="flex justify-end ">
           <button
             type="submit"
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-campus-emerald px-5 text-sm font-semibold text-surface shadow-sm transition-colors hover:bg-campus-emerald-deep"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-campus-emerald px-5 text-sm font-semibold text-surface  transition-colors hover:bg-campus-emerald-deep"
           >
             <TravelExploreIcon className="h-4 w-4" />
             <span>{t('submitButton')}</span>

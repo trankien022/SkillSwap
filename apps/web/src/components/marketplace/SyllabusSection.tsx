@@ -17,7 +17,7 @@ export function SyllabusSection({ item }: { item: ClassDetailView }) {
   const t = useTranslations('ClassDetail.syllabus');
 
   return (
-    <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+    <section className="workspace-panel rounded-xl border border-border bg-surface p-6 ">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-mist text-ink">
@@ -25,7 +25,7 @@ export function SyllabusSection({ item }: { item: ClassDetailView }) {
           </span>
           <h2 className="text-base font-semibold text-ink">{t('title')}</h2>
         </div>
-        <span className="text-xs text-ink-soft">{t('target')}</span>
+        <span className="text-sm text-ink-soft">{t('target')}</span>
       </div>
 
       <p className="mb-6 text-sm leading-relaxed text-ink-soft">
@@ -47,7 +47,7 @@ function SyllabusStepRow({ step }: { step: SyllabusStep }) {
   const t = useTranslations('ClassDetail.syllabus');
   return (
     <div className="flex items-start gap-3 rounded-xl border border-border bg-mist p-4 transition-colors hover:bg-neutral-tint">
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ink text-xs font-bold text-surface">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-bold text-surface">
         {String(step.order).padStart(2, '0')}
       </span>
       <div className="flex flex-1 flex-col gap-0.5">
@@ -55,7 +55,7 @@ function SyllabusStepRow({ step }: { step: SyllabusStep }) {
           <span className="text-base font-semibold text-ink">
             {t('stepN', { n: step.order })}
           </span>
-          <span className="text-xs text-ink-soft">
+          <span className="text-sm text-ink-soft">
             {t('minutes', { n: step.minutes })}
           </span>
         </div>

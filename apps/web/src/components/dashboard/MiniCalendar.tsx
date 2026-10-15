@@ -35,7 +35,7 @@ export function MiniCalendar({
   const next = nextMonth(month, year);
 
   return (
-    <article className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
+    <article className="workspace-panel rounded-2xl border border-border bg-surface p-6 ">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-base font-bold text-ink">
           <CalendarMonthIcon className="h-5 w-5 text-ink" />
@@ -59,7 +59,7 @@ export function MiniCalendar({
         </div>
       </div>
 
-      <div className="mb-2 grid grid-cols-7 gap-1 text-center text-xs text-ink-soft">
+      <div className="mb-2 grid grid-cols-7 gap-1 text-center text-sm text-ink-soft">
         {weekdays.map((label) => (
           <span key={label}>{label}</span>
         ))}
@@ -86,7 +86,7 @@ export function MiniCalendar({
             return (
               <span
                 key={day.date}
-                className={`${baseClasses} bg-ink font-bold text-surface shadow-sm`}
+                className={`${baseClasses} bg-ink font-bold text-surface `}
                 aria-label="today"
               >
                 {dayNum}
@@ -129,7 +129,7 @@ export function MiniCalendar({
         })}
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 text-xs text-ink-soft">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 text-sm text-ink-soft">
         <span className="inline-flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-danger-ink" />
           <span>{t('legendLive')}</span>

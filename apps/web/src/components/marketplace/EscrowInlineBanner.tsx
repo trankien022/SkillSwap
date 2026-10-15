@@ -13,8 +13,8 @@ export function EscrowInlineBanner() {
   const t = useTranslations('ClassDetail.escrow');
 
   return (
-    <aside className="flex items-start gap-3 rounded-xl border border-success-tint bg-success-tint/50 p-4 shadow-sm">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface text-success-ink shadow-sm">
+    <aside className="flex items-start gap-3 rounded-xl border border-success-tint bg-success-tint/50 p-4 ">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface text-success-ink ">
         <ShieldIcon className="h-6 w-6" />
       </span>
       <div className="flex flex-col gap-1">

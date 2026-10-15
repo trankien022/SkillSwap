@@ -17,7 +17,7 @@ export function PrerequisitesSection({
   const t = useTranslations('ClassDetail.prerequisites');
 
   return (
-    <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+    <section className="workspace-panel rounded-xl border border-border bg-surface p-6 ">
       <div className="mb-4 flex items-center gap-2">
         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-mist text-ink">
           <ChecklistIcon className="h-5 w-5" />
