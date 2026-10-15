@@ -133,9 +133,24 @@ GET /api/verifiers/me/queue?limit=20&level=advanced&type=certificate&sort=submit
 | Endpoint | Pagination | Filter | Sort | Search |
 |---|---|---|---|---|
 | `GET /api/verifiers/me/queue` | ✅ keyset + `total` | `level`, `type` | `submittedAt` (default `submittedAt` asc) | `q` (skill name) |
+| `GET /api/verifiers/admin/queue` | ✅ keyset + `total` | `domain`, `status` | `submittedAt` (default asc) | `q` (skill name) |
+| `GET /api/student-verifications` | ✅ keyset + `total` | `status` | `submittedAt` / `decidedAt` (default `submittedAt` asc) | `q` (school name) |
+| `GET /api/audit-log` | ✅ keyset + `total` | `actorId`, `action`, `targetType`, `targetId`, `from`, `to` | `occurredAt` (default `-occurredAt`) | `q` (target id) |
 | `GET /api/wallet/history` | ✅ keyset + `total` | — | fixed newest-first | — |
 | `GET /api/profile-skills/me` | — (bounded; `page: null`) | — | `category` (default), `name`, `-approvedLevel` | `q` (skill name) |
 | `GET /api/skill-evidence/:id/history` | — (audit complete by design) | — | fixed version-desc | — |
+
+### Operations dashboard codes (FR-015, ADR-034)
+
+These are the `code` values the admin operations surface returns on success. Every one is
+`@Roles('admin')`; a non-administrator gets the standard `HTTP_403`.
+
+| Endpoint | Success `code` |
+|---|---|
+| `GET /api/student-verifications` | `ADMIN_VERIFICATIONS_OK` |
+| `GET /api/verifiers/admin/queue` | `ADMIN_VERIFIER_QUEUE_OK` |
+| `GET /api/audit-log` | `AUDIT_LOG_OK` |
+| `GET /api/admin-operation/dashboard` | `ADMIN_DASHBOARD_OK` |
 
 ## 5. Frontend usage
 

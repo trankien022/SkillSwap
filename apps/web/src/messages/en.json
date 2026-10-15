@@ -594,8 +594,36 @@
       "accountIdPlaceholder": "Enter an account id",
       "accountIdRequired": "Enter an account id.",
       "openCta": "Open",
-      "notReadyTitle": "Not available yet",
-      "notReadyBody": "The pending-review queue, the Verifier list and the audit log do not exist in the system yet."
+      "toolsTitle": "Operations tools"
+    },
+    "dashboard": {
+      "loading": "Assembling the figures…",
+      "retry": "Try again",
+      "unauthorizedTitle": "You do not have access to the dashboard",
+      "unauthorizedBody": "The operations dashboard is for administrators only. Sign in with an administrator account.",
+      "generatedAt": "Figures assembled at {date}.",
+      "metrics": {
+        "verificationsPending": "Student verifications awaiting review",
+        "verificationsPendingHint": "Submissions still waiting for a decision.",
+        "evidenceLive": "Evidence in the queue",
+        "evidenceLiveHint": "{unclaimed} unclaimed, {inReview} in review.",
+        "auditEvents": "Recent audited actions",
+        "auditEventsHint": "How many of the newest events are listed below."
+      },
+      "byDomain": {
+        "title": "Backlog by domain",
+        "subtitle": "Counts only evidence still in the queue (unclaimed or in review). A domain with nothing waiting does not appear.",
+        "empty": "No evidence is waiting in any domain right now.",
+        "count": "{count} items"
+      },
+      "recent": {
+        "title": "Recent audited actions",
+        "viewAll": "View the full log",
+        "empty": "No privileged action has been recorded yet."
+      },
+      "errors": {
+        "generic": "Could not load the operations figures. Please try again."
+      }
     },
     "verifiers": {
       "breadcrumb": "Admin",
@@ -605,7 +633,7 @@
       "title": "Change Verifier status",
       "subtitle": "Every change is recorded in the audit log. The Verifier is notified by email after the status update.",
       "accountIdLabel": "Verifier account id",
-      "accountIdHint": "Deep link from a notification email or the audit log. There is no Verifier list yet.",
+      "accountIdHint": "Use this when you have a deep link from a notification email or the audit log. The full Verifier queue is in Verifier queue by domain.",
       "statusLabel": "New status",
       "option": {
         "active": {
@@ -643,11 +671,142 @@
         "generic": "Could not update the Verifier status. Please try again."
       }
     },
+    "verifierQueue": {
+      "pageTitle": "Verifier queue by domain",
+      "pageSubtitle": "Every piece of skill evidence awaiting review, with no expertise restriction. Use this to spot a domain where work is piling up with no active Verifier covering it.",
+      "loading": "Loading the queue…",
+      "loadingMore": "Loading more…",
+      "loadMore": "Load more",
+      "empty": "No evidence matches these filters.",
+      "emptyHint": "Try clearing the domain or status filter.",
+      "totalShown": "{count} evidence items match these filters",
+      "retry": "Try again",
+      "unknownSkill": "Unknown skill",
+      "unknownDomain": "Unknown domain",
+      "requestedLevel": "Requested level: {level}",
+      "version": "Version {version}",
+      "unclaimed": "No Verifier has claimed this",
+      "claimedBy": "Being reviewed by {id}",
+      "unauthorizedTitle": "You do not have access to this queue",
+      "unauthorizedBody": "The platform-wide verifier queue is for administrators only. Sign in with an administrator account.",
+      "filters": {
+        "domain": "Domain",
+        "domainPlaceholder": "Search by domain (at least 2 characters)",
+        "status": "Status",
+        "sort": "Sort"
+      },
+      "sort": {
+        "submittedAt": "Oldest first",
+        "-submittedAt": "Newest first"
+      },
+      "status": {
+        "live": "In the queue",
+        "pending": "Unclaimed",
+        "claimed": "In review",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "superseded": "Superseded"
+      },
+      "level": {
+        "beginner": "Beginner",
+        "intermediate": "Intermediate",
+        "advanced": "Advanced",
+        "expert": "Expert"
+      },
+      "errors": {
+        "generic": "Could not load the verifier queue. Please try again."
+      }
+    },
+    "auditLog": {
+      "pageTitle": "Audit log",
+      "pageSubtitle": "Every privileged action that has been recorded, newest first. The log is append-only: entries are never edited or deleted.",
+      "loading": "Loading the audit log…",
+      "loadingMore": "Loading more…",
+      "loadMore": "Load more",
+      "empty": "No events match these filters.",
+      "emptyHint": "Try clearing the action filter or the date range.",
+      "totalShown": "{count} events match these filters",
+      "retry": "Try again",
+      "occurredAt": "When: {date}",
+      "actorKnown": "Actor: {id}",
+      "actorUnknown": "Actor: not recorded",
+      "targetId": "Target: {id}",
+      "stateChange": "Change: {from} → {to}",
+      "actorGap": "The actor filter currently matches no events: audit entries do not carry the administrator's id yet. The other filters work normally.",
+      "unauthorizedTitle": "You do not have access to the audit log",
+      "unauthorizedBody": "The audit log is for administrators only. Sign in with an administrator account.",
+      "filters": {
+        "action": "Action",
+        "anyAction": "Any action",
+        "actor": "Actor",
+        "actorPlaceholder": "Administrator account id",
+        "from": "From date",
+        "to": "To date",
+        "sort": "Sort"
+      },
+      "sort": {
+        "-occurredAt": "Newest first",
+        "occurredAt": "Oldest first"
+      },
+      "action": {
+        "studentVerificationApproved": "Student verification approved",
+        "studentVerificationRejected": "Student verification rejected",
+        "studentVerificationRevoked": "Student verification revoked",
+        "skillEvidenceClaimed": "Skill evidence claimed",
+        "skillEvidenceApproved": "Skill evidence approved",
+        "skillEvidenceRejected": "Skill evidence rejected",
+        "skillVerifierSuspended": "Verifier suspended",
+        "skillVerifierRevoked": "Verifier revoked",
+        "walletTransactionCompleted": "Wallet transaction completed"
+      },
+      "errors": {
+        "generic": "Could not load the audit log. Please try again."
+      }
+    },
     "StudentVerification": {
       "title": "Student verification review",
       "notice": "Enter the student profile reference to open the review actions. Check the reference and give a clear reason for your decision.",
+      "queueNotice": "Every student verification on the platform. Filter by status, search by school, then open one to review it.",
       "idPlaceholder": "Verification id",
       "openCta": "Open",
+      "openByIdTitle": "Open by verification id",
+      "openByIdBody": "Use this when you already have a deep link from an email or a shared message. The list above is the normal way to review.",
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "revoked": "Revoked"
+      },
+      "queue": {
+        "loading": "Loading the queue…",
+        "loadingMore": "Loading more…",
+        "loadMore": "Load more",
+        "loadedMore": "Loaded {count} more verifications.",
+        "empty": "No verification matches these filters.",
+        "emptyHint": "Try clearing the status filter or searching for a different term.",
+        "noMajor": "No major declared",
+        "submittedAt": "Submitted {date}",
+        "totalShown": "{count} verifications match these filters",
+        "retry": "Try again",
+        "unauthorizedTitle": "You do not have access to this queue",
+        "unauthorizedBody": "The student-verification queue is for administrators only. Sign in with an administrator account.",
+        "filters": {
+          "status": "Status",
+          "anyStatus": "Any status",
+          "school": "School",
+          "schoolPlaceholder": "Search by school name (at least 2 characters)",
+          "sort": "Sort"
+        },
+        "sort": {
+          "submittedAt": "Oldest submitted first",
+          "-submittedAt": "Newest submitted first",
+          "decidedAt": "Oldest decided first",
+          "-decidedAt": "Newest decided first"
+        },
+        "errors": {
+          "generic": "Could not load the student-verification queue. Please try again."
+        }
+      },
       "label": {
         "id": "Verification id",
         "decision": "Decision",

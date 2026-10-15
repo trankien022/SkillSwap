@@ -7,9 +7,11 @@ import type {
   VerificationDocumentRepository,
 } from '../port/out/verification-document-repository';
 import type {
+  AdminVerificationPage,
   ApplyDecisionRequest,
   ApplyDecisionResult,
   CreateVerificationRequest,
+  ListVerificationsForAdminRequest,
   RevokeVerificationRequest,
   VerificationRepository,
 } from '../port/out/verification-repository';
@@ -90,6 +92,52 @@ export class InMemoryVerificationRepository implements VerificationRepository {
       revocationReason: request.reason,
     });
     return { applied: true };
+  }
+
+  /**
+   * FR-015: the admin-wide queue, mirroring the SQL adapter's semantics (filters, whitelisted
+   * sort, keyset on the sort key + id) so a handler spec exercises the same behaviour the
+   * database will.
+   */
+  async listForAdmin(request: ListVerificationsForAdminRequest): Promise<AdminVerificationPage> {
+    const matched = this.rows.filter((row) => {
+      if (request.status !== undefined && row.status !== request.status) return false;
+      if (
+        request.q !== undefined &&
+        !row.schoolName.toLowerCase().includes(request.q.toLowerCase())
+      ) {
+        return false;
+      }
+      return true;
+    });
+
+    const sort = request.sort ?? 'submittedAt';
+    const descending = sort.startsWith('-');
+    const byDecided = sort === 'decidedAt' || sort === '-decidedAt';
+    const keyOf = (row: Verification): string =>
+      (byDecided ? row.decidedAt : row.submittedAt)?.toISOString() ?? '';
+
+    const sorted = [...matched].sort((a, b) => {
+      const left = keyOf(a);
+      const right = keyOf(b);
+      const order = left < right ? -1 : left > right ? 1 : 0;
+      const tie = a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+      const comparison = order !== 0 ? order : tie;
+      return descending ? -comparison : comparison;
+    });
+
+    // Test-seam paging: the fake's cursor is the *index* of the next row, not the opaque keyset
+    // cursor the real adapter emits. An application-layer test double may not import `shared`
+    // (`domain-application-stay-inside-module`, ADR-009), so the real cursor encoding is pinned
+    // where it actually lives — `sql-verification-repository.spec.ts`.
+    const start = request.cursor === undefined ? 0 : Number.parseInt(request.cursor, 10);
+    if (Number.isNaN(start)) {
+      throw new Error(`Test cursor must be a row index, received: ${request.cursor}`);
+    }
+    const items = sorted.slice(start, start + request.limit);
+    const next = start + request.limit < sorted.length ? String(start + request.limit) : null;
+
+    return { items, nextCursor: next, total: matched.length };
   }
 }
 

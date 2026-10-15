@@ -27,6 +27,20 @@ export class PermanentHandlerError extends Error {
   }
 }
 
+/**
+ * NFR-014: a keyset cursor that cannot be honoured — malformed, truncated, or carrying the
+ * wrong number of key parts for the endpoint's sort.
+ *
+ * It is surfaced (400 `INVALID_CURSOR`) rather than ignored, because silently restarting at
+ * page one in response to a bad cursor looks to a caller like data corruption.
+ */
+export class InvalidCursorError extends Error {
+  constructor(message = 'The pagination cursor is not valid') {
+    super(message);
+    this.name = 'InvalidCursorError';
+  }
+}
+
 export function describeError(error: unknown): string {
   if (error instanceof Error) {
     return error.message;

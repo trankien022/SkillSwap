@@ -1,5 +1,7 @@
 import { createZodDto } from 'nestjs-zod';
 import {
+  adminVerifierQueuePageSchema,
+  adminVerifierQueueQuerySchema,
   profileSkillListSchema,
   profileSkillQuerySchema,
   profileSkillSchema,
@@ -45,3 +47,9 @@ export class VerifierQueueQueryDto extends createZodDto(verifierQueueQuerySchema
 
 /** FR-004 / NFR-014: a page of the Verifier's expertise-scoped pending queue. */
 export class VerifierQueuePageDto extends createZodDto(verifierQueuePageSchema) {}
+
+/** FR-015 / NFR-014: query params for GET /verifiers/admin/queue. */
+export class AdminVerifierQueueQueryDto extends createZodDto(adminVerifierQueueQuerySchema) {}
+
+/** FR-015 / NFR-014: a page of the cross-domain Verifier queue. */
+export class AdminVerifierQueuePageDto extends createZodDto(adminVerifierQueuePageSchema) {}

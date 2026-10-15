@@ -13,6 +13,11 @@ import { SqlVerifierRepository } from './internal/adapter/out/persistence/sql-ve
 import { SqlEvidenceAuditRepository } from './internal/adapter/out/persistence/sql-evidence-audit-repository';
 import { SqlVerifiedStudentProjector } from './internal/adapter/out/persistence/sql-verified-student-projector';
 import { SqlSkillCatalogueReader } from './internal/adapter/out/persistence/sql-skill-catalogue-reader';
+import {
+  EVIDENCE_SUMMARY_READER,
+  type EvidenceSummaryReader,
+} from './api/evidence-summary-reader';
+import { SqlEvidenceSummaryReader } from './internal/adapter/out/persistence/sql-evidence-summary-reader';
 import { SystemClock } from './internal/adapter/out/crypto/system-clock';
 import { StatusController } from './internal/adapter/in/web/status.controller';
 import {
@@ -27,6 +32,7 @@ import { ChangeVerifierStatusUseCase } from './internal/application/change-verif
 import { ClaimSkillEvidenceUseCase } from './internal/application/claim-skill-evidence.use-case';
 import { DecideSkillEvidenceUseCase } from './internal/application/decide-skill-evidence.use-case';
 import { ListVerifierQueueQueryHandler } from './internal/application/list-verifier-queue.query';
+import { ListAdminVerifierQueueQueryHandler } from './internal/application/list-admin-verifier-queue.query';
 import { GetSkillEvidenceHistoryUseCase } from './internal/application/get-skill-evidence-history.use-case';
 import { VerifierAuthority } from './internal/application/verifier-authority';
 import { GetMyProfileSkillsQueryHandler } from './internal/application/query/get-my-profile-skills.query';
@@ -58,6 +64,10 @@ import {
   LIST_VERIFIER_QUEUE,
   type ListVerifierQueuePort,
 } from './internal/application/port/in/list-verifier-queue';
+import {
+  LIST_ADMIN_VERIFIER_QUEUE,
+  type ListAdminVerifierQueuePort,
+} from './internal/application/port/in/list-admin-verifier-queue';
 import {
   GET_SKILL_EVIDENCE_HISTORY,
   type GetSkillEvidenceHistoryPort,
@@ -230,6 +240,20 @@ export class SkillVerificationRegistrar implements OnModuleInit {
       inject: [SKILL_EVIDENCE_REPOSITORY, VERIFIER_REPOSITORY],
     },
     {
+      provide: LIST_ADMIN_VERIFIER_QUEUE,
+      useFactory: (evidence: SkillEvidenceRepository): ListAdminVerifierQueuePort =>
+        new ListAdminVerifierQueueQueryHandler(evidence),
+      inject: [SKILL_EVIDENCE_REPOSITORY],
+    },
+    {
+      // FR-015 / ADR-034 §7: the counts the operations dashboard composes. Exported so
+      // `admin-operation` can ask this module rather than read its schema.
+      provide: EVIDENCE_SUMMARY_READER,
+      useFactory: (registry: ModuleDataSourceRegistry): EvidenceSummaryReader =>
+        new SqlEvidenceSummaryReader(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
       provide: GET_SKILL_EVIDENCE_HISTORY,
       useFactory: (
         evidence: SkillEvidenceRepository,
@@ -298,5 +322,6 @@ export class SkillVerificationRegistrar implements OnModuleInit {
     },
     SkillVerificationRegistrar,
   ],
+  exports: [EVIDENCE_SUMMARY_READER],
 })
 export class SkillVerificationModule {}

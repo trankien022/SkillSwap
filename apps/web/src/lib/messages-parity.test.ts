@@ -80,8 +80,12 @@ describe('i18n messages', () => {
     });
 
     it('the Admin namespace keeps every sub-namespace in both locales', () => {
-      // Regression pin: these two live in the same `Admin` object. If a merge
-      // ever splits them again, one silently disappears.
+      // Regression pin: these live in the same `Admin` object. If a merge ever
+      // splits them again, one silently disappears.
+      //
+      // Extended by FR-015: the operations surfaces added `verifierQueue`,
+      // `auditLog` and `dashboard`. Listing them here means a future merge that
+      // drops one is a failing test rather than an admin screen full of raw keys.
       for (const [locale, data] of [
         ['vi', vi],
         ['en', en],
@@ -89,7 +93,14 @@ describe('i18n messages', () => {
         expect(
           Object.keys(data.Admin).sort(),
           `${locale}: Admin sub-namespaces`,
-        ).toEqual(['Landing', 'StudentVerification', 'verifiers']);
+        ).toEqual([
+          'Landing',
+          'StudentVerification',
+          'auditLog',
+          'dashboard',
+          'verifierQueue',
+          'verifiers',
+        ]);
       }
     });
   });

@@ -1,7 +1,41 @@
 # Plan — FR-015 Operations Dashboard (API + Web + Mobile)
 
-Status: **Proposed** — awaiting approval before any code
-Owner: (agent) · Created: 2026-10-15
+Status: **Complete (phases 0–6, W1–W4, M2)** — approved to implement; decisions through §9 resolved below
+Owner: (agent) · Created: 2026-10-15 · Updated: 2026-10-16 (phases 0–6, W1–W4 and M2 landed; FR-015 remains partially implemented — Phase 7 deferred)
+
+> **Resolved before coding.** Q1 (**No** — admins are web-only): §6 **M1 is closed as not
+> applicable** and recorded here rather than silently skipped; M2 ships in the form the device allows (see §6). Q2: audit the
+> privileged actions the SRS §5 list names (verification decisions, verifier status changes, role
+> changes, financial transitions) — see Phase 4. Q3: retain, no pruning in the MVP (OQ-008 /
+> ADR-023 precedent). Q4: keep `total`. Q5: disputes/account-lock stay in deferred Phase 7.
+>
+> **One correction to Phase 3.** `auditEventSchema` **already existed** in
+> `packages/contracts/src/index.ts:610` as FR-018's *evidence-scoped* entry, despite ADR-028 §4
+> promising that name for the general SRS row. ADR-034 §1 resolves it by renaming the evidence
+> shape to `evidenceAuditEventSchema` and giving the general row the `auditEventSchema` name in
+> the new `packages/contracts/src/audit-event.ts`. Phase 0 therefore lands that rename.
+>
+> **A second correction, found during Phase 3.** ADR-034 §5 claimed
+> `skill.verifier.suspended|revoked` already flowed through the outbox. It did not — the names
+> existed, nothing emitted them, so an admin suspending a Verifier left no audit trail.
+> `SqlVerifierRepository.setStatus` now writes the status and its event in one transaction; the
+> mapping table names event types as literals (module isolation forbids importing another
+> module's domain constants, which is also the right coupling for a projection). ADR-034 §5 is
+> corrected in place.
+>
+> **Composition mechanism for the dashboard (ADR-034 §7).** The `api/` facade-reader pattern
+> `account-profile` already used for `PUBLIC_PROFILE_READER`: `student-verification` exposes
+> `VerificationSummaryReader`, `skill-verification` exposes `EvidenceSummaryReader`, and
+> `admin-operation` imports both modules and injects their exported readers. Counts are read live
+> per request; nothing is cached, so the dashboard and the queue it links to cannot disagree.
+>
+> **A third correction, found by browser verification.** The audit log is written with
+> `actorId: null` for every event, so its actor filter matches nothing. A domain event describes a
+> fact and a fact has no actor; the acting user exists only at the HTTP boundary (`x-user-id`) and
+> is not threaded into any command, payload or envelope. Wiring it is a cross-cutting choice with
+> its own ADR (ADR-034 §9), so per the decision recorded there this change ships the column and
+> filter inert rather than inventing attribution. AC-032 and the FR-015 row are qualified to match.
+
 Related: `docs/plans/SkillSwap-SRS.md` (FR-015, UC-014, US-O1, NFR-005, NFR-014),
 `ARCHITECTURE.md` §4, ADR-008 (gateway), ADR-012 (CQRS), ADR-013 (outbox), ADR-014 (TypeORM,
 per-module schemas), ADR-019 (moderation), ADR-023 (verification retention),
@@ -311,6 +345,27 @@ Regardless of M1's outcome: add a spec pinning that the verifier/admin links are
 non-privileged roles and present for the privileged one — the same protection Phase 2 gave web.
 This closes the "Phase 4" open item from the honesty work.
 Commit: `test(mobile): pin role-gated navigation`
+
+**M2 outcome (recorded, not silently skipped).** Half of M2 was already on `main` before this
+plan was implemented: `apps/mobile/src/ui/profile-view.spec.tsx` (added in `527261e`) pins that the
+Verifier queue link is offered to a verifier and withheld from a learner, an admin and a signed-out
+visitor. So the link half needed no new work, and a second copy of it would have been a test that
+duplicates an existing one.
+
+The admin half of M2 is **not applicable**, for the same reason §6 M1 was closed: mobile has no
+admin navigation surface at all. There is no `admin` route under `apps/mobile/app/`, no
+`router.push` to an admin path, and `admin` appears only as a non-interactive role label
+(`dashboard-view.tsx` and `profile-view.tsx` render `Dashboard.adminRole` as text) — consistent
+with Q1, admins are web-only. There is nothing to gate, so nothing is pinned.
+
+What *was* missing is the other end of the verifier gate: `profile-view.spec.tsx` pins that the
+link is only offered, but nothing pinned that the queue **screen** refuses a non-verifier who
+reaches it anyway (deep link, stale route, hand-typed URL). `verifier-queue-view.tsx` implements
+that refusal — a data-load guard at lines 72–76 and a render guard at lines 224–233 — and it was
+implemented but untested. `apps/mobile/src/ui/verifier-queue-view.spec.tsx` now pins it, including
+the part that actually matters: the guard returns **before** `gateway.getQueue` is called, so a
+leaked link cannot fire a request the server would reject. A refused learner, admin and signed-out
+visitor each assert both the forbidden banner and that no request was issued.
 
 ## 7. Commit sequence (one line per commit)
 

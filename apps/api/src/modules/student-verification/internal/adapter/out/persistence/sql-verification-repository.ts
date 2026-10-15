@@ -1,5 +1,7 @@
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { insertOutboxStatement } from '../../../../../../shared/messaging/outbox-statements';
+import { InvalidCursorError } from '../../../../../../shared/errors';
+import { decodeCursor, toKeysetPage } from '../../../../../../shared/http/keyset-cursor';
 import { qualified } from '../../../../../../shared/sql/ident';
 import { returnedRows } from '../../../../../../shared/sql/result';
 import {
@@ -9,9 +11,12 @@ import {
   type VerificationStatus,
 } from '../../../domain/verification';
 import type {
+  AdminVerificationPage,
+  AdminVerificationSort,
   ApplyDecisionRequest,
   ApplyDecisionResult,
   CreateVerificationRequest,
+  ListVerificationsForAdminRequest,
   RevokeVerificationRequest,
   VerificationRepository,
 } from '../../../application/port/out/verification-repository';
@@ -230,6 +235,96 @@ export class SqlVerificationRepository implements VerificationRepository {
       return { applied: true };
     });
   }
+
+  /**
+   * FR-015: the admin-wide verification queue (NFR-014).
+   *
+   * The WHERE clause is shared between the page query and the `COUNT(*)` so `total` cannot
+   * describe a different set of rows than `items`. Pagination is keyset on the sort column
+   * plus `id`, and only whitelisted sorts reach SQL — the sort string is never interpolated
+   * from user input, it selects from the closed table below.
+   */
+  async listForAdmin(
+    request: ListVerificationsForAdminRequest,
+  ): Promise<AdminVerificationPage> {
+    const source = this.registry.get(this.moduleName);
+
+    const filters: string[] = [];
+    const filterParams: unknown[] = [];
+    if (request.status !== undefined) {
+      filterParams.push(request.status);
+      filters.push(`"status" = $${filterParams.length}`);
+    }
+    if (request.q !== undefined) {
+      filterParams.push(`%${request.q}%`);
+      filters.push(`"school_name" ILIKE $${filterParams.length}`);
+    }
+    const where = filters.length === 0 ? '' : `WHERE ${filters.join(' AND ')}`;
+
+    // Only these four spellings reach SQL. `decided_at` is nullable, so its ordering has to
+    // put NULLs last explicitly rather than rely on the default (which differs by direction).
+    const orders: Record<AdminVerificationSort, { column: string; direction: 'ASC' | 'DESC'; nulls: string }> = {
+      submittedAt: { column: '"created_at"', direction: 'ASC', nulls: '' },
+      '-submittedAt': { column: '"created_at"', direction: 'DESC', nulls: '' },
+      decidedAt: { column: '"decided_at"', direction: 'ASC', nulls: ' NULLS LAST' },
+      '-decidedAt': { column: '"decided_at"', direction: 'DESC', nulls: ' NULLS LAST' },
+    };
+    const order = orders[request.sort ?? 'submittedAt'];
+    const comparison = order.direction === 'ASC' ? '>' : '<';
+
+    const pageParams = [...filterParams];
+    let cursorClause = '';
+    const decoded = decodeCursor(request.cursor);
+    if (decoded !== null) {
+      // A malformed cursor is decoded to null upstream by the DTO's schema; a decoded one that
+      // does not carry exactly (sortKey, id) cannot be honoured, so it is rejected rather than
+      // silently ignored (which would restart at page one and look like corruption).
+      if (decoded.length !== 2) {
+        throw new InvalidCursorError();
+      }
+      pageParams.push(decoded[0], decoded[1]);
+      cursorClause = ` AND (${order.column}, "id") ${comparison} ($${pageParams.length - 1}::timestamptz, $${pageParams.length}::uuid)`;
+    }
+    pageParams.push(request.limit + 1);
+    const limitParam = pageParams.length;
+
+    const [rows, countRows] = await Promise.all([
+      source.query(
+        `SELECT ${SELECT_COLUMNS} FROM ${this.table}
+          ${where}${cursorClause}
+          ORDER BY ${order.column} ${order.direction}${order.nulls}, "id" ${order.direction}
+          LIMIT $${limitParam}`,
+        pageParams,
+      ),
+      source.query(`SELECT COUNT(*)::int AS "total" FROM ${this.table} ${where}`, filterParams),
+    ]);
+
+    const { items, nextCursor } = toKeysetPage(
+      rows as VerificationRow[],
+      request.limit,
+      (row) => [toIsoSortKey(row, order.column), row.id],
+    );
+    return { items: items.map(toDomain), nextCursor, total: countRows[0]?.total ?? 0 };
+  }
+}
+
+/**
+ * The cursor key must be the **same value the ORDER BY compared**, so it is read from the
+ * column the sort selected rather than guessed from the row.
+ */
+function toIsoSortKey(row: VerificationRow, column: string): string {
+  if (column === '"decided_at"') {
+    const decided = toDate(row.decided_at);
+    // A NULL sort key cannot be encoded into a cursor; rows with a NULL key are only ever
+    // reached when the filter excludes them, and the cursor is taken from the last row of a
+    // page. An undefined key here would produce a cursor that silently never advances, so it
+    // is surfaced instead.
+    if (decided === null) {
+      throw new InvalidCursorError();
+    }
+    return decided.toISOString();
+  }
+  return new Date(row.created_at).toISOString();
 }
 
 /** Detects the Postgres unique-violation SQLSTATE (23505) from a pg error. */

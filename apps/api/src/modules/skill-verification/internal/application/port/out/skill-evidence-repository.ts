@@ -85,6 +85,33 @@ export interface PendingQueuePage {
   readonly total: number;
 }
 
+/**
+ * FR-015: the filters an Administrator's cross-domain Verifier queue accepts.
+ *
+ * This is the same row shape as {@link PendingQueueQuery} but **without** the expertise
+ * restriction: an administrator is asking "what work exists in this domain and who, if anyone,
+ * has taken it", which the expertise-scoped read cannot answer by construction.
+ */
+export interface AdminQueueQuery {
+  readonly limit: number;
+  readonly cursor?: string;
+  /** Taxonomy category ("domain" in the SRS). */
+  readonly domain?: string;
+  /**
+   * `pending` = unclaimed; `claimed` = a Verifier has taken it. A list, because the queue's
+   * default view is "live work" — the union of the two — and one status per request would make
+   * that view impossible to express without paging two queries and merging the totals.
+   */
+  readonly status?: readonly SkillEvidence['status'][];
+  /** Free-text search over the skill name. */
+  readonly q?: string;
+  /** 'submittedAt' (oldest first, default) or 'submittedAtDesc'. */
+  readonly sort?: 'submittedAt' | 'submittedAtDesc';
+}
+
+/** FR-015 / NFR-014: one page of the admin Verifier queue plus the filtered total. */
+export type AdminQueuePage = PendingQueuePage;
+
 export interface ClaimRequest {
   readonly evidenceId: string;
   readonly verifierId: string;
@@ -134,6 +161,13 @@ export interface SkillEvidenceRepository {
    * appear. `total` counts the filtered set (ignoring limit/cursor).
    */
   listPendingForExpertise(query: PendingQueueQuery): Promise<PendingQueuePage>;
+  /**
+   * FR-015: the **cross-domain** evidence queue for an Administrator (NFR-014).
+   *
+   * Same rows as {@link listPendingForExpertise} without the expertise restriction, so an
+   * administrator can see unclaimed work in a domain no active Verifier covers.
+   */
+  listForAdmin(query: AdminQueueQuery): Promise<AdminQueuePage>;
   /**
    * FR-004 / BR-071: atomically claims a `pending` request for a Verifier (locks it,
    * no other Verifier may claim or decide). Emits `skill.evidence.claimed`.

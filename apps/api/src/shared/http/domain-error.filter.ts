@@ -106,6 +106,9 @@ const NAME_TO_STATUS: Record<string, number> = {
   // refused, not rewritten — the caller sent something the product would never
   // accept, and a silent substitution would hide that bug.
   ReturnUrlNotAllowedError: 422,
+  // NFR-014: an unusable keyset cursor (also INVALID_SORT's sibling; a bad sort is
+  // rejected by the query schema before it reaches here).
+  InvalidCursorError: 400,
 };
 
 /** Maps domain errors and unexpected failures onto the failure envelope (NFR-013). */

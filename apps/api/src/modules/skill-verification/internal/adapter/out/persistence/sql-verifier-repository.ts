@@ -1,5 +1,8 @@
+import { insertOutboxStatement } from '../../../../../../shared/messaging/outbox-statements';
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { qualified } from '../../../../../../shared/sql/ident';
+import { returnedRows } from '../../../../../../shared/sql/result';
+import { VERIFIER_EVENTS } from '../../../domain/verifier';
 import type {
   VerifierRecord,
   VerifierRepository,
@@ -54,18 +57,65 @@ export class SqlVerifierRepository implements VerifierRepository {
     return rows[0] === undefined ? null : toDomain(rows[0]);
   }
 
+  /**
+   * FR-004 / ADR-027 + FR-015 / ADR-013: sets a Verifier's lifecycle status and emits the
+   * matching event **in the same transaction**, so the audit log can never record a change that
+   * did not commit (nor miss one that did).
+   *
+   * The event carries the previous status because that old→new pair is what FR-015's audit row
+   * has to show; deriving it later would mean reading a table that has already moved on.
+   */
   async setStatus(
     accountId: string,
     status: 'active' | 'suspended' | 'revoked',
   ): Promise<VerifierRecord | null> {
     const source = this.registry.get(this.moduleName);
-    const rows = (await source.query(
-      `UPDATE ${this.table} SET "status" = $2, "updated_at" = now()
-        WHERE "account_id" = $1
-        RETURNING "account_id"`,
-      [accountId, status],
-    )) as { account_id: string }[];
-    if (rows.length === 0) {
+    const schema = this.registry.getSchema(this.moduleName);
+
+    const changed = await source.transaction(async (manager) => {
+      // Read the current status first: `RETURNING` sees the post-update row, so it cannot tell
+      // us what the status *was*, and the audit row needs the old→new pair.
+      const current = returnedRows<{ status: string }>(
+        await manager.query(`SELECT "status" FROM ${this.table} WHERE "account_id" = $1 FOR UPDATE`, [
+          accountId,
+        ]),
+      )[0];
+      if (current === undefined) {
+        return null;
+      }
+
+      const rows = returnedRows<{ account_id: string; previous_status: string }>(
+        await manager.query(
+          `UPDATE ${this.table} SET "status" = $2, "updated_at" = now()
+            WHERE "account_id" = $1
+            RETURNING "account_id", $3::text AS previous_status`,
+          [accountId, status, current.status],
+        ),
+      );
+      const row = rows[0];
+      if (row === undefined) {
+        return null;
+      }
+      // Only the demoting transitions are audited; reactivation emits nothing, so no event type
+      // is computed for it. (A reactivation is itself worth auditing later, but that is a
+      // separate behaviour change, not something to smuggle into this one.)
+      if (status !== 'active') {
+        const eventType =
+          status === 'suspended' ? VERIFIER_EVENTS.suspended : VERIFIER_EVENTS.revoked;
+        await manager.query(insertOutboxStatement(schema), [
+          eventType,
+          {
+            verifierId: row.account_id,
+            status,
+            previousStatus: row.previous_status,
+            occurredAt: new Date().toISOString(),
+          },
+        ]);
+      }
+      return row.account_id;
+    });
+
+    if (changed === null) {
       return null;
     }
     return this.findById(accountId);

@@ -292,6 +292,10 @@ Access is server-authorized by role and ownership. Sensitive files are encrypted
 | API-008 | POST `/api/bookings/{id}/room-token` | Obtain time-bound Jitsi access | Booking participant | booking → room/token expiry | forbidden, outside access window, provider unavailable |
 | API-009 | POST `/api/bookings/{id}/messages` | Send internal message | Booking participant | text → message | forbidden, invalid/unsafe content, rate limited |
 | API-010 | POST `/api/bookings/{id}/ratings` | Submit post-class review | Eligible Learner | score/comment → rating | class incomplete, duplicate, invalid content |
+| API-011 | GET `/api/student-verifications` | Browse student-verification queue (admin-wide) | Administrator | status/school_id filter, paged → verification list/total | forbidden |
+| API-012 | GET `/api/verifiers/admin/queue` | Browse Verifier queue by domain (admin-wide) | Administrator | domain/status filter, paged → evidence list/total | forbidden |
+| API-013 | GET `/api/audit-log` | Read the append-only privileged-action audit log | Administrator | actor/time/action filter, paged → audit list/total | forbidden |
+| API-014 | GET `/api/admin-operation/dashboard` | Read the operations aggregate | Administrator | — → verification/Verifier queue counts and recent audit | forbidden |
 
 ### API-005 request/response example
 
@@ -441,4 +445,4 @@ Authentication và authorization dùng server-side role/ownership check cho mọ
 | Discover and book online learning | FR-005–FR-007 | UC-003, US-003 | API-004–API-005, Class, Booking, NFR-001/NFR-006/NFR-007 | FR-005 publish and FR-007 booking implemented (live-class); FR-006 search pending |
 | Traceable wallet settlement | FR-008–FR-010, FR-014, FR-020 | UC-003, UC-005, US-003/US-006 | API-005–API-007, EVT-001, Wallet/Ledger/Withdrawal, NFR-003/NFR-005/NFR-009 | Pending implementation |
 | Secure class participation | FR-011–FR-013, FR-016 | UC-004, US-004/US-005 | API-008–API-010, Message/Rating, NFR-006/NFR-007/NFR-010 | Pending implementation |
-| Platform operations | FR-015 | (UC-014 in SRS) | Audit log, NFR-005 | Pending implementation |
+| Platform operations | FR-015 | UC-014, US-O1 | API-011–API-014, AuditEvent, NFR-005/NFR-014 | Queues + audit log implemented and tested (ADR-034); disputes/account-lock and audit actor attribution pending |

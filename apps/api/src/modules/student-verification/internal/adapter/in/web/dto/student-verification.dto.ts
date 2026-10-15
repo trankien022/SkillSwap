@@ -1,5 +1,7 @@
 import { createZodDto } from 'nestjs-zod';
 import {
+  adminVerificationPageSchema,
+  adminVerificationQuerySchema,
   documentUploadRequestSchema,
   documentUploadTargetSchema,
   studentVerificationSchema,
@@ -25,3 +27,9 @@ export class VerificationRevocationDto extends createZodDto(verificationRevocati
 
 /** FR-002: the verification view returned by the student-verification endpoints. */
 export class StudentVerificationDto extends createZodDto(studentVerificationSchema) {}
+
+/** FR-015: query params for the admin verification queue (GET /student-verifications). */
+export class AdminVerificationQueryDto extends createZodDto(adminVerificationQuerySchema) {}
+
+/** FR-015: a page of the admin verification queue. */
+export class AdminVerificationPageDto extends createZodDto(adminVerificationPageSchema) {}

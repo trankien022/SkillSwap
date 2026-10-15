@@ -5,26 +5,34 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { getMe, type UserProfile } from '../../lib/api-client';
+import { AdminDashboard } from './AdminDashboard';
 
 /**
- * Role-gated admin home (round-2 plan §4.1).
+ * Role-gated admin home (round-2 plan §4.1, extended by FR-015 / W4).
  *
  * Render states, ordered by the data actually held:
  *   1. `loading`   — `/auth/me` is in flight. Brief, no CTA.
  *   2. `signed-out`— no session; sign-in keeps the deep link as `returnUrl`.
  *   3. non-admin   — the translated forbidden banner (the client check is
  *                    best-effort; each admin route re-checks server-side).
- *   4. admin       — only links to routes that exist *today*:
- *                      · `/admin/student-verifications` (works now)
- *                      · verifier status by account id (works now, and the
- *                        copy states plainly that no verifier list exists)
- *                    The pending queue / verifier list / audit log are NOT
- *                    linked — they do not exist yet and a link would be a
- *                    dead end (no fabricated navigation).
+ *   4. admin       — the operations dashboard, then links to the three operations
+ *                    surfaces that exist, then the by-account-id Verifier control.
+ *
+ * The earlier "not ready" banner is gone because it is no longer true: the pending
+ * queue, the Verifier queue and the audit log all exist now, and a screen that says
+ * they do not is a lie an operator has to work around. Every card here links to a
+ * route that renders real data.
+ *
+ * The by-id Verifier control is **kept** alongside the queue, not replaced: the deep
+ * link is still reached from an email or a shared message, and removing the way to
+ * use it would break a path people already follow. It is now the fallback rather
+ * than the only option.
  */
 export function AdminLanding() {
   const t = useTranslations('Admin.Landing');
   const tVerifiers = useTranslations('Admin.verifiers');
+  const tVerifierQueue = useTranslations('Admin.verifierQueue');
+  const tAudit = useTranslations('Admin.auditLog');
   const tStudent = useTranslations('Admin.StudentVerification');
   const locale = useLocale();
   const router = useRouter();
@@ -99,20 +107,43 @@ export function AdminLanding() {
     <main id="main-content" tabIndex={-1} className="workspace-page workspace-page-narrow flex-1">
       <PageIntro title={t('title')} description={t('subtitle')} />
 
+      <AdminDashboard />
+
       <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-semibold text-slate-700">{t('toolsTitle')}</h2>
+
         <a
           href={`/${locale}/admin/student-verifications`}
           className="rounded-2xl border border-slate-200 bg-white p-5 transition-colors hover:border-emerald-300"
         >
-          <h2 className="text-sm font-semibold text-slate-900">{t('studentVerifications')}</h2>
-          <p className="mt-1 text-sm leading-relaxed text-slate-600">{tStudent('notice')}</p>
+          <h3 className="text-sm font-semibold text-slate-900">{t('studentVerifications')}</h3>
+          <p className="mt-1 text-xs leading-relaxed text-slate-600">{tStudent('queueNotice')}</p>
         </a>
 
+        <a
+          href={`/${locale}/admin/verifiers`}
+          className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-emerald-300"
+        >
+          <h3 className="text-sm font-semibold text-slate-900">{tVerifierQueue('pageTitle')}</h3>
+          <p className="mt-1 text-xs leading-relaxed text-slate-600">
+            {tVerifierQueue('pageSubtitle')}
+          </p>
+        </a>
+
+        <a
+          href={`/${locale}/admin/audit-log`}
+          className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-emerald-300"
+        >
+          <h3 className="text-sm font-semibold text-slate-900">{tAudit('pageTitle')}</h3>
+          <p className="mt-1 text-xs leading-relaxed text-slate-600">{tAudit('pageSubtitle')}</p>
+        </a>
+      </section>
+
+      <section className="flex flex-col gap-3">
         <form onSubmit={openVerifierStatus} className="workspace-panel">
           <h2 className="text-sm font-semibold text-slate-900">{t('verifierStatus')}</h2>
-          {/* The lack of a verifier list is stated, not hidden: the admin has
-              to arrive from an email/deep link, and pretending a list exists
-              would be a fabrication. */}
+          {/* Kept as the fallback for a deep link that arrives from an email or a shared
+              message; the queue above is now the normal way in. */}
           <p className="mt-1 text-sm leading-relaxed text-slate-600">
             {tVerifiers('accountIdHint')}
           </p>
@@ -141,13 +172,6 @@ export function AdminLanding() {
             </p>
           )}
         </form>
-      </section>
-
-      {/* Honest boundary: these screens do not exist yet, so no link is
-          offered for them. Copy states it plainly (no requirement IDs in UI). */}
-      <section className="rounded-2xl border border-dashed border-slate-300 bg-slate-100/60 p-5">
-        <h2 className="text-sm font-semibold text-slate-700">{t('notReadyTitle')}</h2>
-        <p className="mt-1 text-sm leading-relaxed text-slate-600">{t('notReadyBody')}</p>
       </section>
     </main>
   );

@@ -589,13 +589,41 @@
     "Landing": {
       "title": "Trang quản trị",
       "subtitle": "Chỉ những công cụ đang vận hành thật trên hệ thống mới được mở từ đây.",
+      "toolsTitle": "Công cụ vận hành",
       "studentVerifications": "Duyệt xác minh sinh viên",
       "verifierStatus": "Mở trạng thái Verifier theo Account ID",
       "accountIdPlaceholder": "Nhập Account ID",
       "accountIdRequired": "Vui lòng nhập Account ID.",
-      "openCta": "Mở",
-      "notReadyTitle": "Chưa có sẵn",
-      "notReadyBody": "Hàng đợi duyệt chờ, danh sách Verifier và nhật ký kiểm định chưa tồn tại trên hệ thống."
+      "openCta": "Mở"
+    },
+    "dashboard": {
+      "loading": "Đang tổng hợp số liệu…",
+      "retry": "Thử lại",
+      "unauthorizedTitle": "Bạn không có quyền truy cập bảng điều khiển",
+      "unauthorizedBody": "Bảng điều khiển vận hành chỉ dành cho quản trị viên. Hãy đăng nhập bằng tài khoản quản trị.",
+      "generatedAt": "Số liệu tổng hợp lúc {date}.",
+      "metrics": {
+        "verificationsPending": "Xác minh sinh viên chờ duyệt",
+        "verificationsPendingHint": "Hồ sơ đang chờ quyết định.",
+        "evidenceLive": "Bằng chứng đang trong hàng đợi",
+        "evidenceLiveHint": "{unclaimed} chưa có Verifier nhận, {inReview} đang thẩm định.",
+        "auditEvents": "Hành động kiểm định gần đây",
+        "auditEventsHint": "Số sự kiện mới nhất hiển thị bên dưới."
+      },
+      "byDomain": {
+        "title": "Tồn đọng theo lĩnh vực",
+        "subtitle": "Chỉ tính bằng chứng đang trong hàng đợi (chưa nhận hoặc đang thẩm định). Lĩnh vực không có việc chờ sẽ không xuất hiện.",
+        "empty": "Hiện không có bằng chứng nào đang chờ ở bất kỳ lĩnh vực nào.",
+        "count": "{count} việc"
+      },
+      "recent": {
+        "title": "Hành động kiểm định gần đây",
+        "viewAll": "Xem toàn bộ nhật ký",
+        "empty": "Chưa có hành động đặc quyền nào được ghi nhận."
+      },
+      "errors": {
+        "generic": "Không thể tải số liệu vận hành. Vui lòng thử lại."
+      }
     },
     "verifiers": {
       "breadcrumb": "Quản trị",
@@ -605,7 +633,7 @@
       "title": "Thay đổi trạng thái Verifier",
       "subtitle": "Mỗi lần thay đổi sẽ được lưu lại trong nhật ký kiểm định. Verifier sẽ nhận được thông báo qua email sau khi trạng thái cập nhật.",
       "accountIdLabel": "Account ID của Verifier",
-      "accountIdHint": "Đường dẫn sâu từ email thông báo hoặc nhật ký kiểm định. Hệ thống chưa có danh sách Verifier.",
+      "accountIdHint": "Dùng khi bạn có sẵn đường dẫn sâu từ email thông báo hoặc nhật ký kiểm định. Danh sách Verifier đầy đủ nằm ở Hàng đợi thẩm định theo lĩnh vực.",
       "statusLabel": "Trạng thái mới",
       "option": {
         "active": {
@@ -643,11 +671,142 @@
         "generic": "Không thể cập nhật trạng thái Verifier. Vui lòng thử lại."
       }
     },
+    "verifierQueue": {
+      "pageTitle": "Hàng đợi thẩm định theo lĩnh vực",
+      "pageSubtitle": "Toàn bộ bằng chứng năng lực đang chờ, không giới hạn theo chuyên môn của một Verifier. Dùng để phát hiện lĩnh vực đang tồn đọng mà không có Verifier nào phụ trách.",
+      "loading": "Đang tải hàng đợi…",
+      "loadingMore": "Đang tải thêm…",
+      "loadMore": "Tải thêm",
+      "empty": "Không có bằng chứng nào khớp bộ lọc.",
+      "emptyHint": "Thử bỏ bộ lọc lĩnh vực hoặc trạng thái.",
+      "totalShown": "{count} bằng chứng khớp bộ lọc",
+      "retry": "Thử lại",
+      "unknownSkill": "Không rõ kỹ năng",
+      "unknownDomain": "Không rõ lĩnh vực",
+      "requestedLevel": "Mức yêu cầu: {level}",
+      "version": "Phiên bản {version}",
+      "unclaimed": "Chưa có Verifier nhận",
+      "claimedBy": "Đang được thẩm định bởi {id}",
+      "unauthorizedTitle": "Bạn không có quyền truy cập hàng đợi này",
+      "unauthorizedBody": "Hàng đợi thẩm định toàn hệ thống chỉ dành cho quản trị viên. Hãy đăng nhập bằng tài khoản quản trị.",
+      "filters": {
+        "domain": "Lĩnh vực",
+        "domainPlaceholder": "Tìm theo lĩnh vực (ít nhất 2 ký tự)",
+        "status": "Trạng thái",
+        "sort": "Sắp xếp"
+      },
+      "sort": {
+        "submittedAt": "Cũ nhất trước",
+        "-submittedAt": "Mới nhất trước"
+      },
+      "status": {
+        "live": "Đang trong hàng đợi",
+        "pending": "Chưa nhận",
+        "claimed": "Đang thẩm định",
+        "approved": "Đã duyệt",
+        "rejected": "Từ chối",
+        "superseded": "Đã thay thế"
+      },
+      "level": {
+        "beginner": "Cơ bản",
+        "intermediate": "Trung cấp",
+        "advanced": "Nâng cao",
+        "expert": "Chuyên gia"
+      },
+      "errors": {
+        "generic": "Không thể tải hàng đợi thẩm định. Vui lòng thử lại."
+      }
+    },
+    "auditLog": {
+      "pageTitle": "Nhật ký kiểm định",
+      "pageSubtitle": "Mọi hành động đặc quyền đã được ghi nhận, mới nhất trước. Nhật ký chỉ ghi thêm, không sửa và không xoá.",
+      "loading": "Đang tải nhật ký…",
+      "loadingMore": "Đang tải thêm…",
+      "loadMore": "Tải thêm",
+      "empty": "Không có sự kiện nào khớp bộ lọc.",
+      "emptyHint": "Thử bỏ bộ lọc hành động hoặc khoảng thời gian.",
+      "totalShown": "{count} sự kiện khớp bộ lọc",
+      "retry": "Thử lại",
+      "occurredAt": "Thời điểm: {date}",
+      "actorKnown": "Người thực hiện: {id}",
+      "actorUnknown": "Người thực hiện: chưa ghi nhận",
+      "targetId": "Đối tượng: {id}",
+      "stateChange": "Thay đổi: {from} → {to}",
+      "actorGap": "Bộ lọc theo người thực hiện hiện chưa khớp được sự kiện nào: các sự kiện trong nhật ký chưa mang theo id quản trị viên. Các bộ lọc còn lại hoạt động bình thường.",
+      "unauthorizedTitle": "Bạn không có quyền truy cập nhật ký kiểm định",
+      "unauthorizedBody": "Nhật ký kiểm định chỉ dành cho quản trị viên. Hãy đăng nhập bằng tài khoản quản trị.",
+      "filters": {
+        "action": "Hành động",
+        "anyAction": "Tất cả hành động",
+        "actor": "Người thực hiện",
+        "actorPlaceholder": "Account ID của quản trị viên",
+        "from": "Từ ngày",
+        "to": "Đến ngày",
+        "sort": "Sắp xếp"
+      },
+      "sort": {
+        "-occurredAt": "Mới nhất trước",
+        "occurredAt": "Cũ nhất trước"
+      },
+      "action": {
+        "studentVerificationApproved": "Duyệt xác minh sinh viên",
+        "studentVerificationRejected": "Từ chối xác minh sinh viên",
+        "studentVerificationRevoked": "Thu hồi xác minh sinh viên",
+        "skillEvidenceClaimed": "Nhận thẩm định bằng chứng",
+        "skillEvidenceApproved": "Duyệt bằng chứng năng lực",
+        "skillEvidenceRejected": "Từ chối bằng chứng năng lực",
+        "skillVerifierSuspended": "Tạm ngưng Verifier",
+        "skillVerifierRevoked": "Thu hồi Verifier",
+        "walletTransactionCompleted": "Hoàn tất giao dịch ví"
+      },
+      "errors": {
+        "generic": "Không thể tải nhật ký kiểm định. Vui lòng thử lại."
+      }
+    },
     "StudentVerification": {
       "title": "Duyệt xác minh sinh viên",
       "notice": "Nhập mã hồ sơ sinh viên cần xét duyệt để mở các thao tác. Kiểm tra đúng hồ sơ và nêu rõ lý do khi ra quyết định.",
+      "queueNotice": "Toàn bộ hồ sơ xác minh sinh viên trên hệ thống. Lọc theo trạng thái, tìm theo trường, rồi mở một hồ sơ để xem xét.",
       "idPlaceholder": "Id xác minh",
       "openCta": "Mở",
+      "openByIdTitle": "Mở theo Id xác minh",
+      "openByIdBody": "Dùng khi bạn có sẵn đường dẫn sâu từ email hoặc được chia sẻ. Danh sách phía trên là cách duyệt thông thường.",
+      "status": {
+        "pending": "Chờ duyệt",
+        "approved": "Đã duyệt",
+        "rejected": "Từ chối",
+        "revoked": "Thu hồi"
+      },
+      "queue": {
+        "loading": "Đang tải danh sách…",
+        "loadingMore": "Đang tải thêm…",
+        "loadMore": "Tải thêm",
+        "loadedMore": "Đã tải thêm {count} hồ sơ.",
+        "empty": "Không có hồ sơ nào khớp bộ lọc.",
+        "emptyHint": "Thử bỏ bộ lọc trạng thái hoặc tìm với từ khoá khác.",
+        "noMajor": "Chưa khai báo ngành",
+        "submittedAt": "Gửi ngày {date}",
+        "totalShown": "{count} hồ sơ khớp bộ lọc",
+        "retry": "Thử lại",
+        "unauthorizedTitle": "Bạn không có quyền truy cập danh sách này",
+        "unauthorizedBody": "Danh sách xác minh sinh viên chỉ dành cho quản trị viên. Hãy đăng nhập bằng tài khoản quản trị.",
+        "filters": {
+          "status": "Trạng thái",
+          "anyStatus": "Tất cả trạng thái",
+          "school": "Tên trường",
+          "schoolPlaceholder": "Tìm theo tên trường (ít nhất 2 ký tự)",
+          "sort": "Sắp xếp"
+        },
+        "sort": {
+          "submittedAt": "Gửi cũ nhất trước",
+          "-submittedAt": "Gửi mới nhất trước",
+          "decidedAt": "Duyệt cũ nhất trước",
+          "-decidedAt": "Duyệt mới nhất trước"
+        },
+        "errors": {
+          "generic": "Không thể tải danh sách xác minh sinh viên. Vui lòng thử lại."
+        }
+      },
       "label": {
         "id": "Id xác minh",
         "decision": "Quyết định",

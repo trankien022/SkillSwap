@@ -1,6 +1,11 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Param, Post, Query, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
-import type { SkillEvidenceView, VerifierQueuePage, VerifierView } from '@skillswap/contracts';
+import type {
+  AdminVerifierQueuePage,
+  SkillEvidenceView,
+  VerifierQueuePage,
+  VerifierView,
+} from '@skillswap/contracts';
 import {
   CHANGE_VERIFIER_STATUS,
   type ChangeVerifierStatusPort,
@@ -9,6 +14,10 @@ import {
   LIST_VERIFIER_QUEUE,
   type ListVerifierQueuePort,
 } from '../../../application/port/in/list-verifier-queue';
+import {
+  LIST_ADMIN_VERIFIER_QUEUE,
+  type ListAdminVerifierQueuePort,
+} from '../../../application/port/in/list-admin-verifier-queue';
 import {
   CLAIM_SKILL_EVIDENCE,
   type ClaimSkillEvidencePort,
@@ -24,6 +33,8 @@ import {
   ResponseMessage,
 } from '../../../../../../shared/http/response-code.decorator';
 import {
+  AdminVerifierQueuePageDto,
+  AdminVerifierQueueQueryDto,
   SkillEvidenceDecisionDto,
   SkillEvidenceDto,
   VerifierDto,
@@ -39,6 +50,7 @@ export class VerifierController {
   constructor(
     @Inject(CHANGE_VERIFIER_STATUS) private readonly changeStatus: ChangeVerifierStatusPort,
     @Inject(LIST_VERIFIER_QUEUE) private readonly queue: ListVerifierQueuePort,
+    @Inject(LIST_ADMIN_VERIFIER_QUEUE) private readonly adminQueue: ListAdminVerifierQueuePort,
   ) {}
 
   @Post(':accountId/status')
@@ -76,6 +88,27 @@ export class VerifierController {
       q: query.q,
       sort: query.sort,
     });
+  }
+
+  /**
+   * FR-015: the cross-domain Verifier queue for an Administrator (NFR-014).
+   *
+   * Declared **after** `myQueue` for the same reason the student-verification controller declares
+   * its admin route last: Nest matches in declaration order, and `me/queue` must win for a
+   * Verifier calling it. The path is `admin/queue` rather than a bare `queue` so the two can
+   * never be confused even if the order changes.
+   */
+  @Get('admin/queue')
+  @Roles('admin')
+  @ResponseCode('ADMIN_VERIFIER_QUEUE_OK')
+  @ResponseMessage('Verifier queue loaded')
+  @ApiOperation({ summary: 'The cross-domain Verifier queue by domain (FR-015)' })
+  @ApiOkResponse({
+    type: AdminVerifierQueuePageDto,
+    description: 'A page of evidence requests across every domain, unclaimed or in review',
+  })
+  listAdminQueue(@Query() query: AdminVerifierQueueQueryDto): Promise<AdminVerifierQueuePage> {
+    return this.adminQueue.execute(query);
   }
 }
 
