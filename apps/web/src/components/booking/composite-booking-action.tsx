@@ -3,12 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import type { WalletBalanceView } from '@skillswap/contracts';
-import { callApiOk, unwrapEnvelope } from '../../lib/api-client';
 import type { ClassDetailView } from '../../lib/marketplace/types';
 import { BookClassService } from '../../lib/booking/service';
 import { HttpBookingGateway } from '../../lib/booking/http-gateway';
-import { newIdempotencyKey } from '../../lib/booking/idempotency';
+import { checkBalanceGate, obtainHold } from '../../lib/booking/gate';
 import { BookingError, type ConfirmBookingResponse } from '../../lib/booking/domain';
 import {
   resolveSettlement,
@@ -39,12 +37,6 @@ import { StatusPill } from './status-pill';
  *    `resolveSettlement` never turns `confirmed: false` into success.
  */
 const service = new BookClassService(new HttpBookingGateway());
-
-async function readAvailableCredits(): Promise<number> {
-  const res = await callApiOk('/wallet/balance');
-  const balance = await unwrapEnvelope<WalletBalanceView>(res);
-  return balance.availableCredits;
-}
 
 /** Why a class cannot be booked, when the server says it cannot. */
 export type DisabledReasonKey = 'confirmed' | 'full' | 'notOpen' | 'tooSoon' | 'notBookable';
@@ -95,12 +87,12 @@ type ActionState =
 export function CompositeBookingAction({
   item,
   service: injectedService,
-  readCredits = readAvailableCredits,
+  readCredits,
 }: {
   item: ClassDetailView;
   /** Injected by tests; production composes the HTTP adapter above. */
   service?: BookClassService;
-  /** Fresh balance for the gate. Injected by tests. */
+  /** Fresh balance for the gate; defaults to the wallet route. */
   readCredits?: () => Promise<number>;
 }) {
   const t = useTranslations('Booking');
@@ -152,24 +144,19 @@ export function CompositeBookingAction({
     setState({ phase: 'busy' });
 
     try {
-      // 1. Hold — reuse the one that already exists rather than asking the
-      //    server for a second seat it will reject as a duplicate.
-      let bookingId = activeHoldBookingId(item);
-      if (bookingId === null) {
-        bookingId = (await port.book(item.id, newIdempotencyKey())).booking.bookingId;
-      }
+      // 1. Hold — `obtainHold` reuses the learner's live hold instead of asking
+      //    the server for a second seat it will reject as a duplicate. A
+      //    rejection (class full, window closed, …) surfaces the reason the
+      //    server sent, never a redirect and never a success.
+      const bookingId = await obtainHold(item, port);
 
-      // 2. Gate — read at press time so the decision uses the balance the
-      //    learner has *now*, not the one the page rendered with.
-      let credits: number | null = null;
-      try {
-        credits = await readCredits();
-      } catch {
-        credits = null;
-      }
-      if (credits === null || credits < item.priceCredits) {
-        // The hold exists by now and its countdown is running; checkout shows
-        // it together with the top-up branch. Confirm is never attempted.
+      // 2. Gate — the shared check reads a fresh balance at press time so the
+      //    decision uses the credits the learner has *now*, not the ones the
+      //    page rendered with. Unaffordable or unreadable both go to checkout,
+      //    where the hold's countdown and the top-up branch live; confirm is
+      //    never attempted (§2.3: there is no synchronous gate to call).
+      const gate = await checkBalanceGate(item.priceCredits, readCredits);
+      if (gate.decision !== 'sufficient') {
         router.push(`/${locale}/classes/${item.id}/checkout`);
         return;
       }
