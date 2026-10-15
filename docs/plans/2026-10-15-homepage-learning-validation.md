@@ -95,6 +95,9 @@ Screenshots and machine-readable browser results are stored locally under
 typechecks, **1,364 tests** (37 + 162 + 623 + 250 + 292), and dependency rules
 (**883 modules / 2,495 dependencies**, no violations).
 
+The tablet hero uses a wider image ratio so both the student and the remote
+teacher remain visible without a portrait crop.
+
 The production build at localhost:3000 passed the same eight VI/EN viewport
 checks and the subject-discovery fixture checks. Production rendering removes
 the Next.js development indicator. This verifies the production frontend,
