@@ -1,5 +1,6 @@
 import createNextIntlPlugin from 'next-intl/plugin';
 import type { NextConfig } from 'next';
+import { PHASE_DEVELOPMENT_SERVER } from 'next/constants';
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
@@ -9,10 +10,16 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: (process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000') + '/api/:path*',
+        destination:
+          (process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000') + '/api/:path*',
       },
     ];
   },
 };
 
-export default withNextIntl(nextConfig);
+// A UI preview must not overwrite the assets of a running production server.
+export default (phase: string) =>
+  withNextIntl({
+    ...nextConfig,
+    distDir: phase === PHASE_DEVELOPMENT_SERVER ? '.next-dev' : '.next',
+  });

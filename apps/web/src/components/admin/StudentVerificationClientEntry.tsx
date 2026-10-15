@@ -10,9 +10,13 @@ export function ClientEntry() {
   const [show, setShow] = useState(false);
 
   return (
-    <div>
+    <div className="workspace-panel workspace-form">
       <div className="mb-3">
+        <label htmlFor="review-profile-id" className="mb-2 block font-semibold">
+          {t('label.id')}
+        </label>
         <input
+          id="review-profile-id"
           value={id}
           onChange={(e) => setId(e.target.value)}
           placeholder={t('idPlaceholder')}
@@ -23,7 +27,7 @@ export function ClientEntry() {
         <button
           onClick={() => setShow(true)}
           disabled={!id.trim()}
-          className="rounded bg-slate-900 px-3 py-1 text-xs text-white disabled:opacity-50"
+          className="rounded bg-slate-900 px-3 py-1 text-sm text-white disabled:opacity-50"
         >
           {t('openCta')}
         </button>

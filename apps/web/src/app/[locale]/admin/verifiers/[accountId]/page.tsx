@@ -30,7 +30,7 @@ export default async function AdminVerifierPage({ params }: PageProps) {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
-      <Navbar />
+      <Navbar currentTab="admin" />
       <div className="flex-1">
         <VerifierStatusPage accountId={accountId} />
       </div>

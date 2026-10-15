@@ -25,9 +25,9 @@ interface CardProps {
 
 function Card({ title, badge, badgeClasses }: CardProps) {
   return (
-    <article className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <article className="workspace-panel flex flex-wrap items-center justify-between gap-4">
       <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${badgeClasses}`}>
+      <span className={`rounded-full px-3 py-1 text-sm font-semibold ${badgeClasses}`}>
         {badge}
       </span>
     </article>
@@ -58,9 +58,7 @@ export function StatusCheck() {
         : { phase: 'down' },
     );
     setApi(
-      apiResult.status === 'fulfilled'
-        ? { phase: 'up', data: apiResult.value }
-        : { phase: 'down' },
+      apiResult.status === 'fulfilled' ? { phase: 'up', data: apiResult.value } : { phase: 'down' },
     );
     setCheckedAt(new Date().toLocaleTimeString());
   }, []);
@@ -69,14 +67,36 @@ export function StatusCheck() {
     void load();
   }, [load]);
 
-  const gatewayBadge = gateway.phase === 'checking' ? t('checking') : gateway.phase === 'up' ? t('operational') : t('down');
-  const gatewayClasses = gateway.phase === 'checking' ? checkingClasses : gateway.phase === 'up' ? upClasses : downClasses;
+  const gatewayBadge =
+    gateway.phase === 'checking'
+      ? t('checking')
+      : gateway.phase === 'up'
+        ? t('operational')
+        : t('down');
+  const gatewayClasses =
+    gateway.phase === 'checking'
+      ? checkingClasses
+      : gateway.phase === 'up'
+        ? upClasses
+        : downClasses;
 
   const apiDegraded = api.phase === 'up' && api.data?.status === 'degraded';
   const apiBadge =
-    api.phase === 'checking' ? t('checking') : api.phase === 'down' ? t('down') : apiDegraded ? t('degraded') : t('operational');
+    api.phase === 'checking'
+      ? t('checking')
+      : api.phase === 'down'
+        ? t('down')
+        : apiDegraded
+          ? t('degraded')
+          : t('operational');
   const apiClasses =
-    api.phase === 'checking' ? checkingClasses : api.phase === 'down' ? downClasses : apiDegraded ? degradedClasses : upClasses;
+    api.phase === 'checking'
+      ? checkingClasses
+      : api.phase === 'down'
+        ? downClasses
+        : apiDegraded
+          ? degradedClasses
+          : upClasses;
 
   return (
     <section className="mt-8 space-y-4" aria-label={t('title')}>

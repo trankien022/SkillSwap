@@ -5,7 +5,7 @@ import enMessages from '../../messages/en.json';
 import viMessages from '../../messages/vi.json';
 
 const replaceMock = vi.fn();
-let currentPath = '/en';
+let currentPath = '/';
 
 vi.mock('../../i18n/routing', () => ({
   routing: {
@@ -22,15 +22,12 @@ const { LocaleSwitcher } = await import('./LocaleSwitcher');
 afterEach(() => {
   cleanup();
   replaceMock.mockClear();
-  currentPath = '/en';
+  currentPath = '/';
 });
 
 function renderSwitcher(locale: 'vi' | 'en' = 'en') {
   return render(
-    <NextIntlClientProvider
-      locale={locale}
-      messages={locale === 'vi' ? viMessages : enMessages}
-    >
+    <NextIntlClientProvider locale={locale} messages={locale === 'vi' ? viMessages : enMessages}>
       <LocaleSwitcher />
     </NextIntlClientProvider>,
   );
@@ -42,14 +39,12 @@ function renderSwitcher(locale: 'vi' | 'en' = 'en') {
  * This keeps the test honest about which locale the user actually sees.
  */
 function label(locale: 'vi' | 'en') {
-  return locale === 'vi'
-    ? viMessages.Landing.footer
-    : enMessages.Landing.footer;
+  return locale === 'vi' ? viMessages.Landing.footer : enMessages.Landing.footer;
 }
 
 describe('LocaleSwitcher', () => {
-  it('marks the English button as checked when path starts with /en', () => {
-    currentPath = '/en';
+  it('marks the English button as checked from the English provider with a locale-less path', () => {
+    currentPath = '/';
     renderSwitcher('en');
 
     const messages = label('en');
@@ -60,8 +55,8 @@ describe('LocaleSwitcher', () => {
     expect(viButton.getAttribute('aria-checked')).toBe('false');
   });
 
-  it('marks the Vietnamese button as checked when path starts with /vi', () => {
-    currentPath = '/vi';
+  it('marks the Vietnamese button as checked from the Vietnamese provider with a locale-less path', () => {
+    currentPath = '/';
     renderSwitcher('vi');
 
     const messages = label('vi');
@@ -73,7 +68,7 @@ describe('LocaleSwitcher', () => {
   });
 
   it('calls router.replace with the other locale while keeping the path', () => {
-    currentPath = '/en';
+    currentPath = '/';
     renderSwitcher('en');
 
     const messages = label('en');
@@ -81,12 +76,12 @@ describe('LocaleSwitcher', () => {
 
     expect(replaceMock).toHaveBeenCalledTimes(1);
     const [path, opts] = replaceMock.mock.calls[0] ?? [];
-    expect(path).toBe('/en');
+    expect(path).toBe('/');
     expect(opts).toEqual({ locale: 'vi' });
   });
 
   it('does not call router.replace when the active locale is clicked again', () => {
-    currentPath = '/vi';
+    currentPath = '/';
     renderSwitcher('vi');
 
     const messages = label('vi');

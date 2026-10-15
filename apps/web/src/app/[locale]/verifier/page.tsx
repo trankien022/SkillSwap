@@ -15,7 +15,7 @@ export default async function VerifierPage({ params }: PageProps) {
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
       {/* This screen is only reachable with a session, so it previously rendered
           with no chrome at all: no brand, no way back, no sign-out. */}
-      <Navbar />
+      <Navbar currentTab="verifier" />
       <VerifierQueuePage />
       <SiteFooter />
     </div>

@@ -1,102 +1,45 @@
+import Image from 'next/image';
 import { getTranslations } from 'next-intl/server';
+import { DiscoveryLink } from './DiscoveryLink';
 
-/**
- * Hero (landing section #1).
- *
- * DESIGN.md:
- *  - Display 700 / tracking -0.025em (Tight-Head Rule).
- *  - Status text + color, never color alone (No-Color-Only Rule).
- *  - Mobile-first 360 px, no horizontal scroll.
- *  - Emerald rationing ≤10%: emerald only on the second headline line.
- *
- * Copy is faithful to intent.md + PRODUCT.md (peer-to-peer, verified,
- * transparent). No fabricated user counts, no SSO claims.
- *
- * Density: one headline, one subline, one row of proof pills. The previous
- * eyebrow badge repeated the subline verbatim and has been dropped.
- */
-export async function HeroSection() {
+export async function HeroSection({ locale }: { locale: string }) {
   const t = await getTranslations('Landing.hero');
 
   return (
-    <section
-      id="hero"
-      aria-labelledby="hero-heading"
-      className="mx-auto w-full max-w-7xl px-4 pb-8 pt-10 lg:px-8"
-    >
-      <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
-        {/* Headline — system sans, tight tracking, display weight */}
-        <h1
-          id="hero-heading"
-          className="mb-4 text-4xl font-bold leading-tight tracking-tight text-ink sm:text-5xl lg:text-[3.25rem]"
-        >
-          <span className="block">{t('headline1')}</span>
-          <span className="block text-campus-emerald">{t('headline2')}</span>
+    <section id="hero" aria-labelledby="hero-heading" className="learning-hero">
+      <div className="learning-hero-copy">
+        <h1 id="hero-heading" className="learning-enter">
+          {t('headline1')}
+          <br />
+          {t('headline2')}
         </h1>
-
-        {/* Subline */}
-        <p className="mx-auto mb-6 max-w-2xl text-base leading-relaxed text-ink-soft sm:text-lg">
-          {t('subline')}
-        </p>
-
-        {/* Institutional pills — calm slate, one emerald accent max */}
-        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 rounded-2xl bg-neutral-tint px-5 py-3 text-xs font-semibold text-ink-soft shadow-sm">
-          <Pill icon="school">{t('pills.school')}</Pill>
-          <span aria-hidden="true" className="text-ink-muted">
-            •
-          </span>
-          <Pill icon="shield">{t('pills.antiFake')}</Pill>
-          <span aria-hidden="true" className="text-ink-muted">
-            •
-          </span>
-          <Pill icon="lock">{t('pills.escrow')}</Pill>
+        <p className="learning-hero-description learning-enter">{t('subline')}</p>
+        <div className="learning-hero-actions learning-enter">
+          <DiscoveryLink locale={locale} className="learning-primary">
+            {t('explore')}
+            <span aria-hidden="true">↗</span>
+          </DiscoveryLink>
+          <a href="#how-it-works" className="learning-text-link">
+            {t('howItWorks')}
+          </a>
         </div>
+        <p className="learning-hero-note learning-enter">{t('note')}</p>
       </div>
+      <figure className="learning-hero-media learning-enter">
+        <Image
+          src="/learning/online-learning.webp"
+          alt={t('imageAlt')}
+          width={1400}
+          height={933}
+          priority
+          sizes="(max-width: 767px) 100vw, 60vw"
+          className="learning-hero-image"
+        />
+        <figcaption className="learning-photo-caption">
+          <span>{t('imageCaption')}</span>
+          <span>{t('sessionLength')}</span>
+        </figcaption>
+      </figure>
     </section>
-  );
-}
-
-function Pill({
-  icon,
-  children,
-}: {
-  icon: 'school' | 'shield' | 'lock';
-  children: React.ReactNode;
-}) {
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <svg
-        viewBox="0 0 24 24"
-        width="18"
-        height="18"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-        className="text-ink"
-      >
-        {icon === 'school' && (
-          <>
-            <path d="M3 9l9-5 9 5-9 5-9-5z" />
-            <path d="M7 11v5c2 1.5 4 1.5 5 1.5s3 0 5-1.5v-5" />
-          </>
-        )}
-        {icon === 'shield' && (
-          <>
-            <path d="M12 3l8 3v6c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V6l8-3z" />
-            <polyline points="9 12 11 14 15 10" />
-          </>
-        )}
-        {icon === 'lock' && (
-          <>
-            <rect x="5" y="11" width="14" height="9" rx="2" />
-            <path d="M8 11V7a4 4 0 1 1 8 0v4" />
-          </>
-        )}
-      </svg>
-      <span>{children}</span>
-    </span>
   );
 }

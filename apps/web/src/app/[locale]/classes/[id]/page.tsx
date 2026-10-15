@@ -22,8 +22,8 @@ export default async function ClassDetailPage({ params }: PageProps) {
   return (
     <div className="flex min-h-dvh flex-col bg-mist text-ink">
       <MarketplaceHeader />
-      <main className="flex-1">
-        <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
+      <main id="main-content" tabIndex={-1} className="flex-1">
+        <div className="workspace-page">
           <ClassDetailContent id={id} />
         </div>
       </main>

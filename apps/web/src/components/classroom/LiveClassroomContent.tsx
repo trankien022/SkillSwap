@@ -53,10 +53,7 @@ type Phase =
       connectedAt: number;
     };
 
-export function LiveClassroomContent({
-  bookingId = '',
-  roomCode = '',
-}: LiveClassroomProps) {
+export function LiveClassroomContent({ bookingId = '', roomCode = '' }: LiveClassroomProps) {
   const t = useTranslations('LiveClassroom');
   const locale = useLocale();
 
@@ -234,9 +231,7 @@ export function LiveClassroomContent({
         // confirmation) WITHOUT claiming the learner is in the room. The phase
         // becomes `connected` only when Jitsi fires `videoConferenceJoined`, so
         // the status bar and timer never report a call that has not started.
-        setPhase((prev) =>
-          prev.kind === 'connecting' ? { ...prev, kind: 'prejoin' } : prev,
-        );
+        setPhase((prev) => (prev.kind === 'connecting' ? { ...prev, kind: 'prejoin' } : prev));
       } catch {
         if (!cancelled) {
           setPhase((prev) =>
@@ -299,14 +294,11 @@ export function LiveClassroomContent({
 
   /* 6. Control bar — every button drives the real conference. */
   const connected = phase.kind === 'connected';
-  const runCommand = useCallback(
-    (command: string) => {
-      const api = jitsiRef.current;
-      if (api === null) return;
-      api.executeCommand(command);
-    },
-    [],
-  );
+  const runCommand = useCallback((command: string) => {
+    const api = jitsiRef.current;
+    if (api === null) return;
+    api.executeCommand(command);
+  }, []);
 
   const handleToggleMic = () => runCommand('toggleAudio');
   const handleToggleCamera = () => runCommand('toggleVideo');
@@ -366,30 +358,36 @@ export function LiveClassroomContent({
       : null;
 
   return (
-    <div className="w-full space-y-5">
+    <div className="min-w-0 w-full space-y-5">
       {/* 1. Classroom Sub-Header & Live Status Bar */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500">
+      <section className="rounded-2xl border border-slate-200 bg-white p-4  flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-slate-500">
           <Link
             href={`/${locale}/bookings`}
             className="flex items-center gap-1.5 font-semibold text-slate-700 hover:text-emerald-700 transition-colors"
           >
-            <span className="material-symbols-outlined text-[16px]">school</span>
+            <span aria-hidden="true" className="material-symbols-outlined text-[16px]">
+              school
+            </span>
             <span>{t('nav.back')}</span>
           </Link>
-          <span className="material-symbols-outlined text-[14px] text-slate-400">chevron_right</span>
-          <span className="text-slate-900 font-bold truncate max-w-xs md:max-w-md">
-            {booking === null ? t('nav.classFallback') : booking.classTitle}
+          <span aria-hidden="true" className="material-symbols-outlined text-[14px] text-slate-400">
+            chevron_right
           </span>
-          <span className="material-symbols-outlined text-[14px] text-slate-400">chevron_right</span>
-          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 font-mono text-[11px] font-bold text-slate-700">
+          <h1 className="min-w-0 break-words text-lg font-bold tracking-tight text-ink">
+            {booking === null ? t('nav.classFallback') : booking.classTitle}
+          </h1>
+          <span aria-hidden="true" className="material-symbols-outlined text-[14px] text-slate-400">
+            chevron_right
+          </span>
+          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-sm font-bold text-slate-700">
             {t('nav.bookingCode', { code: booking === null ? bookingId : booking.id })}
           </span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <span
-            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold tracking-wide ${
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-bold tracking-wide ${
               connected
                 ? 'border-rose-200 bg-rose-50 text-rose-700'
                 : 'border-slate-200 bg-slate-100 text-slate-600'
@@ -403,14 +401,24 @@ export function LiveClassroomContent({
             <span>{connected ? t('statusBar.live') : t('statusBar.notLive')}</span>
           </span>
 
-          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-[11px] font-medium text-slate-700">
-            <span className="material-symbols-outlined text-[14px] text-emerald-600">network_ping</span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
+            <span
+              aria-hidden="true"
+              className="material-symbols-outlined text-[14px] text-emerald-600"
+            >
+              network_ping
+            </span>
             <span>{connected ? t('statusBar.connected') : t('statusBar.disconnected')}</span>
           </span>
 
           {timerLabel !== null && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-900">
-              <span className="material-symbols-outlined text-[14px] text-slate-700">timer</span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-sm font-bold text-slate-900">
+              <span
+                aria-hidden="true"
+                className="material-symbols-outlined text-[14px] text-slate-700"
+              >
+                timer
+              </span>
               <span>{timerLabel}</span>
             </span>
           )}
@@ -419,15 +427,20 @@ export function LiveClassroomContent({
 
       {/* Action notice (e.g. hangup feedback) */}
       {notice !== null && (
-        <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-xs font-semibold text-emerald-900 shadow-sm flex items-center justify-between">
+        <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm font-semibold text-emerald-900  flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px] text-emerald-600">info</span>
+            <span
+              aria-hidden="true"
+              className="material-symbols-outlined text-[18px] text-emerald-600"
+            >
+              info
+            </span>
             <span>{notice}</span>
           </div>
           <button
             type="button"
             onClick={() => setNotice(null)}
-            className="text-xs text-slate-400 hover:text-slate-600"
+            className="text-sm text-slate-400 hover:text-slate-600"
           >
             ✕
           </button>
@@ -446,10 +459,13 @@ export function LiveClassroomContent({
                 `prejoin` phase is excluded: Jitsi's own join screen occupies the
                 stage and must stay clickable. */}
             {!connected && phase.kind !== 'prejoin' && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-tr from-slate-950 via-slate-900 to-indigo-950 p-6 text-center text-white">
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-900 p-6 text-center text-white">
                 {phase.kind === 'loading_booking' && (
                   <>
-                    <span className="material-symbols-outlined animate-spin text-[32px] text-emerald-400">
+                    <span
+                      aria-hidden="true"
+                      className="material-symbols-outlined animate-spin text-[32px] text-emerald-400"
+                    >
                       progress_activity
                     </span>
                     <p className="text-sm font-semibold">{t('states.loadingBooking')}</p>
@@ -458,24 +474,34 @@ export function LiveClassroomContent({
 
                 {phase.kind === 'booking_error' && (
                   <>
-                    <span className="material-symbols-outlined text-[32px] text-rose-400">error</span>
+                    <span
+                      aria-hidden="true"
+                      className="material-symbols-outlined text-[32px] text-rose-400"
+                    >
+                      error
+                    </span>
                     <h3 className="text-base font-bold">{t('states.bookingErrorTitle')}</h3>
-                    <p className="max-w-md text-xs text-slate-300">{t('states.bookingErrorBody')}</p>
+                    <p className="max-w-md text-sm text-slate-300">
+                      {t('states.bookingErrorBody')}
+                    </p>
                   </>
                 )}
 
                 {phase.kind === 'booking_not_found' && (
                   <>
-                    <span className="material-symbols-outlined text-[32px] text-amber-400">
+                    <span
+                      aria-hidden="true"
+                      className="material-symbols-outlined text-[32px] text-amber-400"
+                    >
                       search_off
                     </span>
                     <h3 className="text-base font-bold">{t('states.bookingNotFoundTitle')}</h3>
-                    <p className="max-w-md text-xs text-slate-300">
+                    <p className="max-w-md text-sm text-slate-300">
                       {t('states.bookingNotFoundBody')}
                     </p>
                     <Link
                       href={`/${locale}/bookings`}
-                      className="mt-1 rounded-full bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700"
+                      className="mt-1 rounded-full bg-campus-emerald-deep px-4 py-2 text-sm font-bold text-white hover:bg-ink"
                     >
                       {t('nav.back')}
                     </Link>
@@ -484,7 +510,10 @@ export function LiveClassroomContent({
 
                 {phase.kind === 'requesting_access' && (
                   <>
-                    <span className="material-symbols-outlined animate-spin text-[32px] text-emerald-400">
+                    <span
+                      aria-hidden="true"
+                      className="material-symbols-outlined animate-spin text-[32px] text-emerald-400"
+                    >
                       progress_activity
                     </span>
                     <p className="text-sm font-semibold">{t('states.requestingAccess')}</p>
@@ -493,24 +522,32 @@ export function LiveClassroomContent({
 
                 {screenState !== null && phase.kind === 'denied' && (
                   <>
-                    <span className="material-symbols-outlined text-[32px] text-amber-400">
+                    <span
+                      aria-hidden="true"
+                      className="material-symbols-outlined text-[32px] text-amber-400"
+                    >
                       {screenState.icon}
                     </span>
                     <h3 className="text-base font-bold">{t(`${screenState.key}.title`)}</h3>
-                    <p className="max-w-md text-xs text-slate-300">{t(`${screenState.key}.body`)}</p>
+                    <p className="max-w-md text-sm text-slate-300">
+                      {t(`${screenState.key}.body`)}
+                    </p>
                     {phase.reason === 'window_not_open' && countdownSeconds !== null && (
                       <div className="mt-1 inline-flex items-center gap-2 rounded-full border border-white/20 bg-slate-900/80 px-4 py-1.5">
-                        <span className="material-symbols-outlined text-[16px] text-emerald-400">
+                        <span
+                          aria-hidden="true"
+                          className="material-symbols-outlined text-[16px] text-emerald-400"
+                        >
                           hourglass_top
                         </span>
-                        <span className="font-mono text-sm font-bold">
+                        <span className="text-sm font-bold">
                           {formatCountdown(countdownSeconds)}
                         </span>
                       </div>
                     )}
                     <Link
                       href={`/${locale}/bookings`}
-                      className="mt-1 rounded-full bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700"
+                      className="mt-1 rounded-full bg-campus-emerald-deep px-4 py-2 text-sm font-bold text-white hover:bg-ink"
                     >
                       {t('nav.back')}
                     </Link>
@@ -519,15 +556,23 @@ export function LiveClassroomContent({
 
                 {phase.kind === 'embed_error' && (
                   <>
-                    <span className="material-symbols-outlined text-[32px] text-rose-400">error</span>
+                    <span
+                      aria-hidden="true"
+                      className="material-symbols-outlined text-[32px] text-rose-400"
+                    >
+                      error
+                    </span>
                     <h3 className="text-base font-bold">{t('states.embedErrorTitle')}</h3>
-                    <p className="max-w-md text-xs text-slate-300">{t('states.embedErrorBody')}</p>
+                    <p className="max-w-md text-sm text-slate-300">{t('states.embedErrorBody')}</p>
                   </>
                 )}
 
                 {phase.kind === 'connecting' && (
                   <>
-                    <span className="material-symbols-outlined animate-spin text-[32px] text-emerald-400">
+                    <span
+                      aria-hidden="true"
+                      className="material-symbols-outlined animate-spin text-[32px] text-emerald-400"
+                    >
                       progress_activity
                     </span>
                     <p className="text-sm font-semibold">{t('states.connecting')}</p>
@@ -538,7 +583,7 @@ export function LiveClassroomContent({
 
             {/* Top overlay: real participants */}
             <div className="relative z-10 flex w-full items-start justify-between p-4 pointer-events-none">
-              <div className="flex items-center gap-2 rounded-full border border-white/10 bg-slate-900/80 px-3.5 py-1.5 text-xs text-white backdrop-blur-md">
+              <div className="flex items-center gap-2 rounded-full border border-white/10 bg-slate-900/80 px-3.5 py-1.5 text-sm text-white ">
                 <div
                   className={`h-2.5 w-2.5 rounded-full ${connected ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'}`}
                 />
@@ -546,24 +591,28 @@ export function LiveClassroomContent({
                   {booking === null ? t('nav.classFallback') : booking.teacherName}
                 </span>
                 {booking !== null && (
-                  <span className="text-[11px] text-slate-300">({booking.teacherSchoolLabel})</span>
+                  <span className="text-sm text-slate-300">({booking.teacherSchoolLabel})</span>
                 )}
               </div>
 
               {sharingScreen && (
-                <div className="flex items-center gap-2 rounded-full border border-white/10 bg-slate-900/80 px-3 py-1.5 text-xs text-white backdrop-blur-md">
-                  <span className="material-symbols-outlined text-[16px] text-amber-400">
+                <div className="flex items-center gap-2 rounded-full border border-white/10 bg-slate-900/80 px-3 py-1.5 text-sm text-white ">
+                  <span
+                    aria-hidden="true"
+                    className="material-symbols-outlined text-[16px] text-amber-400"
+                  >
                     present_to_all
                   </span>
-                  <span className="text-[11px] font-medium">{t('video.screenSharing')}</span>
+                  <span className="text-sm font-medium">{t('video.screenSharing')}</span>
                 </div>
               )}
             </div>
 
             {/* Student self-view label (Jitsi renders the actual video) */}
-            <div className="absolute bottom-16 right-4 z-20 flex items-center gap-2 rounded-xl border border-white/20 bg-slate-900/80 px-2.5 py-1.5 text-[11px] text-white backdrop-blur-md">
+            <div className="absolute bottom-16 right-4 z-20 flex items-center gap-2 rounded-xl border border-white/20 bg-slate-900/80 px-2.5 py-1.5 text-sm text-white ">
               <span className="truncate font-medium">{displayName}</span>
               <span
+                aria-hidden="true"
                 className={`material-symbols-outlined text-[14px] ${micMuted ? 'text-rose-400' : 'text-emerald-400'}`}
               >
                 {micMuted ? 'mic_off' : 'mic'}
@@ -576,7 +625,7 @@ export function LiveClassroomContent({
                 until hover), so ours is lifted clear of it instead of covering
                 those controls. */}
             <div
-              className={`relative z-10 mt-auto mx-auto flex items-center gap-2 sm:gap-3 rounded-2xl border border-white/15 bg-slate-900/90 px-4 py-2 shadow-2xl backdrop-blur-lg ${
+              className={`relative z-10 mt-auto mx-auto flex items-center gap-2 sm:gap-3 rounded-2xl border border-white/15 bg-slate-900/90 px-4 py-2 shadow-sm ${
                 connected ? 'mb-20' : 'mb-4'
               }`}
             >
@@ -585,14 +634,14 @@ export function LiveClassroomContent({
                 onClick={handleToggleMic}
                 disabled={!connected}
                 aria-pressed={!micMuted}
-                className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 ${
+                className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                   micMuted
                     ? 'bg-rose-600/30 text-rose-400 hover:bg-rose-600/50'
-                    : 'bg-emerald-600/30 text-emerald-400 hover:bg-emerald-600/50'
+                    : 'bg-campus-emerald-deep/30 text-emerald-400 hover:bg-campus-emerald-deep/50'
                 }`}
                 title={t('video.btnMic')}
               >
-                <span className="material-symbols-outlined text-[20px]">
+                <span aria-hidden="true" className="material-symbols-outlined text-[20px]">
                   {micMuted ? 'mic_off' : 'mic'}
                 </span>
               </button>
@@ -602,14 +651,14 @@ export function LiveClassroomContent({
                 onClick={handleToggleCamera}
                 disabled={!connected}
                 aria-pressed={!videoMuted}
-                className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 ${
+                className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                   videoMuted
                     ? 'bg-rose-600/30 text-rose-400 hover:bg-rose-600/50'
-                    : 'bg-emerald-600/30 text-emerald-400 hover:bg-emerald-600/50'
+                    : 'bg-campus-emerald-deep/30 text-emerald-400 hover:bg-campus-emerald-deep/50'
                 }`}
                 title={t('video.btnCamera')}
               >
-                <span className="material-symbols-outlined text-[20px]">
+                <span aria-hidden="true" className="material-symbols-outlined text-[20px]">
                   {videoMuted ? 'videocam_off' : 'videocam'}
                 </span>
               </button>
@@ -621,14 +670,16 @@ export function LiveClassroomContent({
                 onClick={handleToggleScreen}
                 disabled={!connected}
                 aria-pressed={sharingScreen}
-                className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 ${
+                className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                   sharingScreen
-                    ? 'bg-emerald-600 text-white'
+                    ? 'bg-campus-emerald-deep text-white'
                     : 'bg-white/10 text-slate-200 hover:bg-white/20'
                 }`}
                 title={t('video.btnScreen')}
               >
-                <span className="material-symbols-outlined text-[20px]">screen_share</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[20px]">
+                  screen_share
+                </span>
               </button>
 
               <div className="h-6 w-px bg-white/20" />
@@ -637,32 +688,35 @@ export function LiveClassroomContent({
                 type="button"
                 onClick={handleHangup}
                 disabled={!connected}
-                className="flex h-10 items-center gap-1.5 rounded-xl bg-rose-600 px-3.5 text-xs font-semibold text-white shadow-md transition-all hover:bg-rose-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex h-10 items-center gap-1.5 rounded-xl bg-rose-600 px-3.5 text-sm font-semibold text-white shadow-md transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-40"
                 title={t('video.btnLeave')}
               >
-                <span className="material-symbols-outlined text-[18px]">call_end</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
+                  call_end
+                </span>
                 <span className="hidden sm:inline">{t('video.btnLeave')}</span>
               </button>
             </div>
           </div>
 
           {/* Session details (real booking data) */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5  space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-3">
               <div>
-                <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-800">
-                  {t('session.title')}
-                </div>
+                <div className="text-sm font-bold r text-emerald-800">{t('session.title')}</div>
                 <h3 className="mt-0.5 text-base font-bold text-slate-900">
                   {booking === null ? t('nav.classFallback') : booking.classTitle}
                 </h3>
               </div>
               {booking !== null && (
                 <span className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-800">
-                  <span className="material-symbols-outlined text-[18px] text-emerald-700">
+                  <span
+                    aria-hidden="true"
+                    className="material-symbols-outlined text-[18px] text-emerald-700"
+                  >
                     schedule
                   </span>
-                  <span className="text-xs font-semibold">
+                  <span className="text-sm font-semibold">
                     {formatStartTime(booking.startsAt) ?? t('session.startUnknown')}
                   </span>
                 </span>
@@ -671,7 +725,7 @@ export function LiveClassroomContent({
 
             <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                <dt className="text-[11px] text-slate-500">{t('session.durationLabel')}</dt>
+                <dt className="text-sm text-slate-500">{t('session.durationLabel')}</dt>
                 <dd className="mt-0.5 text-sm font-bold text-slate-900">
                   {booking === null
                     ? '—'
@@ -679,7 +733,7 @@ export function LiveClassroomContent({
                 </dd>
               </div>
               <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                <dt className="text-[11px] text-slate-500">{t('session.teacherLabel')}</dt>
+                <dt className="text-sm text-slate-500">{t('session.teacherLabel')}</dt>
                 <dd className="mt-0.5 text-sm font-bold text-slate-900">
                   {booking === null ? '—' : booking.teacherName}
                 </dd>
@@ -690,14 +744,22 @@ export function LiveClassroomContent({
 
         {/* Right Column: Participants + Escrow */}
         <div className="space-y-5 lg:col-span-4">
-          <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white ">
             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[20px] text-emerald-700">group</span>
+                <span
+                  aria-hidden="true"
+                  className="material-symbols-outlined text-[20px] text-emerald-700"
+                >
+                  group
+                </span>
                 <h4 className="text-sm font-bold text-slate-900">{t('participants.title')}</h4>
               </div>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800">
-                <span className="material-symbols-outlined text-[14px] text-emerald-700">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-sm font-semibold text-emerald-800">
+                <span
+                  aria-hidden="true"
+                  className="material-symbols-outlined text-[14px] text-emerald-700"
+                >
                   {connected ? 'sensors' : 'sensors_off'}
                 </span>
                 <span>{connected ? t('participants.inCall') : t('participants.notInCall')}</span>
@@ -706,33 +768,38 @@ export function LiveClassroomContent({
 
             <ul className="divide-y divide-slate-100">
               <li className="flex items-center gap-3 px-4 py-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-700 text-[11px] font-bold text-white ring-2 ring-emerald-200">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-700 text-sm font-bold text-white ring-2 ring-emerald-200">
                   {booking === null || booking.teacherInitial.length === 0
                     ? '—'
                     : booking.teacherInitial}
                 </div>
                 <div className="min-w-0">
-                  <div className="truncate text-xs font-bold text-slate-900">
+                  <div className="truncate text-sm font-bold text-slate-900">
                     {booking === null ? t('participants.teacherFallback') : booking.teacherName}
                   </div>
-                  <div className="truncate text-[11px] text-slate-500">
+                  <div className="truncate text-sm text-slate-500">
                     {booking === null ? '—' : booking.teacherSchoolLabel}
                   </div>
                 </div>
               </li>
               <li className="flex items-center gap-3 px-4 py-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-800 text-[11px] font-bold text-white">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-800 text-sm font-bold text-white">
                   {initialOf(displayName)}
                 </div>
                 <div className="min-w-0">
-                  <div className="truncate text-xs font-bold text-slate-900">{displayName}</div>
-                  <div className="truncate text-[11px] text-slate-500">{t('participants.youLabel')}</div>
+                  <div className="truncate text-sm font-bold text-slate-900">{displayName}</div>
+                  <div className="truncate text-sm text-slate-500">
+                    {t('participants.youLabel')}
+                  </div>
                 </div>
               </li>
             </ul>
 
-            <div className="flex items-start gap-2 border-t border-amber-200 bg-amber-50/80 px-3.5 py-2.5 text-[11px] text-amber-900">
-              <span className="material-symbols-outlined text-[16px] text-amber-700 shrink-0 mt-0.5">
+            <div className="flex items-start gap-2 border-t border-amber-200 bg-amber-50/80 px-3.5 py-2.5 text-sm text-amber-900">
+              <span
+                aria-hidden="true"
+                className="material-symbols-outlined text-[16px] text-amber-700 shrink-0 mt-0.5"
+              >
                 shield
               </span>
               <p className="leading-tight">{t('chat.safetyNotice')}</p>
@@ -740,26 +807,31 @@ export function LiveClassroomContent({
           </div>
 
           {/* Escrow Protection Card */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5  space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800 font-bold">
-                  <span className="material-symbols-outlined text-[20px]">verified</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-[20px]">
+                    verified
+                  </span>
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-slate-900">{t('escrow.title')}</div>
-                  <div className="text-[11px] text-slate-500">{t('escrow.subtitle')}</div>
+                  <div className="text-sm font-bold text-slate-900">{t('escrow.title')}</div>
+                  <div className="text-sm text-slate-500">{t('escrow.subtitle')}</div>
                 </div>
               </div>
             </div>
 
             <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-3">
               <div>
-                <span className="text-[11px] text-slate-500">
+                <span className="text-sm text-slate-500">
                   {escrowHeld === true ? t('escrow.heldLabel') : t('escrow.notHeldLabel')}
                 </span>
                 <div className="mt-0.5 flex items-center gap-1 font-bold text-slate-900 text-sm">
-                  <span className="material-symbols-outlined text-[16px] text-emerald-600">
+                  <span
+                    aria-hidden="true"
+                    className="material-symbols-outlined text-[16px] text-emerald-600"
+                  >
                     account_balance_wallet
                   </span>
                   <span>
@@ -775,28 +847,30 @@ export function LiveClassroomContent({
               {/* Badge only when there is a real verdict: no booking loaded →
                   no claim at all. */}
               {escrowHeld !== null && (
-                <span className="rounded-lg bg-emerald-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-800">
+                <span className="rounded-lg bg-emerald-100 px-2.5 py-1 text-sm font-bold  text-emerald-800">
                   {escrowHeld ? t('escrow.badge') : t('escrow.notHeldBadge')}
                 </span>
               )}
             </div>
 
             {escrowHeld === true && (
-              <div className="text-[11px] leading-tight text-slate-500">{t('escrow.notice')}</div>
+              <div className="text-sm leading-tight text-slate-500">{t('escrow.notice')}</div>
             )}
 
             <Link
               href={`/${locale}/bookings/${booking === null ? bookingId : booking.id}/review`}
-              className="flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 py-3 text-xs font-bold text-white shadow-md transition-all hover:bg-emerald-700 hover:shadow-lg active:scale-95"
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-campus-emerald-deep px-5 py-3 text-sm font-bold text-white shadow-md transition-colors hover:bg-ink hover:"
             >
-              <span className="material-symbols-outlined text-[18px]">rate_review</span>
+              <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
+                rate_review
+              </span>
               <span>{t('escrow.btnEndAndReview')}</span>
             </Link>
           </div>
 
           {/* Room code reference (not fabricated: it is the booking id when given) */}
           {roomCode.length > 0 && (
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm text-[11px] text-slate-500">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4  text-sm text-slate-500">
               {t('nav.bookingCode', { code: roomCode })}
             </div>
           )}

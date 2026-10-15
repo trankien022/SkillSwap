@@ -23,6 +23,8 @@ export function StatusPill({ tone, label }: { tone: PillTone; label: string }) {
 const styles = StyleSheet.create({
   pill: {
     alignSelf: 'flex-start',
+    flexShrink: 1,
+    maxWidth: '100%',
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,

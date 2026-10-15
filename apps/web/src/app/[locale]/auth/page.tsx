@@ -39,7 +39,7 @@ export default async function AuthPage({ params, searchParams }: PageProps) {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 lg:py-14">
+      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 lg:py-14">
         <Suspense fallback={<div className="h-96 animate-pulse rounded-2xl bg-slate-100" />}>
           <AuthForm initialTab={initialTab} locale={locale} />
         </Suspense>

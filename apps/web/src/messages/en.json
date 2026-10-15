@@ -52,36 +52,63 @@
       "explore": "Explore classes",
       "standard": "Verification standard",
       "signIn": "Sign in",
-      "myBookings": "My bookings"
+      "myBookings": "My bookings",
+      "subjects": "Subjects",
+      "journey": "How it works",
+      "teach": "Become a teacher"
     },
     "hero": {
-      "headline1": "An online skill marketplace",
-      "headline2": "vouched for by students",
-      "subline": "A peer-to-peer skill network that connects students with domain experts whose identity has been independently verified.",
+      "headline1": "Learn together.",
+      "headline2": "Grow every day.",
+      "subline": "Learn online with students whose skills have been verified. From your first line of code to a more confident conversation.",
       "pills": {
-        "school": "University credential links",
-        "antiFake": "Identity fraud prevention",
-        "escrow": "Protected payment funds"
-      }
+        "school": "Manually reviewed student documents",
+        "antiFake": "Expert-reviewed skill evidence",
+        "escrow": "Payments recorded in the ledger"
+      },
+      "intro": "Students teach. Students learn.",
+      "explore": "Explore classes",
+      "howItWorks": "How do I start?",
+      "note": "Learn from anywhere · Book at least 24 hours ahead",
+      "journeyTitle": "From a skill to a shared lesson",
+      "creditLabel": "Credit exchange rate",
+      "creditValue": "1 credit = 1,000 VND",
+      "steps": [
+        {
+          "title": "Find someone to learn from",
+          "body": "Check their skills, profile and class schedule before you book."
+        },
+        {
+          "title": "Know what you are paying",
+          "body": "Class prices are shown in credit. Check your balance and confirm payment."
+        },
+        {
+          "title": "Meet in your online classroom",
+          "body": "Join from your bookings. Leave a review after the lesson."
+        }
+      ],
+      "imageAlt": "Illustration of a student wearing headphones and taking notes during an online video lesson",
+      "imageCaption": "Taught by students. For students.",
+      "sessionLength": "30–180 min / session"
     },
     "assurance": {
-      "eyebrow": "Verified people, transparent money",
-      "heading": "Trust you can check, not just read",
+      "eyebrow": "Before you book",
+      "heading": "Know your teacher. Know your payment.",
       "items": [
         {
           "tag": "Review board",
-          "title": "Every Teacher is reviewed by a domain expert",
-          "body": "Skill evidence and teaching plans are assessed by experts in the matching domain before a Teacher can publish a class."
+          "title": "Teachers have expert-reviewed skills",
+          "body": "A reviewer with relevant expertise checks skill evidence before a student can publish a class."
         },
         {
           "tag": "Audit trail",
-          "title": "Verification decisions are recorded immutably",
-          "body": "Each submission is timestamped and kept as-is, so every approval and rejection stays traceable across versions."
+          "title": "Verification decisions have a history",
+          "body": "Submitted evidence and review decisions are recorded with their time and reason for traceability."
         },
         {
           "tag": "Fixed rate",
           "title": "1 Credit = 1,000 VND",
-          "body": "Direct 1:1 conversion with no hidden markup and no slippage on top-ups or withdrawals."
+          "body": "Each credit corresponds to 1,000 VND. Check the class price and your balance before confirming payment."
         },
         {
           "tag": "Revenue split",
@@ -93,27 +120,54 @@
           "title": "Payment is held until completion",
           "body": "The learner's payment stays in the platform ledger and only moves to the Teacher's wallet once the class is recorded as completed. Every transaction carries a trace ID."
         }
-      ]
+      ],
+      "description": "Focus on learning. Check the teacher, the price and how payment works before you book."
     },
     "cta": {
-      "heading": "Start learning or teaching today",
-      "subline": "Join students across universities who learn together, mentor each other, and earn transparently.",
+      "heading": "Know something? Pass it on.",
+      "subline": "The skill you use every day might be just what another student wants to learn. Share your experience in an online class of your own.",
       "learner": {
-        "title": "I want to learn",
-        "hint": "Browse classes & book a session with a verified Teacher"
+        "title": "Create a learning account",
+        "hint": "Find a skill, schedule and price that work for you."
       },
       "teacher": {
-        "title": "I want to teach",
-        "hint": "Submit your skill evidence & start accepting classes"
+        "title": "Start sharing your skills",
+        "hint": "Submit skill evidence for expert review before publishing a class."
       },
       "trustNoCard": "No credit card required to sign up",
-      "trustSafety": "Every transaction is audit-tracked"
+      "trustSafety": "Every transaction is audit-tracked",
+      "imageAlt": "Illustration of students sharing knowledge during a learning session"
     },
     "footer": {
-      "tagline": "A peer-to-peer skill ecosystem for students.",
+      "tagline": "Learn from each other. Grow together.",
       "langLabel": "Language",
       "vi": "Vietnamese",
-      "en": "English"
+      "en": "English",
+      "illustration": "Illustrations created for SkillSwap."
+    },
+    "subjects": {
+      "heading": "What will you learn?",
+      "description": "Pick a subject that interests you. Browse open classes and find a peer to learn with.",
+      "programming": {
+        "title": "Programming",
+        "description": "From solving a problem to building your first app.",
+        "alt": "Illustrated coding workspace with a laptop, keyboard and notebook"
+      },
+      "design": {
+        "title": "Design",
+        "description": "Turn the ideas in your head into things you can see.",
+        "alt": "Illustrated design workspace with a drawing tablet and color swatches"
+      },
+      "language": {
+        "title": "Languages",
+        "description": "Practice speaking, work through mistakes, build confidence.",
+        "alt": "Illustration of students practicing conversation on a video call"
+      }
+    },
+    "journey": {
+      "heading": "One session. A step forward.",
+      "description": "You do not need a long course to get started. Choose a skill, find the right peer and learn what you need right now.",
+      "action": "Browse class schedules"
     }
   },
   "Marketplace": {
@@ -146,7 +200,8 @@
       "programming": "Programming & IT",
       "design": "UI/UX design",
       "softSkills": "Soft skills",
-      "math": "Math & statistics"
+      "math": "Math & statistics",
+      "label": "Skill categories"
     },
     "resultsBar": {
       "title": "Explore classes",
@@ -157,7 +212,9 @@
         "rating": "Highest rated",
         "priceLow": "Credits: low to high",
         "popular": "Most learners enrolled"
-      }
+      },
+      "description": "Find a skill you need, at a time and price that work for you.",
+      "artAlt": "Illustrated online skills study workspace"
     },
     "states": {
       "loading": "Loading classes…",
@@ -166,7 +223,8 @@
       "signInCta": "Sign in now",
       "errorTitle": "We couldn't load classes",
       "errorBody": "Something went wrong while fetching open classes. Please try again.",
-      "retry": "Try again"
+      "retry": "Try again",
+      "emptyTitle": "No matching classes found"
     },
     "filters": {
       "title": "Advanced filters",
@@ -200,7 +258,7 @@
     "card": {
       "format": {
         "oneOnOne": "1-1 mentoring",
-        "group": "Group class 2-4"
+        "group": "Group class"
       },
       "duration": "{minutes} min",
       "rating": "{avg} ({count})",
@@ -216,12 +274,23 @@
       },
       "pricePerLearner": "~{vnd} VND / learner",
       "viewClass": "View class",
-      "mockDataBadge": "Demo data"
+      "mockDataBadge": "Demo data",
+      "verified": "Verified",
+      "levels": {
+        "beginner": "Beginner",
+        "intermediate": "Intermediate",
+        "advanced": "Advanced",
+        "expert": "Expert"
+      },
+      "illustration": "Subject illustration",
+      "availability": "{free}/{capacity} seats available",
+      "availabilityUnknown": "Seat availability not provided"
     },
     "pagination": {
       "showing": "Showing {from} - {to} of {total} open classes",
       "prev": "Previous",
-      "next": "Next"
+      "next": "Next",
+      "label": "Class pagination"
     },
     "banner": {
       "title": "Payment protection",
@@ -262,8 +331,8 @@
       "capacity": "CAPACITY & ROOM INFRASTRUCTURE",
       "oneOnOne": "1-1 deep-dive class",
       "oneOnOneLimit": "One learner only",
-      "group": "Group class for 2-4 learners",
-      "groupLimit": "Up to 4 learners per session",
+      "group": "Group class",
+      "groupLimit": "Up to {count} learners per session",
       "seatsLeft": "{taken}/{capacity} seats available",
       "room": "End-to-end encrypted room"
     },
@@ -312,7 +381,9 @@
       "ctaBook": "Book this class",
       "ctaSave": "Save to wishlist",
       "supportTitle": "Student support 24/7",
-      "supportSubtitle": "Always-on helpdesk"
+      "supportSubtitle": "Always-on helpdesk",
+      "releaseHint": "Credits are held until the session is recorded as complete.",
+      "policyLink": "Read the payment rules"
     },
     "notFound": {
       "title": "Class not found",
@@ -334,10 +405,11 @@
       "roleChip": "SkillSwap Learner",
       "termChip": "Current term",
       "title": "My Bookings",
-      "subtitle": "Track every booked session, monitor held escrow, join virtual classrooms, and approve credit release upon completion.",
+      "subtitle": "Your schedule, online classrooms and the skills you are building, together in one place.",
       "ctaCalendar": "Sync calendar",
       "ctaExplore": "Find new classes",
-      "mockBadge": "Demo data"
+      "mockBadge": "Demo data",
+      "artAlt": "Illustration of a student learning through a video call"
     },
     "empty": {
       "title": "No sessions found",
@@ -352,7 +424,9 @@
       "hours": "Hours learned",
       "hoursProgress": "{pct}% of monthly target",
       "review": "Reviews pending",
-      "reviewHint": "Completed, review needed"
+      "reviewHint": "Completed, review needed",
+      "hoursUnit": "hours",
+      "creditsUnit": "credits"
     },
     "live": {
       "badge": "LIVE NOW",
@@ -405,13 +479,23 @@
       "cancelledBody": "This class has been cancelled. The held credits have been returned to your wallet.",
       "completedReview": "Your review",
       "endedAt": "Ended at {when}",
-      "startsAt": "{when} • {duration} min"
+      "startsAt": "{when} • {duration} min",
+      "chatHint": "Chat in the classroom once you have access to the session.",
+      "materialsHint": "The teacher shares materials during the session. Check with them when you join."
     },
     "calendar": {
       "title": "Month view",
       "prev": "Previous month",
       "next": "Next month",
-      "weekdays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      "weekdays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri",
+        "Sat",
+        "Sun"
+      ],
       "legendLive": "Live today",
       "legendBooked": "Booked",
       "noMonth": "No events this month"
@@ -436,7 +520,16 @@
       "noShowBody": "If the teacher has not joined the room 15 minutes after the start time, the system automatically returns the held credits to your wallet.",
       "contactRule": "Keep all contact inside the platform",
       "contactBody": "Every message, file share and video call stays inside SkillSwap so the support team has a full record if a dispute is opened.",
-      "support": "Get academic help"
+      "support": "Get academic help",
+      "policyLink": "Read the learning and payment rules",
+      "noShow": {
+        "title": "If the teacher is absent",
+        "body": "Report a no-show when eligible. The system uses the session state and refund policy to process it."
+      },
+      "contact": {
+        "title": "Keep communication on the platform",
+        "body": "Use the SkillSwap classroom and communication tools to keep the session information together."
+      }
     },
     "reviewModal": {
       "title": "Review Session & Release Escrow",
@@ -447,7 +540,8 @@
       "commentPlaceholder": "Share your learning experience, clarity, and mentor helpfulness...",
       "pledge": "Academic pledge: Honest reviews uphold transparent peer-mentoring standards across universities.",
       "cancel": "Later",
-      "submit": "Confirm & Release Escrow"
+      "submit": "Confirm & Release Escrow",
+      "starLabel": "{count} stars"
     },
     "noShowModal": {
       "title": "Report Teacher No-Show",
@@ -460,7 +554,7 @@
   "Wallet": {
     "withdrawal": {
       "notice": "Withdrawal is not available yet",
-      "body": "The payout gateway integration is still in progress. The backend has not shipped this feature yet, so you cannot submit a withdrawal request at this time. Please come back after the backend ships it.",
+      "body": "You cannot submit a withdrawal in this version. Your balance is still available for learning and tracked in transaction history.",
       "cta": "Not yet available",
       "rulesTitle": "Payout & Escrow Protection Rules",
       "rulesBody": "Once the feature ships: the withdrawal amount cannot exceed your available balance. When you submit the request, credits move to a payout_hold state and stay locked while the gateway reconciles. If the gateway rejects the payout, the held credits are returned to your wallet immediately.",
@@ -551,7 +645,7 @@
     },
     "StudentVerification": {
       "title": "Student verification review",
-      "notice": "Review a student verification by id. Admin must know the verification id.",
+      "notice": "Enter the student profile reference to open the review actions. Check the reference and give a clear reason for your decision.",
       "idPlaceholder": "Verification id",
       "openCta": "Open",
       "label": {
@@ -594,10 +688,10 @@
       "title": "Online class details",
       "subjectChip": "Subject module",
       "verificationBanner": {
-        "title": "Verified professional competency",
-        "body": "Your teaching profile meets the academic verification standard. The platform keeps every certificate and review transparent across faculties.",
-        "ruleTitle": "Immutable schedule",
-        "ruleBody": "Schedule and content lock as soon as the first learner books."
+        "title": "Plan a clear learning session",
+        "body": "Choose an approved skill. Check the description, schedule and price so learners know what to expect.",
+        "ruleTitle": "Check before publishing",
+        "ruleBody": "Schedule and content cannot change after the first booking."
       },
       "skill": {
         "label": "Approved professional skill",
@@ -627,7 +721,9 @@
         "capacityLabel": "Maximum capacity",
         "capacityBadge1to1": "1-on-1 mentoring model",
         "capacityBadgeGroup": "Group class ({count} learners)",
-        "conflictHelp": "The conflict checker cross-references your three most recent 1-on-1 classes automatically."
+        "conflictHelp": "The conflict checker cross-references your three most recent 1-on-1 classes automatically.",
+        "decrementCapacity": "Decrease capacity",
+        "incrementCapacity": "Increase capacity"
       },
       "pricing": {
         "title": "Pricing & settlement",
@@ -652,7 +748,8 @@
         "teacher": "You (Teacher)",
         "verifiedFaculty": "Verified student",
         "price": "Price",
-        "priceUnit": "Cr"
+        "priceUnit": "Cr",
+        "draft": "Unpublished draft"
       },
       "actions": {
         "warning": "Teaching commitment: once the first learner registers, schedule and content edits lock automatically.",
@@ -723,23 +820,22 @@
       "result": {
         "successTitle": "Class created",
         "classIdLabel": "Class ID:"
-      }
+      },
+      "description": "Choose an approved skill, schedule your session and check your earnings before publishing.",
+      "artAlt": "Illustrated lesson preparation workspace"
     }
   },
   "Auth": {
     "brandTag": "Verified Student Knowledge Network",
-    "heroTitle1": "Exchange skills.",
-    "heroTitle2": "Build real value.",
-    "heroSubtitle": "Learn from capable peers and share your strengths. Every exchange is protected through a fair credit system.",
-    "pillar1Title": "Genuine Student Verification",
-    "pillar1Desc": "Linked university accounts ensure a secure and trusted study environment.",
-    "pillar2Title": "Transparent Escrow Mechanism",
-    "pillar2Desc": "Credits are transferred only when sessions conclude successfully.",
-    "pillar3Title": "Real-time Interactive Classes",
-    "pillar3Desc": "Direct interactive classrooms with synchronized learning resources.",
-    "testimonialQuote": "Sharing programming skills helped me practice peer communication consistently. Clear process and verified peers give great peace of mind.",
-    "testimonialAuthor": "Minh Tri",
-    "testimonialRole": "Senior Student • 40+ hours exchanged",
+    "heroTitle1": "Learn what you need.",
+    "heroTitle2": "Share what you know.",
+    "heroSubtitle": "Create an account to find a class, learn from another student, or submit your skills for review.",
+    "pillar1Title": "Verification with student documents",
+    "pillar1Desc": "Submit your school name and documents. An administrator reviews them manually.",
+    "pillar2Title": "Pay with credit",
+    "pillar2Desc": "Check the price and your balance before booking. Payments are recorded in the ledger.",
+    "pillar3Title": "Learn together online",
+    "pillar3Desc": "Check your schedule and join the room from your bookings.",
     "tabRegister": "Create Account",
     "tabLogin": "Sign In",
     "providerGoogle": "Google Account",
@@ -769,7 +865,9 @@
     "switchToLogin": "Already have an account?",
     "switchToRegister": "Don't have an account?",
     "validationError": "Please provide valid information (password at least 8 characters).",
-    "pledgeError": "You must agree to the academic integrity pledge."
+    "pledgeError": "You must agree to the academic integrity pledge.",
+    "passwordResetHint": "Please contact the administrator to reset your password.",
+    "learningImageAlt": "Illustration of a student learning with a peer through a video call"
   },
   "Skills": {
     "title": "My skills",
@@ -807,7 +905,8 @@
     "state_claimed": "In review",
     "state_approved": "Approved",
     "state_rejected": "Rejected",
-    "state_superseded": "Superseded"
+    "state_superseded": "Superseded",
+    "artAlt": "Illustration of a creative skills workspace"
   },
   "Verification": {
     "badge": "Verified Student Profile",
@@ -1108,6 +1207,285 @@
       "approved": "Approved",
       "rejected": "Rejected",
       "superseded": "Superseded"
+    },
+    "description": "Review submitted evidence, claim profiles in your area of expertise and record clear decisions.",
+    "emptyHint": "Profiles matching these filters will appear here."
+  },
+  "Workspace": {
+    "skip": "Skip to main content",
+    "wallet": {
+      "title": "Your learning wallet",
+      "description": "See the credits you can spend, the amount held for classes and every transaction in your wallet.",
+      "topUp": "Top up credits",
+      "withdraw": "Withdraw earnings",
+      "available": "Available balance",
+      "held": "Held for classes",
+      "credits": "credits",
+      "heldHint": "Credits not yet released to the teacher.",
+      "rate": "Credit exchange rate",
+      "rateHint": "1 credit equals 1,000 VND.",
+      "unavailable": "Data is unavailable",
+      "depositTitle": "Ready for your next session",
+      "depositHint": "Choose the credits you need. You will pay on the SePay checkout page.",
+      "amountLabel": "Credits to top up",
+      "total": "Payment amount",
+      "processing": "Creating your request…",
+      "pay": "Continue to SePay",
+      "paymentTitle": "Follow your payment",
+      "paymentBody": "Your balance updates once the system receives confirmation from the payment provider. Come back here to check it.",
+      "reopen": "Reopen checkout",
+      "pollExpired": "The final result has not arrived. Refresh to check again.",
+      "refresh": "Refresh balance",
+      "rules": "Learning and payment rules",
+      "history": "Transaction history",
+      "filter": {
+        "all": "All",
+        "deposit": "Credits in",
+        "pay": "Credits out",
+        "escrow": "Holds and refunds"
+      },
+      "emptyTitle": "No transactions yet",
+      "emptyBody": "Credit top-ups and class payments will appear here.",
+      "creditTransaction": "Credits into your wallet",
+      "debitTransaction": "Credits out of your wallet",
+      "status": {
+        "pending": "Awaiting payment confirmation",
+        "settled": "Credits added to your wallet",
+        "failed": "Payment unsuccessful",
+        "reversed": "Payment reversed"
+      },
+      "historyStatus": {
+        "completed": "Completed",
+        "pending": "Processing",
+        "reversed": "Reversed",
+        "settled": "Recorded"
+      },
+      "loadError": "Could not load your wallet. Please try again.",
+      "minAmount": "Top up at least 1 credit (1,000 VND).",
+      "signInError": "Please sign in again before topping up.",
+      "topUpError": "Could not create a top-up request.",
+      "retry": "Please try again.",
+      "refreshError": "Could not refresh your balance. Please try again.",
+      "withdrawTitle": "Withdraw teaching earnings",
+      "withdrawDescription": "Check your balance and the availability of earnings withdrawals.",
+      "backWallet": "Back to your wallet"
+    },
+    "verification": {
+      "title": "Your verification profile",
+      "description": "Verify your student status and submit evidence for the skills you want to teach.",
+      "artAlt": "Illustration of students sharing knowledge",
+      "profile": "Student information",
+      "name": "Full name",
+      "email": "Email",
+      "school": "University",
+      "major": "Major",
+      "status": {
+        "approved": "Verified",
+        "pending": "Under review",
+        "rejected": "Update your evidence",
+        "revoked": "Verification revoked",
+        "unsubmitted": "Not submitted",
+        "unknown": "Status unavailable"
+      },
+      "loading": "Loading your profile…",
+      "signInTitle": "Sign in to view your profile",
+      "signInBody": "Your student profile and verification documents are only visible in your account.",
+      "signIn": "Sign in",
+      "loadError": "Could not load your verification status. Please try again.",
+      "submitted": "Profile submitted. Follow the review result here.",
+      "submitError": "Could not submit your profile. Please try again.",
+      "uploadError": "Could not upload the document. Please try again.",
+      "close": "Close form",
+      "uploadAction": "Submit or update documents",
+      "reviewTitle": "Reviewed by a person",
+      "reviewBody": "Enter your university information and upload your student card or proof of enrollment. An administrator reviews the documents to verify your student status.",
+      "privacy": "Only send documents needed for verification. SkillSwap does not connect to university databases.",
+      "rules": "Read the verification rules",
+      "uploadTitle": "Submit student documents",
+      "uploadBody": "Enter your university before selecting a file; your major is optional. Choosing a file starts the upload and submission.",
+      "schoolPlaceholder": "Enter your university",
+      "majorPlaceholder": "Enter your major",
+      "document": "Student card or enrollment document",
+      "fileHint": "Image or PDF. The file uploads before your profile is submitted for review.",
+      "progress": "Uploading: {progress}%",
+      "skills": "Teaching skills",
+      "skillsBody": "A suitable expert reviews your skill evidence separately from your student profile.",
+      "skillCount": "{count} approved skills.",
+      "skillsAction": "Manage skills and evidence",
+      "majorOptional": "Major (optional)"
+    },
+    "notifications": {
+      "title": "Your notifications",
+      "description": "Updates on your schedule, transactions and verification reviews.",
+      "markViewed": "Mark all viewed for this visit",
+      "markSingle": "Mark viewed for this visit",
+      "filter": {
+        "all": "All",
+        "unread": "Unviewed",
+        "booking": "Classes",
+        "finance": "Wallet",
+        "verify": "Verification"
+      },
+      "loading": "Loading notifications…",
+      "errorTitle": "Notifications are unavailable",
+      "errorBody": "Check your connection and sign-in session, then try again.",
+      "signIn": "Sign in again",
+      "emptyTitle": "No notifications in this view",
+      "emptyBody": "New updates about your classes and account will appear here.",
+      "explore": "Explore classes",
+      "unread": "Unviewed",
+      "viewed": "Viewed",
+      "open": "View details",
+      "sessionHint": "Viewed marks last for this visit to the page."
+    },
+    "teaching": {
+      "title": "Your teaching studio",
+      "description": "Share what you know. Manage your approved skills, teaching schedule and classes.",
+      "artAlt": "Illustration of a workspace for preparing learning materials",
+      "publish": "Publish a new class",
+      "skills": "Manage skills",
+      "verified": "Verified student",
+      "member": "SkillSwap member",
+      "classUnit": "classes",
+      "allCount": "All ({count})",
+      "openCount": "Open ({count})",
+      "closedCount": "Closed ({count})"
+    },
+    "checkout": {
+      "title": "Confirm your class",
+      "description": "Review the session and credits before confirming payment.",
+      "back": "Back to class details",
+      "loading": "Reading session information…",
+      "loadError": "Checkout information is unavailable",
+      "loadingBody": "The class and wallet balance must load before booking is available.",
+      "successTitle": "Your class is confirmed",
+      "successBody": "Follow your schedule and join the classroom when the session opens.",
+      "myClasses": "View my classes",
+      "schedule": "Schedule",
+      "duration": "Duration",
+      "minutes": "{count} minutes",
+      "format": "Format",
+      "individual": "One-to-one learning",
+      "group": "Group of up to {count}",
+      "location": "Location",
+      "online": "Online classroom",
+      "beforeConfirm": "Before you confirm",
+      "paymentRule": "Credits are recorded in the ledger and held until the session is recorded as complete. Check the rules before booking.",
+      "rules": "Read learning and payment rules",
+      "agreement": "I have read the payment rules and agree to join on time and respect the teacher.",
+      "summary": "Your payment",
+      "price": "Session price",
+      "credits": "credits",
+      "equivalent": "Equivalent value",
+      "balance": "Current balance",
+      "holdExpires": "Your hold expires at {time}.",
+      "confirming": "Confirming…",
+      "confirmed": "Confirmed",
+      "confirm": "Confirm and pay",
+      "settlement": {
+        "settling": "The system is recording this transaction. Check again in a moment.",
+        "unknown": "The result could not be read. Check again before taking another action.",
+        "unconfirmed": "The transaction is not confirmed. Check its status or return to the class details."
+      },
+      "recheck": "Check again",
+      "shortfall": "You need {count} more credits to confirm this class.",
+      "topUp": "Top up credits",
+      "topUpTitle": "Top up through SePay",
+      "topUpBody": "Top-up amount: {amount} VND. Checkout opens in a new tab; your balance only updates after provider confirmation.",
+      "openSePay": "Open SePay checkout",
+      "topUpSettled": "Credits have been added. You can now confirm the class.",
+      "bookingRef": "Booking reference"
+    },
+    "copy": {
+      "signInBeforePublishingAClass": "Sign in before publishing a class.",
+      "couldNotPublishTheClass": "Could not publish the class.",
+      "vnd": "VND",
+      "min": "min)",
+      "mine5d92": "min",
+      "loadingYourClasses": "Loading your classes…",
+      "readingTheLatestData": "Reading the latest data.",
+      "signInToSeeYourClasses": "Sign in to see your classes",
+      "yourScheduleHeldCreditsAndReviews": "Your schedule, held credits and reviews are available after you sign in.",
+      "signIn": "Sign in",
+      "couldNotLoadYourClasses": "Could not load your classes",
+      "yourSessionHasExpiredPleaseSign": "Your session has expired. Please sign in again.",
+      "couldNotLoadYourTeachingClasses": "Could not load your teaching classes.",
+      "couldNotLoadYourTeachingInformation": "Could not load your teaching information.",
+      "theRequestWasSentButThe": "The request was sent, but the latest state could not be read. Please reload.",
+      "couldNotStartTheClass": "Could not start the class",
+      "classStarted": "Class started.",
+      "thisClassWasAlreadyStarted": "This class was already started.",
+      "couldNotCompleteTheClass": "Could not complete the class",
+      "classCompletedEarningsHaveBeenReleased": "Class completed. Earnings have been released to your wallet.",
+      "thereIsNothingLeftToComplete": "There is nothing left to complete for this class.",
+      "couldNotSaveChanges": "Could not save changes",
+      "changesSaved": "Changes saved.",
+      "errorundefined": "Error: ",
+      "availableEarnings": "Available earnings",
+      "withdrawEarnings": "Withdraw earnings",
+      "heldForClasses": "Held for classes",
+      "earningsHeldUntilClassCompletion": "Earnings held until class completion",
+      "releasedAfterTheSessionIsCompleted": "Released after the session is completed",
+      "openClasses": "Open classes",
+      "publishedClassesThatHaveNotEnded": "Published classes that have not ended",
+      "closedClasses": "Closed classes",
+      "completedOrCancelledClasses": "Completed or cancelled classes",
+      "approvedTeachingSkills": "Approved teaching skills",
+      "skillsApprovedForPublishingNewClasses": "Skills approved for publishing new classes",
+      "addASkill": "Add a skill",
+      "approved": "Approved",
+      "category": "Category:",
+      "id": "ID:",
+      "noApprovedSkillsYet": "No approved skills yet",
+      "submitSkillEvidenceForExpertReview": "Submit skill evidence for expert review before you publish a class.",
+      "submitSkillEvidence": "Submit skill evidence",
+      "teachingScheduleAndClasses": "Teaching schedule and classes",
+      "classesYouHavePublished": "Classes you have published",
+      "loadingClasses": "Loading classes…",
+      "noClassesYet": "No classes yet",
+      "yourPublishedClassesWillAppearHere": "Your published classes will appear here.",
+      "publishYourFirstClass": "Publish your first class",
+      "ended": "Ended",
+      "openForBooking": "Open for booking",
+      "learners": "learners",
+      "creditsPerLearner": "Credits per learner",
+      "start": "Start",
+      "complete": "Complete",
+      "pricePerLearnerInCredits": "Price per learner in credits",
+      "enterAWholeCreditAmountWithin": "Enter a whole credit amount within the allowed range.",
+      "maximumCapacity": "Maximum capacity",
+      "enterAWholeCapacityWithinThe": "Enter a whole capacity within the allowed range.",
+      "saveChanges": "Save changes",
+      "cancel": "Cancel",
+      "couldNotLoadYourWalletBalance": "Could not load your wallet balance.",
+      "thisClassCouldNotBeFound": "This class could not be found. It may have been cancelled or the link may be incorrect.",
+      "couldNotLoadTheClassInformation": "Could not load the class information.",
+      "pleaseAcceptTheLearningAgreementBefore": "Please accept the learning agreement before continuing.",
+      "yourBookingIsConfirmedButThe": "Your booking is confirmed, but the latest wallet balance could not be read. Please reload.",
+      "couldNotCompleteTheBooking": "Could not complete the booking.",
+      "theSystemIsRecordingTheTransaction": "The system is recording the transaction. Check again in a moment.",
+      "theLatestResultCouldNotBe": "The latest result could not be read. Check again to retry.",
+      "theTransactionIsNotConfirmed": "The transaction is not confirmed.",
+      "theSystemIsStillRecordingThe": "The system is still recording the transaction.",
+      "theLatestResultCouldNotBec489a": "The latest result could not be read. Please try again.",
+      "noHoldWasFoundForThis": "No hold was found for this class. Please book from the class details.",
+      "couldNotCreateTheTopupRequest": "Could not create the top-up request.",
+      "sepayCheckoutOpenedYourBalanceUpdates": "SePay checkout opened. Your balance updates after SePay confirms payment.",
+      "couldNotTopUpPleaseTry": "Could not top up. Please try again.",
+      "publishAClassundefined": "Publish a class →",
+      "availableSeats": "available seats",
+      "edit": "Edit",
+      "minimumConfirmedSeats": "Capacity cannot be below {count} confirmed seats."
+    },
+    "rules": "Learning and payment rules",
+    "fallback": {
+      "notFoundTitle": "Page not found",
+      "notFoundBody": "This link may have changed. Return home or explore classes to continue.",
+      "errorTitle": "This page could not load",
+      "errorBody": "Try loading it again, or return home to continue.",
+      "retry": "Try again",
+      "home": "Back to home",
+      "explore": "Explore classes"
     }
   }
 }

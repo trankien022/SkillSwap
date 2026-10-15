@@ -91,7 +91,7 @@ export function AppButton({
       ]}
     >
       {busy ? (
-        <ActivityIndicator color={tone === 'primary' ? colors.surface : colors.ink} />
+        <ActivityIndicator color={tone === 'primary' || tone === 'secondary' ? colors.surface : tone === 'danger' ? colors.dangerInk : colors.ink} />
       ) : (
         <Text style={[styles.buttonLabel, styles[`${tone}ButtonLabel`]]}>{label}</Text>
       )}
@@ -208,6 +208,7 @@ const styles = StyleSheet.create({
     minHeight: controls.buttonHeight,
     minWidth: controls.minTouchTarget,
     paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -232,6 +233,7 @@ const styles = StyleSheet.create({
   input: {
     minHeight: controls.inputHeight,
     paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.control,

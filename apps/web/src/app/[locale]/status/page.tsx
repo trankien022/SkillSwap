@@ -1,4 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { Navbar } from '../../../components/navbar';
+import { SiteFooter } from '../../../components/landing/SiteFooter';
+import { PageIntro } from '../../../components/ui/PageIntro';
 import { StatusCheck } from '../../../components/status-check';
 
 type PageProps = {
@@ -11,10 +14,13 @@ export default async function StatusPage({ params }: PageProps) {
   const t = await getTranslations('Status');
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-12">
-      <h1 className="text-3xl font-bold tracking-tight text-slate-900">{t('title')}</h1>
-      <p className="mt-2 text-slate-600">{t('description')}</p>
-      <StatusCheck />
-    </main>
+    <div className="flex min-h-dvh flex-col bg-mist text-ink">
+      <Navbar />
+      <main id="main-content" tabIndex={-1} className="workspace-page workspace-page-narrow flex-1">
+        <PageIntro title={t('title')} description={t('description')} />
+        <StatusCheck />
+      </main>
+      <SiteFooter />
+    </div>
   );
 }

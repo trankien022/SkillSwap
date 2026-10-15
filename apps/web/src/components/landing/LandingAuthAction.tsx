@@ -53,13 +53,13 @@ export function LandingAuthAction({
           through sign-in by the destination, not by hiding the control. */}
       <Link
         href={signedIn ? exploreHref : signInHref}
-        className="rounded-md px-3 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-neutral-tint hover:text-ink"
+        className="inline-flex min-h-11 items-center rounded-md px-2 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-neutral-tint hover:text-ink"
       >
         {t('explore')}
       </Link>
       <a
         href="#trust"
-        className="hidden rounded-md px-3 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-neutral-tint hover:text-ink md:inline-block"
+        className="hidden min-h-11 items-center rounded-md px-2 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-neutral-tint hover:text-ink md:inline-flex"
       >
         {t('standard')}
       </a>
@@ -72,7 +72,7 @@ export function LandingAuthAction({
           the sign-in link disappears. */}
       <Link
         href={signedIn ? `/my-bookings` : signInHref}
-        className="inline-flex shrink-0 items-center rounded-full bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
+        className="inline-flex shrink-0 items-center rounded-full bg-campus-emerald-deep min-h-11 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-ink"
       >
         {signedIn ? t('myBookings') : t('signIn')}
       </Link>
