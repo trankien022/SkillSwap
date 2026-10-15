@@ -19,23 +19,22 @@ export function ScheduleDurationSection({ draft, onChange }: Props) {
 
   return (
     <section className="workspace-panel flex flex-col gap-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-campus-emerald-deep text-sm font-bold text-white shadow-xs">
             4
           </span>
           <h2 className="text-base font-bold text-slate-900">{tSteps('step4Title')}</h2>
         </div>
-        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-sm font-semibold text-emerald-800 border border-emerald-200">
-          <CheckCircleIcon className="h-3.5 w-3.5" />
-          <span>{tSteps('leadTimeValid')}</span>
+        <span className="inline-flex items-center rounded-full border border-border bg-neutral-tint px-2.5 py-1 text-sm font-medium text-ink-soft">
+          <span>{tSteps('leadTimeBadge')}</span>
         </span>
       </div>
 
       {/* Date & Time Row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <label htmlFor="class-date" className="text-sm font-semibold text-slate-800">
               {t('dateLabel')}
             </label>
@@ -66,17 +65,18 @@ export function ScheduleDurationSection({ draft, onChange }: Props) {
 
       {/* Duration selector */}
       <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-sm font-semibold text-slate-800">{tGeneral('durationLabel')}</span>
           <span className="text-sm text-ink-muted">{tGeneral('durationStandard')}</span>
         </div>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {[30, 45, 60, 90].map((d) => {
             const active = draft.durationMinutes === d;
             return (
               <button
                 key={d}
                 type="button"
+                aria-pressed={draft.durationMinutes === d}
                 onClick={() => onChange({ durationMinutes: d as ClassDraft['durationMinutes'] })}
                 className={
                   active
@@ -92,7 +92,7 @@ export function ScheduleDurationSection({ draft, onChange }: Props) {
       </div>
 
       {/* Virtual Classroom Integration */}
-      <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-emerald-700 shadow-xs border border-slate-200">
             <span aria-hidden="true" className="material-symbols-outlined text-[20px]">
@@ -109,25 +109,5 @@ export function ScheduleDurationSection({ draft, onChange }: Props) {
         </span>
       </div>
     </section>
-  );
-}
-
-function CheckCircleIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="16"
-      height="16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className={className}
-    >
-      <circle cx="12" cy="12" r="9" />
-      <polyline points="9 12 11 14 15 10" />
-    </svg>
   );
 }

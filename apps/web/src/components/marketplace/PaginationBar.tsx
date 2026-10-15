@@ -38,8 +38,8 @@ export function PaginationBar({
         {t('showing', { from, to, total })}
       </span>
       <nav
-        aria-label="Pagination"
-        className="flex items-center gap-1 rounded-xl border border-border bg-surface p-1 "
+        aria-label={t('label')}
+        className="flex max-w-full flex-wrap items-center justify-center gap-1 rounded-xl border border-border bg-surface p-1"
       >
         <button
           type="button"

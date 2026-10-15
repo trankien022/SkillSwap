@@ -69,7 +69,7 @@ export function ScheduleCapacitySection({ draft, onChange }: Props) {
         <div className="flex items-center gap-1 rounded-lg border border-border bg-surface p-1">
           <button
             type="button"
-            aria-label="decrement capacity"
+            aria-label={t('decrementCapacity')}
             disabled={draft.capacity <= MIN_CAPACITY}
             onClick={() => onChange({ capacity: Math.max(MIN_CAPACITY, draft.capacity - 1) })}
             className="flex h-8 w-8 items-center justify-center rounded text-ink-soft transition-colors hover:bg-mist disabled:cursor-not-allowed disabled:opacity-40"
@@ -79,7 +79,7 @@ export function ScheduleCapacitySection({ draft, onChange }: Props) {
           <span className="w-8 text-center text-lg font-bold text-ink">{draft.capacity}</span>
           <button
             type="button"
-            aria-label="increment capacity"
+            aria-label={t('incrementCapacity')}
             disabled={draft.capacity >= MAX_CAPACITY}
             onClick={() => onChange({ capacity: Math.min(MAX_CAPACITY, draft.capacity + 1) })}
             className="flex h-8 w-8 items-center justify-center rounded text-ink-soft transition-colors hover:bg-mist disabled:cursor-not-allowed disabled:opacity-40"

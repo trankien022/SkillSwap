@@ -22,13 +22,9 @@ export function CategoryPills({
   return (
     <div
       role="radiogroup"
-      aria-label={t('all')}
+      aria-label={t('label')}
       className="flex flex-wrap items-center gap-x-2 gap-y-1"
     >
-      <span className="mr-1 shrink-0 text-sm font-semibold r text-ink-soft">
-        {/* caption for the pills row */}
-        <span className="sr-only">Categories</span>
-      </span>
       <Pill
         label={t('all')}
         icon={<AppsIcon className="h-3.5 w-3.5" />}

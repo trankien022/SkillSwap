@@ -32,7 +32,7 @@ export function LocaleSwitcher() {
   return (
     <div
       aria-label={t('langLabel')}
-      role="group"
+      role="radiogroup"
       className="inline-flex items-center gap-1 rounded-full bg-neutral-tint p-1 text-xs font-semibold"
     >
       <SwitchButton active={current === 'vi'} onClick={() => switchTo('vi')} label={t('vi')} />

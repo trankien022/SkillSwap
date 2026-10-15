@@ -200,7 +200,8 @@
       "programming": "Programming & IT",
       "design": "UI/UX design",
       "softSkills": "Soft skills",
-      "math": "Math & statistics"
+      "math": "Math & statistics",
+      "label": "Skill categories"
     },
     "resultsBar": {
       "title": "Explore classes",
@@ -257,7 +258,7 @@
     "card": {
       "format": {
         "oneOnOne": "1-1 mentoring",
-        "group": "Group class 2-4"
+        "group": "Group class"
       },
       "duration": "{minutes} min",
       "rating": "{avg} ({count})",
@@ -288,7 +289,8 @@
     "pagination": {
       "showing": "Showing {from} - {to} of {total} open classes",
       "prev": "Previous",
-      "next": "Next"
+      "next": "Next",
+      "label": "Class pagination"
     },
     "banner": {
       "title": "Payment protection",
@@ -329,8 +331,8 @@
       "capacity": "CAPACITY & ROOM INFRASTRUCTURE",
       "oneOnOne": "1-1 deep-dive class",
       "oneOnOneLimit": "One learner only",
-      "group": "Group class for 2-4 learners",
-      "groupLimit": "Up to 4 learners per session",
+      "group": "Group class",
+      "groupLimit": "Up to {count} learners per session",
       "seatsLeft": "{taken}/{capacity} seats available",
       "room": "End-to-end encrypted room"
     },
@@ -719,7 +721,9 @@
         "capacityLabel": "Maximum capacity",
         "capacityBadge1to1": "1-on-1 mentoring model",
         "capacityBadgeGroup": "Group class ({count} learners)",
-        "conflictHelp": "The conflict checker cross-references your three most recent 1-on-1 classes automatically."
+        "conflictHelp": "The conflict checker cross-references your three most recent 1-on-1 classes automatically.",
+        "decrementCapacity": "Decrease capacity",
+        "incrementCapacity": "Increase capacity"
       },
       "pricing": {
         "title": "Pricing & settlement",

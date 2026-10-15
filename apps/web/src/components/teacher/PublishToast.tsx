@@ -26,17 +26,17 @@ export function PublishToast({ open, onClose, autoCloseMs = 4000 }: Props) {
     <div
       role="status"
       aria-live="polite"
-      className={
-        open
-          ? 'fixed bottom-6 right-6 z-50 flex max-w-md items-start gap-3 rounded-xl border border-success-ink bg-ink p-4 text-surface shadow-xl transition-colors duration-300'
-          : 'pointer-events-none fixed bottom-6 right-6 z-50 flex max-w-md translate-y-24 items-start gap-3 rounded-xl border border-success-ink bg-ink p-4 text-surface opacity-0 shadow-xl transition-colors duration-300'
-      }
+      className={open ? 'fixed inset-x-4 bottom-6 z-50 flex items-start gap-3 rounded-xl border border-border bg-ink p-4 text-surface shadow-md sm:left-auto sm:right-6 sm:max-w-md' : undefined}
     >
-      <TaskAltIcon className="h-7 w-7 shrink-0 text-success-ink" />
-      <div className="flex flex-col">
-        <span className="text-base font-bold text-surface">{t('title')}</span>
-        <span className="mt-0.5 text-sm text-mist">{t('body')}</span>
-      </div>
+      {open && (
+        <>
+          <TaskAltIcon className="h-7 w-7 shrink-0 text-success-tint" />
+          <div className="flex min-w-0 flex-col break-words">
+            <span className="text-base font-bold text-surface">{t('title')}</span>
+            <span className="mt-0.5 text-sm text-mist">{t('body')}</span>
+          </div>
+        </>
+      )}
     </div>
   );
 }

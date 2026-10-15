@@ -200,7 +200,8 @@
       "programming": "Lập trình & IT",
       "design": "Thiết kế UI/UX",
       "softSkills": "Kỹ năng mềm",
-      "math": "Toán & Xác suất"
+      "math": "Toán & Xác suất",
+      "label": "Danh mục kỹ năng"
     },
     "resultsBar": {
       "title": "Khám phá lớp học",
@@ -257,7 +258,7 @@
     "card": {
       "format": {
         "oneOnOne": "1-1 Mentoring",
-        "group": "Lớp nhóm 2-4 SV"
+        "group": "Lớp nhóm"
       },
       "duration": "{minutes} phút",
       "rating": "{avg} ({count})",
@@ -288,7 +289,8 @@
     "pagination": {
       "showing": "Hiển thị {from} - {to} trong tổng số {total} lớp học đang tuyển sinh",
       "prev": "Trang trước",
-      "next": "Trang sau"
+      "next": "Trang sau",
+      "label": "Phân trang lớp học"
     },
     "banner": {
       "title": "Bảo vệ quỹ thanh toán",
@@ -329,8 +331,8 @@
       "capacity": "QUY MÔ & HẠ TẦNG PHÒNG HỌC",
       "oneOnOne": "Lớp 1-1 chuyên sâu",
       "oneOnOneLimit": "Giới hạn 1 sinh viên",
-      "group": "Lớp nhóm 2-4 sinh viên",
-      "groupLimit": "Tối đa 4 sinh viên mỗi buổi",
+      "group": "Lớp nhóm",
+      "groupLimit": "Tối đa {count} học viên mỗi buổi",
       "seatsLeft": "Còn {taken}/{capacity} chỗ khả dụng",
       "room": "Phòng học mã hoá đầu cuối"
     },
@@ -719,7 +721,9 @@
         "capacityLabel": "Sức chứa tối đa",
         "capacityBadge1to1": "Mô hình kèm cá nhân 1-1",
         "capacityBadgeGroup": "Lớp học nhóm ({count} học viên)",
-        "conflictHelp": "Thuật toán đối soát tự động kiểm tra xung đột thời gian với 3 lớp kèm cá nhân đã tạo trước đó."
+        "conflictHelp": "Thuật toán đối soát tự động kiểm tra xung đột thời gian với 3 lớp kèm cá nhân đã tạo trước đó.",
+        "decrementCapacity": "Giảm sức chứa",
+        "incrementCapacity": "Tăng sức chứa"
       },
       "pricing": {
         "title": "Biểu phí & Quyết toán",

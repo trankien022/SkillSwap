@@ -14,6 +14,7 @@ import type { ClassDetailView } from '../../lib/marketplace/types';
  */
 export function ScheduleSection({ item }: { item: ClassDetailView }) {
   const t = useTranslations('ClassDetail.schedule');
+  const tCard = useTranslations('Marketplace.card');
   const locale = useLocale() as 'vi' | 'en';
   const hoursLeft = hoursUntilBookingDeadline(item.startsAt);
   const [taken, capacity] = formatSeats(item.format, item.capacity)
@@ -54,7 +55,7 @@ export function ScheduleSection({ item }: { item: ClassDetailView }) {
           <div className="flex flex-col">
             <span className="text-base font-semibold text-ink">{dateText}</span>
             <span className="text-sm font-semibold text-ink">
-              {timeText} • {item.durationMinutes} phút
+              {timeText} • {tCard('duration', { minutes: item.durationMinutes })}
             </span>
           </div>
           <div
@@ -78,7 +79,7 @@ export function ScheduleSection({ item }: { item: ClassDetailView }) {
             <span>{t('capacity')}</span>
           </div>
           <div className="flex flex-col">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-base font-semibold text-ink">
                 {item.format === 'one-on-one' ? t('oneOnOne') : t('group')}
               </span>
@@ -93,7 +94,7 @@ export function ScheduleSection({ item }: { item: ClassDetailView }) {
               </span>
             </div>
             <span className="text-sm text-ink-soft">
-              {item.format === 'one-on-one' ? t('oneOnOneLimit') : t('groupLimit')}
+              {item.format === 'one-on-one' ? t('oneOnOneLimit') : t('groupLimit', { count: capacity })}
             </span>
           </div>
           <div className="flex items-center gap-1.5 text-sm text-ink-soft">

@@ -36,14 +36,6 @@ export default async function LocaleLayout({ children, params }: LayoutProps) {
 
   return (
     <html lang={locale}>
-      <head>
-        <link href="https://fonts.googleapis.com" rel="preconnect" />
-        <link crossOrigin="anonymous" href="https://fonts.gstatic.com" rel="preconnect" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
-          rel="stylesheet"
-        />
-      </head>
       <body className="bg-slate-50 text-slate-900 antialiased">
         <a href="#main-content" className="workspace-skip">{workspace('skip')}</a>
         <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>

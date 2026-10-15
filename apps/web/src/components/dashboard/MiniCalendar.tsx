@@ -82,7 +82,7 @@ export function MiniCalendar({
               <span
                 key={day.date}
                 className={`${baseClasses} bg-ink font-bold text-surface `}
-                aria-label="today"
+                aria-current="date"
               >
                 {dayNum}
                 {(day.hasLiveSession || day.hasBookedSession) && (

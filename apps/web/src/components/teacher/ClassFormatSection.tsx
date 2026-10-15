@@ -29,6 +29,7 @@ export function ClassFormatSection({ draft, onChange }: Props) {
         {/* 1-on-1 Option Card */}
         <button
           type="button"
+          aria-pressed={isOneOnOne}
           onClick={() => onChange({ capacity: 1 })}
           className={`flex flex-col justify-between rounded-xl border p-4 text-left transition-colors ${
             isOneOnOne
@@ -56,6 +57,7 @@ export function ClassFormatSection({ draft, onChange }: Props) {
         {/* Small Group Option Card */}
         <button
           type="button"
+          aria-pressed={!isOneOnOne}
           onClick={() => onChange({ capacity: draft.capacity > 1 ? draft.capacity : 4 })}
           className={`flex flex-col justify-between rounded-xl border p-4 text-left transition-colors ${
             !isOneOnOne
@@ -88,7 +90,7 @@ export function ClassFormatSection({ draft, onChange }: Props) {
 
       {/* Stepper only when group is selected */}
       {!isOneOnOne && (
-        <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3.5">
           <div>
             <span className="block text-sm font-bold text-slate-800">
               {tSched('capacityLabel')}
@@ -100,7 +102,7 @@ export function ClassFormatSection({ draft, onChange }: Props) {
           <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1 shadow-xs">
             <button
               type="button"
-              aria-label="decrement capacity"
+              aria-label={tSched('decrementCapacity')}
               disabled={draft.capacity <= 2}
               onClick={() => onChange({ capacity: Math.max(2, draft.capacity - 1) })}
               className="flex h-7 w-7 items-center justify-center rounded text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
@@ -112,7 +114,7 @@ export function ClassFormatSection({ draft, onChange }: Props) {
             </span>
             <button
               type="button"
-              aria-label="increment capacity"
+              aria-label={tSched('incrementCapacity')}
               disabled={draft.capacity >= MAX_CAPACITY}
               onClick={() => onChange({ capacity: Math.min(MAX_CAPACITY, draft.capacity + 1) })}
               className="flex h-7 w-7 items-center justify-center rounded text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
