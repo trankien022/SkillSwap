@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { authenticate } from '../../lib/api-client';
+import { resolvePostLoginPath } from '../../lib/post-login-path';
 
 interface AuthFormProps {
   initialTab?: 'register' | 'login';
@@ -68,7 +69,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
 
     startTransition(async () => {
       try {
-        await authenticate(
+        const { role } = await authenticate(
           'register',
           {
             email: regEmail.trim(),
@@ -80,8 +81,15 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
         );
 
         setSuccessMessage(t('registerSuccess'));
+        // The register CTAs on the landing page carry a returnUrl; it was
+        // silently dropped here, so the visitor lost their deep link.
+        const target = resolvePostLoginPath({
+          role,
+          locale,
+          returnUrl: searchParams.get('returnUrl'),
+        });
         setTimeout(() => {
-          router.push(`/${locale}/classes`);
+          router.push(target);
           router.refresh();
         }, 1000);
       } catch (err: unknown) {
@@ -103,7 +111,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
 
     startTransition(async () => {
       try {
-        await authenticate(
+        const { role } = await authenticate(
           'login',
           {
             email: loginEmail.trim(),
@@ -113,9 +121,15 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
         );
 
         setSuccessMessage(t('loginSuccess'));
-        const returnUrl = searchParams.get('returnUrl') || `/${locale}/classes`;
+        // Role-aware landing: an admin/verifier is sent to their own screen
+        // instead of the marketplace, and an explicit returnUrl still wins.
+        const target = resolvePostLoginPath({
+          role,
+          locale,
+          returnUrl: searchParams.get('returnUrl'),
+        });
         setTimeout(() => {
-          router.push(returnUrl);
+          router.push(target);
           router.refresh();
         }, 1000);
       } catch (err: unknown) {

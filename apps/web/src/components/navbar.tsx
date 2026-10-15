@@ -6,7 +6,7 @@ import { BrandMark } from './BrandMark';
 import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
 import { callApi, getTokens, getStoredUser, logout, unwrapEnvelope, WALLET_BALANCE_EVENT, type UserProfile } from '../lib/api-client';
 
-export type NavbarTab = 'explore' | 'classes' | 'instructor' | 'wallet' | 'verification' | 'skills' | 'notifications' | 'verifier';
+export type NavbarTab = 'explore' | 'classes' | 'instructor' | 'wallet' | 'verification' | 'skills' | 'notifications' | 'verifier' | 'admin';
 
 export interface NavbarProps {
   currentTab?: NavbarTab;
@@ -107,6 +107,7 @@ export function Navbar({
   const signedIn =
     hasTokens || me !== null || propMe !== undefined || propBalance !== undefined;
   const isVerifier = me?.role === 'verifier' || storedUser?.role === 'verifier';
+  const isAdmin = me?.role === 'admin' || storedUser?.role === 'admin';
 
   const navLinks: { id: NavbarTab; label: string; tooltip?: string; href: string }[] = [
     { id: 'explore', label: locale === 'vi' ? 'Khám phá' : 'Explore', href: `/${locale}/classes` },
@@ -142,6 +143,18 @@ export function Navbar({
       tooltip: locale === 'vi' ? 'Trung tâm Thẩm định & Xác minh' : 'Verification Center',
       href: `/${locale}/verification`,
     },
+    // The admin landing exists as a route now; without this entry an admin
+    // had no way back to their own screens after signing in.
+    ...(isAdmin
+      ? ([
+          {
+            id: 'admin',
+            label: locale === 'vi' ? 'Quản trị' : 'Admin',
+            tooltip: locale === 'vi' ? 'Trang quản trị' : 'Admin home',
+            href: `/${locale}/admin`,
+          },
+        ] as const)
+      : []),
     // Only a Verifier can use the queue (`GET /verifiers/me/queue` is
     // role-guarded), so offering the link to everyone was a dead end.
     ...(isVerifier

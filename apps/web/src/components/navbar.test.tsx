@@ -149,6 +149,24 @@ describe('Navbar component', () => {
     expect(queueLink.getAttribute('href')).toBe('/vi/verifier');
   });
 
+  it('offers the admin landing only to an admin', () => {
+    // Regression: role landing — after sign-in an admin was sent to /classes
+    // and the navbar had no entry to any admin screen at all.
+    const { unmount: unmountLearner } = renderNavbar({ me: mockMe({ role: 'user' }) });
+    expect(screen.queryByRole('link', { name: 'Quản trị' })).toBeNull();
+    unmountLearner();
+    cleanup();
+
+    const { unmount: unmountVerifier } = renderNavbar({ me: mockMe({ role: 'verifier' }) });
+    expect(screen.queryByRole('link', { name: 'Quản trị' })).toBeNull();
+    unmountVerifier();
+    cleanup();
+
+    renderNavbar({ me: mockMe({ role: 'admin' }) });
+    const adminLink = screen.getByRole('link', { name: 'Quản trị' });
+    expect(adminLink.getAttribute('href')).toBe('/vi/admin');
+  });
+
   it('renders navigation link with title tooltip for verification', () => {
     renderNavbar({ me: mockMe() });
 

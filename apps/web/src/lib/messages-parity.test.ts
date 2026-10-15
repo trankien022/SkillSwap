@@ -89,7 +89,7 @@ describe('i18n messages', () => {
         expect(
           Object.keys(data.Admin).sort(),
           `${locale}: Admin sub-namespaces`,
-        ).toEqual(['StudentVerification', 'verifiers']);
+        ).toEqual(['Landing', 'StudentVerification', 'verifiers']);
       }
     });
   });

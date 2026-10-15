@@ -463,6 +463,17 @@
     }
   },
   "Admin": {
+    "Landing": {
+      "title": "Admin home",
+      "subtitle": "Only tools that actually work on the system can be opened from here.",
+      "studentVerifications": "Review student verifications",
+      "verifierStatus": "Open verifier status by account id",
+      "accountIdPlaceholder": "Enter an account id",
+      "accountIdRequired": "Enter an account id.",
+      "openCta": "Open",
+      "notReadyTitle": "Not available yet",
+      "notReadyBody": "The pending-review queue, the Verifier list and the audit log do not exist in the system yet."
+    },
     "verifiers": {
       "breadcrumb": "Admin",
       "pageTitle": "Verifier administration",

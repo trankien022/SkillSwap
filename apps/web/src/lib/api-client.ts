@@ -250,7 +250,7 @@ export async function authenticate(
     role?: 'user';
   },
   remember = false,
-): Promise<{ tokens: TokenPair }> {
+): Promise<{ tokens: TokenPair; role?: string }> {
   const endpoint = mode === 'register' ? '/api/auth/register' : '/api/auth/login';
   const bodyPayload = mode === 'register'
     ? {
@@ -282,6 +282,11 @@ export async function authenticate(
   const data = await unwrapEnvelope<{ accessToken: string; refreshToken: string }>(res);
   saveTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken }, remember);
 
+  // The role is read here as a side effect of fetching the profile; returning
+  // it saves a second round-trip in the login redirect, which needs to know
+  // whether this session is an admin/verifier to pick a landing page.
+  let role: string | undefined;
+
   // Immediately try to fetch user info from /auth/me or store payload
   try {
     const meRes = await fetch(`${API}/api/auth/me`, {
@@ -298,6 +303,7 @@ export async function authenticate(
         role?: string;
         studentVerification?: { status?: string } | null;
       }>(meRes);
+      role = meData.role;
       saveStoredUser({
         id: meData.id,
         email: meData.email,
@@ -306,6 +312,7 @@ export async function authenticate(
         studentVerificationStatus: meData.studentVerification?.status,
       }, remember);
     } else {
+      role = 'user';
       saveStoredUser({
         email: payload.email,
         displayName: payload.displayName || payload.email.split('@')[0],
@@ -313,6 +320,7 @@ export async function authenticate(
       }, remember);
     }
   } catch {
+    role = 'user';
     saveStoredUser({
       email: payload.email,
       displayName: payload.displayName || payload.email.split('@')[0],
@@ -322,6 +330,7 @@ export async function authenticate(
 
   return {
     tokens: { accessToken: data.accessToken, refreshToken: data.refreshToken },
+    role,
   };
 }
 

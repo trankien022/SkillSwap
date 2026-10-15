@@ -463,6 +463,17 @@
     }
   },
   "Admin": {
+    "Landing": {
+      "title": "Trang quản trị",
+      "subtitle": "Chỉ những công cụ đang vận hành thật trên hệ thống mới được mở từ đây.",
+      "studentVerifications": "Duyệt xác minh sinh viên",
+      "verifierStatus": "Mở trạng thái Verifier theo Account ID",
+      "accountIdPlaceholder": "Nhập Account ID",
+      "accountIdRequired": "Vui lòng nhập Account ID.",
+      "openCta": "Mở",
+      "notReadyTitle": "Chưa có sẵn",
+      "notReadyBody": "Hàng đợi duyệt chờ, danh sách Verifier và nhật ký kiểm định chưa tồn tại trên hệ thống."
+    },
     "verifiers": {
       "breadcrumb": "Quản trị",
       "pageTitle": "Quản trị Verifier",
