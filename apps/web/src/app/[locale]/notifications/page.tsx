@@ -34,16 +34,22 @@ export default function NotificationsPage() {
   const [filter, setFilter] = useState<'all' | 'unread' | 'booking' | 'finance' | 'verify'>('all');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
-  const [emailInput, setEmailInput] = useState('minh.nguyen@rmit.edu.vn');
+  const [emailInput, setEmailInput] = useState('');
   const [frequency, setFrequency] = useState<'instant' | 'daily' | 'weekly'>('instant');
   const [balance, setBalance] = useState<WalletBalanceView | null>(null);
   const [me, setMe] = useState<MeResponse | null>(null);
 
   useEffect(() => {
-    // 1. Fetch live notifications from GET /api/notifications
+    // 1. Fetch live notifications from GET /api/notifications.
+    //
+    // A successful-but-empty page is a REAL answer ("you have no
+    // notifications"), so it must replace the list. The old guard
+    // (`res.items.length > 0`) kept a hardcoded 7-item mock feed on screen
+    // whenever the API returned nothing, which showed fabricated bookings and
+    // payments to a user who had none.
     fetchNotifications()
       .then((res) => {
-        if (res && res.items.length > 0) {
+        if (res) {
           setItems(res.items);
         }
       })
@@ -57,7 +63,13 @@ export default function NotificationsPage() {
           callApi('/auth/me'),
         ]);
         if (balRes.ok) setBalance(await unwrapEnvelope(balRes));
-        if (meRes.ok) setMe(await unwrapEnvelope(meRes));
+        if (meRes.ok) {
+          const meData = await unwrapEnvelope<MeResponse>(meRes);
+          setMe(meData);
+          // Prefill the notification email with the signed-in address. The input
+          // previously defaulted to a fabricated `minh.nguyen@rmit.edu.vn`.
+          setEmailInput((current) => (current === '' ? meData.email : current));
+        }
       } catch (e) {
         console.warn('Navbar hydration on notifications page error:', e);
       }
@@ -65,165 +77,7 @@ export default function NotificationsPage() {
     fetchSession();
   }, []);
 
-  const [items, setItems] = useState<NotificationItem[]>([
-    {
-      id: 'notif-1',
-      category: 'booking',
-      unread: true,
-      dateGroup: 'today',
-      title: 'Booking Xác nhận',
-      badge: 'Escrow Protected',
-      badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-      timeText: '15 phút trước',
-      content: 'Bạn đã đặt thành công lớp "Luyện Speaking IELTS 6.5+" vào 19:30 tối mai. 100 Credits đã được khóa an toàn vào hợp đồng Escrow.',
-      highlightText: '100 Credits đã khóa',
-      icon: 'event_available',
-      iconBg: 'bg-emerald-50',
-      iconColor: 'text-emerald-700',
-      barColor: 'bg-emerald-600',
-      metaLeft: 'Mã Escrow: #ESC-94827 · Hoàn tiền tự động nếu hủy trước 6h',
-      metaIcon: 'lock',
-      actionSecondary: {
-        label: 'Xem chi tiết lớp',
-        href: '/vi/instructor#classes',
-        icon: 'open_in_new',
-      },
-      actionPrimary: {
-        label: 'Thêm vào Google Calendar',
-        icon: 'calendar_add_on',
-        action: () => showToast('Đã tạo liên kết sự kiện Google Calendar!'),
-      },
-    },
-    {
-      id: 'notif-2',
-      category: 'booking',
-      unread: true,
-      dateGroup: 'today',
-      title: 'Nhắc nhở giờ học',
-      badge: 'Bắt đầu sau 30 phút',
-      badgeColor: 'bg-amber-50 text-amber-800 border-amber-200',
-      timeText: '28 phút trước',
-      content: 'Lớp học "Lập trình Python cơ bản" sẽ bắt đầu sau 30 phút. Nút vào phòng học Jitsi mã hóa E2E đã được kích hoạt!',
-      icon: 'video_camera_front',
-      iconBg: 'bg-amber-50',
-      iconColor: 'text-amber-700',
-      barColor: 'bg-amber-500',
-      metaLeft: 'Host: Hoàng Nam · Jitsi Room ID: swap-py-402',
-      metaIcon: 'sensors',
-      actionPrimary: {
-        label: 'Vào phòng học ngay',
-        icon: 'login',
-        action: () => showToast('Đang kết nối vào phòng Jitsi Meet: swap-py-402...'),
-      },
-    },
-    {
-      id: 'notif-3',
-      category: 'finance',
-      unread: true,
-      dateGroup: 'today',
-      title: 'Biến động số dư',
-      badge: '+200 Credits',
-      badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      timeText: '2 giờ trước',
-      content: 'Bạn vừa nạp thành công 200 Credits qua cổng thanh toán SePay. Số dư khả dụng hiện tại: 150 Credits (đã trừ 100 Credits đang giữ trong Escrow).',
-      icon: 'account_balance_wallet',
-      iconBg: 'bg-emerald-50',
-      iconColor: 'text-emerald-600',
-      barColor: 'bg-emerald-600',
-      metaLeft: 'Giao dịch qua SePay Payment Gateway · Phí: 0đ',
-      linkText: 'Chi tiết Ví Tín dụng →',
-      actionSecondary: {
-        label: 'Chi tiết Ví Tín dụng',
-        href: '/vi/wallet',
-      },
-    },
-    {
-      id: 'notif-4',
-      category: 'verify',
-      unread: false,
-      dateGroup: 'yesterday',
-      title: 'Xác minh năng lực Teacher',
-      badge: 'Verified Tutor C1',
-      badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-100',
-      timeText: 'Hôm qua, 16:42',
-      content: 'Chúc mừng! Hồ sơ năng lực Kỹ năng IELTS Speaking (Level: C1/8.0+) của bạn đã được Verifier Thầy Hùng phê duyệt thành công với điểm tín nhiệm cao.',
-      icon: 'verified_user',
-      iconBg: 'bg-indigo-50',
-      iconColor: 'text-indigo-700',
-      barColor: 'bg-indigo-600',
-      metaLeft: 'Huy hiệu: Verified Tutor C1 · Tối đa 5 slot/tuần',
-      actionPrimary: {
-        label: 'Công bố lớp học ngay',
-        icon: 'add_circle',
-        action: () => {
-          window.location.href = '/vi/instructor';
-        },
-      },
-    },
-    {
-      id: 'notif-5',
-      category: 'finance',
-      unread: false,
-      dateGroup: 'yesterday',
-      title: 'Rút tiền thành công',
-      badge: 'Hoàn tất',
-      badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-      timeText: 'Hôm qua, 10:15',
-      content: 'Yêu cầu rút 800.000 VNĐ mã #WD-8820 đã được chuyển khoản thành công vào tài khoản Vietcombank (*9823).',
-      icon: 'payments',
-      iconBg: 'bg-emerald-50',
-      iconColor: 'text-emerald-600',
-      barColor: 'bg-emerald-600',
-      metaLeft: 'Mã giao dịch: #WD-8820 · Vietcombank',
-      linkText: 'Tải biên lai PDF',
-      actionSecondary: {
-        label: 'Tải biên lai PDF',
-        action: () => showToast('Đang tải biên lai xác nhận giao dịch...'),
-      },
-    },
-    {
-      id: 'notif-6',
-      category: 'booking',
-      unread: false,
-      dateGroup: 'earlier',
-      title: 'Đánh giá & Nghiệm thu',
-      badge: '5.0 Sao',
-      badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
-      timeText: '3 ngày trước',
-      content: 'Học viên Minh Nguyễn vừa gửi đánh giá 5 sao cho buổi học "UI/UX Figma căn bản" kèm lời khen: "Hướng dẫn rất tận tình, bài tập thực tế bổ ích."',
-      icon: 'star',
-      iconBg: 'bg-amber-50',
-      iconColor: 'text-amber-600',
-      barColor: 'bg-amber-500',
-      rating: 5,
-      linkText: 'Gửi lời cảm ơn →',
-      actionSecondary: {
-        label: 'Gửi lời cảm ơn →',
-        action: () => showToast('Đã gửi tin nhắn cảm ơn đến học viên!'),
-      },
-    },
-    {
-      id: 'notif-7',
-      category: 'verify',
-      unread: false,
-      dateGroup: 'earlier',
-      title: 'Cảnh báo hệ thống & Bảo mật Escrow',
-      badge: 'Bảo mật',
-      badgeColor: 'bg-rose-50 text-rose-700 border-rose-100',
-      timeText: '4 ngày trước',
-      content: 'Nhắc nhở an toàn: Không chia sẻ thông tin Zalo, tài khoản ngân hàng cá nhân hoặc nhận thanh toán ngoài hệ thống để bảo đảm quyền lợi bảo vệ hoàn tiền 100% của cơ chế SkillSwap Escrow.',
-      icon: 'shield_with_heart',
-      iconBg: 'bg-rose-50',
-      iconColor: 'text-rose-600',
-      barColor: 'bg-rose-500',
-      metaLeft: 'Chính sách hoàn tiền bảo vệ người học và giảng viên',
-      linkText: 'Xem quy chế giao dịch →',
-      actionSecondary: {
-        label: 'Xem quy chế giao dịch →',
-        action: () => showToast('Mở tài liệu: Quy chế Escrow SkillSwap'),
-      },
-    },
-  ]);
+  const [items, setItems] = useState<NotificationItem[]>([]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -258,6 +112,17 @@ export default function NotificationsPage() {
   const todayItems = filteredItems.filter((i) => i.dateGroup === 'today');
   const yesterdayItems = filteredItems.filter((i) => i.dateGroup === 'yesterday');
   const earlierItems = filteredItems.filter((i) => i.dateGroup === 'earlier');
+
+  /**
+   * Share of the wallet currently held in escrow, 0–100. Derived from the real
+   * balance; the bar used to be hardcoded at 40/60 regardless of the account.
+   */
+  const heldPercent = (() => {
+    if (balance === null) return 0;
+    const total = balance.availableCredits + balance.pendingCredits;
+    if (total <= 0) return 0;
+    return Math.round((balance.pendingCredits / total) * 100);
+  })();
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-slate-50 text-slate-900 antialiased">
@@ -511,34 +376,42 @@ export default function NotificationsPage() {
                   </span>
                 </div>
 
-                {/* Academic Skill Ledger Bar */}
+                {/* Academic Skill Ledger Bar — real wallet credits only. */}
                 <div className="space-y-2">
                   <div className="flex justify-between items-center text-xs text-slate-600">
                     <span>
-                      Đang khóa trong Escrow: <strong className="text-slate-900 font-semibold">100 Cr</strong>
+                      Đang khóa trong Escrow:{' '}
+                      <strong className="text-slate-900 font-semibold">
+                        {balance === null ? '—' : `${balance.pendingCredits} Cr`}
+                      </strong>
                     </span>
                     <span>
-                      Khả dụng: <strong className="text-emerald-700 font-semibold">150 Cr</strong>
+                      Khả dụng:{' '}
+                      <strong className="text-emerald-700 font-semibold">
+                        {balance === null ? '—' : `${balance.availableCredits} Cr`}
+                      </strong>
                     </span>
                   </div>
                   <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden flex border border-slate-200">
                     <div
                       className="bg-amber-500 h-full"
-                      style={{ width: '40%' }}
+                      style={{ width: `${heldPercent}%` }}
                       title="Đang giao dịch (Escrow)"
                     ></div>
                     <div
                       className="bg-emerald-600 h-full"
-                      style={{ width: '60%' }}
+                      style={{ width: `${100 - heldPercent}%` }}
                       title="Số dư khả dụng"
                     ></div>
                   </div>
                   <div className="flex items-center gap-3 text-xs pt-1 text-slate-500">
                     <span className="flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-amber-500"></span> 40% Đang khóa
+                      <span className="w-2 h-2 rounded-full bg-amber-500"></span> {heldPercent}% Đang
+                      khóa
                     </span>
                     <span className="flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-emerald-600"></span> 60% Sẵn sàng
+                      <span className="w-2 h-2 rounded-full bg-emerald-600"></span>{' '}
+                      {100 - heldPercent}% Sẵn sàng
                     </span>
                   </div>
                 </div>
@@ -548,7 +421,8 @@ export default function NotificationsPage() {
                     verified
                   </span>
                   <div className="text-xs text-slate-700 leading-snug">
-                    Bạn có 1 buổi học đang diễn ra trong hôm nay. Phòng Jitsi sẽ mở tự động 15 phút trước giờ hẹn.
+                    Phòng học trực tuyến mở tự động 15 phút trước giờ hẹn của mỗi buổi học đã xác
+                    nhận.
                   </div>
                 </div>
               </div>
@@ -674,20 +548,20 @@ export default function NotificationsPage() {
                 </form>
               </div>
 
-              {/* System Status Mini Card */}
+              {/* System Status Mini Card. The previous "WebSocket Gateway: Live ·
+                  0.04s RMIT Hub · v2.4.1" was invented: there is no socket and no
+                  telemetry endpoint. The stream is server-rendered on load, so we
+                  state that honestly instead. */}
               <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-slate-300"></span>
                   <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-slate-900">
-                      WebSocket Gateway: Live
-                    </span>
+                    <span className="text-xs font-semibold text-slate-900">Tải khi mở trang</span>
                     <span className="text-[11px] text-slate-500">
-                      Đồng bộ hóa 0.04s với RMIT Hub
+                      Chưa có kênh thời gian thực cho thông báo
                     </span>
                   </div>
                 </div>
-                <span className="text-[11px] text-slate-500 font-mono font-medium">v2.4.1</span>
               </div>
             </aside>
           </div>
@@ -728,7 +602,10 @@ export default function NotificationsPage() {
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-sm focus:bg-white focus:border-emerald-600 focus:outline-none transition-all"
                 />
                 <span className="text-[11px] text-slate-500 mt-1 block">
-                  Email edu đã xác minh thông qua SSO RMIT Vietnam.
+                  {/* Previously claimed "Email edu đã xác minh thông qua SSO RMIT
+                      Vietnam" — no SSO integration exists. State what actually
+                      happens instead. */}
+                  Mặc định lấy địa chỉ email từ tài khoản SkillSwap của bạn.
                 </span>
               </div>
 

@@ -925,69 +925,89 @@
   "LiveClassroom": {
     "nav": {
       "back": "My Bookings",
-      "bookingCode": "BOOKING CODE: #{code}"
+      "bookingCode": "BOOKING CODE: #{code}",
+      "classFallback": "Session"
     },
+    "fallbackDisplayName": "Learner",
     "statusBar": {
-      "rec": "REC LIVE",
-      "connection": "HD 1080p (24ms)",
-      "timer": "{elapsed} / {total}",
-      "e2e": "End-to-End Encrypted"
+      "live": "IN ROOM",
+      "notLive": "NOT IN ROOM",
+      "connected": "Room connected",
+      "disconnected": "Not connected",
+      "timer": "{elapsed} / {total}"
     },
     "video": {
-      "whiteboardTitle": "Interactive Whiteboard • IELTS Speaking Part 2",
-      "liveSync": "Live Sync",
-      "topic": "Topic: Describe an environmental problem in your hometown",
-      "pointLabel": "PEEL Structure:",
-      "pointText": "Air pollution due to heavy vehicular exhaust during rush hours.",
-      "collocationsLabel": "C1 Collocations:",
-      "collocationsText": "deteriorating air quality, exponential rise, combative measures.",
-      "feedbackLabel": "Live Feedback:",
-      "feedbackText": "Focus on intonation and linking clauses naturally.",
-      "mentorBadge": "Mentor",
       "screenSharing": "Sharing screen",
-      "studentName": "Minh Nguyen (You)",
       "btnMic": "Microphone",
       "btnCamera": "Camera",
       "btnScreen": "Share Screen",
-      "btnWhiteboard": "Whiteboard",
-      "btnHand": "Raise Hand",
-      "btnLeave": "Leave Room"
+      "btnLeave": "Leave Room",
+      "endedNotice": "You have left the room."
     },
-    "timeline": {
-      "stage": "Stage 3 of 4 • 1-on-1 Mock Session",
-      "topicHeading": "PEEL Structure & C1 Collocations Framework",
-      "remainingTime": "{n} minutes remaining in mock interview",
-      "progressLabel": "Current session progress",
-      "progressPct": "{pct}% completed",
-      "materialsTitle": "Attached session files ({n} files)",
-      "file1Title": "Forecast_Speaking_Q2_2025.pdf",
-      "file1Sub": "1.4 MB • Partner curriculum guide",
-      "file2Title": "Band7_Topic_Collocations.docx",
-      "file2Sub": "420 KB • Focused session summary notes"
+    "session": {
+      "title": "Session details",
+      "durationLabel": "Duration",
+      "durationValue": "{minutes} minutes",
+      "teacherLabel": "Instructor",
+      "startUnknown": "No start time yet"
+    },
+    "participants": {
+      "title": "Participants",
+      "inCall": "In the room",
+      "notInCall": "Not in the room",
+      "youLabel": "You",
+      "teacherFallback": "Instructor"
+    },
+    "states": {
+      "loadingBooking": "Loading session details…",
+      "bookingErrorTitle": "Could not load this session",
+      "bookingErrorBody": "We could not read this booking. Reload the page or try again shortly.",
+      "bookingNotFoundTitle": "Session not found",
+      "bookingNotFoundBody": "This session is no longer in your bookings.",
+      "requestingAccess": "Requesting room access…",
+      "connecting": "Connecting to the room…",
+      "embedErrorTitle": "Could not open the room",
+      "embedErrorBody": "The online room failed to load. Check your connection and try again.",
+      "notAParty": {
+        "title": "You are not part of this session",
+        "body": "Only the learner who booked it and the assigned instructor can enter this room."
+      },
+      "notConfirmed": {
+        "title": "Session is not ready",
+        "body": "Only a confirmed booking can enter the room."
+      },
+      "windowNotOpen": {
+        "title": "Room not open yet",
+        "body": "The room opens 15 minutes before the start time. Please come back when it opens."
+      },
+      "windowClosed": {
+        "title": "Room has closed",
+        "body": "The window to join this session's room has ended."
+      },
+      "roomNotFound": {
+        "title": "Session not found",
+        "body": "This session does not exist or you do not have access to it."
+      },
+      "providerUnavailable": {
+        "title": "Room temporarily unavailable",
+        "body": "The room service is having trouble. Please try again in a few minutes."
+      },
+      "unavailable": {
+        "title": "Could not join the room",
+        "body": "Something went wrong opening the room. Please try again."
+      }
     },
     "chat": {
-      "title": "Live Classroom Chat",
-      "onlineCount": "{n} online",
-      "safetyNotice": "SkillSwap Safety: Keep all interactions within the platform to maintain escrow protection and academic support guarantees.",
-      "systemStart": "Session started at {time} • Secure Room #{code}",
-      "mentorName": "Lan Anh",
-      "mentorTime1": "19:32",
-      "mentorMsg1": "Hello Minh! Let's start Part 2: 'Describe an environmental problem in your hometown'. I shared the vocabulary board on the whiteboard!",
-      "studentName": "You (Minh Nguyen)",
-      "studentTime": "19:34",
-      "studentMsg": "Yes, I can see the board. Let me take 1 minute to outline using the PEEL structure we practiced!",
-      "mentorTime2": "19:40",
-      "mentorMsg2": "Great job! Remember to emphasize 'exponential rise in automotive emission' to boost your lexical resource score.",
-      "inputPlaceholder": "Send a message or ask a question...",
-      "send": "Send",
-      "attach": "Attach file"
+      "safetyNotice": "SkillSwap Safety: Keep all interactions within the platform to maintain escrow protection and academic support guarantees."
     },
     "escrow": {
       "title": "Escrow Protection - Escrow Active",
       "subtitle": "Safe peer guarantee for learners and tutors",
       "heldLabel": "Locked escrow balance:",
+      "notHeldLabel": "Escrow amount:",
       "heldValue": "{credits} Credits (~{vnd} VND)",
       "badge": "Escrow Protected",
+      "notHeldBadge": "Not held",
       "notice": "Once the session concludes, you have 24 hours to review before escrow credits are released to the instructor.",
       "btnEndAndReview": "Finish Class & Proceed to Review"
     }
