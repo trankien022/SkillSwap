@@ -23,10 +23,10 @@ export function ScheduleCapacitySection({ draft, onChange }: Props) {
   const t = useTranslations('Teacher.publish.schedule');
   const isOneOnOne = draft.capacity === 1;
   return (
-    <section className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 shadow-sm">
+    <section className="workspace-panel flex flex-col gap-4 rounded-xl border border-border bg-surface p-6">
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold text-ink">{t('title')}</h2>
-        <span className="inline-flex items-center gap-1 rounded-full bg-success-tint px-2.5 py-1 text-[11px] font-semibold text-success-ink">
+        <span className="inline-flex items-center gap-1 rounded-full bg-success-tint px-2.5 py-1 text-sm font-semibold text-success-ink">
           <EventAvailableIcon className="h-3.5 w-3.5" />
           <span>{t('noConflict')}</span>
         </span>
@@ -44,7 +44,7 @@ export function ScheduleCapacitySection({ draft, onChange }: Props) {
             type="date"
             value={draft.startsOn}
             onChange={(e) => onChange({ startsOn: e.target.value })}
-            className="w-full rounded-lg border border-border bg-mist px-4 py-2.5 text-base text-ink shadow-sm focus:outline-none focus:ring-2 focus:ring-ink"
+            className="w-full rounded-lg border border-border bg-mist px-4 py-2.5 text-base text-ink focus:outline-none focus:ring-2 focus:ring-ink"
           />
         </div>
         <div className="flex flex-col gap-1.5">
@@ -59,7 +59,7 @@ export function ScheduleCapacitySection({ draft, onChange }: Props) {
             type="time"
             value={draft.startsAt}
             onChange={(e) => onChange({ startsAt: e.target.value })}
-            className="w-full rounded-lg border border-border bg-mist px-4 py-2.5 text-base text-ink shadow-sm focus:outline-none focus:ring-2 focus:ring-ink"
+            className="w-full rounded-lg border border-border bg-mist px-4 py-2.5 text-base text-ink focus:outline-none focus:ring-2 focus:ring-ink"
           />
         </div>
       </div>
@@ -68,13 +68,13 @@ export function ScheduleCapacitySection({ draft, onChange }: Props) {
           <span className="block text-sm font-bold text-ink">
             {t('capacityLabel')}
           </span>
-          <span className="block text-[11px] font-semibold text-success-ink">
+          <span className="block text-sm font-semibold text-success-ink">
             {isOneOnOne
               ? t('capacityBadge1to1')
               : t('capacityBadgeGroup', { count: draft.capacity })}
           </span>
         </div>
-        <div className="flex items-center gap-1 rounded-lg border border-border bg-surface p-1 shadow-sm">
+        <div className="flex items-center gap-1 rounded-lg border border-border bg-surface p-1">
           <button
             type="button"
             aria-label="decrement capacity"
@@ -104,7 +104,7 @@ export function ScheduleCapacitySection({ draft, onChange }: Props) {
       </div>
       <div className="flex items-center gap-1.5 rounded-lg border border-border bg-mist p-2.5">
         <VerifiedIcon className="h-4 w-4 text-ink-soft" />
-        <span className="text-[11px] text-ink-soft">{t('conflictHelp')}</span>
+        <span className="text-sm text-ink-soft">{t('conflictHelp')}</span>
       </div>
     </section>
   );

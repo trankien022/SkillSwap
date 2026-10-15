@@ -23,9 +23,9 @@ export function GeneralDetailsSection({ draft, onChange }: Props) {
   const tSteps = useTranslations('Teacher.publish.steps');
   const over = draft.title.length > TITLE_MAX_CHARS;
   return (
-    <section className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="workspace-panel flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-6">
       <div className="flex items-center gap-2">
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white shadow-xs">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-campus-emerald-deep text-sm font-bold text-white shadow-xs">
           2
         </span>
         <h2 className="text-base font-bold text-slate-900">{tSteps('step2Title')}</h2>
@@ -40,8 +40,8 @@ export function GeneralDetailsSection({ draft, onChange }: Props) {
           <span
             className={
               over
-                ? 'text-xs font-semibold text-rose-600'
-                : 'text-xs text-slate-400'
+                ? 'text-sm font-semibold text-rose-600'
+                : 'text-sm text-slate-400'
             }
           >
             {t('titleCounter', {
@@ -83,7 +83,7 @@ export function GeneralDetailsSection({ draft, onChange }: Props) {
           <span className="material-symbols-outlined text-[16px] text-emerald-600" style={{ fontVariationSettings: "'FILL' 1" }}>
             timeline
           </span>
-          <span className="text-xs font-bold text-slate-800">
+          <span className="text-sm font-bold text-slate-800">
             {tSteps('syllabusLabel')}
           </span>
         </div>
@@ -96,7 +96,7 @@ export function GeneralDetailsSection({ draft, onChange }: Props) {
           bullets are gone and the hint points back at the description the API
           actually stores.
         */}
-        <p className="pt-1 text-xs leading-relaxed text-slate-500">
+        <p className="pt-1 text-sm leading-relaxed text-slate-500">
           {tSteps('syllabusHint')}
         </p>
       </div>

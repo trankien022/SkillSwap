@@ -343,6 +343,8 @@ function CardBody({
   tCard: CardTranslator;
   startText?: string;
 }) {
+  const ui = useTranslations('Workspace.copy');
+
   return (
     <div className="flex flex-col items-start gap-3 md:flex-row">
       <SkillBadge icon={booking.skillIcon} />
@@ -376,8 +378,7 @@ function CardBody({
           <span className="text-sm font-semibold text-slate-500">Credits</span>
         </div>
         <span className="text-sm text-slate-400 font-medium">
-          ~{(booking.priceCredits * 1000).toLocaleString('vi-VN')}đ
-        </span>
+          ~{(booking.priceCredits * 1000).toLocaleString('vi-VN')}{ui('vnd')}</span>
       </div>
     </div>
   );
@@ -661,6 +662,8 @@ function LiveCard({
   booking: LearnerBookingView;
   tCard: CardTranslator;
 }) {
+  const ui = useTranslations('Workspace.copy');
+
   const tLive = useTranslations('Dashboard.live');
   const locale = useLocale() as 'vi' | 'en';
   const start = new Date(booking.startsAt).getTime();
@@ -720,7 +723,7 @@ function LiveCard({
             </span>
             <span className="inline-flex items-center gap-1 text-ink-soft">
               <ScheduleIcon className="h-3.5 w-3.5 text-ink-muted" />
-              <span>{startTimeText} - {endTimeText} ({booking.durationMinutes} phút)</span>
+              <span>{startTimeText} - {endTimeText} ({booking.durationMinutes} {ui('min')}</span>
             </span>
           </div>
         </div>
@@ -728,7 +731,7 @@ function LiveCard({
         <div className="space-y-1.5 rounded-xl border border-slate-100 bg-slate-50/80 p-3.5">
           <div className="flex items-center justify-between text-sm">
             <span className="font-medium text-slate-700">
-              {tLive('progress')}: <strong className="text-emerald-700">{elapsedMin}/{booking.durationMinutes} phút</strong>
+              {tLive('progress')}: <strong className="text-emerald-700">{elapsedMin}/{booking.durationMinutes} {ui('mine5d92')}</strong>
             </span>
             <span className="font-bold text-emerald-700">{pct}%</span>
           </div>

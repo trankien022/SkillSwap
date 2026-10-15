@@ -35,38 +35,38 @@ export function MarketplacePreviewCard({ draft, skills }: Props) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between px-1">
-        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        <span className="text-sm font-bold r text-slate-500">
           {t('label')}
         </span>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 border border-emerald-200">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-sm font-semibold text-emerald-800 border border-emerald-200">
           <span
             aria-hidden="true"
-            className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-600"
+            className="h-1.5 w-1.5 animate-pulse rounded-full bg-campus-emerald-deep"
           />
           {t('live')}
         </span>
       </div>
-      <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-sm">
+      <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white transition-shadow hover:shadow-sm">
         <div className="relative flex h-40 w-full items-center justify-center overflow-hidden bg-slate-900">
           <CategoryIcon category={skill?.category ?? null} />
           <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
-            <span className="rounded-lg bg-white/90 px-2.5 py-0.5 text-xs font-bold text-slate-900 shadow-xs backdrop-blur-md">
+            <span className="rounded-lg bg-white/90 px-2.5 py-0.5 text-sm font-bold text-slate-900 shadow-xs backdrop-blur-md">
               {skill?.label ?? t('categoryFallback')}
             </span>
             {draft.capacity === 1 && (
-              <span className="rounded-lg bg-emerald-600 px-2 py-0.5 text-xs font-bold text-white shadow-xs">
+              <span className="rounded-lg bg-campus-emerald-deep px-2 py-0.5 text-sm font-bold text-white shadow-xs">
                 1-1
               </span>
             )}
           </div>
           <div className="absolute inset-x-3 bottom-3 flex items-center justify-between text-white">
-            <div className="flex items-center gap-1.5 text-xs font-medium">
+            <div className="flex items-center gap-1.5 text-sm font-medium">
               <CalendarTodayIcon className="h-4 w-4 text-emerald-400" />
               <span>
                 {day}/{month}/{year} • {time}
               </span>
             </div>
-            <span className="rounded-md bg-white/20 px-2 py-0.5 text-xs font-bold backdrop-blur-sm">
+            <span className="rounded-md bg-white/20 px-2 py-0.5 text-sm font-bold backdrop-blur-sm">
               {t('minutes', { count: draft.durationMinutes })}
             </span>
           </div>
@@ -77,24 +77,24 @@ export function MarketplacePreviewCard({ draft, skills }: Props) {
           </h4>
           <div className="flex items-center justify-between pt-1 border-t border-slate-100">
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-[11px] font-bold text-white">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-sm font-bold text-white">
                 GV
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-bold text-slate-900">
+                <span className="text-sm font-bold text-slate-900">
                   {t('teacher')}
                 </span>
-                <span className="text-[11px] font-semibold text-emerald-700">
+                <span className="text-sm font-semibold text-emerald-700">
                   {t('verifiedFaculty')}
                 </span>
               </div>
             </div>
             <div className="text-right">
-              <span className="block text-[10px] font-semibold text-slate-400 uppercase">
+              <span className="block text-xs font-semibold text-slate-400 uppercase">
                 {t('price')}
               </span>
               <span className="text-base font-extrabold text-slate-900">
-                {draft.priceCredits} <span className="text-xs font-bold text-emerald-700">{t('priceUnit')}</span>
+                {draft.priceCredits} <span className="text-sm font-bold text-emerald-700">{t('priceUnit')}</span>
               </span>
             </div>
           </div>

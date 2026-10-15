@@ -22,18 +22,18 @@ export function SkillSelectSection({ skills, draft, onChange }: Props) {
   const t = useTranslations('Teacher.publish.skill');
   const tSteps = useTranslations('Teacher.publish.steps');
   return (
-    <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="workspace-panel flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-6">
       <div className="flex items-center justify-between">
         <label
           htmlFor="skill-select"
           className="flex items-center gap-2 text-base font-bold text-slate-900"
         >
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white shadow-xs">
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-campus-emerald-deep text-sm font-bold text-white shadow-xs">
             1
           </span>
           <span>{tSteps('step1Title')}</span>
         </label>
-        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 border border-emerald-200">
+        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-sm font-semibold text-emerald-800 border border-emerald-200">
           <CheckCircleIcon className="h-3.5 w-3.5" />
           <span>{tSteps('step1VerifiedBadge', { count: skills.length })}</span>
         </span>
@@ -62,7 +62,7 @@ export function SkillSelectSection({ skills, draft, onChange }: Props) {
       </div>
       <div className="flex items-start gap-2 rounded-xl bg-slate-50 border border-slate-100 p-3">
         <InfoIcon className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-        <p className="text-xs leading-relaxed text-slate-500">
+        <p className="text-sm leading-relaxed text-slate-500">
           {t('help')}
         </p>
       </div>

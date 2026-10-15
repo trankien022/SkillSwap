@@ -106,7 +106,7 @@ describe('DashboardShell (FR-021)', () => {
 
     renderShell();
 
-    expect(await screen.findByText('Đăng nhập để xem lớp học của bạn')).toBeTruthy();
+    expect(await screen.findByText(en.Workspace.copy.signInToSeeYourClasses)).toBeTruthy();
     expect(screen.queryByText('IELTS speaking deep-dive')).toBeNull();
   });
 
@@ -118,6 +118,6 @@ describe('DashboardShell (FR-021)', () => {
 
     renderShell();
 
-    expect(await screen.findByText('Không tải được lớp học')).toBeTruthy();
+    expect(await screen.findByText(en.Workspace.copy.couldNotLoadYourClasses)).toBeTruthy();
   });
 });

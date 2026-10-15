@@ -171,7 +171,7 @@ export function PaymentResultContent({ intentId, providerRef }: PaymentResultCon
         <div className="flex flex-wrap gap-3">
           <a
             href={`/${locale}/wallet`}
-            className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
+            className="rounded-full bg-campus-emerald-deep px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ink"
           >
             {t('walletCta')}
           </a>
@@ -196,10 +196,10 @@ export function PaymentResultContent({ intentId, providerRef }: PaymentResultCon
         <p className="text-sm leading-relaxed text-slate-600">{t('notice')}</p>
       </header>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="workspace-panel rounded-2xl border border-slate-200 bg-white p-5">
         <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <dt className="text-sm font-semibold  text-slate-500">
               {t('intentLabel')}
             </dt>
             <dd className="mt-1 break-all text-sm text-slate-900" data-testid="payment-result-intent">
@@ -207,7 +207,7 @@ export function PaymentResultContent({ intentId, providerRef }: PaymentResultCon
             </dd>
           </div>
           <div>
-            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <dt className="text-sm font-semibold  text-slate-500">
               {t('statusLabel')}
             </dt>
             <dd
@@ -228,7 +228,7 @@ export function PaymentResultContent({ intentId, providerRef }: PaymentResultCon
           {intent !== null && (
             <>
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <dt className="text-sm font-semibold  text-slate-500">
                   {t('amountLabel')}
                 </dt>
                 <dd className="mt-1 text-sm text-slate-900">
@@ -238,7 +238,7 @@ export function PaymentResultContent({ intentId, providerRef }: PaymentResultCon
                 </dd>
               </div>
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <dt className="text-sm font-semibold  text-slate-500">
                   {t('creditsLabel')}
                 </dt>
                 <dd className="mt-1 text-sm text-slate-900">
@@ -248,7 +248,7 @@ export function PaymentResultContent({ intentId, providerRef }: PaymentResultCon
             </>
           )}
           <div>
-            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <dt className="text-sm font-semibold  text-slate-500">
               {t('balanceLabel')}
             </dt>
             <dd className="mt-1 text-sm text-slate-900" data-testid="payment-result-balance">
@@ -260,15 +260,15 @@ export function PaymentResultContent({ intentId, providerRef }: PaymentResultCon
         </dl>
 
         {intentError && (
-          <p className="mt-4 text-xs font-medium text-rose-700" data-testid="payment-result-intent-error">
+          <p className="mt-4 text-sm font-medium text-rose-700" data-testid="payment-result-intent-error">
             {t('intentUnavailable')}
           </p>
         )}
         {balanceError && (
-          <p className="mt-2 text-xs font-medium text-rose-700">{t('balanceUnavailable')}</p>
+          <p className="mt-2 text-sm font-medium text-rose-700">{t('balanceUnavailable')}</p>
         )}
         {timedOut && !TERMINAL_TOP_UP_STATUSES.has(status) && (
-          <p className="mt-4 text-xs leading-relaxed text-slate-600">{t('noIntentHelp')}</p>
+          <p className="mt-4 text-sm leading-relaxed text-slate-600">{t('noIntentHelp')}</p>
         )}
       </section>
 
@@ -277,7 +277,7 @@ export function PaymentResultContent({ intentId, providerRef }: PaymentResultCon
           type="button"
           onClick={() => void handleRefresh()}
           disabled={busy}
-          className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:opacity-60"
+          className="rounded-full bg-campus-emerald-deep px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ink disabled:opacity-60"
         >
           {busy ? t('refreshing') : t('refreshCta')}
         </button>

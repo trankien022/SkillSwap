@@ -11,16 +11,12 @@ export async function VerificationBanner() {
   const t = await getTranslations('Teacher.publish.verificationBanner');
   return (
     <section
-      className="relative overflow-hidden rounded-xl border border-border bg-mist p-6 shadow-sm"
+      className="relative overflow-hidden rounded-xl border border-border bg-mist p-6"
       aria-label={t('title')}
     >
-      <div
-        className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-success-ink/10 blur-2xl"
-        aria-hidden="true"
-      />
       <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-success-ink text-surface shadow-sm">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-success-ink text-surface">
             <VerifiedUserIcon className="h-6 w-6" />
           </div>
           <div className="flex flex-col gap-1">
@@ -28,11 +24,11 @@ export async function VerificationBanner() {
             <p className="text-sm text-ink-soft">{t('body')}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 rounded-lg border-l-4 border-ink bg-surface px-4 py-2.5 shadow-sm">
+        <div className="flex items-center gap-2 rounded-lg border-l-4 border-ink bg-surface px-4 py-2.5">
           <LockClockIcon className="h-5 w-5 text-ink" />
           <div className="flex flex-col">
-            <span className="text-xs font-bold text-ink">{t('ruleTitle')}</span>
-            <span className="text-[11px] text-ink-soft">{t('ruleBody')}</span>
+            <span className="text-sm font-bold text-ink">{t('ruleTitle')}</span>
+            <span className="text-sm text-ink-soft">{t('ruleBody')}</span>
           </div>
         </div>
       </div>

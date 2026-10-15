@@ -46,11 +46,11 @@ export function EligibilityChecklistCard({ draft, skills }: Props) {
   ];
 
   return (
-    <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="workspace-panel flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-6">
       <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
         <h3 className="text-base font-bold text-slate-900">{t('title')}</h3>
         <span
-          className={`rounded-full px-2.5 py-0.5 text-xs font-bold border ${
+          className={`rounded-full px-2.5 py-0.5 text-sm font-bold border ${
             allOk
               ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
               : 'bg-amber-50 text-amber-800 border-amber-200'
@@ -60,7 +60,7 @@ export function EligibilityChecklistCard({ draft, skills }: Props) {
         </span>
       </div>
 
-      <div className="space-y-2 text-xs">
+      <div className="space-y-2 text-sm">
         {rows.map((row) => (
           <div
             key={row.label}
@@ -83,7 +83,7 @@ export function EligibilityChecklistCard({ draft, skills }: Props) {
         ))}
       </div>
 
-      <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-3 text-[11px] text-slate-600 space-y-1">
+      <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-3 text-sm text-slate-600 space-y-1">
         <div className="flex items-center gap-1.5 font-bold text-emerald-900">
           <span className="material-symbols-outlined text-[15px] text-emerald-700">verified</span>
           <span>{t('pledgeTitle')}</span>

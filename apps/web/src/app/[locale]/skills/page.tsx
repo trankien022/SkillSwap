@@ -1,3 +1,4 @@
+import { PageIntro } from '../../../components/ui/PageIntro';
 import { setRequestLocale } from 'next-intl/server';
 import { getTranslations } from 'next-intl/server';
 import { Navbar } from '../../../components/navbar';
@@ -32,11 +33,8 @@ export default async function SkillsPage({ params }: PageProps) {
     <div className="flex min-h-dvh flex-col bg-slate-50 text-slate-900">
       <Navbar currentTab="skills" />
       <main id="main-content" tabIndex={-1} className="flex-1">
-        <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8 lg:px-8">
-          <header>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t('title')}</h1>
-            <p className="mt-1 text-sm text-slate-600">{t('pageSubtitle')}</p>
-          </header>
+        <div className="workspace-page">
+          <PageIntro title={t('title')} description={t('pageSubtitle')} art="design" artAlt={t('artAlt')} />
           <SkillsContent />
         </div>
       </main>

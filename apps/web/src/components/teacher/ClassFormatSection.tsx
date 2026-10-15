@@ -17,9 +17,9 @@ export function ClassFormatSection({ draft, onChange }: Props) {
   const isOneOnOne = draft.capacity === 1;
 
   return (
-    <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="workspace-panel flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6">
       <div className="flex items-center gap-2">
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white shadow-xs">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-campus-emerald-deep text-sm font-bold text-white shadow-xs">
           3
         </span>
         <h2 className="text-base font-bold text-slate-900">{tSteps('step3Title')}</h2>
@@ -44,7 +44,7 @@ export function ClassFormatSection({ draft, onChange }: Props) {
               <span
                 className={`flex h-4 w-4 items-center justify-center rounded-full border ${
                   isOneOnOne
-                    ? 'border-emerald-600 bg-emerald-600 text-white'
+                    ? 'border-emerald-600 bg-campus-emerald-deep text-white'
                     : 'border-slate-300 bg-white'
                 }`}
               >
@@ -53,7 +53,7 @@ export function ClassFormatSection({ draft, onChange }: Props) {
                 )}
               </span>
             </div>
-            <p className="text-xs leading-relaxed text-slate-500">
+            <p className="text-sm leading-relaxed text-slate-500">
               {tSteps('format1to1Desc')}
             </p>
           </div>
@@ -77,7 +77,7 @@ export function ClassFormatSection({ draft, onChange }: Props) {
               <span
                 className={`flex h-4 w-4 items-center justify-center rounded-full border ${
                   !isOneOnOne
-                    ? 'border-emerald-600 bg-emerald-600 text-white'
+                    ? 'border-emerald-600 bg-campus-emerald-deep text-white'
                     : 'border-slate-300 bg-white'
                 }`}
               >
@@ -86,12 +86,12 @@ export function ClassFormatSection({ draft, onChange }: Props) {
                 )}
               </span>
             </div>
-            <p className="text-xs leading-relaxed text-slate-500">
+            <p className="text-sm leading-relaxed text-slate-500">
               {tSteps('formatGroupDesc')}
             </p>
           </div>
           <div className="pt-3">
-            <span className="inline-block rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800">
+            <span className="inline-block rounded-full bg-amber-100 px-2.5 py-0.5 text-sm font-semibold text-amber-800">
               {tSteps('formatGroupSave')}
             </span>
           </div>
@@ -102,10 +102,10 @@ export function ClassFormatSection({ draft, onChange }: Props) {
       {!isOneOnOne && (
         <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3.5">
           <div>
-            <span className="block text-xs font-bold text-slate-800">
+            <span className="block text-sm font-bold text-slate-800">
               {tSched('capacityLabel')}
             </span>
-            <span className="block text-[11px] font-medium text-emerald-700">
+            <span className="block text-sm font-medium text-emerald-700">
               {tSched('capacityBadgeGroup', { count: draft.capacity })}
             </span>
           </div>

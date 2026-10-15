@@ -52,6 +52,8 @@ export function PublishForm({
   skills,
   publish,
 }: Props) {
+  const ui = useTranslations('Workspace.copy');
+
   const [draft, setDraft] = useState<ClassDraft>(initialDraft);
   const [isPublishing, startPublishing] = useTransition();
   const [lastResult, setLastResult] = useState<PublishResult | null>(null);
@@ -88,10 +90,10 @@ export function PublishForm({
         setLastResult(null);
         setPublishError(
           err instanceof TeacherPublishAuthError
-            ? 'Bạn cần đăng nhập để công bố lớp học.'
+            ? ui('signInBeforePublishingAClass')
             : err instanceof Error
               ? err.message
-              : 'Không công bố được lớp học.',
+              : ui('couldNotPublishTheClass'),
         );
       }
     });
@@ -106,7 +108,7 @@ export function PublishForm({
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
+      <div className="workspace-form grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
         {/* Left Column: 5 Sequential Steps */}
         <div className="flex flex-col gap-6 lg:col-span-7">
           {/* Step 1: Verified Subject */}
@@ -141,7 +143,7 @@ export function PublishForm({
           {publishError !== null && (
             <p
               role="alert"
-              className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs font-medium text-rose-700 shadow-sm"
+              className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-700"
             >
               {publishError}
             </p>
@@ -156,7 +158,7 @@ export function PublishForm({
             <div
               role="status"
               aria-live="polite"
-              className="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-600 shadow-sm"
+              className="workspace-panel rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600"
             >
               <div className="flex items-center gap-1.5 font-bold text-emerald-800 pb-1">
                 <span className="material-symbols-outlined text-[16px]">check_circle</span>

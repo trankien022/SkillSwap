@@ -122,7 +122,7 @@ export function Navbar({
   // A `balance`/`me` supplied as a prop is itself proof of a session (the
   // dashboards fetch those server-side), so it counts even before the token
   // read lands on the client.
-  const signedIn = hasTokens || me !== null || propMe !== undefined || propBalance !== undefined;
+  const signedIn = hasTokens || me !== null || balance !== null;
   const isVerifier = me?.role === 'verifier' || storedUser?.role === 'verifier';
   const isAdmin = me?.role === 'admin' || storedUser?.role === 'admin';
 

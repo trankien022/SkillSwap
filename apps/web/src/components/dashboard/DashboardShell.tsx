@@ -34,6 +34,8 @@ type LoadState =
  * once the server confirms it.
  */
 export function DashboardShell({ initial }: Props) {
+  const ui = useTranslations('Workspace.copy');
+
   const gateway = useMemo(() => new HttpLearnerDashboardGateway(), []);
   const locale = useLocale();
   const [load, setLoad] = useState<LoadState>(
@@ -144,21 +146,21 @@ export function DashboardShell({ initial }: Props) {
   }
 
   if (load.phase === 'loading') {
-    return <StatusBlock title="Đang tải lớp học của bạn…" body="Đang đọc dữ liệu từ máy chủ." />;
+    return <StatusBlock title={ui('loadingYourClasses')} body={ui('readingTheLatestData')} />;
   }
 
   if (load.phase === 'signed-out') {
     return (
       <StatusBlock
-        title="Đăng nhập để xem lớp học của bạn"
-        body="Lịch học, số dư ký quỹ và đánh giá chỉ hiển thị cho tài khoản đã đăng nhập."
-        cta={{ label: 'Đăng nhập ngay', href: `/${locale}/login` }}
+        title={ui('signInToSeeYourClasses')}
+        body={ui('yourScheduleHeldCreditsAndReviews')}
+        cta={{ label: ui('signIn'), href: `/${locale}/login` }}
       />
     );
   }
 
   if (load.phase === 'error') {
-    return <StatusBlock title="Không tải được lớp học" body={load.message} />;
+    return <StatusBlock title={ui('couldNotLoadYourClasses')} body={load.message} />;
   }
 
   return (
@@ -307,6 +309,8 @@ function ReviewModal({
   onClose: () => void;
   onSubmit: (rating: number, comment: string) => void;
 }) {
+  const ui = useTranslations('Workspace.copy');
+
   const tModal = useTranslations('Dashboard.reviewModal');
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
@@ -355,7 +359,7 @@ function ReviewModal({
           </div>
           <div className="text-right">
             <span className="font-bold text-emerald-700">{booking.priceCredits} credits</span>
-            <div className="text-sm font-medium text-slate-400">~{(booking.priceCredits * 1000).toLocaleString('vi-VN')}đ</div>
+            <div className="text-sm font-medium text-slate-400">~{(booking.priceCredits * 1000).toLocaleString('vi-VN')}{ui('vnd')}</div>
           </div>
         </div>
 
