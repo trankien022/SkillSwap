@@ -32,6 +32,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps) {
   const { locale } = await params;
   setRequestLocale(locale);
   const messages = await getMessages();
+  const workspace = await getTranslations('Workspace');
 
   return (
     <html lang={locale}>
@@ -44,6 +45,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps) {
         />
       </head>
       <body className="bg-slate-50 text-slate-900 antialiased">
+        <a href="#main-content" className="workspace-skip">{workspace('skip')}</a>
         <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
       </body>
     </html>

@@ -237,7 +237,7 @@ export default function WalletPage() {
       <Navbar currentTab="wallet" balance={balance} me={me} />
 
       {/* Main Content */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main id="main-content" tabIndex={-1} className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* A failed wallet read is stated: an unread ledger and an empty ledger
             render identically, and only one of them is true. */}

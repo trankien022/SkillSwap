@@ -223,7 +223,7 @@ export default function InstructorDashboard() {
     <div className="flex flex-col w-full min-h-screen bg-slate-50 relative">
       <Navbar currentTab="instructor" balance={balance} me={me} />
 
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main id="main-content" tabIndex={-1} className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="w-full">
           {/* 1. Profile summary — name and avatar come from the session, with a
               neutral placeholder while they load. No invented identity. */}

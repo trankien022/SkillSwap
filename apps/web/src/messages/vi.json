@@ -475,7 +475,15 @@
       "title": "Lịch theo tháng",
       "prev": "Tháng trước",
       "next": "Tháng sau",
-      "weekdays": ["T2", "T3", "T4", "T5", "T6", "T7", "CN"],
+      "weekdays": [
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "CN"
+      ],
       "legendLive": "Lớp đang diễn ra",
       "legendBooked": "Lớp đã chốt slot",
       "noMonth": "Chưa có lịch cho tháng này"
@@ -831,7 +839,8 @@
     "switchToRegister": "Chưa có tài khoản?",
     "validationError": "Vui lòng nhập đầy đủ thông tin hợp lệ (mật khẩu từ 8 ký tự).",
     "pledgeError": "Bạn cần đồng ý với cam kết quy chuẩn học thuật.",
-    "passwordResetHint": "Vui lòng liên hệ quản trị viên để đặt lại mật khẩu."
+    "passwordResetHint": "Vui lòng liên hệ quản trị viên để đặt lại mật khẩu.",
+    "learningImageAlt": "Minh họa một buổi học trực tuyến cùng người dạy qua video"
   },
   "Skills": {
     "title": "Kỹ năng của tôi",
@@ -1171,5 +1180,8 @@
       "rejected": "Bị từ chối",
       "superseded": "Bị thay thế"
     }
+  },
+  "Workspace": {
+    "skip": "Chuyển đến nội dung chính"
   }
 }

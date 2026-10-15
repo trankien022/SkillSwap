@@ -132,7 +132,7 @@ export default function NotificationsPage() {
       <Navbar currentTab="notifications" balance={balance} me={me} unreadNotificationsCount={unreadCount} />
 
       {/* Main Content */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main id="main-content" tabIndex={-1} className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
           {/* Top Action / Context Row */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">

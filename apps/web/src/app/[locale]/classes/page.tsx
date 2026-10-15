@@ -29,7 +29,7 @@ export default async function MarketplacePage({ params, searchParams }: PageProp
   return (
     <div className="flex min-h-dvh flex-col bg-mist text-ink">
       <MarketplaceHeader />
-      <main className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1">
         <MarketplaceClient initialCategory={initialCategory} />
         <EscrowBanner />
       </main>

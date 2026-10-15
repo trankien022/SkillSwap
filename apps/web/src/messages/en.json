@@ -475,7 +475,15 @@
       "title": "Month view",
       "prev": "Previous month",
       "next": "Next month",
-      "weekdays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      "weekdays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri",
+        "Sat",
+        "Sun"
+      ],
       "legendLive": "Live today",
       "legendBooked": "Booked",
       "noMonth": "No events this month"
@@ -831,7 +839,8 @@
     "switchToRegister": "Don't have an account?",
     "validationError": "Please provide valid information (password at least 8 characters).",
     "pledgeError": "You must agree to the academic integrity pledge.",
-    "passwordResetHint": "Please contact the administrator to reset your password."
+    "passwordResetHint": "Please contact the administrator to reset your password.",
+    "learningImageAlt": "Illustration of a student learning with a peer through a video call"
   },
   "Skills": {
     "title": "My skills",
@@ -1171,5 +1180,8 @@
       "rejected": "Rejected",
       "superseded": "Superseded"
     }
+  },
+  "Workspace": {
+    "skip": "Skip to main content"
   }
 }

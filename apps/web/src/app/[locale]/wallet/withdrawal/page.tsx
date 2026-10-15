@@ -51,7 +51,7 @@ export default function WithdrawalPage() {
       <Navbar currentTab="wallet" balance={balance} me={me} />
 
       {/* Main Content */}
-      <main className="w-full pt-16 flex-1">
+      <main id="main-content" tabIndex={-1} className="w-full pt-16 flex-1">
         <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-8">
 
           {/* Breadcrumb */}

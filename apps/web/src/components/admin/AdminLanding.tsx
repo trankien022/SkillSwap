@@ -52,7 +52,7 @@ export function AdminLanding() {
 
   if (phase === 'loading') {
     return (
-      <main className="mx-auto flex max-w-3xl flex-col gap-3 px-4 py-12 text-sm text-slate-600">
+      <main id="main-content" tabIndex={-1} className="mx-auto flex max-w-3xl flex-col gap-3 px-4 py-12 text-sm text-slate-600">
         <p data-testid="admin-landing-loading">{tVerifiers('loading')}</p>
       </main>
     );
@@ -61,7 +61,7 @@ export function AdminLanding() {
   if (phase === 'signed-out') {
     const returnUrl = encodeURIComponent(`/${locale}/admin`);
     return (
-      <main className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-12">
+      <main id="main-content" tabIndex={-1} className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-12">
         <h1 className="text-2xl font-bold text-slate-900">{tVerifiers('signInTitle')}</h1>
         <p className="text-sm leading-relaxed text-slate-600">{tVerifiers('signInBody')}</p>
         <a
@@ -76,7 +76,7 @@ export function AdminLanding() {
 
   if (!isAdmin) {
     return (
-      <main className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-12">
+      <main id="main-content" tabIndex={-1} className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-12">
         <h1 className="text-2xl font-bold text-slate-900">{tVerifiers('notAuthorizedTitle')}</h1>
         <p className="text-sm leading-relaxed text-slate-600">{tVerifiers('notAuthorizedBody')}</p>
       </main>
@@ -95,7 +95,7 @@ export function AdminLanding() {
   };
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-6">
+    <main id="main-content" tabIndex={-1} className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-6">
       <header className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-slate-900">{t('title')}</h1>
         <p className="text-sm text-slate-600">{t('subtitle')}</p>

@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import './workspace.css';
 
 /* SkillSwap design tokens — see DESIGN.md §2 (Colors) and §3 (Typography).
  * Tailwind v4 exposes these as utility classes (`bg-mist`, `text-ink-soft`, ...).

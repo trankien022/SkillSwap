@@ -45,15 +45,9 @@ afterEach(() => {
  * regression to any window/serving-time-sensitive locale source fails here
  * instead of only in the browser as a hydration mismatch.
  */
-function renderNavbar(
-  props: Parameters<typeof Navbar>[0] = {},
-  locale: 'en' | 'vi' = 'vi',
-) {
+function renderNavbar(props: Parameters<typeof Navbar>[0] = {}, locale: 'en' | 'vi' = 'vi') {
   return render(
-    <NextIntlClientProvider
-      locale={locale}
-      messages={locale === 'en' ? enMessages : viMessages}
-    >
+    <NextIntlClientProvider locale={locale} messages={locale === 'en' ? enMessages : viMessages}>
       <Navbar {...props} />
     </NextIntlClientProvider>,
   );
@@ -197,7 +191,9 @@ describe('Navbar component', () => {
     const { unmount } = renderNavbar({ me: mockMe() }, 'en');
 
     expect(screen.getByRole('link', { name: /Explore/ }).getAttribute('href')).toBe('/en/classes');
-    expect(screen.getByRole('link', { name: /My Bookings/ }).getAttribute('href')).toBe('/en/bookings');
+    expect(screen.getByRole('link', { name: /My Bookings/ }).getAttribute('href')).toBe(
+      '/en/bookings',
+    );
     expect(screen.getByRole('link', { name: /Skills/ }).getAttribute('href')).toBe('/en/skills');
     expect(screen.queryByRole('link', { name: /Khám phá/ })).toBeNull();
     unmount();
@@ -209,5 +205,17 @@ describe('Navbar component', () => {
     expect(screen.getByRole('link', { name: /Khám phá/ }).getAttribute('href')).toBe('/vi/classes');
     expect(screen.getByRole('link', { name: /Kỹ năng/ }).getAttribute('href')).toBe('/vi/skills');
     expect(screen.queryByRole('link', { name: /Explore/ })).toBeNull();
+  });
+});
+
+describe('Navbar truthful workspace status', () => {
+  it('does not invent unread notifications when no count is supplied', () => {
+    renderNavbar({ me: mockMe() });
+    expect(screen.getByRole('link', { name: 'Thông báo, 0 chưa đọc' })).toBeDefined();
+    expect(screen.queryByText('3')).toBeNull();
+  });
+  it('opens verification from the account summary', () => {
+    renderNavbar({ me: mockMe() });
+    expect(screen.getByTitle('Hồ sơ và xác minh').getAttribute('href')).toBe('/vi/verification');
   });
 });

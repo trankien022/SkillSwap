@@ -22,7 +22,7 @@ export default async function HomePage({ params }: PageProps) {
   return (
     <div className="learning-home flex min-h-dvh flex-col text-ink">
       <SiteHeader locale={locale} />
-      <main className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1">
         <HeroSection locale={locale} />
         <SubjectSection locale={locale} />
         <JourneySection />

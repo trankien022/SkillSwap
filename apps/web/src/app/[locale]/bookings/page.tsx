@@ -28,7 +28,7 @@ export default async function DashboardPage({ params }: PageProps) {
   return (
     <div className="flex min-h-dvh flex-col bg-mist text-ink">
       <MarketplaceHeader currentTab="classes" />
-      <main className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1">
         <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 lg:px-8">
           <DashboardHeader />
           <DashboardShell initial={null} />

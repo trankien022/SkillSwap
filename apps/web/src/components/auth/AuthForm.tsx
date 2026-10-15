@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useTransition } from 'react';
@@ -142,115 +143,31 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
   };
 
   return (
-    <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12 lg:gap-20">
-      {/* CỘT TRÁI: Brand Hero & Minimalist Proof (5 cols) */}
-      <div className="flex flex-col justify-between pt-2 lg:col-span-5">
-        <div className="space-y-6">
-          <div className="inline-flex items-center gap-2 border-l-2 border-ink pl-3 text-sm font-medium text-ink-soft">
-            <svg
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-              <polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
-            <span>{t('brandTag')}</span>
-          </div>
-
-          <h1 className="text-3xl font-bold leading-[1.25] tracking-tight text-slate-900 sm:text-4xl">
-            {t('heroTitle1')}
-            <br />
-            <span className="text-ink">{t('heroTitle2')}</span>
-          </h1>
-
-          <p className="text-[15px] leading-relaxed text-slate-600">{t('heroSubtitle')}</p>
-
-          {/* 3 Trụ cột giá trị */}
-          <div className="hidden space-y-5 border-t border-border pt-6 lg:block">
-            <div className="flex items-start gap-3.5">
-              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-mist text-ink-soft">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="18"
-                  height="18"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-                  <path d="M6 12v5c3 3 9 3 12 0v-5" />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold text-slate-900">{t('pillar1Title')}</h2>
-                <p className="mt-0.5 text-xs leading-relaxed text-slate-500">{t('pillar1Desc')}</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3.5">
-              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-mist text-ink-soft">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="18"
-                  height="18"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <polyline points="17 1 21 5 17 9" />
-                  <path d="M3 11V9a4 4 0 0 1 4-4h14" />
-                  <polyline points="7 23 3 19 7 15" />
-                  <path d="M21 13v2a4 4 0 0 1-4 4H3" />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold text-slate-900">{t('pillar2Title')}</h2>
-                <p className="mt-0.5 text-xs leading-relaxed text-slate-500">{t('pillar2Desc')}</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3.5">
-              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-mist text-ink-soft">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="18"
-                  height="18"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <polygon points="23 7 16 12 23 17 23 7" />
-                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold text-slate-900">{t('pillar3Title')}</h2>
-                <p className="mt-0.5 text-xs leading-relaxed text-slate-500">{t('pillar3Desc')}</p>
-              </div>
-            </div>
-          </div>
+    <div className="workspace-auth">
+      <div className="workspace-auth-story">
+        <h1>
+          {t('heroTitle1')}
+          <br />
+          {t('heroTitle2')}
+        </h1>
+        <p>{t('heroSubtitle')}</p>
+        <Image
+          src="/learning/online-learning.webp"
+          alt={t('learningImageAlt')}
+          width={1400}
+          height={933}
+          sizes="(max-width: 767px) 0px, 50vw"
+        />
+        <div className="workspace-auth-proof">
+          <span>{t('pillar1Title')}</span>
+          <span>{t('pillar3Title')}</span>
         </div>
       </div>
-
-      {/* CỘT PHẢI: Card Auth với 2 Tab (7 cols) */}
-      <div className="lg:col-span-7">
-        <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10 lg:max-w-none">
+      <div>
+        <div className="workspace-auth-card workspace-form">
+          <h2 className="auth-form-title">
+            {tab === 'register' ? t('tabRegister') : t('tabLogin')}
+          </h2>
           {/* Chuyển Tab */}
           <div className="mb-7 border-b border-slate-200">
             <div className="-mb-px flex gap-8">
@@ -266,7 +183,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
               >
                 <span>{t('tabRegister')}</span>
                 {tab === 'register' && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-emerald-600" />
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-campus-emerald-deep" />
                 )}
               </button>
               <button
@@ -281,7 +198,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
               >
                 <span>{t('tabLogin')}</span>
                 {tab === 'login' && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-emerald-600" />
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-campus-emerald-deep" />
                 )}
               </button>
             </div>
@@ -291,7 +208,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
           {errorMessage && (
             <div
               role="alert"
-              className="mb-5 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs font-medium text-rose-700"
+              className="mb-5 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-sm font-medium text-rose-700"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -314,7 +231,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
           )}
 
           {successMessage && (
-            <div className="mb-5 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-xs font-medium text-emerald-800">
+            <div className="mb-5 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-sm font-medium text-emerald-800">
               <svg
                 viewBox="0 0 24 24"
                 width="16"
@@ -336,13 +253,18 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
 
           {/* FORM ĐĂNG KÝ */}
           {tab === 'register' && (
-            <form onSubmit={handleRegister} className="space-y-4">
+            <form aria-label={t('tabRegister')} onSubmit={handleRegister} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700">
+                <label
+                  htmlFor="register-name"
+                  className="block text-sm font-semibold text-slate-700"
+                >
                   {t('fullName')} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
+                  id="register-name"
+                  autoComplete="name"
                   required
                   value={regFullName}
                   onChange={(e) => setRegFullName(e.target.value)}
@@ -353,11 +275,14 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
 
               <div>
                 <div className="flex items-center justify-between">
-                  <label className="block text-xs font-semibold text-slate-700">
+                  <label
+                    htmlFor="register-email"
+                    className="block text-sm font-semibold text-slate-700"
+                  >
                     {t('email')} <span className="text-rose-500">*</span>
                   </label>
                   {isEduEmail && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 border border-emerald-200">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-sm font-medium text-emerald-700 border border-emerald-200">
                       <svg
                         viewBox="0 0 24 24"
                         width="12"
@@ -376,6 +301,8 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                   )}
                 </div>
                 <input
+                  id="register-email"
+                  autoComplete="email"
                   type="email"
                   required
                   value={regEmail}
@@ -383,15 +310,20 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                   placeholder={t('emailPlaceholder')}
                   className="mt-1.5 block w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
                 />
-                <p className="mt-1 text-[11px] text-slate-500">{t('emailHint')}</p>
+                <p className="mt-1 text-sm text-slate-500">{t('emailHint')}</p>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700">
+                <label
+                  htmlFor="register-password"
+                  className="block text-sm font-semibold text-slate-700"
+                >
                   {t('password')} <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative mt-1.5">
                   <input
+                    id="register-password"
+                    autoComplete="new-password"
                     type={showRegPassword ? 'text' : 'password'}
                     required
                     minLength={8}
@@ -465,7 +397,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                         className={`h-1.5 rounded-full ${pwdStrength >= 4 ? 'bg-emerald-500' : 'bg-slate-200'}`}
                       />
                     </div>
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-sm text-slate-500">
                       {locale === 'vi' ? 'Độ mạnh: ' : 'Strength: '}
                       <span className="font-semibold text-slate-700">
                         {pwdStrength <= 1
@@ -490,7 +422,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                   onChange={(e) => setRegPledge(e.target.checked)}
                   className="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                 />
-                <label htmlFor="reg-pledge" className="text-xs leading-relaxed text-slate-600">
+                <label htmlFor="reg-pledge" className="text-sm leading-relaxed text-slate-600">
                   {t('pledge')}
                 </label>
               </div>
@@ -498,7 +430,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
               <button
                 type="submit"
                 disabled={isPending}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:opacity-60"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-campus-emerald-deep py-3 text-sm font-semibold text-white transition-colors hover:bg-ink disabled:opacity-60"
               >
                 {isPending ? (
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -511,12 +443,14 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
 
           {/* FORM ĐĂNG NHẬP */}
           {tab === 'login' && (
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form aria-label={t('tabLogin')} onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700">
+                <label htmlFor="login-email" className="block text-sm font-semibold text-slate-700">
                   {t('email')} <span className="text-rose-500">*</span>
                 </label>
                 <input
+                  id="login-email"
+                  autoComplete="email"
                   type="email"
                   required
                   value={loginEmail}
@@ -528,19 +462,24 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
 
               <div>
                 <div className="flex items-center justify-between">
-                  <label className="block text-xs font-semibold text-slate-700">
+                  <label
+                    htmlFor="login-password"
+                    className="block text-sm font-semibold text-slate-700"
+                  >
                     {t('password')} <span className="text-rose-500">*</span>
                   </label>
                   <button
                     type="button"
                     onClick={() => setErrorMessage(t('passwordResetHint'))}
-                    className="text-xs font-medium text-emerald-700 hover:text-emerald-800"
+                    className="text-sm font-medium text-emerald-700 hover:text-emerald-800"
                   >
                     {t('forgotPassword')}
                   </button>
                 </div>
                 <div className="relative mt-1.5">
                   <input
+                    id="login-password"
+                    autoComplete="current-password"
                     type={showLoginPassword ? 'text' : 'password'}
                     required
                     value={loginPassword}
@@ -605,7 +544,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                 />
-                <label htmlFor="login-remember" className="text-xs text-slate-600">
+                <label htmlFor="login-remember" className="text-sm text-slate-600">
                   {t('rememberMe')}
                 </label>
               </div>
@@ -613,7 +552,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
               <button
                 type="submit"
                 disabled={isPending}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:opacity-60"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-campus-emerald-deep py-3 text-sm font-semibold text-white transition-colors hover:bg-ink disabled:opacity-60"
               >
                 {isPending ? (
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -624,7 +563,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
             </form>
           )}
 
-          <div className="mt-6 text-center text-xs text-slate-500">
+          <div className="mt-6 text-center text-sm text-slate-500">
             {tab === 'register' ? (
               <span>
                 {t('switchToLogin')}{' '}

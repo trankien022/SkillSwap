@@ -84,7 +84,7 @@ export function VerifierQueuePage() {
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
       <Navbar currentTab="verification" me={null} />
 
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
+      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
         <h1 className="text-2xl font-bold mb-4">{t('title')}</h1>
 
         <section className="mb-4">

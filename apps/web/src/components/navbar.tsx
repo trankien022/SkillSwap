@@ -36,7 +36,7 @@ export function Navbar({
   currentTab,
   balance: propBalance,
   me: propMe,
-  unreadNotificationsCount = 3,
+  unreadNotificationsCount = 0,
 }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [internalBalance, setInternalBalance] = useState<WalletBalanceView | null>(null);
@@ -245,7 +245,7 @@ export function Navbar({
               <a
                 href={`/${locale}/wallet`}
                 title={locale === 'vi' ? 'Nạp credit' : 'Top up credits'}
-                className="w-11 h-11 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors text-xs font-bold leading-none shrink-0"
+                className="w-11 h-11 rounded-full bg-campus-emerald-deep hover:bg-ink text-white flex items-center justify-center transition-colors text-xs font-bold leading-none shrink-0"
               >
                 +
               </a>
@@ -257,6 +257,11 @@ export function Navbar({
             <a
               href={`/${locale}/notifications`}
               title={locale === 'vi' ? 'Thông báo' : 'Notifications'}
+              aria-label={
+                locale === 'vi'
+                  ? `Thông báo, ${unreadNotificationsCount} chưa đọc`
+                  : `Notifications, ${unreadNotificationsCount} unread`
+              }
               className={`w-11 h-11 rounded-lg flex items-center justify-center transition-colors relative shrink-0 ${
                 currentTab === 'notifications'
                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
@@ -265,7 +270,9 @@ export function Navbar({
             >
               <span className="material-symbols-outlined text-[20px]">notifications</span>
               {unreadNotificationsCount > 0 && (
-                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-600 ring-2 ring-white"></span>
+                <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-ink px-1 text-center text-xs leading-5 text-surface">
+                  {unreadNotificationsCount}
+                </span>
               )}
             </a>
           )}
@@ -276,13 +283,11 @@ export function Navbar({
           {signedIn ? (
             <div className="flex items-center gap-2 shrink-0">
               <a
-                href={`/${locale}/status`}
+                href={`/${locale}/verification`}
                 className="flex items-center gap-2.5 hover:opacity-80 transition-opacity shrink-0"
                 title={locale === 'vi' ? 'Hồ sơ và xác minh' : 'Profile and verification'}
               >
-                <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center ring-2 ring-emerald-50 text-emerald-800 font-semibold text-xs shrink-0">
-                  {initials}
-                </div>
+                <div className="workspace-account-avatar shrink-0">{initials}</div>
                 <div className="hidden sm:flex flex-col text-left min-w-0 max-w-[72px] md:max-w-[85px] lg:max-w-[95px] xl:max-w-[130px]">
                   <span
                     className="text-xs font-semibold text-slate-900 leading-tight truncate block"
@@ -341,7 +346,7 @@ export function Navbar({
           ) : (
             <a
               href={`/${locale}/auth?tab=login`}
-              className="rounded-full bg-emerald-600 inline-flex min-h-11 items-center px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition-colors shrink-0 whitespace-nowrap"
+              className="rounded-full bg-campus-emerald-deep inline-flex min-h-11 items-center px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-ink transition-colors shrink-0 whitespace-nowrap"
             >
               {locale === 'vi' ? 'Đăng nhập' : 'Sign In'}
             </a>
@@ -351,7 +356,7 @@ export function Navbar({
       <nav
         id="product-navigation"
         aria-label={locale === 'vi' ? 'Điều hướng chính' : 'Main navigation'}
-        className={`mx-auto max-w-7xl gap-x-5 px-4 sm:px-6 xl:px-8 md:flex ${menuOpen ? 'grid grid-cols-2' : 'hidden'}`}
+        className={`workspace-app-nav mx-auto max-w-7xl gap-x-5 px-4 sm:px-6 xl:px-8 md:flex ${menuOpen ? 'grid grid-cols-2' : 'hidden'}`}
       >
         {navLinks.map((link) => {
           const isActive = currentTab === link.id;

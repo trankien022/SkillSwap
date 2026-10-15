@@ -367,7 +367,7 @@ export default function BookingCheckoutPage({ params }: PageProps) {
       {/* Top Synchronized Navbar */}
       <Navbar currentTab="explore" balance={balance} />
 
-      <main className="w-full flex-1">
+      <main id="main-content" tabIndex={-1} className="w-full flex-1">
         {display === null ? (
           <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 px-4 py-24 text-center">
             <h1 className="text-lg font-bold text-slate-900">

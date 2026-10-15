@@ -21,7 +21,7 @@ export default async function BookingReviewPage({ params }: PageProps) {
   return (
     <div className="flex min-h-dvh flex-col bg-slate-50 text-slate-900">
       <MarketplaceHeader currentTab="classes" />
-      <main className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1">
         <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
           <PostSessionReviewContent bookingId={id} />
         </div>
