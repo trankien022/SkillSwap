@@ -58,7 +58,7 @@ function SwitchButton({
       onClick={onClick}
       className={
         active
-          ? 'inline-flex items-center gap-1 rounded-full bg-ink px-3 py-1 text-surface shadow-sm'
+          ? 'inline-flex items-center gap-1 rounded-full bg-ink px-3 py-1 text-surface'
           : 'rounded-full px-3 py-1 text-ink-soft transition-colors hover:text-ink'
       }
     >

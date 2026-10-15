@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server';
 import { Link } from '../../i18n/routing';
 import { BrandMark } from '../BrandMark';
 import { LandingAuthAction } from './LandingAuthAction';
@@ -15,7 +16,8 @@ import { LandingAuthAction } from './LandingAuthAction';
  * instead of being dropped into the unauth state. The locale switcher lives in
  * the footer.
  */
-export function SiteHeader({ locale }: { locale: string }) {
+export async function SiteHeader({ locale }: { locale: string }) {
+  const t = await getTranslations('Landing.nav');
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-surface">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 lg:px-8">
@@ -32,7 +34,19 @@ export function SiteHeader({ locale }: { locale: string }) {
             `exploreHref` is locale-less: next-intl's Link prefixes the locale
             itself, and `returnUrl` is rebuilt from the locale inside the
             action. Passing `/${locale}/classes` here produced /en/en/classes. */}
-        <nav aria-label="Primary" className="flex items-center gap-2">
+        <nav aria-label="SkillSwap" className="flex items-center gap-2">
+          <a
+            href="#subjects"
+            className="hidden min-h-11 items-center px-3 text-sm font-medium hover:text-campus-emerald-deep lg:inline-flex"
+          >
+            {t('subjects')}
+          </a>
+          <a
+            href="#how-it-works"
+            className="hidden min-h-11 items-center px-3 text-sm font-medium hover:text-campus-emerald-deep lg:inline-flex"
+          >
+            {t('journey')}
+          </a>
           <LandingAuthAction exploreHref="/classes" locale={locale} />
         </nav>
       </div>

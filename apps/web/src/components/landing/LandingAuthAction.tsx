@@ -72,7 +72,7 @@ export function LandingAuthAction({
           the sign-in link disappears. */}
       <Link
         href={signedIn ? `/my-bookings` : signInHref}
-        className="inline-flex shrink-0 items-center rounded-full bg-emerald-600 min-h-11 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
+        className="inline-flex shrink-0 items-center rounded-full bg-campus-emerald-deep min-h-11 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-ink"
       >
         {signedIn ? t('myBookings') : t('signIn')}
       </Link>

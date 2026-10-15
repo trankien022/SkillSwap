@@ -36,12 +36,13 @@ type LoadState =
  * is given a thin callback and stays presentational; search submit, category
  * pill click and filter change all flow back here.
  */
-export function MarketplaceClient() {
+export function MarketplaceClient({ initialCategory }: { initialCategory?: SkillCategory }) {
   const t = useTranslations('Marketplace.resultsBar');
   const tStates = useTranslations('Marketplace.states');
   const locale = useLocale();
   const [query, setQuery] = useState<MarketplaceQuery>({
     ...DEFAULT_QUERY,
+    category: initialCategory,
     page: 1,
   });
   const [state, setState] = useState<LoadState>({ phase: 'loading' });
@@ -64,8 +65,8 @@ export function MarketplaceClient() {
   // First load: fetch the default query once the client has mounted and the
   // stored access token is readable. `runQuery` is stable, so this runs once.
   useEffect(() => {
-    void runQuery({ ...DEFAULT_QUERY, page: 1 });
-  }, [runQuery]);
+    void runQuery({ ...DEFAULT_QUERY, category: initialCategory, page: 1 });
+  }, [runQuery, initialCategory]);
 
   return (
     <>

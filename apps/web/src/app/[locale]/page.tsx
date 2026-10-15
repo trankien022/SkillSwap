@@ -1,6 +1,8 @@
 import '../../components/landing/learning-home.css';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { SiteHeader } from '../../components/landing/SiteHeader';
+import { SubjectSection } from '../../components/landing/SubjectSection';
+import { JourneySection } from '../../components/landing/JourneySection';
 import { HeroSection } from '../../components/landing/HeroSection';
 import { AssuranceSection } from '../../components/landing/AssuranceSection';
 import { CtaSection } from '../../components/landing/CtaSection';
@@ -21,11 +23,13 @@ export default async function HomePage({ params }: PageProps) {
     <div className="learning-home flex min-h-dvh flex-col text-ink">
       <SiteHeader locale={locale} />
       <main className="flex-1">
-        <HeroSection />
+        <HeroSection locale={locale} />
+        <SubjectSection locale={locale} />
+        <JourneySection />
         <AssuranceSection />
         <CtaSection locale={locale} />
       </main>
-      <SiteFooter />
+      <SiteFooter learning />
     </div>
   );
 }

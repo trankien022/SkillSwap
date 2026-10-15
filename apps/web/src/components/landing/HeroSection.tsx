@@ -1,28 +1,33 @@
 import Image from 'next/image';
 import { getTranslations } from 'next-intl/server';
-import { Link } from '../../i18n/routing';
+import { DiscoveryLink } from './DiscoveryLink';
 
-export async function HeroSection() {
+export async function HeroSection({ locale }: { locale: string }) {
   const t = await getTranslations('Landing.hero');
 
   return (
     <section id="hero" aria-labelledby="hero-heading" className="learning-hero">
       <div className="learning-hero-copy">
         <h1 id="hero-heading" className="learning-enter">
-          {t('headline1')}<br />{t('headline2')}
+          {t('headline1')}
+          <br />
+          {t('headline2')}
         </h1>
         <p className="learning-hero-description learning-enter">{t('subline')}</p>
         <div className="learning-hero-actions learning-enter">
-          <Link href="/classes" className="learning-primary">
-            {t('explore')}<span aria-hidden="true">↗</span>
-          </Link>
-          <a href="#how-it-works" className="learning-text-link">{t('howItWorks')}</a>
+          <DiscoveryLink locale={locale} className="learning-primary">
+            {t('explore')}
+            <span aria-hidden="true">↗</span>
+          </DiscoveryLink>
+          <a href="#how-it-works" className="learning-text-link">
+            {t('howItWorks')}
+          </a>
         </div>
         <p className="learning-hero-note learning-enter">{t('note')}</p>
       </div>
       <figure className="learning-hero-media learning-enter">
         <Image
-          src="/learning/peer-learning.webp"
+          src="/learning/online-learning.webp"
           alt={t('imageAlt')}
           width={1400}
           height={933}

@@ -52,7 +52,10 @@
       "explore": "Explore classes",
       "standard": "Verification standard",
       "signIn": "Sign in",
-      "myBookings": "My bookings"
+      "myBookings": "My bookings",
+      "subjects": "Subjects",
+      "journey": "How it works",
+      "teach": "Become a teacher"
     },
     "hero": {
       "headline1": "Learn together.",
@@ -84,7 +87,7 @@
           "body": "Join from your bookings. Leave a review after the lesson."
         }
       ],
-      "imageAlt": "Illustration of two students sharing ideas with laptops and study notes",
+      "imageAlt": "Illustration of a student wearing headphones and taking notes during an online video lesson",
       "imageCaption": "Taught by students. For students.",
       "sessionLength": "30–180 min / session"
     },
@@ -117,27 +120,54 @@
           "title": "Payment is held until completion",
           "body": "The learner's payment stays in the platform ledger and only moves to the Teacher's wallet once the class is recorded as completed. Every transaction carries a trace ID."
         }
-      ]
+      ],
+      "description": "Focus on learning. Check the teacher, the price and how payment works before you book."
     },
     "cta": {
-      "heading": "Your next lesson starts with you.",
-      "subline": "Learn what you need. Share what you know. Meet another student in a class that brings both together.",
+      "heading": "Know something? Pass it on.",
+      "subline": "The skill you use every day might be just what another student wants to learn. Share your experience in an online class of your own.",
       "learner": {
         "title": "Create a learning account",
         "hint": "Find a skill, schedule and price that work for you."
       },
       "teacher": {
-        "title": "Have a skill to share?",
-        "hint": "Start by submitting your skill evidence for review."
+        "title": "Start sharing your skills",
+        "hint": "Submit skill evidence for expert review before publishing a class."
       },
       "trustNoCard": "No credit card required to sign up",
-      "trustSafety": "Every transaction is audit-tracked"
+      "trustSafety": "Every transaction is audit-tracked",
+      "imageAlt": "Illustration of students sharing knowledge during a learning session"
     },
     "footer": {
       "tagline": "Learn from each other. Grow together.",
       "langLabel": "Language",
       "vi": "Vietnamese",
-      "en": "English"
+      "en": "English",
+      "illustration": "Illustrations created for SkillSwap."
+    },
+    "subjects": {
+      "heading": "What will you learn?",
+      "description": "Pick a subject that interests you. Browse open classes and find a peer to learn with.",
+      "programming": {
+        "title": "Programming",
+        "description": "From solving a problem to building your first app.",
+        "alt": "Illustrated coding workspace with a laptop, keyboard and notebook"
+      },
+      "design": {
+        "title": "Design",
+        "description": "Turn the ideas in your head into things you can see.",
+        "alt": "Illustrated design workspace with a drawing tablet and color swatches"
+      },
+      "language": {
+        "title": "Languages",
+        "description": "Practice speaking, work through mistakes, build confidence.",
+        "alt": "Illustration of students practicing conversation on a video call"
+      }
+    },
+    "journey": {
+      "heading": "One session. A step forward.",
+      "description": "You do not need a long course to get started. Choose a skill, find the right peer and learn what you need right now.",
+      "action": "Browse class schedules"
     }
   },
   "Marketplace": {
@@ -445,15 +475,7 @@
       "title": "Month view",
       "prev": "Previous month",
       "next": "Next month",
-      "weekdays": [
-        "Mon",
-        "Tue",
-        "Wed",
-        "Thu",
-        "Fri",
-        "Sat",
-        "Sun"
-      ],
+      "weekdays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
       "legendLive": "Live today",
       "legendBooked": "Booked",
       "noMonth": "No events this month"

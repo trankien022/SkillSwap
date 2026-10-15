@@ -1,3 +1,4 @@
+import { catalogueCategory } from '../../../lib/marketplace/category';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { MarketplaceHeader } from '../../../components/marketplace/MarketplaceHeader';
 import { MarketplaceClient } from '../../../components/marketplace/MarketplaceClient';
@@ -6,6 +7,7 @@ import { SiteFooter } from '../../../components/landing/SiteFooter';
 
 type PageProps = {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ category?: string | string[] }>;
 };
 
 /**
@@ -17,9 +19,10 @@ type PageProps = {
  * lives in the browser. Auth-aware chrome (balance, role toggle, school pill)
  * is rendered by `MarketplaceHeader` only when a real session exists.
  */
-export default async function MarketplacePage({ params }: PageProps) {
+export default async function MarketplacePage({ params, searchParams }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const initialCategory = catalogueCategory((await searchParams).category);
   // Touch the namespace so messages-parity still finds the keys at build time.
   await getTranslations('Marketplace.search');
 
@@ -27,7 +30,7 @@ export default async function MarketplacePage({ params }: PageProps) {
     <div className="flex min-h-dvh flex-col bg-mist text-ink">
       <MarketplaceHeader />
       <main className="flex-1">
-        <MarketplaceClient />
+        <MarketplaceClient initialCategory={initialCategory} />
         <EscrowBanner />
       </main>
       <SiteFooter />

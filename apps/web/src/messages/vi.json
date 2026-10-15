@@ -52,7 +52,10 @@
       "explore": "Khám phá lớp",
       "standard": "Quy chuẩn xác minh",
       "signIn": "Đăng nhập",
-      "myBookings": "Buổi học của tôi"
+      "myBookings": "Buổi học của tôi",
+      "subjects": "Chủ đề học",
+      "journey": "Cách học",
+      "teach": "Trở thành người dạy"
     },
     "hero": {
       "headline1": "Học cùng bạn.",
@@ -84,7 +87,7 @@
           "body": "Vào lớp từ lịch học của bạn. Để lại đánh giá sau buổi học."
         }
       ],
-      "imageAlt": "Minh họa hai sinh viên cùng trao đổi kiến thức bên máy tính và sổ học tập",
+      "imageAlt": "Minh họa sinh viên đeo tai nghe, ghi chép và học cùng người dạy qua cuộc gọi video",
       "imageCaption": "Sinh viên dạy. Sinh viên học.",
       "sessionLength": "30–180 phút / buổi"
     },
@@ -117,27 +120,54 @@
           "title": "Khoản thanh toán được phong tỏa tới khi hoàn tất",
           "body": "Khoản thanh toán được giữ trong sổ cái đến khi buổi học được ghi nhận hoàn tất. Mỗi giao dịch có mã truy vết (trace ID)."
         }
-      ]
+      ],
+      "description": "Bạn tập trung vào việc học. Thông tin người dạy, giá lớp và cách thanh toán luôn có thể kiểm tra trước khi đặt."
     },
     "cta": {
-      "heading": "Buổi học tiếp theo, bắt đầu từ bạn.",
-      "subline": "Học điều bạn cần. Chia sẻ điều bạn biết. SkillSwap kết nối hai phía trong cùng một lớp học.",
+      "heading": "Biết một điều hay? Dạy thử đi.",
+      "subline": "Kỹ năng bạn dùng mỗi ngày có thể là điều một người bạn đang muốn học. Chia sẻ kinh nghiệm trong một lớp trực tuyến của riêng mình.",
       "learner": {
         "title": "Tạo tài khoản để học",
         "hint": "Tìm lớp theo kỹ năng, lịch và mức giá phù hợp."
       },
       "teacher": {
-        "title": "Bạn có kỹ năng muốn chia sẻ?",
-        "hint": "Bắt đầu bằng việc gửi bằng chứng kỹ năng để xét duyệt."
+        "title": "Bắt đầu chia sẻ kỹ năng",
+        "hint": "Gửi bằng chứng kỹ năng để chuyên gia xét duyệt trước khi mở lớp."
       },
       "trustNoCard": "Không yêu cầu thẻ tín dụng để đăng ký",
-      "trustSafety": "Mọi giao dịch có audit trail"
+      "trustSafety": "Mọi giao dịch có audit trail",
+      "imageAlt": "Minh họa sinh viên chia sẻ kiến thức trong một buổi học"
     },
     "footer": {
       "tagline": "Học từ nhau. Tiến bộ cùng nhau.",
       "langLabel": "Ngôn ngữ",
       "vi": "Tiếng Việt",
-      "en": "English"
+      "en": "English",
+      "illustration": "Hình ảnh minh họa được tạo cho SkillSwap."
+    },
+    "subjects": {
+      "heading": "Bạn muốn học gì?",
+      "description": "Chọn một chủ đề bạn quan tâm. Xem các lớp đang mở và tìm người học cùng mình.",
+      "programming": {
+        "title": "Lập trình",
+        "description": "Từ tư duy giải bài toán đến tự tay viết ứng dụng.",
+        "alt": "Minh họa góc học lập trình với máy tính, bàn phím và sổ ghi chép"
+      },
+      "design": {
+        "title": "Thiết kế",
+        "description": "Biến ý tưởng thành những sản phẩm nhìn thấy được.",
+        "alt": "Minh họa bàn học thiết kế với bảng vẽ và bảng màu"
+      },
+      "language": {
+        "title": "Ngoại ngữ",
+        "description": "Luyện nói, cùng sửa lỗi, thêm tự tin giao tiếp.",
+        "alt": "Minh họa sinh viên luyện hội thoại qua cuộc gọi trực tuyến"
+      }
+    },
+    "journey": {
+      "heading": "Một buổi học. Một bước tiến.",
+      "description": "Không cần bắt đầu bằng một khóa học dài. Chọn một kỹ năng, tìm người phù hợp và học ngay từ điều bạn đang cần.",
+      "action": "Xem lịch các lớp"
     }
   },
   "Marketplace": {
@@ -445,15 +475,7 @@
       "title": "Lịch theo tháng",
       "prev": "Tháng trước",
       "next": "Tháng sau",
-      "weekdays": [
-        "T2",
-        "T3",
-        "T4",
-        "T5",
-        "T6",
-        "T7",
-        "CN"
-      ],
+      "weekdays": ["T2", "T3", "T4", "T5", "T6", "T7", "CN"],
       "legendLive": "Lớp đang diễn ra",
       "legendBooked": "Lớp đã chốt slot",
       "noMonth": "Chưa có lịch cho tháng này"
