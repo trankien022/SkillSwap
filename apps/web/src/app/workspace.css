@@ -527,3 +527,16 @@
 .workspace-page :is(p, dd) {
   overflow-wrap: anywhere;
 }
+/* Reserve an icon cell before the external icon font arrives, so its fallback
+   text cannot widen buttons or push a tablet layout outside the viewport. */
+.material-symbols-outlined {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  min-width: 1em;
+  overflow: hidden;
+  white-space: nowrap;
+  vertical-align: middle;
+}
