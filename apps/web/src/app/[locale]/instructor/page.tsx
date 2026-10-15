@@ -260,13 +260,13 @@ export default function InstructorDashboard() {
             <div className="flex items-center gap-3">
               <a
                 href={`/${locale}/wallet`}
-                className="px-4 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition-all shadow-sm"
+                className="px-4 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition-colors shadow-sm"
               >
                 Lịch sử giao dịch
               </a>
               <a
                 href={`/${locale}/teach/classes/new`}
-                className="bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-semibold text-sm px-5 py-2.5 rounded-full shadow-sm transition-all flex items-center gap-2"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-5 py-2.5 rounded-full shadow-sm transition-colors flex items-center gap-2"
               >
                 <span className="material-symbols-outlined text-[19px]">add_circle</span>
                 Công bố Lớp học mới
@@ -396,7 +396,7 @@ export default function InstructorDashboard() {
                 </p>
                 <a
                   href={`/${locale}/verification`}
-                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-emerald-700"
+                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
                 >
                   Gửi kỹ năng để xác thực
                 </a>
@@ -453,7 +453,7 @@ export default function InstructorDashboard() {
                 </p>
                 <a
                   href={`/${locale}/teach/classes/new`}
-                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-emerald-700"
+                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
                 >
                   Công bố lớp học đầu tiên
                 </a>
@@ -465,7 +465,7 @@ export default function InstructorDashboard() {
                   return (
                     <div
                       key={item.id}
-                      className={`bg-white p-5 rounded-2xl border shadow-sm transition-all ${
+                      className={`bg-white p-5 rounded-2xl border shadow-sm transition-colors ${
                         isCompleted
                           ? 'border-slate-200 opacity-90 hover:opacity-100'
                           : 'border-emerald-200 hover:border-emerald-300'
@@ -524,7 +524,7 @@ export default function InstructorDashboard() {
                                 editingClassId === item.id ? null : item.id,
                               )}
                               type="button"
-                              className="px-4 py-2 rounded-full text-xs font-semibold border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-60"
+                              className="px-4 py-2 rounded-full text-xs font-semibold border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-60"
                               disabled={isProcessing}
                             >
                               <span className="material-symbols-outlined text-[16px]">edit</span>{' '}
@@ -535,7 +535,7 @@ export default function InstructorDashboard() {
                             <button
                               onClick={() => handleStartClass(item.id)}
                               type="button"
-                              className="px-4 py-2 rounded-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-60"
+                              className="px-4 py-2 rounded-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-60"
                               disabled={isProcessing}
                             >
                               <span className="material-symbols-outlined text-[16px]">
@@ -548,7 +548,7 @@ export default function InstructorDashboard() {
                             <button
                               onClick={() => handleCompleteClass(item.id)}
                               type="button"
-                              className="px-4 py-2 rounded-full text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-60"
+                              className="px-4 py-2 rounded-full text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-60"
                               disabled={isProcessing}
                             >
                               <span className="material-symbols-outlined text-[16px]">
@@ -582,7 +582,7 @@ export default function InstructorDashboard() {
 
       {/* Toast */}
       <div
-        className={`fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2.5 transition-all duration-300 ${
+        className={`fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2.5 transition-colors duration-300 ${
           toastMessage ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'
         }`}
       >
@@ -678,7 +678,7 @@ function ClassEditPanel({
           type="button"
           onClick={() => onSave({ priceCredits: priceNumber, capacity: capacityNumber })}
           disabled={!canSave}
-          className="px-4 py-2 rounded-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all disabled:opacity-50"
+          className="px-4 py-2 rounded-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-colors disabled:opacity-50"
         >
           Lưu thay đổi
         </button>
@@ -686,7 +686,7 @@ function ClassEditPanel({
           type="button"
           onClick={onCancel}
           disabled={disabled}
-          className="px-4 py-2 rounded-full text-xs font-semibold border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-sm transition-all disabled:opacity-50"
+          className="px-4 py-2 rounded-full text-xs font-semibold border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-sm transition-colors disabled:opacity-50"
         >
           Hủy
         </button>

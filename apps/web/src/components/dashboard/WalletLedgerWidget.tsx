@@ -44,7 +44,7 @@ export function WalletLedgerWidget({
         <p className="mt-3 text-sm text-ink-soft leading-relaxed">{t('signInToView')}</p>
         <Link
           href={`/${locale}/auth?tab=login`}
-          className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95"
+          className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
         >
           <span>{t('signInCta')}</span>
         </Link>

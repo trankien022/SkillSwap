@@ -58,7 +58,7 @@ export function StickyBookingCard({
             </span>
           </div>
           <div className="flex flex-col items-end gap-1">
-            <span className="rounded-full bg-error-tint px-2 py-1 text-[11px] font-bold text-error-ink">
+            <span className="rounded-full bg-danger-tint px-2 py-1 text-[11px] font-bold text-danger-ink">
               {t('table.refundValue').split(' ').slice(-2).join(' ')}
             </span>
             <span className="text-right text-[11px] text-ink-soft">

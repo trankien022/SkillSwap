@@ -82,7 +82,7 @@ function PendingCard({
   const hours = Math.floor(countdown / 3600);
   const minutes = Math.floor((countdown % 3600) / 60);
   return (
-    <article className="relative overflow-hidden rounded-2xl border border-border bg-surface p-6 shadow-sm transition-shadow hover:shadow-md">
+    <article className="relative overflow-hidden rounded-2xl border border-border bg-surface p-6 shadow-sm transition-shadow hover:shadow-sm">
       <div className="absolute inset-x-0 top-0 h-1.5 bg-warning-ink" />
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -92,7 +92,7 @@ function PendingCard({
               <span>{tCard('pending')}</span>
             </Chip>
           </div>
-          <span className="inline-flex items-center gap-1 text-xs font-semibold text-error">
+          <span className="inline-flex items-center gap-1 text-xs font-semibold text-danger-ink">
             <AlarmIcon className="h-3.5 w-3.5" />
             <span>{tCard('autoRelease', { time: `${hours}h:${String(minutes).padStart(2, '0')}m` })}</span>
           </span>
@@ -119,7 +119,7 @@ function PendingCard({
             <button
               type="button"
               onClick={() => onAction?.({ type: 'confirm', bookingId: booking.id })}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95 sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 sm:w-auto"
             >
               <CheckCircleIcon className="h-4 w-4" />
               <span>{tCard('confirmReview')}</span>
@@ -152,7 +152,7 @@ function UpcomingCard({
     minute: '2-digit',
   });
   return (
-    <article className="rounded-2xl border border-border bg-surface p-6 shadow-sm transition-shadow hover:shadow-md">
+    <article className="rounded-2xl border border-border bg-surface p-6 shadow-sm transition-shadow hover:shadow-sm">
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -197,7 +197,7 @@ function UpcomingCard({
           </div>
           <Link
             href={`/${locale}/bookings/${booking.id}/live`}
-            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-surface px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-surface px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50"
           >
             <LockClockIcon className="h-4 w-4 text-emerald-600" />
             <span>{tCard('joinRoomSoon')}</span>
@@ -228,7 +228,7 @@ function CompletedCard({
       })
     : '';
   return (
-    <article className="rounded-2xl border border-border bg-surface p-6 shadow-sm transition-shadow hover:shadow-md">
+    <article className="rounded-2xl border border-border bg-surface p-6 shadow-sm transition-shadow hover:shadow-sm">
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -731,7 +731,7 @@ function LiveCard({
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
             <div
-              className="h-full rounded-full bg-emerald-600 transition-all duration-500"
+              className="h-full rounded-full bg-emerald-600 transition-colors duration-500"
               style={{ width: `${pct}%` }}
             />
           </div>
@@ -743,7 +743,7 @@ function LiveCard({
           <div className="flex items-center gap-2">
             <Link
               href={`/${locale}/bookings/${booking.id}/live`}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95 sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 sm:w-auto"
             >
               <VideocamIcon className="h-4 w-4" />
               <span>{tLive('join')}</span>

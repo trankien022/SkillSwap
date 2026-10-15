@@ -144,7 +144,7 @@ export function SkillsContent() {
         </p>
         <Link
           href={`/${locale}/auth`}
-          className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95"
+          className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
         >
           {t('signIn')}
         </Link>
@@ -162,7 +162,7 @@ export function SkillsContent() {
         <button
           type="button"
           onClick={() => void load()}
-          className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700"
+          className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
         >
           {t('retry')}
         </button>
@@ -307,7 +307,7 @@ export function SkillsContent() {
           type="button"
           onClick={() => void submit()}
           disabled={!canSubmit}
-          className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+          className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
         >
           {busy ? t('submitting') : t('submit')}
         </button>

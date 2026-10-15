@@ -341,7 +341,7 @@ export function Navbar({
           ) : (
             <a
               href={`/${locale}/auth?tab=login`}
-              className="rounded-full bg-emerald-600 inline-flex min-h-11 items-center px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95 shrink-0 whitespace-nowrap"
+              className="rounded-full bg-emerald-600 inline-flex min-h-11 items-center px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition-colors shrink-0 whitespace-nowrap"
             >
               {locale === 'vi' ? 'Đăng nhập' : 'Sign In'}
             </a>

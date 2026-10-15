@@ -546,7 +546,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
                       <div
-                        className="h-full rounded-full bg-emerald-600 transition-all duration-300"
+                        className="h-full rounded-full bg-emerald-600 transition-colors duration-300"
                         style={{ width: `${((criteriaRatings[criterion] ?? 5) / 5) * 100}%` }}
                       />
                     </div>
@@ -621,13 +621,13 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-7 py-2.5 text-sm font-semibold text-white shadow-sm transition-all sm:w-auto ${
+                className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-7 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors sm:w-auto ${
                   submit.phase === 'success'
                     ? 'cursor-default bg-emerald-600'
                     : submit.phase === 'submitting'
                       ? 'cursor-wait bg-emerald-700 opacity-80'
                       : canSubmit
-                        ? 'bg-emerald-600 hover:bg-emerald-700 active:scale-95'
+                        ? 'bg-emerald-600 hover:bg-emerald-700'
                         : 'cursor-not-allowed bg-slate-300'
                 }`}
               >
@@ -716,7 +716,7 @@ function ReviewStateBlock({
       {entry.href !== null && (
         <Link
           href={entry.href}
-          className="mt-2 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95"
+          className="mt-2 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
         >
           {t('form.btnBack')}
         </Link>

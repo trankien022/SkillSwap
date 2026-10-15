@@ -65,7 +65,7 @@ export function VerifierStatusPage({ accountId }: { accountId: string }) {
         <p className="text-sm leading-relaxed text-ink-soft">{t('signInBody')}</p>
         <a
           href={`/${locale}/auth?tab=login&returnUrl=${returnUrl}`}
-          className="inline-flex w-fit items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.99]"
+          className="inline-flex w-fit items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
         >
           {/* Was `tRoot('signIn')`, but there is no root-level `signIn` key, so
               this rendered the literal string "signIn". */}

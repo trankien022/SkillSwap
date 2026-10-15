@@ -35,7 +35,7 @@ export function LearnerCharter({
       <button
         type="button"
         aria-disabled="true"
-        className="flex w-full items-center justify-center gap-2 rounded-xl border border-error bg-mist py-2.5 text-sm font-semibold text-error transition-colors hover:bg-error-tint"
+        className="flex w-full items-center justify-center gap-2 rounded-xl border border-danger-ink bg-mist py-2.5 text-sm font-semibold text-danger-ink transition-colors hover:bg-danger-tint"
       >
         <SupportAgentIcon className="h-4 w-4" />
         <span>{t('support')}</span>

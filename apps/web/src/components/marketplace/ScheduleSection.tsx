@@ -40,7 +40,7 @@ export function ScheduleSection({ item }: { item: ClassDetailView }) {
           </span>
           <h2 className="text-base font-semibold text-ink">{t('title')}</h2>
         </div>
-        <span className="rounded-lg border border-campus-emerald/20 bg-campus-emerald-tint px-2 py-1 text-[11px] font-semibold text-campus-emerald-deep">
+        <span className="rounded-lg border border-campus-emerald/20 bg-success-tint px-2 py-1 text-[11px] font-semibold text-campus-emerald-deep">
           {t('policyBadge')}
         </span>
       </div>
@@ -60,7 +60,7 @@ export function ScheduleSection({ item }: { item: ClassDetailView }) {
           <div
             className={
               hoursLeft <= 0
-                ? 'inline-flex w-fit items-center gap-1.5 rounded-lg bg-error-tint px-2 py-1 text-[11px] font-semibold text-error-ink shadow-sm'
+                ? 'inline-flex w-fit items-center gap-1.5 rounded-lg bg-danger-tint px-2 py-1 text-[11px] font-semibold text-danger-ink shadow-sm'
                 : 'inline-flex w-fit items-center gap-1.5 rounded-lg bg-surface px-2 py-1 text-[11px] font-semibold text-success-ink shadow-sm'
             }
           >
@@ -85,7 +85,7 @@ export function ScheduleSection({ item }: { item: ClassDetailView }) {
               <span
                 className={
                   isFull
-                    ? 'rounded-full bg-error-tint px-2 py-0.5 text-[11px] font-bold text-error-ink'
+                    ? 'rounded-full bg-danger-tint px-2 py-0.5 text-[11px] font-bold text-danger-ink'
                     : 'rounded-full border border-success-tint bg-success-tint px-2 py-0.5 text-[11px] font-bold text-success-ink'
                 }
               >

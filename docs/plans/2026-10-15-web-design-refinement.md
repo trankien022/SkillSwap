@@ -44,3 +44,16 @@ Validate landing/auth/catalogue plus signed-out product routes at desktop and
 needed to exercise authenticated visual states; label that evidence separately.
 Run pnpm verify before reporting completion. Record any environmental blockers
 and runtime flows not exercised. Preserve unrelated untracked deliverables.
+
+## Completion
+
+- Phase 1: shared foundation and role-aware mobile navigation implemented.
+- Phase 2: landing layout and vi/en copy implemented.
+- Phase 3: catalogue, dashboard, auth and supporting visual cleanup implemented;
+  advanced filters start closed to prioritize results on phones.
+- `pnpm verify`: passed, including 1,352 tests across all five packages and
+  dependency rules (876 modules, 2,479 dependencies).
+- Browser: 24 guest route/viewport checks, plus catalogue/dashboard fixture
+  rendering and search/filter interactions at 1440 px and 360 px.
+- See [validation report](2026-10-15-web-design-validation.md) for evidence
+  boundaries. No publication or deployment is part of this change.

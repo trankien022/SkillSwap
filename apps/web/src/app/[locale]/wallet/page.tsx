@@ -264,11 +264,11 @@ export default function WalletPage() {
               <p className="text-sm text-slate-600 mt-1">Quản lý số dư, nạp credit học tập và theo dõi dòng tiền minh bạch được bảo vệ bởi Escrow</p>
             </div>
             <div className="flex items-center gap-2.5">
-              <button className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-all shadow-sm flex items-center gap-1.5">
+              <button className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors shadow-sm flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px] text-slate-500">picture_as_pdf</span>
                 Xuất hóa đơn
               </button>
-              <button onClick={scrollToDeposit} className="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5">
+              <button onClick={scrollToDeposit} className="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm transition-colors flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px]">add_card</span>
                 Nạp Credit ngay
               </button>
@@ -388,7 +388,7 @@ export default function WalletPage() {
         </div>
 
         {/* Deposit Section */}
-        <div id="deposit-section" className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-7 shadow-sm mb-8 transition-all">
+        <div id="deposit-section" className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-7 shadow-sm mb-8 transition-colors">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-slate-100 mb-6 gap-3">
             <div>
               <div className="flex items-center gap-2">
@@ -416,7 +416,7 @@ export default function WalletPage() {
                   1. Các gói credit phổ biến
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <button onClick={() => setQuickAmount(50)} className={`p-3.5 rounded-xl border-2 text-left transition-all flex flex-col justify-between ${amount === 50 ? 'border-emerald-600 bg-emerald-50' : 'border-transparent bg-slate-50 hover:bg-slate-100'}`}>
+                  <button onClick={() => setQuickAmount(50)} className={`p-3.5 rounded-xl border-2 text-left transition-colors flex flex-col justify-between ${amount === 50 ? 'border-emerald-600 bg-emerald-50' : 'border-transparent bg-slate-50 hover:bg-slate-100'}`}>
                     <span className={`text-[11px] font-medium ${amount === 50 ? 'text-emerald-700' : 'text-slate-600'}`}>Khởi động</span>
                     <div className="my-2">
                       <span className={`text-xl font-bold ${amount === 50 ? 'text-emerald-800' : 'text-slate-900'}`}>50</span>
@@ -425,7 +425,7 @@ export default function WalletPage() {
                     <span className="text-xs font-semibold text-slate-700">50.000đ</span>
                   </button>
 
-                  <button onClick={() => setQuickAmount(100)} className={`p-3.5 rounded-xl border-2 text-left transition-all flex flex-col justify-between relative ${amount === 100 ? 'border-emerald-600 bg-emerald-50' : 'border-transparent bg-slate-50 hover:bg-slate-100'}`}>
+                  <button onClick={() => setQuickAmount(100)} className={`p-3.5 rounded-xl border-2 text-left transition-colors flex flex-col justify-between relative ${amount === 100 ? 'border-emerald-600 bg-emerald-50' : 'border-transparent bg-slate-50 hover:bg-slate-100'}`}>
                     <span className="absolute -top-2.5 right-2 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-600 text-white">Phổ biến</span>
                     <span className={`text-[11px] font-semibold ${amount === 100 ? 'text-emerald-700' : 'text-slate-600'}`}>Tiêu chuẩn</span>
                     <div className="my-2">
@@ -435,7 +435,7 @@ export default function WalletPage() {
                     <span className="text-xs font-bold text-slate-900">100.000đ</span>
                   </button>
 
-                  <button onClick={() => setQuickAmount(200)} className={`p-3.5 rounded-xl border-2 text-left transition-all flex flex-col justify-between ${amount === 200 ? 'border-emerald-600 bg-emerald-50' : 'border-transparent bg-slate-50 hover:bg-slate-100'}`}>
+                  <button onClick={() => setQuickAmount(200)} className={`p-3.5 rounded-xl border-2 text-left transition-colors flex flex-col justify-between ${amount === 200 ? 'border-emerald-600 bg-emerald-50' : 'border-transparent bg-slate-50 hover:bg-slate-100'}`}>
                     <span className={`text-[11px] font-medium ${amount === 200 ? 'text-emerald-700' : 'text-slate-600'}`}>Chăm chỉ</span>
                     <div className="my-2">
                       <span className={`text-xl font-bold ${amount === 200 ? 'text-emerald-800' : 'text-slate-900'}`}>200</span>
@@ -444,7 +444,7 @@ export default function WalletPage() {
                     <span className="text-xs font-semibold text-slate-700">200.000đ</span>
                   </button>
 
-                  <button onClick={() => setQuickAmount(500)} className={`p-3.5 rounded-xl border-2 text-left transition-all flex flex-col justify-between relative ${amount === 500 ? 'border-emerald-600 bg-emerald-50' : 'border-transparent bg-slate-50 hover:bg-slate-100'}`}>
+                  <button onClick={() => setQuickAmount(500)} className={`p-3.5 rounded-xl border-2 text-left transition-colors flex flex-col justify-between relative ${amount === 500 ? 'border-emerald-600 bg-emerald-50' : 'border-transparent bg-slate-50 hover:bg-slate-100'}`}>
                     <span className="absolute -top-2.5 right-2 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-white">+5% Thưởng</span>
                     <span className={`text-[11px] font-medium ${amount === 500 ? 'text-emerald-700' : 'text-slate-600'}`}>Học bá</span>
                     <div className="my-2">
@@ -469,7 +469,7 @@ export default function WalletPage() {
                       value={amount}
                       onChange={handleAmountChange}
                       data-testid="topup-amount"
-                      className="w-full h-11 px-3.5 pr-16 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent transition-all"
+                      className="w-full h-11 px-3.5 pr-16 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent transition-colors"
                     />
                     <span className="absolute right-3.5 top-3 text-xs font-semibold text-slate-500 pointer-events-none">Credit</span>
                   </div>
@@ -523,7 +523,7 @@ export default function WalletPage() {
                 thanh toán ngay trên trang đó. Sau khi hoàn tất, quay lại tab này — số dư sẽ tự cập nhật.
               </p>
 
-              <button disabled={isPending} onClick={handleTopUp} className="w-full mt-4 py-2.5 px-4 rounded-full bg-slate-900 hover:bg-slate-800 disabled:opacity-70 disabled:cursor-not-allowed text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2">
+              <button disabled={isPending} onClick={handleTopUp} className="w-full mt-4 py-2.5 px-4 rounded-full bg-slate-900 hover:bg-slate-800 disabled:opacity-70 disabled:cursor-not-allowed text-white text-xs font-bold transition-colors shadow-sm flex items-center justify-center gap-2">
                 <span className={`material-symbols-outlined text-[16px] ${isPending ? 'animate-spin' : ''}`}>
                   {isPending ? 'sync' : 'open_in_new'}
                 </span>
@@ -563,7 +563,7 @@ export default function WalletPage() {
                 </div>
               )}
 
-              <button onClick={handleRefreshBalance} className="w-full mt-2 py-2.5 px-4 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2">
+              <button onClick={handleRefreshBalance} className="w-full mt-2 py-2.5 px-4 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors shadow-sm flex items-center justify-center gap-2">
                 <span className="material-symbols-outlined text-[16px]">refresh</span>
                 Kiểm tra lại số dư
               </button>
@@ -587,10 +587,10 @@ export default function WalletPage() {
             </div>
             <div className="flex flex-wrap items-center gap-2.5">
               <div className="inline-flex p-1 bg-slate-50 rounded-xl text-xs font-medium border border-slate-200">
-                <button onClick={() => setFilter('all')} className={`px-3 py-1.5 rounded-lg transition-all ${filter === 'all' ? 'bg-white text-slate-900 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>Tất cả</button>
-                <button onClick={() => setFilter('deposit')} className={`px-3 py-1.5 rounded-lg transition-all ${filter === 'deposit' ? 'bg-white text-slate-900 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>Nạp credit</button>
-                <button onClick={() => setFilter('pay')} className={`px-3 py-1.5 rounded-lg transition-all ${filter === 'pay' ? 'bg-white text-slate-900 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>Thanh toán lớp</button>
-                <button onClick={() => setFilter('escrow')} className={`px-3 py-1.5 rounded-lg transition-all ${filter === 'escrow' ? 'bg-white text-slate-900 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>Hoàn tiền Escrow</button>
+                <button onClick={() => setFilter('all')} className={`px-3 py-1.5 rounded-lg transition-colors ${filter === 'all' ? 'bg-white text-slate-900 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>Tất cả</button>
+                <button onClick={() => setFilter('deposit')} className={`px-3 py-1.5 rounded-lg transition-colors ${filter === 'deposit' ? 'bg-white text-slate-900 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>Nạp credit</button>
+                <button onClick={() => setFilter('pay')} className={`px-3 py-1.5 rounded-lg transition-colors ${filter === 'pay' ? 'bg-white text-slate-900 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>Thanh toán lớp</button>
+                <button onClick={() => setFilter('escrow')} className={`px-3 py-1.5 rounded-lg transition-colors ${filter === 'escrow' ? 'bg-white text-slate-900 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>Hoàn tiền Escrow</button>
               </div>
               <button className="h-9 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm">
                 <span className="material-symbols-outlined text-[16px] text-slate-600">download</span>

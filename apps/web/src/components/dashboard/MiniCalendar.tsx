@@ -91,7 +91,7 @@ export function MiniCalendar({
               >
                 {dayNum}
                 {(day.hasLiveSession || day.hasBookedSession) && (
-                  <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-error" />
+                  <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-danger-ink" />
                 )}
               </span>
             );
@@ -103,7 +103,7 @@ export function MiniCalendar({
                 className={`${baseClasses} bg-mist font-semibold text-ink`}
               >
                 {dayNum}
-                <span className="absolute bottom-0.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-error" />
+                <span className="absolute bottom-0.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-danger-ink" />
               </span>
             );
           }
@@ -131,7 +131,7 @@ export function MiniCalendar({
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 text-xs text-ink-soft">
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-error" />
+          <span className="h-2.5 w-2.5 rounded-full bg-danger-ink" />
           <span>{t('legendLive')}</span>
         </span>
         <span className="inline-flex items-center gap-1.5">

@@ -179,8 +179,8 @@ function Panel({
 }) {
   const iconTone =
     tone === 'error'
-      ? 'bg-error-tint text-error-ink'
-      : 'bg-campus-emerald-tint text-campus-emerald-deep';
+      ? 'bg-danger-tint text-danger-ink'
+      : 'bg-success-tint text-campus-emerald-deep';
   return (
     <div
       role={tone === 'error' ? 'alert' : undefined}

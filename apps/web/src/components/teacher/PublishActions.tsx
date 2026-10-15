@@ -38,7 +38,7 @@ export function PublishActions({
           type="button"
           onClick={onPublish}
           disabled={!canPublish || publishing}
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
         >
           <RocketLaunchIcon className="h-4 w-4" />
           <span>{publishing ? '…' : t('publish')}</span>

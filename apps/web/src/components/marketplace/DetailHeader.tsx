@@ -80,10 +80,7 @@ export function DetailHeader({ item }: { item: ClassDetailView }) {
 
       {/* Hero card */}
       <section className="relative overflow-hidden rounded-xl border border-border bg-surface p-6 shadow-sm">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-campus-emerald-tint blur-2xl"
-        />
+
         <div className="relative flex flex-col gap-4">
           {/* Tags */}
           <div className="flex flex-wrap items-center gap-2">

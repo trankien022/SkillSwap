@@ -56,13 +56,13 @@ export async function LiveSessionBanner({
               </span>
             </div>
             <span className="absolute -right-1 -top-1 flex h-4 w-4">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-error opacity-75" />
-              <span className="relative inline-flex h-4 w-4 rounded-full bg-error" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-danger-ink opacity-75" />
+              <span className="relative inline-flex h-4 w-4 rounded-full bg-danger-ink" />
             </span>
           </div>
           <div className="flex max-w-2xl flex-col gap-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-error bg-error px-2.5 py-0.5 text-xs font-bold text-on-error">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-danger-ink bg-danger-ink px-2.5 py-0.5 text-xs font-bold text-surface">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-surface" />
                 <span>{t('badge')}</span>
               </span>
@@ -104,7 +104,7 @@ export async function LiveSessionBanner({
         <div className="flex shrink-0 flex-col items-stretch gap-2 sm:flex-row sm:items-center xl:flex-col xl:items-end">
           <Link
             href={`/${locale}/bookings/${booking.id}/live`}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-5 py-3 text-sm font-bold text-surface shadow-md transition-all hover:bg-ink-soft active:scale-95"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-5 py-3 text-sm font-bold text-surface shadow-md transition-colors hover:bg-ink-soft"
           >
             <MeetingRoomIcon className="h-5 w-5" />
             <span>{t('join')}</span>

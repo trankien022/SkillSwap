@@ -194,7 +194,7 @@ export default function WithdrawalPage() {
                 </div>
 
                 <div className="relative">
-                  <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-emerald-600 focus-within:border-emerald-600 transition-all">
+                  <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-emerald-600 focus-within:border-emerald-600 transition-colors">
                     <span className="material-symbols-outlined text-slate-400 mr-3 text-[22px]">toll</span>
                     <input
                       id="creditAmount"

@@ -28,8 +28,8 @@ export function PublishToast({ open, onClose, autoCloseMs = 4000 }: Props) {
       aria-live="polite"
       className={
         open
-          ? 'fixed bottom-6 right-6 z-50 flex max-w-md items-start gap-3 rounded-xl border border-success-ink bg-ink p-4 text-surface shadow-xl transition-all duration-300'
-          : 'pointer-events-none fixed bottom-6 right-6 z-50 flex max-w-md translate-y-24 items-start gap-3 rounded-xl border border-success-ink bg-ink p-4 text-surface opacity-0 shadow-xl transition-all duration-300'
+          ? 'fixed bottom-6 right-6 z-50 flex max-w-md items-start gap-3 rounded-xl border border-success-ink bg-ink p-4 text-surface shadow-xl transition-colors duration-300'
+          : 'pointer-events-none fixed bottom-6 right-6 z-50 flex max-w-md translate-y-24 items-start gap-3 rounded-xl border border-success-ink bg-ink p-4 text-surface opacity-0 shadow-xl transition-colors duration-300'
       }
     >
       <TaskAltIcon className="h-7 w-7 shrink-0 text-success-ink" />

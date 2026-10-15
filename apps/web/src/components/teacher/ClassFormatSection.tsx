@@ -30,7 +30,7 @@ export function ClassFormatSection({ draft, onChange }: Props) {
         <button
           type="button"
           onClick={() => onChange({ capacity: 1 })}
-          className={`flex flex-col justify-between rounded-xl border p-4 text-left transition-all ${
+          className={`flex flex-col justify-between rounded-xl border p-4 text-left transition-colors ${
             isOneOnOne
               ? 'border-emerald-600 bg-emerald-50/40 ring-1 ring-emerald-600 shadow-xs'
               : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-300'
@@ -63,7 +63,7 @@ export function ClassFormatSection({ draft, onChange }: Props) {
         <button
           type="button"
           onClick={() => onChange({ capacity: draft.capacity > 1 ? draft.capacity : 4 })}
-          className={`flex flex-col justify-between rounded-xl border p-4 text-left transition-all ${
+          className={`flex flex-col justify-between rounded-xl border p-4 text-left transition-colors ${
             !isOneOnOne
               ? 'border-emerald-600 bg-emerald-50/40 ring-1 ring-emerald-600 shadow-xs'
               : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-300'

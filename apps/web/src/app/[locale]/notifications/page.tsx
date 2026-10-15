@@ -165,7 +165,7 @@ export default function NotificationsPage() {
               <button
                 type="button"
                 onClick={() => setIsEmailModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-all shadow-sm"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-colors shadow-sm"
               >
                 <span className="material-symbols-outlined text-[18px]">tune</span>
                 <span>Cài đặt thông báo qua Email</span>
@@ -194,7 +194,7 @@ export default function NotificationsPage() {
                 <button
                   type="button"
                   onClick={() => setFilter('all')}
-                  className={`px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all ${
+                  className={`px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition-colors ${
                     filter === 'all'
                       ? 'bg-slate-900 text-white shadow-sm'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -208,7 +208,7 @@ export default function NotificationsPage() {
                 <button
                   type="button"
                   onClick={() => setFilter('unread')}
-                  className={`px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all ${
+                  className={`px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition-colors ${
                     filter === 'unread'
                       ? 'bg-slate-900 text-white shadow-sm'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -222,7 +222,7 @@ export default function NotificationsPage() {
                 <button
                   type="button"
                   onClick={() => setFilter('booking')}
-                  className={`px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all ${
+                  className={`px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition-colors ${
                     filter === 'booking'
                       ? 'bg-slate-900 text-white shadow-sm'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -236,7 +236,7 @@ export default function NotificationsPage() {
                 <button
                   type="button"
                   onClick={() => setFilter('finance')}
-                  className={`px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all ${
+                  className={`px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition-colors ${
                     filter === 'finance'
                       ? 'bg-slate-900 text-white shadow-sm'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -250,7 +250,7 @@ export default function NotificationsPage() {
                 <button
                   type="button"
                   onClick={() => setFilter('verify')}
-                  className={`px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all ${
+                  className={`px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition-colors ${
                     filter === 'verify'
                       ? 'bg-slate-900 text-white shadow-sm'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -554,7 +554,7 @@ export default function NotificationsPage() {
 
                   <button
                     type="submit"
-                    className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                    className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-sm"
                   >
                     <span className="material-symbols-outlined text-[18px]">check</span>
                     <span>Lưu tùy chọn nhận tin</span>
@@ -613,7 +613,7 @@ export default function NotificationsPage() {
                   type="email"
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-sm focus:bg-white focus:border-emerald-600 focus:outline-none transition-all"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-sm focus:bg-white focus:border-emerald-600 focus:outline-none transition-colors"
                 />
                 <span className="text-[11px] text-slate-500 mt-1 block">
                   {/* Previously claimed "Email edu đã xác minh thông qua SSO RMIT
@@ -656,7 +656,7 @@ export default function NotificationsPage() {
                   setIsEmailModalOpen(false);
                   showToast('Đã lưu cấu hình email nhận thông báo thành công!');
                 }}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-all shadow-sm"
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-colors shadow-sm"
               >
                 Áp dụng thay đổi
               </button>
@@ -706,7 +706,7 @@ function NotificationCard({
 }) {
   return (
     <article
-      className={`bg-white p-5 rounded-2xl border transition-all space-y-3 relative overflow-hidden shadow-sm hover:shadow ${
+      className={`bg-white p-5 rounded-2xl border transition-colors space-y-3 relative overflow-hidden shadow-sm hover:shadow-sm ${
         item.unread ? 'border-slate-300' : 'border-slate-200 opacity-90 hover:opacity-100'
       }`}
     >
@@ -817,7 +817,7 @@ function NotificationCard({
               <button
                 type="button"
                 onClick={item.actionPrimary.action}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-sm transition-all"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-sm transition-colors"
               >
                 {item.actionPrimary.icon && (
                   <span className="material-symbols-outlined text-[16px]">

@@ -446,7 +446,7 @@ export function LiveClassroomContent({
                 `prejoin` phase is excluded: Jitsi's own join screen occupies the
                 stage and must stay clickable. */}
             {!connected && phase.kind !== 'prejoin' && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-tr from-slate-950 via-slate-900 to-indigo-950 p-6 text-center text-white">
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-900 p-6 text-center text-white">
                 {phase.kind === 'loading_booking' && (
                   <>
                     <span className="material-symbols-outlined animate-spin text-[32px] text-emerald-400">
@@ -585,7 +585,7 @@ export function LiveClassroomContent({
                 onClick={handleToggleMic}
                 disabled={!connected}
                 aria-pressed={!micMuted}
-                className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 ${
+                className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                   micMuted
                     ? 'bg-rose-600/30 text-rose-400 hover:bg-rose-600/50'
                     : 'bg-emerald-600/30 text-emerald-400 hover:bg-emerald-600/50'
@@ -602,7 +602,7 @@ export function LiveClassroomContent({
                 onClick={handleToggleCamera}
                 disabled={!connected}
                 aria-pressed={!videoMuted}
-                className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 ${
+                className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                   videoMuted
                     ? 'bg-rose-600/30 text-rose-400 hover:bg-rose-600/50'
                     : 'bg-emerald-600/30 text-emerald-400 hover:bg-emerald-600/50'
@@ -621,7 +621,7 @@ export function LiveClassroomContent({
                 onClick={handleToggleScreen}
                 disabled={!connected}
                 aria-pressed={sharingScreen}
-                className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 ${
+                className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                   sharingScreen
                     ? 'bg-emerald-600 text-white'
                     : 'bg-white/10 text-slate-200 hover:bg-white/20'
@@ -637,7 +637,7 @@ export function LiveClassroomContent({
                 type="button"
                 onClick={handleHangup}
                 disabled={!connected}
-                className="flex h-10 items-center gap-1.5 rounded-xl bg-rose-600 px-3.5 text-xs font-semibold text-white shadow-md transition-all hover:bg-rose-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex h-10 items-center gap-1.5 rounded-xl bg-rose-600 px-3.5 text-xs font-semibold text-white shadow-md transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-40"
                 title={t('video.btnLeave')}
               >
                 <span className="material-symbols-outlined text-[18px]">call_end</span>
@@ -787,7 +787,7 @@ export function LiveClassroomContent({
 
             <Link
               href={`/${locale}/bookings/${booking === null ? bookingId : booking.id}/review`}
-              className="flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 py-3 text-xs font-bold text-white shadow-md transition-all hover:bg-emerald-700 hover:shadow-lg active:scale-95"
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 py-3 text-xs font-bold text-white shadow-md transition-colors hover:bg-emerald-700 hover:shadow-sm"
             >
               <span className="material-symbols-outlined text-[18px]">rate_review</span>
               <span>{t('escrow.btnEndAndReview')}</span>

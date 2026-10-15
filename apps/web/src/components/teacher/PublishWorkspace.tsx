@@ -82,7 +82,7 @@ export function PublishWorkspace() {
         </p>
         <Link
           href={`/${locale}/auth`}
-          className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95"
+          className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
         >
           {t('signIn')}
         </Link>
@@ -110,7 +110,7 @@ export function PublishWorkspace() {
         </p>
         <Link
           href={`/${locale}/verification`}
-          className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95"
+          className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
         >
           {t('goToVerification')}
         </Link>

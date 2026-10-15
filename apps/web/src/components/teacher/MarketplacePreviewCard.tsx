@@ -46,10 +46,9 @@ export function MarketplacePreviewCard({ draft, skills }: Props) {
           {t('live')}
         </span>
       </div>
-      <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md">
+      <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-sm">
         <div className="relative flex h-40 w-full items-center justify-center overflow-hidden bg-slate-900">
           <CategoryIcon category={skill?.category ?? null} />
-          <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent" />
           <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
             <span className="rounded-lg bg-white/90 px-2.5 py-0.5 text-xs font-bold text-slate-900 shadow-xs backdrop-blur-md">
               {skill?.label ?? t('categoryFallback')}

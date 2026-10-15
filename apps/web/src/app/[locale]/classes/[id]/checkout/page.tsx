@@ -384,7 +384,7 @@ export default function BookingCheckoutPage({ params }: PageProps) {
             {loadError !== null && (
               <a
                 href={`/${locale}/classes`}
-                className="mt-2 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700"
+                className="mt-2 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
               >
                 Về trang khám phá lớp
               </a>
@@ -772,12 +772,12 @@ export default function BookingCheckoutPage({ params }: PageProps) {
                   type="button"
                   disabled={isProcessing || settlement === 'settled' || !affordable}
                   onClick={handleConfirmBooking}
-                  className={`w-full py-3.5 px-4 rounded-xl font-semibold text-sm transition-all shadow-sm flex items-center justify-center gap-2 group cursor-pointer ${
+                  className={`w-full py-3.5 px-4 rounded-xl font-semibold text-sm transition-colors shadow-sm flex items-center justify-center gap-2 group cursor-pointer ${
                     settlement === 'settled'
                       ? 'bg-emerald-600 text-white cursor-default'
                       : !affordable
                         ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
-                        : 'bg-emerald-600 hover:bg-emerald-700 text-white active:scale-[0.99]'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white'
                   }`}
                 >
                   {isProcessing ? (
@@ -1002,7 +1002,7 @@ export default function BookingCheckoutPage({ params }: PageProps) {
               type="button"
               onClick={() => void handleConfirmTopUp()}
               disabled={isProcessing}
-              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-semibold transition-all shadow-sm"
+              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-semibold transition-colors shadow-sm"
             >
               {isProcessing ? 'Đang xử lý…' : 'Mở trang thanh toán SePay'}
             </button>

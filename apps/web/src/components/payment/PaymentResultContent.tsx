@@ -171,7 +171,7 @@ export function PaymentResultContent({ intentId, providerRef }: PaymentResultCon
         <div className="flex flex-wrap gap-3">
           <a
             href={`/${locale}/wallet`}
-            className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700"
+            className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
           >
             {t('walletCta')}
           </a>
@@ -277,7 +277,7 @@ export function PaymentResultContent({ intentId, providerRef }: PaymentResultCon
           type="button"
           onClick={() => void handleRefresh()}
           disabled={busy}
-          className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 disabled:opacity-60"
+          className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:opacity-60"
         >
           {busy ? t('refreshing') : t('refreshCta')}
         </button>
