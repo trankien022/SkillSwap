@@ -211,6 +211,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   userInfoCol: {
+    minWidth: 0,
     flex: 1,
     gap: 2,
   },
@@ -230,6 +231,8 @@ const styles = StyleSheet.create({
   },
   detailRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: spacing.xs,
@@ -239,11 +242,14 @@ const styles = StyleSheet.create({
     color: colors.inkSoft,
   },
   detailValue: {
+    flexShrink: 1,
     fontSize: typography.body.fontSize,
     fontWeight: '600',
     color: colors.ink,
   },
   statusBadge: {
+    maxWidth: '100%',
+    flexShrink: 1,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: radius.control,
@@ -257,6 +263,8 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   langOptionBtn: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
     flex: 1,
     minHeight: 44,
     borderRadius: radius.pill,

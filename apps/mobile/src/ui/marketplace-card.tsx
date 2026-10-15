@@ -109,7 +109,7 @@ export function MarketplaceCard({ item, skillMap, onPress }: MarketplaceCardProp
             const skillName = skillMap?.get(skillId) ?? t('Marketplace.skillPending');
             return (
               <View key={skillId} style={styles.skillChip}>
-                <Text style={styles.skillChipText} numberOfLines={1}>
+                <Text style={styles.skillChipText}>
                   {skillName}
                 </Text>
               </View>
@@ -172,6 +172,7 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: spacing.sm,
@@ -183,6 +184,8 @@ const styles = StyleSheet.create({
     color: colors.inkSoft,
   },
   statusBadge: {
+    maxWidth: '100%',
+    flexShrink: 1,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: radius.control,
@@ -203,6 +206,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   skillChip: {
+    maxWidth: '100%',
     backgroundColor: colors.mist,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
@@ -225,6 +229,7 @@ const styles = StyleSheet.create({
   },
   footerRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: spacing.xs,
@@ -234,7 +239,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   priceAndRatingCol: {
-    flex: 1,
+    flexBasis: 160,
+    flexGrow: 1,
     flexShrink: 1,
     minWidth: 0,
     gap: 2,
@@ -257,8 +263,10 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   actionPill: {
-    flexShrink: 0,
-    minHeight: 44,
+    flexShrink: 1,
+    maxWidth: '100%',
+    minHeight: 48,
+    paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     borderRadius: radius.pill,
     borderWidth: 1,
@@ -268,6 +276,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   actionPillText: {
+    textAlign: 'center',
     color: colors.campusEmerald,
     fontSize: typography.label.fontSize,
     fontWeight: '600',

@@ -67,7 +67,7 @@ export default function TabsLayout() {
         options={{
           title: t('Nav.home'),
           tabBarLabel: t('Nav.home'),
-        tabBarIcon: ({ color, size, focused }) => <SymbolView name={{ ios: 'house.fill', android: 'home' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
+        tabBarIcon: ({ color, size, focused }) => <SymbolView accessible={false} name={{ ios: 'house', android: 'home', web: 'home' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
         }}
       />
       <Tabs.Screen
@@ -75,7 +75,7 @@ export default function TabsLayout() {
         options={{
           title: t('Nav.explore'),
           tabBarLabel: t('Nav.explore'),
-        tabBarIcon: ({ color, size, focused }) => <SymbolView name={{ ios: 'magnifyingglass', android: 'search' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
+        tabBarIcon: ({ color, size, focused }) => <SymbolView accessible={false} name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
         }}
       />
       <Tabs.Screen
@@ -83,7 +83,7 @@ export default function TabsLayout() {
         options={{
           title: t('Nav.schedule'),
           tabBarLabel: t('Nav.schedule'),
-        tabBarIcon: ({ color, size, focused }) => <SymbolView name={{ ios: 'calendar', android: 'calendar_month' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
+        tabBarIcon: ({ color, size, focused }) => <SymbolView accessible={false} name={{ ios: 'calendar', android: 'calendar_month', web: 'calendar_month' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
         }}
       />
       <Tabs.Screen
@@ -91,7 +91,7 @@ export default function TabsLayout() {
         options={{
           title: t('Nav.wallet'),
           tabBarLabel: t('Nav.wallet'),
-        tabBarIcon: ({ color, size, focused }) => <SymbolView name={{ ios: 'wallet.pass.fill', android: 'account_balance_wallet' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
+        tabBarIcon: ({ color, size, focused }) => <SymbolView accessible={false} name={{ ios: 'wallet.pass', android: 'account_balance_wallet', web: 'account_balance_wallet' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
         }}
       />
       <Tabs.Screen
@@ -99,7 +99,7 @@ export default function TabsLayout() {
         options={{
           title: t('Nav.profile'),
           tabBarLabel: t('Nav.profile'),
-        tabBarIcon: ({ color, size, focused }) => <SymbolView name={{ ios: 'person.crop.circle.fill', android: 'account_circle' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
+        tabBarIcon: ({ color, size, focused }) => <SymbolView accessible={false} name={{ ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
         }}
       />
     </Tabs>

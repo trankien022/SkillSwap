@@ -44,9 +44,11 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.lg,
   },
   meta: {
+    flexShrink: 1,
     color: colors.inkSoft,
     fontSize: typography.body.fontSize,
   },

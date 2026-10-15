@@ -225,10 +225,13 @@ const styles = StyleSheet.create({
   },
   cardHeader: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   cardTitle: {
+    flexShrink: 1,
     fontSize: typography.heading.fontSize,
     fontWeight: typography.heading.fontWeight,
     color: colors.ink,
@@ -257,10 +260,12 @@ const styles = StyleSheet.create({
   },
   balanceGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.lg,
   },
   balanceCol: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: 140,
     backgroundColor: colors.mist,
     padding: spacing.md,
     borderRadius: radius.control,
