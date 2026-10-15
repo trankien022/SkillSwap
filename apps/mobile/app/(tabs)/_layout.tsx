@@ -67,7 +67,8 @@ export default function TabsLayout() {
         options={{
           title: t('Nav.home'),
           tabBarLabel: t('Nav.home'),
-        tabBarIcon: ({ color, size, focused }) => <SymbolView accessible={false} name={{ ios: 'house', android: 'home', web: 'home' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
+          tabBarAccessibilityLabel: t('Nav.home'),
+        tabBarIcon: ({ color, size, focused }) => <SymbolView accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" name={{ ios: 'house', android: 'home', web: 'home' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
         }}
       />
       <Tabs.Screen
@@ -75,7 +76,8 @@ export default function TabsLayout() {
         options={{
           title: t('Nav.explore'),
           tabBarLabel: t('Nav.explore'),
-        tabBarIcon: ({ color, size, focused }) => <SymbolView accessible={false} name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
+          tabBarAccessibilityLabel: t('Nav.explore'),
+        tabBarIcon: ({ color, size, focused }) => <SymbolView accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
         }}
       />
       <Tabs.Screen
@@ -83,7 +85,8 @@ export default function TabsLayout() {
         options={{
           title: t('Nav.schedule'),
           tabBarLabel: t('Nav.schedule'),
-        tabBarIcon: ({ color, size, focused }) => <SymbolView accessible={false} name={{ ios: 'calendar', android: 'calendar_month', web: 'calendar_month' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
+          tabBarAccessibilityLabel: t('Nav.schedule'),
+        tabBarIcon: ({ color, size, focused }) => <SymbolView accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" name={{ ios: 'calendar', android: 'calendar_month', web: 'calendar_month' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
         }}
       />
       <Tabs.Screen
@@ -91,7 +94,8 @@ export default function TabsLayout() {
         options={{
           title: t('Nav.wallet'),
           tabBarLabel: t('Nav.wallet'),
-        tabBarIcon: ({ color, size, focused }) => <SymbolView accessible={false} name={{ ios: 'wallet.pass', android: 'account_balance_wallet', web: 'account_balance_wallet' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
+          tabBarAccessibilityLabel: t('Nav.wallet'),
+        tabBarIcon: ({ color, size, focused }) => <SymbolView accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" name={{ ios: 'wallet.pass', android: 'account_balance_wallet', web: 'account_balance_wallet' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
         }}
       />
       <Tabs.Screen
@@ -99,7 +103,8 @@ export default function TabsLayout() {
         options={{
           title: t('Nav.profile'),
           tabBarLabel: t('Nav.profile'),
-        tabBarIcon: ({ color, size, focused }) => <SymbolView accessible={false} name={{ ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
+          tabBarAccessibilityLabel: t('Nav.profile'),
+        tabBarIcon: ({ color, size, focused }) => <SymbolView accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" name={{ ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
         }}
       />
     </Tabs>
