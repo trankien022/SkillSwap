@@ -35,6 +35,34 @@ export interface RevokeVerificationRequest {
   readonly revokedAt: Date;
 }
 
+/** Sort orders the admin queue supports (whitelisted, index-served). */
+export type AdminVerificationSort =
+  | 'submittedAt'
+  | '-submittedAt'
+  | 'decidedAt'
+  | '-decidedAt';
+
+/**
+ * FR-015: the filters an Administrator's verification queue accepts.
+ *
+ * Unlike every other read in this module, this one is deliberately **not** account-scoped —
+ * an administrator reviews other people's submissions, which is the whole point of the queue.
+ */
+export interface ListVerificationsForAdminRequest {
+  readonly limit: number;
+  readonly cursor: string | undefined;
+  readonly status: VerificationStatus | undefined;
+  /** Free-text match over the school name. */
+  readonly q: string | undefined;
+  readonly sort: AdminVerificationSort | undefined;
+}
+
+export interface AdminVerificationPage {
+  readonly items: Verification[];
+  readonly nextCursor: string | null;
+  readonly total: number;
+}
+
 export interface VerificationRepository {
   /** Inserts a pending verification, rejecting a second effective one. */
   create(request: CreateVerificationRequest): Promise<Verification>;
@@ -55,4 +83,11 @@ export interface VerificationRepository {
    * non-effective row is a no-op.
    */
   revoke(request: RevokeVerificationRequest): Promise<ApplyDecisionResult>;
+  /**
+   * FR-015: the admin-wide verification queue (NFR-014).
+   *
+   * Bounded keyset read: `total` is a `COUNT(*)` over the same filters, run in the
+   * same transaction as the page so the two agree.
+   */
+  listForAdmin(request: ListVerificationsForAdminRequest): Promise<AdminVerificationPage>;
 }

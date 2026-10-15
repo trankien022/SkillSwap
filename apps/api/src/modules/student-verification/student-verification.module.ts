@@ -16,6 +16,7 @@ import { RequestDocumentUploadUseCase } from './internal/application/request-doc
 import { DecideStudentVerificationUseCase } from './internal/application/decide-student-verification.use-case';
 import { RevokeStudentVerificationUseCase } from './internal/application/revoke-student-verification.use-case';
 import { GetMyVerificationQueryHandler } from './internal/application/get-my-verification.query';
+import { ListAdminVerificationsQueryHandler } from './internal/application/list-admin-verifications.query';
 import { GET_MODULE_STATUS } from './internal/application/port/in/get-module-status';
 import { ADVANCE_STATUS } from './internal/application/port/in/advance-status';
 import { SUBMIT_STUDENT_VERIFICATION } from './internal/application/port/in/submit-student-verification';
@@ -23,6 +24,7 @@ import { REQUEST_DOCUMENT_UPLOAD } from './internal/application/port/in/request-
 import { DECIDE_STUDENT_VERIFICATION } from './internal/application/port/in/decide-student-verification';
 import { REVOKE_STUDENT_VERIFICATION } from './internal/application/port/in/revoke-student-verification';
 import { GET_MY_VERIFICATION } from './internal/application/port/in/get-my-verification';
+import { LIST_ADMIN_VERIFICATIONS } from './internal/application/port/in/list-admin-verifications';
 import { STATUS_READER, type ModuleStatusReader } from './internal/application/port/out/module-status-reader';
 import { STATUS_WRITER, type ModuleStatusWriter } from './internal/application/port/out/module-status-writer';
 import {
@@ -141,6 +143,12 @@ export class StudentVerificationRegistrar implements OnModuleInit {
       provide: GET_MY_VERIFICATION,
       useFactory: (verifications: VerificationRepository) =>
         new GetMyVerificationQueryHandler(verifications),
+      inject: [VERIFICATION_REPOSITORY],
+    },
+    {
+      provide: LIST_ADMIN_VERIFICATIONS,
+      useFactory: (verifications: VerificationRepository) =>
+        new ListAdminVerificationsQueryHandler(verifications),
       inject: [VERIFICATION_REPOSITORY],
     },
     StudentVerificationRegistrar,

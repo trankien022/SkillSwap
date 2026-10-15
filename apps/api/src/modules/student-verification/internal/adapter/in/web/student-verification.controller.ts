@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Param, Post, Query, Req } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOkResponse,
@@ -7,6 +7,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import type {
+  AdminVerificationPage,
   DocumentUploadTargetView,
   StudentVerificationView,
 } from '@skillswap/contracts';
@@ -30,6 +31,10 @@ import {
   GET_MY_VERIFICATION,
   type GetMyVerificationPort,
 } from '../../../application/port/in/get-my-verification';
+import {
+  LIST_ADMIN_VERIFICATIONS,
+  type ListAdminVerificationsPort,
+} from '../../../application/port/in/list-admin-verifications';
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
 import { Roles } from '../../../../../../shared/http/roles.decorator';
 import {
@@ -37,6 +42,8 @@ import {
   ResponseMessage,
 } from '../../../../../../shared/http/response-code.decorator';
 import {
+  AdminVerificationPageDto,
+  AdminVerificationQueryDto,
   DocumentUploadRequestDto,
   DocumentUploadTargetDto,
   StudentVerificationDto,
@@ -55,6 +62,7 @@ export class StudentVerificationController {
     @Inject(DECIDE_STUDENT_VERIFICATION) private readonly decide: DecideStudentVerificationPort,
     @Inject(REVOKE_STUDENT_VERIFICATION) private readonly revoke: RevokeStudentVerificationPort,
     @Inject(GET_MY_VERIFICATION) private readonly getMine: GetMyVerificationPort,
+    @Inject(LIST_ADMIN_VERIFICATIONS) private readonly listAdmin: ListAdminVerificationsPort,
   ) {}
 
   @Post('documents')
@@ -134,5 +142,23 @@ export class StudentVerificationController {
   @ApiOkResponse({ type: StudentVerificationDto, description: 'The latest verification for the caller, or null' })
   mine(@Req() request: RequestWithIdentity): Promise<StudentVerificationView | null> {
     return this.getMine.execute(currentUserId(request));
+  }
+
+  /**
+   * FR-015: the Administrator's verification queue (NFR-014).
+   *
+   * Declared **after** `mine` on purpose: Nest matches routes in declaration order, and a bare
+   * `@Get()` declared first would shadow `GET /student-verifications/me` and route the caller's
+   * own read into the admin queue. `student-verification.controller.spec.ts` pins that `me`
+   * still resolves to `mine`.
+   */
+  @Get()
+  @Roles('admin')
+  @ResponseCode('ADMIN_VERIFICATIONS_OK')
+  @ResponseMessage('Verification queue loaded')
+  @ApiOperation({ summary: 'The admin verification queue (FR-015)' })
+  @ApiOkResponse({ type: AdminVerificationPageDto, description: 'A page of student verifications' })
+  listVerifications(@Query() query: AdminVerificationQueryDto): Promise<AdminVerificationPage> {
+    return this.listAdmin.execute(query);
   }
 }

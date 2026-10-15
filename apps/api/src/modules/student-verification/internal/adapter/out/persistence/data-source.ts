@@ -7,6 +7,7 @@ import { CreateStudentVerifications1791072000100 } from './migrations/1791072000
 import { DropVerificationExpiryAndSuperseded1791072000101 } from './migrations/1791072000101-DropVerificationExpiryAndSuperseded';
 import { CreateVerificationDocuments1791072000102 } from './migrations/1791072000102-CreateVerificationDocuments';
 import { AddVerificationRevocation1791072000103 } from './migrations/1791072000103-AddVerificationRevocation';
+import { AddAdminVerificationQueueIndex1791072000104 } from './migrations/1791072000104-AddAdminVerificationQueueIndex';
 import { SCHEMA } from './schema';
 
 /** One connection pool per module schema (ARCHITECTURE.md §5). */
@@ -27,6 +28,7 @@ export function createModuleDataSource(config: ApiConfig, schema: string = SCHEM
       DropVerificationExpiryAndSuperseded1791072000101,
       CreateVerificationDocuments1791072000102,
       AddVerificationRevocation1791072000103,
+      AddAdminVerificationQueueIndex1791072000104,
     ],
     migrationsTableName: MIGRATIONS_TABLE,
     synchronize: false,
