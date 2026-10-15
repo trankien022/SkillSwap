@@ -222,7 +222,8 @@
       "signInCta": "Đăng nhập ngay",
       "errorTitle": "Không tải được danh sách lớp",
       "errorBody": "Đã xảy ra lỗi khi tải các lớp đang mở. Vui lòng thử lại.",
-      "retry": "Thử lại"
+      "retry": "Thử lại",
+      "emptyTitle": "Không tìm thấy lớp học phù hợp"
     },
     "filters": {
       "title": "Bộ lọc chuyên sâu",

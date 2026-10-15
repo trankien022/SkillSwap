@@ -222,7 +222,8 @@
       "signInCta": "Sign in now",
       "errorTitle": "We couldn't load classes",
       "errorBody": "Something went wrong while fetching open classes. Please try again.",
-      "retry": "Try again"
+      "retry": "Try again",
+      "emptyTitle": "No matching classes found"
     },
     "filters": {
       "title": "Advanced filters",
