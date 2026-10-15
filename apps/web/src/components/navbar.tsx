@@ -4,9 +4,26 @@ import { useState, useEffect } from 'react';
 import { useLocale } from 'next-intl';
 import { BrandMark } from './BrandMark';
 import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
-import { callApi, getTokens, getStoredUser, logout, unwrapEnvelope, WALLET_BALANCE_EVENT, type UserProfile } from '../lib/api-client';
+import {
+  callApi,
+  getTokens,
+  getStoredUser,
+  logout,
+  unwrapEnvelope,
+  WALLET_BALANCE_EVENT,
+  type UserProfile,
+} from '../lib/api-client';
 
-export type NavbarTab = 'explore' | 'classes' | 'instructor' | 'wallet' | 'verification' | 'skills' | 'notifications' | 'verifier' | 'admin';
+export type NavbarTab =
+  | 'explore'
+  | 'classes'
+  | 'instructor'
+  | 'wallet'
+  | 'verification'
+  | 'skills'
+  | 'notifications'
+  | 'verifier'
+  | 'admin';
 
 export interface NavbarProps {
   currentTab?: NavbarTab;
@@ -21,6 +38,7 @@ export function Navbar({
   me: propMe,
   unreadNotificationsCount = 3,
 }: NavbarProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const [internalBalance, setInternalBalance] = useState<WalletBalanceView | null>(null);
   const [internalMe, setInternalMe] = useState<MeResponse | null>(null);
   const [hasTokens, setHasTokens] = useState<boolean>(false);
@@ -104,8 +122,7 @@ export function Navbar({
   // A `balance`/`me` supplied as a prop is itself proof of a session (the
   // dashboards fetch those server-side), so it counts even before the token
   // read lands on the client.
-  const signedIn =
-    hasTokens || me !== null || propMe !== undefined || propBalance !== undefined;
+  const signedIn = hasTokens || me !== null || propMe !== undefined || propBalance !== undefined;
   const isVerifier = me?.role === 'verifier' || storedUser?.role === 'verifier';
   const isAdmin = me?.role === 'admin' || storedUser?.role === 'admin';
 
@@ -170,7 +187,16 @@ export function Navbar({
   ];
 
   const availableCredits = balance ? balance.availableCredits : 0;
-  const displayName = me?.displayName || storedUser?.displayName || (storedUser?.email ? storedUser.email.split('@')[0] : (hasTokens ? (locale === 'vi' ? 'Học viên' : 'Learner') : ''));
+  const displayName =
+    me?.displayName ||
+    storedUser?.displayName ||
+    (storedUser?.email
+      ? storedUser.email.split('@')[0]
+      : hasTokens
+        ? locale === 'vi'
+          ? 'Học viên'
+          : 'Learner'
+        : '');
   const initials = displayName
     ? displayName
         .split(' ')
@@ -180,11 +206,13 @@ export function Navbar({
         .join('')
         .toUpperCase()
     : 'SS';
-  const isVerified = me?.studentVerification?.status === 'approved' || storedUser?.studentVerificationStatus === 'approved';
+  const isVerified =
+    me?.studentVerification?.status === 'approved' ||
+    storedUser?.studentVerificationStatus === 'approved';
 
   return (
-    <header className="sticky top-0 bg-white border-b border-slate-200 z-50 h-16 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 xl:px-8 h-full flex items-center justify-between gap-2 sm:gap-4">
+    <header className="sticky top-0 z-50 border-b border-border bg-surface">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 xl:px-8 min-h-16 flex items-center justify-between gap-2 sm:gap-4">
         {/* Brand Logo & Main Nav */}
         <div className="flex items-center gap-3 xl:gap-8 min-w-0">
           <a href={`/${locale}/classes`} className="flex items-center gap-2.5 group shrink-0">
@@ -193,42 +221,31 @@ export function Navbar({
               {locale === 'vi' ? 'Sinh viên' : 'Students'}
             </span>
           </a>
-
-          <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1.5 shrink-0">
-            {navLinks.map((link) => {
-              const isActive = currentTab === link.id;
-              return (
-                <a
-                  key={link.id}
-                  href={link.href}
-                  title={link.tooltip || link.label}
-                  className={`whitespace-nowrap px-2.5 xl:px-3 py-1.5 rounded-lg text-xs xl:text-sm transition-colors shrink-0 ${
-                    isActive
-                      ? 'text-emerald-700 bg-emerald-50 font-semibold'
-                      : 'font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                  }`}
-                >
-                  {link.label}
-                </a>
-              );
-            })}
-          </nav>
         </div>
 
-        {/* Right Section: Balance, Notification Bell, User profile */}
+        <button
+          type="button"
+          onClick={() => setMenuOpen((open) => !open)}
+          aria-expanded={menuOpen}
+          aria-controls="product-navigation"
+          className="ml-auto inline-flex min-h-11 items-center px-2 text-sm font-medium text-ink md:hidden"
+        >
+          {locale === 'vi' ? 'Menu' : 'Menu'}
+        </button>
+        {/* Account controls */}
         <div className="flex items-center gap-2 sm:gap-2.5 xl:gap-3 shrink-0">
           {/* Credit balance badge — only once a session exists. A guest has no
               wallet, so showing a hardcoded 0 was both noise and a dead link. */}
           {signedIn && (
-            <div className="flex items-center gap-1.5 sm:gap-2 pl-2 sm:pl-2.5 pr-1.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-xs font-semibold text-slate-900 shrink-0 whitespace-nowrap">
+            <div className="hidden sm:flex items-center gap-1.5 sm:gap-2 pl-2 sm:pl-2.5 pr-1.5 py-1 rounded-lg bg-mist border border-border text-xs font-semibold text-slate-900 shrink-0 whitespace-nowrap">
               <span className="material-symbols-outlined text-[17px] text-emerald-600">toll</span>
               <span className="whitespace-nowrap" data-testid="navbar-credits">
                 {availableCredits.toLocaleString('vi-VN')} Credits
               </span>
               <a
                 href={`/${locale}/wallet`}
-                title="Nạp thêm Credits"
-                className="w-5 h-5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors text-xs font-bold leading-none shrink-0"
+                title={locale === 'vi' ? 'Nạp credit' : 'Top up credits'}
+                className="w-11 h-11 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors text-xs font-bold leading-none shrink-0"
               >
                 +
               </a>
@@ -239,8 +256,8 @@ export function Navbar({
           {signedIn && (
             <a
               href={`/${locale}/notifications`}
-              title="Trung tâm Thông báo"
-              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors relative shrink-0 ${
+              title={locale === 'vi' ? 'Thông báo' : 'Notifications'}
+              className={`w-11 h-11 rounded-lg flex items-center justify-center transition-colors relative shrink-0 ${
                 currentTab === 'notifications'
                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
@@ -261,7 +278,7 @@ export function Navbar({
               <a
                 href={`/${locale}/status`}
                 className="flex items-center gap-2.5 hover:opacity-80 transition-opacity shrink-0"
-                title="Hồ sơ & Trạng thái xác minh"
+                title={locale === 'vi' ? 'Hồ sơ và xác minh' : 'Profile and verification'}
               >
                 <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center ring-2 ring-emerald-50 text-emerald-800 font-semibold text-xs shrink-0">
                   {initials}
@@ -275,9 +292,23 @@ export function Navbar({
                   </span>
                   <span
                     className="text-[11px] text-slate-500 leading-tight truncate block"
-                    title={isVerified ? (locale === 'vi' ? 'SV đã xác minh' : 'Verified Student') : (locale === 'vi' ? 'Học viên' : 'Learner')}
+                    title={
+                      isVerified
+                        ? locale === 'vi'
+                          ? 'SV đã xác minh'
+                          : 'Verified Student'
+                        : locale === 'vi'
+                          ? 'Học viên'
+                          : 'Learner'
+                    }
                   >
-                    {isVerified ? (locale === 'vi' ? 'SV đã xác minh' : 'Verified Student') : (locale === 'vi' ? 'Học viên' : 'Learner')}
+                    {isVerified
+                      ? locale === 'vi'
+                        ? 'SV đã xác minh'
+                        : 'Verified Student'
+                      : locale === 'vi'
+                        ? 'Học viên'
+                        : 'Learner'}
                   </span>
                 </div>
               </a>
@@ -288,9 +319,19 @@ export function Navbar({
                   window.location.href = `/${locale}/auth?tab=login`;
                 }}
                 title={locale === 'vi' ? 'Đăng xuất' : 'Sign Out'}
-                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-100 rounded-lg transition-colors shrink-0"
+                className="min-h-11 min-w-11 p-2 text-slate-500 hover:text-rose-600 hover:bg-slate-100 rounded-lg transition-colors shrink-0"
               >
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                   <polyline points="16 17 21 12 16 7" />
                   <line x1="21" y1="12" x2="9" y2="12" />
@@ -300,13 +341,37 @@ export function Navbar({
           ) : (
             <a
               href={`/${locale}/auth?tab=login`}
-              className="rounded-full bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95 shrink-0 whitespace-nowrap"
+              className="rounded-full bg-emerald-600 inline-flex min-h-11 items-center px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95 shrink-0 whitespace-nowrap"
             >
               {locale === 'vi' ? 'Đăng nhập' : 'Sign In'}
             </a>
           )}
         </div>
       </div>
+      <nav
+        id="product-navigation"
+        aria-label={locale === 'vi' ? 'Điều hướng chính' : 'Main navigation'}
+        className={`mx-auto max-w-7xl gap-x-5 px-4 sm:px-6 xl:px-8 md:flex ${menuOpen ? 'grid grid-cols-2' : 'hidden'}`}
+      >
+        {navLinks.map((link) => {
+          const isActive = currentTab === link.id;
+          return (
+            <a
+              key={link.id}
+              href={link.href}
+              title={link.tooltip || link.label}
+              aria-current={isActive ? 'page' : undefined}
+              className={`inline-flex min-h-11 items-center border-b-2 text-sm transition-colors ${
+                isActive
+                  ? 'border-ink text-ink font-semibold'
+                  : 'border-transparent font-medium text-ink-soft hover:text-ink'
+              }`}
+            >
+              {link.label}
+            </a>
+          );
+        })}
+      </nav>
     </header>
   );
 }

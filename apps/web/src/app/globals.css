@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* SkillSwap design tokens — see DESIGN.md §2 (Colors) and §3 (Typography).
  * Tailwind v4 exposes these as utility classes (`bg-mist`, `text-ink-soft`, ...).
@@ -30,6 +30,52 @@
   color-scheme: light;
 }
 
+@layer base {
+  html {
+    scroll-padding-top: 8rem;
+  }
+
+  body {
+    font-variant-numeric: tabular-nums;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  :where(a, button, input, select, textarea, summary):focus-visible {
+    outline: 2px solid var(--color-campus-emerald-deep);
+    outline-offset: 3px;
+  }
+
+  button:not(:disabled),
+  summary,
+  select {
+    cursor: pointer;
+  }
+
+  button {
+    min-height: 44px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
 body {
   margin: 0;
   background-color: #f8fafc;
@@ -38,9 +84,9 @@ body {
     ui-sans-serif,
     system-ui,
     -apple-system,
-    "Segoe UI",
+    'Segoe UI',
     Roboto,
-    "Helvetica Neue",
+    'Helvetica Neue',
     Arial,
     sans-serif;
 }

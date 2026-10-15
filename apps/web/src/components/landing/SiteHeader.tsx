@@ -17,7 +17,7 @@ import { LandingAuthAction } from './LandingAuthAction';
  */
 export function SiteHeader({ locale }: { locale: string }) {
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-mist/90 backdrop-blur shadow-sm">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-surface">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 lg:px-8">
         {/* Brand wordmark — shared with the post-auth Navbar via BrandMark */}
         <Link
