@@ -552,8 +552,47 @@
     "StudentVerification": {
       "title": "Student verification review",
       "notice": "Review a student verification by id. Admin must know the verification id.",
+      "queueNotice": "Every student verification on the platform. Filter by status, search by school, then open one to review it.",
       "idPlaceholder": "Verification id",
       "openCta": "Open",
+      "openByIdTitle": "Open by verification id",
+      "openByIdBody": "Use this when you already have a deep link from an email or a shared message. The list above is the normal way to review.",
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "revoked": "Revoked"
+      },
+      "queue": {
+        "loading": "Loading the queue…",
+        "loadingMore": "Loading more…",
+        "loadMore": "Load more",
+        "loadedMore": "Loaded {count} more verifications.",
+        "empty": "No verification matches these filters.",
+        "emptyHint": "Try clearing the status filter or searching for a different term.",
+        "noMajor": "No major declared",
+        "submittedAt": "Submitted {date}",
+        "totalShown": "{count} verifications match these filters",
+        "retry": "Try again",
+        "unauthorizedTitle": "You do not have access to this queue",
+        "unauthorizedBody": "The student-verification queue is for administrators only. Sign in with an administrator account.",
+        "filters": {
+          "status": "Status",
+          "anyStatus": "Any status",
+          "school": "School",
+          "schoolPlaceholder": "Search by school name (at least 2 characters)",
+          "sort": "Sort"
+        },
+        "sort": {
+          "submittedAt": "Oldest submitted first",
+          "-submittedAt": "Newest submitted first",
+          "decidedAt": "Oldest decided first",
+          "-decidedAt": "Newest decided first"
+        },
+        "errors": {
+          "generic": "Could not load the student-verification queue. Please try again."
+        }
+      },
       "label": {
         "id": "Verification id",
         "decision": "Decision",

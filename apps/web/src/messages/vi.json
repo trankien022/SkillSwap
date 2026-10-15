@@ -552,8 +552,47 @@
     "StudentVerification": {
       "title": "Duyệt xác minh sinh viên",
       "notice": "Xem xét hồ sơ xác minh sinh viên theo id. Admin cần biết id xác minh.",
+      "queueNotice": "Toàn bộ hồ sơ xác minh sinh viên trên hệ thống. Lọc theo trạng thái, tìm theo tên trường, rồi mở một hồ sơ để xem xét.",
       "idPlaceholder": "Id xác minh",
       "openCta": "Mở",
+      "openByIdTitle": "Mở theo Id xác minh",
+      "openByIdBody": "Dùng khi bạn có sẵn đường dẫn sâu từ email hoặc được chia sẻ. Danh sách phía trên là cách duyệt thông thường.",
+      "status": {
+        "pending": "Chờ duyệt",
+        "approved": "Đã duyệt",
+        "rejected": "Từ chối",
+        "revoked": "Thu hồi"
+      },
+      "queue": {
+        "loading": "Đang tải danh sách…",
+        "loadingMore": "Đang tải thêm…",
+        "loadMore": "Tải thêm",
+        "loadedMore": "Đã tải thêm {count} hồ sơ.",
+        "empty": "Không có hồ sơ nào khớp bộ lọc.",
+        "emptyHint": "Thử bỏ bộ lọc trạng thái hoặc tìm với từ khoá khác.",
+        "noMajor": "Chưa khai báo ngành",
+        "submittedAt": "Gửi ngày {date}",
+        "totalShown": "{count} hồ sơ khớp bộ lọc",
+        "retry": "Thử lại",
+        "unauthorizedTitle": "Bạn không có quyền truy cập danh sách này",
+        "unauthorizedBody": "Danh sách xác minh sinh viên chỉ dành cho quản trị viên. Hãy đăng nhập bằng tài khoản quản trị.",
+        "filters": {
+          "status": "Trạng thái",
+          "anyStatus": "Tất cả trạng thái",
+          "school": "Tên trường",
+          "schoolPlaceholder": "Tìm theo tên trường (ít nhất 2 ký tự)",
+          "sort": "Sắp xếp"
+        },
+        "sort": {
+          "submittedAt": "Gửi cũ nhất trước",
+          "-submittedAt": "Gửi mới nhất trước",
+          "decidedAt": "Duyệt cũ nhất trước",
+          "-decidedAt": "Duyệt mới nhất trước"
+        },
+        "errors": {
+          "generic": "Không thể tải danh sách xác minh sinh viên. Vui lòng thử lại."
+        }
+      },
       "label": {
         "id": "Id xác minh",
         "decision": "Quyết định",
