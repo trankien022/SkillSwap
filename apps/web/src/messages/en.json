@@ -462,6 +462,30 @@
       "loadError": "Could not load your wallet balance. Please reload the page."
     }
   },
+  "PaymentResult": {
+    "title": "Payment result",
+    "notice": "This page only shows the status the server has recorded. Credits are added when SePay notifies the system directly, regardless of whether you come back here.",
+    "noIntent": "This link does not carry a top-up request.",
+    "noIntentHelp": "If you already paid, check your wallet: credits appear once the server receives SePay's confirmation.",
+    "intentLabel": "Top-up request",
+    "amountLabel": "Amount",
+    "creditsLabel": "Credits to receive",
+    "statusLabel": "Status",
+    "balanceLabel": "Available balance now",
+    "status": {
+      "pending": "Waiting for SePay to confirm",
+      "settled": "Added to your wallet",
+      "failed": "Payment did not succeed",
+      "reversed": "Transaction was reversed",
+      "unknown": "Unknown"
+    },
+    "balanceUnavailable": "Could not read your balance. Please reload the page.",
+    "intentUnavailable": "Could not read the top-up status. Please reload the page.",
+    "refreshCta": "Reload status",
+    "refreshing": "Reloading…",
+    "walletCta": "Open Wallet & Credits",
+    "exploreCta": "Back to classes"
+  },
   "Admin": {
     "Landing": {
       "title": "Admin home",

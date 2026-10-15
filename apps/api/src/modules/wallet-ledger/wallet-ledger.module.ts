@@ -162,9 +162,17 @@ export class WalletLedgerRegistrar implements OnModuleInit {
     },
     {
       provide: INITIATE_TOP_UP,
-      useFactory: (intents: TopUpIntentRepository, gateway: PaymentGateway) =>
-        new InitiateTopUpUseCase(intents, gateway),
-      inject: [TOP_UP_INTENT_REPOSITORY, PAYMENT_GATEWAY],
+      useFactory: (intents: TopUpIntentRepository, gateway: PaymentGateway, config: ApiConfig) =>
+        // FR-008: the configured return URL is both the fallback destination
+        // and the base of the allow-list for the client's per-request URL; the
+        // extra origins let the payer's own client (dev or prod) opt in.
+        new InitiateTopUpUseCase(
+          intents,
+          gateway,
+          config.sepayReturnUrl,
+          config.sepayReturnUrlAllowedOrigins,
+        ),
+      inject: [TOP_UP_INTENT_REPOSITORY, PAYMENT_GATEWAY, ApiConfig],
     },
     {
       provide: HANDLE_TOP_UP_CALLBACK,

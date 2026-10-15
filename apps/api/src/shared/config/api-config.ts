@@ -57,6 +57,16 @@ export class ApiConfig {
   readonly sepaySecretKey: string;
   readonly sepayReturnUrl: string;
   /**
+   * FR-008 / ADR-033: extra browser origins a per-request `returnUrl` may use.
+   *
+   * `SEPAY_RETURN_URL`'s own origin is always allowed, but the payer's browser
+   * usually runs the client on a different origin in development
+   * (e.g. `http://localhost:3000` while the configured return URL is a tunnel),
+   * and those origins have to be listed explicitly — never inferred from a
+   * request header, which is what would make this an open redirect.
+   */
+  readonly sepayReturnUrlAllowedOrigins: string[];
+  /**
    * FR-008 / ADR-033 reconciliation (deliberately incomplete, see the sweeper).
    * Off by default so no dev, test or CI run ever calls SePay.
    */
@@ -104,6 +114,10 @@ export class ApiConfig {
     this.sepayMerchantId = readString('SEPAY_MERCHANT_ID', '');
     this.sepaySecretKey = readString('SEPAY_SECRET_KEY', '');
     this.sepayReturnUrl = readString('SEPAY_RETURN_URL', '');
+    this.sepayReturnUrlAllowedOrigins = readString('SEPAY_RETURN_URL_ALLOWED_ORIGINS', '')
+      .split(',')
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
 
     // FR-008 / ADR-033: reconciliation is off unless explicitly enabled, so a
     // test or local run never reaches out to SePay.

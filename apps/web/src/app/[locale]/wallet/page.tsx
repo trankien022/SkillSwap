@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useLocale } from 'next-intl';
 import { callApi, callApiOk, unwrapEnvelope, dispatchWalletBalanceUpdate } from '../../../lib/api-client';
 import { Navbar } from '../../../components/navbar';
 import type {
@@ -33,6 +34,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function WalletPage() {
+  const locale = useLocale();
   const [balance, setBalance] = useState<WalletBalanceView | null>(null);
   const [history, setHistory] = useState<WalletHistoryItemView[]>([]);
   const [me, setMe] = useState<MeResponse | null>(null);
@@ -177,7 +179,13 @@ export default function WalletPage() {
 
       const res = await callApi('/wallet/top-ups', {
         method: 'POST',
-        body: JSON.stringify({ amountVnd: amount * 1000 }),
+        body: JSON.stringify({
+          amountVnd: amount * 1000,
+          // FR-008: come back to this client's own page rather than the
+          // configured fallback, so the payer lands somewhere that can read
+          // the intent back. Absolute, because SePay compares origins.
+          returnUrl: new URL(`/${locale}/payment/result`, window.location.origin).toString(),
+        }),
       });
 
       if (!res.ok) {

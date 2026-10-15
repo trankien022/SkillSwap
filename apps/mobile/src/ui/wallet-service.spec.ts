@@ -89,7 +89,8 @@ describe('WalletService', () => {
 
       expect(mockGateway.authenticatedRequest).toHaveBeenCalledWith('/wallet/top-ups', {
         method: 'POST',
-        body: { amountVnd: 100000 },
+        // FR-008: the payer is handed back to the app, not to a web page.
+        body: { amountVnd: 100000, returnUrl: 'skillswap://wallet' },
       });
       expect(result).toEqual(mockIntent);
     });
@@ -137,6 +138,31 @@ describe('WalletService', () => {
       expect(mockGateway.authenticatedRequest).toHaveBeenCalledWith('/wallet/top-ups/a%2Fb', {
         method: 'GET',
       });
+    });
+  });
+
+  describe('getTopUpIntentByProviderRef', () => {
+    it('reads the intent the payer came back for, by invoice number', async () => {
+      const mockStatus = {
+        id: '11111111-2222-4333-8444-555555555555',
+        ownerId: 'user-1',
+        provider: 'sepay',
+        providerRef: 'SS-1-A1B2C3',
+        amountVnd: 100000,
+        amountCredits: 100,
+        status: 'settled',
+        paidAmountVnd: 100000,
+        paidAt: '2026-10-14T02:30:00.000Z',
+      };
+      mockGateway.authenticatedRequest.mockResolvedValueOnce(mockStatus);
+
+      const result = await service.getTopUpIntentByProviderRef('SS-1-A1B2C3');
+
+      expect(mockGateway.authenticatedRequest).toHaveBeenCalledWith(
+        '/wallet/top-ups/by-provider-ref/SS-1-A1B2C3',
+        { method: 'GET' },
+      );
+      expect(result).toEqual(mockStatus);
     });
   });
 });

@@ -702,6 +702,18 @@ describe('top-up schemas (FR-008)', () => {
     expect(() => topUpRequestSchema.parse({ amountVnd: 1.5 })).toThrow();
   });
 
+  it('carries an optional per-request returnUrl', () => {
+    // Omitted (the API falls back to the configured return URL) …
+    expect(topUpRequestSchema.parse({ amountVnd: 100_000 }).returnUrl).toBeUndefined();
+    // … or supplied by the client. The *allow-list* is the API's job; the
+    // contract only pins that the field travels as a non-empty string.
+    expect(
+      topUpRequestSchema.parse({ amountVnd: 100_000, returnUrl: 'skillswap://wallet' })
+        .returnUrl,
+    ).toBe('skillswap://wallet');
+    expect(() => topUpRequestSchema.parse({ amountVnd: 100_000, returnUrl: '' })).toThrow();
+  });
+
   it('accepts a SePay IPN whose amounts are strings or numbers', () => {
     const base = {
       notification_type: 'ORDER_PAID',

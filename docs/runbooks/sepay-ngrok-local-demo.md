@@ -17,6 +17,9 @@ that page makes SePay call our IPN, and the wallet is credited exactly once.
    - `NGROK_AUTHTOKEN` — your token.
    - `SEPAY_MERCHANT_ID`, `SEPAY_SECRET_KEY` — sandbox credentials (see §3).
    - `SEPAY_RETURN_URL` — `https://<dev-domain>`.
+   - `SEPAY_RETURN_URL_ALLOWED_ORIGINS` — extra browser origins the payer may be sent back to
+     (comma separated), e.g. `http://localhost:3000` so the local web client's
+     `/payment/result` page is accepted. The configured return URL's origin is allowed anyway.
 
 Never commit `.env`. It is git-ignored; keep it that way.
 

@@ -2,7 +2,10 @@ import { HandleTopUpCallbackUseCase } from './handle-top-up-callback.use-case';
 import { InitiateTopUpUseCase } from './initiate-top-up.use-case';
 import { FakePaymentGateway, FakeTopUpIntentRepository, FakeWalletRepository } from './testing/fakes';
 
-function build() {
+function build(
+  configuredReturnUrl = 'https://app.example.test',
+  allowedOrigins: string[] = [],
+) {
   const intents = new FakeTopUpIntentRepository();
   const wallets = new FakeWalletRepository();
   const gateway = new FakePaymentGateway();
@@ -10,7 +13,7 @@ function build() {
     intents,
     wallets,
     gateway,
-    initiate: new InitiateTopUpUseCase(intents, gateway),
+    initiate: new InitiateTopUpUseCase(intents, gateway, configuredReturnUrl, allowedOrigins),
     callback: new HandleTopUpCallbackUseCase(intents, wallets, gateway.provider),
   };
 }
@@ -33,6 +36,66 @@ describe('InitiateTopUpUseCase', () => {
   it('rejects an amount that is not a whole number of credits', async () => {
     const { initiate } = build();
     await expect(initiate.execute({ ownerId: 'u1', amountVnd: 1500 })).rejects.toThrow();
+  });
+
+  it('hands the adapter the configured return URL when the client sends none', async () => {
+    const { initiate, gateway } = build('https://app.example.test');
+    const view = await initiate.execute({ ownerId: 'u1', amountVnd: 100_000 });
+    // The invoice number is appended so the return page can find this intent.
+    expect(gateway.requests[0].returnUrl).toBe(
+      `https://app.example.test/?providerRef=${view.providerRef}`,
+    );
+  });
+
+  it('accepts the client return URL on the configured origin', async () => {
+    const { initiate, gateway } = build('https://app.example.test');
+    const view = await initiate.execute({
+      ownerId: 'u1',
+      amountVnd: 100_000,
+      returnUrl: 'https://app.example.test/vi/payment/result',
+    });
+    expect(gateway.requests[0].returnUrl).toBe(
+      `https://app.example.test/vi/payment/result?providerRef=${view.providerRef}`,
+    );
+  });
+
+  it('accepts an origin the operator listed, which the payer uses in development', async () => {
+    // The configured return URL is a tunnel; the payer's browser runs the web
+    // client on localhost. That origin has to be listed explicitly.
+    const { initiate, gateway } = build('https://app.example.test', ['http://localhost:3000']);
+    const view = await initiate.execute({
+      ownerId: 'u1',
+      amountVnd: 100_000,
+      returnUrl: 'http://localhost:3000/vi/payment/result',
+    });
+    expect(gateway.requests[0].returnUrl).toBe(
+      `http://localhost:3000/vi/payment/result?providerRef=${view.providerRef}`,
+    );
+  });
+
+  it('passes the app deep link through unchanged', async () => {
+    const { initiate, gateway } = build('https://app.example.test');
+    await initiate.execute({
+      ownerId: 'u1',
+      amountVnd: 100_000,
+      returnUrl: 'skillswap://wallet',
+    });
+    expect(gateway.requests[0].returnUrl).toBe('skillswap://wallet');
+  });
+
+  it('refuses a foreign return URL and opens no intent', async () => {
+    const { initiate, gateway, intents } = build('https://app.example.test');
+    await expect(
+      initiate.execute({
+        ownerId: 'u1',
+        amountVnd: 100_000,
+        returnUrl: 'https://evil.example/phish',
+      }),
+    ).rejects.toThrow(/returnUrl is not allowed/);
+    // The gateway is never called and no pending intent is left behind for a
+    // payment the payer could never complete.
+    expect(gateway.requests).toHaveLength(0);
+    expect(intents.intents.size).toBe(0);
   });
 });
 

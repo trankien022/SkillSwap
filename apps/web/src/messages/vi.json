@@ -462,6 +462,30 @@
       "loadError": "Không tải được số dư ví. Vui lòng tải lại trang."
     }
   },
+  "PaymentResult": {
+    "title": "Kết quả thanh toán",
+    "notice": "Trang này chỉ hiển thị trạng thái do máy chủ ghi nhận. Việc cộng credit do SePay thông báo trực tiếp cho hệ thống, không phụ thuộc vào việc bạn quay lại trang này.",
+    "noIntent": "Không tìm thấy yêu cầu nạp tiền nào trong liên kết này.",
+    "noIntentHelp": "Nếu bạn đã thanh toán, hãy kiểm tra Ví: credit sẽ xuất hiện khi máy chủ nhận được xác nhận từ SePay.",
+    "intentLabel": "Yêu cầu nạp tiền",
+    "amountLabel": "Số tiền",
+    "creditsLabel": "Credit nhận được",
+    "statusLabel": "Trạng thái",
+    "balanceLabel": "Số dư khả dụng hiện tại",
+    "status": {
+      "pending": "Đang chờ SePay xác nhận",
+      "settled": "Đã cộng vào ví",
+      "failed": "Thanh toán không thành công",
+      "reversed": "Giao dịch đã bị hoàn",
+      "unknown": "Không xác định"
+    },
+    "balanceUnavailable": "Chưa đọc được số dư. Vui lòng tải lại trang.",
+    "intentUnavailable": "Chưa đọc được trạng thái yêu cầu nạp tiền. Vui lòng tải lại trang.",
+    "refreshCta": "Tải lại trạng thái",
+    "refreshing": "Đang tải lại…",
+    "walletCta": "Mở Ví & Tín dụng",
+    "exploreCta": "Về trang lớp học"
+  },
   "Admin": {
     "Landing": {
       "title": "Trang quản trị",

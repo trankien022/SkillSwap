@@ -102,6 +102,10 @@ const NAME_TO_STATUS: Record<string, number> = {
   InvalidSkillLevelError: 400,
   // FR-008 wallet top-up read (ADR-033).
   TopUpIntentNotFoundError: 404,
+  // FR-008: a client-supplied return URL that is not on our allow-list is
+  // refused, not rewritten — the caller sent something the product would never
+  // accept, and a silent substitution would hide that bug.
+  ReturnUrlNotAllowedError: 422,
 };
 
 /** Maps domain errors and unexpected failures onto the failure envelope (NFR-013). */

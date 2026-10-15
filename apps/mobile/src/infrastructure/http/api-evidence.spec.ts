@@ -24,6 +24,14 @@ describe('mobile API evidence', () => {
     // client evidence; it is simply not client evidence at all.
     expect(evidenceRoute('http://gateway/api/wallet/top-ups/callback')).toBeNull();
   });
+  it('templates the invoice-number lookup separately from the id lookup', () => {
+    // FR-008: the return path reads the intent by invoice number, which is a
+    // different route from the id poll — `by-provider-ref` is a literal
+    // segment, not an id.
+    expect(
+      evidenceRoute('http://gateway/api/wallet/top-ups/by-provider-ref/SS-1-A1B2C3'),
+    ).toBe('/api/wallet/top-ups/by-provider-ref/:providerRef');
+  });
   it('logs no credentials, request body, response payload, or query values', async () => {
     process.env.EXPO_PUBLIC_API_EVIDENCE = '1';
     const log = jest.spyOn(console, 'info').mockImplementation(() => undefined);

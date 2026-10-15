@@ -235,7 +235,13 @@ export default function BookingCheckoutPage({ params }: PageProps) {
       // without contacting the API at all.
       const res = await callApi('/wallet/top-ups', {
         method: 'POST',
-        body: JSON.stringify({ amountVnd: 100_000 }),
+        body: JSON.stringify({
+          amountVnd: 100_000,
+          // FR-008: come back to this client's own result page instead of the
+          // configured fallback, so the payer lands on a page that can read the
+          // intent back. Absolute, because SePay compares origins.
+          returnUrl: new URL(`/${locale}/payment/result`, window.location.origin).toString(),
+        }),
       });
 
       if (!res.ok) {

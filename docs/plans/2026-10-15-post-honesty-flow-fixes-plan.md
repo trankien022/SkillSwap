@@ -175,10 +175,26 @@ zero links to `/classes`-as-nav, `/skills`, `/verification`, `/bookings`, `/wall
 - **Contract:** `topUpRequestSchema` (`contracts/src/index.ts:249`) gains
   `returnUrl: z.string().min(1).optional()`.
 - **Server allow-list** (in the top-up use case, config-aware): omitted → `SEPAY_RETURN_URL`;
-  allowed if `origin === origin(SEPAY_RETURN_URL)` **or** scheme `skillswap:`; otherwise
-  **400 `VALIDATION_FAILED`** (never silently rewrite to an attacker-chosen URL). The resolved URL
-  flows through `InitiatePaymentRequest` into `buildCheckoutForm`
-  (`sepay-payment-gateway.ts:69-79`), which stops reading config directly.
+  allowed if origin ∈ **{`origin(SEPAY_RETURN_URL)`} ∪ `SEPAY_RETURN_URL_ALLOWED_ORIGINS`** — the
+  explicit list plus the configured origin — **or** scheme `skillswap:`; otherwise
+  **422 `VALIDATION_FAILED`** (never silently rewrite to an attacker-chosen URL). The list is
+  configuration, never a request header: trusting `Origin` would make this an open redirect. It
+  exists because in development the web client runs on `http://localhost:3000` while
+  `SEPAY_RETURN_URL` is the public ngrok domain, so the single-origin rule would refuse the payer's
+  own result page (found by probing the running API). The resolved URL flows through
+  `InitiatePaymentRequest` into `buildCheckoutForm` (`sepay-payment-gateway.ts:69-79`), which stops
+  reading config directly. A refused URL is resolved *before* the intent is created, so no
+  unpayable pending intent is left behind.
+  *(422, not 400: the body is well-formed and individually valid — one field is refused on
+  policy. The plan originally said 400; corrected during P3.)*
+- **Correlation, discovered in P3 (was missing from D3):** SePay's redirect carries nothing of its
+  own, and `top_up_intents.id` does not exist when the checkout form is posted (the intent is
+  created *after* the gateway call, `initiate-top-up.use-case.ts:35`). So `withProviderRef` appends
+  the **invoice number** — already the IPN's correlation key — to the web return URL, and
+  `GET /wallet/top-ups/by-provider-ref/:providerRef` (owner-scoped, same 404 semantics as the id
+  route) lets the return page read *that* intent. A custom scheme is left untouched: it cannot
+  carry a query and appending one would change which screen the OS opens, so the app re-reads its
+  own pending intent on arrival instead.
 - **Web:** `handleConfirmTopUp` passes absolute `new URL(\`/${locale}/payment/result\`,
   window.location.origin)`; new route `payment/result/page.tsx` +
   `PaymentResultContent` re-reads the balance and states settlement timing — it **never** infers
@@ -345,3 +361,11 @@ docs(web): close out the post-honesty flow fixes
 | V2 | Does SePay append invoice/status query params to the return URL? | P3 | If yes: `/payment/result` passes them through and polls that intent (upgrade path). If no: neutral page as specified. |
 | V3 | Expo deep-links `skillswap://wallet` to the wallet route in practice (group segments are URL-invisible; typed routes on) | P3 | Add an explicit route/redirect; keep poll-based settle regardless. |
 | V4 | Which of `book-button`/`class-card`/`status-pill`/`lib/booking/*` are orphaned after P4 | P4 | Delete only confirmed orphans; keep anything still imported. |
+
+### Results
+
+| # | Finding |
+|---|---|
+| V1 | **Accepted — no fallback needed.** A top-up sent with `success_url=skillswap://wallet` renders SePay's sandbox checkout normally (our invoice, our amount, no validation error), and SePay's own "Quay lại" link is literally `skillswap://wallet`. Mobile keeps sending its scheme. |
+| V2 | **Nothing appended.** SePay's back link returned `…/payment/result?providerRef=<invoice>` exactly as submitted — it preserves our query and adds none of its own. So `/payment/result` needs no provider-supplied state: it reads the intent by the invoice number we put there, and settlement still comes only from IPN + poll. |
+| V3 | **No extra route added.** `extractPathFromURL` maps `skillswap://wallet` to `/wallet`, and `(tabs)/wallet.tsx` already owns `/wallet` (group segments are URL-invisible), so the deep link resolves to the wallet screen that already re-reads on focus. A root `app/wallet.tsx` would have been a second route file for a URL that already has an owner — the very pattern Expo Router flags as `The route files … conflict on the route "/wallet"` — so it was dropped rather than kept as a redundant redirect. `app.json` already registers `scheme: "skillswap"`, so the link itself is registered. |

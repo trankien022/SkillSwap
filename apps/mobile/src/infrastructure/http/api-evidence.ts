@@ -17,6 +17,9 @@ export function evidenceRoute(url: string): string | null {
   // server-to-server, is never posted by this client, and would otherwise match
   // the `:id` template and be recorded as client evidence.
   if (/^\/wallet\/top-ups\/(?!callback$)[^/]+$/.test(path)) return '/api/wallet/top-ups/:id';
+  // The same read keyed by invoice number, used by the return path.
+  if (/^\/wallet\/top-ups\/by-provider-ref\/[^/]+$/.test(path))
+    return '/api/wallet/top-ups/by-provider-ref/:providerRef';
   if (routes.some((route) => route.test(path))) return `/api${path}`;
   if (/^\/classes\/bookings\/[^/]+\/confirm$/.test(path))
     return '/api/classes/bookings/:bookingId/confirm';
