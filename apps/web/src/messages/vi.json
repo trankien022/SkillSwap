@@ -500,6 +500,7 @@
       "notAuthorizedBody": "Trang này chỉ dành cho quản trị viên. Nếu bạn cần truy cập, hãy liên hệ quản trị hệ thống.",
       "signInTitle": "Cần đăng nhập",
       "signInBody": "Bạn cần đăng nhập bằng tài khoản quản trị để truy cập trang này.",
+      "signInCta": "Đăng nhập ngay",
       "loading": "Đang kiểm tra quyền truy cập…",
       "errors": {
         "accountIdRequired": "Vui lòng nhập Account ID.",
@@ -510,6 +511,8 @@
     "StudentVerification": {
       "title": "Duyệt xác minh sinh viên",
       "notice": "Xem xét hồ sơ xác minh sinh viên theo id. Admin cần biết id xác minh.",
+      "idPlaceholder": "Id xác minh",
+      "openCta": "Mở",
       "label": {
         "id": "Id xác minh",
         "decision": "Quyết định",

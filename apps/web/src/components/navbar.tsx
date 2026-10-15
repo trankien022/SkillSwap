@@ -6,7 +6,7 @@ import { BrandMark } from './BrandMark';
 import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
 import { callApi, getTokens, getStoredUser, logout, unwrapEnvelope, WALLET_BALANCE_EVENT, type UserProfile } from '../lib/api-client';
 
-export type NavbarTab = 'explore' | 'classes' | 'instructor' | 'wallet' | 'verification' | 'skills' | 'notifications';
+export type NavbarTab = 'explore' | 'classes' | 'instructor' | 'wallet' | 'verification' | 'skills' | 'notifications' | 'verifier';
 
 export interface NavbarProps {
   currentTab?: NavbarTab;
@@ -27,7 +27,8 @@ export function Navbar({
   const [storedUser, setStoredUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
-    setHasTokens(Boolean(getTokens()));
+    const tokens = getTokens();
+    setHasTokens(Boolean(tokens));
     setStoredUser(getStoredUser());
 
     // Listen for in-page balance updates (e.g. after a top-up or booking) so the
@@ -39,6 +40,15 @@ export function Navbar({
       }
     };
     window.addEventListener(WALLET_BALANCE_EVENT, handleBalanceEvent);
+
+    // Signed out there is nothing to fetch: `/wallet/balance` and `/auth/me`
+    // both answer 401, which is what produced the unauthenticated requests (and
+    // console noise) on the auth page. The nav renders its guest shape instead.
+    if (!tokens && propBalance === undefined && propMe === undefined) {
+      return () => {
+        window.removeEventListener(WALLET_BALANCE_EVENT, handleBalanceEvent);
+      };
+    }
 
     // Only fetch if not supplied via props
     if (propBalance === undefined || propMe === undefined) {
@@ -84,13 +94,66 @@ export function Navbar({
   // hrefs/labels while the client rendered English ones and every page with this
   // navbar failed hydration on the /en tree.
   const locale = useLocale();
+
+  // Post-auth the nav is role-aware (ADR-029 / ADR-030): a guest sees only the
+  // public entry points, and the Verifier queue is offered only to a Verifier.
+  // The guest shape must be identical on the server and the client — it is
+  // derived from `hasTokens`/`me`, both of which resolve after mount, so the
+  // first paint is the guest shape on both sides and there is no mismatch.
+  //
+  // A `balance`/`me` supplied as a prop is itself proof of a session (the
+  // dashboards fetch those server-side), so it counts even before the token
+  // read lands on the client.
+  const signedIn =
+    hasTokens || me !== null || propMe !== undefined || propBalance !== undefined;
+  const isVerifier = me?.role === 'verifier' || storedUser?.role === 'verifier';
+
   const navLinks: { id: NavbarTab; label: string; tooltip?: string; href: string }[] = [
     { id: 'explore', label: locale === 'vi' ? 'Khám phá' : 'Explore', href: `/${locale}/classes` },
-    { id: 'classes', label: locale === 'vi' ? 'Lớp học của tôi' : 'My Bookings', href: `/${locale}/bookings` },
-    { id: 'instructor', label: locale === 'vi' ? 'Giảng dạy' : 'Teaching', tooltip: locale === 'vi' ? 'Studio Giảng dạy' : 'Teaching Studio', href: `/${locale}/instructor` },
-    { id: 'wallet', label: locale === 'vi' ? 'Ví & Tín dụng' : 'Wallet & Credits', href: `/${locale}/wallet` },
-    { id: 'skills', label: locale === 'vi' ? 'Kỹ năng' : 'Skills', tooltip: locale === 'vi' ? 'Kỹ năng & Bằng chứng' : 'Skills & Evidence', href: `/${locale}/skills` },
-    { id: 'verification', label: locale === 'vi' ? 'Xác minh' : 'Verification', tooltip: locale === 'vi' ? 'Trung tâm Thẩm định & Xác minh' : 'Verification Center', href: `/${locale}/verification` },
+    ...(signedIn
+      ? ([
+          {
+            id: 'classes',
+            label: locale === 'vi' ? 'Lớp học của tôi' : 'My Bookings',
+            href: `/${locale}/bookings`,
+          },
+          {
+            id: 'instructor',
+            label: locale === 'vi' ? 'Giảng dạy' : 'Teaching',
+            tooltip: locale === 'vi' ? 'Studio Giảng dạy' : 'Teaching Studio',
+            href: `/${locale}/instructor`,
+          },
+          {
+            id: 'wallet',
+            label: locale === 'vi' ? 'Ví & Tín dụng' : 'Wallet & Credits',
+            href: `/${locale}/wallet`,
+          },
+        ] as const)
+      : []),
+    {
+      id: 'skills',
+      label: locale === 'vi' ? 'Kỹ năng' : 'Skills',
+      tooltip: locale === 'vi' ? 'Kỹ năng & Bằng chứng' : 'Skills & Evidence',
+      href: `/${locale}/skills`,
+    },
+    {
+      id: 'verification',
+      label: locale === 'vi' ? 'Xác minh' : 'Verification',
+      tooltip: locale === 'vi' ? 'Trung tâm Thẩm định & Xác minh' : 'Verification Center',
+      href: `/${locale}/verification`,
+    },
+    // Only a Verifier can use the queue (`GET /verifiers/me/queue` is
+    // role-guarded), so offering the link to everyone was a dead end.
+    ...(isVerifier
+      ? ([
+          {
+            id: 'verifier',
+            label: locale === 'vi' ? 'Hàng đợi duyệt' : 'Verifier Queue',
+            tooltip: locale === 'vi' ? 'Hàng đợi duyệt kỹ năng' : 'Skill verification queue',
+            href: `/${locale}/verifier`,
+          },
+        ] as const)
+      : []),
   ];
 
   const availableCredits = balance ? balance.availableCredits : 0;
@@ -141,39 +204,46 @@ export function Navbar({
 
         {/* Right Section: Balance, Notification Bell, User profile */}
         <div className="flex items-center gap-2 sm:gap-2.5 xl:gap-3 shrink-0">
-          {/* Credit balance badge */}
-          <div className="flex items-center gap-1.5 sm:gap-2 pl-2 sm:pl-2.5 pr-1.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-xs font-semibold text-slate-900 shrink-0 whitespace-nowrap">
-            <span className="material-symbols-outlined text-[17px] text-emerald-600">toll</span>
-            <span className="whitespace-nowrap">{availableCredits.toLocaleString('vi-VN')} Credits</span>
-            <a
-              href={`/${locale}/wallet`}
-              title="Nạp thêm Credits"
-              className="w-5 h-5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors text-xs font-bold leading-none shrink-0"
-            >
-              +
-            </a>
-          </div>
+          {/* Credit balance badge — only once a session exists. A guest has no
+              wallet, so showing a hardcoded 0 was both noise and a dead link. */}
+          {signedIn && (
+            <div className="flex items-center gap-1.5 sm:gap-2 pl-2 sm:pl-2.5 pr-1.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-xs font-semibold text-slate-900 shrink-0 whitespace-nowrap">
+              <span className="material-symbols-outlined text-[17px] text-emerald-600">toll</span>
+              <span className="whitespace-nowrap" data-testid="navbar-credits">
+                {availableCredits.toLocaleString('vi-VN')} Credits
+              </span>
+              <a
+                href={`/${locale}/wallet`}
+                title="Nạp thêm Credits"
+                className="w-5 h-5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors text-xs font-bold leading-none shrink-0"
+              >
+                +
+              </a>
+            </div>
+          )}
 
-          {/* Notification Center Bell Link */}
-          <a
-            href={`/${locale}/notifications`}
-            title="Trung tâm Thông báo"
-            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors relative shrink-0 ${
-              currentTab === 'notifications'
-                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[20px]">notifications</span>
-            {unreadNotificationsCount > 0 && (
-              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-600 ring-2 ring-white"></span>
-            )}
-          </a>
+          {/* Notification Center Bell Link — notifications require a session. */}
+          {signedIn && (
+            <a
+              href={`/${locale}/notifications`}
+              title="Trung tâm Thông báo"
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors relative shrink-0 ${
+                currentTab === 'notifications'
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[20px]">notifications</span>
+              {unreadNotificationsCount > 0 && (
+                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-600 ring-2 ring-white"></span>
+              )}
+            </a>
+          )}
 
           <div className="h-5 w-px bg-slate-200 hidden sm:block shrink-0"></div>
 
           {/* User profile or Sign In */}
-          {hasTokens || me ? (
+          {signedIn ? (
             <div className="flex items-center gap-2 shrink-0">
               <a
                 href={`/${locale}/status`}

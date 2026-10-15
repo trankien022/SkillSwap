@@ -500,6 +500,7 @@
       "notAuthorizedBody": "This page is restricted to administrators. If you need access, please contact the platform admins.",
       "signInTitle": "Sign in required",
       "signInBody": "You need to sign in with an administrator account to access this page.",
+      "signInCta": "Sign in now",
       "loading": "Checking your access…",
       "errors": {
         "accountIdRequired": "Please enter the account id.",
@@ -510,6 +511,8 @@
     "StudentVerification": {
       "title": "Student verification review",
       "notice": "Review a student verification by id. Admin must know the verification id.",
+      "idPlaceholder": "Verification id",
+      "openCta": "Open",
       "label": {
         "id": "Verification id",
         "decision": "Decision",

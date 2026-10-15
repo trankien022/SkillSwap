@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { getMe } from '../../lib/api-client';
 import { VerifierStatusForm } from './VerifierStatusForm';
 
@@ -20,7 +20,7 @@ import { VerifierStatusForm } from './VerifierStatusForm';
  */
 export function VerifierStatusPage({ accountId }: { accountId: string }) {
   const t = useTranslations('Admin.verifiers');
-  const tRoot = useTranslations();
+  const locale = useLocale();
 
   const [phase, setPhase] = useState<'loading' | 'signed-out' | 'ready'>('loading');
   const [isAdmin, setIsAdmin] = useState(false);
@@ -51,15 +51,25 @@ export function VerifierStatusPage({ accountId }: { accountId: string }) {
   }
 
   if (phase === 'signed-out') {
+    // The CTA used to be a bare `href="#sign-in"` — there is no `#sign-in`
+    // anchor anywhere, so it was a no-op that looked like a working link.
+    // Point it at the real auth page and preserve the deep link as `returnUrl`,
+    // the same contract LandingAuthAction uses (locale-explicit, because
+    // returnUrl is not passed through next-intl's Link).
+    const returnUrl = encodeURIComponent(
+      `/${locale}/admin/verifiers/${encodeURIComponent(accountId)}`,
+    );
     return (
       <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-12">
         <h1 className="text-2xl font-bold text-ink">{t('signInTitle')}</h1>
         <p className="text-sm leading-relaxed text-ink-soft">{t('signInBody')}</p>
         <a
-          href="#sign-in"
+          href={`/${locale}/auth?tab=login&returnUrl=${returnUrl}`}
           className="inline-flex w-fit items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.99]"
         >
-          {tRoot('signIn')}
+          {/* Was `tRoot('signIn')`, but there is no root-level `signIn` key, so
+              this rendered the literal string "signIn". */}
+          {t('signInCta')}
         </a>
       </main>
     );

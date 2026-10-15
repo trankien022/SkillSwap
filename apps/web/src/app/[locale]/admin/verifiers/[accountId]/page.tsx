@@ -1,5 +1,7 @@
 import { setRequestLocale } from 'next-intl/server';
 import { VerifierStatusPage } from '../../../../../components/admin/VerifierStatusPage';
+import { SiteFooter } from '../../../../../components/landing/SiteFooter';
+import { Navbar } from '../../../../../components/navbar';
 
 type PageProps = {
   params: Promise<{ locale: string; accountId: string }>;
@@ -17,10 +19,22 @@ type PageProps = {
  * The backend `POST /verifiers/{accountId}/status` is also `@Roles('admin')`,
  * so even if a non-admin bypasses the client gate, the API returns 403 and
  * the form renders the translated `forbidden` message.
+ *
+ * Chrome (navbar + footer) is rendered here rather than inside the client
+ * component: this is an auth-only deep link (audit log, email, notification),
+ * so without it the screen had no brand, no route back and no sign-out.
  */
 export default async function AdminVerifierPage({ params }: PageProps) {
   const { locale, accountId } = await params;
   setRequestLocale(locale);
 
-  return <VerifierStatusPage accountId={accountId} />;
+  return (
+    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
+      <Navbar />
+      <div className="flex-1">
+        <VerifierStatusPage accountId={accountId} />
+      </div>
+      <SiteFooter />
+    </div>
+  );
 }
