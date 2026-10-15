@@ -29,6 +29,9 @@ package-lock.json
 .codex/
 **/graphify-out/
 
+# Playwright MCP browser-session scratch (page snapshots, console logs).
+.playwright-mcp/
+
 # Local Android build output and Office lock files.
 apps/mobile/build-*.apk
 ~$*.pptx
