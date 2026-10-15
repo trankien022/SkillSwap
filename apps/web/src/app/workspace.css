@@ -499,22 +499,6 @@
     gap: 20px;
   }
 }
-.workspace-teaching-metrics {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 20px;
-  margin-block: 28px 36px;
-}
-@media (max-width: 1023px) {
-  .workspace-teaching-metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (max-width: 639px) {
-  .workspace-teaching-metrics {
-    grid-template-columns: 1fr;
-  }
-}
 .workspace-page :is(a, button, input, select, textarea, summary):focus-visible,
 .workspace-auth :is(a, button, input, select, textarea):focus-visible {
   outline: 2px solid var(--color-campus-emerald-deep);
@@ -556,55 +540,6 @@
   vertical-align: middle;
 }
 
-.workspace-metrics {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
-}
-.workspace-metric-card {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 16px;
-  padding: 16px;
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  background: var(--color-surface);
-}
-.workspace-metric-heading {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 40px;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 20px;
-  color: var(--color-ink-soft);
-}
-.workspace-metric-value {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 8px;
-  overflow-wrap: anywhere;
-}
-.workspace-metric-number {
-  min-width: 0;
-  font-size: 32px;
-  font-weight: 700;
-  line-height: 40px;
-  letter-spacing: -0.025em;
-  color: var(--color-ink);
-}
-.workspace-metric-hint {
-  min-height: 57px;
-  margin-top: auto;
-  padding-top: 12px;
-  border-top: 1px solid var(--color-border);
-  font-size: 14px;
-  line-height: 22px;
-  color: var(--color-ink-soft);
-}
 .workspace-search-hub {
   padding: 12px;
   border: 1px solid var(--color-border);
@@ -661,11 +596,6 @@
 .workspace-search-submit {
   min-width: 0;
 }
-@media (min-width: 480px) {
-  .workspace-metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 @media (min-width: 640px) {
   .workspace-search-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -674,10 +604,5 @@
 @media (min-width: 1100px) {
   .workspace-search-grid {
     grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.1fr) minmax(160px, 0.7fr) auto;
-  }
-}
-@media (min-width: 1280px) {
-  .workspace-metrics {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

@@ -37,6 +37,7 @@ export default function InstructorDashboard() {
 
   const locale = useLocale();
   const tWorkspace = useTranslations('Workspace.teaching');
+  const tWallet = useTranslations('Dashboard.wallet');
   const tLevels = useTranslations('Marketplace.card.levels');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -256,65 +257,31 @@ export default function InstructorDashboard() {
                 : tWorkspace('member')}
             </p>
           )}
-          {/* 2. KPI summary. Each tile shows a value the server actually reports.
-              The previous version also showed a completion rate, a 4.9/5 rating
-              and a review count; those came from nowhere (the schema marks the
-              rating fields as provisional) so they are omitted rather than
-              made up. */}
-          <div className="workspace-teaching-metrics">
-            <MetricCard
-              label={ui('availableEarnings')}
-              icon="account_balance_wallet"
-              value={balance ? balance.availableCredits.toLocaleString(locale) : '—'}
-              unit="Credit"
-              sub={
-                balance
-                  ? `≈ ${(balance.availableCredits * 1000).toLocaleString(locale)} VND`
-                  : undefined
-              }
-              footer={
-                <a
-                  href={`/${locale}/wallet/withdrawal`}
-                  className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 inline-flex items-center gap-1"
-                >
-                  {ui('withdrawEarnings')}{' '}
-                  <span aria-hidden="true" className="material-symbols-outlined text-[14px]">
-                    arrow_forward
-                  </span>
-                </a>
-              }
-            />
-
-            <MetricCard
-              label={ui('heldForClasses')}
-              icon="lock_clock"
-              value={balance ? balance.pendingCredits.toLocaleString(locale) : '—'}
-              unit="Credit"
-              sub={ui('earningsHeldUntilClassCompletion')}
-              footer={
-                <span className="text-sm text-slate-600 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>{' '}
-                  {ui('releasedAfterTheSessionIsCompleted')}
-                </span>
-              }
-            />
-
-            <MetricCard
-              label={ui('openClasses')}
-              icon="school"
-              value={isLoading ? '—' : String(upcomingCount)}
-              unit={tWorkspace('classUnit')}
-              sub={ui('publishedClassesThatHaveNotEnded')}
-            />
-
-            <MetricCard
-              label={ui('closedClasses')}
-              icon="task_alt"
-              value={isLoading ? '—' : String(completedCount)}
-              unit={tWorkspace('classUnit')}
-              sub={ui('completedOrCancelledClasses')}
-            />
-          </div>
+          <section
+            aria-label={tWallet('title')}
+            className="my-6 flex flex-wrap items-center justify-between gap-4 border-y border-border py-4"
+          >
+            <dl className="flex flex-wrap gap-x-8 gap-y-3 text-sm">
+              <div>
+                <dt className="text-ink-soft">{tWallet('available')}</dt>
+                <dd className="mt-1 font-semibold tabular-nums text-ink">
+                  {balance ? balance.availableCredits.toLocaleString(locale) : '—'} credit
+                </dd>
+              </div>
+              <div>
+                <dt className="text-ink-soft">{tWallet('held')}</dt>
+                <dd className="mt-1 font-medium tabular-nums text-ink">
+                  {balance ? balance.pendingCredits.toLocaleString(locale) : '—'} credit
+                </dd>
+              </div>
+            </dl>
+            <a
+              href={`/${locale}/wallet/withdrawal`}
+              className="workspace-link min-h-11 inline-flex items-center"
+            >
+              {ui('withdrawEarnings')}
+            </a>
+          </section>
 
           {/* 3. Approved skills — real list, or an honest empty state. The old
               demo fallback cards named a verifier ("Thầy Hùng") who is not in
@@ -723,41 +690,6 @@ function ClassEditPanel({
  * a caller-supplied string when the body carries none. The uniform envelope
  * puts the human message on `message`.
  */
-function MetricCard({
-  label,
-  icon,
-  value,
-  unit,
-  sub,
-  footer,
-}: {
-  label: string;
-  icon: string;
-  value: string;
-  unit: string;
-  sub?: string;
-  footer?: React.ReactNode;
-}) {
-  return (
-    <div className="bg-white p-5 rounded-2xl border border-slate-200 flex flex-col justify-between">
-      <div>
-        <div className="flex items-center justify-between text-slate-600 text-sm font-medium mb-2">
-          <span>{label}</span>
-          <span aria-hidden="true" className="material-symbols-outlined text-slate-400 text-[18px]">
-            {icon}
-          </span>
-        </div>
-        <div className="flex items-baseline gap-1.5">
-          <span className="font-bold text-2xl text-slate-900">{value}</span>
-          <span className="text-sm font-semibold text-slate-600">{unit}</span>
-        </div>
-        {sub !== undefined && <span className="text-sm text-slate-500 font-normal">{sub}</span>}
-      </div>
-      {footer !== undefined && <div className="mt-4 pt-3 border-t border-slate-100">{footer}</div>}
-    </div>
-  );
-}
-
 function FilterButton({
   active,
   onClick,

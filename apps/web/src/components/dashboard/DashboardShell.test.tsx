@@ -83,10 +83,9 @@ describe('DashboardShell (FR-021)', () => {
     renderShell();
 
     expect(await screen.findByText('IELTS speaking deep-dive')).toBeTruthy();
-    // Held escrow comes from the wallet's pending credits, not a fixture: the
-    // escrow tile renders the server value (60) next to its unit.
-    expect(await screen.findByText(en.Dashboard.metrics.escrow)).toBeTruthy();
-    expect(screen.getAllByText('60').length).toBeGreaterThan(0);
+    // Held money remains available in the wallet, without a duplicate KPI tile.
+    expect(await screen.findByText('60 credits')).toBeTruthy();
+    expect(screen.queryByText(en.Dashboard.metrics.escrow)).toBeNull();
   });
 
   it('shows a sign-in prompt instead of demo data when the session is missing', async () => {
