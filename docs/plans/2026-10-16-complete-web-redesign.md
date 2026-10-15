@@ -58,3 +58,15 @@ Use browser-intercepted contract fixtures for populated/role states; no real
 financial or operator mutations. Check keyboard, form errors, responsive data,
 focus and images. Run pnpm verify. Commit implementation and validation report.
 Preserve unrelated untracked files. No push or deployment is requested.
+
+## Completion
+
+- Phase 1: shared workspace, authentication, readable controls and navigation.
+- Phase 2: discovery, class details, learning dashboard and review presentation.
+- Phase 3: wallet, truthful verification, teaching, notifications and checkout.
+- Phase 4: operator forms, localized error/404 recovery, focus handling and
+  responsive corrections. The verification form preserves the contract's
+  optional major; group prices and free-seat counts reflect actual fields.
+- Implementation is split into local phase commits. No push or deployment.
+- See [validation and complete route matrix](2026-10-16-complete-web-validation.md)
+  for current repository gates, production checks and evidence boundaries.
