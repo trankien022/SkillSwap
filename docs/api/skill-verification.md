@@ -6,7 +6,7 @@
 
 Proving a specific skill at a level (FR-003/FR-004/FR-018, ADR-026/ADR-027/ADR-028). Evidence is submitted, claimed by a Verifier with matching expertise, then approved or rejected; the decision history is append-only.
 
-10 endpoints.
+11 endpoints.
 
 Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
 
@@ -294,6 +294,60 @@ Admin suspends, revokes or reactivates a Verifier (FR-004, ADR-027).
 | `accountId` | string | yes | min 1 chars |
 | `status` | enum | yes | one of `active`, `suspended`, `revoked` |
 | `expertise` | string[] | yes |  |
+
+### `GET /api/verifiers/admin/queue`
+
+**The cross-domain Verifier queue by domain (FR-015)**
+
+- Auth: 🔒 Bearer token required
+- Response: `AdminVerifierQueuePageDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `limit` | query | integer | no |  |
+| `cursor` | query | string | no |  |
+| `domain` | query | string | no |  |
+| `status` | query | string | no |  |
+| `q` | query | string | no |  |
+| `sort` | query | string | no |  |
+
+**Response — `AdminVerifierQueuePageDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `items` | object[] | yes |  |
+| `page` | object | yes |  |
+
+**`items`[]** — AdminVerifierQueuePageDto.items fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `profileSkillId` | string | yes | min 1 chars |
+| `skillId` | string | yes | min 1 chars |
+| `skillName` | string | yes | min 1 chars; nullable |
+| `category` | string | yes | min 1 chars; nullable |
+| `ownerId` | string | yes | min 1 chars; nullable |
+| `version` | integer | yes | > 0 |
+| `evidenceType` | enum | yes | one of `certificate`, `verifier_assessment` |
+| `documentRef` | string | yes | min 1 chars; nullable |
+| `description` | string | yes | min 1 chars; nullable |
+| `requestedLevel` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert` |
+| `approvedLevel` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert`; nullable |
+| `status` | enum | yes | one of `pending`, `claimed`, `approved`, `rejected`, `superseded` |
+| `claimedBy` | string | yes | min 1 chars; nullable |
+| `claimedAt` | string | yes | date-time; nullable |
+| `reason` | string | yes | min 1 chars; nullable |
+| `decidedAt` | string | yes | date-time; nullable |
+| `submittedAt` | string | yes | date-time |
+
+**`page`** — AdminVerifierQueuePageDto.page fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `limit` | integer | yes | ≥ 1; ≤ 100 |
+| `nextCursor` | string | yes | min 1 chars; nullable |
+| `total` | integer | yes | ≥ 0 |
 
 ### `GET /api/verifiers/me/queue`
 

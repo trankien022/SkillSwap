@@ -6,7 +6,7 @@
 
 Proving a learner is a real student (FR-002/FR-019, ADR-023/ADR-025). A submission is reviewed by an admin; an approved verification is what unlocks teaching (via the publish gate).
 
-7 endpoints.
+8 endpoints.
 
 Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
 
@@ -45,6 +45,49 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 |---|---|---|---|
 | `previousState` | string | yes | min 1 chars |
 | `newState` | string | yes | min 1 chars |
+
+### `GET /api/student-verifications`
+
+**The admin verification queue (FR-015)**
+
+- Auth: 🔒 Bearer token required
+- Response: `AdminVerificationPageDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `limit` | query | integer | no |  |
+| `cursor` | query | string | no |  |
+| `status` | query | string | no |  |
+| `q` | query | string | no |  |
+| `sort` | query | string | no |  |
+
+**Response — `AdminVerificationPageDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `items` | object[] | yes |  |
+| `page` | object | yes |  |
+
+**`items`[]** — AdminVerificationPageDto.items fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `status` | enum | yes | one of `pending`, `approved`, `rejected`, `revoked` |
+| `schoolName` | string | yes | min 1 chars |
+| `major` | string | yes | min 1 chars; nullable |
+| `reviewerId` | string | yes | min 1 chars; nullable |
+| `reason` | string | yes | min 1 chars; nullable |
+| `decidedAt` | string | yes | date-time; nullable |
+| `submittedAt` | string | yes | date-time |
+
+**`page`** — AdminVerificationPageDto.page fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `limit` | integer | yes | ≥ 1; ≤ 100 |
+| `nextCursor` | string | yes | min 1 chars; nullable |
+| `total` | integer | yes | ≥ 0 |
 
 ### `POST /api/student-verifications`
 

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import type { AdminVerifierQueuePage, SkillEvidenceView } from '@skillswap/contracts';
+import type { AdminVerifierQueuePage } from '@skillswap/contracts';
 import { AdminAuthError, HttpVerificationGateway } from '../../lib/verification/http-gateway';
 
 /**

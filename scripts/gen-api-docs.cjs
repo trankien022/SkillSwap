@@ -121,7 +121,11 @@ const MODULE_NOTES = {
     },
   },
   'account-profile': { purpose: 'Account profile module lifecycle probe.', endpoints: {} },
-  'admin-operation': { purpose: 'Admin operations module lifecycle probe.', endpoints: {} },
+  'admin-operation': {
+    purpose:
+      'Administrator oversight (FR-015, ADR-034). The append-only audit log plus the operations dashboard aggregate over the student-verification and Verifier queues.',
+    endpoints: {},
+  },
   health: { purpose: 'Liveness/readiness for the load balancer and CI.', endpoints: {} },
   'live-class': { purpose: 'Live class module lifecycle probe.', endpoints: {} },
   schedule: { purpose: 'Schedule module lifecycle probe.', endpoints: {} },

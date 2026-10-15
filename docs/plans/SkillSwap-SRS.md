@@ -227,7 +227,7 @@ None. The clients are browser-based web plus a native mobile app; the only clien
 #### 3.1.4 Communication interfaces
 
 - All client–server traffic over HTTPS; JSON request/response bodies.
-- REST API surface API-001–API-010 and webhook EVT-001 per PRD §10, each with defined auth, payload and error classes.
+- REST API surface API-001–API-014 and webhook EVT-001 per PRD §10, each with defined auth, payload and error classes.
 - Every command with financial effect carries an **idempotency key** and **trace ID**; gateway webhooks carry signature, timestamp and replay nonce.
 - Notifications (FR-016) are emitted for: verification outcome, booking confirmed/cancelled, class starting soon, wallet transaction completed, withdrawal outcome. The delivery channel mix (in-app required; push/email optional) is not fixed by an approved requirement and is treated as in-app notification center for MVP scope (see Appendix A, OQ cross-reference).
 - Jitsi media flows directly between participants and Jitsi (WebRTC); the application never carries media.
@@ -620,7 +620,7 @@ ERD chi tiết và các ràng buộc triển khai: [data model](../diagrams/data
 | Discover and book online learning | FR-005–FR-007 | UC-003, UC-011 | API-004–API-005, Class, Booking, NFR-001/006/007 |
 | Traceable wallet settlement | FR-008–FR-010, FR-014, FR-020 | UC-003, UC-005, UC-012, UC-013 | API-005–API-007, EVT-001, Wallet/Ledger/Withdrawal, NFR-003/005/009 |
 | Secure class participation | FR-011–FR-013, FR-016 | UC-004 | API-008–API-010, Message/Rating, NFR-006/007/010 |
-| Platform operations | FR-015 | UC-014 | API-011–API-014, AuditEvent (ADR-028/ADR-034), NFR-005/014 |
+| Platform operations | FR-015 | UC-014 | API-011–API-014 (ADR-013/ADR-014), AuditEvent (ADR-028/ADR-034), NFR-005/014 |
 
 ### C.3 Diagrams index
 

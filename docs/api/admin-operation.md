@@ -6,9 +6,61 @@
 
 Admin operations module lifecycle probe.
 
-2 endpoints.
+4 endpoints.
 
 Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
+
+### `GET /api/admin-operation/dashboard`
+
+**The operations dashboard aggregate (FR-015)**
+
+- Auth: 🔒 Bearer token required
+- Response: `AdminDashboardDto`
+
+**Response — `AdminDashboardDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `verifications` | object | yes |  |
+| `evidence` | object | yes |  |
+| `evidenceByDomain` | object | yes |  |
+| `recentAuditEvents` | object[] | yes |  |
+| `generatedAt` | string | yes | date-time |
+
+**`verifications`** — AdminDashboardDto.verifications fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `pending` | integer | yes | ≥ 0 |
+| `approved` | integer | yes | ≥ 0 |
+| `rejected` | integer | yes | ≥ 0 |
+| `revoked` | integer | yes | ≥ 0 |
+
+**`evidence`** — AdminDashboardDto.evidence fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `pending` | integer | yes | ≥ 0 |
+| `claimed` | integer | yes | ≥ 0 |
+| `approved` | integer | yes | ≥ 0 |
+| `rejected` | integer | yes | ≥ 0 |
+| `superseded` | integer | yes | ≥ 0 |
+
+**`recentAuditEvents`[]** — AdminDashboardDto.recentAuditEvents fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `actorId` | string | yes | min 1 chars; nullable |
+| `action` | string | yes | min 3 chars; max 120 chars |
+| `targetType` | string | yes | min 2 chars; max 60 chars |
+| `targetId` | string | yes | min 1 chars; nullable |
+| `oldState` | object | yes | nullable |
+| `newState` | object | yes | nullable |
+| `occurredAt` | string | yes | date-time |
+| `traceId` | string | yes | min 1 chars; nullable |
+| `metadata` | object | yes | nullable |
+| `sourceEventId` | string | yes | min 1 chars; nullable |
 
 ### `GET /api/admin-operation/status`
 
@@ -45,3 +97,54 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 |---|---|---|---|
 | `previousState` | string | yes | min 1 chars |
 | `newState` | string | yes | min 1 chars |
+
+### `GET /api/audit-log`
+
+**The Admin audit log, filterable by actor, time and action (FR-015)**
+
+- Auth: 🔒 Bearer token required
+- Response: `AuditLogPageDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `limit` | query | integer | no |  |
+| `cursor` | query | string | no |  |
+| `actorId` | query | string | no |  |
+| `action` | query | string | no |  |
+| `targetType` | query | string | no |  |
+| `targetId` | query | string | no |  |
+| `from` | query | string | no |  |
+| `to` | query | string | no |  |
+| `q` | query | string | no |  |
+| `sort` | query | string | no |  |
+
+**Response — `AuditLogPageDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `items` | object[] | yes |  |
+| `page` | object | yes |  |
+
+**`items`[]** — AuditLogPageDto.items fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `actorId` | string | yes | min 1 chars; nullable |
+| `action` | string | yes | min 3 chars; max 120 chars |
+| `targetType` | string | yes | min 2 chars; max 60 chars |
+| `targetId` | string | yes | min 1 chars; nullable |
+| `oldState` | object | yes | nullable |
+| `newState` | object | yes | nullable |
+| `occurredAt` | string | yes | date-time |
+| `traceId` | string | yes | min 1 chars; nullable |
+| `metadata` | object | yes | nullable |
+| `sourceEventId` | string | yes | min 1 chars; nullable |
+
+**`page`** — AuditLogPageDto.page fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `limit` | integer | yes | ≥ 1; ≤ 100 |
+| `nextCursor` | string | yes | min 1 chars; nullable |
+| `total` | integer | yes | ≥ 0 |
