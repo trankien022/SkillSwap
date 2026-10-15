@@ -254,7 +254,7 @@ Priority follows MoSCoW from the PRD (`Must` / `Should`). Status preserves the P
 | FR-012 | The system shall provide in-class chat to booking participants only; outsiders shall be denied and contact sharing handled per approved policy. | Should | intent.md | Confirmed; enforcement open (OQ-009) |
 | FR-013 | After class, the system shall allow the Learner to submit exactly one rating/comment per valid booking. | Must | intent.md | Confirmed core; threshold open (OQ-004) |
 | FR-014 | The system shall reserve credit atomically with a Teacher withdrawal request before gateway payout, retain the hold while the result is unknown, and post exactly one payout or release on a definitive outcome with complete ledger records. | Must | intent.md | Confirmed core; policy/gateway open (OQ-005, OQ-011) |
-| FR-015 | The system shall provide an Administrator dashboard aggregating the student-verification queue, Verifier queue by domain, dispute/account-lock lists, and an audit log filterable by actor, time and action type. | Must | intent.md | Confirmed |
+| FR-015 | The system shall provide an Administrator dashboard aggregating the student-verification queue, Verifier queue by domain, dispute/account-lock lists, and an audit log filterable by actor, time and action type. | Must | intent.md | **Partially implemented** — queues + audit log built (ADR-034); dispute/account-lock **deferred** pending its own spec + ADR |
 | FR-016 | The system shall notify users on verification outcomes, booking confirmed/cancelled, class starting soon, completed wallet transactions and withdrawal outcomes. | Should | intent.md | Confirmed |
 | FR-017 | The system shall show the Learner their account status and any rejection reason on the main screen. | Must | intent.md | Confirmed |
 | FR-018 | The system shall show a Teacher the complete decision history for each immutable submitted evidence version, retaining old/new decisions when superseded, revoked or expired. | Must | intent.md | Confirmed; audit contract ADR-028; retention keep (OQ-008) |
@@ -607,6 +607,9 @@ ERD chi tiết và các ràng buộc triển khai: [data model](../diagrams/data
 - **AC-028 / FR-005, OQ-007:** Given Teacher công bố lớp, when nhập sức chứa, then sức chứa là số nguyên ≥ 1 (1 = lớp 1-1, >1 = lớp nhóm) và bị từ chối nếu bằng 0 hoặc âm.
 - **AC-029 / FR-007, OQ-007:** Given một lớp còn chỗ, when Learner đặt, then booking ở trạng thái Pending và giữ một chỗ; số chỗ còn lại = sức chứa − (Pending + Confirmed).
 - **AC-030 / FR-005, FR-007, OQ-007:** Given lớp đã đủ sức chứa, when có booking mới, then lớp chuyển Full và hệ thống từ chối booking mới; chỗ chỉ được nhả khi booking Cancelled.
+- **AC-031 / FR-015, ADR-034:** Given một Administrator, when mở dashboard vận hành, then thấy được hàng đợi xác minh sinh viên, hàng đợi Verifier theo lĩnh vực, và nhật ký kiểm toán gần nhất; mỗi danh sách phân trang có giới hạn và tổng số.
+- **AC-032 / FR-015, ADR-034:** Given nhật ký kiểm toán, when lọc theo người thực hiện, khoảng thời gian và loại hành động, then chỉ trả về các bản ghi khớp; mỗi bản ghi là chỉ-ghi-thêm (append-only) và không chứa nội dung tài liệu (NFR-005).
+- **AC-033 / FR-015, ADR-034:** Given một người dùng không phải Administrator, when gọi bất kỳ endpoint vận hành nào, then bị từ chối 403 và giao diện hiển thị thông báo không có quyền — không có danh sách giả.
 
 ### C.2 Traceability matrix
 
@@ -617,7 +620,7 @@ ERD chi tiết và các ràng buộc triển khai: [data model](../diagrams/data
 | Discover and book online learning | FR-005–FR-007 | UC-003, UC-011 | API-004–API-005, Class, Booking, NFR-001/006/007 |
 | Traceable wallet settlement | FR-008–FR-010, FR-014, FR-020 | UC-003, UC-005, UC-012, UC-013 | API-005–API-007, EVT-001, Wallet/Ledger/Withdrawal, NFR-003/005/009 |
 | Secure class participation | FR-011–FR-013, FR-016 | UC-004 | API-008–API-010, Message/Rating, NFR-006/007/010 |
-| Platform operations | FR-015 | UC-014 | Audit log, NFR-005 |
+| Platform operations | FR-015 | UC-014 | API-011–API-014, AuditEvent (ADR-028/ADR-034), NFR-005/014 |
 
 ### C.3 Diagrams index
 

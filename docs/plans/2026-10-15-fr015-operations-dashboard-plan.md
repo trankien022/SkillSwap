@@ -1,7 +1,34 @@
 # Plan — FR-015 Operations Dashboard (API + Web + Mobile)
 
-Status: **Proposed** — awaiting approval before any code
-Owner: (agent) · Created: 2026-10-15
+Status: **In progress** — approved to implement; decisions through §9 resolved below
+Owner: (agent) · Created: 2026-10-15 · Updated: 2026-10-15 (API phases 0–5 landed)
+
+> **Resolved before coding.** Q1 (**No** — admins are web-only): §6 **M1 is closed as not
+> applicable** and recorded here rather than silently skipped; M2 still ships. Q2: audit the
+> privileged actions the SRS §5 list names (verification decisions, verifier status changes, role
+> changes, financial transitions) — see Phase 4. Q3: retain, no pruning in the MVP (OQ-008 /
+> ADR-023 precedent). Q4: keep `total`. Q5: disputes/account-lock stay in deferred Phase 7.
+>
+> **One correction to Phase 3.** `auditEventSchema` **already existed** in
+> `packages/contracts/src/index.ts:610` as FR-018's *evidence-scoped* entry, despite ADR-028 §4
+> promising that name for the general SRS row. ADR-034 §1 resolves it by renaming the evidence
+> shape to `evidenceAuditEventSchema` and giving the general row the `auditEventSchema` name in
+> the new `packages/contracts/src/audit-event.ts`. Phase 0 therefore lands that rename.
+>
+> **A second correction, found during Phase 3.** ADR-034 §5 claimed
+> `skill.verifier.suspended|revoked` already flowed through the outbox. It did not — the names
+> existed, nothing emitted them, so an admin suspending a Verifier left no audit trail.
+> `SqlVerifierRepository.setStatus` now writes the status and its event in one transaction; the
+> mapping table names event types as literals (module isolation forbids importing another
+> module's domain constants, which is also the right coupling for a projection). ADR-034 §5 is
+> corrected in place.
+>
+> **Composition mechanism for the dashboard (ADR-034 §7).** The `api/` facade-reader pattern
+> `account-profile` already used for `PUBLIC_PROFILE_READER`: `student-verification` exposes
+> `VerificationSummaryReader`, `skill-verification` exposes `EvidenceSummaryReader`, and
+> `admin-operation` imports both modules and injects their exported readers. Counts are read live
+> per request; nothing is cached, so the dashboard and the queue it links to cannot disagree.
+
 Related: `docs/plans/SkillSwap-SRS.md` (FR-015, UC-014, US-O1, NFR-005, NFR-014),
 `ARCHITECTURE.md` §4, ADR-008 (gateway), ADR-012 (CQRS), ADR-013 (outbox), ADR-014 (TypeORM,
 per-module schemas), ADR-019 (moderation), ADR-023 (verification retention),

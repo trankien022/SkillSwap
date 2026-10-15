@@ -67,3 +67,11 @@ their decisions and the supersession. Architecture tests stay green.
 
 **Related:** ADR-013 (outbox), ADR-014 (per-module schema), ADR-023 (verification & retention),
 ADR-026 (taxonomy/levels), ADR-027 (verifier claim/decision); BR-014, FR-018, NFR-005, OQ-008.
+
+**Addendum (2026-10-15, ADR-034).** Point 4 above promised a single reusable `auditEventSchema`
+matching the SRS `AuditEvent` row. What shipped here is the **evidence-scoped** entry: keyed by
+`evidenceId`/`version`, with the closed evidence lifecycle as its `action`, and a `snapshot` of
+evidence fields. ADR-034 §1 records that divergence and resolves it by naming the two shapes
+apart — this one is now `evidenceAuditEventSchema`, and the general SRS row is
+`auditEventSchema` in `packages/contracts/src/audit-event.ts`, owned by FR-015 (ADR-034). Nothing
+in this decision's semantics changed; only the export names did.

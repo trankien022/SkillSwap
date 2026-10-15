@@ -1,13 +1,17 @@
 import {
   accountRoleSchema,
+  adminDashboardSchema,
+  adminVerificationQuerySchema,
+  adminVerifierQueueQuerySchema,
   advanceStatusResultSchema,
   advanceStatusSchema,
   apiEnvelopeSchema,
   apiErrorItemSchema,
   apiErrorSchema,
   ApiResponseError,
-  auditActionSchema,
   auditEventSchema,
+  auditLogPageSchema,
+  auditLogQuerySchema,
   bookingCancelledSchema,
   bookingConfirmedSchema,
   bookingRequestSchema,
@@ -26,6 +30,8 @@ import {
   envelopeOk,
   EnvelopeResponseLike,
   eventEnvelopeSchema,
+  evidenceAuditActionSchema,
+  evidenceAuditEventSchema,
   evidenceStatusSchema,
   evidenceTypeSchema,
   identityHeadersSchema,
@@ -963,7 +969,7 @@ describe('student verification contracts', () => {
     });
 
     it('validates the audit event and evidence history (FR-018)', () => {
-      expect(auditActionSchema.options).toEqual([
+      expect(evidenceAuditActionSchema.options).toEqual([
         'submitted',
         'claimed',
         'approved',
@@ -991,8 +997,8 @@ describe('student verification contracts', () => {
         occurredAt: '2026-10-11T00:00:00.000Z',
         traceId: null,
       };
-      expect(auditEventSchema.parse(audit)).toEqual(audit);
-      expect(() => auditEventSchema.parse({ ...audit, action: 'nope' })).toThrow();
+      expect(evidenceAuditEventSchema.parse(audit)).toEqual(audit);
+      expect(() => evidenceAuditEventSchema.parse({ ...audit, action: 'nope' })).toThrow();
 
       const history = {
         profileSkillId: 'ps-1',
@@ -1010,6 +1016,147 @@ describe('student verification contracts', () => {
         ],
       };
       expect(skillEvidenceHistorySchema.parse(history)).toEqual(history);
+    });
+  });
+
+  /**
+   * FR-015 / ADR-034: the admin operations contracts.
+   *
+   * The general audit row is separate from FR-018's evidence entry (ADR-034 §1), so it is pinned
+   * on its own terms: the SRS shape, an open action/target set with a constrained form, and the
+   * NFR-005 guarantee that a snapshot cannot smuggle document contents through a nested object.
+   */
+  describe('admin operations contracts (FR-015)', () => {
+    const event = {
+      id: 'audit-1',
+      actorId: 'admin-1',
+      action: 'student.verification.approved',
+      targetType: 'verification',
+      targetId: 'v-1',
+      oldState: { status: 'pending' },
+      newState: { status: 'approved' },
+      occurredAt: '2026-10-15T00:00:00.000Z',
+      traceId: null,
+      metadata: null,
+      sourceEventId: 'evt-1',
+    };
+
+    it('round-trips the general SRS audit row', () => {
+      expect(auditEventSchema.parse(event)).toEqual(event);
+    });
+
+    it('accepts a row with no actor or target (system-initiated actions)', () => {
+      const system = { ...event, actorId: null, targetId: null, sourceEventId: null };
+      expect(auditEventSchema.parse(system)).toEqual(system);
+    });
+
+    it('rejects an action that is not a dotted lowercase identifier', () => {
+      for (const action of ['Approved', 'approved', 'student..approved', 'a b.c', '']) {
+        expect(() => auditEventSchema.parse({ ...event, action })).toThrow();
+      }
+    });
+
+    it('rejects a malformed target type', () => {
+      for (const targetType of ['Verification', 'has-dash', 'has space']) {
+        expect(() => auditEventSchema.parse({ ...event, targetType })).toThrow();
+      }
+    });
+
+    it('refuses a nested snapshot so a document cannot ride along (NFR-005)', () => {
+      expect(() =>
+        auditEventSchema.parse({
+          ...event,
+          oldState: { document: { contents: 'base64…' } },
+        }),
+      ).toThrow();
+      expect(() =>
+        auditEventSchema.parse({ ...event, metadata: { list: ['a', 'b'] } }),
+      ).toThrow();
+    });
+
+    it('bounded-pages the audit log with the FR-015 filters', () => {
+      const parsed = auditLogQuerySchema.parse({
+        actorId: 'admin-1',
+        action: 'student.verification.revoked',
+        from: '2026-10-01T00:00:00.000Z',
+        to: '2026-10-15T00:00:00.000Z',
+        sort: '-occurredAt',
+      });
+      expect(parsed.actorId).toBe('admin-1');
+      expect(parsed.sort).toBe('-occurredAt');
+    });
+
+    it('rejects an unwhitelisted audit sort and an over-limit page', () => {
+      expect(() => auditLogQuerySchema.parse({ sort: 'actorId' })).toThrow();
+      expect(() => auditLogQuerySchema.parse({ limit: 101 })).toThrow();
+    });
+
+    it('bounds the admin verification queue query', () => {
+      expect(adminVerificationQuerySchema.parse({ status: 'pending', sort: '-decidedAt' })).toEqual({
+        status: 'pending',
+        sort: '-decidedAt',
+      });
+      expect(() => adminVerificationQuerySchema.parse({ status: 'nope' })).toThrow();
+      expect(() => adminVerificationQuerySchema.parse({ limit: 0 })).toThrow();
+      expect(() => adminVerificationQuerySchema.parse({ limit: 101 })).toThrow();
+    });
+
+    it('bounds the admin verifier queue query', () => {
+      expect(adminVerifierQueueQuerySchema.parse({ domain: 'Languages' })).toEqual({
+        domain: 'Languages',
+      });
+      expect(() => adminVerifierQueueQuerySchema.parse({ status: 'nope' })).toThrow();
+      expect(() => adminVerifierQueueQuerySchema.parse({ sort: 'decidedAt' })).toThrow();
+    });
+
+    it('composes the operations dashboard without any optional field', () => {
+      const dashboard = {
+        verifications: { pending: 3, approved: 5, rejected: 1, revoked: 2 },
+        evidence: { pending: 4, claimed: 2, approved: 9, rejected: 1, superseded: 1 },
+        evidenceByDomain: { Programming: 6, Languages: 1 },
+        recentAuditEvents: [event],
+        generatedAt: '2026-10-15T00:00:00.000Z',
+      };
+      expect(adminDashboardSchema.parse(dashboard)).toEqual(dashboard);
+    });
+
+    it('rejects a negative count, because a count of rows cannot be below zero', () => {
+      expect(() =>
+        adminDashboardSchema.parse({
+          verifications: { pending: -1, approved: 0, rejected: 0, revoked: 0 },
+          evidence: { pending: 0, claimed: 0, approved: 0, rejected: 0, superseded: 0 },
+          evidenceByDomain: {},
+          recentAuditEvents: [],
+          generatedAt: '2026-10-15T00:00:00.000Z',
+        }),
+      ).toThrow();
+    });
+
+    it('requires every count group in full, so a blank is never a missing key', () => {
+      expect(() =>
+        adminDashboardSchema.parse({
+          verifications: { pending: 0 },
+          evidence: { pending: 0, claimed: 0, approved: 0, rejected: 0, superseded: 0 },
+          evidenceByDomain: {},
+          recentAuditEvents: [],
+          generatedAt: '2026-10-15T00:00:00.000Z',
+        }),
+      ).toThrow();
+    });
+
+    it('pages the audit log with the shared page metadata', () => {
+      const page = auditLogPageSchema.parse({
+        items: [event],
+        page: { limit: 20, nextCursor: null, total: 1 },
+      });
+      expect(page.items).toHaveLength(1);
+      expect(page.page.total).toBe(1);
+    });
+
+    it('rejects an audit page whose cursor is an empty string', () => {
+      expect(() =>
+        auditLogPageSchema.parse({ items: [], page: { limit: 20, nextCursor: '', total: 0 } }),
+      ).toThrow();
     });
   });
 });
