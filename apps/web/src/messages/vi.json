@@ -55,62 +55,83 @@
       "myBookings": "Buổi học của tôi"
     },
     "hero": {
-      "headline1": "Nền tảng học kỹ năng trực tuyến",
-      "headline2": "bảo chứng cho sinh viên",
-      "subline": "Mạng lưới trao đổi kỹ năng ngang hàng kết nối sinh viên với cố vấn học thuật đã xác minh danh tính.",
+      "headline1": "Bạn biết một điều hay.",
+      "headline2": "Ai đó đang muốn học.",
+      "subline": "Tìm người cùng trường, cùng thế hệ để học kỹ năng mới. Xem hồ sơ đã xác minh, chọn buổi học phù hợp và thanh toán bằng credit.",
       "pills": {
-        "school": "Liên kết hệ thống trường đại học",
-        "antiFake": "Chống giả mạo danh tính",
-        "escrow": "Bảo vệ quỹ thanh toán"
-      }
+        "school": "Hồ sơ sinh viên được duyệt thủ công",
+        "antiFake": "Kỹ năng được chuyên gia đánh giá",
+        "escrow": "Thanh toán được ghi vào sổ cái"
+      },
+      "intro": "Sinh viên dạy. Sinh viên học.",
+      "explore": "Tìm lớp học",
+      "howItWorks": "Cách SkillSwap hoạt động",
+      "note": "Các lớp học diễn ra trực tuyến · Đặt trước ít nhất 24 giờ",
+      "journeyTitle": "Từ một kỹ năng đến một buổi học",
+      "creditLabel": "Tỷ giá credit",
+      "creditValue": "1 credit = 1.000 VNĐ",
+      "steps": [
+        {
+          "title": "Chọn người bạn muốn học cùng",
+          "body": "Xem kỹ năng, thông tin người dạy và lịch học trước khi đặt."
+        },
+        {
+          "title": "Biết rõ khoản mình trả",
+          "body": "Giá lớp hiển thị bằng credit. Kiểm tra số dư và xác nhận thanh toán."
+        },
+        {
+          "title": "Gặp nhau trong lớp trực tuyến",
+          "body": "Vào lớp từ lịch học của bạn. Để lại đánh giá sau buổi học."
+        }
+      ]
     },
     "assurance": {
-      "eyebrow": "Người đã xác minh, tiền minh bạch",
-      "heading": "Niềm tin kiểm chứng được, không chỉ để đọc",
+      "eyebrow": "Trước khi bạn đặt lớp",
+      "heading": "Rõ người dạy. Rõ khoản trả.",
       "items": [
         {
-          "tag": "Hội đồng duyệt",
-          "title": "Mọi Teacher đã xác minh bởi chuyên gia chuyên môn",
-          "body": "Hồ sơ năng lực và đề cương giảng dạy được đánh giá bởi chuyên gia có chuyên môn phù hợp trước khi cấp quyền mở lớp."
+          "tag": "Xác minh kỹ năng",
+          "title": "Người dạy có kỹ năng được chuyên gia duyệt",
+          "body": "Người duyệt có chuyên môn phù hợp kiểm tra bằng chứng kỹ năng trước khi sinh viên được mở lớp."
         },
         {
-          "tag": "Audit Trail",
-          "title": "Quyết định xác minh được lưu vết không thể chỉnh sửa",
-          "body": "Mỗi phiên bản hồ sơ được gắn dấu thời gian và giữ nguyên, đảm bảo truy vết được từng quyết định duyệt hoặc từ chối."
+          "tag": "Lịch sử xét duyệt",
+          "title": "Có lịch sử cho từng quyết định xác minh",
+          "body": "Hồ sơ và quyết định duyệt hoặc từ chối được lưu để truy vết, kèm thời điểm và lý do."
         },
         {
-          "tag": "Tỷ giá bất biến",
+          "tag": "Quy đổi credit",
           "title": "1 Credit = 1.000 VNĐ",
-          "body": "Quy đổi trực tiếp 1:1, không hoa hồng ngầm, không trượt giá khi nạp hoặc rút về tài khoản."
+          "body": "Mỗi credit tương ứng 1.000 VNĐ. Kiểm tra giá lớp và số dư trước khi xác nhận thanh toán."
         },
         {
-          "tag": "Phân bổ dòng tiền",
-          "title": "90% cho Teacher, 10% phí nền tảng",
-          "body": "Teacher nhận 90% mỗi buổi học hoàn tất; nền tảng thu cố định 10% cho vận hành và kiểm định."
+          "tag": "Phí nền tảng",
+          "title": "90% cho người dạy, 10% phí nền tảng",
+          "body": "Khi buổi học được hoàn tất, người dạy nhận 90%; 10% còn lại là phí nền tảng."
         },
         {
-          "tag": "Sổ cái nguyên tử",
+          "tag": "Lịch sử giao dịch",
           "title": "Khoản thanh toán được phong tỏa tới khi hoàn tất",
-          "body": "Tiền của người học nằm trong sổ cái nền tảng và chỉ chuyển vào ví Teacher khi buổi học được ghi nhận hoàn tất. Mỗi giao dịch đều có trace ID xuyên suốt."
+          "body": "Khoản thanh toán được giữ trong sổ cái đến khi buổi học được ghi nhận hoàn tất. Mỗi giao dịch có mã truy vết (trace ID)."
         }
       ]
     },
     "cta": {
-      "heading": "Bắt đầu học hoặc dạy ngay hôm nay",
-      "subline": "Cùng sinh viên các trường đại học kết nối, học tập và tạo thu nhập minh bạch.",
+      "heading": "Buổi học tiếp theo, bắt đầu từ bạn.",
+      "subline": "Học điều bạn cần. Chia sẻ điều bạn biết. SkillSwap kết nối hai phía trong cùng một lớp học.",
       "learner": {
-        "title": "Tôi muốn học",
-        "hint": "Khám phá lớp & đặt buổi học với Teacher đã xác minh"
+        "title": "Tạo tài khoản để học",
+        "hint": "Tìm lớp theo kỹ năng, lịch và mức giá phù hợp."
       },
       "teacher": {
-        "title": "Tôi muốn dạy",
-        "hint": "Nộp hồ sơ năng lực & bắt đầu nhận lớp"
+        "title": "Bạn có kỹ năng muốn chia sẻ?",
+        "hint": "Bắt đầu bằng việc gửi bằng chứng kỹ năng để xét duyệt."
       },
       "trustNoCard": "Không yêu cầu thẻ tín dụng để đăng ký",
       "trustSafety": "Mọi giao dịch có audit trail"
     },
     "footer": {
-      "tagline": "Hệ sinh thái trao đổi kỹ năng cho sinh viên.",
+      "tagline": "Học từ nhau. Tiến bộ cùng nhau.",
       "langLabel": "Ngôn ngữ",
       "vi": "Tiếng Việt",
       "en": "English"

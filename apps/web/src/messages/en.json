@@ -55,33 +55,54 @@
       "myBookings": "My bookings"
     },
     "hero": {
-      "headline1": "An online skill marketplace",
-      "headline2": "vouched for by students",
-      "subline": "A peer-to-peer skill network that connects students with domain experts whose identity has been independently verified.",
+      "headline1": "You know something good.",
+      "headline2": "Someone wants to learn it.",
+      "subline": "Learn a skill from another student. Check their verified profile, find a time that works, and pay with credit.",
       "pills": {
-        "school": "University credential links",
-        "antiFake": "Identity fraud prevention",
-        "escrow": "Protected payment funds"
-      }
+        "school": "Manually reviewed student documents",
+        "antiFake": "Expert-reviewed skill evidence",
+        "escrow": "Payments recorded in the ledger"
+      },
+      "intro": "Students teach. Students learn.",
+      "explore": "Find a class",
+      "howItWorks": "How SkillSwap works",
+      "note": "Online classes · Book at least 24 hours ahead",
+      "journeyTitle": "From a skill to a shared lesson",
+      "creditLabel": "Credit exchange rate",
+      "creditValue": "1 credit = 1,000 VND",
+      "steps": [
+        {
+          "title": "Find someone to learn from",
+          "body": "Check their skills, profile and class schedule before you book."
+        },
+        {
+          "title": "Know what you are paying",
+          "body": "Class prices are shown in credit. Check your balance and confirm payment."
+        },
+        {
+          "title": "Meet in your online classroom",
+          "body": "Join from your bookings. Leave a review after the lesson."
+        }
+      ]
     },
     "assurance": {
-      "eyebrow": "Verified people, transparent money",
-      "heading": "Trust you can check, not just read",
+      "eyebrow": "Before you book",
+      "heading": "Know your teacher. Know your payment.",
       "items": [
         {
           "tag": "Review board",
-          "title": "Every Teacher is reviewed by a domain expert",
-          "body": "Skill evidence and teaching plans are assessed by experts in the matching domain before a Teacher can publish a class."
+          "title": "Teachers have expert-reviewed skills",
+          "body": "A reviewer with relevant expertise checks skill evidence before a student can publish a class."
         },
         {
           "tag": "Audit trail",
-          "title": "Verification decisions are recorded immutably",
-          "body": "Each submission is timestamped and kept as-is, so every approval and rejection stays traceable across versions."
+          "title": "Verification decisions have a history",
+          "body": "Submitted evidence and review decisions are recorded with their time and reason for traceability."
         },
         {
           "tag": "Fixed rate",
           "title": "1 Credit = 1,000 VND",
-          "body": "Direct 1:1 conversion with no hidden markup and no slippage on top-ups or withdrawals."
+          "body": "Each credit corresponds to 1,000 VND. Check the class price and your balance before confirming payment."
         },
         {
           "tag": "Revenue split",
@@ -96,21 +117,21 @@
       ]
     },
     "cta": {
-      "heading": "Start learning or teaching today",
-      "subline": "Join students across universities who learn together, mentor each other, and earn transparently.",
+      "heading": "Your next lesson starts with you.",
+      "subline": "Learn what you need. Share what you know. Meet another student in a class that brings both together.",
       "learner": {
-        "title": "I want to learn",
-        "hint": "Browse classes & book a session with a verified Teacher"
+        "title": "Create a learning account",
+        "hint": "Find a skill, schedule and price that work for you."
       },
       "teacher": {
-        "title": "I want to teach",
-        "hint": "Submit your skill evidence & start accepting classes"
+        "title": "Have a skill to share?",
+        "hint": "Start by submitting your skill evidence for review."
       },
       "trustNoCard": "No credit card required to sign up",
       "trustSafety": "Every transaction is audit-tracked"
     },
     "footer": {
-      "tagline": "A peer-to-peer skill ecosystem for students.",
+      "tagline": "Learn from each other. Grow together.",
       "langLabel": "Language",
       "vi": "Vietnamese",
       "en": "English"

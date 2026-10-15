@@ -59,7 +59,7 @@ export function LandingAuthAction({
       </Link>
       <a
         href="#trust"
-        className="hidden inline-flex min-h-11 items-center rounded-md px-2 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-neutral-tint hover:text-ink md:inline-block"
+        className="hidden min-h-11 items-center rounded-md px-2 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-neutral-tint hover:text-ink md:inline-flex"
       >
         {t('standard')}
       </a>
