@@ -271,9 +271,11 @@ Commit: `feat(web): add the admin verifier queue view`
 Commit: `feat(web): add the admin audit log view`
 
 ### Phase W4 — `/admin` dashboard shell
-- New route `apps/web/src/app/[locale]/admin/page.tsx` + `components/admin/AdminDashboard.tsx`
-  composing the three reads into metric tiles + the latest audit entries. It replaces the
-  deep-link-only entry point with a real landing page while **keeping** the deep links.
+- The route `apps/web/src/app/[locale]/admin/page.tsx` **already exists by then**: the
+  post-honesty plan (2026-10-15-post-honesty-flow-fixes-plan.md, P1) adds a landing shell linking
+  to the pages that exist. This phase **extends that shell** with the composed metrics
+  (`components/admin/AdminDashboard.tsx`), turning the deep-link entry point into a real
+  landing page while **keeping** the deep links.
 - `Navbar` gains an admin-aware entry (mirroring Phase 2's role-aware `navbar.tsx`): the link is
   shown only when the session's role is `admin`. Reuse the Phase 2 signed-in predicate; do not
   reintroduce guest fetches.
