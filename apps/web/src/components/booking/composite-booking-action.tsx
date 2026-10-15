@@ -242,7 +242,7 @@ export function CompositeBookingAction({
         onPress={() => void submit()}
       />
       {state.phase === 'failed' ? (
-        <p className="text-xs font-medium text-error-ink" role="alert">
+        <p className="text-xs font-medium text-danger-ink" role="alert">
           {state.message}
         </p>
       ) : null}

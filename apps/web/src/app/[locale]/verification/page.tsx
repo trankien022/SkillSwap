@@ -6,17 +6,7 @@ type PageProps = {
   params: Promise<{ locale: string }>;
 };
 
-/**
- * Student Verification Center page (FR-004 student verification,
- * FR-005 skill verification).
- *
- * Displays:
- * 1. Verified student identification card & university affiliation
- * 2. Watermarked student card scan with secure internal masking
- * 3. Academic Trust Index gauge & peer endorsements
- * 4. Certified subject credentials
- * 5. SkillSwap safety and privacy pledge
- */
+/** Student information and manually reviewed verification evidence. */
 export default async function VerificationPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);

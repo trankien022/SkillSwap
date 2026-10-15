@@ -31,7 +31,7 @@ export default async function PaymentResultPage({ params, searchParams }: PagePr
   return (
     <div className="flex min-h-dvh flex-col bg-slate-50 text-slate-900">
       <Navbar />
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6">
+      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6">
         <PaymentResultContent intentId={intentId ?? null} providerRef={providerRef ?? null} />
       </main>
       <SiteFooter />

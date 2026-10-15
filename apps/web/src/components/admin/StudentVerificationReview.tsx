@@ -51,7 +51,9 @@ export function StudentVerificationReview({ verificationId }: { verificationId: 
     setError(null);
     setSuccess(null);
     try {
-      await gateway.revokeStudentVerification(verificationId, { reason: reason || 'Revoked by admin' });
+      await gateway.revokeStudentVerification(verificationId, {
+        reason: reason || 'Revoked by admin',
+      });
       setSuccess(t('messages.revoked'));
     } catch (err) {
       if (err instanceof AdminAuthError) {
@@ -67,14 +69,14 @@ export function StudentVerificationReview({ verificationId }: { verificationId: 
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-6">
-      <h1 className="text-xl font-bold mb-4">{t('title')}</h1>
+    <div className="workspace-panel workspace-form">
+      <h1 className="workspace-title mb-4">{t('title')}</h1>
 
       <p className="text-sm text-slate-600 mb-4">{t('notice')}</p>
 
       <div className="mb-4">
-        <div className="text-xs text-slate-500">{t('label.id')}</div>
-        <div className="text-sm font-mono">{verificationId}</div>
+        <div className="text-sm text-slate-500">{t('label.id')}</div>
+        <div className="break-all text-sm">{verificationId}</div>
       </div>
 
       {error && <div className="mb-4 text-sm text-red-700">{error}</div>}
@@ -85,34 +87,74 @@ export function StudentVerificationReview({ verificationId }: { verificationId: 
           <legend className="text-sm font-semibold mb-2">{t('label.decision')}</legend>
           <div className="flex gap-4 items-center">
             <label className="flex items-center gap-2">
-              <input type="radio" name="decision" value="approve" checked={decision === 'approve'} onChange={() => setDecision('approve')} />
+              <input
+                type="radio"
+                name="decision"
+                value="approve"
+                checked={decision === 'approve'}
+                onChange={() => setDecision('approve')}
+              />
               <span className="text-sm">{t('actions.approve')}</span>
             </label>
 
             <label className="flex items-center gap-2">
-              <input type="radio" name="decision" value="reject" checked={decision === 'reject'} onChange={() => setDecision('reject')} />
+              <input
+                type="radio"
+                name="decision"
+                value="reject"
+                checked={decision === 'reject'}
+                onChange={() => setDecision('reject')}
+              />
               <span className="text-sm">{t('actions.reject')}</span>
             </label>
           </div>
         </fieldset>
 
         <div>
-          <div className="text-xs text-slate-500">{t('label.approvedMajor')}</div>
-          <input value={approvedMajor} onChange={(e) => setApprovedMajor(e.target.value)} placeholder={t('placeholders.approvedMajor')} className="w-full h-9 rounded border px-2 text-sm" />
+          <label htmlFor="review-major" className="block text-sm font-semibold">
+            {t('label.approvedMajor')}
+          </label>
+          <input
+            id="review-major"
+            value={approvedMajor}
+            onChange={(e) => setApprovedMajor(e.target.value)}
+            placeholder={t('placeholders.approvedMajor')}
+            className="w-full h-9 rounded border px-2 text-sm"
+          />
         </div>
 
         <div>
-          <div className="text-xs text-slate-500">{t('label.reason')}</div>
-          <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('placeholders.reason')} className="w-full rounded border px-2 py-2 text-sm" />
+          <label htmlFor="review-reason" className="block text-sm font-semibold">
+            {t('label.reason')}
+          </label>
+          <textarea
+            id="review-reason"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder={t('placeholders.reason')}
+            className="w-full rounded border px-2 py-2 text-sm"
+          />
         </div>
 
         <div className="flex gap-2">
-          <button onClick={handleDecide} disabled={loading} className="rounded bg-emerald-600 px-3 py-1 text-xs text-white">{t('actions.submitDecision')}</button>
+          <button
+            onClick={handleDecide}
+            disabled={loading}
+            className="rounded bg-campus-emerald-deep px-3 py-1 text-sm text-white"
+          >
+            {t('actions.submitDecision')}
+          </button>
 
-          <button onClick={handleRevoke} disabled={loading} className="rounded bg-red-600 px-3 py-1 text-xs text-white">{t('actions.revoke')}</button>
+          <button
+            onClick={handleRevoke}
+            disabled={loading}
+            className="rounded bg-red-600 px-3 py-1 text-sm text-white"
+          >
+            {t('actions.revoke')}
+          </button>
         </div>
 
-        <div className="text-xs text-slate-500">{t('note')}</div>
+        <div className="text-sm text-slate-500">{t('note')}</div>
       </div>
     </div>
   );

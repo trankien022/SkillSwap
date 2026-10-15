@@ -38,8 +38,8 @@ export function PaginationBar({
         {t('showing', { from, to, total })}
       </span>
       <nav
-        aria-label="Pagination"
-        className="flex items-center gap-1 rounded-xl border border-border bg-surface p-1 shadow-sm"
+        aria-label={t('label')}
+        className="flex max-w-full flex-wrap items-center justify-center gap-1 rounded-xl border border-border bg-surface p-1"
       >
         <button
           type="button"
@@ -66,7 +66,7 @@ export function PaginationBar({
               aria-current={entry === page ? 'page' : undefined}
               className={
                 entry === page
-                  ? 'h-9 w-9 rounded-lg bg-ink text-sm font-semibold text-surface shadow-sm'
+                  ? 'h-9 w-9 rounded-lg bg-ink text-sm font-semibold text-surface '
                   : 'h-9 w-9 rounded-lg text-sm font-semibold text-ink-soft transition-colors hover:bg-mist hover:text-ink'
               }
             >

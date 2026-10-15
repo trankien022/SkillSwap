@@ -1,12 +1,10 @@
 'use client';
 
+import { SkillCategoryLabel } from '../ui/SkillCategoryLabel';
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
-import {
-  HttpSkillsGateway,
-  SkillsAuthError,
-} from '../../lib/skills/http-gateway';
+import { HttpSkillsGateway, SkillsAuthError } from '../../lib/skills/http-gateway';
 import type {
   ProfileSkillView,
   SkillCatalogueItemView,
@@ -130,21 +128,21 @@ export function SkillsContent() {
   };
 
   if (status === 'loading') {
-    return <Panel>
-      <p className="text-sm font-medium text-slate-700">{t('loading')}</p>
-    </Panel>;
+    return (
+      <Panel>
+        <p className="text-sm font-medium text-slate-700">{t('loading')}</p>
+      </Panel>
+    );
   }
 
   if (status === 'signed-out') {
     return (
       <Panel>
         <h1 className="text-lg font-bold text-slate-900">{t('signedOutTitle')}</h1>
-        <p className="mt-1 max-w-md text-sm leading-relaxed text-slate-600">
-          {t('signedOutBody')}
-        </p>
+        <p className="mt-1 max-w-md text-sm leading-relaxed text-slate-600">{t('signedOutBody')}</p>
         <Link
           href={`/${locale}/auth`}
-          className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95"
+          className="mt-4 inline-flex items-center gap-2 rounded-full bg-campus-emerald-deep px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ink"
         >
           {t('signIn')}
         </Link>
@@ -162,7 +160,7 @@ export function SkillsContent() {
         <button
           type="button"
           onClick={() => void load()}
-          className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700"
+          className="mt-4 inline-flex items-center gap-2 rounded-full bg-campus-emerald-deep px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ink"
         >
           {t('retry')}
         </button>
@@ -173,9 +171,9 @@ export function SkillsContent() {
   return (
     <div className="flex flex-col gap-6">
       {/* 1. Approved skills — the real `GET /profile-skills/me` result. */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="workspace-panel">
         <h2 className="text-lg font-bold text-slate-900">{t('approved')}</h2>
-        <p className="mt-1 text-xs text-slate-600">{t('approvedBody')}</p>
+        <p className="mt-1 text-sm text-slate-600">{t('approvedBody')}</p>
 
         {approved.length === 0 ? (
           <p className="mt-3 rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-600">
@@ -190,9 +188,11 @@ export function SkillsContent() {
               >
                 <div>
                   <p className="text-sm font-bold text-slate-900">{item.skillName}</p>
-                  <p className="text-xs text-slate-600">{item.category}</p>
+                  <p className="text-sm text-slate-600">
+                    <SkillCategoryLabel category={item.category} />
+                  </p>
                 </div>
-                <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800">
+                <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-sm font-semibold text-emerald-800">
                   {t(`level_${item.approvedLevel}`)}
                 </span>
               </li>
@@ -202,14 +202,12 @@ export function SkillsContent() {
 
         {pending.length > 0 && (
           <div className="mt-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {t('pending')}
-            </h3>
+            <h3 className="text-sm font-semibold  text-slate-500">{t('pending')}</h3>
             <ul className="mt-2 flex flex-wrap gap-2">
               {pending.map((item) => (
                 <li
                   key={item.id}
-                  className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600"
+                  className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-600"
                 >
                   {item.skillName}
                 </li>
@@ -220,14 +218,12 @@ export function SkillsContent() {
       </section>
 
       {/* 2. Submit evidence — real POST /skill-evidence. */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="workspace-panel">
         <h2 className="text-lg font-bold text-slate-900">{t('submitTitle')}</h2>
-        <p className="mt-1 text-xs text-slate-600">{t('submitBody')}</p>
+        <p className="mt-1 text-sm text-slate-600">{t('submitBody')}</p>
 
         <fieldset className="mt-4" disabled={busy}>
-          <legend className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            {t('chooseSkill')}
-          </legend>
+          <legend className="text-sm font-semibold  text-slate-500">{t('chooseSkill')}</legend>
           {catalogue.length === 0 ? (
             <p className="mt-2 text-sm text-slate-600">{t('noCatalogue')}</p>
           ) : (
@@ -238,23 +234,23 @@ export function SkillsContent() {
                   type="button"
                   onClick={() => setSelected(skill.id)}
                   aria-pressed={selected === skill.id}
-                  className={`min-h-[44px] rounded-xl border px-3 py-2 text-left text-xs transition-colors ${
+                  className={`min-h-[44px] rounded-xl border px-3 py-2 text-left text-sm transition-colors ${
                     selected === skill.id
                       ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
                       : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
                   }`}
                 >
                   <span className="block font-semibold">{skill.name}</span>
-                  <span className="block text-[11px] text-slate-500">{skill.category}</span>
+                  <span className="block text-sm text-slate-500">
+                    <SkillCategoryLabel category={skill.category} />
+                  </span>
                 </button>
               ))}
             </div>
           )}
 
           <div className="mt-4">
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {t('requestedLevel')}
-            </span>
+            <span className="text-sm font-semibold  text-slate-500">{t('requestedLevel')}</span>
             <div className="mt-2 flex flex-wrap gap-2">
               {LEVELS.map((item) => (
                 <button
@@ -262,7 +258,7 @@ export function SkillsContent() {
                   type="button"
                   onClick={() => setLevel(item)}
                   aria-pressed={level === item}
-                  className={`min-h-[44px] rounded-full border px-4 py-2 text-xs font-semibold transition-colors ${
+                  className={`min-h-[44px] rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
                     level === item
                       ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
                       : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
@@ -275,7 +271,7 @@ export function SkillsContent() {
           </div>
 
           <div className="mt-4">
-            <label htmlFor="evidence-description" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <label htmlFor="evidence-description" className="text-sm font-semibold  text-slate-500">
               {t('description')}
             </label>
             <textarea
@@ -287,18 +283,25 @@ export function SkillsContent() {
               placeholder={t('description')}
               className="mt-2 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600"
             />
-            <p className="mt-1 text-[11px] text-slate-500">{t('descriptionHint')}</p>
+            <p className="mt-1 text-sm text-slate-500">{t('descriptionHint')}</p>
           </div>
         </fieldset>
 
         {submitError !== null && (
-          <p role="alert" className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-700">
+          <p
+            role="alert"
+            className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-medium text-rose-700"
+          >
             {submitError}
           </p>
         )}
 
         {submitted !== null && (
-          <p role="status" aria-live="polite" className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-medium text-emerald-800">
+          <p
+            role="status"
+            aria-live="polite"
+            className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800"
+          >
             {t('submitted', { skill: submitted.skillName })}
           </p>
         )}
@@ -307,7 +310,7 @@ export function SkillsContent() {
           type="button"
           onClick={() => void submit()}
           disabled={!canSubmit}
-          className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+          className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-full bg-campus-emerald-deep px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ink disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-ink-muted"
         >
           {busy ? t('submitting') : t('submit')}
         </button>
@@ -316,29 +319,27 @@ export function SkillsContent() {
           <button
             type="button"
             onClick={() => void showHistory(submitted.id)}
-            className="mt-3 block text-xs font-semibold text-emerald-700 hover:underline"
+            className="mt-3 block text-sm font-semibold text-emerald-700 hover:underline"
           >
             {t('history')}
           </button>
         )}
 
         {historyFor !== null && historyError !== null && (
-          <p role="alert" className="mt-3 text-xs font-medium text-rose-700">
+          <p role="alert" className="mt-3 text-sm font-medium text-rose-700">
             {historyError}
           </p>
         )}
 
         {historyFor !== null && history !== null && (
           <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {t('historyTitle')}
-            </h3>
+            <h3 className="text-sm font-semibold  text-slate-500">{t('historyTitle')}</h3>
             {history.versions.length === 0 ? (
-              <p className="mt-1 text-xs text-slate-600">{t('noHistory')}</p>
+              <p className="mt-1 text-sm text-slate-600">{t('noHistory')}</p>
             ) : (
               <ul className="mt-2 space-y-1">
                 {history.versions.map((version, index) => (
-                  <li key={index} className="text-xs text-slate-700">
+                  <li key={index} className="text-sm text-slate-700">
                     {t(`level_${version.requestedLevel}`)} · {t(`state_${version.currentStatus}`)}
                   </li>
                 ))}
@@ -353,7 +354,7 @@ export function SkillsContent() {
 
 function Panel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+    <div className="mx-auto w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-8">
       {children}
     </div>
   );

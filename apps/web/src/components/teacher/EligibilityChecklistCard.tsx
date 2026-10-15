@@ -30,8 +30,7 @@ export function EligibilityChecklistCard({ draft, skills }: Props) {
 
   const startsAt = parseStartsAt(draft.startsOn, draft.startsAt);
   const leadTimeOk =
-    startsAt !== null &&
-    startsAt.getTime() - Date.now() >= MIN_LEAD_TIME_HOURS * 60 * 60 * 1000;
+    startsAt !== null && startsAt.getTime() - Date.now() >= MIN_LEAD_TIME_HOURS * 60 * 60 * 1000;
 
   // The 90/10 split is a fixed platform constant, not per-draft state, so this
   // row is always true while that rule stands (BR-013, fee 1000 bps).
@@ -46,11 +45,11 @@ export function EligibilityChecklistCard({ draft, skills }: Props) {
   ];
 
   return (
-    <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+    <section className="workspace-panel flex flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between border-b border-slate-100 pb-2.5">
         <h3 className="text-base font-bold text-slate-900">{t('title')}</h3>
         <span
-          className={`rounded-full px-2.5 py-0.5 text-xs font-bold border ${
+          className={`rounded-full px-2.5 py-0.5 text-sm font-bold border ${
             allOk
               ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
               : 'bg-amber-50 text-amber-800 border-amber-200'
@@ -60,37 +59,28 @@ export function EligibilityChecklistCard({ draft, skills }: Props) {
         </span>
       </div>
 
-      <div className="space-y-2 text-xs">
+      <div className="space-y-2 text-sm">
         {rows.map((row) => (
           <div
             key={row.label}
-            className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-2.5"
+            className="flex flex-wrap items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-2.5"
           >
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
               <span
+                aria-hidden="true"
                 className={`material-symbols-outlined text-[18px] ${
-                  row.ok ? 'text-emerald-600' : 'text-slate-400'
+                  row.ok ? 'text-campus-emerald-deep' : 'text-ink-muted'
                 }`}
               >
                 {row.ok ? 'check_circle' : 'radio_button_unchecked'}
               </span>
-              <span className="font-medium text-slate-800">{row.label}</span>
+              <span className="min-w-0 flex-1 font-medium text-slate-800">{row.label}</span>
             </div>
             <span className={`font-semibold ${row.ok ? 'text-emerald-700' : 'text-amber-700'}`}>
               {row.status}
             </span>
           </div>
         ))}
-      </div>
-
-      <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-3 text-[11px] text-slate-600 space-y-1">
-        <div className="flex items-center gap-1.5 font-bold text-emerald-900">
-          <span className="material-symbols-outlined text-[15px] text-emerald-700">verified</span>
-          <span>{t('pledgeTitle')}</span>
-        </div>
-        <p className="leading-relaxed">
-          {t('pledgeDesc')}
-        </p>
       </div>
     </section>
   );

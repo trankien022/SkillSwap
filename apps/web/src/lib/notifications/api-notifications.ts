@@ -3,6 +3,7 @@ import type { NotificationsPage, NotificationItem as BackendNotificationItem } f
 
 export interface UINotificationItem {
   id: string;
+  createdAt: string;
   category: 'booking' | 'finance' | 'verify';
   unread: boolean;
   dateGroup: 'today' | 'yesterday' | 'earlier';
@@ -78,6 +79,7 @@ export function mapBackendNotificationToUI(item: BackendNotificationItem): UINot
 
   return {
     id: item.id,
+    createdAt: item.createdAt,
     category,
     unread: !item.read,
     dateGroup,

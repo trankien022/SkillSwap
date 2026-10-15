@@ -68,7 +68,7 @@ export function PublishWorkspace() {
     return (
       <Panel>
         <p className="text-sm font-medium text-slate-700">{t('loading')}</p>
-        <p className="mt-1 text-xs text-slate-500">{t('loadingBody')}</p>
+        <p className="mt-1 text-sm text-slate-500">{t('loadingBody')}</p>
       </Panel>
     );
   }
@@ -82,7 +82,7 @@ export function PublishWorkspace() {
         </p>
         <Link
           href={`/${locale}/auth`}
-          className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95"
+          className="mt-4 inline-flex items-center gap-2 rounded-full bg-campus-emerald-deep px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ink"
         >
           {t('signIn')}
         </Link>
@@ -110,7 +110,7 @@ export function PublishWorkspace() {
         </p>
         <Link
           href={`/${locale}/verification`}
-          className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95"
+          className="mt-4 inline-flex items-center gap-2 rounded-full bg-campus-emerald-deep px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ink"
         >
           {t('goToVerification')}
         </Link>
@@ -123,7 +123,7 @@ export function PublishWorkspace() {
 
 function Panel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">{children}</div>
+    <div className="rounded-2xl border border-slate-200 bg-white p-8">{children}</div>
   );
 }
 

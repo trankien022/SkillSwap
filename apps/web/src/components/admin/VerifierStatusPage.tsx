@@ -1,5 +1,6 @@
 'use client';
 
+import { PageIntro } from '../ui/PageIntro';
 import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { getMe } from '../../lib/api-client';
@@ -44,7 +45,7 @@ export function VerifierStatusPage({ accountId }: { accountId: string }) {
 
   if (phase === 'loading') {
     return (
-      <main className="mx-auto flex max-w-2xl flex-col gap-3 px-4 py-12 text-sm text-ink-soft">
+      <main id="main-content" tabIndex={-1} className="workspace-page workspace-page-narrow flex-1">
         <p data-testid="admin-verifier-loading">{t('loading')}</p>
       </main>
     );
@@ -60,12 +61,12 @@ export function VerifierStatusPage({ accountId }: { accountId: string }) {
       `/${locale}/admin/verifiers/${encodeURIComponent(accountId)}`,
     );
     return (
-      <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-12">
+      <main id="main-content" tabIndex={-1} className="workspace-page workspace-page-narrow flex-1">
         <h1 className="text-2xl font-bold text-ink">{t('signInTitle')}</h1>
         <p className="text-sm leading-relaxed text-ink-soft">{t('signInBody')}</p>
         <a
           href={`/${locale}/auth?tab=login&returnUrl=${returnUrl}`}
-          className="inline-flex w-fit items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.99]"
+          className="inline-flex w-fit items-center gap-2 rounded-full bg-campus-emerald-deep px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ink"
         >
           {/* Was `tRoot('signIn')`, but there is no root-level `signIn` key, so
               this rendered the literal string "signIn". */}
@@ -77,7 +78,7 @@ export function VerifierStatusPage({ accountId }: { accountId: string }) {
 
   if (!isAdmin) {
     return (
-      <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-12">
+      <main id="main-content" tabIndex={-1} className="workspace-page workspace-page-narrow flex-1">
         <h1 className="text-2xl font-bold text-ink">{t('notAuthorizedTitle')}</h1>
         <p className="text-sm leading-relaxed text-ink-soft">{t('notAuthorizedBody')}</p>
       </main>
@@ -85,14 +86,8 @@ export function VerifierStatusPage({ accountId }: { accountId: string }) {
   }
 
   return (
-    <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8 lg:px-8">
-      <header className="flex flex-col gap-1">
-        <span className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
-          {t('breadcrumb')}
-        </span>
-        <h1 className="text-2xl font-bold text-ink">{t('pageTitle')}</h1>
-        <p className="text-sm text-ink-soft">{t('pageSubtitle')}</p>
-      </header>
+    <main id="main-content" tabIndex={-1} className="workspace-page workspace-page-narrow flex-1">
+      <PageIntro title={t('pageTitle')} description={t('pageSubtitle')} />
       <VerifierStatusForm accountId={accountId} initial={null} />
     </main>
   );

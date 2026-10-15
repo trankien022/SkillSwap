@@ -4,20 +4,9 @@ import { useTranslations } from 'next-intl';
 import { useMemo, useState, useTransition } from 'react';
 import type { LearnerBookingView } from '../../lib/dashboard/types';
 
-export type FilterKey =
-  | 'all'
-  | 'upcoming'
-  | 'actionRequired'
-  | 'completed'
-  | 'canceled';
+export type FilterKey = 'all' | 'upcoming' | 'actionRequired' | 'completed' | 'canceled';
 
-const FILTERS: FilterKey[] = [
-  'all',
-  'upcoming',
-  'actionRequired',
-  'completed',
-  'canceled',
-];
+const FILTERS: FilterKey[] = ['all', 'upcoming', 'actionRequired', 'completed', 'canceled'];
 
 /** Filter bar for the dashboard session list (FR-021).
  *
@@ -41,17 +30,10 @@ export function FilterBar({
     return {
       all: bookings.length,
       upcoming: bookings.filter((b) => b.state === 'upcoming').length,
-      actionRequired: bookings.filter(
-        (b) => b.state === 'pending_learner_confirmation',
-      ).length,
-      completed: bookings.filter(
-        (b) => b.state === 'completed' || b.state === 'released',
-      ).length,
+      actionRequired: bookings.filter((b) => b.state === 'pending_learner_confirmation').length,
+      completed: bookings.filter((b) => b.state === 'completed' || b.state === 'released').length,
       canceled: bookings.filter(
-        (b) =>
-          b.state === 'cancelled' ||
-          b.state === 'refunded' ||
-          b.state === 'no_show_reported',
+        (b) => b.state === 'cancelled' || b.state === 'refunded' || b.state === 'no_show_reported',
       ).length,
     };
   }, [bookings]);
@@ -67,12 +49,8 @@ export function FilterBar({
   }
 
   return (
-    <div className="flex flex-col items-stretch justify-between gap-3 rounded-xl border border-border bg-surface p-4 shadow-sm md:flex-row md:items-center">
-      <div
-        role="tablist"
-        aria-label={t('all')}
-        className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0"
-      >
+    <div className="flex flex-col items-stretch justify-between gap-3 border-b border-border pb-4 2xl:flex-row 2xl:items-center">
+      <div role="tablist" aria-label={t('all')} className="flex flex-wrap items-center gap-1">
         {FILTERS.map((key) => {
           const active = key === filter;
           return (
@@ -85,7 +63,7 @@ export function FilterBar({
               onClick={() => setFilterAndNotify(key)}
               className={
                 active
-                  ? 'inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-ink px-3 py-1.5 text-sm font-semibold text-surface shadow-sm transition-colors'
+                  ? 'inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-ink px-3 py-1.5 text-sm font-semibold text-surface  transition-colors'
                   : 'inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium text-ink-soft transition-colors hover:bg-mist'
               }
             >
@@ -93,8 +71,8 @@ export function FilterBar({
               <span
                 className={
                   active
-                    ? 'rounded-full bg-surface/20 px-1.5 py-0.5 text-[11px] font-semibold'
-                    : 'rounded-full bg-mist px-1.5 py-0.5 text-[11px] font-semibold text-ink'
+                    ? 'rounded-full bg-surface/20 px-1.5 py-0.5 text-sm font-semibold'
+                    : 'rounded-full bg-mist px-1.5 py-0.5 text-sm font-semibold text-ink'
                 }
               >
                 {t('count', { count: counts[key] })}
@@ -103,7 +81,7 @@ export function FilterBar({
           );
         })}
       </div>
-      <div className="relative w-full shrink-0 md:w-64">
+      <div className="relative w-full shrink-0 2xl:w-64">
         <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft">
           <SearchIcon className="h-4 w-4" />
         </span>
@@ -121,7 +99,18 @@ export function FilterBar({
 
 function SearchIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <circle cx="11" cy="11" r="7" />
       <line x1="21" y1="21" x2="16.5" y2="16.5" />
     </svg>

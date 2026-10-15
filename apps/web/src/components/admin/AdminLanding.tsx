@@ -1,5 +1,6 @@
 'use client';
 
+import { PageIntro } from '../ui/PageIntro';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
@@ -60,7 +61,7 @@ export function AdminLanding() {
 
   if (phase === 'loading') {
     return (
-      <main className="mx-auto flex max-w-3xl flex-col gap-3 px-4 py-12 text-sm text-slate-600">
+      <main id="main-content" tabIndex={-1} className="workspace-page workspace-page-narrow flex-1">
         <p data-testid="admin-landing-loading">{tVerifiers('loading')}</p>
       </main>
     );
@@ -69,12 +70,12 @@ export function AdminLanding() {
   if (phase === 'signed-out') {
     const returnUrl = encodeURIComponent(`/${locale}/admin`);
     return (
-      <main className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-12">
+      <main id="main-content" tabIndex={-1} className="workspace-page workspace-page-narrow flex-1">
         <h1 className="text-2xl font-bold text-slate-900">{tVerifiers('signInTitle')}</h1>
         <p className="text-sm leading-relaxed text-slate-600">{tVerifiers('signInBody')}</p>
         <a
           href={`/${locale}/auth?tab=login&returnUrl=${returnUrl}`}
-          className="inline-flex w-fit items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.99]"
+          className="inline-flex w-fit items-center gap-2 rounded-full bg-campus-emerald-deep px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ink"
         >
           {tVerifiers('signInCta')}
         </a>
@@ -84,7 +85,7 @@ export function AdminLanding() {
 
   if (!isAdmin) {
     return (
-      <main className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-12">
+      <main id="main-content" tabIndex={-1} className="workspace-page workspace-page-narrow flex-1">
         <h1 className="text-2xl font-bold text-slate-900">{tVerifiers('notAuthorizedTitle')}</h1>
         <p className="text-sm leading-relaxed text-slate-600">{tVerifiers('notAuthorizedBody')}</p>
       </main>
@@ -103,11 +104,8 @@ export function AdminLanding() {
   };
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-4 py-6">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-900">{t('title')}</h1>
-        <p className="text-sm text-slate-600">{t('subtitle')}</p>
-      </header>
+    <main id="main-content" tabIndex={-1} className="workspace-page workspace-page-narrow flex-1">
+      <PageIntro title={t('title')} description={t('subtitle')} />
 
       <AdminDashboard />
 
@@ -116,7 +114,7 @@ export function AdminLanding() {
 
         <a
           href={`/${locale}/admin/student-verifications`}
-          className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-emerald-300"
+          className="rounded-2xl border border-slate-200 bg-white p-5 transition-colors hover:border-emerald-300"
         >
           <h3 className="text-sm font-semibold text-slate-900">{t('studentVerifications')}</h3>
           <p className="mt-1 text-xs leading-relaxed text-slate-600">{tStudent('queueNotice')}</p>
@@ -142,14 +140,11 @@ export function AdminLanding() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <form
-          onSubmit={openVerifierStatus}
-          className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-        >
+        <form onSubmit={openVerifierStatus} className="workspace-panel">
           <h2 className="text-sm font-semibold text-slate-900">{t('verifierStatus')}</h2>
           {/* Kept as the fallback for a deep link that arrives from an email or a shared
               message; the queue above is now the normal way in. */}
-          <p className="mt-1 text-xs leading-relaxed text-slate-600">
+          <p className="mt-1 text-sm leading-relaxed text-slate-600">
             {tVerifiers('accountIdHint')}
           </p>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
@@ -162,17 +157,17 @@ export function AdminLanding() {
               }}
               placeholder={t('accountIdPlaceholder')}
               aria-label={tVerifiers('accountIdLabel')}
-              className="block w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+              className="block w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-ink-muted focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
             />
             <button
               type="submit"
-              className="shrink-0 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.99]"
+              className="shrink-0 rounded-full bg-campus-emerald-deep px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ink"
             >
               {t('openCta')}
             </button>
           </div>
           {accountIdError && (
-            <p role="alert" className="mt-2 text-xs font-medium text-rose-600">
+            <p role="alert" className="mt-2 text-sm font-medium text-rose-600">
               {t('accountIdRequired')}
             </p>
           )}

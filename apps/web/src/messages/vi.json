@@ -52,68 +52,122 @@
       "explore": "Khám phá lớp",
       "standard": "Quy chuẩn xác minh",
       "signIn": "Đăng nhập",
-      "myBookings": "Buổi học của tôi"
+      "myBookings": "Buổi học của tôi",
+      "subjects": "Chủ đề học",
+      "journey": "Cách học",
+      "teach": "Trở thành người dạy"
     },
     "hero": {
-      "headline1": "Nền tảng học kỹ năng trực tuyến",
-      "headline2": "bảo chứng cho sinh viên",
-      "subline": "Mạng lưới trao đổi kỹ năng ngang hàng kết nối sinh viên với cố vấn học thuật đã xác minh danh tính.",
+      "headline1": "Học cùng bạn.",
+      "headline2": "Giỏi thêm mỗi ngày.",
+      "subline": "Học trực tuyến cùng sinh viên có kỹ năng đã được xác minh. Từ dòng code đầu tiên đến một cuộc trò chuyện tự tin hơn.",
       "pills": {
-        "school": "Liên kết hệ thống trường đại học",
-        "antiFake": "Chống giả mạo danh tính",
-        "escrow": "Bảo vệ quỹ thanh toán"
-      }
+        "school": "Hồ sơ sinh viên được duyệt thủ công",
+        "antiFake": "Kỹ năng được chuyên gia đánh giá",
+        "escrow": "Thanh toán được ghi vào sổ cái"
+      },
+      "intro": "Sinh viên dạy. Sinh viên học.",
+      "explore": "Khám phá lớp học",
+      "howItWorks": "Bắt đầu thế nào?",
+      "note": "Học từ bất cứ đâu · Đặt lớp trước ít nhất 24 giờ",
+      "journeyTitle": "Từ một kỹ năng đến một buổi học",
+      "creditLabel": "Tỷ giá credit",
+      "creditValue": "1 credit = 1.000 VNĐ",
+      "steps": [
+        {
+          "title": "Chọn người bạn muốn học cùng",
+          "body": "Xem kỹ năng, thông tin người dạy và lịch học trước khi đặt."
+        },
+        {
+          "title": "Biết rõ khoản mình trả",
+          "body": "Giá lớp hiển thị bằng credit. Kiểm tra số dư và xác nhận thanh toán."
+        },
+        {
+          "title": "Gặp nhau trong lớp trực tuyến",
+          "body": "Vào lớp từ lịch học của bạn. Để lại đánh giá sau buổi học."
+        }
+      ],
+      "imageAlt": "Minh họa sinh viên đeo tai nghe, ghi chép và học cùng người dạy qua cuộc gọi video",
+      "imageCaption": "Sinh viên dạy. Sinh viên học.",
+      "sessionLength": "30–180 phút / buổi"
     },
     "assurance": {
-      "eyebrow": "Người đã xác minh, tiền minh bạch",
-      "heading": "Niềm tin kiểm chứng được, không chỉ để đọc",
+      "eyebrow": "Trước khi bạn đặt lớp",
+      "heading": "Rõ người dạy. Rõ khoản trả.",
       "items": [
         {
-          "tag": "Hội đồng duyệt",
-          "title": "Mọi Teacher đã xác minh bởi chuyên gia chuyên môn",
-          "body": "Hồ sơ năng lực và đề cương giảng dạy được đánh giá bởi chuyên gia có chuyên môn phù hợp trước khi cấp quyền mở lớp."
+          "tag": "Xác minh kỹ năng",
+          "title": "Người dạy có kỹ năng được chuyên gia duyệt",
+          "body": "Người duyệt có chuyên môn phù hợp kiểm tra bằng chứng kỹ năng trước khi sinh viên được mở lớp."
         },
         {
-          "tag": "Audit Trail",
-          "title": "Quyết định xác minh được lưu vết không thể chỉnh sửa",
-          "body": "Mỗi phiên bản hồ sơ được gắn dấu thời gian và giữ nguyên, đảm bảo truy vết được từng quyết định duyệt hoặc từ chối."
+          "tag": "Lịch sử xét duyệt",
+          "title": "Có lịch sử cho từng quyết định xác minh",
+          "body": "Hồ sơ và quyết định duyệt hoặc từ chối được lưu để truy vết, kèm thời điểm và lý do."
         },
         {
-          "tag": "Tỷ giá bất biến",
+          "tag": "Quy đổi credit",
           "title": "1 Credit = 1.000 VNĐ",
-          "body": "Quy đổi trực tiếp 1:1, không hoa hồng ngầm, không trượt giá khi nạp hoặc rút về tài khoản."
+          "body": "Mỗi credit tương ứng 1.000 VNĐ. Kiểm tra giá lớp và số dư trước khi xác nhận thanh toán."
         },
         {
-          "tag": "Phân bổ dòng tiền",
-          "title": "90% cho Teacher, 10% phí nền tảng",
-          "body": "Teacher nhận 90% mỗi buổi học hoàn tất; nền tảng thu cố định 10% cho vận hành và kiểm định."
+          "tag": "Phí nền tảng",
+          "title": "90% cho người dạy, 10% phí nền tảng",
+          "body": "Khi buổi học được hoàn tất, người dạy nhận 90%; 10% còn lại là phí nền tảng."
         },
         {
-          "tag": "Sổ cái nguyên tử",
+          "tag": "Lịch sử giao dịch",
           "title": "Khoản thanh toán được phong tỏa tới khi hoàn tất",
-          "body": "Tiền của người học nằm trong sổ cái nền tảng và chỉ chuyển vào ví Teacher khi buổi học được ghi nhận hoàn tất. Mỗi giao dịch đều có trace ID xuyên suốt."
+          "body": "Khoản thanh toán được giữ trong sổ cái đến khi buổi học được ghi nhận hoàn tất. Mỗi giao dịch có mã truy vết (trace ID)."
         }
-      ]
+      ],
+      "description": "Bạn tập trung vào việc học. Thông tin người dạy, giá lớp và cách thanh toán luôn có thể kiểm tra trước khi đặt."
     },
     "cta": {
-      "heading": "Bắt đầu học hoặc dạy ngay hôm nay",
-      "subline": "Cùng sinh viên các trường đại học kết nối, học tập và tạo thu nhập minh bạch.",
+      "heading": "Biết một điều hay? Dạy thử đi.",
+      "subline": "Kỹ năng bạn dùng mỗi ngày có thể là điều một người bạn đang muốn học. Chia sẻ kinh nghiệm trong một lớp trực tuyến của riêng mình.",
       "learner": {
-        "title": "Tôi muốn học",
-        "hint": "Khám phá lớp & đặt buổi học với Teacher đã xác minh"
+        "title": "Tạo tài khoản để học",
+        "hint": "Tìm lớp theo kỹ năng, lịch và mức giá phù hợp."
       },
       "teacher": {
-        "title": "Tôi muốn dạy",
-        "hint": "Nộp hồ sơ năng lực & bắt đầu nhận lớp"
+        "title": "Bắt đầu chia sẻ kỹ năng",
+        "hint": "Gửi bằng chứng kỹ năng để chuyên gia xét duyệt trước khi mở lớp."
       },
       "trustNoCard": "Không yêu cầu thẻ tín dụng để đăng ký",
-      "trustSafety": "Mọi giao dịch có audit trail"
+      "trustSafety": "Mọi giao dịch có audit trail",
+      "imageAlt": "Minh họa sinh viên chia sẻ kiến thức trong một buổi học"
     },
     "footer": {
-      "tagline": "Hệ sinh thái trao đổi kỹ năng cho sinh viên.",
+      "tagline": "Học từ nhau. Tiến bộ cùng nhau.",
       "langLabel": "Ngôn ngữ",
       "vi": "Tiếng Việt",
-      "en": "English"
+      "en": "English",
+      "illustration": "Hình ảnh minh họa được tạo cho SkillSwap."
+    },
+    "subjects": {
+      "heading": "Bạn muốn học gì?",
+      "description": "Chọn một chủ đề bạn quan tâm. Xem các lớp đang mở và tìm người học cùng mình.",
+      "programming": {
+        "title": "Lập trình",
+        "description": "Từ tư duy giải bài toán đến tự tay viết ứng dụng.",
+        "alt": "Minh họa góc học lập trình với máy tính, bàn phím và sổ ghi chép"
+      },
+      "design": {
+        "title": "Thiết kế",
+        "description": "Biến ý tưởng thành những sản phẩm nhìn thấy được.",
+        "alt": "Minh họa bàn học thiết kế với bảng vẽ và bảng màu"
+      },
+      "language": {
+        "title": "Ngoại ngữ",
+        "description": "Luyện nói, cùng sửa lỗi, thêm tự tin giao tiếp.",
+        "alt": "Minh họa sinh viên luyện hội thoại qua cuộc gọi trực tuyến"
+      }
+    },
+    "journey": {
+      "heading": "Một buổi học. Một bước tiến.",
+      "description": "Không cần bắt đầu bằng một khóa học dài. Chọn một kỹ năng, tìm người phù hợp và học ngay từ điều bạn đang cần.",
+      "action": "Xem lịch các lớp"
     }
   },
   "Marketplace": {
@@ -146,7 +200,8 @@
       "programming": "Lập trình & IT",
       "design": "Thiết kế UI/UX",
       "softSkills": "Kỹ năng mềm",
-      "math": "Toán & Xác suất"
+      "math": "Toán & Xác suất",
+      "label": "Danh mục kỹ năng"
     },
     "resultsBar": {
       "title": "Khám phá lớp học",
@@ -157,7 +212,9 @@
         "rating": "Đánh giá cao nhất",
         "priceLow": "Credits: Thấp đến cao",
         "popular": "Lớp đông học viên nhất"
-      }
+      },
+      "description": "Tìm kỹ năng bạn cần, chọn lịch và mức giá phù hợp.",
+      "artAlt": "Minh họa góc học kỹ năng trực tuyến"
     },
     "states": {
       "loading": "Đang tải danh sách lớp học…",
@@ -166,7 +223,8 @@
       "signInCta": "Đăng nhập ngay",
       "errorTitle": "Không tải được danh sách lớp",
       "errorBody": "Đã xảy ra lỗi khi tải các lớp đang mở. Vui lòng thử lại.",
-      "retry": "Thử lại"
+      "retry": "Thử lại",
+      "emptyTitle": "Không tìm thấy lớp học phù hợp"
     },
     "filters": {
       "title": "Bộ lọc chuyên sâu",
@@ -200,7 +258,7 @@
     "card": {
       "format": {
         "oneOnOne": "1-1 Mentoring",
-        "group": "Lớp nhóm 2-4 SV"
+        "group": "Lớp nhóm"
       },
       "duration": "{minutes} phút",
       "rating": "{avg} ({count})",
@@ -216,12 +274,23 @@
       },
       "pricePerLearner": "~{vnd}đ / SV",
       "viewClass": "Xem lớp",
-      "mockDataBadge": "Dữ liệu minh họa"
+      "mockDataBadge": "Dữ liệu minh họa",
+      "verified": "Đã xác minh",
+      "levels": {
+        "beginner": "Cơ bản",
+        "intermediate": "Trung cấp",
+        "advanced": "Nâng cao",
+        "expert": "Chuyên sâu"
+      },
+      "illustration": "Minh họa chủ đề học",
+      "availability": "{free}/{capacity} chỗ còn trống",
+      "availabilityUnknown": "Chưa đọc được số chỗ còn trống"
     },
     "pagination": {
       "showing": "Hiển thị {from} - {to} trong tổng số {total} lớp học đang tuyển sinh",
       "prev": "Trang trước",
-      "next": "Trang sau"
+      "next": "Trang sau",
+      "label": "Phân trang lớp học"
     },
     "banner": {
       "title": "Bảo vệ quỹ thanh toán",
@@ -262,8 +331,8 @@
       "capacity": "QUY MÔ & HẠ TẦNG PHÒNG HỌC",
       "oneOnOne": "Lớp 1-1 chuyên sâu",
       "oneOnOneLimit": "Giới hạn 1 sinh viên",
-      "group": "Lớp nhóm 2-4 sinh viên",
-      "groupLimit": "Tối đa 4 sinh viên mỗi buổi",
+      "group": "Lớp nhóm",
+      "groupLimit": "Tối đa {count} học viên mỗi buổi",
       "seatsLeft": "Còn {taken}/{capacity} chỗ khả dụng",
       "room": "Phòng học mã hoá đầu cuối"
     },
@@ -312,7 +381,9 @@
       "ctaBook": "Tiến hành đặt lớp",
       "ctaSave": "Lưu vào danh sách quan tâm",
       "supportTitle": "Hỗ trợ sinh viên 24/7",
-      "supportSubtitle": "Hệ thống hỗ trợ trực tuyến"
+      "supportSubtitle": "Hệ thống hỗ trợ trực tuyến",
+      "releaseHint": "Credit được giữ tới khi buổi học được ghi nhận hoàn tất.",
+      "policyLink": "Xem quy tắc thanh toán"
     },
     "notFound": {
       "title": "Không tìm thấy lớp học",
@@ -334,10 +405,11 @@
       "roleChip": "Học viên SkillSwap",
       "termChip": "Kỳ học hiện tại",
       "title": "Lớp học của tôi",
-      "subtitle": "Theo dõi tiến độ các buổi học đã đặt, kiểm soát quy trình ký quỹ, truy cập phòng học và phê duyệt giải ngân credits sau mỗi ca học.",
+      "subtitle": "Lịch học, phòng học trực tuyến và những kỹ năng bạn đang tích lũy — tất cả ở một nơi.",
       "ctaCalendar": "Đồng bộ lịch",
       "ctaExplore": "Khám phá lớp mới",
-      "mockBadge": "Dữ liệu minh họa"
+      "mockBadge": "Dữ liệu minh họa",
+      "artAlt": "Minh họa sinh viên học trực tuyến qua video"
     },
     "empty": {
       "title": "Chưa có buổi học nào",
@@ -352,7 +424,9 @@
       "hours": "Thời gian tích luỹ",
       "hoursProgress": "{pct}% mục tiêu tháng",
       "review": "Đánh giá chờ gửi",
-      "reviewHint": "Đã hoàn tất, cần đánh giá"
+      "reviewHint": "Đã hoàn tất, cần đánh giá",
+      "hoursUnit": "giờ",
+      "creditsUnit": "credit"
     },
     "live": {
       "badge": "ĐANG DIỄN RA",
@@ -405,13 +479,23 @@
       "cancelledBody": "Lớp học đã được huỷ. Số credits ký quỹ đã hoàn về ví của bạn.",
       "completedReview": "Đánh giá bạn đã gửi",
       "endedAt": "Đã kết thúc lúc {when}",
-      "startsAt": "{when} • {duration} phút"
+      "startsAt": "{when} • {duration} phút",
+      "chatHint": "Trò chuyện trong phòng học khi bạn được cấp quyền vào lớp.",
+      "materialsHint": "Người dạy chia sẻ tài liệu trong buổi học. Kiểm tra với người dạy khi vào lớp."
     },
     "calendar": {
       "title": "Lịch theo tháng",
       "prev": "Tháng trước",
       "next": "Tháng sau",
-      "weekdays": ["T2", "T3", "T4", "T5", "T6", "T7", "CN"],
+      "weekdays": [
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "CN"
+      ],
       "legendLive": "Lớp đang diễn ra",
       "legendBooked": "Lớp đã chốt slot",
       "noMonth": "Chưa có lịch cho tháng này"
@@ -436,7 +520,16 @@
       "noShowBody": "Nếu giảng viên không vào phòng sau 15 phút tính từ giờ bắt đầu, hệ thống tự động hoàn credits ký quỹ về ví của bạn.",
       "contactRule": "Liên lạc an toàn qua nền tảng",
       "contactBody": "Mọi trao đổi, gửi mã nguồn và cuộc gọi video đều diễn ra nội bộ trong SkillSwap để bảo đảm căn cứ giải quyết tranh chấp học thuật.",
-      "support": "Cần trợ giúp học vụ"
+      "support": "Cần trợ giúp học vụ",
+      "policyLink": "Xem quy tắc học và thanh toán",
+      "noShow": {
+        "title": "Nếu người dạy vắng mặt",
+        "body": "Bạn có thể báo vắng mặt khi đủ điều kiện. Hệ thống xử lý theo trạng thái buổi học và chính sách hoàn credit."
+      },
+      "contact": {
+        "title": "Trao đổi trong nền tảng",
+        "body": "Dùng phòng học và công cụ trao đổi của SkillSwap để giữ đầy đủ thông tin buổi học."
+      }
     },
     "reviewModal": {
       "title": "Đánh giá buổi học & Giải ngân ký quỹ",
@@ -447,7 +540,8 @@
       "commentPlaceholder": "Chia sẻ trải nghiệm học tập, sự nhiệt tình và nội dung kiến thức được trao đổi...",
       "pledge": "Cam kết học thuật: Đánh giá trung thực giúp xây dựng môi trường trao đổi kỹ năng minh bạch giữa sinh viên các trường.",
       "cancel": "Để sau",
-      "submit": "Xác nhận & Giải ngân"
+      "submit": "Xác nhận & Giải ngân",
+      "starLabel": "{count} sao"
     },
     "noShowModal": {
       "title": "Báo cáo giảng viên vắng mặt",
@@ -460,7 +554,7 @@
   "Wallet": {
     "withdrawal": {
       "notice": "Tính năng rút tiền chưa khả dụng",
-      "body": "Hệ thống đang hoàn thiện quy trình rút tiền qua cổng payout. Backend chưa phát hành tính năng này, nên bạn không thể gửi yêu cầu rút vào lúc này. Vui lòng quay lại khi backend phát hành.",
+      "body": "Bạn chưa thể gửi yêu cầu rút tiền ở phiên bản này. Số dư vẫn có thể sử dụng để học và được theo dõi trong lịch sử giao dịch.",
       "cta": "Chưa khả dụng",
       "rulesTitle": "Quy tắc nghiệp vụ Payout & Bảo vệ Escrow",
       "rulesBody": "Khi tính năng được phát hành: số tiền rút không được vượt quá số dư khả dụng. Ngay khi bạn gửi yêu cầu, credits sẽ được chuyển sang trạng thái payout_hold để khóa an toàn trong khi đối soát. Nếu cổng thanh toán từ chối, khoản này sẽ hoàn trả ngay về ví.",
@@ -671,8 +765,8 @@
     },
     "StudentVerification": {
       "title": "Duyệt xác minh sinh viên",
-      "notice": "Xem xét hồ sơ xác minh sinh viên theo id. Admin cần biết id xác minh.",
-      "queueNotice": "Toàn bộ hồ sơ xác minh sinh viên trên hệ thống. Lọc theo trạng thái, tìm theo tên trường, rồi mở một hồ sơ để xem xét.",
+      "notice": "Nhập mã hồ sơ sinh viên cần xét duyệt để mở các thao tác. Kiểm tra đúng hồ sơ và nêu rõ lý do khi ra quyết định.",
+      "queueNotice": "Toàn bộ hồ sơ xác minh sinh viên trên hệ thống. Lọc theo trạng thái, tìm theo trường, rồi mở một hồ sơ để xem xét.",
       "idPlaceholder": "Id xác minh",
       "openCta": "Mở",
       "openByIdTitle": "Mở theo Id xác minh",
@@ -753,10 +847,10 @@
       "title": "Thông tin lớp học trực tuyến",
       "subjectChip": "Học phần chuyên đề",
       "verificationBanner": {
-        "title": "Giảng viên chuyên môn thẩm định",
-        "body": "Hồ sơ sư phạm đáp ứng chuẩn kiểm định. Hệ thống đảm bảo tính minh bạch và giá trị chứng chỉ tương đương giữa các khoa viện.",
-        "ruleTitle": "Quy ước bất biến",
-        "ruleBody": "Khóa sửa lịch & nội dung sau khi có lượt đặt đầu tiên"
+        "title": "Chuẩn bị một buổi học rõ ràng",
+        "body": "Chọn kỹ năng đã được duyệt. Kiểm tra mô tả, thời gian và giá để người học biết mình sẽ học gì.",
+        "ruleTitle": "Kiểm tra trước khi công bố",
+        "ruleBody": "Không sửa lịch và nội dung sau khi có lượt đặt đầu tiên."
       },
       "skill": {
         "label": "Kỹ năng chuyên môn áp dụng",
@@ -786,7 +880,9 @@
         "capacityLabel": "Sức chứa tối đa",
         "capacityBadge1to1": "Mô hình kèm cá nhân 1-1",
         "capacityBadgeGroup": "Lớp học nhóm ({count} học viên)",
-        "conflictHelp": "Thuật toán đối soát tự động kiểm tra xung đột thời gian với 3 lớp kèm cá nhân đã tạo trước đó."
+        "conflictHelp": "Thuật toán đối soát tự động kiểm tra xung đột thời gian với 3 lớp kèm cá nhân đã tạo trước đó.",
+        "decrementCapacity": "Giảm sức chứa",
+        "incrementCapacity": "Tăng sức chứa"
       },
       "pricing": {
         "title": "Biểu phí & Quyết toán",
@@ -811,7 +907,8 @@
         "teacher": "Bạn (Giảng viên)",
         "verifiedFaculty": "Đã chứng thực sinh viên",
         "price": "Học phí",
-        "priceUnit": "Cr"
+        "priceUnit": "Cr",
+        "draft": "Bản nháp chưa công bố"
       },
       "actions": {
         "warning": "Cam kết sư phạm: Sau khi có học viên đầu tiên đăng ký, lớp sẽ tự động khóa toàn bộ thao tác sửa đổi giờ học và nội dung.",
@@ -882,23 +979,22 @@
       "result": {
         "successTitle": "Đã tạo lớp học",
         "classIdLabel": "Mã lớp:"
-      }
+      },
+      "description": "Chọn kỹ năng đã được duyệt, lên lịch buổi học và kiểm tra khoản thu trước khi công bố.",
+      "artAlt": "Minh họa góc chuẩn bị bài giảng"
     }
   },
   "Auth": {
     "brandTag": "Mạng lưới tri thức sinh viên",
-    "heroTitle1": "Trao đổi kỹ năng.",
-    "heroTitle2": "Tích lũy giá trị thực.",
-    "heroSubtitle": "Học hỏi từ bạn học xuất sắc và chia sẻ thế mạnh của bạn. Mọi trao đổi đều được bảo chứng minh bạch qua hệ thống tín chỉ công bằng.",
-    "pillar1Title": "Xác thực sinh viên chính danh",
-    "pillar1Desc": "Liên kết tài khoản trường đại học đảm bảo môi trường học tập an toàn.",
-    "pillar2Title": "Cơ chế ký quỹ minh bạch",
-    "pillar2Desc": "Tín chỉ chỉ chuyển giao khi buổi trao đổi diễn ra trọn vẹn và đạt yêu cầu.",
-    "pillar3Title": "Lớp học tương tác thời gian thực",
-    "pillar3Desc": "Phòng học tương tác trực tiếp với tài liệu học tập được chia sẻ đồng bộ.",
-    "testimonialQuote": "Trao đổi kỹ năng lập trình giúp mình luyện tập thêm nhiều buổi giao tiếp bổ ích. Quy trình chuẩn mực, tài khoản xác thực rất an tâm.",
-    "testimonialAuthor": "Minh Trí",
-    "testimonialRole": "Sinh viên khóa trước • 40+ giờ trao đổi kỹ năng",
+    "heroTitle1": "Học điều bạn cần.",
+    "heroTitle2": "Chia sẻ điều bạn biết.",
+    "heroSubtitle": "Tạo tài khoản để tìm lớp, học cùng sinh viên khác hoặc gửi bằng chứng kỹ năng để bắt đầu dạy.",
+    "pillar1Title": "Xác minh bằng hồ sơ sinh viên",
+    "pillar1Desc": "Bạn gửi tên trường và giấy tờ. Quản trị viên kiểm tra hồ sơ thủ công.",
+    "pillar2Title": "Thanh toán bằng credit",
+    "pillar2Desc": "Kiểm tra giá và số dư trước khi đặt. Khoản thanh toán được ghi trong sổ cái.",
+    "pillar3Title": "Học trực tuyến cùng nhau",
+    "pillar3Desc": "Xem lịch và vào phòng học từ danh sách lớp đã đặt.",
     "tabRegister": "Đăng ký tài khoản",
     "tabLogin": "Đăng nhập",
     "providerGoogle": "Tài khoản Google",
@@ -928,7 +1024,9 @@
     "switchToLogin": "Đã có tài khoản?",
     "switchToRegister": "Chưa có tài khoản?",
     "validationError": "Vui lòng nhập đầy đủ thông tin hợp lệ (mật khẩu từ 8 ký tự).",
-    "pledgeError": "Bạn cần đồng ý với cam kết quy chuẩn học thuật."
+    "pledgeError": "Bạn cần đồng ý với cam kết quy chuẩn học thuật.",
+    "passwordResetHint": "Vui lòng liên hệ quản trị viên để đặt lại mật khẩu.",
+    "learningImageAlt": "Minh họa một buổi học trực tuyến cùng người dạy qua video"
   },
   "Skills": {
     "title": "Kỹ năng của tôi",
@@ -966,7 +1064,8 @@
     "state_claimed": "Đang được xem xét",
     "state_approved": "Đã duyệt",
     "state_rejected": "Bị từ chối",
-    "state_superseded": "Đã thay thế"
+    "state_superseded": "Đã thay thế",
+    "artAlt": "Minh họa bàn học sáng tạo và phát triển kỹ năng"
   },
   "Verification": {
     "badge": "Hồ sơ đã kiểm duyệt chính thức",
@@ -1267,6 +1366,285 @@
       "approved": "Đã phê duyệt",
       "rejected": "Bị từ chối",
       "superseded": "Bị thay thế"
+    },
+    "description": "Xem bằng chứng được gửi, nhận hồ sơ phù hợp chuyên môn và ghi rõ quyết định xét duyệt.",
+    "emptyHint": "Hồ sơ phù hợp với các bộ lọc này sẽ xuất hiện tại đây."
+  },
+  "Workspace": {
+    "skip": "Chuyển đến nội dung chính",
+    "wallet": {
+      "title": "Ví học tập",
+      "description": "Biết rõ số credit bạn có, khoản đang giữ cho lớp học và từng giao dịch trong ví.",
+      "topUp": "Nạp credit",
+      "withdraw": "Rút thu nhập",
+      "available": "Số dư khả dụng",
+      "held": "Đang giữ cho lớp học",
+      "credits": "credit",
+      "heldHint": "Credit chưa được giải ngân cho người dạy.",
+      "rate": "Quy đổi credit",
+      "rateHint": "1 credit tương ứng 1.000 VND.",
+      "unavailable": "Chưa đọc được dữ liệu",
+      "depositTitle": "Nạp thêm cho buổi học tới",
+      "depositHint": "Chọn số credit cần nạp. Bạn sẽ thanh toán trên trang SePay.",
+      "amountLabel": "Số credit muốn nạp",
+      "total": "Số tiền thanh toán",
+      "processing": "Đang tạo yêu cầu…",
+      "pay": "Tiếp tục đến SePay",
+      "paymentTitle": "Theo dõi thanh toán",
+      "paymentBody": "Số dư chỉ cập nhật khi hệ thống nhận được xác nhận từ cổng thanh toán. Bạn có thể quay lại đây để kiểm tra.",
+      "reopen": "Mở lại trang thanh toán",
+      "pollExpired": "Chưa nhận được kết quả cuối cùng. Bấm cập nhật để kiểm tra lại.",
+      "refresh": "Cập nhật số dư",
+      "rules": "Quy tắc thanh toán và học tập",
+      "history": "Lịch sử giao dịch",
+      "filter": {
+        "all": "Tất cả",
+        "deposit": "Credit vào",
+        "pay": "Credit ra",
+        "escrow": "Tạm giữ và hoàn"
+      },
+      "emptyTitle": "Chưa có giao dịch",
+      "emptyBody": "Giao dịch nạp credit và thanh toán lớp học sẽ xuất hiện tại đây.",
+      "creditTransaction": "Credit vào ví",
+      "debitTransaction": "Credit ra khỏi ví",
+      "status": {
+        "pending": "Đang chờ xác nhận thanh toán",
+        "settled": "Đã cộng credit vào ví",
+        "failed": "Thanh toán không thành công",
+        "reversed": "Giao dịch đã được hoàn"
+      },
+      "historyStatus": {
+        "completed": "Đã hoàn tất",
+        "pending": "Đang xử lý",
+        "reversed": "Đã hoàn",
+        "settled": "Đã ghi nhận"
+      },
+      "loadError": "Không tải được dữ liệu ví. Vui lòng thử lại.",
+      "minAmount": "Nạp tối thiểu 1 credit (1.000 VND).",
+      "signInError": "Vui lòng đăng nhập lại trước khi nạp credit.",
+      "topUpError": "Không tạo được yêu cầu nạp credit.",
+      "retry": "Vui lòng thử lại.",
+      "refreshError": "Không cập nhật được số dư. Vui lòng thử lại.",
+      "withdrawTitle": "Rút thu nhập giảng dạy",
+      "withdrawDescription": "Kiểm tra số dư và trạng thái tính năng rút thu nhập.",
+      "backWallet": "Về ví học tập"
+    },
+    "verification": {
+      "title": "Hồ sơ xác minh",
+      "description": "Xác minh tư cách sinh viên và gửi bằng chứng cho những kỹ năng bạn muốn giảng dạy.",
+      "artAlt": "Minh họa sinh viên cùng chia sẻ kiến thức",
+      "profile": "Thông tin sinh viên",
+      "name": "Họ và tên",
+      "email": "Email",
+      "school": "Trường đại học",
+      "major": "Chuyên ngành",
+      "status": {
+        "approved": "Đã xác minh",
+        "pending": "Đang xét duyệt",
+        "rejected": "Cần bổ sung hồ sơ",
+        "revoked": "Đã thu hồi xác minh",
+        "unsubmitted": "Chưa gửi hồ sơ",
+        "unknown": "Chưa đọc được trạng thái"
+      },
+      "loading": "Đang tải hồ sơ…",
+      "signInTitle": "Đăng nhập để xem hồ sơ",
+      "signInBody": "Hồ sơ sinh viên và tài liệu xác minh chỉ hiển thị với tài khoản của bạn.",
+      "signIn": "Đăng nhập",
+      "loadError": "Không tải được trạng thái xác minh. Vui lòng thử lại.",
+      "submitted": "Đã gửi hồ sơ. Theo dõi kết quả xét duyệt tại đây.",
+      "submitError": "Không gửi được hồ sơ. Vui lòng thử lại.",
+      "uploadError": "Không tải lên được tài liệu. Vui lòng thử lại.",
+      "close": "Đóng biểu mẫu",
+      "uploadAction": "Gửi hoặc bổ sung hồ sơ",
+      "reviewTitle": "Xét duyệt thủ công",
+      "reviewBody": "Nhập thông tin trường và gửi ảnh thẻ sinh viên hoặc giấy xác nhận đang theo học. Quản trị viên xem xét tài liệu để xác minh tư cách sinh viên.",
+      "privacy": "Chỉ gửi tài liệu cần thiết cho việc xác minh. SkillSwap không kết nối với cơ sở dữ liệu của trường.",
+      "rules": "Xem quy tắc xác minh",
+      "uploadTitle": "Gửi tài liệu sinh viên",
+      "uploadBody": "Điền tên trường trước khi chọn tệp; bạn có thể bổ sung chuyên ngành. Việc chọn tệp sẽ bắt đầu tải lên và gửi hồ sơ.",
+      "schoolPlaceholder": "Nhập tên trường của bạn",
+      "majorPlaceholder": "Nhập chuyên ngành đang học",
+      "document": "Ảnh thẻ hoặc giấy xác nhận sinh viên",
+      "fileHint": "Ảnh hoặc PDF. Tệp được tải lên rồi mới gửi hồ sơ xét duyệt.",
+      "progress": "Đang tải lên: {progress}%",
+      "skills": "Kỹ năng giảng dạy",
+      "skillsBody": "Bằng chứng kỹ năng được chuyên gia phù hợp xét duyệt riêng với hồ sơ sinh viên.",
+      "skillCount": "{count} kỹ năng đã được duyệt.",
+      "skillsAction": "Quản lý kỹ năng và bằng chứng",
+      "majorOptional": "Chuyên ngành (không bắt buộc)"
+    },
+    "notifications": {
+      "title": "Thông báo của bạn",
+      "description": "Cập nhật về lịch học, giao dịch và kết quả xét duyệt hồ sơ.",
+      "markViewed": "Đánh dấu tất cả đã xem trong phiên này",
+      "markSingle": "Đã xem trong phiên này",
+      "filter": {
+        "all": "Tất cả",
+        "unread": "Chưa xem",
+        "booking": "Lớp học",
+        "finance": "Ví học tập",
+        "verify": "Xác minh"
+      },
+      "loading": "Đang tải thông báo…",
+      "errorTitle": "Chưa tải được thông báo",
+      "errorBody": "Kiểm tra kết nối và phiên đăng nhập rồi thử lại.",
+      "signIn": "Đăng nhập lại",
+      "emptyTitle": "Không có thông báo trong mục này",
+      "emptyBody": "Thông báo mới về lớp học và tài khoản sẽ xuất hiện tại đây.",
+      "explore": "Khám phá lớp học",
+      "unread": "Chưa xem",
+      "viewed": "Đã xem",
+      "open": "Xem chi tiết",
+      "sessionHint": "Dấu đã xem được lưu trong phiên mở trang này."
+    },
+    "teaching": {
+      "title": "Không gian giảng dạy",
+      "description": "Chia sẻ điều bạn biết. Quản lý kỹ năng đã duyệt, lịch dạy và các lớp của mình.",
+      "artAlt": "Minh họa góc chuẩn bị nội dung học tập",
+      "publish": "Mở lớp học mới",
+      "skills": "Quản lý kỹ năng",
+      "verified": "Sinh viên đã xác minh",
+      "member": "Thành viên SkillSwap",
+      "classUnit": "lớp",
+      "allCount": "Tất cả ({count})",
+      "openCount": "Đang mở ({count})",
+      "closedCount": "Đã xong ({count})"
+    },
+    "checkout": {
+      "title": "Xác nhận lớp học",
+      "description": "Kiểm tra buổi học và số credit trước khi xác nhận thanh toán.",
+      "back": "Về thông tin lớp",
+      "loading": "Đang đọc thông tin buổi học…",
+      "loadError": "Chưa tải được thông tin thanh toán",
+      "loadingBody": "Thông tin lớp và số dư ví cần được tải đầy đủ trước khi đặt.",
+      "successTitle": "Lớp học đã được xác nhận",
+      "successBody": "Bạn có thể theo dõi lịch và vào phòng khi buổi học mở.",
+      "myClasses": "Xem lớp học của tôi",
+      "schedule": "Lịch học",
+      "duration": "Thời lượng",
+      "minutes": "{count} phút",
+      "format": "Hình thức",
+      "individual": "Học một kèm một",
+      "group": "Nhóm tối đa {count} người",
+      "location": "Địa điểm",
+      "online": "Phòng học trực tuyến",
+      "beforeConfirm": "Trước khi xác nhận",
+      "paymentRule": "Credit được ghi nhận vào sổ cái và giữ tới khi buổi học được ghi nhận hoàn tất. Kiểm tra chính sách trước khi đặt lớp.",
+      "rules": "Xem quy tắc học và thanh toán",
+      "agreement": "Tôi đã đọc quy tắc thanh toán và cam kết tham gia đúng giờ, tôn trọng người dạy.",
+      "summary": "Khoản thanh toán của bạn",
+      "price": "Giá buổi học",
+      "credits": "credit",
+      "equivalent": "Tương đương",
+      "balance": "Số dư hiện tại",
+      "holdExpires": "Chỗ giữ hết hạn lúc {time}.",
+      "confirming": "Đang xác nhận…",
+      "confirmed": "Đã xác nhận",
+      "confirm": "Xác nhận và thanh toán",
+      "settlement": {
+        "settling": "Hệ thống đang ghi nhận giao dịch. Hãy kiểm tra lại sau giây lát.",
+        "unknown": "Chưa đọc được kết quả. Hãy kiểm tra lại trước khi thao tác tiếp.",
+        "unconfirmed": "Giao dịch chưa được xác nhận. Kiểm tra lại trạng thái hoặc quay về thông tin lớp."
+      },
+      "recheck": "Kiểm tra lại",
+      "shortfall": "Bạn còn thiếu {count} credit để xác nhận lớp này.",
+      "topUp": "Nạp thêm credit",
+      "topUpTitle": "Nạp qua SePay",
+      "topUpBody": "Số tiền cần nạp: {amount} VND. Thanh toán mở trong tab mới; số dư chỉ cập nhật khi có xác nhận từ cổng thanh toán.",
+      "openSePay": "Mở trang SePay",
+      "topUpSettled": "Credit đã được cộng vào ví. Bạn có thể tiếp tục xác nhận lớp.",
+      "bookingRef": "Mã đặt lớp"
+    },
+    "copy": {
+      "signInBeforePublishingAClass": "Bạn cần đăng nhập để công bố lớp học.",
+      "couldNotPublishTheClass": "Không công bố được lớp học.",
+      "vnd": "đ",
+      "min": "phút)",
+      "mine5d92": "phút",
+      "loadingYourClasses": "Đang tải lớp học của bạn…",
+      "readingTheLatestData": "Đang đọc dữ liệu từ máy chủ.",
+      "signInToSeeYourClasses": "Đăng nhập để xem lớp học của bạn",
+      "yourScheduleHeldCreditsAndReviews": "Lịch học, số dư ký quỹ và đánh giá chỉ hiển thị cho tài khoản đã đăng nhập.",
+      "signIn": "Đăng nhập ngay",
+      "couldNotLoadYourClasses": "Không tải được lớp học",
+      "yourSessionHasExpiredPleaseSign": "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+      "couldNotLoadYourTeachingClasses": "Không tải được danh sách lớp giảng dạy.",
+      "couldNotLoadYourTeachingInformation": "Không tải được dữ liệu giảng dạy.",
+      "theRequestWasSentButThe": "Lệnh đã được gửi, nhưng chưa đọc lại được trạng thái mới nhất. Vui lòng tải lại trang.",
+      "couldNotStartTheClass": "Không bắt đầu được lớp",
+      "classStarted": "Đã bắt đầu lớp học.",
+      "thisClassWasAlreadyStarted": "Lớp này đã bắt đầu trước đó.",
+      "couldNotCompleteTheClass": "Không hoàn thành được lớp",
+      "classCompletedEarningsHaveBeenReleased": "Đã hoàn thành lớp. Doanh thu đã được giải ngân vào ví.",
+      "thereIsNothingLeftToComplete": "Lớp này không còn gì để hoàn thành.",
+      "couldNotSaveChanges": "Không lưu được thay đổi",
+      "changesSaved": "Đã lưu thay đổi.",
+      "errorundefined": "Lỗi: ",
+      "availableEarnings": "Doanh thu khả dụng",
+      "withdrawEarnings": "Rút về ngân hàng",
+      "heldForClasses": "Tạm giữ theo lớp",
+      "earningsHeldUntilClassCompletion": "Doanh thu Escrow chờ kết thúc lớp",
+      "releasedAfterTheSessionIsCompleted": "Giải ngân sau khi kết thúc buổi dạy",
+      "openClasses": "Lớp đang mở",
+      "publishedClassesThatHaveNotEnded": "Lớp đã công bố và chưa kết thúc",
+      "closedClasses": "Đã xong",
+      "completedOrCancelledClasses": "Lớp đã hoàn thành hoặc đã hủy",
+      "approvedTeachingSkills": "Kỹ năng được duyệt giảng dạy",
+      "skillsApprovedForPublishingNewClasses": "Các chủ đề bạn đã hoàn tất kiểm định và có thể mở lớp bất kỳ lúc nào",
+      "addASkill": "Thêm kỹ năng mới",
+      "approved": "Đã duyệt",
+      "category": "Danh mục:",
+      "id": "Mã:",
+      "noApprovedSkillsYet": "Chưa có kỹ năng nào được duyệt",
+      "submitSkillEvidenceForExpertReview": "Theo quy chuẩn kiểm định, bạn chỉ có thể mở lớp cho kỹ năng đã qua hội đồng chuyên môn.",
+      "submitSkillEvidence": "Gửi kỹ năng để xác thực",
+      "teachingScheduleAndClasses": "Lịch giảng dạy & Lớp học",
+      "classesYouHavePublished": "Các lớp bạn đã công bố trên hệ thống",
+      "loadingClasses": "Đang tải danh sách lớp…",
+      "noClassesYet": "Chưa có lớp học nào",
+      "yourPublishedClassesWillAppearHere": "Các lớp bạn công bố sẽ xuất hiện ở đây.",
+      "publishYourFirstClass": "Công bố lớp học đầu tiên",
+      "ended": "Đã kết thúc",
+      "openForBooking": "Đang mở đăng ký",
+      "learners": "học viên",
+      "creditsPerLearner": "Credit / học viên",
+      "start": "Bắt đầu",
+      "complete": "Hoàn thành",
+      "pricePerLearnerInCredits": "Giá mỗi học viên (Credit)",
+      "enterAWholeCreditAmountWithin": "Giá không hợp lệ (số nguyên Credit trong giới hạn cho phép).",
+      "maximumCapacity": "Số chỗ tối đa",
+      "enterAWholeCapacityWithinThe": "Sức chứa không hợp lệ (số nguyên trong giới hạn cho phép).",
+      "saveChanges": "Lưu thay đổi",
+      "cancel": "Hủy",
+      "couldNotLoadYourWalletBalance": "Không tải được số dư ví.",
+      "thisClassCouldNotBeFound": "Không tìm thấy lớp học này. Có thể lớp đã bị hủy hoặc đường dẫn không đúng.",
+      "couldNotLoadTheClassInformation": "Không tải được thông tin lớp học.",
+      "pleaseAcceptTheLearningAgreementBefore": "Vui lòng chọn cam kết văn hóa học tập trước khi tiếp tục.",
+      "yourBookingIsConfirmedButThe": "Đã đặt lớp, nhưng chưa đọc lại được số dư ví. Vui lòng tải lại trang để xem số dư mới nhất.",
+      "couldNotCompleteTheBooking": "Không thể hoàn tất đặt lớp.",
+      "theSystemIsRecordingTheTransaction": "Hệ thống đang ghi nhận giao dịch. Bấm kiểm tra lại sau giây lát.",
+      "theLatestResultCouldNotBe": "Chưa đọc được kết quả mới nhất. Bấm kiểm tra lại để thử lại.",
+      "theTransactionIsNotConfirmed": "Giao dịch chưa được xác nhận.",
+      "theSystemIsStillRecordingThe": "Hệ thống vẫn đang ghi nhận giao dịch.",
+      "theLatestResultCouldNotBec489a": "Chưa đọc được kết quả mới nhất. Vui lòng thử lại.",
+      "noHoldWasFoundForThis": "Không tìm thấy chỗ đã giữ cho lớp này. Hãy đặt lại từ trang lớp học.",
+      "couldNotCreateTheTopupRequest": "Không thể tạo yêu cầu nạp tiền.",
+      "sepayCheckoutOpenedYourBalanceUpdates": "Đã mở trang thanh toán SePay. Số dư sẽ cập nhật ngay khi SePay xác nhận.",
+      "couldNotTopUpPleaseTry": "Không thể nạp tiền. Vui lòng thử lại.",
+      "publishAClassundefined": "Mở lớp →",
+      "availableSeats": "chỗ trống",
+      "edit": "Sửa",
+      "minimumConfirmedSeats": "Không thể nhỏ hơn {count} chỗ đã xác nhận."
+    },
+    "rules": "Quy tắc học và thanh toán",
+    "fallback": {
+      "notFoundTitle": "Không tìm thấy trang",
+      "notFoundBody": "Đường dẫn có thể đã thay đổi. Quay về trang chủ hoặc khám phá lớp học để tiếp tục.",
+      "errorTitle": "Trang này chưa tải được",
+      "errorBody": "Hãy thử tải lại. Bạn cũng có thể quay về trang chủ để tiếp tục.",
+      "retry": "Thử lại",
+      "home": "Về trang chủ",
+      "explore": "Khám phá lớp học"
     }
   }
 }

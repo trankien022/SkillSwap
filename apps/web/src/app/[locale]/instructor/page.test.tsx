@@ -104,7 +104,7 @@ describe('InstructorDashboard lifecycle controls', () => {
     const calls = stubApi();
     renderPage();
 
-    const startButton = await screen.findByRole('button', { name: /Bắt đầu/ });
+    const startButton = await screen.findByRole('button', { name: /Start/ });
     fireEvent.click(startButton);
 
     await waitFor(() => {
@@ -119,20 +119,20 @@ describe('InstructorDashboard lifecycle controls', () => {
     renderPage();
 
     await screen.findByText('Guitar co-ban');
-    expect(screen.queryByRole('button', { name: /Bắt đầu/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Start/ })).toBeNull();
   });
 
   it('saves an edit with PATCH and only the editable fields', async () => {
     const calls = stubApi();
     renderPage();
 
-    fireEvent.click(await screen.findByRole('button', { name: /Sửa/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Edit/ }));
 
-    const priceInput = await screen.findByLabelText(/Giá mỗi học viên/);
-    const capacityInput = screen.getByLabelText(/Số chỗ tối đa/);
+    const priceInput = await screen.findByLabelText(/Price per learner/);
+    const capacityInput = screen.getByLabelText(/Maximum capacity/);
     fireEvent.change(priceInput, { target: { value: '150' } });
     fireEvent.change(capacityInput, { target: { value: '3' } });
-    fireEvent.click(screen.getByRole('button', { name: /Lưu thay đổi/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
 
     await waitFor(() => {
       const patch = calls.find((c) => (c.init.method ?? '').toUpperCase() === 'PATCH');
@@ -149,10 +149,10 @@ describe('InstructorDashboard lifecycle controls', () => {
     stubApi({ onStart: () => jsonResponse(envelopeOk({ started: false })) });
     renderPage();
 
-    fireEvent.click(await screen.findByRole('button', { name: /Bắt đầu/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Start/ }));
 
-    expect(await screen.findByText(/đã bắt đầu trước đó/)).toBeTruthy();
-    expect(screen.queryByText('Đã bắt đầu lớp học.')).toBeNull();
+    expect(await screen.findByText(/was already started/)).toBeTruthy();
+    expect(screen.queryByText(en.Workspace.copy.classStarted)).toBeNull();
   });
 
   it('only mentions released income when the server actually completed the class', async () => {
@@ -177,10 +177,10 @@ describe('InstructorDashboard lifecycle controls', () => {
     );
     renderPage();
 
-    fireEvent.click(await screen.findByRole('button', { name: /Hoàn thành/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Complete/ }));
 
-    expect(await screen.findByText(/không còn gì để hoàn thành/)).toBeTruthy();
-    expect(screen.queryByText(/Doanh thu đã được giải ngân/)).toBeNull();
+    expect(await screen.findByText(/nothing left to complete/)).toBeTruthy();
+    expect(screen.queryByText(/Earnings have been released/)).toBeNull();
   });
 
   it('shows the server message when the class is locked and keeps the panel honest', async () => {
@@ -199,8 +199,8 @@ describe('InstructorDashboard lifecycle controls', () => {
     });
     renderPage();
 
-    fireEvent.click(await screen.findByRole('button', { name: /Sửa/ }));
-    fireEvent.click(await screen.findByRole('button', { name: /Lưu thay đổi/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Edit/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Save changes/ }));
 
     // The API's own words are surfaced, not a generic "Lỗi hệ thống".
     expect(await screen.findByText(/Class is locked by a confirmed booking/)).toBeTruthy();
@@ -213,11 +213,11 @@ describe('InstructorDashboard lifecycle controls', () => {
     });
     renderPage();
 
-    fireEvent.click(await screen.findByRole('button', { name: /Sửa/ }));
-    const capacityInput = await screen.findByLabelText(/Số chỗ tối đa/);
+    fireEvent.click(await screen.findByRole('button', { name: /Edit/ }));
+    const capacityInput = await screen.findByLabelText(/Maximum capacity/);
     fireEvent.change(capacityInput, { target: { value: '1' } });
 
-    const save = screen.getByRole('button', { name: /Lưu thay đổi/ }) as HTMLButtonElement;
+    const save = screen.getByRole('button', { name: /Save changes/ }) as HTMLButtonElement;
     expect(save.disabled).toBe(true);
     expect(calls.some((c) => (c.init.method ?? '').toUpperCase() === 'PATCH')).toBe(false);
   });
