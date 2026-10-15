@@ -484,7 +484,15 @@
       "title": "Month view",
       "prev": "Previous month",
       "next": "Next month",
-      "weekdays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      "weekdays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri",
+        "Sat",
+        "Sun"
+      ],
       "legendLive": "Live today",
       "legendBooked": "Booked",
       "noMonth": "No events this month"
@@ -1289,7 +1297,7 @@
       "privacy": "Only send documents needed for verification. SkillSwap does not connect to university databases.",
       "rules": "Read the verification rules",
       "uploadTitle": "Submit student documents",
-      "uploadBody": "Enter your university and major before selecting a file. Choosing a file starts the upload and submission.",
+      "uploadBody": "Enter your university before selecting a file; your major is optional. Choosing a file starts the upload and submission.",
       "schoolPlaceholder": "Enter your university",
       "majorPlaceholder": "Enter your major",
       "document": "Student card or enrollment document",
@@ -1298,7 +1306,8 @@
       "skills": "Teaching skills",
       "skillsBody": "A suitable expert reviews your skill evidence separately from your student profile.",
       "skillCount": "{count} approved skills.",
-      "skillsAction": "Manage skills and evidence"
+      "skillsAction": "Manage skills and evidence",
+      "majorOptional": "Major (optional)"
     },
     "notifications": {
       "title": "Your notifications",

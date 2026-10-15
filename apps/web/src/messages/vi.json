@@ -484,7 +484,15 @@
       "title": "Lịch theo tháng",
       "prev": "Tháng trước",
       "next": "Tháng sau",
-      "weekdays": ["T2", "T3", "T4", "T5", "T6", "T7", "CN"],
+      "weekdays": [
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "CN"
+      ],
       "legendLive": "Lớp đang diễn ra",
       "legendBooked": "Lớp đã chốt slot",
       "noMonth": "Chưa có lịch cho tháng này"
@@ -1289,7 +1297,7 @@
       "privacy": "Chỉ gửi tài liệu cần thiết cho việc xác minh. SkillSwap không kết nối với cơ sở dữ liệu của trường.",
       "rules": "Xem quy tắc xác minh",
       "uploadTitle": "Gửi tài liệu sinh viên",
-      "uploadBody": "Điền trường và chuyên ngành trước khi chọn tệp. Việc chọn tệp sẽ bắt đầu tải lên và gửi hồ sơ.",
+      "uploadBody": "Điền tên trường trước khi chọn tệp; bạn có thể bổ sung chuyên ngành. Việc chọn tệp sẽ bắt đầu tải lên và gửi hồ sơ.",
       "schoolPlaceholder": "Nhập tên trường của bạn",
       "majorPlaceholder": "Nhập chuyên ngành đang học",
       "document": "Ảnh thẻ hoặc giấy xác nhận sinh viên",
@@ -1298,7 +1306,8 @@
       "skills": "Kỹ năng giảng dạy",
       "skillsBody": "Bằng chứng kỹ năng được chuyên gia phù hợp xét duyệt riêng với hồ sơ sinh viên.",
       "skillCount": "{count} kỹ năng đã được duyệt.",
-      "skillsAction": "Quản lý kỹ năng và bằng chứng"
+      "skillsAction": "Quản lý kỹ năng và bằng chứng",
+      "majorOptional": "Chuyên ngành (không bắt buộc)"
     },
     "notifications": {
       "title": "Thông báo của bạn",

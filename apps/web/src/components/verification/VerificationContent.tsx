@@ -151,7 +151,7 @@ export function VerificationContent() {
         method: 'POST',
         body: JSON.stringify({
           schoolName,
-          major,
+          major: major.trim() || undefined,
           documentId,
         }),
       });
@@ -288,7 +288,7 @@ export function VerificationContent() {
                   </div>
                   <div>
                     <label htmlFor="verification-major" className="mb-2 block font-semibold">
-                      {t('major')}
+                      {t('majorOptional')}
                     </label>
                     <input
                       id="verification-major"
@@ -306,7 +306,7 @@ export function VerificationContent() {
                   id="verification-document"
                   type="file"
                   accept="image/*,.pdf"
-                  disabled={isSubmitting || !schoolName.trim() || !major.trim()}
+                  disabled={isSubmitting || !schoolName.trim()}
                   onChange={handleUploadAndSubmit}
                   className="max-w-full text-sm file:mr-4 file:rounded-full file:border-0 file:bg-campus-emerald-deep file:px-5 file:py-3 file:text-surface disabled:opacity-50"
                 />
