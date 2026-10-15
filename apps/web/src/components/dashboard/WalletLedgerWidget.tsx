@@ -11,9 +11,8 @@ import { getTokens } from '../../lib/api-client';
  *
  * Two visual states:
  *  - no auth (pilot): single card with prompt to sign in and direct login button.
- *  - authed: full breakdown of available / held / total + the
- *    wallet invariant progress bar + two trust lines + a link
- *    to the escrow ledger.
+ *  - authed: available / held balances and a link to the full wallet.
+ * Policy details live in the learner rules and the booking decision.
  *
  * No '100%' claim, no 'Smart-Escrow' wording, no invented SLA.
  */
@@ -51,11 +50,6 @@ export function WalletLedgerWidget({
     );
   }
 
-  const vnd = wallet.totalCredits * wallet.vndRate;
-  const heldPct = Math.min(
-    100,
-    Math.round((wallet.heldCredits / Math.max(1, wallet.totalCredits)) * 100),
-  );
   return (
     <article className="workspace-panel relative overflow-hidden">
       <div className="mb-4 flex items-center gap-2">
@@ -69,35 +63,6 @@ export function WalletLedgerWidget({
         <div className="flex items-center justify-between text-sm">
           <span className="text-ink-soft">{t('held')}</span>
           <span className="text-base font-bold text-ink">{wallet.heldCredits} credits</span>
-        </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
-          <div
-            className="h-full rounded-full bg-campus-emerald-deep"
-            style={{ width: `${heldPct}%` }}
-          />
-        </div>
-        <div className="flex items-center justify-between text-sm text-ink-soft">
-          <span>{t('total')}</span>
-          <span>
-            {wallet.totalCredits} credits{' '}
-            {t('vndEstimate', {
-              vnd: vnd.toLocaleString(locale),
-            })}
-          </span>
-        </div>
-      </div>
-      <div className="flex flex-col gap-2 text-sm text-ink-soft">
-        <div className="flex items-start gap-2">
-          <span>
-            <strong className="text-ink">{t('noDirectTitle')}: </strong>
-            {t('noDirect')}
-          </span>
-        </div>
-        <div className="flex items-start gap-2">
-          <span>
-            <strong className="text-ink">{t('refundPolicyTitle')}: </strong>
-            {t('refundPolicy')}
-          </span>
         </div>
       </div>
       <Link

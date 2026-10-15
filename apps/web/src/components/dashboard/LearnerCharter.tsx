@@ -19,21 +19,18 @@ export function LearnerCharter({ entries }: { entries: CharterEntry[] }) {
   const t = useTranslations('Dashboard.charter');
   const locale = useLocale();
   return (
-    <article className="workspace-panel flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <GavelIcon className="h-5 w-5 text-ink" />
-        <h3 className="text-base font-bold text-ink">{t('title')}</h3>
-      </div>
-      <div className="flex flex-col gap-2 text-sm">
+    <details className="workspace-panel">
+      <summary className="cursor-pointer text-base font-semibold text-ink">{t('title')}</summary>
+      <div className="mt-4 flex flex-col gap-2 text-sm">
         {entries.map((entry, idx) => (
           <CharterRule key={idx} entry={entry} />
         ))}
       </div>
-      <a href={`/${locale}#trust`} className="workspace-link">
+      <a href={`/${locale}#trust`} className="workspace-link mt-4">
         {t('policyLink')}
         <span aria-hidden="true">↗</span>
       </a>
-    </article>
+    </details>
   );
 }
 
@@ -130,25 +127,4 @@ function CharterIcon({ icon, className = '' }: { icon: CharterEntry['icon']; cla
         </svg>
       );
   }
-}
-
-function GavelIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="22"
-      height="22"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className={className}
-    >
-      <path d="M14 4l6 6-4 4-6-6z" />
-      <line x1="3" y1="21" x2="13" y2="11" />
-      <line x1="9" y1="7" x2="17" y2="15" />
-    </svg>
-  );
 }

@@ -15,8 +15,6 @@ import {
 import type {
   MeResponse,
   StudentVerificationView,
-  ProfileSkillList,
-  ProfileSkillView,
   DocumentUploadTargetView,
 } from '@skillswap/contracts';
 
@@ -28,7 +26,6 @@ export function VerificationContent() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [me, setMe] = useState<MeResponse | null>(null);
   const [studentVerif, setStudentVerif] = useState<StudentVerificationView | null>(null);
-  const [skills, setSkills] = useState<ProfileSkillView[]>([]);
   const [schoolName, setSchoolName] = useState('');
   const [major, setMajor] = useState('');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -49,10 +46,9 @@ export function VerificationContent() {
     setUser(getStoredUser());
     const loadData = async () => {
       try {
-        const [meRes, verifRes, skillsRes] = await Promise.all([
+        const [meRes, verifRes] = await Promise.all([
           callApi('/auth/me'),
           callApi('/student-verifications/me'),
-          callApi('/profile-skills/me'),
         ]);
         if (meRes.ok) {
           setMe(await unwrapEnvelope<MeResponse>(meRes));
@@ -69,10 +65,6 @@ export function VerificationContent() {
           // anything else means the status could not be read and is reported
           // rather than rendered as "pending", which is a different claim.
           setLoadError(t('loadError'));
-        }
-        if (skillsRes.ok) {
-          const s = await unwrapEnvelope<ProfileSkillList>(skillsRes);
-          if (s?.items) setSkills(s.items);
         }
       } catch (err) {
         setLoadError(err instanceof Error ? err.message : t('loadError'));
@@ -328,18 +320,12 @@ export function VerificationContent() {
                 )}
               </section>
             )}
-            <section className="workspace-panel mt-6">
-              <h2 className="workspace-panel-title">{t('skills')}</h2>
-              <p className="mt-3 text-base leading-relaxed text-ink-soft">{t('skillsBody')}</p>
-              <p className="mt-4 text-sm">
-                {t('skillCount', {
-                  count: skills.filter((skill) => skill.approvedLevel !== null).length,
-                })}
-              </p>
-              <a href={`/${locale}/skills`} className="workspace-link mt-4">
-                {t('skillsAction')} ↗
-              </a>
-            </section>
+            <a
+              href={`/${locale}/skills`}
+              className="workspace-link mt-6 inline-flex min-h-11 items-center"
+            >
+              {t('skillsAction')} ↗
+            </a>
           </>
         )}
       </main>

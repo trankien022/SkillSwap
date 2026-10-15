@@ -12,7 +12,6 @@ import { SyllabusSection } from './SyllabusSection';
 import { PrerequisitesSection } from './PrerequisitesSection';
 import { TeacherDossierSection } from './TeacherDossierSection';
 import { ReviewsSection } from './ReviewsSection';
-import { EscrowInlineBanner } from './EscrowInlineBanner';
 import { StickyBookingCard } from './StickyBookingCard';
 import type { ClassDetailView } from '../../lib/marketplace/types';
 
@@ -105,7 +104,6 @@ function ClassDetailBody({ item }: { item: ClassDetailView }) {
           <PrerequisitesSection item={item} />
           <TeacherDossierSection item={item} />
           <ReviewsSection item={item} />
-          <EscrowInlineBanner />
         </div>
         {/* Right column (4/12) — sticky booking */}
         <div className="lg:col-span-4">
@@ -122,7 +120,10 @@ function LoadingPanel() {
   return (
     <div role="status" aria-live="polite" className="flex flex-col gap-6">
       <span className="sr-only">{t('loading')}</span>
-      <div aria-hidden="true" className="h-48 animate-pulse rounded-xl border border-border bg-surface " />
+      <div
+        aria-hidden="true"
+        className="h-48 animate-pulse rounded-xl border border-border bg-surface "
+      />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div aria-hidden="true" className="flex flex-col gap-6 lg:col-span-8">
           <div className="h-40 animate-pulse rounded-xl border border-border bg-surface " />
@@ -225,7 +226,18 @@ function NotFoundPanel() {
 
 function SearchOffIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="28"
+      height="28"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <circle cx="11" cy="11" r="7" />
       <path d="M21 21l-4.3-4.3" />
       <line x1="8" y1="8" x2="14" y2="14" />
@@ -235,7 +247,18 @@ function SearchOffIcon({ className = '' }: { className?: string }) {
 
 function LockIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="24"
+      height="24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <rect x="4" y="11" width="16" height="10" rx="2" />
       <path d="M8 11V7a4 4 0 0 1 8 0v4" />
     </svg>
@@ -244,7 +267,18 @@ function LockIcon({ className = '' }: { className?: string }) {
 
 function AlertIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="24"
+      height="24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <circle cx="12" cy="12" r="9" />
       <line x1="12" y1="8" x2="12" y2="13" />
       <line x1="12" y1="16" x2="12" y2="16.01" />

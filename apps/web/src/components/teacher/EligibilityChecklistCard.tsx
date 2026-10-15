@@ -82,19 +82,6 @@ export function EligibilityChecklistCard({ draft, skills }: Props) {
           </div>
         ))}
       </div>
-
-      <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-3 text-sm text-slate-600 space-y-1">
-        <div className="flex items-center gap-1.5 font-bold text-emerald-900">
-          <span
-            aria-hidden="true"
-            className="material-symbols-outlined text-[15px] text-emerald-700"
-          >
-            verified
-          </span>
-          <span>{t('pledgeTitle')}</span>
-        </div>
-        <p className="leading-relaxed">{t('pledgeDesc')}</p>
-      </div>
     </section>
   );
 }

@@ -243,20 +243,9 @@ export default function InstructorDashboard() {
                 <a href={`/${locale}/teach/classes/new`} className="workspace-primary">
                   {tWorkspace('publish')} ↗
                 </a>
-                <a href={`/${locale}/skills`} className="workspace-link">
-                  {tWorkspace('skills')}
-                </a>
               </>
             }
           />
-          {me && (
-            <p className="mb-6 text-sm text-ink-soft">
-              {me.displayName} ·{' '}
-              {me.studentVerification?.status === 'approved'
-                ? tWorkspace('verified')
-                : tWorkspace('member')}
-            </p>
-          )}
           <section
             aria-label={tWallet('title')}
             className="my-6 flex flex-wrap items-center justify-between gap-4 border-y border-border py-4"

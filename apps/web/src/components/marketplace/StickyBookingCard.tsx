@@ -46,9 +46,6 @@ export function StickyBookingCard({ item }: { item: ClassDetailView }) {
             <span className="text-sm text-ink-soft">{t('vndRate', { vnd })}</span>
           </div>
           <div className="flex flex-col items-end gap-1">
-            <span className="rounded-full bg-danger-tint px-2 py-1 text-sm font-bold text-danger-ink">
-              {t('table.refundValue').split(' ').slice(-2).join(' ')}
-            </span>
             <span className="text-right text-sm text-ink-soft">{`${taken}/${capacity}`}</span>
           </div>
         </div>
