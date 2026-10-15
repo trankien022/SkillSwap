@@ -50,7 +50,9 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
   };
 
   const pwdStrength = getPasswordStrength(regPassword);
-  const isEduEmail = regEmail.includes('@') && (regEmail.endsWith('.edu') || regEmail.endsWith('.edu.vn') || regEmail.includes('.edu.'));
+  const isEduEmail =
+    regEmail.includes('@') &&
+    (regEmail.endsWith('.edu') || regEmail.endsWith('.edu.vn') || regEmail.includes('.edu.'));
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,12 +142,22 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
   };
 
   return (
-    <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-12 lg:gap-16">
+    <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12 lg:gap-20">
       {/* CỘT TRÁI: Brand Hero & Minimalist Proof (5 cols) */}
       <div className="flex flex-col justify-between pt-2 lg:col-span-5">
         <div className="space-y-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200/60 bg-emerald-50 px-3.5 py-1 text-xs font-semibold tracking-wide text-emerald-800">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <div className="inline-flex items-center gap-2 border-l-2 border-ink pl-3 text-sm font-medium text-ink-soft">
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
               <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
@@ -155,18 +167,26 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
           <h1 className="text-3xl font-bold leading-[1.25] tracking-tight text-slate-900 sm:text-4xl">
             {t('heroTitle1')}
             <br />
-            <span className="text-emerald-700">{t('heroTitle2')}</span>
+            <span className="text-ink">{t('heroTitle2')}</span>
           </h1>
 
-          <p className="text-[15px] leading-relaxed text-slate-600">
-            {t('heroSubtitle')}
-          </p>
+          <p className="text-[15px] leading-relaxed text-slate-600">{t('heroSubtitle')}</p>
 
           {/* 3 Trụ cột giá trị */}
-          <div className="space-y-4 pt-3">
+          <div className="hidden space-y-5 border-t border-border pt-6 lg:block">
             <div className="flex items-start gap-3.5">
-              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-700">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-mist text-ink-soft">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
                   <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
                   <path d="M6 12v5c3 3 9 3 12 0v-5" />
                 </svg>
@@ -178,8 +198,18 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
             </div>
 
             <div className="flex items-start gap-3.5">
-              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 text-emerald-700">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-mist text-ink-soft">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
                   <polyline points="17 1 21 5 17 9" />
                   <path d="M3 11V9a4 4 0 0 1 4-4h14" />
                   <polyline points="7 23 3 19 7 15" />
@@ -193,8 +223,18 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
             </div>
 
             <div className="flex items-start gap-3.5">
-              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-purple-100 bg-purple-50 text-purple-700">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-mist text-ink-soft">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
                   <polygon points="23 7 16 12 23 17 23 7" />
                   <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
                 </svg>
@@ -203,29 +243,6 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                 <h2 className="text-sm font-semibold text-slate-900">{t('pillar3Title')}</h2>
                 <p className="mt-0.5 text-xs leading-relaxed text-slate-500">{t('pillar3Desc')}</p>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Lời chứng thực sinh viên */}
-        <div className="mt-10 space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-1 text-amber-500">
-            {[...Array(5)].map((_, i) => (
-              <svg key={i} viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none" aria-hidden="true">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
-            ))}
-          </div>
-          <p className="text-xs italic leading-relaxed text-slate-700">
-            &ldquo;{t('testimonialQuote')}&rdquo;
-          </p>
-          <div className="flex items-center gap-3 border-t border-slate-100 pt-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-800">
-              MT
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-900">{t('testimonialAuthor')}</p>
-              <p className="text-[11px] text-slate-500">{t('testimonialRole')}</p>
             </div>
           </div>
         </div>
@@ -244,9 +261,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                   setErrorMessage('');
                 }}
                 className={`relative pb-3.5 text-sm font-semibold transition-colors ${
-                  tab === 'register'
-                    ? 'text-emerald-700'
-                    : 'text-slate-500 hover:text-slate-800'
+                  tab === 'register' ? 'text-emerald-700' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <span>{t('tabRegister')}</span>
@@ -261,9 +276,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                   setErrorMessage('');
                 }}
                 className={`relative pb-3.5 text-sm font-semibold transition-colors ${
-                  tab === 'login'
-                    ? 'text-emerald-700'
-                    : 'text-slate-500 hover:text-slate-800'
+                  tab === 'login' ? 'text-emerald-700' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <span>{t('tabLogin')}</span>
@@ -274,48 +287,24 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
             </div>
           </div>
 
-          {/* Nút liên kết tài khoản (Disabled kèm chú thích) */}
-          <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              disabled
-              title={t('ssoComingSoon')}
-              className="flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50/70 px-4 text-xs font-medium text-slate-400 cursor-not-allowed opacity-75"
-            >
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
-                <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" />
-              </svg>
-              <span>{t('providerGoogle')}</span>
-              <span className="rounded bg-slate-200 px-1 py-0.5 text-[10px] text-slate-600">{t('providerBadge')}</span>
-            </button>
-
-            <button
-              type="button"
-              disabled
-              title={t('ssoComingSoon')}
-              className="flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50/70 px-4 text-xs font-medium text-slate-400 cursor-not-allowed opacity-75"
-            >
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
-                <path d="M11.4 24H0V12.6h11.4V24zM24 24H12.6V12.6H24V24zM11.4 11.4H0V0h11.4v11.4zm12.6 0H12.6V0H24v11.4z" />
-              </svg>
-              <span>{t('providerMicrosoft')}</span>
-              <span className="rounded bg-slate-200 px-1 py-0.5 text-[10px] text-slate-600">{t('providerBadge')}</span>
-            </button>
-          </div>
-
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200" />
-            </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="bg-white px-3 text-slate-400">{t('orDivider')}</span>
-            </div>
-          </div>
-
           {/* Báo lỗi / Thành công */}
           {errorMessage && (
-            <div className="mb-5 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs font-medium text-rose-700">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
+            <div
+              role="alert"
+              className="mb-5 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs font-medium text-rose-700"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="shrink-0"
+              >
                 <circle cx="12" cy="12" r="10" />
                 <line x1="12" y1="8" x2="12" y2="12" />
                 <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -326,7 +315,18 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
 
           {successMessage && (
             <div className="mb-5 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-xs font-medium text-emerald-800">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-emerald-700">
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="shrink-0 text-emerald-700"
+              >
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                 <polyline points="22 4 12 14.01 9 11.01" />
               </svg>
@@ -358,7 +358,17 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                   </label>
                   {isEduEmail && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 border border-emerald-200">
-                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="12"
+                        height="12"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                       {locale === 'vi' ? 'Email sinh viên' : 'Student email'}
@@ -393,16 +403,44 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                   <button
                     type="button"
                     onClick={() => setShowRegPassword(!showRegPassword)}
-                    aria-label={showRegPassword ? (locale === 'vi' ? 'Ẩn mật khẩu' : 'Hide password') : (locale === 'vi' ? 'Hiện mật khẩu' : 'Show password')}
+                    aria-label={
+                      showRegPassword
+                        ? locale === 'vi'
+                          ? 'Ẩn mật khẩu'
+                          : 'Hide password'
+                        : locale === 'vi'
+                          ? 'Hiện mật khẩu'
+                          : 'Show password'
+                    }
                     className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600"
                   >
                     {showRegPassword ? (
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="18"
+                        height="18"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
                         <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
                         <line x1="1" y1="1" x2="23" y2="23" />
                       </svg>
                     ) : (
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="18"
+                        height="18"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                         <circle cx="12" cy="12" r="3" />
                       </svg>
@@ -414,10 +452,18 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                 {regPassword.length > 0 && (
                   <div className="mt-2 space-y-1">
                     <div className="grid grid-cols-4 gap-1.5">
-                      <div className={`h-1.5 rounded-full ${pwdStrength >= 1 ? 'bg-rose-500' : 'bg-slate-200'}`} />
-                      <div className={`h-1.5 rounded-full ${pwdStrength >= 2 ? 'bg-amber-500' : 'bg-slate-200'}`} />
-                      <div className={`h-1.5 rounded-full ${pwdStrength >= 3 ? 'bg-blue-500' : 'bg-slate-200'}`} />
-                      <div className={`h-1.5 rounded-full ${pwdStrength >= 4 ? 'bg-emerald-500' : 'bg-slate-200'}`} />
+                      <div
+                        className={`h-1.5 rounded-full ${pwdStrength >= 1 ? 'bg-rose-500' : 'bg-slate-200'}`}
+                      />
+                      <div
+                        className={`h-1.5 rounded-full ${pwdStrength >= 2 ? 'bg-amber-500' : 'bg-slate-200'}`}
+                      />
+                      <div
+                        className={`h-1.5 rounded-full ${pwdStrength >= 3 ? 'bg-blue-500' : 'bg-slate-200'}`}
+                      />
+                      <div
+                        className={`h-1.5 rounded-full ${pwdStrength >= 4 ? 'bg-emerald-500' : 'bg-slate-200'}`}
+                      />
                     </div>
                     <p className="text-[11px] text-slate-500">
                       {locale === 'vi' ? 'Độ mạnh: ' : 'Strength: '}
@@ -425,10 +471,10 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                         {pwdStrength <= 1
                           ? t('passwordStrengthWeak')
                           : pwdStrength === 2
-                          ? t('passwordStrengthMedium')
-                          : pwdStrength === 3
-                          ? t('passwordStrengthStrong')
-                          : t('passwordStrengthVeryStrong')}
+                            ? t('passwordStrengthMedium')
+                            : pwdStrength === 3
+                              ? t('passwordStrengthStrong')
+                              : t('passwordStrengthVeryStrong')}
                       </span>
                     </p>
                   </div>
@@ -452,7 +498,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
               <button
                 type="submit"
                 disabled={isPending}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.99] disabled:opacity-60"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:opacity-60"
               >
                 {isPending ? (
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -487,7 +533,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                   </label>
                   <button
                     type="button"
-                    onClick={() => alert(locale === 'vi' ? 'Vui lòng liên hệ quản trị viên để đặt lại mật khẩu.' : 'Please contact the administrator to reset your password.')}
+                    onClick={() => setErrorMessage(t('passwordResetHint'))}
                     className="text-xs font-medium text-emerald-700 hover:text-emerald-800"
                   >
                     {t('forgotPassword')}
@@ -505,16 +551,44 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                   <button
                     type="button"
                     onClick={() => setShowLoginPassword(!showLoginPassword)}
-                    aria-label={showLoginPassword ? (locale === 'vi' ? 'Ẩn mật khẩu' : 'Hide password') : (locale === 'vi' ? 'Hiện mật khẩu' : 'Show password')}
+                    aria-label={
+                      showLoginPassword
+                        ? locale === 'vi'
+                          ? 'Ẩn mật khẩu'
+                          : 'Hide password'
+                        : locale === 'vi'
+                          ? 'Hiện mật khẩu'
+                          : 'Show password'
+                    }
                     className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600"
                   >
                     {showLoginPassword ? (
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="18"
+                        height="18"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
                         <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
                         <line x1="1" y1="1" x2="23" y2="23" />
                       </svg>
                     ) : (
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="18"
+                        height="18"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                         <circle cx="12" cy="12" r="3" />
                       </svg>
@@ -539,7 +613,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
               <button
                 type="submit"
                 disabled={isPending}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.99] disabled:opacity-60"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:opacity-60"
               >
                 {isPending ? (
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

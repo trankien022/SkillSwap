@@ -178,7 +178,8 @@
         "rating": "Highest rated",
         "priceLow": "Credits: low to high",
         "popular": "Most learners enrolled"
-      }
+      },
+      "description": "Find a skill you need, at a time and price that work for you."
     },
     "states": {
       "loading": "Loading classes…",
@@ -237,7 +238,14 @@
       },
       "pricePerLearner": "~{vnd} VND / learner",
       "viewClass": "View class",
-      "mockDataBadge": "Demo data"
+      "mockDataBadge": "Demo data",
+      "verified": "Verified",
+      "levels": {
+        "beginner": "Beginner",
+        "intermediate": "Intermediate",
+        "advanced": "Advanced",
+        "expert": "Expert"
+      }
     },
     "pagination": {
       "showing": "Showing {from} - {to} of {total} open classes",
@@ -373,7 +381,9 @@
       "hours": "Hours learned",
       "hoursProgress": "{pct}% of monthly target",
       "review": "Reviews pending",
-      "reviewHint": "Completed, review needed"
+      "reviewHint": "Completed, review needed",
+      "hoursUnit": "hours",
+      "creditsUnit": "credits"
     },
     "live": {
       "badge": "LIVE NOW",
@@ -749,18 +759,15 @@
   },
   "Auth": {
     "brandTag": "Verified Student Knowledge Network",
-    "heroTitle1": "Exchange skills.",
-    "heroTitle2": "Build real value.",
-    "heroSubtitle": "Learn from capable peers and share your strengths. Every exchange is protected through a fair credit system.",
-    "pillar1Title": "Genuine Student Verification",
-    "pillar1Desc": "Linked university accounts ensure a secure and trusted study environment.",
-    "pillar2Title": "Transparent Escrow Mechanism",
-    "pillar2Desc": "Credits are transferred only when sessions conclude successfully.",
-    "pillar3Title": "Real-time Interactive Classes",
-    "pillar3Desc": "Direct interactive classrooms with synchronized learning resources.",
-    "testimonialQuote": "Sharing programming skills helped me practice peer communication consistently. Clear process and verified peers give great peace of mind.",
-    "testimonialAuthor": "Minh Tri",
-    "testimonialRole": "Senior Student • 40+ hours exchanged",
+    "heroTitle1": "Learn what you need.",
+    "heroTitle2": "Share what you know.",
+    "heroSubtitle": "Create an account to find a class, learn from another student, or submit your skills for review.",
+    "pillar1Title": "Verification with student documents",
+    "pillar1Desc": "Submit your school name and documents. An administrator reviews them manually.",
+    "pillar2Title": "Pay with credit",
+    "pillar2Desc": "Check the price and your balance before booking. Payments are recorded in the ledger.",
+    "pillar3Title": "Learn together online",
+    "pillar3Desc": "Check your schedule and join the room from your bookings.",
     "tabRegister": "Create Account",
     "tabLogin": "Sign In",
     "providerGoogle": "Google Account",
@@ -790,7 +797,8 @@
     "switchToLogin": "Already have an account?",
     "switchToRegister": "Don't have an account?",
     "validationError": "Please provide valid information (password at least 8 characters).",
-    "pledgeError": "You must agree to the academic integrity pledge."
+    "pledgeError": "You must agree to the academic integrity pledge.",
+    "passwordResetHint": "Please contact the administrator to reset your password."
   },
   "Skills": {
     "title": "My skills",

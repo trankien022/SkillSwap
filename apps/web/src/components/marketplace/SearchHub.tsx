@@ -5,18 +5,7 @@ import { useTranslations } from 'next-intl';
 import type { MarketplaceQuery, UniversityCode } from '../../lib/marketplace/types';
 import { UNIVERSITY_CODES } from '../../lib/marketplace/types';
 
-/**
- * Marketplace search hub (FR-006).
- *
- * Two controls that mutate a `MarketplaceQuery`:
- *  - keyword text input (debouncing is the parent's concern)
- *  - university select
- *  - 'Bộ lọc phụ' button — toggles the filter sidebar (Phase 4 wires it)
- *  - 'Tìm kiếm' submit button — calls `onSubmit(query)`
- *
- * The form does not POST anywhere. The parent `MarketplaceClient`
- * (Phase 5) holds the actual query state and re-runs the gateway.
- */
+/** Search fields and the optional filter trigger share the parent query. */
 export function SearchHub({
   initialQuery,
   onSubmit,
@@ -44,21 +33,18 @@ export function SearchHub({
   }
 
   return (
-    <div className="w-full rounded-xl border border-border bg-surface p-2 shadow-sm">
+    <div className="w-full rounded-2xl border border-border bg-surface p-3 shadow-sm">
       <form
         onSubmit={handleSubmit}
-        className="grid grid-cols-1 items-center gap-1 md:grid-cols-12"
+        className="grid grid-cols-1 items-center gap-1 md:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_auto_auto]"
         role="search"
         aria-label={t('keywordLabel')}
       >
         {/* Keyword input (col-span-5) */}
-        <div className="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-mist md:col-span-5">
+        <div className="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-mist ">
           <SearchIcon className="h-5 w-5 shrink-0 text-ink" />
           <div className="flex w-full min-w-0 flex-col">
-            <label
-              htmlFor="search-keyword"
-              className="text-[11px] font-medium text-ink-soft"
-            >
+            <label htmlFor="search-keyword" className="text-[11px] font-medium text-ink-soft">
               {t('keywordLabel')}
             </label>
             <input
@@ -72,24 +58,17 @@ export function SearchHub({
           </div>
         </div>
 
-        <Divider />
-
         {/* University select (col-span-3) */}
-        <div className="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-mist md:col-span-3">
+        <div className="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-mist ">
           <SchoolIcon className="h-5 w-5 shrink-0 text-ink-soft" />
           <div className="flex w-full min-w-0 flex-col">
-            <label
-              htmlFor="university-select"
-              className="text-[11px] font-medium text-ink-soft"
-            >
+            <label htmlFor="university-select" className="text-[11px] font-medium text-ink-soft">
               {t('universityLabel')}
             </label>
             <select
               id="university-select"
               value={university}
-              onChange={(e) =>
-                setUniversity(e.target.value as UniversityCode | 'all')
-              }
+              onChange={(e) => setUniversity(e.target.value as UniversityCode | 'all')}
               className="w-full cursor-pointer truncate bg-transparent text-sm font-semibold text-ink focus:outline-none"
             >
               <option value="all">{t('universityAll')}</option>
@@ -102,32 +81,26 @@ export function SearchHub({
           </div>
         </div>
 
-        <Divider />
-
         {/* Bộ lọc phụ trigger (col-span-2) */}
         <button
           type="button"
           onClick={onToggleFilters}
           aria-expanded={filterOpen}
           aria-controls="filter-sidebar"
-          className="flex items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors hover:bg-mist md:col-span-2"
+          className="flex items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors hover:bg-mist "
         >
           <TuneIcon className="h-5 w-5 shrink-0 text-ink-soft" />
           <div className="flex flex-col">
-            <span className="text-[11px] font-medium text-ink-soft">
-              {t('filterButton')}
-            </span>
-            <span className="text-sm font-semibold text-ink">
-              {t('filterTitle')}
-            </span>
+            <span className="text-[11px] font-medium text-ink-soft">{t('filterButton')}</span>
+            <span className="text-sm font-semibold text-ink">{t('filterTitle')}</span>
           </div>
         </button>
 
         {/* Submit (col-span-2) */}
-        <div className="flex justify-end md:col-span-2">
+        <div className="flex justify-end ">
           <button
             type="submit"
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-ink px-4 text-sm font-semibold text-surface shadow-sm transition-colors hover:bg-ink-soft"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-campus-emerald px-5 text-sm font-semibold text-surface shadow-sm transition-colors hover:bg-campus-emerald-deep"
           >
             <TravelExploreIcon className="h-4 w-4" />
             <span>{t('submitButton')}</span>
@@ -139,15 +112,6 @@ export function SearchHub({
 }
 
 /* --- Internal helpers --- */
-
-function Divider() {
-  return (
-    <div
-      aria-hidden="true"
-      className="mx-1 hidden h-8 w-px bg-border md:block"
-    />
-  );
-}
 
 function SearchIcon({ className = '' }: { className?: string }) {
   return (

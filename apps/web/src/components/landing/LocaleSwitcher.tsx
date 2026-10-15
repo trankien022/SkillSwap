@@ -1,14 +1,14 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { usePathname, useRouter } from '../../i18n/routing';
-import { routing, type Locale } from '../../i18n/routing';
+import { type Locale } from '../../i18n/routing';
 
 /**
  * Locale switcher wired to next-intl navigation.
  *
- * - The active locale is derived from usePathname() which already carries
- *   the locale segment in the URL (next-intl middleware injects it).
+ * - The provider supplies the current locale. The localized router pathname
+ *   deliberately excludes the locale prefix.
  * - Clicking a button calls router.replace(path, { locale: target }) so
  *   the page swaps locale without a full reload and keeps scroll position.
  * - Active state is shown with bg-ink + text-surface + a check glyph,
@@ -22,7 +22,7 @@ export function LocaleSwitcher() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const current = currentLocaleFromPath(pathname);
+  const current = useLocale();
 
   function switchTo(target: Locale) {
     if (target === current) return;
@@ -35,16 +35,8 @@ export function LocaleSwitcher() {
       role="group"
       className="inline-flex items-center gap-1 rounded-full bg-neutral-tint p-1 text-xs font-semibold"
     >
-      <SwitchButton
-        active={current === 'vi'}
-        onClick={() => switchTo('vi')}
-        label={t('vi')}
-      />
-      <SwitchButton
-        active={current === 'en'}
-        onClick={() => switchTo('en')}
-        label={t('en')}
-      />
+      <SwitchButton active={current === 'vi'} onClick={() => switchTo('vi')} label={t('vi')} />
+      <SwitchButton active={current === 'en'} onClick={() => switchTo('en')} label={t('en')} />
     </div>
   );
 }
@@ -88,16 +80,4 @@ function SwitchButton({
       )}
     </button>
   );
-}
-
-/**
- * Derive the active locale from the first URL segment. next-intl middleware
- * ensures the path always begins with a known locale segment on locale
- * routes, so this is the authoritative source. Falls back to the routing
- * default if the path is missing a segment (e.g. /status on the root).
- */
-function currentLocaleFromPath(pathname: string): Locale {
-  const seg = pathname.split('/').filter(Boolean)[0];
-  if (seg === 'vi' || seg === 'en') return seg;
-  return routing.defaultLocale as Locale;
 }

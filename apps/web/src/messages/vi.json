@@ -178,7 +178,8 @@
         "rating": "Đánh giá cao nhất",
         "priceLow": "Credits: Thấp đến cao",
         "popular": "Lớp đông học viên nhất"
-      }
+      },
+      "description": "Tìm kỹ năng bạn cần, chọn lịch và mức giá phù hợp."
     },
     "states": {
       "loading": "Đang tải danh sách lớp học…",
@@ -237,7 +238,14 @@
       },
       "pricePerLearner": "~{vnd}đ / SV",
       "viewClass": "Xem lớp",
-      "mockDataBadge": "Dữ liệu minh họa"
+      "mockDataBadge": "Dữ liệu minh họa",
+      "verified": "Đã xác minh",
+      "levels": {
+        "beginner": "Cơ bản",
+        "intermediate": "Trung cấp",
+        "advanced": "Nâng cao",
+        "expert": "Chuyên sâu"
+      }
     },
     "pagination": {
       "showing": "Hiển thị {from} - {to} trong tổng số {total} lớp học đang tuyển sinh",
@@ -373,7 +381,9 @@
       "hours": "Thời gian tích luỹ",
       "hoursProgress": "{pct}% mục tiêu tháng",
       "review": "Đánh giá chờ gửi",
-      "reviewHint": "Đã hoàn tất, cần đánh giá"
+      "reviewHint": "Đã hoàn tất, cần đánh giá",
+      "hoursUnit": "giờ",
+      "creditsUnit": "credit"
     },
     "live": {
       "badge": "ĐANG DIỄN RA",
@@ -749,18 +759,15 @@
   },
   "Auth": {
     "brandTag": "Mạng lưới tri thức sinh viên",
-    "heroTitle1": "Trao đổi kỹ năng.",
-    "heroTitle2": "Tích lũy giá trị thực.",
-    "heroSubtitle": "Học hỏi từ bạn học xuất sắc và chia sẻ thế mạnh của bạn. Mọi trao đổi đều được bảo chứng minh bạch qua hệ thống tín chỉ công bằng.",
-    "pillar1Title": "Xác thực sinh viên chính danh",
-    "pillar1Desc": "Liên kết tài khoản trường đại học đảm bảo môi trường học tập an toàn.",
-    "pillar2Title": "Cơ chế ký quỹ minh bạch",
-    "pillar2Desc": "Tín chỉ chỉ chuyển giao khi buổi trao đổi diễn ra trọn vẹn và đạt yêu cầu.",
-    "pillar3Title": "Lớp học tương tác thời gian thực",
-    "pillar3Desc": "Phòng học tương tác trực tiếp với tài liệu học tập được chia sẻ đồng bộ.",
-    "testimonialQuote": "Trao đổi kỹ năng lập trình giúp mình luyện tập thêm nhiều buổi giao tiếp bổ ích. Quy trình chuẩn mực, tài khoản xác thực rất an tâm.",
-    "testimonialAuthor": "Minh Trí",
-    "testimonialRole": "Sinh viên khóa trước • 40+ giờ trao đổi kỹ năng",
+    "heroTitle1": "Học điều bạn cần.",
+    "heroTitle2": "Chia sẻ điều bạn biết.",
+    "heroSubtitle": "Tạo tài khoản để tìm lớp, học cùng sinh viên khác hoặc gửi bằng chứng kỹ năng để bắt đầu dạy.",
+    "pillar1Title": "Xác minh bằng hồ sơ sinh viên",
+    "pillar1Desc": "Bạn gửi tên trường và giấy tờ. Quản trị viên kiểm tra hồ sơ thủ công.",
+    "pillar2Title": "Thanh toán bằng credit",
+    "pillar2Desc": "Kiểm tra giá và số dư trước khi đặt. Khoản thanh toán được ghi trong sổ cái.",
+    "pillar3Title": "Học trực tuyến cùng nhau",
+    "pillar3Desc": "Xem lịch và vào phòng học từ danh sách lớp đã đặt.",
     "tabRegister": "Đăng ký tài khoản",
     "tabLogin": "Đăng nhập",
     "providerGoogle": "Tài khoản Google",
@@ -790,7 +797,8 @@
     "switchToLogin": "Đã có tài khoản?",
     "switchToRegister": "Chưa có tài khoản?",
     "validationError": "Vui lòng nhập đầy đủ thông tin hợp lệ (mật khẩu từ 8 ký tự).",
-    "pledgeError": "Bạn cần đồng ý với cam kết quy chuẩn học thuật."
+    "pledgeError": "Bạn cần đồng ý với cam kết quy chuẩn học thuật.",
+    "passwordResetHint": "Vui lòng liên hệ quản trị viên để đặt lại mật khẩu."
   },
   "Skills": {
     "title": "Kỹ năng của tôi",

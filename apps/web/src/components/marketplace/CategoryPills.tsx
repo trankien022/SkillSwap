@@ -7,8 +7,8 @@ import { SKILL_CATEGORIES, type SkillCategory } from '../../lib/marketplace/type
  * Quick-pill row of skill categories (FR-006).
  *
  * The first pill is "Tất cả" (value 'all'). Selecting a pill changes the
- * active category. Horizontal scroll on small screens, no JS-side filter
- * yet — the parent passes the value via `onChange`.
+ * active category. Categories wrap on phones; selection flows through
+ * the parent's query callback.
  */
 export function CategoryPills({
   active,
@@ -23,7 +23,7 @@ export function CategoryPills({
     <div
       role="radiogroup"
       aria-label={t('all')}
-      className="flex items-center gap-2 overflow-x-auto pb-1"
+      className="flex flex-wrap items-center gap-x-2 gap-y-1"
     >
       <span className="mr-1 shrink-0 text-[11px] font-semibold uppercase tracking-wider text-ink-soft">
         {/* caption for the pills row */}
@@ -49,7 +49,9 @@ export function CategoryPills({
 }
 
 /** Map the kebab enum value to the camelCase i18n key. */
-function categoryI18nKey(category: SkillCategory): 'language' | 'programming' | 'design' | 'softSkills' | 'math' {
+function categoryI18nKey(
+  category: SkillCategory,
+): 'language' | 'programming' | 'design' | 'softSkills' | 'math' {
   switch (category) {
     case 'language':
       return 'language';
@@ -83,8 +85,8 @@ function Pill({
       onClick={onClick}
       className={
         active
-          ? 'flex shrink-0 items-center gap-1 rounded-full bg-campus-emerald px-3 py-1.5 text-xs font-semibold text-surface shadow-sm'
-          : 'flex shrink-0 items-center gap-1 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:border-campus-emerald hover:bg-mist'
+          ? 'flex shrink-0 items-center gap-1 rounded-lg bg-neutral-tint px-3 py-2 text-sm font-semibold text-ink'
+          : 'flex shrink-0 items-center gap-1 rounded-lg border border-transparent px-3 py-2 text-sm font-semibold text-ink transition-colors hover:border-border hover:bg-mist'
       }
     >
       <span className="text-current">{icon}</span>

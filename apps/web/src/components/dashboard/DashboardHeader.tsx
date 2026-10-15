@@ -4,8 +4,7 @@ import { getTranslations, getLocale } from 'next-intl/server';
  * Page header (FR-021 dashboard).
  *
  * Renders the role chip + term chip, the page H1, the subtitle, and
- * the two top-right CTAs ("Sync calendar" placeholder + "Find new
- * classes" -> /[locale]/classes).
+ * the action linking to the class catalogue.
  *
  * The KPI tiles that used to live in this file moved to `MetricTiles.tsx`:
  * they render live snapshot data, so they are now a client component mounted by
@@ -33,17 +32,9 @@ export async function DashboardHeader() {
         <p className="text-sm leading-relaxed text-ink-soft">{t('subtitle')}</p>
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-2">
-        <button
-          type="button"
-          aria-disabled="true"
-          className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-ink-soft shadow-sm transition-colors hover:bg-mist"
-        >
-          <CalendarAddOnIcon className="h-4 w-4" />
-          <span>{t('ctaCalendar')}</span>
-        </button>
         <a
           href={`/${locale}/classes`}
-          className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95"
+          className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
         >
           <SearchIcon className="h-4 w-4" />
           <span>{t('ctaExplore')}</span>
@@ -57,29 +48,38 @@ export async function DashboardHeader() {
 
 function SchoolIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <path d="M3 9l9-5 9 5-9 5-9-5z" />
       <path d="M7 11v5c2 1.5 4 1.5 5 1.5s3 0 5-1.5v-5" />
     </svg>
   );
 }
 
-function CalendarAddOnIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
-      <rect x="3" y="5" width="18" height="16" rx="2" />
-      <line x1="3" y1="10" x2="21" y2="10" />
-      <line x1="8" y1="3" x2="8" y2="7" />
-      <line x1="16" y1="3" x2="16" y2="7" />
-      <line x1="12" y1="13" x2="12" y2="19" />
-      <line x1="9" y1="16" x2="15" y2="16" />
-    </svg>
-  );
-}
-
 function SearchIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <circle cx="11" cy="11" r="7" />
       <line x1="21" y1="21" x2="16.5" y2="16.5" />
     </svg>

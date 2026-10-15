@@ -8,13 +8,6 @@ import {
 } from '../../lib/marketplace/mock-data';
 import type { MarketplaceClass } from '../../lib/marketplace/types';
 
-/**
- * One marketplace class card (FR-006).
- *
- * Client component so it can be rendered inside the `MarketplaceClient`
- * shell without breaking the server/client boundary. The cover area is
- * a slate-to-mist gradient placeholder; no third-party CDN images.
- */
 export function ClassCard({ item }: { item: MarketplaceClass }) {
   const t = useTranslations('Marketplace.card');
   const locale = useLocale() as 'vi' | 'en';
@@ -31,83 +24,50 @@ export function ClassCard({ item }: { item: MarketplaceClass }) {
     .map((n) => Number(n));
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-campus-emerald/40 hover:shadow-md">
-      {/* Cover area */}
-      <div
-        className="relative h-48 w-full overflow-hidden bg-mist"
-        style={{
-          backgroundImage: `linear-gradient(135deg, ${item.coverGradient.from}, ${item.coverGradient.to})`,
-        }}
-        role="img"
-        aria-label={item.skillName ?? undefined}
-      >
-        {/* Top-left chips */}
-        <div className="absolute left-3 top-3 flex flex-wrap gap-1">
-          <span className="rounded-full bg-ink/90 px-2 py-0.5 text-[11px] font-semibold text-surface backdrop-blur-sm">
-            {t(item.format === 'one-on-one' ? 'format.oneOnOne' : 'format.group')}
-          </span>
-          <span className="flex items-center gap-1 rounded-full bg-surface/95 px-2 py-0.5 text-[11px] font-semibold text-ink shadow-sm">
-            <ClockIcon className="h-3 w-3 text-ink-soft" />
-            {t('duration', { minutes: item.durationMinutes })}
-          </span>
-        </div>
-
-        {/* Top-right rating pill. A class with no ratings shows an explicit
-            "chưa có đánh giá" instead of a fabricated 5.00. */}
-        <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded border border-border bg-surface/95 px-2 py-0.5 text-[11px] font-semibold text-ink shadow-sm backdrop-blur-sm">
-          <StarIcon className="h-3.5 w-3.5 text-warning-ink" />
-          {item.ratingAvg === null ? (
-            <span className="font-normal text-ink-soft">{t('noRating')}</span>
-          ) : (
-            <>
-              <span className="font-bold text-ink">
-                {item.ratingAvg.toFixed(2)}
-              </span>
-              <span className="font-normal text-ink-soft">
-                ({item.ratingCount})
-              </span>
-            </>
-          )}
-        </div>
+    <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3 text-xs text-ink-soft">
+        <span className="font-medium">
+          {t(item.format === 'one-on-one' ? 'format.oneOnOne' : 'format.group')}
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <ClockIcon className="h-3.5 w-3.5" />
+          {t('duration', { minutes: item.durationMinutes })}
+        </span>
       </div>
-
       {/* Body */}
-      <div className="flex flex-1 flex-col gap-3 p-4">
+      <div className="flex flex-1 flex-col gap-4 p-5">
         {/* Schedule row */}
-        <div className="flex items-center gap-1.5 text-xs font-medium text-campus-emerald">
+        <div className="flex flex-wrap items-center gap-1.5 text-xs font-medium text-ink-soft">
           <CalendarIcon className="h-4 w-4" />
-          <span>
-            {t('startsAt', { when: weekday, time })}
-          </span>
+          <span>{t('startsAt', { when: weekday, time })}</span>
           <span className="text-ink-muted">•</span>
-          <span className="font-normal text-ink-soft">
-            {t('deadline', { hours: hoursLeft })}
-          </span>
+          <span className="font-normal text-ink-soft">{t('deadline', { hours: hoursLeft })}</span>
         </div>
 
         {/* Title. Absent when the API is the class-detail route, which does not
             return a skill name; the description below stands on its own. */}
         {item.skillName !== null && (
-          <h3 className="line-clamp-2 text-base font-semibold text-ink transition-colors group-hover:text-campus-emerald">
+          <h3 className="text-xl font-semibold leading-snug tracking-tight text-ink">
             {item.skillName}
           </h3>
         )}
 
         {/* Teacher card */}
-        <div className="flex items-center gap-2 rounded-lg border border-border bg-mist p-2">
+        <div className="flex items-center gap-3">
           <div
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-semibold text-surface"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-neutral-tint text-sm font-semibold text-ink"
             aria-hidden="true"
           >
             {item.teacherName.charAt(0).toUpperCase()}
           </div>
           <div className="flex min-w-0 flex-col">
-            <div className="flex items-center gap-1 truncate">
-              <span className="truncate text-sm font-medium text-ink">
-                {item.teacherName}
-              </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="truncate text-sm font-medium text-ink">{item.teacherName}</span>
               {item.verified === true && (
-                <CheckIcon className="h-4 w-4 shrink-0 text-success-ink" />
+                <span className="inline-flex items-center gap-1 text-xs text-success-ink">
+                  <CheckIcon className="h-4 w-4 shrink-0" />
+                  <span>{t('verified')}</span>
+                </span>
               )}
             </div>
             {/* School and level are omitted when absent; the catalogue sends
@@ -115,13 +75,11 @@ export function ClassCard({ item }: { item: MarketplaceClass }) {
             {(item.schoolName !== null || item.level !== null) && (
               <div className="flex items-center gap-1.5">
                 {item.schoolName !== null && (
-                  <span className="truncate text-[11px] text-ink-soft">
-                    {item.schoolName}
-                  </span>
+                  <span className="truncate text-[11px] text-ink-soft">{item.schoolName}</span>
                 )}
                 {item.level !== null && (
-                  <span className="shrink-0 rounded border border-success-tint bg-success-tint px-1.5 py-0.5 text-[10px] font-semibold text-success-ink">
-                    {item.level}
+                  <span className="shrink-0 rounded bg-neutral-tint px-1.5 py-0.5 text-[10px] font-semibold text-ink-soft">
+                    {t(`levels.${item.level}`)}
                   </span>
                 )}
               </div>
@@ -129,26 +87,33 @@ export function ClassCard({ item }: { item: MarketplaceClass }) {
           </div>
         </div>
 
+        <div className="flex items-center gap-1.5 text-xs text-ink-soft">
+          <StarIcon className="h-3.5 w-3.5 text-ink-muted" />
+          {item.ratingAvg === null ? (
+            t('noRating')
+          ) : (
+            <>
+              <span className="font-semibold text-ink">{item.ratingAvg.toFixed(2)}</span>
+              <span>({item.ratingCount})</span>
+            </>
+          )}
+        </div>
+
         {/* Footer */}
-        <div className="mt-auto flex items-center justify-between border-t border-border pt-2">
+        <div className="mt-auto flex flex-wrap items-end justify-between gap-4 border-t border-border pt-4">
           <div className="flex flex-col">
-            <div className="flex items-center gap-1 text-[11px] font-semibold text-success-ink">
+            <div className="flex items-center gap-1 text-xs font-medium text-ink-soft">
               <GroupIcon className="h-3.5 w-3.5" />
-              <span>
-                {t('seats.format', { taken, capacity })}
-              </span>
+              <span>{t('seats.format', { taken, capacity })}</span>
             </div>
-            <div className="mt-0.5 flex items-baseline gap-1">
-              <span className="text-base font-bold text-ink">
+            <div className="mt-1 flex flex-wrap items-baseline gap-1">
+              <span className="text-lg font-bold text-ink">
                 {t('price.credits', { credits: item.priceCredits })}
               </span>
               <span className="text-[11px] text-ink-soft">
                 {item.format === 'group-2-4'
                   ? t('pricePerLearner', {
-                      vnd: (
-                        (item.priceCredits * 1000) /
-                        item.capacity
-                      ).toLocaleString(locale),
+                      vnd: ((item.priceCredits * 1000) / item.capacity).toLocaleString(locale),
                     })
                   : t('price.vnd', { vnd })}
               </span>
@@ -156,7 +121,7 @@ export function ClassCard({ item }: { item: MarketplaceClass }) {
           </div>
           <a
             href={`/${locale}/classes/${item.id}`}
-            className="flex items-center gap-1 rounded-lg bg-ink px-3 py-2 text-xs font-semibold text-surface transition-colors hover:bg-ink-soft"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-ink transition-colors hover:bg-mist"
           >
             <span>{t('viewClass')}</span>
             <ArrowForwardIcon className="h-4 w-4" />
@@ -171,7 +136,18 @@ export function ClassCard({ item }: { item: MarketplaceClass }) {
 
 function ClockIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="14"
+      height="14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <circle cx="12" cy="12" r="9" />
       <polyline points="12 7 12 12 15 14" />
     </svg>
@@ -180,7 +156,17 @@ function ClockIcon({ className = '' }: { className?: string }) {
 
 function StarIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="14"
+      height="14"
+      fill="currentColor"
+      stroke="currentColor"
+      strokeWidth="1"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18 5.5 22 7 14.5 2 9.5 9 9" />
     </svg>
   );
@@ -188,7 +174,18 @@ function StarIcon({ className = '' }: { className?: string }) {
 
 function CalendarIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <rect x="3" y="5" width="18" height="16" rx="2" />
       <line x1="3" y1="10" x2="21" y2="10" />
       <line x1="8" y1="3" x2="8" y2="7" />
@@ -199,7 +196,18 @@ function CalendarIcon({ className = '' }: { className?: string }) {
 
 function CheckIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <polyline points="20 6 9 17 4 12" />
     </svg>
   );
@@ -207,7 +215,18 @@ function CheckIcon({ className = '' }: { className?: string }) {
 
 function GroupIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="14"
+      height="14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
       <circle cx="9" cy="7" r="4" />
       <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
@@ -218,7 +237,18 @@ function GroupIcon({ className = '' }: { className?: string }) {
 
 function ArrowForwardIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <line x1="5" y1="12" x2="19" y2="12" />
       <polyline points="12 5 19 12 12 19" />
     </svg>
