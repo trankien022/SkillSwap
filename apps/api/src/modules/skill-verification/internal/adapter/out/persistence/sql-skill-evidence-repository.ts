@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { InvalidCursorError } from '../../../../../../shared/errors';
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { insertOutboxStatement } from '../../../../../../shared/messaging/outbox-statements';
 import { qualified } from '../../../../../../shared/sql/ident';
@@ -15,6 +16,8 @@ import {
 import type { EvidenceAuditSnapshot } from '../../../domain/history';
 import { appendEvidenceAudit } from './sql-evidence-audit-repository';
 import type {
+  AdminQueuePage,
+  AdminQueueQuery,
   ApplyEvidenceDecisionRequest,
   ApplyEvidenceDecisionResult,
   ClaimRequest,
@@ -259,6 +262,99 @@ export class SqlSkillEvidenceRepository implements SkillEvidenceRepository {
              JOIN ${qualified(this.schema, 'profile_skills')} ps ON ps."id" = e."profile_skill_id"
              JOIN ${qualified(this.schema, 'skills')} s ON s."id" = ps."skill_id"
             WHERE ${where}`,
+          countParams,
+        ) as Promise<Array<{ total: number }>>,
+      ]);
+
+      const { items: pageRows, nextCursor } = toKeysetPage(
+        rows,
+        query.limit,
+        (row) => [toIso(row.submitted_at), row.id],
+      );
+
+      return {
+        items: pageRows.map((row) => this.toPending(row)),
+        nextCursor,
+        total: countRows[0]?.total ?? 0,
+      };
+    });
+  }
+
+  /**
+   * FR-015: the cross-domain queue for an Administrator (NFR-014).
+   *
+   * Structurally the same read as {@link listPendingForExpertise}, minus the
+   * `skill_id = ANY(expertise)` restriction and plus a `category` filter. Kept as its own method
+   * rather than a flag on the verifier query because the two have different authorization
+   * stories: this one is admin-only, the other is expertise-scoped to its caller.
+   */
+  async listForAdmin(query: AdminQueueQuery): Promise<AdminQueuePage> {
+    const source = this.registry.get(this.moduleName);
+
+    return source.transaction(async (manager) => {
+      const params: unknown[] = [];
+      const filters: string[] = [];
+
+      // `pending` and `claimed` are the live queue states; the rest are decisions already
+      // taken. The wire schema still allows every status so a caller can ask "what was
+      // rejected in this domain", but nothing here assumes the queue's default.
+      if (query.status !== undefined) {
+        params.push(query.status);
+        filters.push(`e."status" = $${params.length}`);
+      }
+      if (query.domain !== undefined) {
+        params.push(query.domain);
+        filters.push(`s."category" = $${params.length}`);
+      }
+      if (query.q !== undefined) {
+        params.push(`%${query.q}%`);
+        filters.push(`s."name" ILIKE $${params.length}`);
+      }
+      const where = filters.length === 0 ? '' : `WHERE ${filters.join(' AND ')}`;
+      const countParams = [...params];
+
+      const desc = query.sort === 'submittedAtDesc';
+      const comparison = desc ? '<' : '>';
+      const order = desc ? 'DESC' : 'ASC';
+      let pageWhere = where;
+      const pageParams = [...params];
+      const decoded = decodeCursor(query.cursor);
+      if (decoded !== null) {
+        if (decoded.length !== 2) {
+          throw new InvalidCursorError();
+        }
+        pageParams.push(decoded[0], decoded[1]);
+        pageWhere += `${filters.length === 0 ? 'WHERE' : ' AND'} (e."submitted_at", e."id") ${comparison} ($${pageParams.length - 1}::timestamptz, $${pageParams.length}::uuid)`;
+      }
+      pageParams.push(query.limit + 1);
+      const limitParam = pageParams.length;
+
+      const [rows, countRows] = await Promise.all([
+        manager.query(
+          `SELECT e.${SELECT_COLUMNS.split(', ').join(', e.')},
+                  ps."account_id" AS owner_id, s."id" AS skill_id, s."name" AS skill_name,
+                  s."category" AS category
+             FROM ${this.table} e
+             JOIN ${qualified(this.schema, 'profile_skills')} ps ON ps."id" = e."profile_skill_id"
+             JOIN ${qualified(this.schema, 'skills')} s ON s."id" = ps."skill_id"
+            ${pageWhere}
+            ORDER BY e."submitted_at" ${order}, e."id" ${order}
+            LIMIT $${limitParam}`,
+          pageParams,
+        ) as Promise<
+          (EvidenceRow & {
+            owner_id: string;
+            skill_id: string;
+            skill_name: string;
+            category: string;
+          })[]
+        >,
+        manager.query(
+          `SELECT COUNT(*)::int AS "total"
+             FROM ${this.table} e
+             JOIN ${qualified(this.schema, 'profile_skills')} ps ON ps."id" = e."profile_skill_id"
+             JOIN ${qualified(this.schema, 'skills')} s ON s."id" = ps."skill_id"
+            ${where}`,
           countParams,
         ) as Promise<Array<{ total: number }>>,
       ]);

@@ -27,6 +27,7 @@ import { ChangeVerifierStatusUseCase } from './internal/application/change-verif
 import { ClaimSkillEvidenceUseCase } from './internal/application/claim-skill-evidence.use-case';
 import { DecideSkillEvidenceUseCase } from './internal/application/decide-skill-evidence.use-case';
 import { ListVerifierQueueQueryHandler } from './internal/application/list-verifier-queue.query';
+import { ListAdminVerifierQueueQueryHandler } from './internal/application/list-admin-verifier-queue.query';
 import { GetSkillEvidenceHistoryUseCase } from './internal/application/get-skill-evidence-history.use-case';
 import { VerifierAuthority } from './internal/application/verifier-authority';
 import { GetMyProfileSkillsQueryHandler } from './internal/application/query/get-my-profile-skills.query';
@@ -58,6 +59,10 @@ import {
   LIST_VERIFIER_QUEUE,
   type ListVerifierQueuePort,
 } from './internal/application/port/in/list-verifier-queue';
+import {
+  LIST_ADMIN_VERIFIER_QUEUE,
+  type ListAdminVerifierQueuePort,
+} from './internal/application/port/in/list-admin-verifier-queue';
 import {
   GET_SKILL_EVIDENCE_HISTORY,
   type GetSkillEvidenceHistoryPort,
@@ -228,6 +233,12 @@ export class SkillVerificationRegistrar implements OnModuleInit {
         verifiers: VerifierRepository,
       ): ListVerifierQueuePort => new ListVerifierQueueQueryHandler(evidence, verifiers),
       inject: [SKILL_EVIDENCE_REPOSITORY, VERIFIER_REPOSITORY],
+    },
+    {
+      provide: LIST_ADMIN_VERIFIER_QUEUE,
+      useFactory: (evidence: SkillEvidenceRepository): ListAdminVerifierQueuePort =>
+        new ListAdminVerifierQueueQueryHandler(evidence),
+      inject: [SKILL_EVIDENCE_REPOSITORY],
     },
     {
       provide: GET_SKILL_EVIDENCE_HISTORY,

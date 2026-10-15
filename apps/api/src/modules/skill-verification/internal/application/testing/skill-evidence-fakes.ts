@@ -8,6 +8,8 @@ import {
 import type { Clock } from '../port/out/clock';
 import type { SkillRepository } from '../port/out/skill-repository';
 import type {
+  AdminQueuePage,
+  AdminQueueQuery,
   ApplyEvidenceDecisionRequest,
   ApplyEvidenceDecisionResult,
   ClaimRequest,
@@ -228,9 +230,72 @@ export class InMemorySkillEvidenceRepository implements SkillEvidenceRepository 
     };
   }
 
+  /**
+   * FR-015: the same queue without the expertise restriction, so a handler spec exercises the
+   * administrator's view (domain filter, any status) rather than a Verifier's.
+   */
+  async listForAdmin(query: AdminQueueQuery): Promise<AdminQueuePage> {
+    const matched = this.rows
+      .filter((row) => (query.status === undefined ? true : row.status === query.status))
+      .filter((row) => {
+        const ctx = this.profileSkillContext.get(row.profileSkillId);
+        if (ctx === undefined) return false;
+        if (query.domain !== undefined && this.skillCategory(ctx.skillId) !== query.domain) {
+          return false;
+        }
+        if (query.q !== undefined && !ctx.skillId.toLowerCase().includes(query.q.toLowerCase())) {
+          return false;
+        }
+        return true;
+      });
+
+    const total = matched.length;
+    const desc = query.sort === 'submittedAtDesc';
+    const sorted = [...matched].sort((a, b) => {
+      const byTime = a.submittedAt.getTime() - b.submittedAt.getTime();
+      const byId = a.id.localeCompare(b.id);
+      const cmp = byTime !== 0 ? byTime : byId;
+      return desc ? -cmp : cmp;
+    });
+
+    const start = query.cursor === undefined ? 0 : Number.parseInt(query.cursor, 10);
+    const slice = sorted.slice(start, start + query.limit);
+    const next = start + query.limit < sorted.length ? String(start + query.limit) : null;
+
+    return {
+      items: slice.map((row) => {
+        const ctx = this.profileSkillContext.get(row.profileSkillId)!;
+        return {
+          id: row.id,
+          profileSkillId: row.profileSkillId,
+          skillId: ctx.skillId,
+          skillName: this.skillName(ctx.skillId),
+          category: this.skillCategory(ctx.skillId),
+          ownerId: ctx.ownerId,
+          evidence: row,
+        };
+      }),
+      nextCursor: next,
+      total,
+    };
+  }
+
+  /** Test seam: the catalogue category for a skill id (drives the `domain` filter). */
+  readonly skillDomains = new Map<string, string>();
+
+  /** Test seam: the display name for a skill id. */
+  readonly skillNames = new Map<string, string>();
+
+  private skillCategory(skillId: string): string {
+    return this.skillDomains.get(skillId) ?? 'unknown';
+  }
+
+  private skillName(skillId: string): string {
+    return this.skillNames.get(skillId) ?? skillId;
+  }
+
   async claim(request: ClaimRequest): Promise<ClaimedEvidence> {
-    const index = this.rows.findIndex((row) => row.id === request.evidenceId && row.status === 'pending');
-    if (index === -1) {
+    const index = this.rows.findIndex((row) => row.id === request.evidenceId && row.status === 'pending');    if (index === -1) {
       throw new EvidenceNotClaimableError('claimed');
     }
     const claimed = withEvidence(this.rows[index], {
