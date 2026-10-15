@@ -1,22 +1,22 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import { BookingPanel, type BookingMessages } from '../booking/booking-panel';
+import { CompositeBookingAction } from '../booking/composite-booking-action';
 import { formatSeats, formatStartsAt } from '../../lib/marketplace/mock-data';
 import type { ClassDetailView } from '../../lib/marketplace/types';
 
 /**
  * Sticky booking card for the class detail page (FR-006 detail).
  *
- * Composes the existing `BookingPanel` (FR-007 reuse) inside a
- * sticky-positioned column. Above the panel: a price recap table
- * faithful to the SRS (no '100% refund' / no 'Smart-Escrow'). Below
- * the panel: trust signals + 24/7 support card.
+ * Renders a price recap table faithful to the SRS (no '100% refund' / no
+ * 'Smart-Escrow'), **one** committing action — `CompositeBookingAction`, which
+ * books, gates against the balance and confirms in a single press (D5) — and
+ * the trust signals below it.
  *
- * The wallet balance block is intentionally hidden in the pilot
- * (no auth yet) so we do not show a fake '150 Credits → 65 Credits'
- * widget. The detail page renders only the parts that do not depend
- * on a session.
+ * This card used to render a `BookingPanel` ("Đặt lớp") *and* a second
+ * "review & lock" link on top of it: two buttons, one API, so the first press
+ * created the hold and the second was refused as a duplicate. Both are gone;
+ * the wallet balance is likewise never shown here from a made-up figure.
  */
 export function StickyBookingCard({
   item,
@@ -24,7 +24,6 @@ export function StickyBookingCard({
   item: ClassDetailView;
 }) {
   const t = useTranslations('ClassDetail.booking');
-  const tBooking = useTranslations('Booking');
   const locale = useLocale() as 'vi' | 'en';
   const dateText = formatStartsAt(item.startsAt, locale);
   const timeText = new Date(item.startsAt).toLocaleTimeString(locale, {
@@ -35,23 +34,6 @@ export function StickyBookingCard({
   const [taken, capacity] = formatSeats(item.format, item.capacity)
     .split('/')
     .map((n) => Number(n));
-
-  const messages: BookingMessages = {
-    title: tBooking('title'),
-    bookCta: tBooking('bookCta'),
-    booking: tBooking('booking'),
-    pending: tBooking('pending'),
-    pendingHint: tBooking('pendingHint'),
-    errorTitle: tBooking('errorTitle'),
-    notFound: tBooking('notFound'),
-    durationLabel: tBooking('durationLabel'),
-    seatsLabel: tBooking('seatsLabel'),
-    durationTemplate: tBooking.raw('duration'),
-    priceTemplate: tBooking.raw('price'),
-    capacityTemplate: tBooking.raw('capacity'),
-    startsAtTemplate: tBooking.raw('startsAt'),
-    errorReasons: tBooking.raw('error') as Record<string, string>,
-  };
 
   return (
     <div className="sticky top-24 flex flex-col gap-4">
@@ -113,25 +95,10 @@ export function StickyBookingCard({
           />
         </div>
 
-        {/* Booking panel (FR-007 reuse) */}
-        <BookingPanel classId={item.id} messages={messages} />
-
-        <div className="mt-3">
-          <a
-            href={`/${locale}/classes/${item.id}/checkout`}
-            className="flex w-full items-center justify-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
-          >
-            <span>
-              {locale === 'vi'
-                ? `Xem xét & Khóa ký quỹ (${item.priceCredits} Credit)`
-                : `Review & Lock Escrow (${item.priceCredits} Credits)`}
-            </span>
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <line x1="5" y1="12" x2="19" y2="12" />
-              <polyline points="12 5 19 12 12 19" />
-            </svg>
-          </a>
-        </div>
+        {/* The single committing action: book → balance gate → confirm.
+            Checkout is no longer a second entry point — it is where the gate
+            sends a learner who cannot afford the class yet. */}
+        <CompositeBookingAction item={item} />
 
         {/* Trust signals */}
         <div className="mt-4 flex flex-col gap-1 text-[11px] text-ink-soft">

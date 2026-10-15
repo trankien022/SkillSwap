@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { HttpMarketplaceGateway } from '../../lib/marketplace/http-gateway';
+import { ClassDetailApiGateway } from '../../lib/marketplace/api-class-detail';
 import { toClassDetailView } from '../../lib/marketplace/api-mapping';
 import { DetailHeader } from './DetailHeader';
 import { ScheduleSection } from './ScheduleSection';
@@ -16,6 +17,7 @@ import { StickyBookingCard } from './StickyBookingCard';
 import type { ClassDetailView } from '../../lib/marketplace/types';
 
 const gateway = new HttpMarketplaceGateway();
+const verdictGateway = new ClassDetailApiGateway();
 
 type LoadState =
   | { phase: 'loading' }
@@ -33,6 +35,12 @@ type LoadState =
  * is missing/expired, a retryable error, and the composed body once real
  * data arrives. The detail-only sections are derived from the real class
  * by `toClassDetailView` — never mocked.
+ *
+ * Booking is read separately from `GET /classes/:id`, the only route that
+ * answers *for this caller*: `canBook`, an existing hold (`ownBooking`) and
+ * the free-seat count. Merging them is what lets the booking action refuse a
+ * second seat, reuse a hold, and name why a class cannot be booked — with the
+ * server's words rather than a guess.
  */
 export function ClassDetailContent({ id }: { id: string }) {
   const [state, setState] = useState<LoadState>({ phase: 'loading' });
@@ -40,11 +48,33 @@ export function ClassDetailContent({ id }: { id: string }) {
   useEffect(() => {
     let active = true;
     setState({ phase: 'loading' });
-    gateway
-      .findById(id)
-      .then((item) => {
+    Promise.all([
+      gateway.findById(id),
+      // A failed verdict read must not hide a class the catalogue already
+      // resolved: it resolves to null and the view keeps its honest defaults
+      // (not bookable, no known hold). The server is the only thing allowed to
+      // say yes, so "unknown" stays closed rather than optimistically open.
+      verdictGateway.getById(id).catch(() => null),
+    ])
+      .then(([item, verdict]) => {
         if (!active) return;
-        setState(item === null ? { phase: 'not_found' } : { phase: 'ready', item: toClassDetailView(item) });
+        if (item === null) {
+          setState({ phase: 'not_found' });
+          return;
+        }
+        const view = toClassDetailView(item);
+        setState({
+          phase: 'ready',
+          item:
+            verdict === null
+              ? view
+              : {
+                  ...view,
+                  canBook: verdict.canBook,
+                  ownBooking: verdict.ownBooking,
+                  availableSeats: verdict.availableSeats,
+                },
+        });
       })
       .catch((error) => {
         if (!active) return;

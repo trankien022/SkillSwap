@@ -4,6 +4,8 @@ import {
   type BookingGateway,
   type BookingView,
   type ClassView,
+  type ConfirmBookingResponse,
+  type OwnBookingSummaryView,
 } from './domain';
 import { demoClass } from './demo-class';
 
@@ -84,6 +86,45 @@ export class MockBookingGateway implements BookingGateway {
     this.bookings.set(booking.bookingId, booking);
     this.byIdempotencyKey.set(idempotencyKey, booking.bookingId);
     return { booking, created: true };
+  }
+
+  /**
+   * The mock settles immediately: the hold it knows about becomes `confirmed`
+   * and the answer states the same fact a read-back would. An unknown booking
+   * throws instead of answering `confirmed: true` for something that does not
+   * exist — the one thing this flow must never fabricate.
+   */
+  async confirmBooking(bookingId: string): Promise<ConfirmBookingResponse> {
+    const booking = this.bookings.get(bookingId);
+    if (booking === undefined) {
+      throw new Error(`Booking not found: ${bookingId}`);
+    }
+    const settled: BookingView =
+      booking.state === 'confirmed' ? booking : { ...booking, state: 'confirmed' };
+    this.bookings.set(bookingId, settled);
+    return { confirmed: true, booking: settled };
+  }
+
+  async getOwnBooking(classId: string): Promise<OwnBookingSummaryView | null> {
+    const own = [...this.bookings.values()].find(
+      (booking) =>
+        booking.classId === classId &&
+        booking.learnerId === this.learnerId &&
+        (booking.state === 'pending' || booking.state === 'confirmed'),
+    );
+    if (own === undefined) {
+      return null;
+    }
+    // The mock issues no hold TTL, so it reports none rather than inventing a
+    // countdown: `expiresAt: null` means "no deadline was set". The state is
+    // stated explicitly because `BookingView.state` is an open string — a hold
+    // is either pending or confirmed, and anything else is no hold at all.
+    const state: 'pending' | 'confirmed' | null =
+      own.state === 'pending' ? 'pending' : own.state === 'confirmed' ? 'confirmed' : null;
+    if (state === null) {
+      return null;
+    }
+    return { bookingId: own.bookingId, state, expiresAt: null };
   }
 }
 

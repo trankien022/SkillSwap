@@ -115,6 +115,44 @@ describe('HttpBookingGateway', () => {
     },
   );
 
+  it('posts the confirm to /classes/bookings/:id/confirm and returns the reply as data', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(envelopeOk({ confirmed: false, booking })));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const reply = await new HttpBookingGateway().confirmBooking('booking-1');
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toContain('/api/classes/bookings/booking-1/confirm');
+    expect(init.method).toBe('POST');
+    // `confirmed: false` is a legitimate answer while the debit settles, so it
+    // parses into data instead of being thrown or believed as success.
+    expect(reply.confirmed).toBe(false);
+    expect(reply.booking?.bookingId).toBe('booking-1');
+  });
+
+  it("reads the caller's own hold from GET /classes/:id, or null when they have none", async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(envelopeOk(classDetail))));
+    expect(await new HttpBookingGateway().getOwnBooking(CLASS_ID)).toBeNull();
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        jsonResponse(
+          envelopeOk({
+            ...classDetail,
+            ownBooking: {
+              bookingId: 'booking-1',
+              state: 'pending',
+              expiresAt: '2029-12-01T10:15:00.000Z',
+            },
+          }),
+        ),
+      ),
+    );
+    const hold = await new HttpBookingGateway().getOwnBooking(CLASS_ID);
+    expect(hold).toMatchObject({ bookingId: 'booking-1', state: 'pending' });
+  });
+
   it('degrades an unknown code to class_not_bookable instead of throwing a raw error', async () => {
     vi.stubGlobal(
       'fetch',

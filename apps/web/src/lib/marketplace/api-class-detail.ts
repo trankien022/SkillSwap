@@ -54,6 +54,14 @@ export function mapContractDetailToWeb(detail: ContractClassDetailView): ClassDe
     teacherBio: null,
     teacherStats: null,
     teacherCredentials: [],
+    // Free seats come straight from Route 14; nothing is derived from capacity.
+    availableSeats: detail.availableSeats,
+    // The server's verdict for this caller, copied across unchanged. `false`
+    // means "not bookable" (own class, full, too soon, already booked) — never
+    // an optimistic `true` — and `ownBooking` is what makes an existing hold
+    // visible to the web client, which could not see one at all before.
+    canBook: detail.canBook,
+    ownBooking: detail.ownBooking ?? null,
     reviews: (detail.recentRatings ?? []).map((r) => ({
       id: r.id,
       authorName: r.learnerDisplayName,

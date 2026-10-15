@@ -1,4 +1,4 @@
-import type { ClassView } from '@skillswap/contracts';
+import type { ClassView, OwnBookingSummaryView } from '@skillswap/contracts';
 
 /**
  * Marketplace domain types (FR-006 mock layer).
@@ -57,6 +57,12 @@ export interface MarketplaceClass extends ClassView {
   verified: boolean | null;
   /** Two hex colors used to render a subtle slate+emerald gradient cover. */
   coverGradient: { from: string; to: string };
+  /**
+   * Free seats as the catalogue reports them (`GET /classes`). Optional because
+   * only that route supplies it, and nullable so "unknown" stays
+   * distinguishable from "0 seats left" — never defaulted either way.
+   */
+  availableSeats?: number | null;
 }
 
 export interface MarketplaceQuery {
@@ -167,6 +173,21 @@ export interface ClassDetailView extends MarketplaceClass {
   teacherStats: TeacherStats | null;
   teacherCredentials: TeacherCredential[];
   reviews: ReviewView[];
+  /**
+   * The server's own verdict on booking this class *for this caller*
+   * (`GET /classes/:id`). The catalogue route the detail page reads carries no
+   * booking facts, so this starts at `false` — never an optimistic `true` — and
+   * `ClassDetailContent` replaces it with the real value once Route 14 answers.
+   */
+  canBook: boolean;
+  /**
+   * The caller's own booking, when they have one. This is why `canBook` is
+   * false for a learner who already holds a seat: they are booked, not barred,
+   * so the composite action reads it *before* any `canBook` test.
+   */
+  ownBooking: OwnBookingSummaryView | null;
+  /** Free seats per Route 14; null where the source supplies none (demo cards). */
+  availableSeats: number | null;
 }
 
 /** Categories shown in the quick-pills row, mirrored by `Landing.categories`. */
