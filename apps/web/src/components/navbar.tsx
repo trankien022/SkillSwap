@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useLocale } from 'next-intl';
+import Link from 'next/link';
 import { BrandMark } from './BrandMark';
 import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
 import {
@@ -41,13 +42,15 @@ export function Navbar({
   const [menuOpen, setMenuOpen] = useState(false);
   const [internalBalance, setInternalBalance] = useState<WalletBalanceView | null>(null);
   const [internalMe, setInternalMe] = useState<MeResponse | null>(null);
+  const [sessionResolved, setSessionResolved] = useState(false);
   const [hasTokens, setHasTokens] = useState<boolean>(false);
   const [storedUser, setStoredUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     const tokens = getTokens();
     setHasTokens(Boolean(tokens));
-    setStoredUser(getStoredUser());
+    setStoredUser(tokens ? getStoredUser() : null);
+    setSessionResolved(true);
 
     // Listen for in-page balance updates (e.g. after a top-up or booking) so the
     // badge reflects the change without a refetch.
@@ -115,9 +118,9 @@ export function Navbar({
 
   // Post-auth the nav is role-aware (ADR-029 / ADR-030): a guest sees only the
   // public entry points, and the Verifier queue is offered only to a Verifier.
-  // The guest shape must be identical on the server and the client — it is
-  // derived from `hasTokens`/`me`, both of which resolve after mount, so the
-  // first paint is the guest shape on both sides and there is no mismatch.
+  // Browser storage is unavailable during SSR. Keep the account area neutral
+  // until it is checked, rather than briefly advertising sign-in to members.
+  // The server and initial client render remain identical for hydration.
   //
   // A `balance`/`me` supplied as a prop is itself proof of a session (the
   // dashboards fetch those server-side), so it counts even before the token
@@ -215,12 +218,12 @@ export function Navbar({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 xl:px-8 min-h-16 flex items-center justify-between gap-2 sm:gap-4">
         {/* Brand Logo & Main Nav */}
         <div className="flex items-center gap-3 xl:gap-8 min-w-0">
-          <a href={`/${locale}/classes`} className="flex items-center gap-2.5 group shrink-0">
+          <Link href={`/${locale}/classes`} className="flex items-center gap-2.5 group shrink-0">
             <BrandMark />
             <span className="whitespace-nowrap text-[11px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold leading-none border border-emerald-100 hidden sm:inline-block">
               {locale === 'vi' ? 'Sinh viên' : 'Students'}
             </span>
-          </a>
+          </Link>
         </div>
 
         <button
@@ -248,19 +251,19 @@ export function Navbar({
                 {availableCredits === null ? '—' : availableCredits.toLocaleString(locale)}{' '}
                 {locale === 'vi' ? 'credit' : 'credits'}
               </span>
-              <a
+              <Link
                 href={`/${locale}/wallet`}
                 title={locale === 'vi' ? 'Nạp credit' : 'Top up credits'}
                 className="w-11 h-11 rounded-full bg-campus-emerald-deep hover:bg-ink text-white flex items-center justify-center transition-colors text-xs font-bold leading-none shrink-0"
               >
                 +
-              </a>
+              </Link>
             </div>
           )}
 
           {/* Notification Center Bell Link — notifications require a session. */}
           {signedIn && (
-            <a
+            <Link
               href={`/${locale}/notifications`}
               title={locale === 'vi' ? 'Thông báo' : 'Notifications'}
               aria-label={
@@ -282,7 +285,7 @@ export function Navbar({
                   {unreadNotificationsCount}
                 </span>
               )}
-            </a>
+            </Link>
           )}
 
           <div className="h-5 w-px bg-slate-200 hidden sm:block shrink-0"></div>
@@ -290,7 +293,7 @@ export function Navbar({
           {/* User profile or Sign In */}
           {signedIn ? (
             <div className="flex items-center gap-2 shrink-0">
-              <a
+              <Link
                 href={`/${locale}/verification`}
                 className="flex min-h-11 min-w-11 items-center gap-2.5 hover:opacity-80 transition-opacity shrink-0"
                 title={locale === 'vi' ? 'Hồ sơ và xác minh' : 'Profile and verification'}
@@ -324,7 +327,7 @@ export function Navbar({
                         : 'Learner'}
                   </span>
                 </div>
-              </a>
+              </Link>
               <button
                 type="button"
                 onClick={async () => {
@@ -351,13 +354,15 @@ export function Navbar({
                 </svg>
               </button>
             </div>
-          ) : (
-            <a
+          ) : sessionResolved ? (
+            <Link
               href={`/${locale}/auth?tab=login`}
               className="rounded-full bg-campus-emerald-deep inline-flex min-h-11 items-center px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-ink transition-colors shrink-0 whitespace-nowrap"
             >
               {locale === 'vi' ? 'Đăng nhập' : 'Sign In'}
-            </a>
+            </Link>
+          ) : (
+            <span aria-hidden="true" className="block h-11 w-24 rounded-lg bg-mist" />
           )}
         </div>
       </div>
@@ -369,7 +374,7 @@ export function Navbar({
         {navLinks.map((link) => {
           const isActive = currentTab === link.id;
           return (
-            <a
+            <Link
               key={link.id}
               href={link.href}
               title={link.tooltip || link.label}
@@ -381,7 +386,7 @@ export function Navbar({
               }`}
             >
               {link.label}
-            </a>
+            </Link>
           );
         })}
       </nav>

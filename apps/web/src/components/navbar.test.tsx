@@ -1,3 +1,5 @@
+import { renderToString } from 'react-dom/server';
+import { TOKEN_STORAGE_KEY, USER_STORAGE_KEY } from '../lib/api-client';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextIntlClientProvider } from 'next-intl';
@@ -23,6 +25,8 @@ const mockBalance = (overrides: Partial<WalletBalanceView> = {}): WalletBalanceV
 });
 
 beforeEach(() => {
+  window.sessionStorage.clear();
+  window.localStorage.clear();
   // Mock fetch to return valid envelope contracts to avoid unhandled network errors in jsdom
   vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
     Promise.resolve(
@@ -218,4 +222,46 @@ describe('Navbar truthful workspace status', () => {
     renderNavbar({ me: mockMe() });
     expect(screen.getByTitle('Hồ sơ và xác minh').getAttribute('href')).toBe('/vi/verification');
   });
+});
+
+describe('Navbar session transitions', () => {
+  it('does not render a guest CTA before browser session resolution', () => {
+    const html = renderToString(
+      <NextIntlClientProvider locale="vi" messages={viMessages}>
+        <Navbar />
+      </NextIntlClientProvider>,
+    );
+    expect(html).not.toContain('Đăng nhập');
+    expect(html).not.toContain('navbar-credits');
+  });
+
+  it.each(['sessionStorage', 'localStorage'] as const)(
+    'keeps the account visible across remounts using %s while API requests are pending',
+    (storageName) => {
+      window[storageName].setItem(
+        TOKEN_STORAGE_KEY,
+        JSON.stringify({
+          accessToken: 'access',
+          refreshToken: 'refresh',
+        }),
+      );
+      window[storageName].setItem(
+        USER_STORAGE_KEY,
+        JSON.stringify({
+          displayName: 'Demo User 1',
+          email: 'demo@example.com',
+          role: 'user',
+        }),
+      );
+      vi.mocked(fetch).mockImplementation(() => new Promise<Response>(() => {}));
+      const first = renderNavbar();
+      expect(screen.getByTitle('Demo User 1')).toBeDefined();
+      expect(screen.queryByRole('link', { name: 'Đăng nhập' })).toBeNull();
+      first.unmount();
+      renderNavbar({ currentTab: 'wallet' });
+      expect(screen.getByTitle('Demo User 1')).toBeDefined();
+      expect(screen.queryByRole('link', { name: 'Đăng nhập' })).toBeNull();
+      expect(screen.getByRole('link', { name: 'Lớp học của tôi' })).toBeDefined();
+    },
+  );
 });
