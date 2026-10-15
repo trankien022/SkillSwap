@@ -82,6 +82,21 @@ describe('AdminVerifierQueue', () => {
     listAdminVerifierQueue.mockResolvedValue(page([pendingEvidence, claimedEvidence], null, 2));
   });
 
+  it('opens on the domain named in the URL, so a dashboard row lands filtered', async () => {
+    render(
+      <NextIntlClientProvider locale="vi" messages={viMessages}>
+        <AdminVerifierQueue initialDomain="Languages" />
+      </NextIntlClientProvider>,
+    );
+
+    // A backlog link that promised "Languages" and arrived unfiltered would be a lie.
+    await waitFor(() => {
+      expect(listAdminVerifierQueue).toHaveBeenLastCalledWith(
+        expect.objectContaining({ domain: 'Languages' }),
+      );
+    });
+  });
+
   it('renders each item with skill, domain and status as text', async () => {
     renderQueue();
 

@@ -5,6 +5,7 @@ import { Navbar } from '../../../../components/navbar';
 
 type PageProps = {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ domain?: string }>;
 };
 
 /**
@@ -15,13 +16,19 @@ type PageProps = {
  * merging them would mean one screen whose contents depend on who is looking at
  * it — the thing that makes an operations view untrustworthy.
  *
+ * `?domain=` seeds the domain filter, so a dashboard backlog row opens the queue it
+ * counted. The value is passed through as-is: the queue's contract already bounds
+ * it (`min(2).max(80)`), and a value outside that is dropped by the client rather
+ * than sent, so a stray param cannot 400 the page.
+ *
  * Chrome is rendered here rather than in the client component, matching the
  * other admin routes: the client component owns the role gate (the token lives
  * in `localStorage`, so it can only be read after mount) and the server owns the
  * locale.
  */
-export default async function AdminVerifierQueuePage({ params }: PageProps) {
+export default async function AdminVerifierQueuePage({ params, searchParams }: PageProps) {
   const { locale } = await params;
+  const { domain } = await searchParams;
   setRequestLocale(locale);
   const t = await getTranslations('Admin.verifierQueue');
 
@@ -33,7 +40,7 @@ export default async function AdminVerifierQueuePage({ params }: PageProps) {
           <h1 className="text-2xl font-bold text-slate-900">{t('pageTitle')}</h1>
           <p className="text-sm leading-relaxed text-slate-600">{t('pageSubtitle')}</p>
         </header>
-        <AdminVerifierQueue />
+        <AdminVerifierQueue initialDomain={domain ?? ''} />
       </main>
       <SiteFooter />
     </div>

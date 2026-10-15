@@ -13,14 +13,14 @@ import { StudentVerificationsQueue } from './StudentVerificationsQueue';
  * path for a deep link someone pasted in. The id entry is not removed: the review
  * route it opens still exists and is still linked from emails.
  */
-export function ClientEntry() {
+export function ClientEntry({ initialStatus = '' }: { initialStatus?: string } = {}) {
   const t = useTranslations('Admin.StudentVerification');
   const [id, setId] = useState('');
   const [show, setShow] = useState(false);
 
   return (
     <div className="flex flex-col gap-8">
-      <StudentVerificationsQueue />
+      <StudentVerificationsQueue initialStatus={initialStatus} />
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <h2 className="text-sm font-semibold text-slate-900">{t('openByIdTitle')}</h2>

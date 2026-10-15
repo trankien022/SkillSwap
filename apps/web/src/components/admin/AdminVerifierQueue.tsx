@@ -50,10 +50,11 @@ type LoadState =
   | { kind: 'unauthorized' }
   | { kind: 'failed'; message: string };
 
-export function AdminVerifierQueue() {
+export function AdminVerifierQueue({ initialDomain = '' }: { initialDomain?: string } = {}) {
   const t = useTranslations('Admin.verifierQueue');
 
-  const [domain, setDomain] = useState('');
+  // Seeded from the URL so a dashboard backlog row opens the queue it counted.
+  const [domain, setDomain] = useState(initialDomain);
   const [status, setStatus] = useState<string>(LIVE_STATUS);
   const [sort, setSort] = useState<string>('submittedAt');
   const [state, setState] = useState<LoadState>({ kind: 'loading' });

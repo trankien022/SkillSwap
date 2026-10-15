@@ -6,12 +6,39 @@ import { getMe } from '../../lib/api-client';
 import { AdminLanding } from './AdminLanding';
 
 /**
- * The admin home must prove three things the reported bug could not:
+ * The admin home must prove four things:
  *   1. an admin actually reaches it and every link on it is a route that
  *      exists (no fabricated queue/list navigation),
- *   2. a learner gets the translated forbidden banner instead of admin tools,
- *   3. an anonymous visitor gets a real sign-in link (no dead anchors).
+ *   2. the operations dashboard renders on it, so the landing is a real home
+ *      rather than a menu of deep links,
+ *   3. a learner gets the translated forbidden banner instead of admin tools,
+ *   4. an anonymous visitor gets a real sign-in link (no dead anchors).
+ *
+ * The dashboard is stubbed here: this suite is about the landing's composition and
+ * role gate, and the dashboard's own behaviour is pinned in `AdminDashboard.test.tsx`.
  */
+const dashboard = {
+  verifications: { pending: 2, approved: 5, rejected: 1, revoked: 0 },
+  evidence: { pending: 1, claimed: 2, approved: 9, rejected: 1, superseded: 1 },
+  evidenceByDomain: { Programming: 3 },
+  recentAuditEvents: [],
+  generatedAt: '2026-10-16T00:00:00.000Z',
+};
+
+const getAdminDashboard = vi.fn();
+
+vi.mock('../../lib/verification/http-gateway', async () => {
+  const actual = await vi.importActual<typeof import('../../lib/verification/http-gateway')>(
+    '../../lib/verification/http-gateway',
+  );
+  return {
+    ...actual,
+    HttpVerificationGateway: class {
+      getAdminDashboard = getAdminDashboard;
+    },
+  };
+});
+
 const { push, returnUrl } = vi.hoisted(() => ({
   push: vi.fn(),
   returnUrl: { value: null as string | null },
@@ -38,6 +65,8 @@ beforeEach(() => {
   vi.mocked(getMe).mockResolvedValue(null);
   push.mockReset();
   returnUrl.value = null;
+  getAdminDashboard.mockReset();
+  getAdminDashboard.mockResolvedValue(dashboard);
 });
 
 afterEach(() => {
@@ -67,9 +96,11 @@ describe('AdminLanding role gate', () => {
       await screen.findByText('Bạn không có quyền truy cập trang này'),
     ).toBeDefined();
     expect(screen.queryByRole('link', { name: /Duyệt xác minh sinh viên/ })).toBeNull();
+    // The dashboard is admin-only too: a learner must not even trigger its read.
+    expect(getAdminDashboard).not.toHaveBeenCalled();
   });
 
-  it('renders only links to admin routes that exist for an admin', async () => {
+  it('renders links only to admin routes that exist, for an admin', async () => {
     vi.mocked(getMe).mockResolvedValue({
       id: 'acc-admin',
       email: 'admin@example.com',
@@ -81,13 +112,46 @@ describe('AdminLanding role gate', () => {
 
     expect(await screen.findByRole('heading', { name: 'Trang quản trị' })).toBeDefined();
 
-    // Exactly one anchor on the page, and it is a real route (the verifier
-    // status screen is reached by the form below, never by a fabricated link).
     const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href'));
-    expect(hrefs).toEqual(['/vi/admin/student-verifications']);
+    // The three operations surfaces, plus the per-domain links the dashboard renders.
+    expect(hrefs).toContain('/vi/admin/student-verifications');
+    expect(hrefs).toContain('/vi/admin/verifiers');
+    expect(hrefs).toContain('/vi/admin/audit-log');
+    // Every link goes to a route under this app's admin tree — no fabricated navigation,
+    // and nothing pointing at a page that does not exist.
+    for (const href of hrefs) {
+      expect(href).toMatch(/^\/vi\/admin(\/|$|\?)/);
+    }
+  });
 
-    // The pending queue / verifier list / audit log are announced as absent.
-    expect(screen.getByText('Chưa có sẵn')).toBeDefined();
+  it('no longer claims the operations screens are missing', async () => {
+    vi.mocked(getMe).mockResolvedValue({
+      id: 'acc-admin',
+      email: 'admin@example.com',
+      displayName: 'Admin',
+      role: 'admin',
+    });
+
+    renderPage();
+    await screen.findByRole('heading', { name: 'Trang quản trị' });
+
+    // The old banner was a lie once the screens shipped; a landing that denies its own
+    // links is worse than no banner at all.
+    expect(screen.queryByText('Chưa có sẵn')).toBeNull();
+    expect(screen.queryByText(/chưa tồn tại trên hệ thống/)).toBeNull();
+  });
+
+  it('composes the dashboard into the landing', async () => {
+    vi.mocked(getMe).mockResolvedValue({
+      id: 'acc-admin',
+      email: 'admin@example.com',
+      displayName: 'Admin',
+      role: 'admin',
+    });
+
+    renderPage();
+
+    expect(await screen.findByTestId('admin-dashboard')).toBeTruthy();
   });
 });
 

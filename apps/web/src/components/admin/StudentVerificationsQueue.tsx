@@ -36,11 +36,18 @@ type LoadState =
   | { kind: 'unauthorized' }
   | { kind: 'failed'; message: string };
 
-export function StudentVerificationsQueue() {
+export function StudentVerificationsQueue({
+  initialStatus = '',
+}: {
+  initialStatus?: string;
+} = {}) {
   const t = useTranslations('Admin.StudentVerification');
   const locale = useLocale();
 
-  const [status, setStatus] = useState('');
+  // Seeded from the URL so the dashboard's "awaiting review" count lands on the filtered
+  // list it counted. A link that promised a filter and arrived unfiltered would be a
+  // fabricated affordance.
+  const [status, setStatus] = useState(initialStatus);
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<string>('-submittedAt');
   const [state, setState] = useState<LoadState>({ kind: 'loading' });

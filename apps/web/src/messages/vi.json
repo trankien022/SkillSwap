@@ -495,13 +495,41 @@
     "Landing": {
       "title": "Trang quản trị",
       "subtitle": "Chỉ những công cụ đang vận hành thật trên hệ thống mới được mở từ đây.",
+      "toolsTitle": "Công cụ vận hành",
       "studentVerifications": "Duyệt xác minh sinh viên",
       "verifierStatus": "Mở trạng thái Verifier theo Account ID",
       "accountIdPlaceholder": "Nhập Account ID",
       "accountIdRequired": "Vui lòng nhập Account ID.",
-      "openCta": "Mở",
-      "notReadyTitle": "Chưa có sẵn",
-      "notReadyBody": "Hàng đợi duyệt chờ, danh sách Verifier và nhật ký kiểm định chưa tồn tại trên hệ thống."
+      "openCta": "Mở"
+    },
+    "dashboard": {
+      "loading": "Đang tổng hợp số liệu…",
+      "retry": "Thử lại",
+      "unauthorizedTitle": "Bạn không có quyền truy cập bảng điều khiển",
+      "unauthorizedBody": "Bảng điều khiển vận hành chỉ dành cho quản trị viên. Hãy đăng nhập bằng tài khoản quản trị.",
+      "generatedAt": "Số liệu tổng hợp lúc {date}.",
+      "metrics": {
+        "verificationsPending": "Xác minh sinh viên chờ duyệt",
+        "verificationsPendingHint": "Hồ sơ đang chờ quyết định.",
+        "evidenceLive": "Bằng chứng đang trong hàng đợi",
+        "evidenceLiveHint": "{unclaimed} chưa có Verifier nhận, {inReview} đang thẩm định.",
+        "auditEvents": "Hành động kiểm định gần đây",
+        "auditEventsHint": "Số sự kiện mới nhất hiển thị bên dưới."
+      },
+      "byDomain": {
+        "title": "Tồn đọng theo lĩnh vực",
+        "subtitle": "Chỉ tính bằng chứng đang trong hàng đợi (chưa nhận hoặc đang thẩm định). Lĩnh vực không có việc chờ sẽ không xuất hiện.",
+        "empty": "Hiện không có bằng chứng nào đang chờ ở bất kỳ lĩnh vực nào.",
+        "count": "{count} việc"
+      },
+      "recent": {
+        "title": "Hành động kiểm định gần đây",
+        "viewAll": "Xem toàn bộ nhật ký",
+        "empty": "Chưa có hành động đặc quyền nào được ghi nhận."
+      },
+      "errors": {
+        "generic": "Không thể tải số liệu vận hành. Vui lòng thử lại."
+      }
     },
     "verifiers": {
       "breadcrumb": "Quản trị",
@@ -511,7 +539,7 @@
       "title": "Thay đổi trạng thái Verifier",
       "subtitle": "Mỗi lần thay đổi sẽ được lưu lại trong nhật ký kiểm định. Verifier sẽ nhận được thông báo qua email sau khi trạng thái cập nhật.",
       "accountIdLabel": "Account ID của Verifier",
-      "accountIdHint": "Đường dẫn sâu từ email thông báo hoặc nhật ký kiểm định. Hệ thống chưa có danh sách Verifier.",
+      "accountIdHint": "Dùng khi bạn có sẵn đường dẫn sâu từ email thông báo hoặc nhật ký kiểm định. Danh sách Verifier đầy đủ nằm ở Hàng đợi thẩm định theo lĩnh vực.",
       "statusLabel": "Trạng thái mới",
       "option": {
         "active": {

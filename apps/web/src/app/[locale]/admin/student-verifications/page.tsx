@@ -5,6 +5,7 @@ import { Navbar } from '../../../../components/navbar';
 
 type PageProps = {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ status?: string }>;
 };
 
 /**
@@ -14,11 +15,21 @@ type PageProps = {
  *      route back.
  * The `Admin.StudentVerification` namespace already existed for the review
  * screen, so the index now reads its title/notice from it.
+ *
+ * `?status=` seeds the queue's status filter, so the dashboard's
+ * "verifications awaiting review" count opens the exact list it counted. Only the
+ * four known statuses are accepted; anything else is ignored rather than forwarded,
+ * because a stray value would 400 the queue's own contract.
  */
-export default async function AdminStudentVerificationsIndex({ params }: PageProps) {
+export default async function AdminStudentVerificationsIndex({ params, searchParams }: PageProps) {
   const { locale } = await params;
+  const { status } = await searchParams;
   setRequestLocale(locale);
   const t = await getTranslations('Admin.StudentVerification');
+
+  const initialStatus = (['pending', 'approved', 'rejected', 'revoked'] as const).find(
+    (known) => known === status,
+  );
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
@@ -27,7 +38,7 @@ export default async function AdminStudentVerificationsIndex({ params }: PagePro
         <h1 className="text-2xl font-bold text-slate-900 mb-4">{t('title')}</h1>
         <p className="text-sm text-slate-600 mb-4">{t('notice')}</p>
 
-        <ClientEntry />
+        <ClientEntry initialStatus={initialStatus ?? ''} />
       </main>
       <SiteFooter />
     </div>

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import type { AuditEvent, AuditLogPage } from '@skillswap/contracts';
 import { AdminAuthError, HttpVerificationGateway } from '../../lib/verification/http-gateway';
+import { ACTION_MESSAGE_KEY, AUDITED_ACTIONS } from '../../lib/audit-action-labels';
 
 /**
  * FR-015 / W3: the admin audit log.
@@ -24,49 +25,7 @@ import { AdminAuthError, HttpVerificationGateway } from '../../lib/verification/
 
 const PAGE_SIZE = 20;
 
-/**
- * The audited action identifiers, mirroring the ingest table
- * (`admin-operation/internal/application/audit-actions.ts`).
- *
- * Listed rather than free-text because the contract validates `action` against a
- * dotted-identifier pattern: a hand-typed `Approve` would be a 400 the admin has
- * to decode. This is a list of what the system actually audits today, not a claim
- * about every action that could ever be audited — a new audited behaviour shows up
- * under "all actions" without this list changing.
- */
-const AUDITED_ACTIONS = [
-  'student.verification.approved',
-  'student.verification.rejected',
-  'student.verification.revoked',
-  'skill.evidence.claimed',
-  'skill.evidence.approved',
-  'skill.evidence.rejected',
-  'skill.verifier.suspended',
-  'skill.verifier.revoked',
-  'wallet.transaction.completed',
-] as const;
-
 const SORT_OPTIONS = ['-occurredAt', 'occurredAt'] as const;
-
-/**
- * Maps a dotted audit action to its message key.
- *
- * next-intl treats `.` as a **key separator**, so `action.student.verification.approved`
- * is read as a four-level path and never resolves — the flat dotted keys would render as
- * raw key strings. The message keys are therefore flat camelCase, and this table is the
- * one place the wire identifier and the message key are connected.
- */
-const ACTION_MESSAGE_KEY: Record<string, string> = {
-  'student.verification.approved': 'studentVerificationApproved',
-  'student.verification.rejected': 'studentVerificationRejected',
-  'student.verification.revoked': 'studentVerificationRevoked',
-  'skill.evidence.claimed': 'skillEvidenceClaimed',
-  'skill.evidence.approved': 'skillEvidenceApproved',
-  'skill.evidence.rejected': 'skillEvidenceRejected',
-  'skill.verifier.suspended': 'skillVerifierSuspended',
-  'skill.verifier.revoked': 'skillVerifierRevoked',
-  'wallet.transaction.completed': 'walletTransactionCompleted',
-};
 
 type LoadState =
   | { kind: 'loading' }

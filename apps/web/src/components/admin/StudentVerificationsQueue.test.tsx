@@ -76,6 +76,22 @@ describe('StudentVerificationsQueue', () => {
     listAdminVerifications.mockResolvedValue(page([pendingVerification, approvedVerification], null, 2));
   });
 
+  it('opens on the status named in the URL, so a dashboard count lands filtered', async () => {
+    render(
+      <NextIntlClientProvider locale="vi" messages={viMessages}>
+        <StudentVerificationsQueue initialStatus="pending" />
+      </NextIntlClientProvider>,
+    );
+
+    // The dashboard links "awaiting review" with `?status=pending`; landing unfiltered
+    // would make the number the operator clicked unverifiable.
+    await waitFor(() => {
+      expect(listAdminVerifications).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: 'pending' }),
+      );
+    });
+  });
+
   it('renders each verification with its status as text, not colour alone', async () => {
     renderQueue();
 
