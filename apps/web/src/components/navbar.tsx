@@ -186,7 +186,7 @@ export function Navbar({
       : []),
   ];
 
-  const availableCredits = balance ? balance.availableCredits : 0;
+  const availableCredits = balance ? balance.availableCredits : null;
   const displayName =
     me?.displayName ||
     storedUser?.displayName ||
@@ -238,9 +238,15 @@ export function Navbar({
               wallet, so showing a hardcoded 0 was both noise and a dead link. */}
           {signedIn && (
             <div className="hidden sm:flex items-center gap-1.5 sm:gap-2 pl-2 sm:pl-2.5 pr-1.5 py-1 rounded-lg bg-mist border border-border text-xs font-semibold text-slate-900 shrink-0 whitespace-nowrap">
-              <span className="material-symbols-outlined text-[17px] text-emerald-600">toll</span>
+              <span
+                aria-hidden="true"
+                className="material-symbols-outlined text-[17px] text-emerald-600"
+              >
+                toll
+              </span>
               <span className="whitespace-nowrap" data-testid="navbar-credits">
-                {availableCredits.toLocaleString('vi-VN')} Credits
+                {availableCredits === null ? '—' : availableCredits.toLocaleString(locale)}{' '}
+                {locale === 'vi' ? 'credit' : 'credits'}
               </span>
               <a
                 href={`/${locale}/wallet`}
@@ -268,7 +274,9 @@ export function Navbar({
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
               }`}
             >
-              <span className="material-symbols-outlined text-[20px]">notifications</span>
+              <span aria-hidden="true" className="material-symbols-outlined text-[20px]">
+                notifications
+              </span>
               {unreadNotificationsCount > 0 && (
                 <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-ink px-1 text-center text-xs leading-5 text-surface">
                   {unreadNotificationsCount}
@@ -284,7 +292,7 @@ export function Navbar({
             <div className="flex items-center gap-2 shrink-0">
               <a
                 href={`/${locale}/verification`}
-                className="flex items-center gap-2.5 hover:opacity-80 transition-opacity shrink-0"
+                className="flex min-h-11 min-w-11 items-center gap-2.5 hover:opacity-80 transition-opacity shrink-0"
                 title={locale === 'vi' ? 'Hồ sơ và xác minh' : 'Profile and verification'}
               >
                 <div className="workspace-account-avatar shrink-0">{initials}</div>

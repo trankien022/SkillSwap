@@ -269,7 +269,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                   value={regFullName}
                   onChange={(e) => setRegFullName(e.target.value)}
                   placeholder={t('fullNamePlaceholder')}
-                  className="mt-1.5 block w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                  className="mt-1.5 block w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-ink-muted focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
                 />
               </div>
 
@@ -308,7 +308,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                   value={regEmail}
                   onChange={(e) => setRegEmail(e.target.value)}
                   placeholder={t('emailPlaceholder')}
-                  className="mt-1.5 block w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                  className="mt-1.5 block w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-ink-muted focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
                 />
                 <p className="mt-1 text-sm text-slate-500">{t('emailHint')}</p>
               </div>
@@ -330,7 +330,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
                     placeholder={t('passwordPlaceholder')}
-                    className="block w-full rounded-xl border border-slate-300 px-3.5 py-2.5 pr-10 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                    className="block w-full rounded-xl border border-slate-300 px-3.5 py-2.5 pr-10 text-sm text-slate-900 placeholder:text-ink-muted focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
                   />
                   <button
                     type="button"
@@ -344,7 +344,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                           ? 'Hiện mật khẩu'
                           : 'Show password'
                     }
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600"
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-ink-muted hover:text-slate-600"
                   >
                     {showRegPassword ? (
                       <svg
@@ -420,7 +420,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                   id="reg-pledge"
                   checked={regPledge}
                   onChange={(e) => setRegPledge(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-campus-emerald-deep focus:ring-emerald-500"
                 />
                 <label htmlFor="reg-pledge" className="text-sm leading-relaxed text-slate-600">
                   {t('pledge')}
@@ -456,7 +456,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
                   placeholder={t('emailPlaceholder')}
-                  className="mt-1.5 block w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                  className="mt-1.5 block w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-ink-muted focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
                 />
               </div>
 
@@ -485,7 +485,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     placeholder={t('passwordPlaceholder')}
-                    className="block w-full rounded-xl border border-slate-300 px-3.5 py-2.5 pr-10 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                    className="block w-full rounded-xl border border-slate-300 px-3.5 py-2.5 pr-10 text-sm text-slate-900 placeholder:text-ink-muted focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
                   />
                   <button
                     type="button"
@@ -499,7 +499,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                           ? 'Hiện mật khẩu'
                           : 'Show password'
                     }
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600"
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-ink-muted hover:text-slate-600"
                   >
                     {showLoginPassword ? (
                       <svg
@@ -542,7 +542,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
                   id="login-remember"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  className="h-4 w-4 rounded border-slate-300 text-campus-emerald-deep focus:ring-emerald-500"
                 />
                 <label htmlFor="login-remember" className="text-sm text-slate-600">
                   {t('rememberMe')}

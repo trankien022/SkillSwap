@@ -15,9 +15,11 @@ export default async function ReviewByIdPage({ params }: PageProps) {
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
       {/* Auth-only deep link: without the navbar this screen had no brand, no
           route back and no sign-out. */}
-      <Navbar />
+      <Navbar currentTab="admin" />
       {/* Client-side review component */}
-      <StudentVerificationReview verificationId={verificationId} />
+      <main id="main-content" tabIndex={-1} className="workspace-page workspace-page-narrow flex-1">
+        <StudentVerificationReview verificationId={verificationId} />
+      </main>
       <SiteFooter />
     </div>
   );

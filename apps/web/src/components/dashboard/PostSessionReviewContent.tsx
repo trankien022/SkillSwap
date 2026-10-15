@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import Link from 'next/link';
+import { PageIntro } from '../ui/PageIntro';
 import { useRouter } from 'next/navigation';
 import {
   createRatingSchema,
@@ -12,11 +13,7 @@ import {
   type LearnerBookingItemView,
 } from '@skillswap/contracts';
 import { callApi, getTokens, unwrapEnvelope } from '../../lib/api-client';
-import {
-  computeNetCredits,
-  computePlatformFee,
-  computeVndEstimate,
-} from '../../lib/teacher/money';
+import { computeNetCredits, computePlatformFee, computeVndEstimate } from '../../lib/teacher/money';
 
 export interface PostSessionReviewProps {
   bookingId: string;
@@ -224,69 +221,21 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
 
   return (
     <div className="w-full space-y-6">
-      {/* 1. Milestone stepper */}
-      <nav
-        aria-label={t('steps.step1')}
-        className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3 text-sm font-medium"
-      >
-        <div className="flex items-center gap-2 font-semibold text-emerald-700">
-          <span className="material-symbols-outlined text-[18px] text-emerald-600">
-            videocam_off
-          </span>
-          <span>{t('steps.step1')}</span>
-        </div>
-
-        <div className="mx-3 hidden h-0.5 flex-1 bg-emerald-200 sm:block" />
-
-        <div className="flex items-center gap-2 font-semibold text-emerald-700">
-          <span className="material-symbols-outlined text-[18px] text-emerald-600">verified</span>
-          <span>{t('steps.step2')}</span>
-        </div>
-
-        <div className="mx-3 hidden h-0.5 flex-1 bg-slate-200 sm:block" />
-
-        <div className="flex items-center gap-2 font-bold text-slate-900">
-          <span className="material-symbols-outlined text-[18px] text-amber-500">star</span>
-          <span>{t('steps.step3')}</span>
-        </div>
-      </nav>
-
-      {/* 2. Session summary banner (real booking data) */}
-      <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 p-6 text-white  sm:p-7">
-        <div className="relative z-10 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/20 px-3 py-1 text-sm font-semibold text-emerald-300">
-              <span className="material-symbols-outlined text-[15px]">task_alt</span>
-              <span>{t('banner.badge')}</span>
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-              {t('banner.title')}
-            </h1>
-            <p className="max-w-xl text-sm text-slate-300">{t('banner.subtitle')}</p>
-          </div>
-
-          <div className="flex shrink-0 flex-col items-start gap-2.5 sm:flex-row md:flex-col md:items-end">
-            <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-3.5 py-1.5 ">
-              <span className="text-sm font-medium text-slate-300">
-                {t('banner.bookingCode', { code: booking.bookingId.slice(0, 12) })}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 text-sm font-medium text-slate-300">
-              <span className="material-symbols-outlined text-[16px] text-emerald-400">
-                schedule
-              </span>
-              <span>{t('banner.duration', { minutes: durationMinutes })}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
+      <PageIntro
+        title={t('banner.title')}
+        description={t('banner.subtitle')}
+        art="online-learning"
+      />
+      <p className="text-sm text-ink-soft">
+        {t('banner.bookingCode', { code: booking.bookingId.slice(0, 12) })} ·{' '}
+        {t('banner.duration', { minutes: durationMinutes })}
+      </p>
       {/* 3. Main grid: settlement + dossier, review form */}
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
         <div className="space-y-5 lg:col-span-5">
           {/* Card 1: session info */}
           <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 ">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-1">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-1">
               <span className="text-sm font-semibold r text-slate-400">
                 {t('sessionInfo.title')}
               </span>
@@ -297,11 +246,13 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
 
             <div className="flex items-start gap-4">
               <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-100 text-emerald-800 ">
-                <span className="material-symbols-outlined text-[26px]">
+                <span aria-hidden="true" className="material-symbols-outlined text-[26px]">
                   {skillIcon(booking)}
                 </span>
                 <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-campus-emerald-deep text-white shadow">
-                  <span className="material-symbols-outlined text-[12px]">check</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-[12px]">
+                    check
+                  </span>
                 </div>
               </div>
 
@@ -347,9 +298,12 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
 
           {/* Card 2: escrow settlement, derived from the real price */}
           <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 ">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-1">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-1">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[22px] text-emerald-600">
+                <span
+                  aria-hidden="true"
+                  className="material-symbols-outlined text-[22px] text-emerald-600"
+                >
                   account_balance
                 </span>
                 <h3 className="text-base font-bold text-slate-900">{t('escrow.title')}</h3>
@@ -362,7 +316,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
             <p className="text-sm leading-relaxed text-slate-600">{t('escrow.desc')}</p>
 
             <div className="space-y-3 rounded-xl border border-slate-100 bg-slate-50 p-4">
-              <div className="flex items-center justify-between text-slate-900">
+              <div className="flex flex-wrap items-center justify-between gap-3 text-slate-900">
                 <span className="text-sm font-medium">{t('escrow.totalCost')}</span>
                 <span className="text-lg font-bold text-slate-900">
                   {t('escrow.credits', { n: price })}
@@ -383,7 +337,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
               </div>
 
               <div className="space-y-1.5 pt-1 text-sm">
-                <div className="flex items-center justify-between text-slate-800">
+                <div className="flex flex-wrap items-center justify-between gap-3 text-slate-800">
                   <div className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-campus-emerald-deep" />
                     <span>{t('escrow.tutorShare')}</span>
@@ -392,7 +346,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
                     {t('escrow.credits', { n: teacherNet })}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-slate-500">
+                <div className="flex flex-wrap items-center justify-between gap-3 text-slate-500">
                   <div className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-slate-400" />
                     <span>{t('escrow.platformShare')}</span>
@@ -409,9 +363,12 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
             </div>
 
             {availableCredits !== null && (
-              <div className="flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50/70 p-3 text-left">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50/70 p-3 text-left">
                 <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[18px] text-emerald-600">
+                  <span
+                    aria-hidden="true"
+                    className="material-symbols-outlined text-[18px] text-emerald-600"
+                  >
                     account_balance_wallet
                   </span>
                   <span className="text-sm text-slate-800">
@@ -433,17 +390,18 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
 
           {/* Card 3: materials — honestly unavailable */}
           <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-6 ">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-1">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-1">
               <h3 className="flex items-center gap-2 text-base font-bold text-slate-900">
-                <span className="material-symbols-outlined text-[20px] text-slate-400">
+                <span
+                  aria-hidden="true"
+                  className="material-symbols-outlined text-[20px] text-slate-400"
+                >
                   assignment_turned_in
                 </span>
                 <span>{t('materials.title')}</span>
               </h3>
             </div>
-            <p className="text-sm leading-relaxed text-slate-500">
-              {t('unavailable.materials')}
-            </p>
+            <p className="text-sm leading-relaxed text-slate-500">{t('unavailable.materials')}</p>
           </div>
         </div>
 
@@ -454,9 +412,11 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
             className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 "
           >
             <div className="space-y-1.5 border-b border-slate-100 pb-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <span className="flex items-center gap-1 text-sm font-semibold text-emerald-700">
-                  <span className="material-symbols-outlined text-[16px]">verified</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-[16px]">
+                    verified
+                  </span>
                   {t('form.badge')}
                 </span>
                 <span className="text-sm text-slate-400">{t('form.counterpart')}</span>
@@ -483,6 +443,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
                       className="group p-1 transition-colors hover:scale-125 focus:outline-none"
                     >
                       <span
+                        aria-hidden="true"
                         className={`material-symbols-outlined text-[38px] transition-colors ${
                           isActive ? 'text-amber-400' : 'text-slate-300 group-hover:text-amber-300'
                         }`}
@@ -509,7 +470,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
                     key={criterion}
                     className="space-y-1.5 rounded-xl border border-slate-200 bg-slate-50 p-3.5"
                   >
-                    <div className="flex items-center justify-between text-slate-900">
+                    <div className="flex flex-wrap items-center justify-between gap-3 text-slate-900">
                       <span className="text-sm font-semibold">
                         {t(`form.crit${criterion}` as 'form.crit1')}
                       </span>
@@ -526,6 +487,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
                             aria-pressed={s <= (criteriaRatings[criterion] ?? 5)}
                           >
                             <span
+                              aria-hidden="true"
                               className={`material-symbols-outlined text-[16px] ${
                                 s <= (criteriaRatings[criterion] ?? 5)
                                   ? 'text-amber-400'
@@ -533,9 +495,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
                               }`}
                               style={{
                                 fontVariationSettings:
-                                  s <= (criteriaRatings[criterion] ?? 5)
-                                    ? "'FILL' 1"
-                                    : "'FILL' 0",
+                                  s <= (criteriaRatings[criterion] ?? 5) ? "'FILL' 1" : "'FILL' 0",
                               }}
                             >
                               star
@@ -633,19 +593,26 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
               >
                 {submit.phase === 'submitting' ? (
                   <>
-                    <span className="material-symbols-outlined animate-spin text-[18px]">
+                    <span
+                      aria-hidden="true"
+                      className="material-symbols-outlined animate-spin text-[18px]"
+                    >
                       progress_activity
                     </span>
                     <span>{t('form.btnSubmitting')}</span>
                   </>
                 ) : submit.phase === 'success' ? (
                   <>
-                    <span className="material-symbols-outlined text-[18px]">done_all</span>
+                    <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
+                      done_all
+                    </span>
                     <span>{t('form.btnSuccess')}</span>
                   </>
                 ) : (
                   <>
-                    <span className="material-symbols-outlined text-[18px]">send</span>
+                    <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
+                      send
+                    </span>
                     <span>{t('form.btnSubmit')}</span>
                   </>
                 )}
@@ -656,7 +623,9 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
           {submit.phase === 'success' && (
             <div className="flex items-center gap-3 rounded-2xl border border-emerald-300 bg-emerald-50 p-4 text-emerald-900 ">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-campus-emerald-deep text-white">
-                <span className="material-symbols-outlined text-[24px]">verified</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[24px]">
+                  verified
+                </span>
               </div>
               <div className="flex-1">
                 <div className="text-sm font-bold text-emerald-900">
@@ -704,7 +673,11 @@ function ReviewStateBlock({
       body: t('states.ratedBody'),
       href: `/${locale}/bookings`,
     },
-    error: { title: t('form.errorTitle'), body: state.phase === 'error' ? state.message : '', href: null },
+    error: {
+      title: t('form.errorTitle'),
+      body: state.phase === 'error' ? state.message : '',
+      href: null,
+    },
   } as const;
 
   const entry = map[state.phase];

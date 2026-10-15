@@ -12,6 +12,7 @@ import {
   type TeacherClassItem,
 } from '../../../lib/teacher/dashboard-view-model';
 import { WorkspaceFooter } from '../../../components/ui/WorkspaceFooter';
+import { SkillCategoryLabel } from '../../../components/ui/SkillCategoryLabel';
 import { PageIntro } from '../../../components/ui/PageIntro';
 import { Navbar } from '../../../components/navbar';
 import type {
@@ -36,6 +37,7 @@ export default function InstructorDashboard() {
 
   const locale = useLocale();
   const tWorkspace = useTranslations('Workspace.teaching');
+  const tLevels = useTranslations('Marketplace.card.levels');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -94,7 +96,9 @@ export default function InstructorDashboard() {
         }
       } catch (err) {
         if (active) {
-          setLoadError(err instanceof Error ? err.message : ui('couldNotLoadYourTeachingInformation'));
+          setLoadError(
+            err instanceof Error ? err.message : ui('couldNotLoadYourTeachingInformation'),
+          );
         }
       } finally {
         if (active) setIsLoading(false);
@@ -130,9 +134,7 @@ export default function InstructorDashboard() {
       const page = await unwrapEnvelope<ListClassesPageView>(classesRes);
       if (Array.isArray(page?.items)) setClasses(page.items.map(toTeacherClassItem));
     } catch (e) {
-      showToast(
-        ui('theRequestWasSentButThe'),
-      );
+      showToast(ui('theRequestWasSentButThe'));
       console.warn('Failed to refresh teacher server state:', e);
     }
   };
@@ -230,8 +232,30 @@ export default function InstructorDashboard() {
 
       <main id="main-content" tabIndex={-1} className="workspace-page flex-1">
         <div className="w-full">
-          <PageIntro title={tWorkspace('title')} description={tWorkspace('description')} art="design" artAlt={tWorkspace('artAlt')} actions={<><a href={`/${locale}/teach/classes/new`} className="workspace-primary">{tWorkspace('publish')} ↗</a><a href={`/${locale}/skills`} className="workspace-link">{tWorkspace('skills')}</a></>} />
-          {me && <p className="mb-6 text-sm text-ink-soft">{me.displayName} · {me.studentVerification?.status === 'approved' ? tWorkspace('verified') : tWorkspace('member')}</p>}
+          <PageIntro
+            title={tWorkspace('title')}
+            description={tWorkspace('description')}
+            art="design"
+            artAlt={tWorkspace('artAlt')}
+            actions={
+              <>
+                <a href={`/${locale}/teach/classes/new`} className="workspace-primary">
+                  {tWorkspace('publish')} ↗
+                </a>
+                <a href={`/${locale}/skills`} className="workspace-link">
+                  {tWorkspace('skills')}
+                </a>
+              </>
+            }
+          />
+          {me && (
+            <p className="mb-6 text-sm text-ink-soft">
+              {me.displayName} ·{' '}
+              {me.studentVerification?.status === 'approved'
+                ? tWorkspace('verified')
+                : tWorkspace('member')}
+            </p>
+          )}
           {/* 2. KPI summary. Each tile shows a value the server actually reports.
               The previous version also showed a completion rate, a 4.9/5 rating
               and a review count; those came from nowhere (the schema marks the
@@ -245,7 +269,7 @@ export default function InstructorDashboard() {
               unit="Credit"
               sub={
                 balance
-                  ? `≈ ${(balance.availableCredits * 1000).toLocaleString(locale)} VNĐ`
+                  ? `≈ ${(balance.availableCredits * 1000).toLocaleString(locale)} VND`
                   : undefined
               }
               footer={
@@ -254,7 +278,9 @@ export default function InstructorDashboard() {
                   className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 inline-flex items-center gap-1"
                 >
                   {ui('withdrawEarnings')}{' '}
-                  <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                  <span aria-hidden="true" className="material-symbols-outlined text-[14px]">
+                    arrow_forward
+                  </span>
                 </a>
               }
             />
@@ -267,7 +293,9 @@ export default function InstructorDashboard() {
               sub={ui('earningsHeldUntilClassCompletion')}
               footer={
                 <span className="text-sm text-slate-600 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> {ui('releasedAfterTheSessionIsCompleted')}</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>{' '}
+                  {ui('releasedAfterTheSessionIsCompleted')}
+                </span>
               }
             />
 
@@ -296,13 +324,18 @@ export default function InstructorDashboard() {
               <div>
                 <h2 className="workspace-panel-title">{ui('approvedTeachingSkills')}</h2>
                 <p className="text-sm text-slate-600">
-                  {ui('skillsApprovedForPublishingNewClasses')}</p>
+                  {ui('skillsApprovedForPublishingNewClasses')}
+                </p>
               </div>
               <a
                 href={`/${locale}/skills`}
                 className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
               >
-                <span className="material-symbols-outlined text-[16px]">add</span> {ui('addASkill')}</a>
+                <span aria-hidden="true" className="material-symbols-outlined text-[16px]">
+                  add
+                </span>{' '}
+                {ui('addASkill')}
+              </a>
             </div>
 
             {approvedSkills.length > 0 ? (
@@ -315,39 +348,51 @@ export default function InstructorDashboard() {
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <span className="inline-flex items-center gap-1 text-sm font-semibold px-2 py-0.5 rounded-md text-emerald-700 bg-emerald-50">
-                          <span className="material-symbols-outlined text-[12px]">verified</span>
-                          {ui('approved')}</span>
+                          <span
+                            aria-hidden="true"
+                            className="material-symbols-outlined text-[12px]"
+                          >
+                            verified
+                          </span>
+                          {ui('approved')}
+                        </span>
                         <span className="text-sm font-medium text-slate-500 capitalize">
-                          {s.approvedLevel}
+                          {s.approvedLevel ? tLevels(s.approvedLevel) : '—'}
                         </span>
                       </div>
                       <h3 className="font-bold text-slate-900 text-sm mb-1">{s.skillName}</h3>
                       <p className="text-sm text-slate-600 line-clamp-2 mb-3">
-                        {ui('category')}{s.category}
+                        {ui('category')}
+                        <SkillCategoryLabel category={s.category} />
                       </p>
                     </div>
                     <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                      <span className="text-sm text-slate-500">{ui('id')}{s.skillId.slice(0, 8)}</span>
+                      <span className="text-sm text-slate-500">
+                        {ui('id')}
+                        {s.skillId.slice(0, 8)}
+                      </span>
                       <a
                         href={`/${locale}/teach/classes/new`}
                         className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
                       >
-                        {ui('publishAClassundefined')}</a>
+                        {ui('publishAClassundefined')}
+                      </a>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="bg-white p-6 rounded-2xl border border-dashed border-slate-300 text-center">
-                <p className="text-sm font-semibold text-slate-800">
-                  {ui('noApprovedSkillsYet')}</p>
+                <p className="text-sm font-semibold text-slate-800">{ui('noApprovedSkillsYet')}</p>
                 <p className="mt-1 text-sm text-slate-600">
-                  {ui('submitSkillEvidenceForExpertReview')}</p>
+                  {ui('submitSkillEvidenceForExpertReview')}
+                </p>
                 <a
                   href={`/${locale}/skills`}
                   className="mt-4 inline-flex items-center gap-2 rounded-full bg-campus-emerald-deep px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ink"
                 >
-                  {ui('submitSkillEvidence')}</a>
+                  {ui('submitSkillEvidence')}
+                </a>
               </div>
             )}
           </div>
@@ -359,31 +404,31 @@ export default function InstructorDashboard() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
               <div>
                 <h2 className="workspace-panel-title">{ui('teachingScheduleAndClasses')}</h2>
-                <p className="text-sm text-slate-600">
-                  {ui('classesYouHavePublished')}</p>
+                <p className="text-sm text-slate-600">{ui('classesYouHavePublished')}</p>
               </div>
               <div className="inline-flex items-center p-1 bg-white border border-slate-200 rounded-xl text-sm font-semibold">
                 <FilterButton
                   active={classFilter === 'all'}
                   onClick={() => setClassFilter('all')}
-                  label={tWorkspace('allCount',{count:classes.length})}
+                  label={tWorkspace('allCount', { count: classes.length })}
                 />
                 <FilterButton
                   active={classFilter === 'upcoming'}
                   onClick={() => setClassFilter('upcoming')}
-                  label={`Sắp diễn ra (${upcomingCount})`}
+                  label={tWorkspace('openCount', { count: upcomingCount })}
                 />
                 <FilterButton
                   active={classFilter === 'completed'}
                   onClick={() => setClassFilter('completed')}
-                  label={tWorkspace('closedCount',{count:completedCount})}
+                  label={tWorkspace('closedCount', { count: completedCount })}
                 />
               </div>
             </div>
 
             {isLoading ? (
               <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center text-sm text-slate-500">
-                {ui('loadingClasses')}</div>
+                {ui('loadingClasses')}
+              </div>
             ) : loadError !== null ? (
               <div
                 role="alert"
@@ -395,12 +440,14 @@ export default function InstructorDashboard() {
               <div className="bg-white p-8 rounded-2xl border border-dashed border-slate-300 text-center">
                 <p className="text-sm font-semibold text-slate-800">{ui('noClassesYet')}</p>
                 <p className="mt-1 text-sm text-slate-600">
-                  {ui('yourPublishedClassesWillAppearHere')}</p>
+                  {ui('yourPublishedClassesWillAppearHere')}
+                </p>
                 <a
                   href={`/${locale}/teach/classes/new`}
                   className="mt-4 inline-flex items-center gap-2 rounded-full bg-campus-emerald-deep px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ink"
                 >
-                  {ui('publishYourFirstClass')}</a>
+                  {ui('publishYourFirstClass')}
+                </a>
               </div>
             ) : (
               <div className="space-y-4">
@@ -417,7 +464,7 @@ export default function InstructorDashboard() {
                     >
                       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                         <div className="space-y-2">
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <span
                               className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-sm font-semibold ${
                                 isCompleted
@@ -428,12 +475,16 @@ export default function InstructorDashboard() {
                               {isCompleted ? ui('ended') : ui('openForBooking')}
                             </span>
                             <span className="text-sm text-slate-600 font-medium">
-                              {item.availableSeats} {ui('availableSeats')}</span>
+                              {item.availableSeats} {ui('availableSeats')}
+                            </span>
                           </div>
                           <h3 className="font-bold text-slate-900 text-base">{item.description}</h3>
                           <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-sm text-slate-600">
                             <span className="flex items-center gap-1 text-slate-900 font-medium">
-                              <span className="material-symbols-outlined text-[16px] text-emerald-600">
+                              <span
+                                aria-hidden="true"
+                                className="material-symbols-outlined text-[16px] text-emerald-600"
+                              >
                                 calendar_today
                               </span>{' '}
                               {new Date(item.startsAt).toLocaleDateString(locale)}{' '}
@@ -441,34 +492,49 @@ export default function InstructorDashboard() {
                                 hour: '2-digit',
                                 minute: '2-digit',
                               })}{' '}
-                              • {item.durationMinutes} {ui('mine5d92')}</span>
+                              • {item.durationMinutes} {ui('mine5d92')}
+                            </span>
                             <span className="flex items-center gap-1">
-                              <span className="material-symbols-outlined text-[16px] text-slate-500">
+                              <span
+                                aria-hidden="true"
+                                className="material-symbols-outlined text-[16px] text-slate-500"
+                              >
                                 group
                               </span>{' '}
-                              {item.confirmedBookingsCount}/{item.capacity} {ui('learners')}</span>
+                              {item.confirmedBookingsCount}/{item.capacity} {ui('learners')}
+                            </span>
                             <span className="flex items-center gap-1 text-slate-900 font-semibold">
-                              <span className="material-symbols-outlined text-[16px] text-emerald-600">
+                              <span
+                                aria-hidden="true"
+                                className="material-symbols-outlined text-[16px] text-emerald-600"
+                              >
                                 payments
                               </span>{' '}
-                              {item.priceCredits} {ui('creditsPerLearner')}</span>
+                              {item.priceCredits} {ui('creditsPerLearner')}
+                            </span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2.5 shrink-0 pt-2 lg:pt-0">
+                        <div className="flex max-w-full flex-wrap items-center gap-2.5 pt-2 lg:pt-0">
                           <span className="text-sm text-slate-500 font-mono">
                             {item.id.slice(0, 8)}
                           </span>
                           {!isCompleted && (
                             <button
-                              onClick={() => setEditingClassId(
-                                editingClassId === item.id ? null : item.id,
-                              )}
+                              onClick={() =>
+                                setEditingClassId(editingClassId === item.id ? null : item.id)
+                              }
                               type="button"
                               className="px-4 py-2 rounded-full text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition-colors flex items-center gap-1.5 disabled:opacity-60"
                               disabled={isProcessing}
                             >
-                              <span className="material-symbols-outlined text-[16px]">edit</span>{' '}
-                              {ui('edit')}</button>
+                              <span
+                                aria-hidden="true"
+                                className="material-symbols-outlined text-[16px]"
+                              >
+                                edit
+                              </span>{' '}
+                              {ui('edit')}
+                            </button>
                           )}
                           {STARTABLE_CLASS_STATES.has(item.state) && (
                             <button
@@ -477,10 +543,14 @@ export default function InstructorDashboard() {
                               className="px-4 py-2 rounded-full text-sm font-semibold bg-campus-emerald-deep hover:bg-ink text-white transition-colors flex items-center gap-1.5 disabled:opacity-60"
                               disabled={isProcessing}
                             >
-                              <span className="material-symbols-outlined text-[16px]">
+                              <span
+                                aria-hidden="true"
+                                className="material-symbols-outlined text-[16px]"
+                              >
                                 play_arrow
                               </span>{' '}
-                              {ui('start')}</button>
+                              {ui('start')}
+                            </button>
                           )}
                           {!isCompleted && (
                             <button
@@ -489,10 +559,14 @@ export default function InstructorDashboard() {
                               className="px-4 py-2 rounded-full text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white transition-colors flex items-center gap-1.5 disabled:opacity-60"
                               disabled={isProcessing}
                             >
-                              <span className="material-symbols-outlined text-[16px]">
+                              <span
+                                aria-hidden="true"
+                                className="material-symbols-outlined text-[16px]"
+                              >
                                 check_circle
                               </span>{' '}
-                              {ui('complete')}</button>
+                              {ui('complete')}
+                            </button>
                           )}
                         </div>
                       </div>
@@ -522,10 +596,14 @@ export default function InstructorDashboard() {
       <div
         role="status"
         className={`fixed bottom-6 right-6 max-w-[calc(100vw-3rem)] z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2.5 transition-colors duration-300 ${
-          toastMessage ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'
+          toastMessage
+            ? 'translate-y-0 opacity-100'
+            : 'translate-y-20 opacity-0 pointer-events-none'
         }`}
       >
-        <span className="material-symbols-outlined text-[18px] text-emerald-400">check_circle</span>
+        <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-emerald-400">
+          check_circle
+        </span>
         <span className="text-sm font-medium">{toastMessage}</span>
       </div>
     </div>
@@ -573,7 +651,8 @@ function ClassEditPanel({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <label className="flex flex-col gap-1">
           <span className="text-sm font-semibold text-slate-700">
-            {ui('pricePerLearnerInCredits')}</span>
+            {ui('pricePerLearnerInCredits')}
+          </span>
           <input
             type="number"
             inputMode="numeric"
@@ -585,8 +664,7 @@ function ClassEditPanel({
             className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none disabled:bg-slate-50"
           />
           {!priceOk && (
-            <span className="text-sm text-rose-600">
-              {ui('enterAWholeCreditAmountWithin')}</span>
+            <span className="text-sm text-rose-600">{ui('enterAWholeCreditAmountWithin')}</span>
           )}
         </label>
 
@@ -619,14 +697,16 @@ function ClassEditPanel({
           disabled={!canSave}
           className="px-4 py-2 rounded-full text-sm font-semibold bg-campus-emerald-deep hover:bg-ink text-white transition-colors disabled:opacity-50"
         >
-          {ui('saveChanges')}</button>
+          {ui('saveChanges')}
+        </button>
         <button
           type="button"
           onClick={onCancel}
           disabled={disabled}
           className="px-4 py-2 rounded-full text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition-colors disabled:opacity-50"
         >
-          {ui('cancel')}</button>
+          {ui('cancel')}
+        </button>
       </div>
     </div>
   );
@@ -663,19 +743,17 @@ function MetricCard({
       <div>
         <div className="flex items-center justify-between text-slate-600 text-sm font-medium mb-2">
           <span>{label}</span>
-          <span className="material-symbols-outlined text-slate-400 text-[18px]">{icon}</span>
+          <span aria-hidden="true" className="material-symbols-outlined text-slate-400 text-[18px]">
+            {icon}
+          </span>
         </div>
         <div className="flex items-baseline gap-1.5">
           <span className="font-bold text-2xl text-slate-900">{value}</span>
           <span className="text-sm font-semibold text-slate-600">{unit}</span>
         </div>
-        {sub !== undefined && (
-          <span className="text-sm text-slate-500 font-normal">{sub}</span>
-        )}
+        {sub !== undefined && <span className="text-sm text-slate-500 font-normal">{sub}</span>}
       </div>
-      {footer !== undefined && (
-        <div className="mt-4 pt-3 border-t border-slate-100">{footer}</div>
-      )}
+      {footer !== undefined && <div className="mt-4 pt-3 border-t border-slate-100">{footer}</div>}
     </div>
   );
 }

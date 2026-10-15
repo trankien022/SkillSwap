@@ -17,7 +17,7 @@ export function ClassFormatSection({ draft, onChange }: Props) {
   const isOneOnOne = draft.capacity === 1;
 
   return (
-    <section className="workspace-panel flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6">
+    <section className="workspace-panel flex flex-col gap-4">
       <div className="flex items-center gap-2">
         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-campus-emerald-deep text-sm font-bold text-white shadow-xs">
           3
@@ -38,9 +38,7 @@ export function ClassFormatSection({ draft, onChange }: Props) {
         >
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-bold text-slate-900">
-                {tSteps('format1to1Title')}
-              </span>
+              <span className="text-sm font-bold text-slate-900">{tSteps('format1to1Title')}</span>
               <span
                 className={`flex h-4 w-4 items-center justify-center rounded-full border ${
                   isOneOnOne
@@ -48,14 +46,10 @@ export function ClassFormatSection({ draft, onChange }: Props) {
                     : 'border-slate-300 bg-white'
                 }`}
               >
-                {isOneOnOne && (
-                  <span className="h-1.5 w-1.5 rounded-full bg-white" />
-                )}
+                {isOneOnOne && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
               </span>
             </div>
-            <p className="text-sm leading-relaxed text-slate-500">
-              {tSteps('format1to1Desc')}
-            </p>
+            <p className="text-sm leading-relaxed text-slate-500">{tSteps('format1to1Desc')}</p>
           </div>
         </button>
 
@@ -71,9 +65,7 @@ export function ClassFormatSection({ draft, onChange }: Props) {
         >
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-bold text-slate-900">
-                {tSteps('formatGroupTitle')}
-              </span>
+              <span className="text-sm font-bold text-slate-900">{tSteps('formatGroupTitle')}</span>
               <span
                 className={`flex h-4 w-4 items-center justify-center rounded-full border ${
                   !isOneOnOne
@@ -81,14 +73,10 @@ export function ClassFormatSection({ draft, onChange }: Props) {
                     : 'border-slate-300 bg-white'
                 }`}
               >
-                {!isOneOnOne && (
-                  <span className="h-1.5 w-1.5 rounded-full bg-white" />
-                )}
+                {!isOneOnOne && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
               </span>
             </div>
-            <p className="text-sm leading-relaxed text-slate-500">
-              {tSteps('formatGroupDesc')}
-            </p>
+            <p className="text-sm leading-relaxed text-slate-500">{tSteps('formatGroupDesc')}</p>
           </div>
           <div className="pt-3">
             <span className="inline-block rounded-full bg-amber-100 px-2.5 py-0.5 text-sm font-semibold text-amber-800">

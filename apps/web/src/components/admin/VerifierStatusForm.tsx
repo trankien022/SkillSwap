@@ -79,7 +79,7 @@ export function VerifierStatusForm({
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
       <form
         onSubmit={handleSubmit}
-        className="rounded-2xl border border-border bg-surface p-6 shadow-sm lg:col-span-3"
+        className="rounded-2xl border border-border bg-surface p-6 lg:col-span-3"
         aria-label={t('formLabel')}
       >
         <h2 className="text-base font-semibold text-ink">{t('title')}</h2>
@@ -95,10 +95,10 @@ export function VerifierStatusForm({
               autoComplete="off"
               spellCheck={false}
               required
-              className="rounded-xl border border-border bg-mist px-3 py-2 font-mono text-sm text-ink focus:border-emerald-600 focus:outline-hidden focus:ring-1 focus:ring-emerald-600"
+              className="rounded-xl border border-border bg-mist px-3 py-2  text-sm text-ink focus:border-emerald-600 focus:outline-hidden focus:ring-1 focus:ring-emerald-600"
               data-testid="admin-verifier-account-id"
             />
-            <span className="text-xs font-normal text-ink-soft">{t('accountIdHint')}</span>
+            <span className="text-sm font-normal text-ink-soft">{t('accountIdHint')}</span>
           </label>
 
           <fieldset className="flex flex-col gap-2">
@@ -119,7 +119,7 @@ export function VerifierStatusForm({
                 />
                 <span className="flex flex-col">
                   <span className="font-semibold text-ink">{t(`option.${option}.label`)}</span>
-                  <span className="text-xs text-ink-soft">{t(`option.${option}.body`)}</span>
+                  <span className="text-sm text-ink-soft">{t(`option.${option}.body`)}</span>
                 </span>
               </label>
             ))}
@@ -148,7 +148,7 @@ export function VerifierStatusForm({
             type="submit"
             disabled={pending}
             aria-disabled={pending}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-campus-emerald-deep px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ink disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
           >
             {pending ? t('applying') : t('applyCta')}
           </button>
@@ -161,21 +161,19 @@ export function VerifierStatusForm({
       >
         <h3 className="text-base font-semibold text-ink">{t('currentStateTitle')}</h3>
         {view === null ? (
-          <p className="mt-3 text-sm leading-relaxed text-ink-soft">
-            {t('currentStateEmpty')}
-          </p>
+          <p className="mt-3 text-sm leading-relaxed text-ink-soft">{t('currentStateEmpty')}</p>
         ) : (
           <dl className="mt-3 flex flex-col gap-2 text-sm">
             <div className="flex items-center justify-between gap-2">
               <dt className="text-ink-soft">{t('currentAccountId')}</dt>
-              <dd className="font-mono text-ink">{view.accountId}</dd>
+              <dd className=" text-ink">{view.accountId}</dd>
             </div>
             <div className="flex items-center justify-between gap-2">
               <dt className="text-ink-soft">{t('currentStatus')}</dt>
               <dd>
                 <span
                   data-testid="admin-verifier-status-pill"
-                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold ${pillClasses(view.status)}`}
+                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm font-semibold ${pillClasses(view.status)}`}
                 >
                   {t(`option.${view.status}.label`)}
                 </span>
@@ -185,12 +183,12 @@ export function VerifierStatusForm({
               <dt className="text-ink-soft">{t('currentExpertise')}</dt>
               <dd className="mt-1 flex flex-wrap gap-1">
                 {view.expertise.length === 0 ? (
-                  <span className="text-xs text-ink-soft">—</span>
+                  <span className="text-sm text-ink-soft">—</span>
                 ) : (
                   view.expertise.map((skill) => (
                     <span
                       key={skill}
-                      className="rounded-full border border-border bg-surface px-2 py-0.5 text-[11px] font-mono text-ink-soft"
+                      className="rounded-full border border-border bg-surface px-2 py-0.5 text-[11px]  text-ink-soft"
                     >
                       {skill}
                     </span>

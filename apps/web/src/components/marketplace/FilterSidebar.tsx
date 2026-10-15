@@ -1,11 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import type {
-  ClassFormat,
-  MarketplaceQuery,
-  TimeFilter,
-} from '../../lib/marketplace/types';
+import type { ClassFormat, MarketplaceQuery, TimeFilter } from '../../lib/marketplace/types';
 
 /**
  * Advanced filter sidebar (FR-006).
@@ -51,7 +47,7 @@ export function FilterSidebar({
     <aside
       id="filter-sidebar"
       aria-label={t('title')}
-      className="workspace-panel sticky top-24 flex flex-col gap-6 rounded-xl border border-border bg-surface p-6 "
+      className="workspace-panel sticky top-24 flex flex-col gap-6"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -148,9 +144,7 @@ export function FilterSidebar({
       <FilterGroup label={t('verified.title')}>
         <Checkbox
           checked={value.verifiedOnly ?? false}
-          onChange={() =>
-            onChange({ ...value, verifiedOnly: !value.verifiedOnly, page: 1 })
-          }
+          onChange={() => onChange({ ...value, verifiedOnly: !value.verifiedOnly, page: 1 })}
           label={t('verified.studentVerified')}
           leading={<CheckIcon className="h-4 w-4 text-success-ink" />}
         />
@@ -176,11 +170,7 @@ function FilterGroup({
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-ink">{label}</span>
-        {rightLabel && (
-          <span className="text-sm font-bold text-campus-emerald">
-            {rightLabel}
-          </span>
-        )}
+        {rightLabel && <span className="text-sm font-bold text-campus-emerald">{rightLabel}</span>}
       </div>
       {hint && <p className="text-sm text-ink-soft">{hint}</p>}
       <div className="flex flex-col gap-1">{children}</div>
@@ -269,7 +259,18 @@ function Divider() {
 
 function FilterIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="20"
+      height="20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <line x1="4" y1="6" x2="14" y2="6" />
       <line x1="4" y1="12" x2="10" y2="12" />
       <line x1="4" y1="18" x2="16" y2="18" />
@@ -282,7 +283,18 @@ function FilterIcon({ className = '' }: { className?: string }) {
 
 function CheckIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <polyline points="20 6 9 17 4 12" />
     </svg>
   );
@@ -290,7 +302,17 @@ function CheckIcon({ className = '' }: { className?: string }) {
 
 function StarIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="currentColor"
+      stroke="currentColor"
+      strokeWidth="1"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18 5.5 22 7 14.5 2 9.5 9 9" />
     </svg>
   );

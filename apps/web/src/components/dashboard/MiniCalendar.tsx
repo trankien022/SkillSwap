@@ -25,17 +25,17 @@ export function MiniCalendar({
 }) {
   const t = useTranslations('Dashboard.calendar');
   const locale = useLocale() as 'vi' | 'en';
-  const monthLabel = new Date(Date.UTC(year, month, 1)).toLocaleDateString(
-    locale,
-    { month: 'long', year: 'numeric' },
-  );
+  const monthLabel = new Date(Date.UTC(year, month, 1)).toLocaleDateString(locale, {
+    month: 'long',
+    year: 'numeric',
+  });
   const weekdays = t.raw('weekdays') as string[];
 
   const prev = prevMonth(month, year);
   const next = nextMonth(month, year);
 
   return (
-    <article className="workspace-panel rounded-2xl border border-border bg-surface p-6 ">
+    <article className="workspace-panel">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-base font-bold text-ink">
           <CalendarMonthIcon className="h-5 w-5 text-ink" />
@@ -69,15 +69,10 @@ export function MiniCalendar({
         {days.map((day) => {
           const cellDate = new Date(day.date);
           const dayNum = cellDate.getUTCDate();
-          const baseClasses =
-            'relative flex items-center justify-center py-1.5 rounded-lg';
+          const baseClasses = 'relative flex items-center justify-center py-1.5 rounded-lg';
           if (!day.inMonth) {
             return (
-              <span
-                key={day.date}
-                aria-hidden="true"
-                className={`${baseClasses} text-ink-soft/60`}
-              >
+              <span key={day.date} aria-hidden="true" className={`${baseClasses} text-ink-soft/60`}>
                 {dayNum}
               </span>
             );
@@ -98,10 +93,7 @@ export function MiniCalendar({
           }
           if (day.hasLiveSession) {
             return (
-              <span
-                key={day.date}
-                className={`${baseClasses} bg-mist font-semibold text-ink`}
-              >
+              <span key={day.date} className={`${baseClasses} bg-mist font-semibold text-ink`}>
                 {dayNum}
                 <span className="absolute bottom-0.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-danger-ink" />
               </span>
@@ -109,20 +101,14 @@ export function MiniCalendar({
           }
           if (day.hasBookedSession) {
             return (
-              <span
-                key={day.date}
-                className={`${baseClasses} bg-mist font-semibold text-ink`}
-              >
+              <span key={day.date} className={`${baseClasses} bg-mist font-semibold text-ink`}>
                 {dayNum}
                 <span className="absolute bottom-0.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-success-ink" />
               </span>
             );
           }
           return (
-            <span
-              key={day.date}
-              className={`${baseClasses} text-ink`}
-            >
+            <span key={day.date} className={`${baseClasses} text-ink`}>
               {dayNum}
             </span>
           );
@@ -157,7 +143,18 @@ function nextMonth(month: number, year: number) {
 
 function CalendarMonthIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="22"
+      height="22"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <rect x="3" y="5" width="18" height="16" rx="2" />
       <line x1="3" y1="10" x2="21" y2="10" />
       <line x1="8" y1="3" x2="8" y2="7" />
@@ -168,7 +165,18 @@ function CalendarMonthIcon({ className = '' }: { className?: string }) {
 
 function ChevronLeftIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <polyline points="15 18 9 12 15 6" />
     </svg>
   );
@@ -176,7 +184,18 @@ function ChevronLeftIcon({ className = '' }: { className?: string }) {
 
 function ChevronRightIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <polyline points="9 18 15 12 9 6" />
     </svg>
   );

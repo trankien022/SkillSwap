@@ -100,7 +100,7 @@ export function SearchHub({
         <div className="flex justify-end ">
           <button
             type="submit"
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-campus-emerald px-5 text-sm font-semibold text-surface  transition-colors hover:bg-campus-emerald-deep"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-campus-emerald-deep px-5 text-sm font-semibold text-surface  transition-colors hover:bg-campus-emerald-deep"
           >
             <TravelExploreIcon className="h-4 w-4" />
             <span>{t('submitButton')}</span>

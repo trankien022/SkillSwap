@@ -36,7 +36,7 @@ export function WalletLedgerWidget({
 
   if (!authed || !wallet) {
     return (
-      <article className="workspace-panel rounded-2xl border border-border bg-surface p-6 ">
+      <article className="workspace-panel">
         <div className="flex items-center gap-2">
           <AccountBalanceIcon className="h-5 w-5 text-emerald-700" />
           <h3 className="text-base font-bold text-ink">{t('title')}</h3>
@@ -58,7 +58,7 @@ export function WalletLedgerWidget({
     Math.round((wallet.heldCredits / Math.max(1, wallet.totalCredits)) * 100),
   );
   return (
-    <article className="workspace-panel relative overflow-hidden rounded-2xl border border-border bg-surface p-6 ">
+    <article className="workspace-panel relative overflow-hidden">
       <div className="mb-4 flex items-center gap-2">
         <AccountBalanceIcon className="h-5 w-5 text-emerald-700" />
         <h3 className="text-base font-bold text-ink">{t('title')}</h3>
@@ -66,15 +66,11 @@ export function WalletLedgerWidget({
       <div className="mb-4 flex flex-col gap-2 rounded-xl border border-border bg-mist p-4">
         <div className="flex items-center justify-between text-sm">
           <span className="text-ink-soft">{t('available')}</span>
-          <span className="text-base font-bold text-ink">
-            {wallet.availableCredits} credits
-          </span>
+          <span className="text-base font-bold text-ink">{wallet.availableCredits} credits</span>
         </div>
         <div className="flex items-center justify-between text-sm">
           <span className="text-ink-soft">{t('held')}</span>
-          <span className="text-base font-bold text-ink">
-            {wallet.heldCredits} credits
-          </span>
+          <span className="text-base font-bold text-ink">{wallet.heldCredits} credits</span>
         </div>
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
           <div
@@ -123,7 +119,18 @@ export function WalletLedgerWidget({
 
 function AccountBalanceIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="22"
+      height="22"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <path d="M3 21h18" />
       <path d="M4 10h16l-2 9H6z" />
       <path d="M9 10V5a3 3 0 0 1 6 0v5" />
@@ -133,7 +140,18 @@ function AccountBalanceIcon({ className = '' }: { className?: string }) {
 
 function VerifiedUserIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <circle cx="12" cy="12" r="9" />
       <polyline points="9 12 11 14 15 10" />
     </svg>
@@ -142,7 +160,18 @@ function VerifiedUserIcon({ className = '' }: { className?: string }) {
 
 function HistoryIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <path d="M3 12a9 9 0 1 0 3-6.7" />
       <polyline points="3 4 3 10 9 10" />
       <polyline points="12 7 12 12 15 14" />
@@ -152,7 +181,18 @@ function HistoryIcon({ className = '' }: { className?: string }) {
 
 function AccountBalanceWalletIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <rect x="3" y="6" width="18" height="13" rx="2" />
       <path d="M3 10h18" />
       <circle cx="17" cy="15" r="1.2" fill="currentColor" />

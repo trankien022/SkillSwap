@@ -2,11 +2,7 @@
 
 import Image from 'next/image';
 import { useLocale, useTranslations } from 'next-intl';
-import {
-  formatSeats,
-  formatStartsAt,
-  hoursUntilBookingDeadline,
-} from '../../lib/marketplace/mock-data';
+import { formatStartsAt, hoursUntilBookingDeadline } from '../../lib/marketplace/mock-data';
 import type { MarketplaceClass } from '../../lib/marketplace/types';
 
 export function ClassCard({ item }: { item: MarketplaceClass }) {
@@ -20,11 +16,15 @@ export function ClassCard({ item }: { item: MarketplaceClass }) {
   });
   const hoursLeft = hoursUntilBookingDeadline(item.startsAt);
   const vnd = (item.priceCredits * 1000).toLocaleString(locale);
-  const [taken, capacity] = formatSeats(item.format, item.capacity)
-    .split('/')
-    .map((n) => Number(n));
 
-  const art = item.skillCategory === 'programming' ? 'programming' : item.skillCategory === 'design' ? 'design' : item.skillCategory === 'language' ? 'languages' : 'peer-learning';
+  const art =
+    item.skillCategory === 'programming'
+      ? 'programming'
+      : item.skillCategory === 'design'
+        ? 'design'
+        : item.skillCategory === 'language'
+          ? 'languages'
+          : 'peer-learning';
 
   return (
     <article className="workspace-class-card">
@@ -37,7 +37,16 @@ export function ClassCard({ item }: { item: MarketplaceClass }) {
           {t('duration', { minutes: item.durationMinutes })}
         </span>
       </div>
-      <figure className="workspace-class-art"><Image src={`/learning/${art}.webp`} alt="" width={800} height={533} sizes="(max-width: 767px) 100vw, 50vw" /><figcaption>{t('illustration')}</figcaption></figure>
+      <figure className="workspace-class-art">
+        <Image
+          src={`/learning/${art}.webp`}
+          alt=""
+          width={800}
+          height={533}
+          sizes="(max-width: 767px) 100vw, 50vw"
+        />
+        <figcaption>{t('illustration')}</figcaption>
+      </figure>
       {/* Body */}
       <div className="flex flex-1 flex-col gap-4 p-5">
         {/* Schedule row */}
@@ -108,7 +117,11 @@ export function ClassCard({ item }: { item: MarketplaceClass }) {
           <div className="flex flex-col">
             <div className="flex items-center gap-1 text-sm font-medium text-ink-soft">
               <GroupIcon className="h-3.5 w-3.5" />
-              <span>{t('seats.format', { taken, capacity })}</span>
+              <span>
+                {item.availableSeats == null
+                  ? t('availabilityUnknown')
+                  : t('availability', { free: item.availableSeats, capacity: item.capacity })}
+              </span>
             </div>
             <div className="mt-1 flex flex-wrap items-baseline gap-1">
               <span className="text-lg font-bold text-ink">
@@ -117,16 +130,13 @@ export function ClassCard({ item }: { item: MarketplaceClass }) {
               <span className="text-sm text-ink-soft">
                 {item.format === 'group-2-4'
                   ? t('pricePerLearner', {
-                      vnd: ((item.priceCredits * 1000) / item.capacity).toLocaleString(locale),
+                      vnd,
                     })
                   : t('price.vnd', { vnd })}
               </span>
             </div>
           </div>
-          <a
-            href={`/${locale}/classes/${item.id}`}
-            className="workspace-secondary"
-          >
+          <a href={`/${locale}/classes/${item.id}`} className="workspace-secondary">
             <span>{t('viewClass')}</span>
             <ArrowForwardIcon className="h-4 w-4" />
           </a>

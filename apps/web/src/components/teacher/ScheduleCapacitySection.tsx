@@ -23,7 +23,7 @@ export function ScheduleCapacitySection({ draft, onChange }: Props) {
   const t = useTranslations('Teacher.publish.schedule');
   const isOneOnOne = draft.capacity === 1;
   return (
-    <section className="workspace-panel flex flex-col gap-4 rounded-xl border border-border bg-surface p-6">
+    <section className="workspace-panel flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold text-ink">{t('title')}</h2>
         <span className="inline-flex items-center gap-1 rounded-full bg-success-tint px-2.5 py-1 text-sm font-semibold text-success-ink">
@@ -33,10 +33,7 @@ export function ScheduleCapacitySection({ draft, onChange }: Props) {
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="class-date"
-            className="text-sm font-semibold text-ink"
-          >
+          <label htmlFor="class-date" className="text-sm font-semibold text-ink">
             {t('dateLabel')}
           </label>
           <input
@@ -48,10 +45,7 @@ export function ScheduleCapacitySection({ draft, onChange }: Props) {
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="class-time"
-            className="text-sm font-semibold text-ink"
-          >
+          <label htmlFor="class-time" className="text-sm font-semibold text-ink">
             {t('timeLabel')}
           </label>
           <input
@@ -65,9 +59,7 @@ export function ScheduleCapacitySection({ draft, onChange }: Props) {
       </div>
       <div className="flex items-center justify-between rounded-lg border border-border bg-mist p-4">
         <div>
-          <span className="block text-sm font-bold text-ink">
-            {t('capacityLabel')}
-          </span>
+          <span className="block text-sm font-bold text-ink">{t('capacityLabel')}</span>
           <span className="block text-sm font-semibold text-success-ink">
             {isOneOnOne
               ? t('capacityBadge1to1')
@@ -79,23 +71,17 @@ export function ScheduleCapacitySection({ draft, onChange }: Props) {
             type="button"
             aria-label="decrement capacity"
             disabled={draft.capacity <= MIN_CAPACITY}
-            onClick={() =>
-              onChange({ capacity: Math.max(MIN_CAPACITY, draft.capacity - 1) })
-            }
+            onClick={() => onChange({ capacity: Math.max(MIN_CAPACITY, draft.capacity - 1) })}
             className="flex h-8 w-8 items-center justify-center rounded text-ink-soft transition-colors hover:bg-mist disabled:cursor-not-allowed disabled:opacity-40"
           >
             <RemoveIcon className="h-4 w-4" />
           </button>
-          <span className="w-8 text-center text-lg font-bold text-ink">
-            {draft.capacity}
-          </span>
+          <span className="w-8 text-center text-lg font-bold text-ink">{draft.capacity}</span>
           <button
             type="button"
             aria-label="increment capacity"
             disabled={draft.capacity >= MAX_CAPACITY}
-            onClick={() =>
-              onChange({ capacity: Math.min(MAX_CAPACITY, draft.capacity + 1) })
-            }
+            onClick={() => onChange({ capacity: Math.min(MAX_CAPACITY, draft.capacity + 1) })}
             className="flex h-8 w-8 items-center justify-center rounded text-ink-soft transition-colors hover:bg-mist disabled:cursor-not-allowed disabled:opacity-40"
           >
             <AddIcon className="h-4 w-4" />
@@ -112,7 +98,18 @@ export function ScheduleCapacitySection({ draft, onChange }: Props) {
 
 function EventAvailableIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="14"
+      height="14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <rect x="3" y="5" width="18" height="16" rx="2" />
       <line x1="3" y1="10" x2="21" y2="10" />
       <polyline points="9 16 11 18 15 14" />
@@ -122,7 +119,18 @@ function EventAvailableIcon({ className = '' }: { className?: string }) {
 
 function AddIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <line x1="12" y1="5" x2="12" y2="19" />
       <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
@@ -131,7 +139,18 @@ function AddIcon({ className = '' }: { className?: string }) {
 
 function RemoveIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
   );
@@ -139,7 +158,18 @@ function RemoveIcon({ className = '' }: { className?: string }) {
 
 function VerifiedIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <circle cx="12" cy="12" r="9" />
       <polyline points="9 12 11 14 15 10" />
     </svg>

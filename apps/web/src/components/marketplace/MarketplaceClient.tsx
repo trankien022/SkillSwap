@@ -75,7 +75,12 @@ export function MarketplaceClient({ initialCategory }: { initialCategory?: Skill
       {/* Search + categories */}
       <section className="bg-mist">
         <div className="workspace-page">
-          <PageIntro title={t('title')} description={t('description')} art="programming" artAlt={t('artAlt')} />
+          <PageIntro
+            title={t('title')}
+            description={t('description')}
+            art="programming"
+            artAlt={t('artAlt')}
+          />
           <SearchHub
             initialQuery={query}
             filterOpen={filterOpen}
@@ -194,6 +199,7 @@ function SortControl({
     <div className="flex items-center gap-2">
       <span className="text-sm text-ink-soft">{label}</span>
       <select
+        aria-label={label}
         value={query.sort}
         onChange={(e) => onSort(e.target.value as SortOrder)}
         className="cursor-pointer rounded-lg border border-border bg-mist px-3 py-1.5 text-sm font-semibold text-ink focus:border-ink focus:outline-none"
@@ -239,8 +245,25 @@ function StatePanel({
   cta: { href: string; label: string; onClick?: () => void };
 }) {
   void icon;
-  return <WorkspaceState title={title} tone={tone === 'error' ? 'error' : 'neutral'} action={cta.onClick ? <button type="button" onClick={cta.onClick} className="workspace-primary">{cta.label}</button> : <Link href={cta.href} className="workspace-primary">{cta.label}</Link>}>{body}</WorkspaceState>;
-
+  return (
+    <WorkspaceState
+      title={title}
+      tone={tone === 'error' ? 'error' : 'neutral'}
+      action={
+        cta.onClick ? (
+          <button type="button" onClick={cta.onClick} className="workspace-primary">
+            {cta.label}
+          </button>
+        ) : (
+          <Link href={cta.href} className="workspace-primary">
+            {cta.label}
+          </Link>
+        )
+      }
+    >
+      {body}
+    </WorkspaceState>
+  );
 }
 
 /* --- Inline SVG glyphs --- */

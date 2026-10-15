@@ -11,15 +11,8 @@ import { MarketplacePreviewCard } from './MarketplacePreviewCard';
 import { EligibilityChecklistCard } from './EligibilityChecklistCard';
 import { PublishActions } from './PublishActions';
 import { PublishToast } from './PublishToast';
-import {
-  capacityIsValid,
-  priceIsValid,
-  titleOver,
-} from '../../lib/teacher/money';
-import {
-  HttpTeacherPublishGateway,
-  TeacherPublishAuthError,
-} from '../../lib/teacher/http-gateway';
+import { capacityIsValid, priceIsValid, titleOver } from '../../lib/teacher/money';
+import { HttpTeacherPublishGateway, TeacherPublishAuthError } from '../../lib/teacher/http-gateway';
 import {
   TITLE_MAX_CHARS,
   type ClassDraft,
@@ -47,11 +40,7 @@ interface Props {
  * rejects the draft, the screen shows the rejection instead of a fabricated
  * success with a room code the backend never issued.
  */
-export function PublishForm({
-  initialDraft,
-  skills,
-  publish,
-}: Props) {
+export function PublishForm({ initialDraft, skills, publish }: Props) {
   const ui = useTranslations('Workspace.copy');
 
   const [draft, setDraft] = useState<ClassDraft>(initialDraft);
@@ -112,11 +101,7 @@ export function PublishForm({
         {/* Left Column: 5 Sequential Steps */}
         <div className="flex flex-col gap-6 lg:col-span-7">
           {/* Step 1: Verified Subject */}
-          <SkillSelectSection
-            skills={skills}
-            draft={draft}
-            onChange={onChange}
-          />
+          <SkillSelectSection skills={skills} draft={draft} onChange={onChange} />
           {/* Step 2: Title, Description, and 3-stage Syllabus Roadmap */}
           <GeneralDetailsSection draft={draft} onChange={onChange} />
           {/* Step 3: Class Format (1-on-1 vs Small Group) & Scale */}
@@ -158,10 +143,12 @@ export function PublishForm({
             <div
               role="status"
               aria-live="polite"
-              className="workspace-panel rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600"
+              className="workspace-panel text-sm text-slate-600"
             >
               <div className="flex items-center gap-1.5 font-bold text-emerald-800 pb-1">
-                <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[16px]">
+                  check_circle
+                </span>
                 <span>{tResult('successTitle')}</span>
               </div>
               <div>
@@ -174,10 +161,7 @@ export function PublishForm({
           )}
         </div>
       </div>
-      <PublishToast
-        open={toastOpen}
-        onClose={() => setToastOpen(false)}
-      />
+      <PublishToast open={toastOpen} onClose={() => setToastOpen(false)} />
     </>
   );
 }

@@ -2,11 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import {
-  callApiOk,
-  dispatchWalletBalanceUpdate,
-  unwrapEnvelope,
-} from '../../lib/api-client';
+import { callApiOk, dispatchWalletBalanceUpdate, unwrapEnvelope } from '../../lib/api-client';
 import type { WalletBalanceView, TopUpIntentStatusView } from '@skillswap/contracts';
 
 /** Terminal states: once the intent can no longer change, polling stops. */
@@ -163,11 +159,11 @@ export function PaymentResultContent({ intentId, providerRef }: PaymentResultCon
   if (path === null) {
     return (
       <div className="flex flex-col gap-4">
-        <h1 className="text-2xl font-bold text-slate-900">{t('title')}</h1>
+        <h1 className="workspace-title">{t('title')}</h1>
         <p className="text-sm font-medium text-slate-800" data-testid="payment-result-no-intent">
           {t('noIntent')}
         </p>
-        <p className="text-sm leading-relaxed text-slate-600">{t('noIntentHelp')}</p>
+        <p className="workspace-description">{t('noIntentHelp')}</p>
         <div className="flex flex-wrap gap-3">
           <a
             href={`/${locale}/wallet`}
@@ -192,24 +188,23 @@ export function PaymentResultContent({ intentId, providerRef }: PaymentResultCon
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-900">{t('title')}</h1>
-        <p className="text-sm leading-relaxed text-slate-600">{t('notice')}</p>
+        <h1 className="workspace-title">{t('title')}</h1>
+        <p className="workspace-description">{t('notice')}</p>
       </header>
 
-      <section className="workspace-panel rounded-2xl border border-slate-200 bg-white p-5">
+      <section className="workspace-panel">
         <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <dt className="text-sm font-semibold  text-slate-500">
-              {t('intentLabel')}
-            </dt>
-            <dd className="mt-1 break-all text-sm text-slate-900" data-testid="payment-result-intent">
+            <dt className="text-sm font-semibold  text-slate-500">{t('intentLabel')}</dt>
+            <dd
+              className="mt-1 break-all text-sm text-slate-900"
+              data-testid="payment-result-intent"
+            >
               {intent?.providerRef ?? providerRef ?? intentId}
             </dd>
           </div>
           <div>
-            <dt className="text-sm font-semibold  text-slate-500">
-              {t('statusLabel')}
-            </dt>
+            <dt className="text-sm font-semibold  text-slate-500">{t('statusLabel')}</dt>
             <dd
               className={`mt-1 text-sm font-semibold ${
                 isSettled
@@ -228,9 +223,7 @@ export function PaymentResultContent({ intentId, providerRef }: PaymentResultCon
           {intent !== null && (
             <>
               <div>
-                <dt className="text-sm font-semibold  text-slate-500">
-                  {t('amountLabel')}
-                </dt>
+                <dt className="text-sm font-semibold  text-slate-500">{t('amountLabel')}</dt>
                 <dd className="mt-1 text-sm text-slate-900">
                   {intent.paidAmountVnd?.toLocaleString('vi-VN') ??
                     intent.amountVnd.toLocaleString('vi-VN')}{' '}
@@ -238,9 +231,7 @@ export function PaymentResultContent({ intentId, providerRef }: PaymentResultCon
                 </dd>
               </div>
               <div>
-                <dt className="text-sm font-semibold  text-slate-500">
-                  {t('creditsLabel')}
-                </dt>
+                <dt className="text-sm font-semibold  text-slate-500">{t('creditsLabel')}</dt>
                 <dd className="mt-1 text-sm text-slate-900">
                   {intent.amountCredits.toLocaleString('vi-VN')} Credits
                 </dd>
@@ -248,9 +239,7 @@ export function PaymentResultContent({ intentId, providerRef }: PaymentResultCon
             </>
           )}
           <div>
-            <dt className="text-sm font-semibold  text-slate-500">
-              {t('balanceLabel')}
-            </dt>
+            <dt className="text-sm font-semibold  text-slate-500">{t('balanceLabel')}</dt>
             <dd className="mt-1 text-sm text-slate-900" data-testid="payment-result-balance">
               {balance !== null
                 ? `${balance.availableCredits.toLocaleString('vi-VN')} Credits`
@@ -260,7 +249,10 @@ export function PaymentResultContent({ intentId, providerRef }: PaymentResultCon
         </dl>
 
         {intentError && (
-          <p className="mt-4 text-sm font-medium text-rose-700" data-testid="payment-result-intent-error">
+          <p
+            className="mt-4 text-sm font-medium text-rose-700"
+            data-testid="payment-result-intent-error"
+          >
             {t('intentUnavailable')}
           </p>
         )}

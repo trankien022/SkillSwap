@@ -280,7 +280,9 @@
         "advanced": "Advanced",
         "expert": "Expert"
       },
-      "illustration": "Subject illustration"
+      "illustration": "Subject illustration",
+      "availability": "{free}/{capacity} seats available",
+      "availabilityUnknown": "Seat availability not provided"
     },
     "pagination": {
       "showing": "Showing {from} - {to} of {total} open classes",
@@ -482,15 +484,7 @@
       "title": "Month view",
       "prev": "Previous month",
       "next": "Next month",
-      "weekdays": [
-        "Mon",
-        "Tue",
-        "Wed",
-        "Thu",
-        "Fri",
-        "Sat",
-        "Sun"
-      ],
+      "weekdays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
       "legendLive": "Live today",
       "legendBooked": "Booked",
       "noMonth": "No events this month"
@@ -535,7 +529,8 @@
       "commentPlaceholder": "Share your learning experience, clarity, and mentor helpfulness...",
       "pledge": "Academic pledge: Honest reviews uphold transparent peer-mentoring standards across universities.",
       "cancel": "Later",
-      "submit": "Confirm & Release Escrow"
+      "submit": "Confirm & Release Escrow",
+      "starLabel": "{count} stars"
     },
     "noShowModal": {
       "title": "Report Teacher No-Show",
@@ -639,7 +634,7 @@
     },
     "StudentVerification": {
       "title": "Student verification review",
-      "notice": "Review a student verification by id. Admin must know the verification id.",
+      "notice": "Enter the student profile reference to open the review actions. Check the reference and give a clear reason for your decision.",
       "idPlaceholder": "Verification id",
       "openCta": "Open",
       "label": {
@@ -682,10 +677,10 @@
       "title": "Online class details",
       "subjectChip": "Subject module",
       "verificationBanner": {
-        "title": "Verified professional competency",
-        "body": "Your teaching profile meets the academic verification standard. The platform keeps every certificate and review transparent across faculties.",
-        "ruleTitle": "Immutable schedule",
-        "ruleBody": "Schedule and content lock as soon as the first learner books."
+        "title": "Plan a clear learning session",
+        "body": "Choose an approved skill. Check the description, schedule and price so learners know what to expect.",
+        "ruleTitle": "Check before publishing",
+        "ruleBody": "Schedule and content cannot change after the first booking."
       },
       "skill": {
         "label": "Approved professional skill",
@@ -740,7 +735,8 @@
         "teacher": "You (Teacher)",
         "verifiedFaculty": "Verified student",
         "price": "Price",
-        "priceUnit": "Cr"
+        "priceUnit": "Cr",
+        "draft": "Unpublished draft"
       },
       "actions": {
         "warning": "Teaching commitment: once the first learner registers, schedule and content edits lock automatically.",
@@ -1198,7 +1194,9 @@
       "approved": "Approved",
       "rejected": "Rejected",
       "superseded": "Superseded"
-    }
+    },
+    "description": "Review submitted evidence, claim profiles in your area of expertise and record clear decisions.",
+    "emptyHint": "Profiles matching these filters will appear here."
   },
   "Workspace": {
     "skip": "Skip to main content",
@@ -1465,6 +1463,15 @@
       "edit": "Edit",
       "minimumConfirmedSeats": "Capacity cannot be below {count} confirmed seats."
     },
-    "rules": "Learning and payment rules"
+    "rules": "Learning and payment rules",
+    "fallback": {
+      "notFoundTitle": "Page not found",
+      "notFoundBody": "This link may have changed. Return home or explore classes to continue.",
+      "errorTitle": "This page could not load",
+      "errorBody": "Try loading it again, or return home to continue.",
+      "retry": "Try again",
+      "home": "Back to home",
+      "explore": "Explore classes"
+    }
   }
 }

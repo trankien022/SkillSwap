@@ -1,12 +1,10 @@
 'use client';
 
+import { SkillCategoryLabel } from '../ui/SkillCategoryLabel';
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
-import {
-  HttpSkillsGateway,
-  SkillsAuthError,
-} from '../../lib/skills/http-gateway';
+import { HttpSkillsGateway, SkillsAuthError } from '../../lib/skills/http-gateway';
 import type {
   ProfileSkillView,
   SkillCatalogueItemView,
@@ -130,18 +128,18 @@ export function SkillsContent() {
   };
 
   if (status === 'loading') {
-    return <Panel>
-      <p className="text-sm font-medium text-slate-700">{t('loading')}</p>
-    </Panel>;
+    return (
+      <Panel>
+        <p className="text-sm font-medium text-slate-700">{t('loading')}</p>
+      </Panel>
+    );
   }
 
   if (status === 'signed-out') {
     return (
       <Panel>
         <h1 className="text-lg font-bold text-slate-900">{t('signedOutTitle')}</h1>
-        <p className="mt-1 max-w-md text-sm leading-relaxed text-slate-600">
-          {t('signedOutBody')}
-        </p>
+        <p className="mt-1 max-w-md text-sm leading-relaxed text-slate-600">{t('signedOutBody')}</p>
         <Link
           href={`/${locale}/auth`}
           className="mt-4 inline-flex items-center gap-2 rounded-full bg-campus-emerald-deep px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ink"
@@ -173,7 +171,7 @@ export function SkillsContent() {
   return (
     <div className="flex flex-col gap-6">
       {/* 1. Approved skills — the real `GET /profile-skills/me` result. */}
-      <section className="workspace-panel rounded-2xl border border-slate-200 bg-white p-6">
+      <section className="workspace-panel">
         <h2 className="text-lg font-bold text-slate-900">{t('approved')}</h2>
         <p className="mt-1 text-sm text-slate-600">{t('approvedBody')}</p>
 
@@ -190,7 +188,9 @@ export function SkillsContent() {
               >
                 <div>
                   <p className="text-sm font-bold text-slate-900">{item.skillName}</p>
-                  <p className="text-sm text-slate-600">{item.category}</p>
+                  <p className="text-sm text-slate-600">
+                    <SkillCategoryLabel category={item.category} />
+                  </p>
                 </div>
                 <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-sm font-semibold text-emerald-800">
                   {t(`level_${item.approvedLevel}`)}
@@ -202,9 +202,7 @@ export function SkillsContent() {
 
         {pending.length > 0 && (
           <div className="mt-4">
-            <h3 className="text-sm font-semibold  text-slate-500">
-              {t('pending')}
-            </h3>
+            <h3 className="text-sm font-semibold  text-slate-500">{t('pending')}</h3>
             <ul className="mt-2 flex flex-wrap gap-2">
               {pending.map((item) => (
                 <li
@@ -220,14 +218,12 @@ export function SkillsContent() {
       </section>
 
       {/* 2. Submit evidence — real POST /skill-evidence. */}
-      <section className="workspace-panel rounded-2xl border border-slate-200 bg-white p-6">
+      <section className="workspace-panel">
         <h2 className="text-lg font-bold text-slate-900">{t('submitTitle')}</h2>
         <p className="mt-1 text-sm text-slate-600">{t('submitBody')}</p>
 
         <fieldset className="mt-4" disabled={busy}>
-          <legend className="text-sm font-semibold  text-slate-500">
-            {t('chooseSkill')}
-          </legend>
+          <legend className="text-sm font-semibold  text-slate-500">{t('chooseSkill')}</legend>
           {catalogue.length === 0 ? (
             <p className="mt-2 text-sm text-slate-600">{t('noCatalogue')}</p>
           ) : (
@@ -245,16 +241,16 @@ export function SkillsContent() {
                   }`}
                 >
                   <span className="block font-semibold">{skill.name}</span>
-                  <span className="block text-sm text-slate-500">{skill.category}</span>
+                  <span className="block text-sm text-slate-500">
+                    <SkillCategoryLabel category={skill.category} />
+                  </span>
                 </button>
               ))}
             </div>
           )}
 
           <div className="mt-4">
-            <span className="text-sm font-semibold  text-slate-500">
-              {t('requestedLevel')}
-            </span>
+            <span className="text-sm font-semibold  text-slate-500">{t('requestedLevel')}</span>
             <div className="mt-2 flex flex-wrap gap-2">
               {LEVELS.map((item) => (
                 <button
@@ -292,13 +288,20 @@ export function SkillsContent() {
         </fieldset>
 
         {submitError !== null && (
-          <p role="alert" className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-medium text-rose-700">
+          <p
+            role="alert"
+            className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-medium text-rose-700"
+          >
             {submitError}
           </p>
         )}
 
         {submitted !== null && (
-          <p role="status" aria-live="polite" className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800">
+          <p
+            role="status"
+            aria-live="polite"
+            className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800"
+          >
             {t('submitted', { skill: submitted.skillName })}
           </p>
         )}
@@ -307,7 +310,7 @@ export function SkillsContent() {
           type="button"
           onClick={() => void submit()}
           disabled={!canSubmit}
-          className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-full bg-campus-emerald-deep px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ink disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+          className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-full bg-campus-emerald-deep px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ink disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-ink-muted"
         >
           {busy ? t('submitting') : t('submit')}
         </button>
@@ -330,9 +333,7 @@ export function SkillsContent() {
 
         {historyFor !== null && history !== null && (
           <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <h3 className="text-sm font-semibold  text-slate-500">
-              {t('historyTitle')}
-            </h3>
+            <h3 className="text-sm font-semibold  text-slate-500">{t('historyTitle')}</h3>
             {history.versions.length === 0 ? (
               <p className="mt-1 text-sm text-slate-600">{t('noHistory')}</p>
             ) : (

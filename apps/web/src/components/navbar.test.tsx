@@ -105,7 +105,7 @@ describe('Navbar component', () => {
   it('renders credit balance badge', () => {
     renderNavbar({ balance: mockBalance({ availableCredits: 250 }) });
 
-    expect(screen.getByText('250 Credits')).toBeDefined();
+    expect(screen.getByText('250 credit')).toBeDefined();
   });
 
   it('renders sign in button when guest', () => {

@@ -4,9 +4,15 @@ import { useState, useEffect } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { PageIntro } from '../ui/PageIntro';
 import { StatePanel } from '../ui/StatePanel';
-import { WorkspaceFooter } from '../ui/WorkspaceFooter';
 import { Navbar } from '../navbar';
-import { getTokens, getStoredUser, callApi, unwrapEnvelope, type UserProfile } from '../../lib/api-client';import type {
+import {
+  getTokens,
+  getStoredUser,
+  callApi,
+  unwrapEnvelope,
+  type UserProfile,
+} from '../../lib/api-client';
+import type {
   MeResponse,
   StudentVerificationView,
   ProfileSkillList,
@@ -36,7 +42,10 @@ export function VerificationContent() {
   useEffect(() => {
     const hasSession = Boolean(getTokens());
     setSignedIn(hasSession);
-    if (!hasSession) { setIsLoading(false); return; }
+    if (!hasSession) {
+      setIsLoading(false);
+      return;
+    }
     setUser(getStoredUser());
     const loadData = async () => {
       try {
@@ -66,10 +75,10 @@ export function VerificationContent() {
           if (s?.items) setSkills(s.items);
         }
       } catch (err) {
-        setLoadError(
-          err instanceof Error ? err.message : t('loadError'),
-        );
-      } finally { setIsLoading(false); }
+        setLoadError(err instanceof Error ? err.message : t('loadError'));
+      } finally {
+        setIsLoading(false);
+      }
     };
     loadData();
   }, []);
@@ -158,8 +167,6 @@ export function VerificationContent() {
         const err = (await submitRes.json().catch(() => ({}))) as { message?: string };
         setUploadError(err.message || t('submitError'));
       }
-
-
     } catch (err: unknown) {
       console.error(err);
       // If upload failed, never call POST /student-verifications — we ensure that by sequencing
@@ -173,19 +180,169 @@ export function VerificationContent() {
     }
   };
 
-  return <div className="flex min-h-dvh flex-col bg-mist text-ink"><Navbar currentTab="verification" {...(me ? {me} : {})}/><main id="main-content" tabIndex={-1} className="workspace-page flex-1">
-    <PageIntro title={t('title')} description={t('description')} art="peer-learning" artAlt={t('artAlt')}/>
-    {isLoading ? <p role="status" className="workspace-panel">{t('loading')}</p> : !signedIn ? <StatePanel title={t('signInTitle')} action={<a href={`/${locale}/auth?tab=login&returnUrl=${encodeURIComponent(`/${locale}/verification`)}`} className="workspace-primary">{t('signIn')}</a>}>{t('signInBody')}</StatePanel> : <>
-    {loadError && <p role="alert" data-testid="verification-load-error" className="workspace-feedback workspace-feedback-error mb-6">{loadError}</p>}
-    <div className="grid gap-6 lg:grid-cols-2">
-      <section className="workspace-panel"><div className="flex flex-wrap items-start justify-between gap-3"><h2 className="workspace-panel-title">{t('profile')}</h2><span className={`rounded-full px-3 py-1 text-sm font-semibold ${currentStatus === 'approved' ? 'bg-success-tint text-success-ink' : 'bg-neutral-tint text-ink-soft'}`}>{loadError ? t('status.unknown') : t.has(`status.${currentStatus}`) ? t(`status.${currentStatus}`) : t('status.unknown')}</span></div>
-      <dl className="workspace-profile-fields"><div><dt>{t('name')}</dt><dd>{me?.displayName || user?.displayName || '—'}</dd></div><div><dt>{t('email')}</dt><dd>{me?.email || user?.email || '—'}</dd></div><div><dt>{t('school')}</dt><dd>{studentVerif?.schoolName || '—'}</dd></div><div><dt>{t('major')}</dt><dd>{studentVerif?.major || '—'}</dd></div></dl>
-      <button className="workspace-secondary mt-5" aria-expanded={isUploadOpen} aria-controls="verification-upload" onClick={()=>setIsUploadOpen(open=>!open)}>{isUploadOpen ? t('close') : t('uploadAction')}</button>
-      </section>
-      <aside className="workspace-panel"><h2 className="workspace-panel-title">{t('reviewTitle')}</h2><p className="mt-4 text-base leading-relaxed text-ink-soft">{t('reviewBody')}</p><p className="mt-4 text-sm leading-relaxed text-ink-soft">{t('privacy')}</p><a href={`/${locale}#trust`} className="workspace-link mt-4">{t('rules')} ↗</a></aside>
+  return (
+    <div className="flex min-h-dvh flex-col bg-mist text-ink">
+      <Navbar currentTab="verification" {...(me ? { me } : {})} />
+      <main id="main-content" tabIndex={-1} className="workspace-page flex-1">
+        <PageIntro
+          title={t('title')}
+          description={t('description')}
+          art="peer-learning"
+          artAlt={t('artAlt')}
+        />
+        {isLoading ? (
+          <p role="status" className="workspace-panel">
+            {t('loading')}
+          </p>
+        ) : !signedIn ? (
+          <StatePanel
+            title={t('signInTitle')}
+            action={
+              <a
+                href={`/${locale}/auth?tab=login&returnUrl=${encodeURIComponent(`/${locale}/verification`)}`}
+                className="workspace-primary"
+              >
+                {t('signIn')}
+              </a>
+            }
+          >
+            {t('signInBody')}
+          </StatePanel>
+        ) : (
+          <>
+            {loadError && (
+              <p
+                role="alert"
+                data-testid="verification-load-error"
+                className="workspace-feedback workspace-feedback-error mb-6"
+              >
+                {loadError}
+              </p>
+            )}
+            <div className="grid gap-6 lg:grid-cols-2">
+              <section className="workspace-panel">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <h2 className="workspace-panel-title">{t('profile')}</h2>
+                  <span
+                    className={`rounded-full px-3 py-1 text-sm font-semibold ${currentStatus === 'approved' ? 'bg-success-tint text-success-ink' : 'bg-neutral-tint text-ink-soft'}`}
+                  >
+                    {loadError
+                      ? t('status.unknown')
+                      : t.has(`status.${currentStatus}`)
+                        ? t(`status.${currentStatus}`)
+                        : t('status.unknown')}
+                  </span>
+                </div>
+                <dl className="workspace-profile-fields">
+                  <div>
+                    <dt>{t('name')}</dt>
+                    <dd>{me?.displayName || user?.displayName || '—'}</dd>
+                  </div>
+                  <div>
+                    <dt>{t('email')}</dt>
+                    <dd>{me?.email || user?.email || '—'}</dd>
+                  </div>
+                  <div>
+                    <dt>{t('school')}</dt>
+                    <dd>{studentVerif?.schoolName || '—'}</dd>
+                  </div>
+                  <div>
+                    <dt>{t('major')}</dt>
+                    <dd>{studentVerif?.major || '—'}</dd>
+                  </div>
+                </dl>
+                <button
+                  className="workspace-secondary mt-5"
+                  aria-expanded={isUploadOpen}
+                  aria-controls="verification-upload"
+                  onClick={() => setIsUploadOpen((open) => !open)}
+                >
+                  {isUploadOpen ? t('close') : t('uploadAction')}
+                </button>
+              </section>
+              <aside className="workspace-panel">
+                <h2 className="workspace-panel-title">{t('reviewTitle')}</h2>
+                <p className="mt-4 text-base leading-relaxed text-ink-soft">{t('reviewBody')}</p>
+                <p className="mt-4 text-sm leading-relaxed text-ink-soft">{t('privacy')}</p>
+                <a href={`/${locale}#trust`} className="workspace-link mt-4">
+                  {t('rules')} ↗
+                </a>
+              </aside>
+            </div>
+            {isUploadOpen && (
+              <section id="verification-upload" className="workspace-panel workspace-form mt-6">
+                <h2 className="workspace-panel-title">{t('uploadTitle')}</h2>
+                <p className="mt-3 text-base text-ink-soft">{t('uploadBody')}</p>
+                <div className="mt-6 grid gap-5 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="verification-school" className="mb-2 block font-semibold">
+                      {t('school')}
+                    </label>
+                    <input
+                      id="verification-school"
+                      value={schoolName}
+                      onChange={(e) => setSchoolName(e.target.value)}
+                      placeholder={t('schoolPlaceholder')}
+                      className="w-full border px-4 py-3"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="verification-major" className="mb-2 block font-semibold">
+                      {t('major')}
+                    </label>
+                    <input
+                      id="verification-major"
+                      value={major}
+                      onChange={(e) => setMajor(e.target.value)}
+                      placeholder={t('majorPlaceholder')}
+                      className="w-full border px-4 py-3"
+                    />
+                  </div>
+                </div>
+                <label htmlFor="verification-document" className="mb-3 mt-6 block font-semibold">
+                  {t('document')}
+                </label>
+                <input
+                  id="verification-document"
+                  type="file"
+                  accept="image/*,.pdf"
+                  disabled={isSubmitting || !schoolName.trim() || !major.trim()}
+                  onChange={handleUploadAndSubmit}
+                  className="max-w-full text-sm file:mr-4 file:rounded-full file:border-0 file:bg-campus-emerald-deep file:px-5 file:py-3 file:text-surface disabled:opacity-50"
+                />
+                <p className="mt-3 text-sm text-ink-soft">{t('fileHint')}</p>
+                {isUploading && (
+                  <p role="status" className="mt-4 text-sm">
+                    {t('progress', { progress: uploadProgress })}
+                  </p>
+                )}
+                {uploadError && (
+                  <p role="alert" className="workspace-feedback workspace-feedback-error mt-4">
+                    {uploadError}
+                  </p>
+                )}
+                {uploadedMessage && !uploadError && (
+                  <p role="status" className="workspace-feedback workspace-feedback-success mt-4">
+                    {uploadedMessage}
+                  </p>
+                )}
+              </section>
+            )}
+            <section className="workspace-panel mt-6">
+              <h2 className="workspace-panel-title">{t('skills')}</h2>
+              <p className="mt-3 text-base leading-relaxed text-ink-soft">{t('skillsBody')}</p>
+              <p className="mt-4 text-sm">
+                {t('skillCount', {
+                  count: skills.filter((skill) => skill.approvedLevel !== null).length,
+                })}
+              </p>
+              <a href={`/${locale}/skills`} className="workspace-link mt-4">
+                {t('skillsAction')} ↗
+              </a>
+            </section>
+          </>
+        )}
+      </main>
     </div>
-    {isUploadOpen && <section id="verification-upload" className="workspace-panel workspace-form mt-6"><h2 className="workspace-panel-title">{t('uploadTitle')}</h2><p className="mt-3 text-base text-ink-soft">{t('uploadBody')}</p><div className="mt-6 grid gap-5 sm:grid-cols-2"><div><label htmlFor="verification-school" className="mb-2 block font-semibold">{t('school')}</label><input id="verification-school" value={schoolName} onChange={e=>setSchoolName(e.target.value)} placeholder={t('schoolPlaceholder')} className="w-full border px-4 py-3" /></div><div><label htmlFor="verification-major" className="mb-2 block font-semibold">{t('major')}</label><input id="verification-major" value={major} onChange={e=>setMajor(e.target.value)} placeholder={t('majorPlaceholder')} className="w-full border px-4 py-3"/></div></div><label htmlFor="verification-document" className="mb-3 mt-6 block font-semibold">{t('document')}</label><input id="verification-document" type="file" accept="image/*,.pdf" disabled={isSubmitting || !schoolName.trim() || !major.trim()} onChange={handleUploadAndSubmit} className="max-w-full text-sm file:mr-4 file:rounded-full file:border-0 file:bg-campus-emerald-deep file:px-5 file:py-3 file:text-surface disabled:opacity-50"/><p className="mt-3 text-sm text-ink-soft">{t('fileHint')}</p>{isUploading && <p role="status" className="mt-4 text-sm">{t('progress',{progress:uploadProgress})}</p>}{uploadError && <p role="alert" className="workspace-feedback workspace-feedback-error mt-4">{uploadError}</p>}{uploadedMessage && !uploadError && <p role="status" className="workspace-feedback workspace-feedback-success mt-4">{uploadedMessage}</p>}</section>}
-    <section className="workspace-panel mt-6"><h2 className="workspace-panel-title">{t('skills')}</h2><p className="mt-3 text-base leading-relaxed text-ink-soft">{t('skillsBody')}</p><p className="mt-4 text-sm">{t('skillCount',{count:skills.filter(skill=>skill.approvedLevel !== null).length})}</p><a href={`/${locale}/skills`} className="workspace-link mt-4">{t('skillsAction')} ↗</a></section>
-    </>}
-  </main><WorkspaceFooter/></div>;
+  );
 }

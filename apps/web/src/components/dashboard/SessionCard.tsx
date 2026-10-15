@@ -3,11 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import type {
-  BookingState,
-  LearnerBookingView,
-  SkillIcon,
-} from '../../lib/dashboard/types';
+import type { BookingState, LearnerBookingView, SkillIcon } from '../../lib/dashboard/types';
 
 /**
  * Polymorphic session card (FR-021 booking lifecycle).
@@ -34,16 +30,12 @@ export function SessionCard({
 
   switch (booking.state) {
     case 'pending_learner_confirmation':
-      return (
-        <PendingCard booking={booking} onAction={onAction} tCard={tCard} />
-      );
+      return <PendingCard booking={booking} onAction={onAction} tCard={tCard} />;
     case 'upcoming':
       return <UpcomingCard booking={booking} tCard={tCard} />;
     case 'completed':
     case 'released':
-      return (
-        <CompletedCard booking={booking} onAction={onAction} tCard={tCard} />
-      );
+      return <CompletedCard booking={booking} onAction={onAction} tCard={tCard} />;
     case 'cancelled':
     case 'refunded':
     case 'no_show_reported':
@@ -83,7 +75,7 @@ function PendingCard({
   const hours = Math.floor(countdown / 3600);
   const minutes = Math.floor((countdown % 3600) / 60);
   return (
-    <article className="workspace-panel relative overflow-hidden rounded-2xl border border-border bg-surface p-6  transition-shadow hover:">
+    <article className="workspace-panel relative overflow-hidden transition-shadow hover:">
       <div className="absolute inset-x-0 top-0 h-1.5 bg-warning-ink" />
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -95,7 +87,9 @@ function PendingCard({
           </div>
           <span className="inline-flex items-center gap-1 text-sm font-semibold text-danger-ink">
             <AlarmIcon className="h-3.5 w-3.5" />
-            <span>{tCard('autoRelease', { time: `${hours}h:${String(minutes).padStart(2, '0')}m` })}</span>
+            <span>
+              {tCard('autoRelease', { time: `${hours}h:${String(minutes).padStart(2, '0')}m` })}
+            </span>
           </span>
         </div>
         <CardBody booking={booking} tCard={tCard} />
@@ -115,7 +109,9 @@ function PendingCard({
               className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
             >
               <span>{locale === 'vi' ? 'Nghiệm thu chi tiết' : 'Detailed Settlement'}</span>
-              <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+              <span aria-hidden="true" className="material-symbols-outlined text-[14px]">
+                arrow_forward
+              </span>
             </Link>
             <button
               type="button"
@@ -132,20 +128,11 @@ function PendingCard({
   );
 }
 
-function UpcomingCard({
-  booking,
-  tCard,
-}: {
-  booking: LearnerBookingView;
-  tCard: CardTranslator;
-}) {
+function UpcomingCard({ booking, tCard }: { booking: LearnerBookingView; tCard: CardTranslator }) {
   const locale = useLocale() as 'vi' | 'en';
   const [notice, setNotice] = useState<string | null>(null);
   const start = new Date(booking.startsAt);
-  const hoursLeft = Math.max(
-    0,
-    Math.round((start.getTime() - Date.now()) / (60 * 60 * 1000)),
-  );
+  const hoursLeft = Math.max(0, Math.round((start.getTime() - Date.now()) / (60 * 60 * 1000)));
   const startText = start.toLocaleString(locale, {
     weekday: 'short',
     day: '2-digit',
@@ -154,7 +141,7 @@ function UpcomingCard({
     minute: '2-digit',
   });
   return (
-    <article className="workspace-panel rounded-2xl border border-border bg-surface p-6  transition-shadow hover:">
+    <article className="workspace-panel transition-shadow hover:">
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -178,7 +165,11 @@ function UpcomingCard({
           <LinkIcon className="h-4 w-4 text-ink" />
           <span>{tCard('roomUnavailable')}</span>
         </div>
-        {notice && <p role="status" className="workspace-feedback bg-neutral-tint text-ink-soft">{notice}</p>}
+        {notice && (
+          <p role="status" className="workspace-feedback bg-neutral-tint text-ink-soft">
+            {notice}
+          </p>
+        )}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -231,7 +222,7 @@ function CompletedCard({
       })
     : '';
   return (
-    <article className="workspace-panel rounded-2xl border border-border bg-surface p-6  transition-shadow hover:">
+    <article className="workspace-panel transition-shadow hover:">
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -258,9 +249,7 @@ function CompletedCard({
                 {tCard('reviewStars', { rating: booking.reviewSubmitted.rating })}
               </span>
             </div>
-            <p className="text-sm italic text-ink-soft">
-              "{booking.reviewSubmitted.body}"
-            </p>
+            <p className="text-sm italic text-ink-soft">"{booking.reviewSubmitted.body}"</p>
           </div>
         )}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
@@ -306,9 +295,8 @@ function ClosedCard({
   tFilters: FiltersTranslator;
 }) {
   const locale = useLocale() as 'vi' | 'en';
-  const reason = booking.state === 'no_show_reported'
-    ? tCard('noShowBody')
-    : tCard('cancelledBody');
+  const reason =
+    booking.state === 'no_show_reported' ? tCard('noShowBody') : tCard('cancelledBody');
   const date = new Date(booking.startsAt).toLocaleDateString(locale, {
     day: '2-digit',
     month: '2-digit',
@@ -324,9 +312,7 @@ function ClosedCard({
           <span className="text-sm text-ink-soft">{date}</span>
         </div>
       </div>
-      <h3 className="mt-3 text-base font-semibold text-ink">
-        {booking.classTitle}
-      </h3>
+      <h3 className="mt-3 text-base font-semibold text-ink">{booking.classTitle}</h3>
       <p className="mt-1 text-sm text-ink-soft">{reason}</p>
     </article>
   );
@@ -372,13 +358,17 @@ function CardBody({
         </div>
       </div>
       <div className="flex shrink-0 flex-row items-end justify-between gap-1 text-right md:flex-col">
-        <span className="text-sm text-ink-soft">{tCard('cost', { credits: booking.priceCredits })}</span>
+        <span className="text-sm text-ink-soft">
+          {tCard('cost', { credits: booking.priceCredits })}
+        </span>
         <div className="flex items-baseline gap-1">
           <span className="text-lg font-bold text-ink">{booking.priceCredits}</span>
           <span className="text-sm font-semibold text-slate-500">Credits</span>
         </div>
         <span className="text-sm text-slate-400 font-medium">
-          ~{(booking.priceCredits * 1000).toLocaleString('vi-VN')}{ui('vnd')}</span>
+          ~{(booking.priceCredits * 1000).toLocaleString('vi-VN')}
+          {ui('vnd')}
+        </span>
       </div>
     </div>
   );
@@ -433,7 +423,18 @@ function SkillIconSvg({ icon }: { icon: SkillIcon }) {
   switch (icon) {
     case 'language':
       return (
-        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={cn}>
+        <svg
+          viewBox="0 0 24 24"
+          width="32"
+          height="32"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          className={cn}
+        >
           <line x1="4" y1="5" x2="14" y2="5" />
           <path d="M4 5l-2 7" />
           <line x1="2" y1="12" x2="12" y2="12" />
@@ -443,21 +444,54 @@ function SkillIconSvg({ icon }: { icon: SkillIcon }) {
       );
     case 'code':
       return (
-        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={cn}>
+        <svg
+          viewBox="0 0 24 24"
+          width="32"
+          height="32"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          className={cn}
+        >
           <polyline points="16 18 22 12 16 6" />
           <polyline points="8 6 2 12 8 18" />
         </svg>
       );
     case 'design':
       return (
-        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={cn}>
+        <svg
+          viewBox="0 0 24 24"
+          width="32"
+          height="32"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          className={cn}
+        >
           <path d="M3 6h18l-2 12H5z" />
           <path d="M9 6V4a3 3 0 0 1 6 0v2" />
         </svg>
       );
     case 'math':
       return (
-        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={cn}>
+        <svg
+          viewBox="0 0 24 24"
+          width="32"
+          height="32"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          className={cn}
+        >
           <line x1="3" y1="6" x2="21" y2="6" />
           <line x1="3" y1="18" x2="21" y2="18" />
           <line x1="9" y1="3" x2="9" y2="21" />
@@ -466,14 +500,36 @@ function SkillIconSvg({ icon }: { icon: SkillIcon }) {
       );
     case 'business':
       return (
-        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={cn}>
+        <svg
+          viewBox="0 0 24 24"
+          width="32"
+          height="32"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          className={cn}
+        >
           <path d="M3 21V9l9-6 9 6v12" />
           <path d="M9 21v-8h6v8" />
         </svg>
       );
     case 'science':
       return (
-        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={cn}>
+        <svg
+          viewBox="0 0 24 24"
+          width="32"
+          height="32"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          className={cn}
+        >
           <path d="M9 3h6l-1 7 5 11H5l5-11z" />
         </svg>
       );
@@ -507,7 +563,18 @@ function Stars({ filled, className = '' }: { filled: number; className?: string 
 
 function PendingIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <circle cx="12" cy="12" r="9" />
       <polyline points="12 7 12 12 15 14" />
     </svg>
@@ -516,7 +583,18 @@ function PendingIcon({ className = '' }: { className?: string }) {
 
 function AlarmIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="14"
+      height="14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <circle cx="12" cy="13" r="8" />
       <line x1="12" y1="9" x2="12" y2="13" />
       <line x1="9" y1="3" x2="15" y2="3" />
@@ -526,7 +604,18 @@ function AlarmIcon({ className = '' }: { className?: string }) {
 
 function ReportIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <path d="M12 3l10 18H2z" />
       <line x1="12" y1="10" x2="12" y2="14" />
       <circle cx="12" cy="17" r="0.5" fill="currentColor" />
@@ -536,7 +625,18 @@ function ReportIcon({ className = '' }: { className?: string }) {
 
 function CheckCircleIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <circle cx="12" cy="12" r="9" />
       <polyline points="9 12 11 14 15 10" />
     </svg>
@@ -545,7 +645,18 @@ function CheckCircleIcon({ className = '' }: { className?: string }) {
 
 function EventAvailableIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <rect x="3" y="5" width="18" height="16" rx="2" />
       <line x1="3" y1="10" x2="21" y2="10" />
       <polyline points="9 16 11 18 15 14" />
@@ -555,7 +666,18 @@ function EventAvailableIcon({ className = '' }: { className?: string }) {
 
 function LockIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="14"
+      height="14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <rect x="4" y="11" width="16" height="10" rx="2" />
       <path d="M8 11V7a4 4 0 0 1 8 0v4" />
     </svg>
@@ -564,7 +686,18 @@ function LockIcon({ className = '' }: { className?: string }) {
 
 function LinkIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <path d="M10 14l4-4" />
       <path d="M13 8a4 4 0 0 1 5 5l-1 1" />
       <path d="M11 16a4 4 0 0 1-5-5l1-1" />
@@ -574,7 +707,18 @@ function LinkIcon({ className = '' }: { className?: string }) {
 
 function PolicyIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="14"
+      height="14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <path d="M12 3l8 3v6c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V6l8-3z" />
     </svg>
   );
@@ -582,7 +726,18 @@ function PolicyIcon({ className = '' }: { className?: string }) {
 
 function ChatIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <path d="M21 12a8 8 0 0 1-12.6 6.6L3 21l1.4-4.7A8 8 0 1 1 21 12z" />
     </svg>
   );
@@ -590,7 +745,18 @@ function ChatIcon({ className = '' }: { className?: string }) {
 
 function DownloadIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <path d="M12 4v12" />
       <polyline points="7 11 12 16 17 11" />
       <line x1="4" y1="20" x2="20" y2="20" />
@@ -600,7 +766,18 @@ function DownloadIcon({ className = '' }: { className?: string }) {
 
 function LockClockIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <rect x="4" y="11" width="16" height="10" rx="2" />
       <path d="M8 11V7a4 4 0 0 1 8 0v4" />
       <circle cx="12" cy="16" r="2" />
@@ -610,7 +787,18 @@ function LockClockIcon({ className = '' }: { className?: string }) {
 
 function TaskAltIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <polyline points="9 11 12 14 22 4" />
       <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
     </svg>
@@ -619,7 +807,18 @@ function TaskAltIcon({ className = '' }: { className?: string }) {
 
 function ReceiptIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <path d="M5 3h14v18l-2-1-2 1-2-1-2 1-2-1-2 1-2-1z" />
       <line x1="9" y1="8" x2="15" y2="8" />
       <line x1="9" y1="12" x2="15" y2="12" />
@@ -630,7 +829,18 @@ function ReceiptIcon({ className = '' }: { className?: string }) {
 
 function ReplayIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <polyline points="1 4 1 10 7 10" />
       <path d="M3.5 15a9 9 0 1 0 2.1-9.4L1 10" />
     </svg>
@@ -639,7 +849,18 @@ function ReplayIcon({ className = '' }: { className?: string }) {
 
 function VerifiedIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <circle cx="12" cy="12" r="9" />
       <polyline points="9 12 11 14 15 10" />
     </svg>
@@ -648,20 +869,25 @@ function VerifiedIcon({ className = '' }: { className?: string }) {
 
 function ScheduleIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <circle cx="12" cy="12" r="9" />
       <polyline points="12 7 12 12 15 14" />
     </svg>
   );
 }
 
-function LiveCard({
-  booking,
-  tCard,
-}: {
-  booking: LearnerBookingView;
-  tCard: CardTranslator;
-}) {
+function LiveCard({ booking, tCard }: { booking: LearnerBookingView; tCard: CardTranslator }) {
   const ui = useTranslations('Workspace.copy');
 
   const tLive = useTranslations('Dashboard.live');
@@ -670,10 +896,7 @@ function LiveCard({
   const now = Date.now();
   const elapsedMs = Math.max(0, now - start);
   const totalMs = booking.durationMinutes * 60 * 1000;
-  const elapsedMin = Math.min(
-    booking.durationMinutes,
-    Math.floor(elapsedMs / (60 * 1000)),
-  );
+  const elapsedMin = Math.min(booking.durationMinutes, Math.floor(elapsedMs / (60 * 1000)));
   const pct = Math.min(100, Math.round((elapsedMs / totalMs) * 100));
   const startTimeText = new Date(booking.startsAt).toLocaleTimeString(locale, {
     hour: '2-digit',
@@ -710,9 +933,7 @@ function LiveCard({
         </div>
 
         <div>
-          <h3 className="text-xl font-bold text-ink tracking-tight mb-2">
-            {booking.classTitle}
-          </h3>
+          <h3 className="text-xl font-bold text-ink tracking-tight mb-2">{booking.classTitle}</h3>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-ink-soft">
             <span className="inline-flex items-center gap-1.5 font-semibold text-ink">
               <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-sm">
@@ -723,7 +944,9 @@ function LiveCard({
             </span>
             <span className="inline-flex items-center gap-1 text-ink-soft">
               <ScheduleIcon className="h-3.5 w-3.5 text-ink-muted" />
-              <span>{startTimeText} - {endTimeText} ({booking.durationMinutes} {ui('min')}</span>
+              <span>
+                {startTimeText} - {endTimeText} ({booking.durationMinutes} {ui('min')}
+              </span>
             </span>
           </div>
         </div>
@@ -731,7 +954,10 @@ function LiveCard({
         <div className="space-y-1.5 rounded-xl border border-slate-100 bg-slate-50/80 p-3.5">
           <div className="flex items-center justify-between text-sm">
             <span className="font-medium text-slate-700">
-              {tLive('progress')}: <strong className="text-emerald-700">{elapsedMin}/{booking.durationMinutes} {ui('mine5d92')}</strong>
+              {tLive('progress')}:{' '}
+              <strong className="text-emerald-700">
+                {elapsedMin}/{booking.durationMinutes} {ui('mine5d92')}
+              </strong>
             </span>
             <span className="font-bold text-emerald-700">{pct}%</span>
           </div>
@@ -764,7 +990,18 @@ function LiveCard({
 
 function VideocamIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <polygon points="23 7 16 12 23 17 23 7" />
       <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
     </svg>

@@ -12,11 +12,7 @@ import type { LearnerBookingView } from '../../lib/dashboard/types';
  * booking's startsAt + durationMinutes; the banner is hidden when
  * no booking is in_progress.
  */
-export async function LiveSessionBanner({
-  booking,
-}: {
-  booking: LearnerBookingView | null;
-}) {
+export async function LiveSessionBanner({ booking }: { booking: LearnerBookingView | null }) {
   const t = await getTranslations('Dashboard.live');
   const tCard = await getTranslations('Dashboard.card');
   const locale = (await getLocale()) as 'vi' | 'en';
@@ -27,21 +23,15 @@ export async function LiveSessionBanner({
   const now = Date.now();
   const elapsedMs = Math.max(0, now - start);
   const totalMs = booking.durationMinutes * 60 * 1000;
-  const elapsedMin = Math.min(
-    booking.durationMinutes,
-    Math.floor(elapsedMs / (60 * 1000)),
-  );
-  const pct = Math.min(
-    100,
-    Math.round((elapsedMs / totalMs) * 100),
-  );
+  const elapsedMin = Math.min(booking.durationMinutes, Math.floor(elapsedMs / (60 * 1000)));
+  const pct = Math.min(100, Math.round((elapsedMs / totalMs) * 100));
   const dateText = new Date(booking.startsAt).toLocaleTimeString(locale, {
     hour: '2-digit',
     minute: '2-digit',
   });
 
   return (
-    <section className="workspace-panel relative overflow-hidden rounded-2xl border border-border bg-surface p-6 shadow-md md:p-8">
+    <section className="workspace-panel relative overflow-hidden shadow-md md:p-8">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-mist blur-3xl"
@@ -83,16 +73,19 @@ export async function LiveSessionBanner({
                 <ScheduleIcon className="h-4 w-4 text-ink" />
                 <span>
                   {dateText} -{' '}
-                  {new Date(
-                    start + booking.durationMinutes * 60 * 1000,
-                  ).toLocaleTimeString(locale, {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}{' '}
-                  ({t('elapsed', {
+                  {new Date(start + booking.durationMinutes * 60 * 1000).toLocaleTimeString(
+                    locale,
+                    {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    },
+                  )}{' '}
+                  (
+                  {t('elapsed', {
                     elapsed: elapsedMin,
                     total: booking.durationMinutes,
-                  })})
+                  })}
+                  )
                 </span>
               </span>
               <span className="rounded bg-mist px-2 py-0.5 text-sm font-semibold text-ink">
@@ -134,17 +127,16 @@ export async function LiveSessionBanner({
         <div className="flex items-center justify-between text-sm text-ink-soft">
           <span>{t('progress')}</span>
           <span className="font-semibold text-ink">
-            {t('pct', { pct })} ({t('elapsed', {
+            {t('pct', { pct })} (
+            {t('elapsed', {
               elapsed: elapsedMin,
               total: booking.durationMinutes,
-            })})
+            })}
+            )
           </span>
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-mist">
-          <div
-            className="h-full rounded-full bg-ink"
-            style={{ width: `${pct}%` }}
-          />
+          <div className="h-full rounded-full bg-ink" style={{ width: `${pct}%` }} />
         </div>
       </div>
     </section>
@@ -155,7 +147,18 @@ export async function LiveSessionBanner({
 
 function VideocamIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="30"
+      height="30"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <polygon points="23 7 16 12 23 17 23 7" />
       <rect x="1" y="5" width="15" height="14" rx="2" />
     </svg>
@@ -164,7 +167,18 @@ function VideocamIcon({ className = '' }: { className?: string }) {
 
 function PersonIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <circle cx="12" cy="8" r="4" />
       <path d="M4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2" />
     </svg>
@@ -173,7 +187,18 @@ function PersonIcon({ className = '' }: { className?: string }) {
 
 function ScheduleIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <circle cx="12" cy="12" r="9" />
       <polyline points="12 7 12 12 15 14" />
     </svg>
@@ -182,7 +207,18 @@ function ScheduleIcon({ className = '' }: { className?: string }) {
 
 function MeetingRoomIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="20"
+      height="20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <path d="M3 21h18" />
       <path d="M5 21V5a2 2 0 0 1 2-2h6v18" />
       <path d="M13 12h6" />
@@ -193,7 +229,18 @@ function MeetingRoomIcon({ className = '' }: { className?: string }) {
 
 function FolderIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
     </svg>
   );
@@ -201,7 +248,18 @@ function FolderIcon({ className = '' }: { className?: string }) {
 
 function ChatIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <path d="M21 12a8 8 0 0 1-12.6 6.6L3 21l1.4-4.7A8 8 0 1 1 21 12z" />
     </svg>
   );

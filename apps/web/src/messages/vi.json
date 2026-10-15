@@ -280,7 +280,9 @@
         "advanced": "Nâng cao",
         "expert": "Chuyên sâu"
       },
-      "illustration": "Minh họa chủ đề học"
+      "illustration": "Minh họa chủ đề học",
+      "availability": "{free}/{capacity} chỗ còn trống",
+      "availabilityUnknown": "Chưa đọc được số chỗ còn trống"
     },
     "pagination": {
       "showing": "Hiển thị {from} - {to} trong tổng số {total} lớp học đang tuyển sinh",
@@ -482,15 +484,7 @@
       "title": "Lịch theo tháng",
       "prev": "Tháng trước",
       "next": "Tháng sau",
-      "weekdays": [
-        "T2",
-        "T3",
-        "T4",
-        "T5",
-        "T6",
-        "T7",
-        "CN"
-      ],
+      "weekdays": ["T2", "T3", "T4", "T5", "T6", "T7", "CN"],
       "legendLive": "Lớp đang diễn ra",
       "legendBooked": "Lớp đã chốt slot",
       "noMonth": "Chưa có lịch cho tháng này"
@@ -535,7 +529,8 @@
       "commentPlaceholder": "Chia sẻ trải nghiệm học tập, sự nhiệt tình và nội dung kiến thức được trao đổi...",
       "pledge": "Cam kết học thuật: Đánh giá trung thực giúp xây dựng môi trường trao đổi kỹ năng minh bạch giữa sinh viên các trường.",
       "cancel": "Để sau",
-      "submit": "Xác nhận & Giải ngân"
+      "submit": "Xác nhận & Giải ngân",
+      "starLabel": "{count} sao"
     },
     "noShowModal": {
       "title": "Báo cáo giảng viên vắng mặt",
@@ -639,7 +634,7 @@
     },
     "StudentVerification": {
       "title": "Duyệt xác minh sinh viên",
-      "notice": "Xem xét hồ sơ xác minh sinh viên theo id. Admin cần biết id xác minh.",
+      "notice": "Nhập mã hồ sơ sinh viên cần xét duyệt để mở các thao tác. Kiểm tra đúng hồ sơ và nêu rõ lý do khi ra quyết định.",
       "idPlaceholder": "Id xác minh",
       "openCta": "Mở",
       "label": {
@@ -682,10 +677,10 @@
       "title": "Thông tin lớp học trực tuyến",
       "subjectChip": "Học phần chuyên đề",
       "verificationBanner": {
-        "title": "Giảng viên chuyên môn thẩm định",
-        "body": "Hồ sơ sư phạm đáp ứng chuẩn kiểm định. Hệ thống đảm bảo tính minh bạch và giá trị chứng chỉ tương đương giữa các khoa viện.",
-        "ruleTitle": "Quy ước bất biến",
-        "ruleBody": "Khóa sửa lịch & nội dung sau khi có lượt đặt đầu tiên"
+        "title": "Chuẩn bị một buổi học rõ ràng",
+        "body": "Chọn kỹ năng đã được duyệt. Kiểm tra mô tả, thời gian và giá để người học biết mình sẽ học gì.",
+        "ruleTitle": "Kiểm tra trước khi công bố",
+        "ruleBody": "Không sửa lịch và nội dung sau khi có lượt đặt đầu tiên."
       },
       "skill": {
         "label": "Kỹ năng chuyên môn áp dụng",
@@ -740,7 +735,8 @@
         "teacher": "Bạn (Giảng viên)",
         "verifiedFaculty": "Đã chứng thực sinh viên",
         "price": "Học phí",
-        "priceUnit": "Cr"
+        "priceUnit": "Cr",
+        "draft": "Bản nháp chưa công bố"
       },
       "actions": {
         "warning": "Cam kết sư phạm: Sau khi có học viên đầu tiên đăng ký, lớp sẽ tự động khóa toàn bộ thao tác sửa đổi giờ học và nội dung.",
@@ -1198,7 +1194,9 @@
       "approved": "Đã phê duyệt",
       "rejected": "Bị từ chối",
       "superseded": "Bị thay thế"
-    }
+    },
+    "description": "Xem bằng chứng được gửi, nhận hồ sơ phù hợp chuyên môn và ghi rõ quyết định xét duyệt.",
+    "emptyHint": "Hồ sơ phù hợp với các bộ lọc này sẽ xuất hiện tại đây."
   },
   "Workspace": {
     "skip": "Chuyển đến nội dung chính",
@@ -1465,6 +1463,15 @@
       "edit": "Sửa",
       "minimumConfirmedSeats": "Không thể nhỏ hơn {count} chỗ đã xác nhận."
     },
-    "rules": "Quy tắc học và thanh toán"
+    "rules": "Quy tắc học và thanh toán",
+    "fallback": {
+      "notFoundTitle": "Không tìm thấy trang",
+      "notFoundBody": "Đường dẫn có thể đã thay đổi. Quay về trang chủ hoặc khám phá lớp học để tiếp tục.",
+      "errorTitle": "Trang này chưa tải được",
+      "errorBody": "Hãy thử tải lại. Bạn cũng có thể quay về trang chủ để tiếp tục.",
+      "retry": "Thử lại",
+      "home": "Về trang chủ",
+      "explore": "Khám phá lớp học"
+    }
   }
 }
