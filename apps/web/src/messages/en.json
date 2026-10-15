@@ -549,6 +549,52 @@
         "generic": "Could not update the Verifier status. Please try again."
       }
     },
+    "verifierQueue": {
+      "pageTitle": "Verifier queue by domain",
+      "pageSubtitle": "Every piece of skill evidence awaiting review, with no expertise restriction. Use this to spot a domain where work is piling up with no active Verifier covering it.",
+      "loading": "Loading the queue…",
+      "loadingMore": "Loading more…",
+      "loadMore": "Load more",
+      "empty": "No evidence matches these filters.",
+      "emptyHint": "Try clearing the domain or status filter.",
+      "totalShown": "{count} evidence items match these filters",
+      "retry": "Try again",
+      "unknownSkill": "Unknown skill",
+      "unknownDomain": "Unknown domain",
+      "requestedLevel": "Requested level: {level}",
+      "version": "Version {version}",
+      "unclaimed": "No Verifier has claimed this",
+      "claimedBy": "Being reviewed by {id}",
+      "unauthorizedTitle": "You do not have access to this queue",
+      "unauthorizedBody": "The platform-wide verifier queue is for administrators only. Sign in with an administrator account.",
+      "filters": {
+        "domain": "Domain",
+        "domainPlaceholder": "Search by domain (at least 2 characters)",
+        "status": "Status",
+        "sort": "Sort"
+      },
+      "sort": {
+        "submittedAt": "Oldest first",
+        "-submittedAt": "Newest first"
+      },
+      "status": {
+        "live": "In the queue",
+        "pending": "Unclaimed",
+        "claimed": "In review",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "superseded": "Superseded"
+      },
+      "level": {
+        "beginner": "Beginner",
+        "intermediate": "Intermediate",
+        "advanced": "Advanced",
+        "expert": "Expert"
+      },
+      "errors": {
+        "generic": "Could not load the verifier queue. Please try again."
+      }
+    },
     "StudentVerification": {
       "title": "Student verification review",
       "notice": "Review a student verification by id. Admin must know the verification id.",

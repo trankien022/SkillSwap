@@ -549,6 +549,52 @@
         "generic": "Không thể cập nhật trạng thái Verifier. Vui lòng thử lại."
       }
     },
+    "verifierQueue": {
+      "pageTitle": "Hàng đợi thẩm định theo lĩnh vực",
+      "pageSubtitle": "Toàn bộ bằng chứng năng lực đang chờ, không giới hạn theo chuyên môn của một Verifier. Dùng để phát hiện lĩnh vực đang tồn đọng mà không có Verifier nào phụ trách.",
+      "loading": "Đang tải hàng đợi…",
+      "loadingMore": "Đang tải thêm…",
+      "loadMore": "Tải thêm",
+      "empty": "Không có bằng chứng nào khớp bộ lọc.",
+      "emptyHint": "Thử bỏ bộ lọc lĩnh vực hoặc trạng thái.",
+      "totalShown": "{count} bằng chứng khớp bộ lọc",
+      "retry": "Thử lại",
+      "unknownSkill": "Không rõ kỹ năng",
+      "unknownDomain": "Không rõ lĩnh vực",
+      "requestedLevel": "Mức yêu cầu: {level}",
+      "version": "Phiên bản {version}",
+      "unclaimed": "Chưa có Verifier nhận",
+      "claimedBy": "Đang được thẩm định bởi {id}",
+      "unauthorizedTitle": "Bạn không có quyền truy cập hàng đợi này",
+      "unauthorizedBody": "Hàng đợi thẩm định toàn hệ thống chỉ dành cho quản trị viên. Hãy đăng nhập bằng tài khoản quản trị.",
+      "filters": {
+        "domain": "Lĩnh vực",
+        "domainPlaceholder": "Tìm theo lĩnh vực (ít nhất 2 ký tự)",
+        "status": "Trạng thái",
+        "sort": "Sắp xếp"
+      },
+      "sort": {
+        "submittedAt": "Cũ nhất trước",
+        "-submittedAt": "Mới nhất trước"
+      },
+      "status": {
+        "live": "Đang trong hàng đợi",
+        "pending": "Chưa nhận",
+        "claimed": "Đang thẩm định",
+        "approved": "Đã duyệt",
+        "rejected": "Từ chối",
+        "superseded": "Đã thay thế"
+      },
+      "level": {
+        "beginner": "Cơ bản",
+        "intermediate": "Trung cấp",
+        "advanced": "Nâng cao",
+        "expert": "Chuyên gia"
+      },
+      "errors": {
+        "generic": "Không thể tải hàng đợi thẩm định. Vui lòng thử lại."
+      }
+    },
     "StudentVerification": {
       "title": "Duyệt xác minh sinh viên",
       "notice": "Xem xét hồ sơ xác minh sinh viên theo id. Admin cần biết id xác minh.",
