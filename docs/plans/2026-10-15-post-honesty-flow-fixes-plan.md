@@ -1,16 +1,18 @@
 # Plan — Post-honesty flow fixes: role landing, auth chrome, payment return, booking flow
 
-Status: **Proposed** — round-2 decisions (§0) recorded; awaiting approval to start P1
-Owner: (agent) · Created: 2026-10-15 · Updated: 2026-10-15 (round 2)
+Status: **Proposed** — approved to start; decisions through round 3 (§0) recorded
+Owner: (agent) · Created: 2026-10-15 · Updated: 2026-10-15 (round 3: booking flow redesign)
 Related: `docs/plans/2026-10-15-fr015-operations-dashboard-plan.md` (P1 is its precondition),
 `docs/plans/SkillSwap-SRS.md` (AC-022–AC-030, OQ-003, OQ-007), ADR-029/ADR-030 (roles),
 ADR-032 (event-driven settlement C3a/C3b), ADR-033 (SePay hosted checkout), ADR-018 (escrow),
 `docs/runbooks/sepay-ngrok-local-demo.md`.
 
 > This **replaces the round-1 version** of this plan (commit `b074e64`). Round 1 answered
-> "what is wrong"; round 2 records the decisions taken on each open point and folds in the two
+> "what is wrong"; round 2 recorded the decisions on each open point and folded in the two
 > fabrication survivors found while answering (§1.5) plus the fields web was silently dropping
-> (§1.6).
+> (§1.6). Round 3 (D4/D5 + §2.3) redesigned the booking flow after it became clear there is **no
+> synchronous credit-gate API**: one composite book → gate → confirm action on the detail page,
+> with checkout demoted to the failed-balance branch.
 
 ---
 
@@ -21,8 +23,8 @@ ADR-032 (event-driven settlement C3a/C3b), ADR-033 (SePay hosted checkout), ADR-
 | D1 | Where do admin/verifier land after login? | Verifier → `/verifier` (their queue). Admin → a **new** `/admin` landing page (§4.1). |
 | D2 | Navbar on the login/register page | **Remove all nav items** — brand header only. `login/` and `register/` are pure redirects, so `auth/page.tsx` is the only surface. |
 | D3 | SePay return URL when both web and mobile exist | **Per-request `returnUrl`, allow-listed server-side.** Web sends `/{locale}/payment/result`; mobile sends `skillswap://wallet`. `SEPAY_RETURN_URL` is the default when omitted. The IPN + intent poll remain the source of truth on both clients. |
-| D4 | Insufficient balance UX | **Gate on checkout**: confirm disabled + shortfall copy + a `Nạp thêm credit` button that opens the top-up modal already on that page; polling refreshes the balance, then confirm enables. |
-| D5 | Single class-detail CTA label | **`"Đặt lớp"`** → `/checkout`. The `Đặt chỗ` button is removed (§4.4). |
+| D4 | Insufficient balance UX | **Gate inside the single detail action, after booking**: sufficient → confirm in place; insufficient → navigate to `/checkout`, where a `Nạp thêm credit` button appears (the gate's failure) opening the top-up modal already on that page; polling refreshes the balance, then confirm enables. |
+| D5 | Class-detail button | **One composite action — book → balance gate → confirm.** No second button, no navigation CTA, **no "Đặt lớp" button** (the `Đặt chỗ` button *and* the `Xem xét & Khóa ký quỹ` link are both removed). Checkout is reached **only** when the balance is short. Working label for the composite button: `Xác nhận & Thanh toán` (one i18n key — trivial to rename). |
 | D6 | Learner cancellation? | **None — by design.** AC-023: the MVP deliberately has no booking-cancellation policy. No endpoint or button to build; the hold expiry (§2.2) is surfaced instead. |
 | D7 | Mobile top-up flow | **Already exists** (`wallet-view.tsx` + `wallet-service.ts`) — round 1 wrongly said it didn't. Scope for mobile is *return handling* only (P3). |
 
@@ -121,6 +123,26 @@ ADR-032 (event-driven settlement C3a/C3b), ADR-033 (SePay hosted checkout), ADR-
   phút"*) and **no live countdown**; mobile shows `ownBooking.expiresAt`
   (`class-detail-view.tsx:430-432`). P5 adds the countdown to checkout.
 
+### 2.3 Is there an API that gates the credit check?
+**No — no synchronous credit gate exists.** (asked 2026-10-15, round 3)
+- **Book** does not touch the wallet: `booking.ts:4-6` — *"This phase owns booking eligibility … It
+  does not touch the wallet."* `assertBookable` checks state / 24 h lead / duration / capacity /
+  duplicate / self only (`:161-198`).
+- **Confirm** does not either: `confirm-booking.ts:17` — *"There is no synchronous payment
+  claim."* It emits `booking.confirmed {settled:false}` (C3a) and answers `confirmed: false`.
+- The **only real balance gate runs asynchronously** in the wallet consumer, *after* the HTTP
+  response: `UPDATE … SET available_credits = available_credits - $price WHERE owner_id AND
+  available_credits >= $price`, else `InsufficientBalanceError`
+  (`sql-wallet-repository.ts:182-198`). The client cannot observe that failure — precisely the
+  reported "auto accept without changing the wallet ledger" (§1.4).
+- **Consequence:** the gate must be composed client-side from two existing reads —
+  `GET /wallet/balance` → `availableCredits` vs `priceCredits` from `GET /classes/:id`. No new
+  endpoint (§3.1). The server's async gate remains the authority; the settlement machine (§4.5)
+  surfaces its rare failure honestly.
+- Making `confirm` check synchronously would require live-class to read wallet state across
+  module/schema boundaries (ADR-014: no cross-schema; modules are coupled by events today) — an
+  architecture decision needing its own ADR, deliberately out of scope here.
+
 ## 3. Scope boundaries
 
 1. **No new endpoints.** P3 is a request-field addition to an existing endpoint; P4/P5 are pure
@@ -171,31 +193,48 @@ zero links to `/classes`-as-nav, `/skills`, `/verification`, `/bookings`, `/wall
 - **Risk (§8):** SePay may reject custom-scheme URLs. Fallback: mobile omits `returnUrl` (web
   page or configured default); the poll is unchanged either way.
 
-### 4.4 Single CTA on the class detail, two branches (D5)
-`StickyBookingCard` drops `BookingPanel` (`:117`) and its messages; one CTA, four states:
-1. **`ownBooking.state === 'pending'` && not expired** → enabled **"Đặt lớp"** → `/checkout`
-   (continues an existing hold — the branch `canBook: false` would wrongly kill).
-2. **`ownBooking.state === 'confirmed'`** → success pill + link to `/bookings`, no book CTA.
-3. **`canBook === true`** → **"Đặt lớp"** → `/checkout` (the hold is created on checkout, where
-   the balance gate lives; no hold exists for an abandoned detail page).
-4. **`canBook === false`** → disabled control with a reason derived from data the client already
-   has (0 seats / state ≠ published / lead < 24 h / own class) — facts, not placeholders.
-`canBook` + `ownBooking` are threaded through `types.ts:160` and `mapContractDetailToWeb`
-(§1.6). Demo fixtures get `canBook: false, ownBooking: null` — no mock class pretends bookable.
+### 4.4 One composite action on the class detail (D5)
+`StickyBookingCard` drops the `BookingPanel` render (`:117`) **and** the `Xem xét & Khóa ký quỹ`
+link (`:119-134`). A single button performs the whole flow — *book first, then gate, then confirm*:
 
-### 4.5 Checkout: gate, countdown, earned success, de-faked copy (D4)
-- **Gate:** `affordable = availableCredits >= priceCredits`; when false the confirm control is
-  disabled with the shortfall and a **`Nạp thêm credit`** button opens the existing top-up modal
-  (`:229-261`); its settle-poll refreshes the balance and re-evaluates the gate.
-- **Settlement state machine:** `lib/booking/settlement.ts`, pure functions ported from
-  `class-detail-coordinator.ts:304-320` — success only on `confirmed === true &&
-  booking.state === 'confirmed'`, **or** a read-back `GET /classes/:id` showing
-  `ownBooking.state === 'confirmed'`. `confirmed: false` → *pending settlement* with a re-poll;
-  timeout → honest "đang xử lý" with Ví/My Bookings links, **no modal**. If a hold exists,
-  confirm only (skip the book POST); else book → confirm with today's idempotency key.
-- **15-min countdown:** live tick from `ownBooking.expiresAt`; on expiry re-read the class and
-  return to a fresh state (D6: no cancel button, ever).
-- **De-fake §1.5:** derive the 24-hour remaining time from `startsAt`; `:511` reads
+1. **Book (skip when already held):** if `ownBooking` is `pending` and not expired → reuse it;
+   otherwise `POST /classes/:id/bookings` (idempotency key as today). Book rejections
+   (`class_full`, `duplicate_booking`, `booking_window_closed` …) surface as the existing
+   translated reason, never a redirect.
+2. **Gate** (client-composed, §2.3): `availableCredits >= priceCredits`, from a fresh
+   `GET /wallet/balance` (`callApiOk`, Phase-3 discipline) against `priceCredits` already on the
+   page.
+   - **Sufficient** → step 3.
+   - **Insufficient → navigate to `/checkout`** — the hold exists by now, its 15-min countdown
+     running. No confirm is attempted.
+   - **Balance unreadable → also `/checkout`** (cannot gate ⇒ cannot honestly confirm); checkout
+     re-reads and shows its own honest load-error state if it still fails.
+3. **Confirm:** `POST /classes/bookings/:bookingId/confirm` → settlement machine (§4.5) →
+   success rendered **in place** on the detail page, only when earned.
+`canBook` + `ownBooking` are threaded through (`types.ts:160`, `mapContractDetailToWeb`
+`api-class-detail.ts:23`, §1.6). With no active hold and `canBook === false`, the button is
+disabled with a reason derived from data the client has (0 seats / state ≠ published / < 24 h /
+own class) — facts, not placeholders. Demo fixtures get `canBook: false, ownBooking: null`.
+Trap honoured: the pending-hold branch runs **before** any `canBook` test (§1.6 — `canBook` is
+false exactly when the learner holds a seat).
+
+### 4.5 Checkout = the failed-gate branch; settlement honesty (D4)
+The checkout page stops being the mandatory step and becomes the page a failed gate lands on:
+- **Arrival with a hold:** it re-reads the class; `ownBooking` pending → shortfall copy, live
+  **countdown from `expiresAt`**, and the **`Nạp thêm credit` button shown immediately** (the
+  gate failed — that is *why* the learner is there) opening the existing top-up modal
+  (`:229-261`). The settle-poll refreshes the balance and re-runs the gate; sufficient → the
+  confirm button enables.
+- **Confirm:** `POST …/confirm` only (the hold exists). A direct visit with **no** hold runs the
+  same book → gate code as §4.4 (shared helper), so the bare URL still works.
+- **Settlement machine:** `lib/booking/settlement.ts`, pure functions ported from
+  `class-detail-coordinator.ts:304-320` (spec parity with `class-detail-coordinator.spec.ts:180`
+  and `:219`) — success only on `confirmed === true && booking.state === 'confirmed'`, **or** a
+  read-back `GET /classes/:id` showing `ownBooking.state === 'confirmed'`. `confirmed: false` →
+  *pending settlement* with re-poll; timeout → honest "đang xử lý / kiểm tra ví" state with
+  links — **never** a success modal. Shipped in P4 (the detail action needs it), reused here.
+- **Countdown expiry** → re-read the class → fresh state. No cancel button, ever (D6/AC-023).
+- **De-fake §1.5:** the 24-hour remaining time derives from `startsAt`; `:511` reads
   `display.priceCredits`.
 
 ## 5. Phase plan
@@ -232,27 +271,36 @@ Commit: `fix(web): stop offering signed-in navigation to signed-out visitors`
   README:73, runbook.
 Commit: `feat(payments): send SePay payers back to their own client`
 
-### P4 — One booking path on the class detail
+### P4 — One composite book → gate → confirm on the class detail
 - Thread `canBook` + `ownBooking` (§1.6) through `types.ts:160` + `api-class-detail.ts:23`;
   demo fixtures `canBook:false, ownBooking:null`.
-- `StickyBookingCard.tsx`: remove `BookingPanel` usage + messages; render the four-branch CTA
-  (§4.4). Delete `booking-panel.tsx` + its test after auditing `book-button`/`class-card`/
-  `status-pill`/`lib/booking` for other consumers — delete only what is orphaned.
+- `StickyBookingCard.tsx`: remove `BookingPanel` usage + messages **and** the escrow link
+  (`:119-134`); render the single composite button (§4.4). The detail view fetches its own
+  balance via `callApiOk('/wallet/balance')` for the gate; gate-failure path → `router.push` to
+  `/checkout`.
+- New `lib/booking/settlement.ts` + specs mirroring `class-detail-coordinator.spec.ts:180/:219`.
+- Delete `booking-panel.tsx` + its test after auditing `book-button`/`class-card`/`status-pill`/
+  `lib/booking` for other consumers (V4) — delete only what is orphaned.
 - Fix `classes/checkout/page.tsx:9`: hardcoded `ielts-speaking-mock` slug → redirect to
   `/classes`.
-- Tests: four CTA branches (incl. pending-hold branch stays **enabled**); exactly one CTA;
-  bare `/classes/checkout` no longer targets a fabricated slug.
-Commit: `fix(web): give the class detail one booking path`
+- Tests: sufficient balance → book then confirm called, success only when earned; insufficient →
+  navigates to `/checkout`, confirm **never** called; balance read fails → navigates (no fake
+  gate); existing pending hold → book skipped; book rejection surfaces its reason; `confirmed:
+  false` never shows success; disabled state reasons; exactly one button; bare `/classes/checkout`
+  no longer targets a fabricated slug.
+Commit: `fix(web): book, gate and confirm in one action on the class detail`
 
-### P5 — Checkout: balance gate, countdown, earned success, de-faked copy
-- New `lib/booking/settlement.ts` + specs mirroring `class-detail-coordinator.spec.ts:180/:219`.
-- `checkout/page.tsx`: gate + `Nạp thêm credit` → existing top-up modal; hold-reuse vs book→confirm;
-  pending-settlement re-poll → success modal only when earned; timeout state; 15-min countdown
-  from `ownBooking.expiresAt`; unmount clears every timer; §1.5 copy derived.
-- Tests: `confirmed:false` never opens the modal; success only via response or read-back;
-  insufficient balance disables confirm and never calls confirm; top-up settlement re-enables it;
-  countdown expiry re-reads; no success claim from redirect params; price/lead-time values derived.
-Commit: `fix(web): claim a booking succeeded only once the wallet settles it`
+### P5 — Checkout as the failed-gate branch
+- Rework `checkout/page.tsx`: hold arrival via `ownBooking` (shortfall + live 15-min countdown +
+  **`Nạp thêm credit` button appearing because the gate failed** → existing top-up modal →
+  settle-poll refreshes balance → confirm enables); confirm-only path when a hold exists, full
+  book → gate for direct visits (shared helper from P4); settlement machine reuse; every timer
+  cleared on unmount; §1.5 copy derived from real data.
+- Tests: failed-gate arrival shows `Nạp thêm` immediately and never claims success; after top-up
+  settles the confirm enables and succeeds; countdown expiry re-reads to a fresh state; direct
+  visit without a hold books first; no success claim from redirect params; price/lead-time values
+  derived (the `38 giờ 15 phút` / `100 Credits` strings are gone).
+Commit: `fix(web): make checkout the top-up branch of the booking flow`
 
 ### P6 — Mobile regression pins
 - Pin role-gated links (verifier link present for verifier, absent for learner/admin) — closes
@@ -270,8 +318,8 @@ Commit: `docs(web): close out the post-honesty flow fixes`
 feat(web): land each role on a page it can actually use
 fix(web): stop offering signed-in navigation to signed-out visitors
 feat(payments): send SePay payers back to their own client
-fix(web): give the class detail one booking path
-fix(web): claim a booking succeeded only once the wallet settles it
+fix(web): book, gate and confirm in one action on the class detail
+fix(web): make checkout the top-up branch of the booking flow
 test(mobile): pin role-gated navigation
 docs(web): close out the post-honesty flow fixes
 ```
@@ -280,8 +328,10 @@ docs(web): close out the post-honesty flow fixes
 - `pnpm verify` green at every phase; no new lint warnings; i18n parity green.
 - Admin lands on `/admin`, verifier on `/verifier`, learner on `/classes`; explicit `returnUrl`
   still wins; no signed-out page links to an auth-gated route; auth page has no nav items.
-- Exactly one booking CTA on the class detail; a pending hold can always reach checkout; no
-  fabricated slug route remains.
+- Exactly **one** button on the class detail, performing book → balance gate → confirm; checkout
+  is reached **only** when the balance is short (or by direct URL, which still works); an
+  insufficient gate never calls `/confirm` and shows `Nạp thêm credit` on arrival; no fabricated
+  slug route remains.
 - No success claim without a server-confirmed settlement; affordability gates confirm; the 15-min
   hold is visible as a countdown; **no cancel button anywhere** (AC-023).
 - SePay return URLs are allow-listed per client, `/payment/result` never infers success from a
