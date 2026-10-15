@@ -595,6 +595,52 @@
         "generic": "Could not load the verifier queue. Please try again."
       }
     },
+    "auditLog": {
+      "pageTitle": "Audit log",
+      "pageSubtitle": "Every privileged action that has been recorded, newest first. The log is append-only: entries are never edited or deleted.",
+      "loading": "Loading the audit log…",
+      "loadingMore": "Loading more…",
+      "loadMore": "Load more",
+      "empty": "No events match these filters.",
+      "emptyHint": "Try clearing the action filter or the date range.",
+      "totalShown": "{count} events match these filters",
+      "retry": "Try again",
+      "occurredAt": "When: {date}",
+      "actorKnown": "Actor: {id}",
+      "actorUnknown": "Actor: not recorded",
+      "targetId": "Target: {id}",
+      "stateChange": "Change: {from} → {to}",
+      "actorGap": "The actor filter currently matches no events: audit entries do not carry the administrator's id yet. The other filters work normally.",
+      "unauthorizedTitle": "You do not have access to the audit log",
+      "unauthorizedBody": "The audit log is for administrators only. Sign in with an administrator account.",
+      "filters": {
+        "action": "Action",
+        "anyAction": "Any action",
+        "actor": "Actor",
+        "actorPlaceholder": "Administrator account id",
+        "from": "From date",
+        "to": "To date",
+        "sort": "Sort"
+      },
+      "sort": {
+        "-occurredAt": "Newest first",
+        "occurredAt": "Oldest first"
+      },
+      "action": {
+        "studentVerificationApproved": "Student verification approved",
+        "studentVerificationRejected": "Student verification rejected",
+        "studentVerificationRevoked": "Student verification revoked",
+        "skillEvidenceClaimed": "Skill evidence claimed",
+        "skillEvidenceApproved": "Skill evidence approved",
+        "skillEvidenceRejected": "Skill evidence rejected",
+        "skillVerifierSuspended": "Verifier suspended",
+        "skillVerifierRevoked": "Verifier revoked",
+        "walletTransactionCompleted": "Wallet transaction completed"
+      },
+      "errors": {
+        "generic": "Could not load the audit log. Please try again."
+      }
+    },
     "StudentVerification": {
       "title": "Student verification review",
       "notice": "Review a student verification by id. Admin must know the verification id.",

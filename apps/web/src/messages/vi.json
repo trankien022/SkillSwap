@@ -595,6 +595,52 @@
         "generic": "Không thể tải hàng đợi thẩm định. Vui lòng thử lại."
       }
     },
+    "auditLog": {
+      "pageTitle": "Nhật ký kiểm định",
+      "pageSubtitle": "Mọi hành động đặc quyền đã được ghi nhận, mới nhất trước. Nhật ký chỉ ghi thêm, không sửa và không xoá.",
+      "loading": "Đang tải nhật ký…",
+      "loadingMore": "Đang tải thêm…",
+      "loadMore": "Tải thêm",
+      "empty": "Không có sự kiện nào khớp bộ lọc.",
+      "emptyHint": "Thử bỏ bộ lọc hành động hoặc khoảng thời gian.",
+      "totalShown": "{count} sự kiện khớp bộ lọc",
+      "retry": "Thử lại",
+      "occurredAt": "Thời điểm: {date}",
+      "actorKnown": "Người thực hiện: {id}",
+      "actorUnknown": "Người thực hiện: chưa ghi nhận",
+      "targetId": "Đối tượng: {id}",
+      "stateChange": "Thay đổi: {from} → {to}",
+      "actorGap": "Bộ lọc theo người thực hiện hiện chưa khớp được sự kiện nào: các sự kiện trong nhật ký chưa mang theo id quản trị viên. Các bộ lọc còn lại hoạt động bình thường.",
+      "unauthorizedTitle": "Bạn không có quyền truy cập nhật ký kiểm định",
+      "unauthorizedBody": "Nhật ký kiểm định chỉ dành cho quản trị viên. Hãy đăng nhập bằng tài khoản quản trị.",
+      "filters": {
+        "action": "Hành động",
+        "anyAction": "Tất cả hành động",
+        "actor": "Người thực hiện",
+        "actorPlaceholder": "Account ID của quản trị viên",
+        "from": "Từ ngày",
+        "to": "Đến ngày",
+        "sort": "Sắp xếp"
+      },
+      "sort": {
+        "-occurredAt": "Mới nhất trước",
+        "occurredAt": "Cũ nhất trước"
+      },
+      "action": {
+        "studentVerificationApproved": "Duyệt xác minh sinh viên",
+        "studentVerificationRejected": "Từ chối xác minh sinh viên",
+        "studentVerificationRevoked": "Thu hồi xác minh sinh viên",
+        "skillEvidenceClaimed": "Nhận thẩm định bằng chứng",
+        "skillEvidenceApproved": "Duyệt bằng chứng năng lực",
+        "skillEvidenceRejected": "Từ chối bằng chứng năng lực",
+        "skillVerifierSuspended": "Tạm ngưng Verifier",
+        "skillVerifierRevoked": "Thu hồi Verifier",
+        "walletTransactionCompleted": "Hoàn tất giao dịch ví"
+      },
+      "errors": {
+        "generic": "Không thể tải nhật ký kiểm định. Vui lòng thử lại."
+      }
+    },
     "StudentVerification": {
       "title": "Duyệt xác minh sinh viên",
       "notice": "Xem xét hồ sơ xác minh sinh viên theo id. Admin cần biết id xác minh.",
