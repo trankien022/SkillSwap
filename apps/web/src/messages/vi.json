@@ -506,6 +506,35 @@
         "forbidden": "Bạn không có quyền thực hiện thao tác này. Vui lòng đăng nhập với tài khoản quản trị.",
         "generic": "Không thể cập nhật trạng thái Verifier. Vui lòng thử lại."
       }
+    },
+    "StudentVerification": {
+      "title": "Duyệt xác minh sinh viên",
+      "notice": "Xem xét hồ sơ xác minh sinh viên theo id. Admin cần biết id xác minh.",
+      "label": {
+        "id": "Id xác minh",
+        "decision": "Quyết định",
+        "approvedMajor": "Ngành được duyệt",
+        "reason": "Lý do"
+      },
+      "placeholders": {
+        "approvedMajor": "Ngành được duyệt (không bắt buộc)",
+        "reason": "Lý do (bắt buộc khi từ chối)"
+      },
+      "actions": {
+        "approve": "Phê duyệt",
+        "reject": "Từ chối",
+        "submitDecision": "Gửi quyết định",
+        "revoke": "Thu hồi"
+      },
+      "revokeConfirm": "Thu hồi xác minh này? Hành động không thể hoàn tác.",
+      "messages": {
+        "decided": "Quyết định đã được ghi nhận.",
+        "revoked": "Xác minh đã bị thu hồi."
+      },
+      "errors": {
+        "auth": "Không có quyền thực hiện hành động này."
+      },
+      "note": "Quyết định được ghi lại không thể thay đổi."
     }
   },
   "Teacher": {
@@ -1015,37 +1044,6 @@
       "approved": "Đã phê duyệt",
       "rejected": "Bị từ chối",
       "superseded": "Bị thay thế"
-    }
-  },
-  "Admin": {
-    "StudentVerification": {
-      "title": "Duyệt xác minh sinh viên",
-      "notice": "Xem xét hồ sơ xác minh sinh viên theo id. Admin cần biết id xác minh.",
-      "label": {
-        "id": "Id xác minh",
-        "decision": "Quyết định",
-        "approvedMajor": "Ngành được duyệt",
-        "reason": "Lý do"
-      },
-      "placeholders": {
-        "approvedMajor": "Ngành được duyệt (không bắt buộc)",
-        "reason": "Lý do (bắt buộc khi từ chối)"
-      },
-      "actions": {
-        "approve": "Phê duyệt",
-        "reject": "Từ chối",
-        "submitDecision": "Gửi quyết định",
-        "revoke": "Thu hồi"
-      },
-      "revokeConfirm": "Thu hồi xác minh này? Hành động không thể hoàn tác.",
-      "messages": {
-        "decided": "Quyết định đã được ghi nhận.",
-        "revoked": "Xác minh đã bị thu hồi."
-      },
-      "errors": {
-        "auth": "Không có quyền thực hiện hành động này."
-      },
-      "note": "Quyết định được ghi lại không thể thay đổi."
     }
   }
 }

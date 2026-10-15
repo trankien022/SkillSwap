@@ -506,6 +506,35 @@
         "forbidden": "You are not allowed to perform this action. Please sign in with an admin account.",
         "generic": "Could not update the Verifier status. Please try again."
       }
+    },
+    "StudentVerification": {
+      "title": "Student verification review",
+      "notice": "Review a student verification by id. Admin must know the verification id.",
+      "label": {
+        "id": "Verification id",
+        "decision": "Decision",
+        "approvedMajor": "Approved major",
+        "reason": "Reason"
+      },
+      "placeholders": {
+        "approvedMajor": "Approved major (optional)",
+        "reason": "Reason (required for rejection)"
+      },
+      "actions": {
+        "approve": "Approve",
+        "reject": "Reject",
+        "submitDecision": "Submit decision",
+        "revoke": "Revoke"
+      },
+      "revokeConfirm": "Revoke this verification? This action is irreversible.",
+      "messages": {
+        "decided": "Decision recorded.",
+        "revoked": "Verification revoked."
+      },
+      "errors": {
+        "auth": "Not authorized to perform this action."
+      },
+      "note": "Decisions are recorded immutably."
     }
   },
   "Teacher": {
@@ -1015,37 +1044,6 @@
       "approved": "Approved",
       "rejected": "Rejected",
       "superseded": "Superseded"
-    }
-  },
-  "Admin": {
-    "StudentVerification": {
-      "title": "Student verification review",
-      "notice": "Review a student verification by id. Admin must know the verification id.",
-      "label": {
-        "id": "Verification id",
-        "decision": "Decision",
-        "approvedMajor": "Approved major",
-        "reason": "Reason"
-      },
-      "placeholders": {
-        "approvedMajor": "Approved major (optional)",
-        "reason": "Reason (required for rejection)"
-      },
-      "actions": {
-        "approve": "Approve",
-        "reject": "Reject",
-        "submitDecision": "Submit decision",
-        "revoke": "Revoke"
-      },
-      "revokeConfirm": "Revoke this verification? This action is irreversible.",
-      "messages": {
-        "decided": "Decision recorded.",
-        "revoked": "Verification revoked."
-      },
-      "errors": {
-        "auth": "Not authorized to perform this action."
-      },
-      "note": "Decisions are recorded immutably."
     }
   }
 }

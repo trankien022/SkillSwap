@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import en from '../messages/en.json';
 import vi from '../messages/vi.json';
+import enRaw from '../messages/en.json?raw';
+import viRaw from '../messages/vi.json?raw';
 
 function leafKeys(value: unknown, prefix = ''): string[] {
   if (typeof value !== 'object' || value === null) {
@@ -22,6 +24,74 @@ function leafValues(value: unknown): string[] {
 describe('i18n messages', () => {
   it('en and vi expose the same key set', () => {
     expect(leafKeys(vi).sort()).toEqual(leafKeys(en).sort());
+  });
+
+  /**
+   * Duplicate-key guard.
+   *
+   * `JSON.parse` silently keeps the LAST occurrence of a duplicate key, so a
+   * second top-level `"Admin": { … }` block deletes the first one at runtime
+   * while every parsed-object check above still passes. That actually shipped:
+   * `Admin.verifiers.*` was unreachable because a later `"Admin"` block held
+   * only `StudentVerification`, so the admin Verifier page rendered raw key
+   * paths (`Admin.verifiers.notAuthorizedTitle`) instead of copy.
+   *
+   * Only the raw source text can see this, hence the `?raw` imports.
+   */
+  describe('duplicate-key guard (JSON.parse drops all but the last)', () => {
+    /**
+     * Walks the raw JSON text tracking the enclosing key path via indentation
+     * depth, so a repeated name under a *different* parent (`Marketplace.nav`
+     * vs `Teacher.nav`) is not a false positive. Only a key repeated at the
+     * same full path is a real duplicate.
+     */
+    function duplicateKeys(raw: string): string[] {
+      const stack: string[] = [];
+      const seen = new Set<string>();
+      const duplicates: string[] = [];
+      const openObject = /^(\s*)"([^"]+)":\s*\{\s*$/;
+
+      for (const line of raw.split(/\r?\n/)) {
+        const match = openObject.exec(line);
+        if (match) {
+          const depth = Math.floor(match[1].length / 2);
+          stack.length = depth;
+          const path = [...stack, match[2]].join('.');
+          if (seen.has(path)) duplicates.push(path);
+          seen.add(path);
+          stack.push(match[2]);
+          continue;
+        }
+        // A closing brace on its own line ends the current object.
+        const trimmed = line.trim();
+        if (trimmed === '}' || trimmed === '},') {
+          stack.pop();
+        }
+      }
+      return duplicates;
+    }
+
+    it('vi.json has no duplicate keys', () => {
+      expect(duplicateKeys(viRaw)).toEqual([]);
+    });
+
+    it('en.json has no duplicate keys', () => {
+      expect(duplicateKeys(enRaw)).toEqual([]);
+    });
+
+    it('the Admin namespace keeps every sub-namespace in both locales', () => {
+      // Regression pin: these two live in the same `Admin` object. If a merge
+      // ever splits them again, one silently disappears.
+      for (const [locale, data] of [
+        ['vi', vi],
+        ['en', en],
+      ] as const) {
+        expect(
+          Object.keys(data.Admin).sort(),
+          `${locale}: Admin sub-namespaces`,
+        ).toEqual(['StudentVerification', 'verifiers']);
+      }
+    });
   });
 
   it('no translation values are empty', () => {
