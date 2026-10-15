@@ -6,3 +6,9 @@ Teaching: replace the four KPI cards with one compact wallet summary and withdra
 
 ## Phase 2 — verification
 Run the full repository gate, inspect VI/EN bookings and teaching at 360/768/1440 px, including empty bookings. Commit implementation separately from plan and record evidence.
+
+## Results
+- Removed both four-card KPI grids and their CSS/helpers. Learner summaries only render relevant nonzero context. Teaching wallet labels now describe balances rather than incorrectly implying all available wallet credit is teaching revenue.
+- Held learner credits remain in the wallet; the regression test checks the real 60-credit amount there and absence of the duplicate escrow heading.
+- `pnpm verify` passed, including 307 web tests and architecture gate (899 modules / 2565 dependencies).
+- Chromium checked bookings and teaching in VI/EN at 360/768/1440 px: all 12 cases without horizontal overflow or squeezed SVGs. Desktop screenshots visually inspected, including the empty-bookings state without KPI cards.
