@@ -95,6 +95,27 @@ cannot describe "an administrator suspended a Verifier" or "a payout destination
    a model to fill a dashboard table is the failure mode ADR-028 and the task-01 plan forbid.
    FR-015 is recorded as **partially implemented** until a separate spec + ADR covers them.
 
+9. **Actor attribution is not wired, and the log says so.** Every audited event is mapped with
+   `actorId: null`, so the `actor` filter on `GET /audit-log` currently matches only rows written
+   without an actor (i.e. every row it can write). This is a **known limitation, not a bug left
+   unnoticed** — it was found by exercising the flow, and the decision to ship it this way was
+   deliberate.
+
+   The reason is structural. A domain event describes a **fact**, and a fact has no actor:
+   `student.verification.approved` is true whoever clicked, and adding an actor to every payload
+   would put request-scoped identity into the event contract that ADR-013 defines as the module's
+   public vocabulary. The actor is currently available only at the HTTP boundary, where the trusted
+   identity arrives as `x-user-id` (`shared/http/identity.ts`). Nothing threads it into the
+   use-case command, the repository, or the bus envelope, and no request-context facility
+   (`AsyncLocalStorage`) exists in this codebase.
+
+   Closing this properly means choosing a mechanism — an `actorId` on the audited commands carried
+   into the payload, or a cross-cutting request context that stamping reads — and that choice
+   affects every emitting module (skill-verification, student-verification, wallet-ledger). It is
+   therefore its own decision with its own ADR, not a rider on this one. Until it lands, the
+   actor column and its filter exist but are inert, and the ADR says so rather than implying the
+   feature works.
+
 **Rationale.** FR-018's immediate, single-schema read stays exactly as it is, so the split costs
 nothing at runtime; FR-015 gets the general row ADR-028 always intended. Consuming events keeps
 the modules decoupled in the direction ADR-013 established — the audit log is a **downstream
@@ -110,6 +131,9 @@ dispute table would be a worse answer than a dashboard that says the section is 
 - (−) One more table and one more consumer process to operate.
 - (−) Audit rows for actions that happen **before** the consumer exists are not backfilled; only
   events published after deployment land. The table is honest about being a projection.
+- (−) **`actorId` is always null**, so the log's actor filter matches nothing (see §9). The column,
+  the index, and the filter are in place for the change that wires attribution, but until then an
+  administrator cannot answer "what did this person do" from the log alone.
 - (−) The rename touches FR-018's exported names (`auditEventSchema` → `evidenceAuditEventSchema`),
   a source-level break for any consumer outside this repo. Only `index.spec.ts` used them here.
 - (−) The audit log grows unbounded in the MVP (retention kept by the OQ-008/ADR-023 precedent).
@@ -117,8 +141,10 @@ dispute table would be a worse answer than a dashboard that says the section is 
 **Verification.** Contracts: the general row round-trips, rejects a malformed action, and refuses
 a nested `oldState`. Domain: the snapshot admits only whitelisted scalar fields. Repository: the
 append path leaves the row unchanged when the same `sourceEventId` is delivered twice, and filters
-by actor/time/action. Consumer: a duplicate delivery appends one row; an unknown event type is
-ignored, not fatal. Architecture tests stay green (`pnpm test:arch`), proving no cross-schema
+by actor/time/action — **the actor filter is exercised with an actor supplied directly to the
+query, which is what the repository supports; it is not a claim that end-to-end rows carry one**
+(§9). Consumer: a duplicate delivery appends one row; an unknown event type is ignored, not fatal.
+Architecture tests stay green (`pnpm test:arch`), proving no cross-schema
 import was introduced.
 
 **Related:** ADR-013 (outbox + idempotent consumers), ADR-014 (per-module schema, no cross-schema

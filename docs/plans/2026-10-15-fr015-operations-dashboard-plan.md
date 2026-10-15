@@ -28,6 +28,13 @@ Owner: (agent) · Created: 2026-10-15 · Updated: 2026-10-15 (API phases 0–5 l
 > `VerificationSummaryReader`, `skill-verification` exposes `EvidenceSummaryReader`, and
 > `admin-operation` imports both modules and injects their exported readers. Counts are read live
 > per request; nothing is cached, so the dashboard and the queue it links to cannot disagree.
+>
+> **A third correction, found by browser verification.** The audit log is written with
+> `actorId: null` for every event, so its actor filter matches nothing. A domain event describes a
+> fact and a fact has no actor; the acting user exists only at the HTTP boundary (`x-user-id`) and
+> is not threaded into any command, payload or envelope. Wiring it is a cross-cutting choice with
+> its own ADR (ADR-034 §9), so per the decision recorded there this change ships the column and
+> filter inert rather than inventing attribution. AC-032 and the FR-015 row are qualified to match.
 
 Related: `docs/plans/SkillSwap-SRS.md` (FR-015, UC-014, US-O1, NFR-005, NFR-014),
 `ARCHITECTURE.md` §4, ADR-008 (gateway), ADR-012 (CQRS), ADR-013 (outbox), ADR-014 (TypeORM,
