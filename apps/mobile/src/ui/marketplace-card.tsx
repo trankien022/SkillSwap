@@ -135,7 +135,7 @@ export function MarketplaceCard({ item, skillMap, onPress }: MarketplaceCardProp
       {/* Footer: Price, Rating & Pill CTA with 360px flex/shrink layout */}
       <View style={styles.footerRow}>
         <View style={styles.priceAndRatingCol}>
-          <Text style={styles.priceText} numberOfLines={1}>
+          <Text style={styles.priceText}>
             {t('Marketplace.price', { credits: item.priceCredits })}
           </Text>
           <Text
@@ -143,7 +143,6 @@ export function MarketplaceCard({ item, skillMap, onPress }: MarketplaceCardProp
               styles.ratingText,
               hasRating ? styles.ratingPositive : styles.ratingEmpty,
             ]}
-            numberOfLines={1}
           >
             {ratingText}
           </Text>

@@ -1,13 +1,16 @@
 import React from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Redirect, Tabs } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, typography } from '@/design/tokens';
 import { BootErrorView } from '@/ui/boot-error-view';
 import { ConfigErrorView } from '@/ui/config-error-view';
 import { useSession } from '@/ui/session-context';
 
 export default function TabsLayout() {
+  const { fontScale } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const { isAuthenticated, isLoading, t, configError, bootError, retryBoot } = useSession();
 
   if (configError) {
@@ -48,7 +51,8 @@ export default function TabsLayout() {
           borderTopColor: colors.border,
           borderTopWidth: 1,
           paddingTop: spacing.sm,
-        minHeight: 76,
+          minHeight: 76,
+          height: 64 + Math.max(0, fontScale - 1) * 48 + insets.bottom,
         },
         tabBarActiveTintColor: colors.campusEmerald,
         tabBarInactiveTintColor: colors.inkMuted,
@@ -66,45 +70,109 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: t('Nav.home'),
-          tabBarLabel: t('Nav.home'),
+          tabBarLabel: ({ color }) => (
+            <Text style={[styles.tabLabel, { color }]}>{t('Nav.home')}</Text>
+          ),
           tabBarAccessibilityLabel: t('Nav.home'),
-        tabBarIcon: ({ color, size, focused }) => <SymbolView accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" name={{ ios: 'house', android: 'home', web: 'home' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <SymbolView
+              accessible={false}
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              name={{ ios: 'house', android: 'home', web: 'home' }}
+              tintColor={color}
+              size={size}
+              weight={focused ? 'semibold' : 'regular'}
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
           title: t('Nav.explore'),
-          tabBarLabel: t('Nav.explore'),
+          tabBarLabel: ({ color }) => (
+            <Text style={[styles.tabLabel, { color }]}>{t('Nav.explore')}</Text>
+          ),
           tabBarAccessibilityLabel: t('Nav.explore'),
-        tabBarIcon: ({ color, size, focused }) => <SymbolView accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <SymbolView
+              accessible={false}
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }}
+              tintColor={color}
+              size={size}
+              weight={focused ? 'semibold' : 'regular'}
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="schedule"
         options={{
           title: t('Nav.schedule'),
-          tabBarLabel: t('Nav.schedule'),
+          tabBarLabel: ({ color }) => (
+            <Text style={[styles.tabLabel, { color }]}>{t('Nav.schedule')}</Text>
+          ),
           tabBarAccessibilityLabel: t('Nav.schedule'),
-        tabBarIcon: ({ color, size, focused }) => <SymbolView accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" name={{ ios: 'calendar', android: 'calendar_month', web: 'calendar_month' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <SymbolView
+              accessible={false}
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              name={{ ios: 'calendar', android: 'calendar_month', web: 'calendar_month' }}
+              tintColor={color}
+              size={size}
+              weight={focused ? 'semibold' : 'regular'}
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="wallet"
         options={{
           title: t('Nav.wallet'),
-          tabBarLabel: t('Nav.wallet'),
+          tabBarLabel: ({ color }) => (
+            <Text style={[styles.tabLabel, { color }]}>{t('Nav.wallet')}</Text>
+          ),
           tabBarAccessibilityLabel: t('Nav.wallet'),
-        tabBarIcon: ({ color, size, focused }) => <SymbolView accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" name={{ ios: 'wallet.pass', android: 'account_balance_wallet', web: 'account_balance_wallet' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <SymbolView
+              accessible={false}
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              name={{
+                ios: 'wallet.pass',
+                android: 'account_balance_wallet',
+                web: 'account_balance_wallet',
+              }}
+              tintColor={color}
+              size={size}
+              weight={focused ? 'semibold' : 'regular'}
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: t('Nav.profile'),
-          tabBarLabel: t('Nav.profile'),
+          tabBarLabel: ({ color }) => (
+            <Text style={[styles.tabLabel, { color }]}>{t('Nav.profile')}</Text>
+          ),
           tabBarAccessibilityLabel: t('Nav.profile'),
-        tabBarIcon: ({ color, size, focused }) => <SymbolView accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" name={{ ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }} tintColor={color} size={size} weight={focused ? 'semibold' : 'regular'} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <SymbolView
+              accessible={false}
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              name={{ ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }}
+              tintColor={color}
+              size={size}
+              weight={focused ? 'semibold' : 'regular'}
+            />
+          ),
         }}
       />
     </Tabs>
@@ -112,6 +180,12 @@ export default function TabsLayout() {
 }
 
 const styles = StyleSheet.create({
+  tabLabel: {
+    fontSize: typography.caption.fontSize,
+    lineHeight: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
