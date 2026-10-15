@@ -175,19 +175,71 @@ export async function callApi(path: string, init: RequestInit = {}, retry = true
   return res;
 }
 
-import { unwrapEnvelope, type ApiEnvelope } from '@skillswap/contracts';
-
-/**
- * NFR-013: the envelope runtime layer is shared from `@skillswap/contracts` so web, mobile and any
- * other client parse responses identically. Re-exported here so existing imports keep working;
- * transport concerns (base URL, auth, retry) stay in this file.
- *
- * `ApiError` is kept as a local alias of the shared `ApiResponseError` for call sites/tests that
- * import it from here (the `contracts` package already uses `ApiError` for the legacy
- * `apiErrorSchema` type, so the class is named `ApiResponseError` at the source).
- */
+import {
+  unwrapEnvelope,
+  httpStatusCode,
+  ApiResponseError,
+  type ApiEnvelope,
+} from '@skillswap/contracts';
 export { unwrapEnvelope, type ApiEnvelope, type ApiErrorItem } from '@skillswap/contracts';
 export { ApiResponseError as ApiError, ApiResponseError } from '@skillswap/contracts';
+
+/** Stable code `callApiOk` raises for an unauthenticated request (`HTTP 401`). */
+export const UNAUTHORIZED_CODE = 'UNAUTHORIZED' as const;
+/** Stable code `callApiOk` raises for a forbidden request (`HTTP 403`). */
+export const FORBIDDEN_CODE = 'FORBIDDEN' as const;
+
+/**
+ * Like `callApi`, but throws when the server answers outside 2xx.
+ *
+ * `callApi` deliberately returns the raw `Response`: some callers treat a
+ * non-2xx as a legitimate "absent" answer (an optional balance, a class that may
+ * not exist) rather than an error. Everywhere the answer is *required*, that
+ * shape is a hazard — the recurring bug was
+ *
+ *     if (res.ok) { setState(await unwrapEnvelope(res)); }   // no else
+ *
+ * which turns a 500 or an expired session into a screen that silently stands
+ * still, indistinguishable from "still loading". `unwrapEnvelope` only throws
+ * for a `success: false` envelope, and the identity guards answer 401 with a
+ * bare `{ statusCode, message }`, so the status check cannot be left to it.
+ *
+ * The thrown `ApiResponseError` keeps the HTTP status in `code` so callers can
+ * branch on it: `UNAUTHORIZED` (401), `FORBIDDEN` (403), else `HTTP_<status>`.
+ */
+export async function callApiOk(
+  path: string,
+  init: RequestInit = {},
+  retry = true,
+): Promise<Response> {
+  const res = await callApi(path, init, retry);
+  if (!res.ok) {
+    throw new ApiResponseError(apiFailureCode(res.status), await apiFailureMessage(res), []);
+  }
+  return res;
+}
+
+/** Maps an HTTP status to the stable code `callApiOk` reports. */
+export function apiFailureCode(status: number): string {
+  if (status === 401) return UNAUTHORIZED_CODE;
+  if (status === 403) return FORBIDDEN_CODE;
+  return httpStatusCode(status);
+}
+
+/**
+ * Best-effort human message for a failed response. The uniform envelope carries
+ * it on `message`; the guard's 401/403 body carries it too; anything else (an
+ * HTML error page, an empty body) falls back to the status.
+ */
+async function apiFailureMessage(res: Response): Promise<string> {
+  try {
+    const body = (await res.clone().json()) as { message?: unknown };
+    if (typeof body?.message === 'string' && body.message.trim()) return body.message;
+  } catch {
+    // Non-JSON or already-consumed body; fall through to the status text.
+  }
+  return `Request failed (${res.status})`;
+}
 
 export async function authenticate(
   mode: 'login' | 'register',

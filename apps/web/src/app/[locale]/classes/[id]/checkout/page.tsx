@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect, useRef, useCallback } from 'react';
 import { Navbar } from '../../../../../components/navbar';
-import { callApi, unwrapEnvelope, dispatchWalletBalanceUpdate } from '../../../../../lib/api-client';
+import { callApi, callApiOk, unwrapEnvelope, dispatchWalletBalanceUpdate, UNAUTHORIZED_CODE, type ApiResponseError } from '../../../../../lib/api-client';
 import { ClassDetailApiGateway } from '../../../../../lib/marketplace/api-class-detail';
 import type { ClassDetailView } from '../../../../../lib/marketplace/types';
 import type { WalletBalanceView, TopUpIntentCreated, TopUpIntentStatusView } from '@skillswap/contracts';
@@ -46,17 +46,23 @@ export default function BookingCheckoutPage({ params }: PageProps) {
   useEffect(() => {
     let isMounted = true;
     const loadData = async () => {
-      // 1. Load wallet balance from the server (never a cached copy)
+      // 1. Load wallet balance from the server (never a cached copy).
+      //    The balance gates the confirm button's affordability copy, so a
+      //    failure must not leave it unset while the page claims it loaded.
       try {
-        const res = await callApi('/wallet/balance');
-        if (res.ok) {
-          const remoteBal = await unwrapEnvelope<WalletBalanceView>(res);
-          if (isMounted) setBalance(remoteBal);
-        } else if (res.status === 401) {
-          if (isMounted) setLoadError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
-        }
+        const res = await callApiOk('/wallet/balance');
+        const remoteBal = await unwrapEnvelope<WalletBalanceView>(res);
+        if (isMounted) setBalance(remoteBal);
       } catch (e) {
-        console.warn('Failed to load wallet balance for checkout', e);
+        if (isMounted) {
+          setLoadError(
+            (e as ApiResponseError)?.code === UNAUTHORIZED_CODE
+              ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
+              : e instanceof Error
+                ? e.message
+                : 'Không tải được số dư ví.',
+          );
+        }
       }
 
       // 2. Load class details from the server. There is deliberately no local
@@ -95,10 +101,16 @@ export default function BookingCheckoutPage({ params }: PageProps) {
   // wallet. Nothing here invents a fallback for a missing field: a class the API
   // cannot resolve renders the error state below, not a placeholder price,
   // title, teacher or rating.
+  // Both are required: the class prices the booking and the wallet says whether
+  // it is affordable, so with either missing there is nothing honest to show.
+  // The error state below names *which* read failed rather than always blaming
+  // the class, which is what a wallet failure used to be reported as.
   const display =
     classDetail !== null && balance !== null
       ? buildDisplayModel(classDetail, balance)
       : null;
+
+  const balanceUnavailable = balance === null;
 
   const handleConfirmBooking = async () => {
     if (!agreementChecked) {
@@ -160,14 +172,17 @@ export default function BookingCheckoutPage({ params }: PageProps) {
       // ignore the escrow hold vs. debit distinction and any server-side fee,
       // and would persist that guess across reloads.
       try {
-        const balRes = await callApi('/wallet/balance');
-        if (balRes.ok) {
-          const remote = await unwrapEnvelope<WalletBalanceView>(balRes);
-          setBalance(remote);
-          dispatchWalletBalanceUpdate(remote);
-        }
+        const balRes = await callApiOk('/wallet/balance');
+        const remote = await unwrapEnvelope<WalletBalanceView>(balRes);
+        setBalance(remote);
+        dispatchWalletBalanceUpdate(remote);
       } catch (e) {
+        // The booking already succeeded, so this is only a stale badge; the
+        // success modal's balance line reads `display.currentCredits`, which was
+        // derived from the pre-settlement read, so say so rather than silently
+        // showing a number that no longer matches the ledger.
         console.warn('Failed to refresh balance after settlement', e);
+        showToast('Đã đặt lớp, nhưng chưa đọc lại được số dư ví. Vui lòng tải lại trang để xem số dư mới nhất.');
       }
     } catch (err) {
       // The previous version caught this and fell through to a "simulated
@@ -190,19 +205,15 @@ export default function BookingCheckoutPage({ params }: PageProps) {
     const tick = async () => {
       topUpPollTimer.current = null;
       try {
-        const res = await callApi(`/wallet/top-ups/${intentId}`);
-        if (res.ok) {
-          const status = await unwrapEnvelope<TopUpIntentStatusView>(res);
-          if (TERMINAL_TOP_UP_STATUSES.has(status.status)) {
-            setTopUpSettled(status.status === 'settled');
-            const balRes = await callApi('/wallet/balance');
-            if (balRes.ok) {
-              const remote = await unwrapEnvelope<WalletBalanceView>(balRes);
-              setBalance(remote);
-              dispatchWalletBalanceUpdate(remote);
-            }
-            return;
-          }
+        const res = await callApiOk(`/wallet/top-ups/${intentId}`);
+        const status = await unwrapEnvelope<TopUpIntentStatusView>(res);
+        if (TERMINAL_TOP_UP_STATUSES.has(status.status)) {
+          setTopUpSettled(status.status === 'settled');
+          const balRes = await callApiOk('/wallet/balance');
+          const remote = await unwrapEnvelope<WalletBalanceView>(balRes);
+          setBalance(remote);
+          dispatchWalletBalanceUpdate(remote);
+          return;
         }
       } catch (e) {
         console.warn('Top-up poll failed', e);
@@ -258,7 +269,11 @@ export default function BookingCheckoutPage({ params }: PageProps) {
         {display === null ? (
           <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 px-4 py-24 text-center">
             <h1 className="text-lg font-bold text-slate-900">
-              {loadError !== null ? 'Không tải được thông tin lớp học' : 'Đang tải thông tin lớp học…'}
+              {loadError !== null
+                ? balanceUnavailable
+                  ? 'Chưa đọc được số dư ví'
+                  : 'Không tải được thông tin lớp học'
+                : 'Đang tải thông tin lớp học…'}
             </h1>
             <p className="max-w-md text-sm leading-relaxed text-slate-600">
               {loadError ??

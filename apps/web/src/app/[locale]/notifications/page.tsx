@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Navbar } from '../../../components/navbar';
-import { callApi, unwrapEnvelope } from '../../../lib/api-client';
+import { callApiOk, unwrapEnvelope } from '../../../lib/api-client';
 import { fetchNotifications } from '../../../lib/notifications/api-notifications';
 import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
 
@@ -38,6 +38,7 @@ export default function NotificationsPage() {
   const [frequency, setFrequency] = useState<'instant' | 'daily' | 'weekly'>('instant');
   const [balance, setBalance] = useState<WalletBalanceView | null>(null);
   const [me, setMe] = useState<MeResponse | null>(null);
+  const [sessionError, setSessionError] = useState<string | null>(null);
 
   useEffect(() => {
     // 1. Fetch live notifications from GET /api/notifications.
@@ -59,19 +60,20 @@ export default function NotificationsPage() {
     const fetchSession = async () => {
       try {
         const [balRes, meRes] = await Promise.all([
-          callApi('/wallet/balance'),
-          callApi('/auth/me'),
+          callApiOk('/wallet/balance'),
+          callApiOk('/auth/me'),
         ]);
-        if (balRes.ok) setBalance(await unwrapEnvelope(balRes));
-        if (meRes.ok) {
-          const meData = await unwrapEnvelope<MeResponse>(meRes);
-          setMe(meData);
-          // Prefill the notification email with the signed-in address. The input
-          // previously defaulted to a fabricated `minh.nguyen@rmit.edu.vn`.
-          setEmailInput((current) => (current === '' ? meData.email : current));
-        }
+        setBalance(await unwrapEnvelope(balRes));
+        const meData = await unwrapEnvelope<MeResponse>(meRes);
+        setMe(meData);
+        // Prefill the notification email with the signed-in address. The input
+        // previously defaulted to a fabricated `minh.nguyen@rmit.edu.vn`.
+        setEmailInput((current) => (current === '' ? meData.email : current));
       } catch (e) {
-        console.warn('Navbar hydration on notifications page error:', e);
+        // The two reads are required for the sidebar, so a failure is surfaced
+        // rather than swallowed into a permanently empty panel.
+        console.warn('Notifications page could not load the wallet/me summary:', e);
+        setSessionError(e instanceof Error ? e.message : 'Không tải được thông tin ví.');
       }
     };
     fetchSession();
@@ -175,6 +177,18 @@ export default function NotificationsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             {/* Primary Column: Tabs Filter + Feed */}
             <div className="lg:col-span-8 flex flex-col space-y-4">
+              {/* Session read failure — the wallet sidebar is server-owned, so a
+                  failure is stated instead of leaving an empty, silent panel. */}
+              {sessionError !== null && (
+                <div
+                  role="alert"
+                  data-testid="notifications-session-error"
+                  className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900"
+                >
+                  <span className="material-symbols-outlined text-[18px] flex-shrink-0 mt-0.5">info</span>
+                  <span>{sessionError}</span>
+                </div>
+              )}
               {/* Filter Tabs Bar */}
               <div className="bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm overflow-x-auto flex items-center gap-1">
                 <button

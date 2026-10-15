@@ -96,18 +96,25 @@ export function mapBackendNotificationToUI(item: BackendNotificationItem): UINot
 
 /**
  * Fetches notification inbox for authenticated user via GET /api/notifications.
+ *
+ * Returns `null` for "could not read" so the caller can render an empty state,
+ * but the reason (401 vs. 500) is logged rather than discarded: an earlier
+ * revision ignored every failure identically, which is how a session expiry and
+ * a server error both came to look like "you have no notifications".
  */
 export async function fetchNotifications(): Promise<{ items: UINotificationItem[]; unreadCount: number } | null> {
   try {
     const res = await callApi('/notifications');
-    if (res.ok) {
-      const page = await unwrapEnvelope<NotificationsPage>(res);
-      if (page && Array.isArray(page.items)) {
-        return {
-          items: page.items.map(mapBackendNotificationToUI),
-          unreadCount: page.unreadCount,
-        };
-      }
+    if (!res.ok) {
+      console.warn(`GET /api/notifications failed: HTTP ${res.status}`);
+      return null;
+    }
+    const page = await unwrapEnvelope<NotificationsPage>(res);
+    if (page && Array.isArray(page.items)) {
+      return {
+        items: page.items.map(mapBackendNotificationToUI),
+        unreadCount: page.unreadCount,
+      };
     }
   } catch (err) {
     console.warn('Failed to fetch /api/notifications:', err);

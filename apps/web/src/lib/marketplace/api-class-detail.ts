@@ -93,11 +93,13 @@ export class ClassDetailApiGateway {
     // 2. Query backend for real class by UUID
     try {
       const res = await callApi(`/classes/${id}`);
-      if (res.ok) {
-        const detail = await unwrapEnvelope<ContractClassDetailView>(res);
-        if (detail && detail.id) {
-          return mapContractDetailToWeb(detail);
-        }
+      if (!res.ok) {
+        console.warn(`GET /api/classes/${id} failed: HTTP ${res.status}`);
+        return null;
+      }
+      const detail = await unwrapEnvelope<ContractClassDetailView>(res);
+      if (detail && detail.id) {
+        return mapContractDetailToWeb(detail);
       }
     } catch (err) {
       console.warn(`Failed to fetch /api/classes/${id}:`, err);

@@ -458,7 +458,8 @@
       "body": "The payout gateway integration is still in progress. The backend has not shipped this feature yet, so you cannot submit a withdrawal request at this time. Please come back after the backend ships it.",
       "cta": "Not yet available",
       "rulesTitle": "Payout & Escrow Protection Rules",
-      "rulesBody": "Once the feature ships: the withdrawal amount cannot exceed your available balance. When you submit the request, credits move to a payout_hold state and stay locked while the gateway reconciles. If the gateway rejects the payout, the held credits are returned to your wallet immediately."
+      "rulesBody": "Once the feature ships: the withdrawal amount cannot exceed your available balance. When you submit the request, credits move to a payout_hold state and stay locked while the gateway reconciles. If the gateway rejects the payout, the held credits are returned to your wallet immediately.",
+      "loadError": "Could not load your wallet balance. Please reload the page."
     }
   },
   "Admin": {
