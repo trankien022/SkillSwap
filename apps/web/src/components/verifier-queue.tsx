@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Navbar } from './navbar';
 import type {
   VerifierQueuePage as VerifierQueuePageType,
   SkillEvidenceView,
@@ -81,9 +80,7 @@ export function VerifierQueuePage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
-      <Navbar currentTab="verification" me={null} />
-
+    <>
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
         <h1 className="text-2xl font-bold mb-4">{t('title')}</h1>
 
@@ -171,7 +168,7 @@ export function VerifierQueuePage() {
           )}
         </section>
       </main>
-    </div>
+    </>
   );
 }
 
