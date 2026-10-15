@@ -51,3 +51,65 @@ Source findings pending runtime verification:
   spinner visibility; button labels have no vertical padding for scaled text.
 - Mobile class metadata rows lack wrapping and marketplace chips lack a maximum
   width, allowing long labels or enlarged text to escape the card.
+
+
+## Implemented corrections
+
+- Prevent decorative SVG glyphs shrinking in flex rows; the authenticated
+  baseline had 33 glyph observations below 10 px. The repeated matrix has zero.
+- Bundle the installed Material Symbols outline font and its license locally.
+  Remove external font requests and keep square glyph cells with explicit font
+  metrics; no additional package dependency is introduced.
+- Let pagination wrap; make toast positioning fit narrow screens, remove hidden
+  toast contents from the accessibility tree and improve its icon contrast.
+- Replace the unconditional green schedule-valid badge with the lead-time rule.
+  The existing eligibility checklist still computes the actual draft status.
+- Expose selected class format/duration states, translate capacity controls,
+  category and pagination labels, and use native current-date semantics.
+- Display actual group capacity and localized duration on class details instead
+  of a hard-coded four-person limit or Vietnamese text in English.
+- Reflect parent filter resets in search fields and restart new searches at page
+  one. Browser interaction confirmed an empty keyword after reset at 360 px.
+- Isolate Next.js development output in .next-dev, with matching Git, ESLint and
+  Prettier exclusions. The original production process referenced unavailable
+  static files (HTTP 400); after rebuilding/restarting, both page CSS assets
+  returned HTTP 200. Preview and production no longer overwrite one directory.
+- Mobile: fix dark secondary-button pending spinner contrast; permit larger
+  labels/inputs to grow; bound chips/status pills and wrap class/profile rows.
+- Mobile: reflow wallet columns, marketplace price/action rows and search fields.
+  Keep exact prices and rating text available when system text grows.
+- Mobile: use consistent outline tab symbols, supply web mappings and explicit
+  translated tab accessibility labels. Hide decorative icon descendants.
+- Mobile: render wrapping tab labels and adapt bar height to font scale and safe
+  area. At 360 dp / font scale 1.5, labels and search fields are readable.
+
+## Verification record
+
+- Full gate: pnpm verify passed after the final source edits (lint, all builds,
+  typechecks, tests and architecture checks).
+- Tests: contracts 37; gateway 162; API 623; mobile 253; web 304.
+- Architecture: 898 modules / 2,562 dependencies, no violations.
+- Web: 9 authenticated learner/teacher routes × VI/EN × widths 360, 390, 768,
+  1440 = 72 observations; zero horizontal overflows and zero squeezed glyphs
+  under 10 px in the repeated matrix.
+- Routes: classes, bookings, wallet, verification, skills, instructor,
+  notifications, teach/classes/new and an actual class detail.
+- Public home/auth, signed-out feature states and status were also inspected.
+- Admin and verifier screens inspected at 360 px in VI/EN with reduced motion
+  and Google Fonts blocked. Local glyph font remained available.
+- Native baseline: Android API 37 AVD, five primary tabs and live demo API data.
+  The initially installed app was a release binary; it was not accepted as proof
+  of new source. Installed the existing debug client without clearing data and
+  connected it to Metro to verify the current source, including 360 dp / 150%
+  text reflow. Emulator display/font settings restored afterwards.
+- Local screenshots, viewport observations and complete final gate output are
+  saved under .codex/artifacts/ui-audit-2026-10-16/ (ignored development evidence).
+
+## Limits of this audit
+
+- iOS, tablets, maximum OS font size and native landscape were not visually
+  accepted. The app currently declares portrait orientation and light mode.
+- Live Jitsi/media, real payment/payout, destructive admin actions and every
+  possible error/data combination were not exercised by this visual audit.
+  No claim of exhaustive business-flow acceptance is made.
+- Existing untracked presentation/document deliverables were preserved.
