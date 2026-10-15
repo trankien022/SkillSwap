@@ -1,7 +1,9 @@
 # Plan — Post-honesty flow fixes: role landing, auth chrome, payment return, booking flow
 
-Status: **Proposed** — approved to start; decisions through round 3 (§0) recorded
-Owner: (agent) · Created: 2026-10-15 · Updated: 2026-10-15 (round 3: booking flow redesign)
+Status: **Done** — all seven phases landed (`75def69`, `eff9536`, `53be42b`, `a7fafbd`, `c03acf8`,
+`6cd0322`, and this close-out); every phase green on `pnpm verify`, and the two booking flows
+verified end-to-end in a browser against the real stack (see §8 V5–V6).
+Owner: (agent) · Created: 2026-10-15 · Updated: 2026-10-15 (P7: closed out)
 Related: `docs/plans/2026-10-15-fr015-operations-dashboard-plan.md` (P1 is its precondition),
 `docs/plans/SkillSwap-SRS.md` (AC-022–AC-030, OQ-003, OQ-007), ADR-029/ADR-030 (roles),
 ADR-032 (event-driven settlement C3a/C3b), ADR-033 (SePay hosted checkout), ADR-018 (escrow),
@@ -333,6 +335,10 @@ Commit: `test(mobile): pin role-gated navigation`
 ### P7 — Close-out
 - Flip this plan's status, cross-reference FR-015's W4 (extends the P1 landing shell),
   `pnpm docs:api` already done in P3.
+- Landed: the status is now **Done** with the seven phase commits recorded, FR-015's W4 names the
+  two commits (`75def69`, `eff9536`) it builds on instead of assuming they exist, and §8 carries
+  the two end-to-end results (V5: sufficient balance confirms in place; V6: short balance lands on
+  checkout with a real 80-Credit shortfall and an 80.000 VNĐ top-up).
 Commit: `docs(web): close out the post-honesty flow fixes`
 
 ## 6. Commit sequence
@@ -368,6 +374,8 @@ docs(web): close out the post-honesty flow fixes
 | V2 | Does SePay append invoice/status query params to the return URL? | P3 | If yes: `/payment/result` passes them through and polls that intent (upgrade path). If no: neutral page as specified. |
 | V3 | Expo deep-links `skillswap://wallet` to the wallet route in practice (group segments are URL-invisible; typed routes on) | P3 | Add an explicit route/redirect; keep poll-based settle regardless. |
 | V4 | Which of `book-button`/`class-card`/`status-pill`/`lib/booking/*` are orphaned after P4 | P4 | Delete only confirmed orphans; keep anything still imported. |
+| V5 | Does the sufficient-balance path confirm in place, and does the UI wait for the read-back before claiming success? | P4 | If the read-back lags too long for a demo, surface the `checking` state (already the design) rather than a claim. |
+| V6 | Does the short-balance path land on checkout with a real shortfall and a top-up sized to it? | P5 | If a balance cannot be set low enough to trigger it, verify by unit test only and note it. |
 
 ### Results
 

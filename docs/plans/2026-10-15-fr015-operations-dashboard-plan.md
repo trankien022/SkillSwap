@@ -273,7 +273,9 @@ Commit: `feat(web): add the admin audit log view`
 ### Phase W4 — `/admin` dashboard shell
 - The route `apps/web/src/app/[locale]/admin/page.tsx` **already exists by then**: the
   post-honesty plan (2026-10-15-post-honesty-flow-fixes-plan.md, P1) adds a landing shell linking
-  to the pages that exist. This phase **extends that shell** with the composed metrics
+  to the pages that exist. That plan is now **Done** (commit `75def69` for the shell, `eff9536`
+  for the role-aware navbar this phase builds on), so both prerequisites are real code, not
+  assumptions. This phase **extends that shell** with the composed metrics
   (`components/admin/AdminDashboard.tsx`), turning the deep-link entry point into a real
   landing page while **keeping** the deep links.
 - `Navbar` gains an admin-aware entry (mirroring Phase 2's role-aware `navbar.tsx`): the link is
