@@ -1,4 +1,5 @@
 import { VerifierController } from './verifier.controller';
+import { AdminVerifierQueueQueryDto } from './dto/skill-verification.dto';
 import type { AdminVerifierQueuePage, VerifierQueuePage } from '@skillswap/contracts';
 import type { ListVerifierQueuePort } from '../../../application/port/in/list-verifier-queue';
 import type { ListAdminVerifierQueuePort } from '../../../application/port/in/list-admin-verifier-queue';
@@ -18,9 +19,11 @@ describe('VerifierController queue routing', () => {
     const adminQueue: ListAdminVerifierQueuePort = { execute: jest.fn().mockResolvedValue(page) };
     const controller = new VerifierController(unused, unused, adminQueue);
 
-    const query = { domain: 'Programming', status: 'pending' as const };
+    // The wire carries `status=pending,claimed`; the schema turns it into a list before the
+    // handler sees it. Passing the unparsed string here would test a shape no request produces.
+    const query = AdminVerifierQueueQueryDto.schema.parse({ domain: 'Programming', status: 'pending' });
     await expect(controller.listAdminQueue(query)).resolves.toEqual(page);
-    expect(adminQueue.execute).toHaveBeenCalledWith(query);
+    expect(adminQueue.execute).toHaveBeenCalledWith({ domain: 'Programming', status: ['pending'] });
   });
 
   it('delegates the caller queue to the verifier port with the caller id', async () => {

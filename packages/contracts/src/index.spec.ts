@@ -1109,6 +1109,29 @@ describe('student verification contracts', () => {
       expect(() => adminVerifierQueueQuerySchema.parse({ sort: 'decidedAt' })).toThrow();
     });
 
+    it('accepts a comma-separated status list, for the queue\'s live-work view', () => {
+      // The screen's default is unclaimed + in review at once. One status per request could not
+      // express it, and paging two queries would split the shared total and the keyset cursor.
+      expect(adminVerifierQueueQuerySchema.parse({ status: 'pending,claimed' })).toEqual({
+        status: ['pending', 'claimed'],
+      });
+      expect(adminVerifierQueueQuerySchema.parse({ status: 'pending' })).toEqual({
+        status: ['pending'],
+      });
+      // Whitespace is tolerated so a hand-written URL is not a 400.
+      expect(adminVerifierQueueQuerySchema.parse({ status: ' pending , claimed ' })).toEqual({
+        status: ['pending', 'claimed'],
+      });
+      // An empty list is not "no filter" — that is `status` omitted. Reject it rather than
+      // silently returning the whole table for a typo like `?status=`.
+      expect(() => adminVerifierQueueQuerySchema.parse({ status: '' })).toThrow();
+      // A trailing comma is a hand-written URL, not a different query: empty parts drop out.
+      expect(adminVerifierQueueQuerySchema.parse({ status: 'pending,' })).toEqual({
+        status: ['pending'],
+      });
+      expect(() => adminVerifierQueueQuerySchema.parse({ status: 'pending,nope' })).toThrow();
+    });
+
     it('composes the operations dashboard without any optional field', () => {
       const dashboard = {
         verifications: { pending: 3, approved: 5, rejected: 1, revoked: 2 },

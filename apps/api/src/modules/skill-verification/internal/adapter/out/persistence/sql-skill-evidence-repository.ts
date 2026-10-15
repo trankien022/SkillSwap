@@ -295,12 +295,12 @@ export class SqlSkillEvidenceRepository implements SkillEvidenceRepository {
       const params: unknown[] = [];
       const filters: string[] = [];
 
-      // `pending` and `claimed` are the live queue states; the rest are decisions already
-      // taken. The wire schema still allows every status so a caller can ask "what was
-      // rejected in this domain", but nothing here assumes the queue's default.
-      if (query.status !== undefined) {
-        params.push(query.status);
-        filters.push(`e."status" = $${params.length}`);
+      // `status` is a list: the queue's default view is the two live states at once, which one
+      // equality could not express. An empty list is treated as "no filter" by the contract's
+      // `.min(1)`, so reaching here with one is a programming error, not a client request.
+      if (query.status !== undefined && query.status.length > 0) {
+        params.push([...query.status]);
+        filters.push(`e."status" = ANY($${params.length}::text[])`);
       }
       if (query.domain !== undefined) {
         params.push(query.domain);

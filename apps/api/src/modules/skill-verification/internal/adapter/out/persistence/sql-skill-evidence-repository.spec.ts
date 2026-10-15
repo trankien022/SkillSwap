@@ -115,25 +115,37 @@ describe('SqlSkillEvidenceRepository.listForAdmin', () => {
     const { registry, recordedQueries } = createRecordingRegistry([[], [{ total: 0 }]]);
     const repository = new SqlSkillEvidenceRepository(registry, 'skill-verification');
 
-    await repository.listForAdmin({ ...baseQuery, status: 'claimed', q: 'type' });
+    await repository.listForAdmin({ ...baseQuery, status: ['claimed'], q: 'type' });
 
-    expect(recordedQueries[0].sql).toContain('e."status" = $1');
+    expect(recordedQueries[0].sql).toContain('e."status" = ANY($1::text[])');
     expect(recordedQueries[0].sql).toContain('s."name" ILIKE $2');
-    expect(recordedQueries[0].params).toContain('claimed');
+    expect(recordedQueries[0].params).toContainEqual(['claimed']);
     expect(recordedQueries[0].params).toContain('%type%');
+  });
+
+  it('matches any status in the list, so the live queue is one query', async () => {
+    const { registry, recordedQueries } = createRecordingRegistry([[], [{ total: 0 }]]);
+    const repository = new SqlSkillEvidenceRepository(registry, 'skill-verification');
+
+    // The queue's default view is `pending` + `claimed` at once. A single equality could not
+    // express it, and paging two queries would break the shared total and the cursor.
+    await repository.listForAdmin({ ...baseQuery, status: ['pending', 'claimed'] });
+
+    expect(recordedQueries[0].sql).toContain('e."status" = ANY($1::text[])');
+    expect(recordedQueries[0].params).toContainEqual(['pending', 'claimed']);
   });
 
   it('runs the page and the count together with the same filters', async () => {
     const { registry, recordedQueries } = createRecordingRegistry([[], [{ total: 0 }]]);
     const repository = new SqlSkillEvidenceRepository(registry, 'skill-verification');
 
-    await repository.listForAdmin({ ...baseQuery, domain: 'Languages', status: 'pending' });
+    await repository.listForAdmin({ ...baseQuery, domain: 'Languages', status: ['pending'] });
 
     expect(recordedQueries).toHaveLength(2);
     expect(recordedQueries[1].sql).toContain('COUNT(*)');
-    expect(recordedQueries[1].sql).toContain('e."status" = $1');
+    expect(recordedQueries[1].sql).toContain('e."status" = ANY($1::text[])');
     expect(recordedQueries[1].sql).toContain('s."category" = $2');
-    expect(recordedQueries[1].params).toEqual(['pending', 'Languages']);
+    expect(recordedQueries[1].params).toEqual([['pending'], 'Languages']);
     expect(recordedQueries[1].sql).not.toContain('LIMIT');
   });
 

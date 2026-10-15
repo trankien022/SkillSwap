@@ -97,8 +97,12 @@ export interface AdminQueueQuery {
   readonly cursor?: string;
   /** Taxonomy category ("domain" in the SRS). */
   readonly domain?: string;
-  /** `pending` = unclaimed; `claimed` = a Verifier has taken it. */
-  readonly status?: SkillEvidence['status'];
+  /**
+   * `pending` = unclaimed; `claimed` = a Verifier has taken it. A list, because the queue's
+   * default view is "live work" — the union of the two — and one status per request would make
+   * that view impossible to express without paging two queries and merging the totals.
+   */
+  readonly status?: readonly SkillEvidence['status'][];
   /** Free-text search over the skill name. */
   readonly q?: string;
   /** 'submittedAt' (oldest first, default) or 'submittedAtDesc'. */

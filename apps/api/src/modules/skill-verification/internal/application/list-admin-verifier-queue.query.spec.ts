@@ -19,7 +19,7 @@ interface Seed {
   readonly category: string;
   readonly skillName?: string;
   readonly ownerId?: string;
-  readonly status?: 'pending' | 'claimed';
+  readonly status?: 'pending' | 'claimed' | 'approved' | 'rejected' | 'superseded';
   readonly submittedAt: Date;
 }
 
@@ -145,11 +145,53 @@ describe('ListAdminVerifierQueueQueryHandler', () => {
     ]);
     const handler = new ListAdminVerifierQueueQueryHandler(repository);
 
-    const unclaimed = await handler.execute({ status: 'pending' });
-    const inReview = await handler.execute({ status: 'claimed' });
+    const unclaimed = await handler.execute({ status: ['pending'] });
+    const inReview = await handler.execute({ status: ['claimed'] });
 
     expect(unclaimed.items.map((item) => item.id)).toEqual(['e-1']);
     expect(inReview.items.map((item) => item.id)).toEqual(['e-2']);
+  });
+
+  it('matches every status in the list, so the live queue is the two states at once', async () => {
+    const repository = new InMemorySkillEvidenceRepository();
+    await seed(repository, [
+      {
+        id: 'e-1', profileSkillId: 'ps-1', skillId: 'sk-1',
+        category: 'Programming', status: 'pending', submittedAt: AT(1),
+      },
+      {
+        id: 'e-2', profileSkillId: 'ps-2', skillId: 'sk-2',
+        category: 'Programming', status: 'claimed', submittedAt: AT(2),
+      },
+      {
+        id: 'e-3', profileSkillId: 'ps-3', skillId: 'sk-3',
+        category: 'Programming', status: 'claimed', submittedAt: AT(3),
+      },
+    ]);
+    // Decide `e-3` through the repository's own port rather than poking at its rows: the point
+    // is that a decided row is excluded from the live view, which only means something if the
+    // row really went through the decision path.
+    await repository.decide({
+      evidenceId: 'e-3',
+      status: 'approved',
+      reviewerId: 'vf-1',
+      approvedLevel: 'intermediate',
+      reason: null,
+      decidedAt: AT(4),
+      skillId: 'sk-3',
+      ownerId: 'acc-1',
+    });
+    const handler = new ListAdminVerifierQueueQueryHandler(repository);
+
+    // The queue's default view: unclaimed + in review, with the already-decided row excluded.
+    const live = await handler.execute({ status: ['pending', 'claimed'] });
+
+    expect(live.items.map((item) => item.id).sort()).toEqual(['e-1', 'e-2']);
+    expect(live.page.total).toBe(2);
+
+    // And the decided row is still reachable when asked for explicitly.
+    const decided = await handler.execute({ status: ['approved'] });
+    expect(decided.items.map((item) => item.id)).toEqual(['e-3']);
   });
 
   it('searches the skill name', async () => {

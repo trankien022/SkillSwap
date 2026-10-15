@@ -236,7 +236,11 @@ export class InMemorySkillEvidenceRepository implements SkillEvidenceRepository 
    */
   async listForAdmin(query: AdminQueueQuery): Promise<AdminQueuePage> {
     const matched = this.rows
-      .filter((row) => (query.status === undefined ? true : row.status === query.status))
+      .filter((row) =>
+        query.status === undefined || query.status.length === 0
+          ? true
+          : query.status.includes(row.status),
+      )
       .filter((row) => {
         const ctx = this.profileSkillContext.get(row.profileSkillId);
         if (ctx === undefined) return false;
