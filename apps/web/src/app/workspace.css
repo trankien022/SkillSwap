@@ -581,15 +581,6 @@
   line-height: 20px;
   color: var(--color-ink-soft);
 }
-.workspace-metric-icon {
-  display: flex;
-  flex: 0 0 32px;
-  height: 32px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  background: var(--color-neutral-tint);
-}
 .workspace-metric-value {
   display: flex;
   flex-wrap: wrap;

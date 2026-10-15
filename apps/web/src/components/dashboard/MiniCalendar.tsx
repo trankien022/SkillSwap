@@ -38,7 +38,6 @@ export function MiniCalendar({
     <article className="workspace-panel">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-base font-bold text-ink">
-          <CalendarMonthIcon className="h-5 w-5 text-ink" />
           <span>{monthLabel}</span>
         </h3>
         <div className="flex items-center gap-1">
@@ -140,28 +139,6 @@ function nextMonth(month: number, year: number) {
 }
 
 /* --- Inline SVG glyphs --- */
-
-function CalendarMonthIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="22"
-      height="22"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className={className}
-    >
-      <rect x="3" y="5" width="18" height="16" rx="2" />
-      <line x1="3" y1="10" x2="21" y2="10" />
-      <line x1="8" y1="3" x2="8" y2="7" />
-      <line x1="16" y1="3" x2="16" y2="7" />
-    </svg>
-  );
-}
 
 function ChevronLeftIcon({ className = '' }: { className?: string }) {
   return (
