@@ -57,4 +57,30 @@ describe('MockBookingGateway (FR-007)', () => {
       reason: 'self_booking',
     });
   });
+
+  it('confirms a hold and reports it back as the caller\'s own booking', async () => {
+    const gateway = new MockBookingGateway();
+    expect(await gateway.getOwnBooking(DEMO_CLASS_ID)).toBeNull();
+
+    const { booking } = await gateway.bookClass(DEMO_CLASS_ID, 'k1');
+    expect(await gateway.getOwnBooking(DEMO_CLASS_ID)).toMatchObject({
+      bookingId: booking.bookingId,
+      state: 'pending',
+    });
+
+    const reply = await gateway.confirmBooking(booking.bookingId);
+    expect(reply.confirmed).toBe(true);
+    expect(reply.booking?.state).toBe('confirmed');
+
+    // The read-back — the only thing that earns a success — agrees with it.
+    expect(await gateway.getOwnBooking(DEMO_CLASS_ID)).toMatchObject({ state: 'confirmed' });
+  });
+
+  it('never confirms a booking it does not hold', async () => {
+    // The one thing the flow must not fabricate: a confirmation for something
+    // that was never booked here.
+    await expect(new MockBookingGateway().confirmBooking('missing-booking')).rejects.toThrow(
+      'Booking not found',
+    );
+  });
 });

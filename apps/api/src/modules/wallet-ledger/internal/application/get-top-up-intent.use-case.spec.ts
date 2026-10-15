@@ -80,4 +80,34 @@ describe('GetTopUpIntentUseCase (FR-008 / ADR-033)', () => {
     ).rejects.toBeInstanceOf(TopUpIntentNotFoundError);
     expect(findById).not.toHaveBeenCalled();
   });
+
+  it('reads an intent by its invoice number for the owner', async () => {
+    const intents = new FakeTopUpIntentRepository();
+    const id = await seedIntent(intents);
+
+    const view = await new GetTopUpIntentUseCase(intents).executeByProviderRef(
+      'owner-1',
+      'SS-1-A1B2C3',
+    );
+
+    expect(view.id).toBe(id);
+    expect(view.providerRef).toBe('SS-1-A1B2C3');
+  });
+
+  it("refuses another owner's invoice number as not found", async () => {
+    const intents = new FakeTopUpIntentRepository();
+    await seedIntent(intents, 'owner-1');
+
+    await expect(
+      new GetTopUpIntentUseCase(intents).executeByProviderRef('owner-2', 'SS-1-A1B2C3'),
+    ).rejects.toBeInstanceOf(TopUpIntentNotFoundError);
+  });
+
+  it('reports an unknown invoice number as not found', async () => {
+    const intents = new FakeTopUpIntentRepository();
+
+    await expect(
+      new GetTopUpIntentUseCase(intents).executeByProviderRef('owner-1', 'SS-9-ZZZZZZ'),
+    ).rejects.toBeInstanceOf(TopUpIntentNotFoundError);
+  });
 });

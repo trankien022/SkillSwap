@@ -140,6 +140,12 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
           } catch {
             availableCredits = null;
           }
+        } else {
+          // The balance is supplementary here (it only annotates the form), so a
+          // failure degrades to "unknown" rather than failing the page — but it
+          // is logged so a broken read is not indistinguishable from an absent
+          // one in the logs.
+          console.warn(`GET /api/wallet/balance failed: HTTP ${balanceRes.status}`);
         }
 
         if (active) setLoad({ phase: 'ready', booking, availableCredits });

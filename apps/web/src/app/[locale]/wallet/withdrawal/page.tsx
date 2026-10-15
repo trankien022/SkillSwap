@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { callApi, unwrapEnvelope } from '../../../../lib/api-client';
+import { callApiOk, unwrapEnvelope } from '../../../../lib/api-client';
 import { Navbar } from '../../../../components/navbar';
 import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
 
@@ -10,25 +10,29 @@ export default function WithdrawalPage() {
   const tUnavailable = useTranslations('Wallet.withdrawal');
   const [balance, setBalance] = useState<WalletBalanceView | null>(null);
   const [me, setMe] = useState<MeResponse | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [amount, setAmount] = useState(100);
 
   useEffect(() => {
     const loadData = async () => {
       try {
+        // Both reads are required: the page must not show a spendable balance it
+        // could not read, so a failure is surfaced instead of silently leaving
+        // the withdrawal limits at their placeholder defaults.
         const [balRes, meRes] = await Promise.all([
-          callApi('/wallet/balance'),
-          callApi('/auth/me'),
+          callApiOk('/wallet/balance'),
+          callApiOk('/auth/me'),
         ]);
-        if (balRes.ok) setBalance(await unwrapEnvelope(balRes));
-        if (meRes.ok) setMe(await unwrapEnvelope(meRes));
+        setBalance(await unwrapEnvelope(balRes));
+        setMe(await unwrapEnvelope(meRes));
       } catch (e) {
-        console.error(e);
+        setLoadError(e instanceof Error ? e.message : tUnavailable('loadError'));
       }
     };
     loadData();
-  }, []);
+  }, [tUnavailable]);
 
-  const maxCredits = balance ? balance.availableCredits : 1260;
+  const maxCredits = balance ? balance.availableCredits : 0;
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = parseInt(e.target.value) || 0;
@@ -73,8 +77,7 @@ export default function WithdrawalPage() {
               <p className="text-base text-slate-600 max-w-2xl mt-2">
                 Rút tiền trực tiếp từ số dư khả dụng về tài khoản ngân hàng chính chủ sinh viên với quy trình đối soát tự động Napas 24/7.
               </p>
-            </div>
-            {/* Instructor Quick Info Snapshot */}
+            </div>{/* Instructor Quick Info Snapshot */}
             <div className="flex items-center gap-3 px-4 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm">
               <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-900 text-base font-bold">
                 {(me?.displayName || 'LA').slice(0, 2).toUpperCase()}
@@ -88,6 +91,20 @@ export default function WithdrawalPage() {
               </div>
             </div>
           </div>
+
+          {/* A failed balance read is stated: the panels below derive every limit
+              from `balance`, so silently leaving them at defaults would show a
+              withdrawal ceiling the account may not actually have. */}
+          {loadError !== null && (
+            <div
+              role="alert"
+              data-testid="withdrawal-load-error"
+              className="mb-6 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+            >
+              <span className="material-symbols-outlined text-[20px] flex-shrink-0 mt-0.5">info</span>
+              <span>{loadError}</span>
+            </div>
+          )}
 
           {/* Main Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

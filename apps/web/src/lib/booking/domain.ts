@@ -40,8 +40,29 @@ export class BookingError extends Error {
   }
 }
 
+/**
+ * Re-exported so the UI models a booking against one source of truth: the
+ * confirm answer and the caller's own hold come from the same contracts as the
+ * booking call itself.
+ */
+export type { ConfirmBookingResponse, OwnBookingSummaryView } from '@skillswap/contracts';
+
+import type { ConfirmBookingResponse, OwnBookingSummaryView } from '@skillswap/contracts';
+
 /** Port the UI depends on. */
 export interface BookingGateway {
   getClass(classId: string): Promise<ClassView>;
   bookClass(classId: string, idempotencyKey: string): Promise<BookClassResult>;
+  /**
+   * Confirm the hold into a paid booking (FR-007). The answer is deliberately
+   * not trusted on its own: `confirmed` can be `false` by design while the
+   * debit is still settling, so callers resolve it against `getOwnBooking`.
+   */
+  confirmBooking(bookingId: string): Promise<ConfirmBookingResponse>;
+  /**
+   * The caller's hold on a class, or null when they have none — the read that
+   * tells a learner "you already hold a seat" instead of letting a second book
+   * attempt collide with the first.
+   */
+  getOwnBooking(classId: string): Promise<OwnBookingSummaryView | null>;
 }

@@ -10,6 +10,15 @@ import {
 } from '@skillswap/contracts';
 import type { GatewayClient } from '@/infrastructure/http/gateway-client';
 
+/**
+ * FR-008: where SePay hands the payer back on mobile.
+ *
+ * The app's own scheme, so the OS returns the payer to the wallet screen rather
+ * than to a web page the app cannot use. The API accepts this scheme
+ * explicitly (see the wallet-ledger return-URL allow-list).
+ */
+export const MOBILE_WALLET_RETURN_URL = 'skillswap://wallet';
+
 export class WalletValidationError extends Error {
   constructor(message: string) {
     super(message);
@@ -56,10 +65,32 @@ export class WalletService {
 
     const raw = await this.gateway.authenticatedRequest<unknown>('/wallet/top-ups', {
       method: 'POST',
-      body: { amountVnd },
+      body: {
+        amountVnd,
+        // FR-008 / ADR-015: the OS hands the payer back to the app instead of
+        // to a web page it cannot use. The API accepts this scheme explicitly;
+        // the invoice number is not appended to it, so the wallet screen reads
+        // its own pending intent after the hand-off.
+        returnUrl: MOBILE_WALLET_RETURN_URL,
+      },
     });
 
     return topUpIntentCreatedSchema.parse(raw);
+  }
+
+  /**
+   * Reads the intent the payer was returned for, by invoice number.
+   *
+   * SePay's redirect carries the invoice number and nothing else, and the
+   * intent id does not exist when the checkout form is submitted — so the app
+   * looks the intent up by the same handle the provider uses.
+   */
+  async getTopUpIntentByProviderRef(providerRef: string): Promise<TopUpIntentStatusView> {
+    const raw = await this.gateway.authenticatedRequest<unknown>(
+      `/wallet/top-ups/by-provider-ref/${encodeURIComponent(providerRef)}`,
+      { method: 'GET' },
+    );
+    return topUpIntentStatusSchema.parse(raw);
   }
 
   /**

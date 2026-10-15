@@ -75,6 +75,27 @@ describe('ClassDetailApiGateway', () => {
     expect(unrated.ratingCount).toBe(0);
   });
 
+  it('threads the booking verdict the API gives this caller, inventing nothing', () => {
+    // Route 14 is the only route that answers *for this caller*: the verdict
+    // and any hold are copied across unchanged, because the booking action
+    // below refuses, reuses a seat and names its disabled reason from them.
+    const withHold = mapContractDetailToWeb({
+      ...sampleContractDetail,
+      canBook: false,
+      ownBooking: { bookingId: 'booking-1', state: 'pending', expiresAt: '2026-10-30T10:15:00.000Z' },
+    });
+    expect(withHold.canBook).toBe(false);
+    expect(withHold.availableSeats).toBe(2);
+    expect(withHold.ownBooking).toMatchObject({ bookingId: 'booking-1', state: 'pending' });
+
+    // No hold in the response means no hold — never a fabricated one — and
+    // `canBook` is whatever the server said, not an optimistic default.
+    const withoutHold = mapContractDetailToWeb(sampleContractDetail);
+    expect(withoutHold.canBook).toBe(true);
+    expect(withoutHold.ownBooking).toBeNull();
+    expect(withoutHold.availableSeats).toBe(2);
+  });
+
   it('resolves demo class IDs seamlessly from fallback fixture', async () => {
     const gateway = new ClassDetailApiGateway();
     const item = await gateway.getById('demo-ielts-speaking');

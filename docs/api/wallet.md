@@ -6,7 +6,7 @@
 
 Money in and out (FR-008/FR-010, ADR-033/ADR-022). Credits are integer VND, 1 credit = 1,000 VND. Top-ups go through the SePay Payment Gateway (hosted checkout); the IPN settles them.
 
-5 endpoints.
+7 endpoints.
 
 Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
 
@@ -82,6 +82,7 @@ Start a top-up and get a hosted SePay checkout URL to open. Use from the "Add fu
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `amountVnd` | integer | yes | > 0; ≤ 100000000 |
+| `returnUrl` | string | no | min 1 chars |
 
 **Response — `TopUpIntentDto`** (inside the `data` envelope key)
 
@@ -94,7 +95,57 @@ Start a top-up and get a hosted SePay checkout URL to open. Use from the "Add fu
 | `amountVnd` | integer | yes | > 0 |
 | `amountCredits` | integer | yes | > 0 |
 | `status` | string | yes | min 1 chars |
-| `paymentUrl` | string | no | min 1 chars |
+| `paymentUrl` | string | yes | min 1 chars |
+
+### `GET /api/wallet/top-ups/{id}`
+
+**Poll a wallet top-up intent (FR-008 / ADR-033)**
+
+- Auth: 🔒 Bearer token required
+- Response: `TopUpIntentStatusDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `id` | path | string | yes |  |
+
+**Response — `TopUpIntentStatusDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `ownerId` | string | yes | min 1 chars |
+| `provider` | string | yes | min 1 chars |
+| `providerRef` | string | yes | min 1 chars |
+| `amountVnd` | integer | yes | > 0 |
+| `amountCredits` | integer | yes | > 0 |
+| `status` | string | yes | min 1 chars |
+| `paidAmountVnd` | integer | yes | nullable |
+| `paidAt` | string | yes | nullable |
+
+### `GET /api/wallet/top-ups/by-provider-ref/{providerRef}`
+
+**Read a top-up intent by invoice number (FR-008)**
+
+- Auth: 🔒 Bearer token required
+- Response: `TopUpIntentStatusDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `providerRef` | path | string | yes |  |
+
+**Response — `TopUpIntentStatusDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `ownerId` | string | yes | min 1 chars |
+| `provider` | string | yes | min 1 chars |
+| `providerRef` | string | yes | min 1 chars |
+| `amountVnd` | integer | yes | > 0 |
+| `amountCredits` | integer | yes | > 0 |
+| `status` | string | yes | min 1 chars |
+| `paidAmountVnd` | integer | yes | nullable |
+| `paidAt` | string | yes | nullable |
 
 ### `GET /api/wallet/top-ups/callback`
 

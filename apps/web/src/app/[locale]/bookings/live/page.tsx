@@ -1,28 +1,21 @@
-import { setRequestLocale } from 'next-intl/server';
-import { MarketplaceHeader } from '../../../../components/marketplace/MarketplaceHeader';
-import { SiteFooter } from '../../../../components/landing/SiteFooter';
-import { LiveClassroomContent } from '../../../../components/classroom/LiveClassroomContent';
+import { redirect } from 'next/navigation';
 
 type PageProps = {
   params: Promise<{ locale: string }>;
 };
 
 /**
- * Fallback static live classroom route for preview or direct navigation.
+ * There is no such thing as a booking-less live classroom.
+ *
+ * This route used to render `LiveClassroomContent bookingId="SS-VN-8821"` — a
+ * fabricated id — so every visit sent `POST /classes/bookings/SS-VN-8821/room-access`
+ * and got a 500 (`invalid input syntax for type uuid`). A real classroom always
+ * belongs to a booking, reachable at `/{locale}/bookings/{id}/live`.
+ *
+ * Rather than invent a booking to show, send the visitor back to their bookings
+ * list where the real join buttons live.
  */
 export default async function DefaultBookingLiveClassroomPage({ params }: PageProps) {
   const { locale } = await params;
-  setRequestLocale(locale);
-
-  return (
-    <div className="flex min-h-dvh flex-col bg-slate-50 text-slate-900">
-      <MarketplaceHeader currentTab="classes" />
-      <main className="flex-1">
-        <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
-          <LiveClassroomContent bookingId="SS-VN-8821" roomCode="SS-VN-8821" />
-        </div>
-      </main>
-      <SiteFooter />
-    </div>
-  );
+  redirect(`/${locale}/bookings`);
 }

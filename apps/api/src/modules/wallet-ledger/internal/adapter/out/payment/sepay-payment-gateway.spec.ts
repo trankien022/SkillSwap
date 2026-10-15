@@ -39,6 +39,7 @@ describe('SepayPaymentGateway', () => {
       providerRef: 'SS-1-A1B2C3',
       amountVnd: 10000,
       description: 'SkillSwap wallet top-up SS-1-A1B2C3',
+      returnUrl: 'https://example.test/vi/payment/result',
     });
 
     expect(result.paymentUrl).toBe(hosted);
@@ -53,6 +54,7 @@ describe('SepayPaymentGateway', () => {
         providerRef: 'SS-3-C3D4E5',
         amountVnd: 10000,
         description: 'SkillSwap wallet top-up SS-3-C3D4E5',
+        returnUrl: 'https://example.test/return',
       }),
     ).rejects.toThrow(/SEPAY_MERCHANT_ID/);
 
@@ -69,6 +71,7 @@ describe('SepayPaymentGateway', () => {
         providerRef: 'SS-4-D4E5F6',
         amountVnd: 10000,
         description: 'SkillSwap wallet top-up SS-4-D4E5F6',
+        returnUrl: 'https://example.test/return',
       }),
     ).rejects.toThrow(/SEPAY_SECRET_KEY/);
 
@@ -84,6 +87,7 @@ describe('SepayPaymentGateway', () => {
       providerRef: 'SS-2-B2C3D4',
       amountVnd: 50000,
       description: 'SkillSwap wallet top-up SS-2-B2C3D4',
+      returnUrl: 'https://example.test/vi/payment/result',
     });
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
@@ -101,13 +105,32 @@ describe('SepayPaymentGateway', () => {
     expect(fields.order_amount).toBe('50000');
     expect(fields.currency).toBe('VND');
     expect(fields.order_invoice_number).toBe('SS-2-B2C3D4');
-    expect(fields.success_url).toBe('https://example.test/api/wallet/top-ups/callback');
+    // The per-request URL is what ships, not the configured fallback: a payer
+    // on the web must land back on the web, and one in the app in the app.
+    expect(fields.success_url).toBe('https://example.test/vi/payment/result');
     expect(fields.error_url).toBe(fields.success_url);
     expect(fields.cancel_url).toBe(fields.success_url);
     // The signature is over the fields as sent (minus the signature itself).
     expect(fields.signature).toBe(signSepayFields(fields, 'spsk_test_secret'));
     // No payment_method: the payer chooses on SePay's page.
     expect(fields.payment_method).toBeUndefined();
+  });
+
+  it('signs the app deep link when the payer is on mobile', async () => {
+    const fetchMock = stubFetch(
+      new Response(null, { status: 302, headers: { location: 'https://pay-sandbox.sepay.vn/v1/checkout' } }),
+    );
+
+    await new SepayPaymentGateway(config()).initiateTopUp({
+      providerRef: 'SS-5-E5F6A7',
+      amountVnd: 50000,
+      description: 'SkillSwap wallet top-up SS-5-E5F6A7',
+      returnUrl: 'skillswap://wallet',
+    });
+
+    const params = new URLSearchParams(fetchMock.mock.calls[0][1].body as string);
+    expect(params.get('success_url')).toBe('skillswap://wallet');
+    expect(params.get('cancel_url')).toBe('skillswap://wallet');
   });
 
   it('trims a trailing slash from the configured checkout host', async () => {
@@ -119,6 +142,7 @@ describe('SepayPaymentGateway', () => {
       providerRef: 'SS-3',
       amountVnd: 10000,
       description: 'top-up',
+      returnUrl: 'https://example.test/return',
     });
 
     expect(fetchMock.mock.calls[0][0]).toBe('https://pay.sepay.vn/v1/checkout/init');
@@ -132,6 +156,7 @@ describe('SepayPaymentGateway', () => {
         providerRef: 'SS-4',
         amountVnd: 10000,
         description: 'top-up',
+        returnUrl: 'https://example.test/return',
       }),
     ).rejects.toThrow(/SePay checkout init failed \(HTTP 200\)/);
   });

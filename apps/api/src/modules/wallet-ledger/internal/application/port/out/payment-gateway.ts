@@ -4,6 +4,12 @@ export interface InitiatePaymentRequest {
   readonly providerRef: string;
   readonly amountVnd: number;
   readonly description: string;
+  /**
+   * FR-008: where the provider sends the payer back. Already resolved against
+   * the configured allow-list by the calling use case, so the adapter only
+   * places it in the checkout form.
+   */
+  readonly returnUrl: string;
 }
 
 export interface InitiatePaymentResult {

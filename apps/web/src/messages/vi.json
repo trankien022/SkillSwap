@@ -18,19 +18,24 @@
     "failed": "Không thể kết nối tới {url}."
   },
   "Booking": {
-    "title": "Đặt lớp học",
-    "duration": "{minutes} phút",
-    "price": "{credits} credit",
-    "capacity": "{seats} chỗ",
-    "startsAt": "Bắt đầu {when}",
-    "durationLabel": "Thời lượng",
-    "seatsLabel": "Số chỗ",
-    "bookCta": "Đặt lớp",
-    "booking": "Đang đặt…",
-    "pending": "Chờ xác nhận — đã giữ chỗ",
-    "pendingHint": "Chỗ của bạn đã được giữ. Xác nhận bằng cách nạp tiền trong 15 phút.",
-    "errorTitle": "Không thể đặt lớp",
-    "notFound": "Không tìm thấy lớp này.",
+    "confirm": "Xác nhận & Thanh toán",
+    "confirming": "Đang xử lý…",
+    "settled": "Lớp đã được xác nhận",
+    "settledHint": "Chỗ của bạn đã được giữ và credit đã được trừ. Không cần thao tác nào thêm.",
+    "settling": "Đang chờ hệ thống ghi nhận",
+    "settlingHint": "Giao dịch chưa ghi nhận xong. Kiểm tra lại sau giây lát.",
+    "unconfirmed": "Chưa được xác nhận",
+    "unconfirmedHint": "Hệ thống chưa ghi nhận chỗ ngồi cho bạn. Kiểm tra ví để xem số dư mới nhất.",
+    "unknown": "Chưa kiểm tra được kết quả",
+    "unknownHint": "Không đọc được trạng thái mới nhất — hãy kiểm tra lại.",
+    "recheck": "Kiểm tra lại",
+    "disabled": {
+      "confirmed": "Bạn đã xác nhận lớp này",
+      "full": "Lớp đã hết chỗ",
+      "notOpen": "Lớp này không mở đăng ký",
+      "tooSoon": "Đã quá thời hạn đặt lớp (cần trước giờ học ít nhất 24 giờ)",
+      "notBookable": "Không thể đặt lớp này lúc này"
+    },
     "error": {
       "class_not_bookable": "Lớp này không còn mở để đặt.",
       "class_started": "Lớp này đã bắt đầu.",
@@ -458,10 +463,46 @@
       "body": "Hệ thống đang hoàn thiện quy trình rút tiền qua cổng payout. Backend chưa phát hành tính năng này, nên bạn không thể gửi yêu cầu rút vào lúc này. Vui lòng quay lại khi backend phát hành.",
       "cta": "Chưa khả dụng",
       "rulesTitle": "Quy tắc nghiệp vụ Payout & Bảo vệ Escrow",
-      "rulesBody": "Khi tính năng được phát hành: số tiền rút không được vượt quá số dư khả dụng. Ngay khi bạn gửi yêu cầu, credits sẽ được chuyển sang trạng thái payout_hold để khóa an toàn trong khi đối soát. Nếu cổng thanh toán từ chối, khoản này sẽ hoàn trả ngay về ví."
+      "rulesBody": "Khi tính năng được phát hành: số tiền rút không được vượt quá số dư khả dụng. Ngay khi bạn gửi yêu cầu, credits sẽ được chuyển sang trạng thái payout_hold để khóa an toàn trong khi đối soát. Nếu cổng thanh toán từ chối, khoản này sẽ hoàn trả ngay về ví.",
+      "loadError": "Không tải được số dư ví. Vui lòng tải lại trang."
     }
   },
+  "PaymentResult": {
+    "title": "Kết quả thanh toán",
+    "notice": "Trang này chỉ hiển thị trạng thái do máy chủ ghi nhận. Việc cộng credit do SePay thông báo trực tiếp cho hệ thống, không phụ thuộc vào việc bạn quay lại trang này.",
+    "noIntent": "Không tìm thấy yêu cầu nạp tiền nào trong liên kết này.",
+    "noIntentHelp": "Nếu bạn đã thanh toán, hãy kiểm tra Ví: credit sẽ xuất hiện khi máy chủ nhận được xác nhận từ SePay.",
+    "intentLabel": "Yêu cầu nạp tiền",
+    "amountLabel": "Số tiền",
+    "creditsLabel": "Credit nhận được",
+    "statusLabel": "Trạng thái",
+    "balanceLabel": "Số dư khả dụng hiện tại",
+    "status": {
+      "pending": "Đang chờ SePay xác nhận",
+      "settled": "Đã cộng vào ví",
+      "failed": "Thanh toán không thành công",
+      "reversed": "Giao dịch đã bị hoàn",
+      "unknown": "Không xác định"
+    },
+    "balanceUnavailable": "Chưa đọc được số dư. Vui lòng tải lại trang.",
+    "intentUnavailable": "Chưa đọc được trạng thái yêu cầu nạp tiền. Vui lòng tải lại trang.",
+    "refreshCta": "Tải lại trạng thái",
+    "refreshing": "Đang tải lại…",
+    "walletCta": "Mở Ví & Tín dụng",
+    "exploreCta": "Về trang lớp học"
+  },
   "Admin": {
+    "Landing": {
+      "title": "Trang quản trị",
+      "subtitle": "Chỉ những công cụ đang vận hành thật trên hệ thống mới được mở từ đây.",
+      "studentVerifications": "Duyệt xác minh sinh viên",
+      "verifierStatus": "Mở trạng thái Verifier theo Account ID",
+      "accountIdPlaceholder": "Nhập Account ID",
+      "accountIdRequired": "Vui lòng nhập Account ID.",
+      "openCta": "Mở",
+      "notReadyTitle": "Chưa có sẵn",
+      "notReadyBody": "Hàng đợi duyệt chờ, danh sách Verifier và nhật ký kiểm định chưa tồn tại trên hệ thống."
+    },
     "verifiers": {
       "breadcrumb": "Quản trị",
       "pageTitle": "Quản trị Verifier",
@@ -500,12 +541,44 @@
       "notAuthorizedBody": "Trang này chỉ dành cho quản trị viên. Nếu bạn cần truy cập, hãy liên hệ quản trị hệ thống.",
       "signInTitle": "Cần đăng nhập",
       "signInBody": "Bạn cần đăng nhập bằng tài khoản quản trị để truy cập trang này.",
+      "signInCta": "Đăng nhập ngay",
       "loading": "Đang kiểm tra quyền truy cập…",
       "errors": {
         "accountIdRequired": "Vui lòng nhập Account ID.",
         "forbidden": "Bạn không có quyền thực hiện thao tác này. Vui lòng đăng nhập với tài khoản quản trị.",
         "generic": "Không thể cập nhật trạng thái Verifier. Vui lòng thử lại."
       }
+    },
+    "StudentVerification": {
+      "title": "Duyệt xác minh sinh viên",
+      "notice": "Xem xét hồ sơ xác minh sinh viên theo id. Admin cần biết id xác minh.",
+      "idPlaceholder": "Id xác minh",
+      "openCta": "Mở",
+      "label": {
+        "id": "Id xác minh",
+        "decision": "Quyết định",
+        "approvedMajor": "Ngành được duyệt",
+        "reason": "Lý do"
+      },
+      "placeholders": {
+        "approvedMajor": "Ngành được duyệt (không bắt buộc)",
+        "reason": "Lý do (bắt buộc khi từ chối)"
+      },
+      "actions": {
+        "approve": "Phê duyệt",
+        "reject": "Từ chối",
+        "submitDecision": "Gửi quyết định",
+        "revoke": "Thu hồi"
+      },
+      "revokeConfirm": "Thu hồi xác minh này? Hành động không thể hoàn tác.",
+      "messages": {
+        "decided": "Quyết định đã được ghi nhận.",
+        "revoked": "Xác minh đã bị thu hồi."
+      },
+      "errors": {
+        "auth": "Không có quyền thực hiện hành động này."
+      },
+      "note": "Quyết định được ghi lại không thể thay đổi."
     }
   },
   "Teacher": {
@@ -896,69 +969,89 @@
   "LiveClassroom": {
     "nav": {
       "back": "Lớp học của tôi",
-      "bookingCode": "MÃ BUỔI HỌC: #{code}"
+      "bookingCode": "MÃ BUỔI HỌC: #{code}",
+      "classFallback": "Buổi học"
     },
+    "fallbackDisplayName": "Học viên",
     "statusBar": {
-      "rec": "REC LIVE",
-      "connection": "HD 1080p (24ms)",
-      "timer": "{elapsed} / {total}",
-      "e2e": "Mã hóa E2E bảo mật"
+      "live": "ĐANG TRONG PHÒNG",
+      "notLive": "CHƯA VÀO PHÒNG",
+      "connected": "Đã kết nối phòng học",
+      "disconnected": "Chưa kết nối",
+      "timer": "{elapsed} / {total}"
     },
     "video": {
-      "whiteboardTitle": "Bảng trắng tương tác • IELTS Speaking Part 2",
-      "liveSync": "Đồng bộ trực tiếp",
-      "topic": "Chủ đề: Describe an environmental problem in your hometown",
-      "pointLabel": "Cấu trúc PEEL:",
-      "pointText": "Air pollution due to heavy vehicular exhaust during rush hours.",
-      "collocationsLabel": "Từ vựng C1:",
-      "collocationsText": "deteriorating air quality, exponential rise, combative measures.",
-      "feedbackLabel": "Góp ý trực tiếp:",
-      "feedbackText": "Tập trung nối âm và ngắt nhịp tự nhiên theo ý tưởng.",
-      "mentorBadge": "Giảng viên",
       "screenSharing": "Đang chia sẻ màn hình",
-      "studentName": "Minh Nguyễn (Bạn)",
       "btnMic": "Micro",
       "btnCamera": "Camera",
       "btnScreen": "Chia sẻ màn hình",
-      "btnWhiteboard": "Bảng trắng",
-      "btnHand": "Giơ tay phát biểu",
-      "btnLeave": "Rời phòng"
+      "btnLeave": "Rời phòng",
+      "endedNotice": "Bạn đã rời phòng học."
     },
-    "timeline": {
-      "stage": "Giai đoạn 3 / 4 • Buổi học mô phỏng 1-1",
-      "topicHeading": "Phương pháp PEEL & Khung phản xạ C1 Collocations",
-      "remainingTime": "Còn {n} phút luyện tập trực tiếp",
-      "progressLabel": "Tiến độ buổi học hiện tại",
-      "progressPct": "{pct}% hoàn thành",
-      "materialsTitle": "Tài liệu buổi học đính kèm ({n} tệp)",
-      "file1Title": "Forecast_Speaking_Q2_2025.pdf",
-      "file1Sub": "1.4 MB • Giáo trình chuẩn đối tác đào tạo",
-      "file2Title": "Band7_Topic_Collocations.docx",
-      "file2Sub": "420 KB • Ghi chú buổi học trọng tâm"
+    "session": {
+      "title": "Thông tin buổi học",
+      "durationLabel": "Thời lượng",
+      "durationValue": "{minutes} phút",
+      "teacherLabel": "Giảng viên",
+      "startUnknown": "Chưa có giờ bắt đầu"
+    },
+    "participants": {
+      "title": "Thành viên",
+      "inCall": "Đang trong phòng",
+      "notInCall": "Chưa vào phòng",
+      "youLabel": "Bạn",
+      "teacherFallback": "Giảng viên"
+    },
+    "states": {
+      "loadingBooking": "Đang tải thông tin buổi học…",
+      "bookingErrorTitle": "Không tải được buổi học",
+      "bookingErrorBody": "Không thể đọc thông tin buổi học. Vui lòng tải lại trang hoặc thử lại sau.",
+      "bookingNotFoundTitle": "Không tìm thấy buổi học",
+      "bookingNotFoundBody": "Buổi học này không còn trong danh sách đặt lớp của bạn.",
+      "requestingAccess": "Đang xin quyền vào phòng học…",
+      "connecting": "Đang kết nối phòng học…",
+      "embedErrorTitle": "Không mở được phòng học",
+      "embedErrorBody": "Không tải được phòng học trực tuyến. Kiểm tra kết nối mạng rồi thử lại.",
+      "notAParty": {
+        "title": "Bạn không thuộc buổi học này",
+        "body": "Chỉ học viên đã đặt lớp và giảng viên phụ trách mới vào được phòng học này."
+      },
+      "notConfirmed": {
+        "title": "Buổi học chưa sẵn sàng",
+        "body": "Chỉ buổi học ở trạng thái đã xác nhận mới có thể vào phòng."
+      },
+      "windowNotOpen": {
+        "title": "Phòng học chưa mở",
+        "body": "Phòng học mở trước giờ bắt đầu 15 phút. Vui lòng quay lại khi phòng mở."
+      },
+      "windowClosed": {
+        "title": "Phòng học đã đóng",
+        "body": "Thời gian vào phòng học của buổi này đã kết thúc."
+      },
+      "roomNotFound": {
+        "title": "Không tìm thấy buổi học",
+        "body": "Buổi học này không tồn tại hoặc bạn không có quyền truy cập."
+      },
+      "providerUnavailable": {
+        "title": "Phòng học tạm thời không khả dụng",
+        "body": "Dịch vụ phòng học đang gặp sự cố. Vui lòng thử lại sau ít phút."
+      },
+      "unavailable": {
+        "title": "Không vào được phòng học",
+        "body": "Đã xảy ra lỗi khi mở phòng học. Vui lòng thử lại."
+      }
     },
     "chat": {
-      "title": "Chat Lớp Học Trực Tuyến",
-      "onlineCount": "{n} trực tuyến",
-      "safetyNotice": "Bảo mật SkillSwap: Mọi tương tác diễn ra trên nền tảng để bảo đảm quyền lợi ký quỹ an toàn và giải quyết khiếu nại học thuật.",
-      "systemStart": "Phòng học bắt đầu lúc {time} • Mã bảo mật #{code}",
-      "mentorName": "Lan Anh",
-      "mentorTime1": "19:32",
-      "mentorMsg1": "Chào Minh! Chúng ta bắt đầu phần Part 2: 'Describe an environmental problem in your hometown' nhé. Mình vừa chia sẻ bảng từ vựng qua whiteboard rồi nhé!",
-      "studentName": "Bạn (Minh Nguyễn)",
-      "studentTime": "19:34",
-      "studentMsg": "Dạ vâng, em đã nhận được tài liệu. Em xin 1 phút chuẩn bị dàn ý theo mô hình PEEL đã học ở buổi trước ạ!",
-      "mentorTime2": "19:40",
-      "mentorMsg2": "Rất tốt! Nhớ nhấn mạnh cụm 'exponential rise in automotive emission' để nâng điểm tiêu chí từ vựng nhé.",
-      "inputPlaceholder": "Gửi tin nhắn hoặc đặt câu hỏi...",
-      "send": "Gửi",
-      "attach": "Đính kèm tệp"
+      "safetyNotice": "Bảo mật SkillSwap: Mọi tương tác diễn ra trên nền tảng để bảo đảm quyền lợi ký quỹ an toàn và giải quyết khiếu nại học thuật."
     },
     "escrow": {
       "title": "Ký quỹ Bảo chứng - Escrow Active",
       "subtitle": "Bảo vệ quyền lợi học viên & giảng viên",
       "heldLabel": "Khoản bảo chứng đang khóa:",
+      "notHeldLabel": "Khoản bảo chứng:",
       "heldValue": "{credits} Credits (~{vnd} VNĐ)",
       "badge": "Đang bảo chứng",
+      "notHeldBadge": "Không khóa",
       "notice": "Sau khi lớp kết thúc, bạn có 24 giờ để đánh giá buổi học trước khi hệ thống chính thức giải ngân số credits cho giảng viên.",
       "btnEndAndReview": "Kết thúc lớp & Chấm điểm đánh giá"
     }
@@ -1015,37 +1108,6 @@
       "approved": "Đã phê duyệt",
       "rejected": "Bị từ chối",
       "superseded": "Bị thay thế"
-    }
-  },
-  "Admin": {
-    "StudentVerification": {
-      "title": "Duyệt xác minh sinh viên",
-      "notice": "Xem xét hồ sơ xác minh sinh viên theo id. Admin cần biết id xác minh.",
-      "label": {
-        "id": "Id xác minh",
-        "decision": "Quyết định",
-        "approvedMajor": "Ngành được duyệt",
-        "reason": "Lý do"
-      },
-      "placeholders": {
-        "approvedMajor": "Ngành được duyệt (không bắt buộc)",
-        "reason": "Lý do (bắt buộc khi từ chối)"
-      },
-      "actions": {
-        "approve": "Phê duyệt",
-        "reject": "Từ chối",
-        "submitDecision": "Gửi quyết định",
-        "revoke": "Thu hồi"
-      },
-      "revokeConfirm": "Thu hồi xác minh này? Hành động không thể hoàn tác.",
-      "messages": {
-        "decided": "Quyết định đã được ghi nhận.",
-        "revoked": "Xác minh đã bị thu hồi."
-      },
-      "errors": {
-        "auth": "Không có quyền thực hiện hành động này."
-      },
-      "note": "Quyết định được ghi lại không thể thay đổi."
     }
   }
 }

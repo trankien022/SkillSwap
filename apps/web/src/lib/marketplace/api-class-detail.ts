@@ -54,6 +54,14 @@ export function mapContractDetailToWeb(detail: ContractClassDetailView): ClassDe
     teacherBio: null,
     teacherStats: null,
     teacherCredentials: [],
+    // Free seats come straight from Route 14; nothing is derived from capacity.
+    availableSeats: detail.availableSeats,
+    // The server's verdict for this caller, copied across unchanged. `false`
+    // means "not bookable" (own class, full, too soon, already booked) — never
+    // an optimistic `true` — and `ownBooking` is what makes an existing hold
+    // visible to the web client, which could not see one at all before.
+    canBook: detail.canBook,
+    ownBooking: detail.ownBooking ?? null,
     reviews: (detail.recentRatings ?? []).map((r) => ({
       id: r.id,
       authorName: r.learnerDisplayName,
@@ -93,11 +101,13 @@ export class ClassDetailApiGateway {
     // 2. Query backend for real class by UUID
     try {
       const res = await callApi(`/classes/${id}`);
-      if (res.ok) {
-        const detail = await unwrapEnvelope<ContractClassDetailView>(res);
-        if (detail && detail.id) {
-          return mapContractDetailToWeb(detail);
-        }
+      if (!res.ok) {
+        console.warn(`GET /api/classes/${id} failed: HTTP ${res.status}`);
+        return null;
+      }
+      const detail = await unwrapEnvelope<ContractClassDetailView>(res);
+      if (detail && detail.id) {
+        return mapContractDetailToWeb(detail);
       }
     } catch (err) {
       console.warn(`Failed to fetch /api/classes/${id}:`, err);

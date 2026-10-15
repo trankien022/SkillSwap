@@ -343,6 +343,11 @@ function buildDetail(
     teacherStats: opts.teacherStats,
     teacherCredentials: defaultCredentials,
     reviews: opts.reviews,
+    // The demo fixture has no session behind it: it is never bookable, the
+    // visitor has no hold on it, and no seat count is supplied to reason from.
+    canBook: false,
+    ownBooking: null,
+    availableSeats: null,
   };
 }
 

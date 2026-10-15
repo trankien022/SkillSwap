@@ -71,6 +71,10 @@ once and never changes.
    NGROK_AUTHTOKEN=<your own ngrok token>
    NGROK_DOMAIN=<team reserved domain, no scheme, e.g. discuss-showbiz-octagon.ngrok-free.dev>
    SEPAY_RETURN_URL=https://<same domain>
+   # Origins your own web app may be sent back to (comma separated). The configured
+   # return URL's origin is always allowed; this widens it so the browser can return
+   # to the local web client's /payment/result page.
+   SEPAY_RETURN_URL_ALLOWED_ORIGINS=http://localhost:3000
    ```
 5. **Point `ngrok.yml` at the same domain.** Replace the `url:` under the `api` endpoint with
    `https://<NGROK_DOMAIN>`. The file holds the domain only — **never** a token.

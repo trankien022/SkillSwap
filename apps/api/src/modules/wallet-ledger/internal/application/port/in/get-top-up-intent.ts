@@ -10,4 +10,13 @@ export const GET_TOP_UP_INTENT = Symbol('GetTopUpIntent');
  */
 export interface GetTopUpIntentPort {
   execute(ownerId: string, intentId: string): Promise<TopUpIntentStatusView>;
+  /**
+   * FR-008: read the intent the payer was returned for.
+   *
+   * The SePay redirect carries only the invoice number (the intent id does not
+   * exist when the checkout form is submitted), so the return page needs this
+   * second handle. Owner-scoped exactly like `execute`: someone else's invoice
+   * number is "not found".
+   */
+  executeByProviderRef(ownerId: string, providerRef: string): Promise<TopUpIntentStatusView>;
 }

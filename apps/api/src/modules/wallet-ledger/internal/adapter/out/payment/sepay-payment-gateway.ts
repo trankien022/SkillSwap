@@ -61,12 +61,17 @@ export class SepayPaymentGateway implements PaymentGateway {
    * The signed checkout form. `payment_method` is deliberately omitted so the
    * payer picks on SePay's page rather than being forced into one channel.
    * `order_amount` is integer VND — SePay takes the smallest currency unit.
+   *
+   * The return URL comes from the request, not from config: the top-up use
+   * case resolves the client's per-request URL against the allow-list, so a
+   * payer on web lands back on the web result page and a payer in the app
+   * lands back in the app.
    */
   private buildCheckoutForm(request: InitiatePaymentRequest): {
     checkoutUrl: string;
     fields: Record<string, string>;
   } {
-    const returnUrl = this.config.sepayReturnUrl;
+    const returnUrl = request.returnUrl;
     const fields: Record<string, string> = {
       merchant: this.config.sepayMerchantId,
       operation: 'PURCHASE',

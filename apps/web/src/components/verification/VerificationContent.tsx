@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Navbar } from '../navbar';
-import { getStoredUser, callApi, unwrapEnvelope, type UserProfile } from '../../lib/api-client';
-import type {
+import { getStoredUser, callApi, unwrapEnvelope, type UserProfile } from '../../lib/api-client';import type {
   MeResponse,
   StudentVerificationView,
   ProfileSkillList,
@@ -26,6 +25,7 @@ export function VerificationContent() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     setUser(getStoredUser());
@@ -46,13 +46,20 @@ export function VerificationContent() {
             if (v.schoolName) setSchoolName(v.schoolName);
             if (v.major) setMajor(v.major);
           }
+        } else if (verifRes.status !== 404) {
+          // 404 is `null` for "no submission yet" on this route and is expected;
+          // anything else means the status could not be read and is reported
+          // rather than rendered as "pending", which is a different claim.
+          setLoadError('Không đọc được trạng thái xác minh. Vui lòng tải lại trang.');
         }
         if (skillsRes.ok) {
           const s = await unwrapEnvelope<ProfileSkillList>(skillsRes);
           if (s?.items) setSkills(s.items);
         }
       } catch (err) {
-        console.warn('Failed to load verification status', err);
+        setLoadError(
+          err instanceof Error ? err.message : 'Không tải được trạng thái xác minh.',
+        );
       }
     };
     loadData();
@@ -142,8 +149,11 @@ export function VerificationContent() {
         setStudentVerif(result);
         setUploadedMessage(`Đã gửi hồ sơ thành công! Trạng thái: Chờ duyệt (${result.schoolName}).`);
       } else {
+        // The previous "Thông báo: … Hồ sơ đã được tiếp nhận." default claimed
+        // the submission landed even when it did not. A failure now reads as a
+        // failure.
         const err = (await submitRes.json().catch(() => ({}))) as { message?: string };
-        setUploadedMessage(`Thông báo: ${err.message || 'Hồ sơ đã được tiếp nhận.'}`);
+        setUploadError(err.message || 'Không gửi được hồ sơ xác minh. Vui lòng thử lại.');
       }
 
       setTimeout(() => {
@@ -167,6 +177,18 @@ export function VerificationContent() {
       <Navbar currentTab="verification" me={me} />
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
+        {/* A failed status read is stated: rendering the unread status as
+            "pending" would claim something the server never said. */}
+        {loadError !== null && (
+          <div
+            role="alert"
+            data-testid="verification-load-error"
+            className="mb-6 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+          >
+            <span className="material-symbols-outlined text-[20px] flex-shrink-0 mt-0.5">info</span>
+            <span>{loadError}</span>
+          </div>
+        )}
         {/* Page Header */}
         <div className="mb-8 flex flex-col justify-between gap-4 border-b border-slate-200 pb-6 md:flex-row md:items-end">
           <div className="space-y-1.5">

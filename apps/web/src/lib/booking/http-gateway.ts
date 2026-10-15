@@ -1,6 +1,7 @@
 import {
   bookClassResponseSchema,
   classDetailViewSchema,
+  confirmBookingResponseSchema,
   ApiResponseError,
   type ClassView,
 } from '@skillswap/contracts';
@@ -11,6 +12,8 @@ import {
   type BookClassResult,
   type BookingGateway,
   type BookingRejectionReason,
+  type ConfirmBookingResponse,
+  type OwnBookingSummaryView,
 } from './domain';
 
 /**
@@ -19,12 +22,13 @@ import {
  *
  * It talks to the gateway's `/api/classes` endpoints and **maps the backend's
  * stable rejection `code` onto the domain `BookingError`** that the UI already
- * translates, so `booking-panel.tsx` needs no change: only the composition root
- * picks this adapter instead of `MockBookingGateway`.
+ * translates, so the booking UI stays presentation-only: only the composition
+ * root picks this adapter instead of `MockBookingGateway`.
  *
  * Endpoints:
- * - GET  /classes/:id            — class detail (state, capacity, own booking)
- * - POST /classes/:id/bookings   — create a booking (idempotencyKey)
+ * - GET  /classes/:id                 — class detail (state, capacity, own booking)
+ * - POST /classes/:id/bookings        — create a booking (idempotencyKey)
+ * - POST /classes/bookings/:id/confirm — settle a hold into a paid booking
  *
  * The booking command is never auto-replayed: `callApi` retries only on 401,
  * and even then the idempotency key makes a replay safe.
@@ -64,6 +68,31 @@ export class HttpBookingGateway implements BookingGateway {
     } catch (error) {
       throw toBookingError(error);
     }
+  }
+
+  /**
+   * `POST /classes/bookings/:id/confirm` — the settlement request. The answer
+   * is parsed and returned as-is: `confirmed: false` is a legitimate reply while
+   * the debit is still settling, so it is data, not an error (NFR-005).
+   */
+  async confirmBooking(bookingId: string): Promise<ConfirmBookingResponse> {
+    const res = await callApi(`/classes/bookings/${encodeURIComponent(bookingId)}/confirm`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    return confirmBookingResponseSchema.parse(await unwrapEnvelope<unknown>(res));
+  }
+
+  /**
+   * The caller's own hold, read back from `GET /classes/:id` — the same read
+   * `getClass` uses, keeping the verdict (`ownBooking`) that tells the UI a
+   * seat is already held instead of issuing a second booking.
+   */
+  async getOwnBooking(classId: string): Promise<OwnBookingSummaryView | null> {
+    const res = await callApi(`/classes/${encodeURIComponent(classId)}`);
+    const detail = classDetailViewSchema.parse(await unwrapEnvelope<unknown>(res));
+    return detail.ownBooking ?? null;
   }
 }
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useLocale } from 'next-intl';
-import { callApi, unwrapEnvelope } from '../../../lib/api-client';
+import { callApiOk, callApi, unwrapEnvelope } from '../../../lib/api-client';
 import { capacityIsValid, priceIsValid } from '../../../lib/teacher/money';
 import {
   readApiMessage,
@@ -113,17 +113,24 @@ export default function InstructorDashboard() {
    * truth rather than an optimistically mutated local copy.
    */
   const refreshServerState = async () => {
-    const [balRes, classesRes] = await Promise.all([
-      callApi('/wallet/balance'),
-      callApi('/classes?teacherId=me'),
-    ]);
-    if (balRes.ok) setBalance(await unwrapEnvelope<WalletBalanceView>(balRes));
-    if (classesRes.ok) {
+    try {
+      // Both reads run after a lifecycle command that moved money or changed a
+      // class, so a failure must not leave the previous numbers on screen as if
+      // nothing had happened.
+      const [balRes, classesRes] = await Promise.all([
+        callApiOk('/wallet/balance'),
+        callApiOk('/classes?teacherId=me'),
+      ]);
+      setBalance(await unwrapEnvelope<WalletBalanceView>(balRes));
       const page = await unwrapEnvelope<ListClassesPageView>(classesRes);
       if (Array.isArray(page?.items)) setClasses(page.items.map(toTeacherClassItem));
+    } catch (e) {
+      showToast(
+        'Lệnh đã được gửi, nhưng chưa đọc lại được trạng thái mới nhất. Vui lòng tải lại trang.',
+      );
+      console.warn('Failed to refresh teacher server state:', e);
     }
   };
-
   /**
    * Starts a class. The server answers `{ started }`: `false` means the class was
    * already in progress, which is a truthful no-op rather than a new success, so

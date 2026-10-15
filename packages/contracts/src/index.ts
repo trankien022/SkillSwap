@@ -248,6 +248,18 @@ export type MeResponse = z.infer<typeof meResponseSchema>;
 /** FR-008: wallet top-up and callback (ADR-033). Amounts are integer VND. */
 export const topUpRequestSchema = z.object({
   amountVnd: z.number().int().positive().max(100_000_000),
+  /**
+   * FR-008: where the payer's client should be sent back after paying.
+   *
+   * Optional. Omitted → the configured `SEPAY_RETURN_URL`. When present the
+   * API accepts it only if its origin is on the allow-list — the configured
+   * return URL's origin plus the origins in `SEPAY_RETURN_URL_ALLOWED_ORIGINS`
+   * — or it uses the mobile client's `skillswap:` scheme; anything else is
+   * refused rather than silently rewritten. The URL only ever ends up in
+   * SePay's `success_url`/`error_url`/`cancel_url`, and settlement is decided
+   * by the server-to-server IPN, never by this redirect.
+   */
+  returnUrl: z.string().min(1).optional(),
 });
 export type TopUpRequestInput = z.infer<typeof topUpRequestSchema>;
 

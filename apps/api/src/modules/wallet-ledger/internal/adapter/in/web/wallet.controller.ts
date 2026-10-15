@@ -82,7 +82,13 @@ export class WalletController {
     @Body() body: TopUpRequestDto,
     @Req() request: RequestWithIdentity,
   ): Promise<TopUpIntentCreated> {
-    return this.initiateTopUp.execute({ ownerId: currentUserId(request), amountVnd: body.amountVnd });
+    return this.initiateTopUp.execute({
+      ownerId: currentUserId(request),
+      amountVnd: body.amountVnd,
+      // FR-008: the payer's own client decides where to come back to; the use
+      // case accepts it only on our origin or the app scheme (422 otherwise).
+      returnUrl: body.returnUrl,
+    });
   }
 
   /**
@@ -103,6 +109,29 @@ export class WalletController {
     @Req() request: RequestWithIdentity,
   ): Promise<TopUpIntentStatusView> {
     return this.getTopUpIntent.execute(currentUserId(request), id);
+  }
+
+  /**
+   * FR-008: the same read, keyed by the invoice number.
+   *
+   * The return page only ever receives `providerRef` (SePay's redirect carries
+   * our URL plus the invoice number), so it needs this handle. Owner-scoped
+   * identically: a foreign invoice number is 404.
+   *
+   * Declared before `top-ups/:id` would matter only for a conflicting path; the
+   * literal segment `by-provider-ref` cannot be mistaken for a uuid, and the
+   * lookup rejects anything that is not one anyway.
+   */
+  @Get('top-ups/by-provider-ref/:providerRef')
+  @ResponseCode('WALLET_TOP_UP_OK')
+  @ResponseMessage('Top-up intent loaded')
+  @ApiOperation({ summary: 'Read a top-up intent by invoice number (FR-008)' })
+  @ApiOkResponse({ type: TopUpIntentStatusDto, description: 'The intent, including settlement facts' })
+  topUpStatusByProviderRef(
+    @Param('providerRef') providerRef: string,
+    @Req() request: RequestWithIdentity,
+  ): Promise<TopUpIntentStatusView> {
+    return this.getTopUpIntent.executeByProviderRef(currentUserId(request), providerRef);
   }
 
   /**

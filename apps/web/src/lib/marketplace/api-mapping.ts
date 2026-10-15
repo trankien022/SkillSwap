@@ -141,6 +141,9 @@ export function toMarketplaceClass(
     // be a claim the API never made.
     verified: null,
     coverGradient: coverGradientFor(item.id),
+    // Free seats as reported by the catalogue — used for the "full" reason on
+    // the detail action, never defaulted (absent stays absent).
+    availableSeats: item.availableSeats,
   };
 }
 
@@ -308,5 +311,14 @@ export function toClassDetailView(item: MarketplaceClass): ClassDetailView {
     teacherCredentials: [...DERIVED_CREDENTIALS],
     // No review source exists in the API; an empty list is the honest state.
     reviews: [],
+    // The catalogue (`GET /classes`) carries the seat count but no booking
+    // verdict, so seats are taken as they are while `canBook`/`ownBooking` stay
+    // at their honest unknown-but-false defaults: a caller that has not merged
+    // Route 14 (`ClassDetailContent`) does not get to claim the class is
+    // bookable. The merge replaces both with the server's answer for this
+    // caller.
+    availableSeats: item.availableSeats ?? null,
+    canBook: false,
+    ownBooking: null,
   };
 }

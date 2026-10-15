@@ -121,8 +121,54 @@ describe('Navbar component', () => {
     expect(signInLink).toBeDefined();
   });
 
-  it('renders navigation link with title tooltip for verification', () => {
+  it('hides the session-only nav and wallet chrome from a guest', () => {
+    // Regression: the navbar unconditionally rendered My Bookings / Teaching /
+    // Wallet / the credits pill / the bell, so an anonymous visitor on /auth saw
+    // links into screens that answer 401, plus a hardcoded "0 Credits".
     renderNavbar();
+
+    expect(screen.queryByRole('link', { name: /Lớp học của tôi/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Giảng dạy/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Ví & Tín dụng/ })).toBeNull();
+    expect(screen.queryByTestId('navbar-credits')).toBeNull();
+    expect(screen.queryByTitle('Trung tâm Thông báo')).toBeNull();
+    // The public entry points stay visible.
+    expect(screen.getByRole('link', { name: /Khám phá/ })).toBeDefined();
+    expect(screen.getByRole('link', { name: /Kỹ năng/ })).toBeDefined();
+  });
+
+  it('offers the verifier queue only to a verifier', () => {
+    const { unmount } = renderNavbar({ me: mockMe({ role: 'user' }) });
+    expect(screen.queryByRole('link', { name: /Hàng đợi duyệt/ })).toBeNull();
+    unmount();
+
+    cleanup();
+
+    renderNavbar({ me: mockMe({ role: 'verifier' }) });
+    const queueLink = screen.getByRole('link', { name: /Hàng đợi duyệt/ });
+    expect(queueLink.getAttribute('href')).toBe('/vi/verifier');
+  });
+
+  it('offers the admin landing only to an admin', () => {
+    // Regression: role landing — after sign-in an admin was sent to /classes
+    // and the navbar had no entry to any admin screen at all.
+    const { unmount: unmountLearner } = renderNavbar({ me: mockMe({ role: 'user' }) });
+    expect(screen.queryByRole('link', { name: 'Quản trị' })).toBeNull();
+    unmountLearner();
+    cleanup();
+
+    const { unmount: unmountVerifier } = renderNavbar({ me: mockMe({ role: 'verifier' }) });
+    expect(screen.queryByRole('link', { name: 'Quản trị' })).toBeNull();
+    unmountVerifier();
+    cleanup();
+
+    renderNavbar({ me: mockMe({ role: 'admin' }) });
+    const adminLink = screen.getByRole('link', { name: 'Quản trị' });
+    expect(adminLink.getAttribute('href')).toBe('/vi/admin');
+  });
+
+  it('renders navigation link with title tooltip for verification', () => {
+    renderNavbar({ me: mockMe() });
 
     const verificationLink = screen.getByTitle('Trung tâm Thẩm định & Xác minh');
     expect(verificationLink).toBeDefined();
@@ -146,7 +192,9 @@ describe('Navbar component', () => {
     // server therefore always produced the 'vi' fallback. On /en the server
     // emitted /vi hrefs and Vietnamese labels while the client emitted /en and
     // English ones, and React reported a hydration mismatch on every page.
-    const { unmount } = renderNavbar({}, 'en');
+    //
+    // Signed in, because My Bookings is a session-only link now.
+    const { unmount } = renderNavbar({ me: mockMe() }, 'en');
 
     expect(screen.getByRole('link', { name: /Explore/ }).getAttribute('href')).toBe('/en/classes');
     expect(screen.getByRole('link', { name: /My Bookings/ }).getAttribute('href')).toBe('/en/bookings');
@@ -156,7 +204,7 @@ describe('Navbar component', () => {
 
     cleanup();
 
-    renderNavbar({}, 'vi');
+    renderNavbar({ me: mockMe() }, 'vi');
 
     expect(screen.getByRole('link', { name: /Khám phá/ }).getAttribute('href')).toBe('/vi/classes');
     expect(screen.getByRole('link', { name: /Kỹ năng/ }).getAttribute('href')).toBe('/vi/skills');

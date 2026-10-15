@@ -2,8 +2,17 @@
 
 import { use, useState, useEffect, useRef, useCallback } from 'react';
 import { Navbar } from '../../../../../components/navbar';
-import { callApi, unwrapEnvelope, dispatchWalletBalanceUpdate } from '../../../../../lib/api-client';
+import { callApi, callApiOk, unwrapEnvelope, dispatchWalletBalanceUpdate, UNAUTHORIZED_CODE, type ApiResponseError } from '../../../../../lib/api-client';
 import { ClassDetailApiGateway } from '../../../../../lib/marketplace/api-class-detail';
+import { HttpBookingGateway } from '../../../../../lib/booking/http-gateway';
+import { BookClassService } from '../../../../../lib/booking/service';
+import { decideGate, obtainHold, topUpAmountForShortfall, type BalanceGate } from '../../../../../lib/booking/gate';
+import {
+  resolveSettlement,
+  type SettlementReadback,
+  type SettlementStatus,
+} from '../../../../../lib/booking/settlement';
+import { BookingError } from '../../../../../lib/booking/domain';
 import type { ClassDetailView } from '../../../../../lib/marketplace/types';
 import type { WalletBalanceView, TopUpIntentCreated, TopUpIntentStatusView } from '@skillswap/contracts';
 
@@ -16,6 +25,28 @@ const TERMINAL_TOP_UP_STATUSES = new Set(['settled', 'failed', 'reversed']);
 const POLL_INTERVAL_MS = 3_000;
 const POLL_TIMEOUT_MS = 120_000;
 
+/**
+ * The checkout is the **top-up branch of the booking flow**, not a second way
+ * into it (D5).
+ *
+ * Reached when the class detail's balance gate fails, it has one job: let the
+ * learner add credits and then finish the booking they already started. Two
+ * things follow from that, and they are the reason this page changed:
+ *
+ * 1. **If a hold exists, this page confirms it; it does not book again.**
+ *    `POST /classes/:id/bookings` rejects a second booking for the same learner,
+ *    so the old unconditional call turned a learner who had just come from the
+ *    class detail into an error. `obtainHold` reuses the live hold, and only a
+ *    direct visit (no hold) books — which is why the same helper is shared with
+ *    the class detail action rather than reimplemented here.
+ * 2. **Settlement is shown when the read-back earns it.** `POST …/confirm`
+ *    answers `confirmed: false` by design while the outbox consumer settles the
+ *    debit (ADR-032 C3a), so `resolveSettlement` requires the hold to read
+ *    `confirmed` before anything claims success — the same rule, from the same
+ *    module, as the class detail action.
+ */
+const bookingService = new BookClassService(new HttpBookingGateway());
+
 export default function BookingCheckoutPage({ params }: PageProps) {
   const { id, locale } = use(params);
 
@@ -26,7 +57,7 @@ export default function BookingCheckoutPage({ params }: PageProps) {
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [bookingConfirmed, setBookingConfirmed] = useState(false);
+  const [settlement, setSettlement] = useState<SettlementStatus | null>(null);
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [topUpSettled, setTopUpSettled] = useState(false);
@@ -46,17 +77,23 @@ export default function BookingCheckoutPage({ params }: PageProps) {
   useEffect(() => {
     let isMounted = true;
     const loadData = async () => {
-      // 1. Load wallet balance from the server (never a cached copy)
+      // 1. Load wallet balance from the server (never a cached copy).
+      //    The balance gates the confirm button's affordability copy, so a
+      //    failure must not leave it unset while the page claims it loaded.
       try {
-        const res = await callApi('/wallet/balance');
-        if (res.ok) {
-          const remoteBal = await unwrapEnvelope<WalletBalanceView>(res);
-          if (isMounted) setBalance(remoteBal);
-        } else if (res.status === 401) {
-          if (isMounted) setLoadError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
-        }
+        const res = await callApiOk('/wallet/balance');
+        const remoteBal = await unwrapEnvelope<WalletBalanceView>(res);
+        if (isMounted) setBalance(remoteBal);
       } catch (e) {
-        console.warn('Failed to load wallet balance for checkout', e);
+        if (isMounted) {
+          setLoadError(
+            (e as ApiResponseError)?.code === UNAUTHORIZED_CODE
+              ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
+              : e instanceof Error
+                ? e.message
+                : 'Không tải được số dư ví.',
+          );
+        }
       }
 
       // 2. Load class details from the server. There is deliberately no local
@@ -95,10 +132,55 @@ export default function BookingCheckoutPage({ params }: PageProps) {
   // wallet. Nothing here invents a fallback for a missing field: a class the API
   // cannot resolve renders the error state below, not a placeholder price,
   // title, teacher or rating.
+  // Both are required: the class prices the booking and the wallet says whether
+  // it is affordable, so with either missing there is nothing honest to show.
+  // The error state below names *which* read failed rather than always blaming
+  // the class, which is what a wallet failure used to be reported as.
   const display =
     classDetail !== null && balance !== null
       ? buildDisplayModel(classDetail, balance)
       : null;
+
+  const balanceUnavailable = balance === null;
+
+  /**
+   * The gate, decided from the data this page already loaded so it states the
+   * *real* shortfall. It is the same decision function the class detail action
+   * runs through `checkBalanceGate`, so a learner who lands here from that
+   * action sees the same verdict it did — and `unreadable` never counts as
+   * affordable, which is why a missing balance is treated as `short`.
+   */
+  const gate: BalanceGate | null =
+    classDetail === null || balance === null
+      ? null
+      : decideGate(classDetail.priceCredits, balance.availableCredits);
+
+  /** The page renders the shortfall branch from the same gate the action ran. */
+  const affordable = gate?.decision === 'sufficient';
+  const shortfallCredits = gate?.decision === 'short' ? gate.shortfall : 0;
+
+  /**
+   * The amount the top-up modal will ask for, derived from the shortfall shown
+   * above it. Computed once so the modal's copy and the request body agree, and
+   * so neither can drift from what the gate decided.
+   */
+  const topUpAmountVnd = topUpAmountForShortfall(shortfallCredits);
+
+  /** Reads the hold back — the only thing that may earn a success claim. */
+  const readHold = async (): Promise<SettlementReadback> => {
+    try {
+      return { read: 'ok', ownBooking: await bookingService.ownBooking(id) };
+    } catch {
+      return { read: 'failed' };
+    }
+  };
+
+  const refreshBalance = async () => {
+    const balRes = await callApiOk('/wallet/balance');
+    const remote = await unwrapEnvelope<WalletBalanceView>(balRes);
+    setBalance(remote);
+    dispatchWalletBalanceUpdate(remote);
+  };
 
   const handleConfirmBooking = async () => {
     if (!agreementChecked) {
@@ -107,73 +189,99 @@ export default function BookingCheckoutPage({ params }: PageProps) {
     }
 
     setIsProcessing(true);
+    setSettlement(null);
     try {
-      // 1. Hold booking via POST /api/classes/:id/bookings
-      const idempotencyKey =
-        typeof crypto !== 'undefined' && crypto.randomUUID
-          ? crypto.randomUUID()
-          : `idemp-${Date.now()}`;
-
-      const res = await callApi(
-        `/classes/${id}/bookings`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ idempotencyKey }),
-        },
-        false,
+      // 1. Hold. `obtainHold` reuses the hold that brought the learner here; it
+      //    books only when there is none (a direct visit to this URL). Booking
+      //    unconditionally is what used to make this page fail for exactly the
+      //    learners it exists to serve.
+      const finalBookingId = await obtainHold(
+        { id, ownBooking: classDetail?.ownBooking ?? null },
+        bookingService,
       );
-
-      if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { message?: string };
-        showToast(err.message || 'Không thể giữ chỗ cho lớp này. Vui lòng thử lại.');
-        return;
-      }
-
-      const bookResult = await unwrapEnvelope<{
-        booking: { bookingId: string; priceCredits: number };
-        created: boolean;
-      }>(res);
-      const finalBookingId = bookResult.booking.bookingId;
       setBookingId(finalBookingId);
 
-      // 2. Settle payment via POST /api/classes/bookings/:bookingId/confirm
-      const confirmRes = await callApi(
-        `/classes/bookings/${finalBookingId}/confirm`,
-        {
-          method: 'POST',
-        },
-        false,
-      );
+      // 2. Confirm, then believe the read-back rather than the reply. A rejected
+      //    confirm is surfaced with the server's own reason; it is never turned
+      //    into a success.
+      let response = null;
+      let confirmError: unknown = null;
+      try {
+        response = await bookingService.confirm(finalBookingId);
+      } catch (error) {
+        confirmError = error;
+      }
 
-      if (!confirmRes.ok) {
-        const err = (await confirmRes.json().catch(() => ({}))) as { message?: string };
-        showToast(err.message || 'Số dư ví không đủ để thanh toán giữ chỗ.');
+      const status = resolveSettlement(response, await readHold());
+      setSettlement(status);
+
+      if (status === 'settled') {
+        setIsSuccessModalOpen(true);
+        await refreshBalance().catch((e) => {
+          // The booking is real; only the badge is stale. Say so rather than
+          // showing a number that no longer matches the ledger.
+          console.warn('Failed to refresh balance after settlement', e);
+          showToast('Đã đặt lớp, nhưng chưa đọc lại được số dư ví. Vui lòng tải lại trang để xem số dư mới nhất.');
+        });
         return;
       }
 
-      // Both calls succeeded, so the booking and the escrow hold are real.
-      setBookingConfirmed(true);
-      setIsSuccessModalOpen(true);
-
-      // The confirm call settled the escrow on the server, so the balance is
-      // refetched rather than calculated. Subtracting the price locally would
-      // ignore the escrow hold vs. debit distinction and any server-side fee,
-      // and would persist that guess across reloads.
-      try {
-        const balRes = await callApi('/wallet/balance');
-        if (balRes.ok) {
-          const remote = await unwrapEnvelope<WalletBalanceView>(balRes);
-          setBalance(remote);
-          dispatchWalletBalanceUpdate(remote);
-        }
-      } catch (e) {
-        console.warn('Failed to refresh balance after settlement', e);
+      if (status === 'unconfirmed' && confirmError !== null) {
+        showToast(
+          confirmError instanceof BookingError
+            ? confirmError.message
+            : confirmError instanceof Error
+              ? confirmError.message
+              : 'Không thể hoàn tất đặt lớp.',
+        );
+        return;
       }
+
+      // Still settling, or the outcome could not be read: neither is a success,
+      // and the state stays on screen with a way to check again.
+      showToast(
+        status === 'settling'
+          ? 'Hệ thống đang ghi nhận giao dịch. Bấm kiểm tra lại sau giây lát.'
+          : status === 'unknown'
+            ? 'Chưa đọc được kết quả mới nhất. Bấm kiểm tra lại để thử lại.'
+            : 'Giao dịch chưa được xác nhận.',
+      );
     } catch (err) {
-      // The previous version caught this and fell through to a "simulated
-      // escrow" success, so a booking that never happened still showed the
-      // confirmation modal. Failures are now surfaced instead.
-      showToast('Lỗi: ' + (err instanceof Error ? err.message : 'Không thể hoàn tất đặt lớp.'));
+      // A rejection explains itself (the class filled up, the window closed, the
+      // balance moved); an unexpected error keeps its own message. Both are
+      // failures, and neither is a booking.
+      showToast(
+        err instanceof BookingError
+          ? err.message
+          : 'Lỗi: ' + (err instanceof Error ? err.message : 'Không thể hoàn tất đặt lớp.'),
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  /**
+   * Re-reads the hold after a top-up or a timeout. This is the recovery path for
+   * `settling`/`unknown`, and the way a learner confirms a booking once the
+   * credits land — no redirect parameter and no local guess is involved.
+   */
+  const handleRecheckSettlement = async () => {
+    setIsProcessing(true);
+    try {
+      const status = resolveSettlement(null, await readHold());
+      setSettlement(status);
+      if (status === 'settled') {
+        setIsSuccessModalOpen(true);
+        await refreshBalance().catch(() => undefined);
+        return;
+      }
+      showToast(
+        status === 'settling'
+          ? 'Hệ thống vẫn đang ghi nhận giao dịch.'
+          : status === 'unknown'
+            ? 'Chưa đọc được kết quả mới nhất. Vui lòng thử lại.'
+            : 'Không tìm thấy chỗ đã giữ cho lớp này. Hãy đặt lại từ trang lớp học.',
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -190,19 +298,15 @@ export default function BookingCheckoutPage({ params }: PageProps) {
     const tick = async () => {
       topUpPollTimer.current = null;
       try {
-        const res = await callApi(`/wallet/top-ups/${intentId}`);
-        if (res.ok) {
-          const status = await unwrapEnvelope<TopUpIntentStatusView>(res);
-          if (TERMINAL_TOP_UP_STATUSES.has(status.status)) {
-            setTopUpSettled(status.status === 'settled');
-            const balRes = await callApi('/wallet/balance');
-            if (balRes.ok) {
-              const remote = await unwrapEnvelope<WalletBalanceView>(balRes);
-              setBalance(remote);
-              dispatchWalletBalanceUpdate(remote);
-            }
-            return;
-          }
+        const res = await callApiOk(`/wallet/top-ups/${intentId}`);
+        const status = await unwrapEnvelope<TopUpIntentStatusView>(res);
+        if (TERMINAL_TOP_UP_STATUSES.has(status.status)) {
+          setTopUpSettled(status.status === 'settled');
+          const balRes = await callApiOk('/wallet/balance');
+          const remote = await unwrapEnvelope<WalletBalanceView>(balRes);
+          setBalance(remote);
+          dispatchWalletBalanceUpdate(remote);
+          return;
         }
       } catch (e) {
         console.warn('Top-up poll failed', e);
@@ -219,12 +323,21 @@ export default function BookingCheckoutPage({ params }: PageProps) {
     try {
       setIsProcessing(true);
       setTopUpSettled(false);
-      // Real top-up: create the intent, then let the SePay IPN settle it. The
-      // previous version added 100 credits to local state and reported success
-      // without contacting the API at all.
+      // The top-up is sized to the shortfall this page exists to close, rounded
+      // up to a whole 10.000 VNĐ (1 credit = 1.000 VNĐ). The old version always
+      // asked for 100.000 VNĐ, which for a learner 10 credits short meant paying
+      // ten times what they owed — and for a learner 400 short, still not enough
+      // to finish the booking they had already started. `topUpAmountVnd` is the
+      // same value the modal displayed.
       const res = await callApi('/wallet/top-ups', {
         method: 'POST',
-        body: JSON.stringify({ amountVnd: 100_000 }),
+        body: JSON.stringify({
+          amountVnd: topUpAmountVnd,
+          // FR-008: come back to this client's own result page instead of the
+          // configured fallback, so the payer lands on a page that can read the
+          // intent back. Absolute, because SePay compares origins.
+          returnUrl: new URL(`/${locale}/payment/result`, window.location.origin).toString(),
+        }),
       });
 
       if (!res.ok) {
@@ -258,7 +371,11 @@ export default function BookingCheckoutPage({ params }: PageProps) {
         {display === null ? (
           <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 px-4 py-24 text-center">
             <h1 className="text-lg font-bold text-slate-900">
-              {loadError !== null ? 'Không tải được thông tin lớp học' : 'Đang tải thông tin lớp học…'}
+              {loadError !== null
+                ? balanceUnavailable
+                  ? 'Chưa đọc được số dư ví'
+                  : 'Không tải được thông tin lớp học'
+                : 'Đang tải thông tin lớp học…'}
             </h1>
             <p className="max-w-md text-sm leading-relaxed text-slate-600">
               {loadError ??
@@ -281,12 +398,12 @@ export default function BookingCheckoutPage({ params }: PageProps) {
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <span className="font-semibold text-emerald-800">
-                Bảo vệ Ký quỹ Escrow
+                Bạn đang ở bước nạp credit
               </span>
             </div>
             <div className="flex items-center gap-1.5 text-slate-600">
               <span className="material-symbols-outlined text-[16px] text-emerald-600">verified_user</span>
-              <span>Khoản thanh toán được giữ trong ví ký quỹ đến khi buổi học hoàn tất</span>
+              <span>Credits chỉ chuyển cho giảng viên sau khi buổi học hoàn tất</span>
             </div>
           </div>
         </div>
@@ -309,7 +426,7 @@ export default function BookingCheckoutPage({ params }: PageProps) {
               </li>
               <li className="text-slate-300">/</li>
               <li aria-current="page" className="text-slate-900 font-semibold">
-                Xác nhận đặt lớp &amp; Ký quỹ
+                Xác nhận &amp; Thanh toán
               </li>
             </ol>
           </nav>
@@ -318,17 +435,17 @@ export default function BookingCheckoutPage({ params }: PageProps) {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-slate-200">
             <div>
               <p className="text-[11px] text-emerald-700 uppercase tracking-wider font-semibold mb-1">
-                Quy trình Đặt chỗ &amp; Giao dịch An toàn
+                Bước cuối để hoàn tất đặt lớp
               </p>
               <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-                Xác nhận Đặt lớp &amp; Thanh toán Ký quỹ
+                Xác nhận &amp; Thanh toán
               </h1>
             </div>
             <div className="flex items-center gap-2 self-start md:self-auto bg-white border border-slate-200 px-3.5 py-1.5 rounded-full shadow-sm text-xs">
               <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[11px]">
                 1
               </span>
-              <span className="font-semibold text-emerald-700">Xem xét &amp; Khóa ký quỹ</span>
+              <span className="font-semibold text-emerald-700">Xem lại &amp; xác nhận</span>
               <span className="text-slate-300">—</span>
               <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-semibold text-[11px]">
                 2
@@ -339,7 +456,7 @@ export default function BookingCheckoutPage({ params }: PageProps) {
 
           {/* Main Content Layout (65% / 35%) */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start pt-6">
-            {/* Cột trái (8 cols): Thông tin đặt chỗ, giảng viên, Escrow & Cam kết */}
+            {/* Cột trái (8 cols): Thông tin lớp, giảng viên, quyền lợi & Cam kết */}
             <div className="lg:col-span-8 flex flex-col gap-6">
               {/* Card 1: Thẻ tóm tắt lớp học */}
               <section className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
@@ -350,7 +467,7 @@ export default function BookingCheckoutPage({ params }: PageProps) {
                     </span>
                     <span className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-medium flex items-center gap-1">
                       <span className="material-symbols-outlined text-[14px] text-emerald-600">lock_clock</span>
-                      Bảo vệ Escrow (BR-021)
+                      Giữ chỗ trong 15 phút
                     </span>
                   </div>
                   <div className="text-right">
@@ -462,17 +579,21 @@ export default function BookingCheckoutPage({ params }: PageProps) {
                   </div>
                 </div>
 
-                {/* Quy chuẩn thời gian BR-021 */}
+                {/* Quy chuẩn thời gian: derived from the class's real start
+                    time, not a fixed "38 giờ 15 phút" string. */}
                 <div className="mt-4 p-3 rounded-xl bg-emerald-50/60 border border-emerald-100 flex items-center justify-between gap-2 text-slate-700 text-xs">
                   <span className="flex items-center gap-1.5 text-emerald-800 font-medium">
                     <span className="material-symbols-outlined text-[16px] text-emerald-600">check_circle</span>
-                    Thỏa mãn quy tắc đặt chỗ trước &gt; 24 giờ (BR-021): Thời gian còn lại 38 giờ 15 phút.
+                    {display.leadTimeText}
                   </span>
-                  <span className="font-mono text-slate-400 text-[11px]">ISO-8601-VN</span>
                 </div>
               </section>
 
-              {/* Card 2: Atomic Escrow Protection & Chính sách hủy */}
+              {/* Card 2: protection & refund terms, stated in the product's own
+                  words. The previous version was a marketing diagram with an
+                  invented step-1 amount ("Khóa 100 Credits"), a "100% refund"
+                  promise and internal requirement IDs, none of which described
+                  what the system actually does. */}
               <section className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
                 <div className="flex items-center gap-3 mb-5">
                   <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
@@ -480,54 +601,25 @@ export default function BookingCheckoutPage({ params }: PageProps) {
                   </div>
                   <div>
                     <h3 className="font-bold text-base text-slate-900">
-                      Bảo vệ Ký quỹ Escrow &amp; Quyền lợi Người học
+                      Quyền lợi người học &amp; chính sách hoàn
                     </h3>
                     <p className="text-xs text-slate-500">
-                      Tuân thủ nghiêm ngặt chuẩn kỹ thuật AC-004, AC-022 &amp; BR-046
+                      Credits chỉ chuyển cho giảng viên sau khi buổi học hoàn tất.
                     </p>
                   </div>
                 </div>
 
-                {/* Escrow Step Diagram Visual */}
-                <div className="bg-slate-50 rounded-xl p-4 mb-5 border border-slate-100">
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-center sm:text-left">
-                    <div className="flex-1 bg-white p-3.5 rounded-lg shadow-sm border border-slate-100">
-                      <span className="text-[11px] text-slate-400 block">Bước 1: Ngay bây giờ</span>
-                      <p className="text-xs font-semibold text-emerald-700">Khóa 100 Credits trong Ví Ký quỹ</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">Tiền chưa chuyển cho Mentor</p>
-                    </div>
-                    <div className="hidden sm:flex items-center justify-center text-slate-300">
-                      <span className="material-symbols-outlined text-[20px]">trending_flat</span>
-                    </div>
-                    <div className="flex-1 bg-white p-3.5 rounded-lg shadow-sm border border-slate-100">
-                      <span className="text-[11px] text-slate-400 block">Bước 2: Trong buổi học</span>
-                      <p className="text-xs font-semibold text-slate-900">Giám sát Check-in 15 phút</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">Tự động kích hoạt phòng học</p>
-                    </div>
-                    <div className="hidden sm:flex items-center justify-center text-slate-300">
-                      <span className="material-symbols-outlined text-[20px]">trending_flat</span>
-                    </div>
-                    <div className="flex-1 bg-white p-3.5 rounded-lg shadow-sm border border-slate-100">
-                      <span className="text-[11px] text-slate-400 block">Bước 3: Sau kết thúc</span>
-                      <p className="text-xs font-semibold text-emerald-700">Giải ngân an toàn cho Mentor</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">Sau khi học viên xác nhận</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Feature Clauses Grid */}
                 <div className="space-y-3">
                   <div className="flex items-start gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-100">
                     <span className="material-symbols-outlined text-[20px] text-emerald-600 mt-0.5">
                       account_balance_wallet
                     </span>
                     <div>
-                      <h4 className="text-xs font-bold text-slate-900">
-                        Cơ chế Ký quỹ Nguyên tử (Atomic Escrow Protection)
-                      </h4>
+                      <h4 className="text-xs font-bold text-slate-900">Credits được giữ lại khi bạn đặt lớp</h4>
                       <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
-                        Học phí được tạm giữ an toàn trong ví Escrow trung lập và{' '}
-                        <span className="font-semibold text-slate-800">chỉ được giải ngân</span> cho Mentor sau khi buổi học hoàn tất và bạn bấm xác nhận hài lòng hoặc qua 24h không có khiếu nại.
+                        Học phí của buổi học được ghi nhận vào sổ cái và{' '}
+                        <span className="font-semibold text-slate-800">chỉ chuyển cho giảng viên</span> sau khi buổi học
+                        hoàn tất.
                       </p>
                     </div>
                   </div>
@@ -537,12 +629,11 @@ export default function BookingCheckoutPage({ params }: PageProps) {
                       history
                     </span>
                     <div>
-                      <h4 className="text-xs font-bold text-slate-900">
-                        Cam kết Hoàn tiền 100% tự động (AC-022, AC-024)
-                      </h4>
+                      <h4 className="text-xs font-bold text-slate-900">Hoàn credits khi giảng viên vắng mặt</h4>
                       <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
-                        Nếu Mentor hủy lịch hoặc vắng mặt trong 15 phút đầu tiên, toàn bộ{' '}
-                        <span className="font-semibold text-slate-800">100% Credits</span> sẽ được hệ thống Ledger tự động giải phóng và hoàn trả lại số dư khả dụng của bạn ngay lập tức.
+                        Nếu giảng viên vắng mặt hoặc hủy trước giờ học,{' '}
+                        <span className="font-semibold text-slate-800">toàn bộ credits</span> được hệ thống tự động
+                        hoàn về số dư khả dụng của bạn.
                       </p>
                     </div>
                   </div>
@@ -553,14 +644,17 @@ export default function BookingCheckoutPage({ params }: PageProps) {
                     </span>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h4 className="text-xs font-bold text-slate-900">Chính sách MVP về Hủy đặt chỗ (BR-046)</h4>
+                        <h4 className="text-xs font-bold text-slate-900">Hủy đặt chỗ sau khi đã xác nhận</h4>
                         <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-200 text-slate-700 font-semibold">
-                          Quy định MVP
+                          Quy định hiện hành
                         </span>
                       </div>
                       <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
-                        Nhằm bảo vệ thời gian chuẩn bị giáo trình của Mentor,{' '}
-                        <span className="font-semibold text-slate-800">MVP hiện không áp dụng tính năng tự hủy booking từ phía học viên sau khi đã xác nhận</span>. Xin vui lòng sắp xếp thời gian chắc chắn trước khi bấm hoàn tất.
+                        Nhằm bảo vệ thời gian chuẩn bị giáo trình của giảng viên,{' '}
+                        <span className="font-semibold text-slate-800">
+                          hiện chưa hỗ trợ học viên tự hủy booking sau khi đã xác nhận
+                        </span>
+                        . Xin vui lòng sắp xếp thời gian chắc chắn trước khi bấm hoàn tất.
                       </p>
                     </div>
                   </div>
@@ -606,7 +700,7 @@ export default function BookingCheckoutPage({ params }: PageProps) {
                     className="w-4 h-4 mt-0.5 rounded text-emerald-600 accent-emerald-600 cursor-pointer"
                   />
                   <span className="text-xs text-slate-700 leading-relaxed">
-                    Tôi xác nhận đã đọc, hiểu rõ chính sách Escrow giữ chỗ và cam kết tham gia lớp học đúng giờ, tôn trọng giảng viên ThS. Lan Anh.
+                    Tôi xác nhận đã đọc, hiểu rõ chính sách giữ chỗ và cam kết tham gia lớp học đúng giờ, tôn trọng giảng viên {display.teacherName}.
                   </span>
                 </label>
               </section>
@@ -617,34 +711,10 @@ export default function BookingCheckoutPage({ params }: PageProps) {
               {/* Card Ledger Tài chính */}
               <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-base text-slate-900">Chi tiết Bút toán Ký quỹ</h3>
+                  <h3 className="font-bold text-base text-slate-900">Chi tiết thanh toán</h3>
                   <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold text-[11px] border border-emerald-100">
-                    Ledger v2
+                    Credits
                   </span>
-                </div>
-
-                {/* Academic Ledger Distribution Bar */}
-                <div className="mb-5">
-                  <div className="flex items-center justify-between text-xs text-slate-600 mb-1.5">
-                    <span>
-                      Phân bổ số dư: <span className="text-slate-900 font-semibold">{display.priceCredits} / {display.currentCredits} Credits</span>
-                    </span>
-                    <span className="text-emerald-700 font-semibold">{display.lockedPercentage.toFixed(1)}% Khóa</span>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden flex border border-slate-200">
-                    <div
-                      className="h-full bg-emerald-600 rounded-full transition-all duration-500"
-                      style={{ width: `${display.lockedPercentage}%` }}
-                    ></div>
-                    <div
-                      className="h-full bg-slate-200 rounded-full"
-                      style={{ width: `${Math.max(0, 100 - display.lockedPercentage)}%` }}
-                    ></div>
-                  </div>
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
-                    <span>{display.priceCredits} Credits (Ký quỹ khóa)</span>
-                    <span>{display.remainingCredits} Credits (Khả dụng còn lại)</span>
-                  </div>
                 </div>
 
                 {/* Chi tiết bảng giá */}
@@ -657,22 +727,9 @@ export default function BookingCheckoutPage({ params }: PageProps) {
                     <span>Tương đương quy đổi</span>
                     <span className="font-mono">{(display.priceCredits * 1000).toLocaleString('vi-VN')} VNĐ</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1">
-                      <span className="text-slate-600">Phí nền tảng SkillSwap</span>
-                      <span className="px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 font-bold text-[10px]">
-                        Miễn phí
-                      </span>
-                    </div>
-                    <span className="font-mono font-semibold text-emerald-700">0 Credits</span>
-                  </div>
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 pl-2 -mt-1">
-                    <span>Hỗ trợ sinh viên 2025</span>
-                    <span className="line-through">15 Credits</span>
-                  </div>
                   <div className="h-px bg-slate-100 my-2"></div>
                   <div className="flex items-center justify-between pt-1">
-                    <span className="text-sm font-semibold text-slate-900">Tổng thanh toán ký quỹ</span>
+                    <span className="text-sm font-semibold text-slate-900">Tổng thanh toán</span>
                     <div className="text-right">
                       <span className="text-2xl font-bold text-emerald-700 font-mono leading-none">{display.priceCredits}</span>
                       <span className="text-xs font-semibold text-emerald-700 ml-1">Credits</span>
@@ -680,93 +737,133 @@ export default function BookingCheckoutPage({ params }: PageProps) {
                   </div>
                 </div>
 
-                {/* Trạng thái ví hiện tại */}
+                {/* Số dư hiện tại, as read from the wallet. The page deliberately
+                    does not project a "balance after the hold": the hold and the
+                    debit are the server's to apply, and a locally subtracted
+                    number would sit next to a real one and look equally true. */}
                 <div className="bg-slate-50 rounded-xl p-4 my-5 space-y-2.5 border border-slate-100 text-xs">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-600">Số dư khả dụng hiện tại:</span>
                     <span className="font-mono font-semibold text-slate-900">{display.currentCredits} Credits</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-600">Số dư sau khi khóa Escrow:</span>
-                    <span className="font-mono font-semibold text-emerald-700 flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[15px]">check_circle</span>
-                      {display.remainingCredits} Credits
-                    </span>
-                  </div>
-                  <div className="p-2 rounded-lg bg-white border border-slate-200 text-emerald-800 text-[11px] flex items-center gap-1.5 font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                    Ví đủ điều kiện thanh toán ngay không cần nạp bổ sung.
-                  </div>
+                  {affordable ? (
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-600">Còn lại sau khi trả học phí:</span>
+                      <span className="font-mono font-semibold text-emerald-700 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[15px]">check_circle</span>
+                        {display.currentCredits - display.priceCredits} Credits
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="p-2 rounded-lg bg-white border border-amber-200 text-amber-800 text-[11px] flex items-center gap-1.5 font-medium">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                      Còn thiếu {shortfallCredits} Credits để thanh toán lớp này.
+                    </div>
+                  )}
                 </div>
 
-                {/* Primary Confirmation Button */}
+                {/* Primary Confirmation Button. It is disabled while the
+                    learner cannot afford the class: pressing it would only ask
+                    the server to debit credits that are not there, and the
+                    `Nạp thêm credit` card below is the path that actually works.
+                    A live hold from the class detail also lands here, and its
+                    countdown is shown next to the button. */}
                 <button
                   type="button"
-                  disabled={isProcessing || bookingConfirmed}
+                  disabled={isProcessing || settlement === 'settled' || !affordable}
                   onClick={handleConfirmBooking}
                   className={`w-full py-3.5 px-4 rounded-xl font-semibold text-sm transition-all shadow-sm flex items-center justify-center gap-2 group cursor-pointer ${
-                    bookingConfirmed
+                    settlement === 'settled'
                       ? 'bg-emerald-600 text-white cursor-default'
-                      : 'bg-emerald-600 hover:bg-emerald-700 text-white active:scale-[0.99]'
+                      : !affordable
+                        ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white active:scale-[0.99]'
                   }`}
                 >
                   {isProcessing ? (
                     <>
                       <span className="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
-                      <span>Đang khóa bút toán Escrow...</span>
+                      <span>Đang xác nhận…</span>
                     </>
-                  ) : bookingConfirmed ? (
+                  ) : settlement === 'settled' ? (
                     <>
                       <span className="material-symbols-outlined text-[20px]">check_circle</span>
-                      <span>Đã đặt chỗ &amp; Khóa Escrow thành công</span>
+                      <span>Đã xác nhận đặt lớp</span>
                     </>
                   ) : (
                     <>
                       <span className="material-symbols-outlined text-[20px] group-hover:rotate-12 transition-transform">
                         lock
                       </span>
-                      <span>Xác nhận Đặt lớp &amp; Khóa Escrow ({display.priceCredits} Credits)</span>
+                      <span>Xác nhận &amp; Thanh toán ({display.priceCredits} Credits)</span>
                     </>
                   )}
                 </button>
 
+                {/* Settlement states that are neither success nor failure. They
+                    are shown instead of a claim, with the read-back behind the
+                    `check again` action. */}
+                {settlement !== null && settlement !== 'settled' && (
+                  <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
+                    <p className="font-semibold text-slate-900">
+                      {settlement === 'settling'
+                        ? 'Đang chờ hệ thống ghi nhận'
+                        : settlement === 'unknown'
+                          ? 'Chưa kiểm tra được kết quả'
+                          : 'Giao dịch chưa được xác nhận'}
+                    </p>
+                    <p className="mt-0.5 text-slate-600">
+                      {settlement === 'settling'
+                        ? 'Giao dịch chưa ghi nhận xong. Kiểm tra lại sau giây lát.'
+                        : settlement === 'unknown'
+                          ? 'Không đọc được trạng thái mới nhất. Hãy kiểm tra lại.'
+                          : 'Hệ thống chưa ghi nhận chỗ ngồi cho bạn. Kiểm tra lại hoặc đặt lại từ trang lớp học.'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleRecheckSettlement}
+                      disabled={isProcessing}
+                      className="mt-2 rounded-full border border-slate-300 bg-white px-3 py-1.5 font-semibold text-slate-800 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Kiểm tra lại
+                    </button>
+                  </div>
+                )}
+
                 <p className="text-[11px] text-slate-500 text-center mt-3">
-                  Bằng việc bấm xác nhận, {display.priceCredits} Credits sẽ được giữ trong ví Escrow trung lập.
+                  {affordable
+                    ? `Bằng việc bấm xác nhận, ${display.priceCredits} Credits sẽ được trừ theo cơ chế bảo chứng của SkillSwap.`
+                    : `Bạn còn thiếu ${shortfallCredits} Credits cho lớp này. Hãy nạp thêm rồi xác nhận.`}
                 </p>
-
-                {/* Security Badges Footer */}
-                <div className="mt-5 p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-start gap-2.5 text-[11px] text-slate-600">
-                  <span className="material-symbols-outlined text-[18px] text-emerald-600 mt-0.5">verified</span>
-                  <div>
-                    <span className="font-semibold text-slate-800">Bút toán nguyên tử (Atomic LedgerPosting):</span>{' '}
-                    Giao dịch ghi nhận trạng thái đồng bộ hai chiều, ngăn chặn hoàn toàn rủi ro trừ kép số dư.
-                  </div>
-                </div>
               </div>
 
-              {/* Không đủ số dư → nạp qua cổng thanh toán SePay */}
-              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[20px] text-emerald-600">add_card</span>
-                    <h4 className="text-xs font-bold text-slate-900">Trường hợp số dư không đủ?</h4>
+              {/* Số dư không đủ. This card is the reason the page exists, and it
+                  states the real shortfall — never an invented amount. */}
+              {!affordable && (
+                <div className="bg-white rounded-2xl p-5 border border-amber-200 bg-amber-50/40 shadow-sm space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[20px] text-amber-600">add_card</span>
+                      <h4 className="text-xs font-bold text-slate-900">Số dư không đủ?</h4>
+                    </div>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-white text-slate-600 font-mono border border-slate-200">
+                      SePay
+                    </span>
                   </div>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-mono">
-                    SePay
-                  </span>
+                  <p className="text-xs text-slate-700 leading-relaxed">
+                    Bạn cần thêm <strong className="text-slate-900">{shortfallCredits} Credits</strong> để xác nhận lớp này.
+                    Nạp qua <strong className="text-slate-900">cổng thanh toán SePay</strong> và số dư sẽ cập nhật ngay khi SePay xác nhận.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setIsTopUpModalOpen(true)}
+                    className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors text-xs font-semibold flex items-center justify-center gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">add_circle</span>
+                    Nạp thêm credit
+                  </button>
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Nạp thêm Credit qua <strong className="text-slate-900">cổng thanh toán SePay</strong> ngay tại đây mà <strong className="text-slate-900">không làm mất lựa chọn lớp hay phiên đặt trước</strong>.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setIsTopUpModalOpen(true)}
-                  className="w-full py-2.5 px-3 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors text-xs font-semibold flex items-center justify-center gap-1.5"
-                >
-                  <span className="material-symbols-outlined text-[16px] text-emerald-600">add_circle</span>
-                  Nạp thêm Credit
-                </button>
-              </div>
+              )}
 
               {/* Trợ giúp & Khiếu nại 24/7 */}
               <div className="flex items-center justify-between p-4 rounded-2xl bg-white border border-slate-200 text-xs text-slate-600 shadow-sm">
@@ -807,9 +904,9 @@ export default function BookingCheckoutPage({ params }: PageProps) {
                 Mã giữ chỗ: {bookingId}
               </span>
             )}
-            <h3 className="text-xl font-bold text-slate-900 mt-3 mb-2">Đặt lớp &amp; Ký quỹ Thành công!</h3>
+            <h3 className="text-xl font-bold text-slate-900 mt-3 mb-2">Đặt lớp thành công!</h3>
             <p className="text-xs text-slate-600 mb-5 leading-relaxed">
-              Hệ thống đã khóa <strong className="text-slate-900 font-semibold">{display.priceCredits} Credits</strong> vào ví Escrow bảo chứng. Bạn có thể vào phòng học trực tuyến ngay khi mở cửa lớp học.
+              Hệ thống đã xác nhận <strong className="text-slate-900 font-semibold">{display.priceCredits} Credits</strong> cho buổi học này. Bạn có thể vào phòng học khi lớp mở.
             </p>
             <div className="bg-slate-50 rounded-xl p-3.5 text-left text-xs space-y-2 mb-6 border border-slate-100">
               <div className="flex justify-between">
@@ -864,7 +961,7 @@ export default function BookingCheckoutPage({ params }: PageProps) {
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[22px] text-emerald-600">credit_card</span>
-                <h3 className="text-base font-bold text-slate-900">Nạp 100.000 VNĐ qua SePay</h3>
+                <h3 className="text-base font-bold text-slate-900">Nạp credit qua SePay</h3>
               </div>
               <button
                 type="button"
@@ -882,11 +979,13 @@ export default function BookingCheckoutPage({ params }: PageProps) {
             <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 text-left space-y-2 mb-4">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-600">Số tiền nạp:</span>
-                <span className="font-bold text-emerald-700">100.000 VNĐ</span>
+                <span className="font-bold text-emerald-700">
+                  {topUpAmountVnd.toLocaleString('vi-VN')} VNĐ
+                </span>
               </div>
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-600">Quy đổi:</span>
-                <span className="font-bold text-slate-900">100 Credit</span>
+                <span className="font-bold text-slate-900">{topUpAmountVnd / 1_000} Credit</span>
               </div>
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-600">Cổng thanh toán:</span>
@@ -932,7 +1031,7 @@ export default function BookingCheckoutPage({ params }: PageProps) {
             <span>•</span>
             <a className="hover:text-emerald-700 transition-colors" href="#">Quy định &amp; Chính sách</a>
             <span>•</span>
-            <a className="hover:text-emerald-700 transition-colors" href="#">Bảo mật Escrow</a>
+            <a className="hover:text-emerald-700 transition-colors" href="#">Quy định bảo vệ người học</a>
             <span>•</span>
             <span className="inline-flex items-center gap-1 font-medium text-slate-700">
               <span className="material-symbols-outlined text-[16px] text-emerald-600">language</span>
@@ -958,9 +1057,12 @@ export default function BookingCheckoutPage({ params }: PageProps) {
 function buildDisplayModel(classDetail: ClassDetailView, balance: WalletBalanceView) {
   const currentCredits = balance.availableCredits;
   const priceCredits = classDetail.priceCredits;
-  const remainingCredits = Math.max(0, currentCredits - priceCredits);
-  const lockedPercentage =
-    currentCredits > 0 ? Math.min(100, (priceCredits / currentCredits) * 100) : 100;
+  // The affordability verdict is deliberately **not** computed here: the gate
+  // (`decideGate`) owns it, so the page cannot show a "shortfall" that disagrees
+  // with what the booking action decided. A "balance after the hold" figure is
+  // likewise not computed — the hold and later debit are the server's to decide,
+  // and a locally subtracted number sat next to a real one and looked equally
+  // true.
 
   const teacherName = classDetail.teacherName;
   const teacherInitials =
@@ -977,8 +1079,6 @@ function buildDisplayModel(classDetail: ClassDetailView, balance: WalletBalanceV
   return {
     currentCredits,
     priceCredits,
-    remainingCredits,
-    lockedPercentage,
     classTitle: classDetail.description || classDetail.skillName || '',
     skillBadge: classDetail.skillName,
     teacherName,
@@ -998,6 +1098,12 @@ function buildDisplayModel(classDetail: ClassDetailView, balance: WalletBalanceV
       year: 'numeric',
     }),
     durationMin: classDetail.durationMinutes,
+    // The 24-hour booking rule is stated from the class's real start time. The
+    // page used to print a fixed "còn lại 38 giờ 15 phút" for every class.
+    leadTimeText:
+      startsAtDate.getTime() - Date.now() >= 24 * 60 * 60 * 1000
+        ? 'Thoả mãn quy tắc đặt trước tối thiểu 24 giờ'
+        : 'Lớp sắp diễn ra trong vòng 24 giờ tới',
     formatText:
       classDetail.format === 'one-on-one'
         ? '1-on-1 Cá nhân'

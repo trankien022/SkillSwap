@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { callApi, unwrapEnvelope, dispatchWalletBalanceUpdate } from '../../../lib/api-client';
+import { useLocale } from 'next-intl';
+import { callApi, callApiOk, unwrapEnvelope, dispatchWalletBalanceUpdate } from '../../../lib/api-client';
 import { Navbar } from '../../../components/navbar';
 import type {
   WalletBalanceView,
@@ -33,6 +34,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function WalletPage() {
+  const locale = useLocale();
   const [balance, setBalance] = useState<WalletBalanceView | null>(null);
   const [history, setHistory] = useState<WalletHistoryItemView[]>([]);
   const [me, setMe] = useState<MeResponse | null>(null);
@@ -43,25 +45,22 @@ export default function WalletPage() {
   const [activeIntent, setActiveIntent] = useState<TopUpIntentCreated | null>(null);
   const [intentStatus, setIntentStatus] = useState<TopUpIntentStatusView | null>(null);
   const [pollExpired, setPollExpired] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /** Refreshes balance + history from the server (never computed locally). */
   const refreshWallet = useCallback(async () => {
     const [balRes, histRes] = await Promise.all([
-      callApi('/wallet/balance'),
-      callApi('/wallet/history'),
+      callApiOk('/wallet/balance'),
+      callApiOk('/wallet/history'),
     ]);
 
-    if (balRes.ok) {
-      const newBal = await unwrapEnvelope<WalletBalanceView>(balRes);
-      setBalance(newBal);
-      dispatchWalletBalanceUpdate(newBal);
-    }
+    const newBal = await unwrapEnvelope<WalletBalanceView>(balRes);
+    setBalance(newBal);
+    dispatchWalletBalanceUpdate(newBal);
 
-    if (histRes.ok) {
-      const data = await unwrapEnvelope<{ items: WalletHistoryItemView[] }>(histRes);
-      setHistory(getCombinedHistory(data.items || []));
-    }
+    const data = await unwrapEnvelope<{ items: WalletHistoryItemView[] }>(histRes);
+    setHistory(getCombinedHistory(data.items || []));
   }, []);
 
   useEffect(() => {
@@ -69,31 +68,26 @@ export default function WalletPage() {
 
     const fetchWallet = async () => {
       try {
+        // Every read here is required to render the ledger truthfully, so a
+        // failure is reported rather than swallowed into an empty page.
         const [balRes, histRes, meRes] = await Promise.all([
-          callApi('/wallet/balance'),
-          callApi('/wallet/history'),
-          callApi('/auth/me'),
+          callApiOk('/wallet/balance'),
+          callApiOk('/wallet/history'),
+          callApiOk('/auth/me'),
         ]);
 
-        if (balRes.ok) {
-          // Read the balance straight from the server; it is never cached.
-          setBalance(await unwrapEnvelope<WalletBalanceView>(balRes));
-        } else {
-          console.warn('Wallet balance not found or error');
-        }
+        // Read the balance straight from the server; it is never cached.
+        setBalance(await unwrapEnvelope<WalletBalanceView>(balRes));
 
-        if (histRes.ok) {
-          const data = await unwrapEnvelope<{ items: WalletHistoryItemView[] }>(histRes);
-          setHistory(getCombinedHistory(data.items || []));
-        } else {
-          setHistory(getCombinedHistory([]));
-        }
+        const data = await unwrapEnvelope<{ items: WalletHistoryItemView[] }>(histRes);
+        setHistory(getCombinedHistory(data.items || []));
 
-        if (meRes.ok) {
-          setMe(await unwrapEnvelope(meRes));
-        }
+        setMe(await unwrapEnvelope(meRes));
       } catch (e) {
-        console.error(e);
+        // An empty ledger and an unread ledger look identical, so the failure
+        // is surfaced instead of leaving a blank list that reads as "no
+        // transactions".
+        setLoadError(e instanceof Error ? e.message : 'Không tải được dữ liệu ví.');
       }
     };
     fetchWallet();
@@ -137,16 +131,16 @@ export default function WalletPage() {
         // A new run or an unmount clears the timer, so a late tick is a no-op.
         pollTimer.current = null;
         try {
-          const res = await callApi(`/wallet/top-ups/${intentId}`);
-          if (res.ok) {
-            const status = await unwrapEnvelope<TopUpIntentStatusView>(res);
-            setIntentStatus(status);
-            if (TERMINAL_TOP_UP_STATUSES.has(status.status)) {
-              await refreshWallet();
-              return;
-            }
+          const res = await callApiOk(`/wallet/top-ups/${intentId}`);
+          const status = await unwrapEnvelope<TopUpIntentStatusView>(res);
+          setIntentStatus(status);
+          if (TERMINAL_TOP_UP_STATUSES.has(status.status)) {
+            await refreshWallet();
+            return;
           }
         } catch (e) {
+          // The poll only learns the outcome from the server, so a failed read
+          // is retried rather than treated as "no change" and silently dropped.
           console.warn('Top-up poll failed', e);
         }
 
@@ -185,7 +179,13 @@ export default function WalletPage() {
 
       const res = await callApi('/wallet/top-ups', {
         method: 'POST',
-        body: JSON.stringify({ amountVnd: amount * 1000 }),
+        body: JSON.stringify({
+          amountVnd: amount * 1000,
+          // FR-008: come back to this client's own page rather than the
+          // configured fallback, so the payer lands somewhere that can read
+          // the intent back. Absolute, because SePay compares origins.
+          returnUrl: new URL(`/${locale}/payment/result`, window.location.origin).toString(),
+        }),
       });
 
       if (!res.ok) {
@@ -238,6 +238,19 @@ export default function WalletPage() {
 
       {/* Main Content */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        {/* A failed wallet read is stated: an unread ledger and an empty ledger
+            render identically, and only one of them is true. */}
+        {loadError !== null && (
+          <div
+            role="alert"
+            data-testid="wallet-load-error"
+            className="mb-6 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+          >
+            <span className="material-symbols-outlined text-[20px] flex-shrink-0 mt-0.5">info</span>
+            <span>{loadError}</span>
+          </div>
+        )}
 
         {/* Header Section */}
         <div className="mb-8">
