@@ -40,18 +40,18 @@ export function SearchHub({
   }
 
   return (
-    <div className="w-full rounded-2xl border border-border bg-surface p-3 ">
+    <div className="workspace-search-hub">
       <form
         onSubmit={handleSubmit}
-        className="grid grid-cols-1 items-center gap-1 md:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_auto_auto]"
+        className="workspace-search-grid"
         role="search"
         aria-label={t('keywordLabel')}
       >
         {/* Keyword input (col-span-5) */}
-        <div className="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-mist ">
+        <div className="workspace-search-field">
           <SearchIcon className="h-5 w-5 shrink-0 text-ink" />
-          <div className="flex w-full min-w-0 flex-col">
-            <label htmlFor="search-keyword" className="text-sm font-medium text-ink-soft">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <label htmlFor="search-keyword" className="text-sm font-medium leading-5 text-ink-soft">
               {t('keywordLabel')}
             </label>
             <input
@@ -60,23 +60,23 @@ export function SearchHub({
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               placeholder={t('keywordPlaceholder')}
-              className="w-full bg-transparent text-sm font-semibold text-ink placeholder:text-ink-muted focus:outline-none"
+              className="workspace-search-input"
             />
           </div>
         </div>
 
         {/* University select (col-span-3) */}
-        <div className="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-mist ">
+        <div className="workspace-search-field">
           <SchoolIcon className="h-5 w-5 shrink-0 text-ink-soft" />
-          <div className="flex w-full min-w-0 flex-col">
-            <label htmlFor="university-select" className="text-sm font-medium text-ink-soft">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <label htmlFor="university-select" className="text-sm font-medium leading-5 text-ink-soft">
               {t('universityLabel')}
             </label>
             <select
               id="university-select"
               value={university}
               onChange={(e) => setUniversity(e.target.value as UniversityCode | 'all')}
-              className="w-full cursor-pointer truncate bg-transparent text-sm font-semibold text-ink focus:outline-none"
+              className="workspace-search-input"
             >
               <option value="all">{t('universityAll')}</option>
               {UNIVERSITY_CODES.map((code) => (
@@ -94,22 +94,22 @@ export function SearchHub({
           onClick={onToggleFilters}
           aria-expanded={filterOpen}
           aria-controls="filter-sidebar"
-          className="flex items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors hover:bg-mist "
+          className="workspace-search-field workspace-search-filter"
         >
           <TuneIcon className="h-5 w-5 shrink-0 text-ink-soft" />
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-ink-soft">{t('filterButton')}</span>
-            <span className="text-sm font-semibold text-ink">{t('filterTitle')}</span>
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <span className="text-sm font-medium leading-5 text-ink-soft">{t('filterButton')}</span>
+            <span className="text-base font-medium leading-6 text-ink">{t('filterTitle')}</span>
           </div>
         </button>
 
         {/* Submit (col-span-2) */}
-        <div className="flex justify-end ">
+        <div className="workspace-search-submit">
           <button
             type="submit"
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-campus-emerald-deep px-5 text-sm font-semibold text-surface  transition-colors hover:bg-campus-emerald-deep"
+            className="workspace-primary w-full"
           >
-            <TravelExploreIcon className="h-4 w-4" />
+            <SearchIcon className="h-5 w-5" />
             <span>{t('submitButton')}</span>
           </button>
         </div>
@@ -180,26 +180,6 @@ function TuneIcon({ className = '' }: { className?: string }) {
       <circle cx="16" cy="12" r="2" fill="currentColor" />
       <line x1="4" y1="18" x2="20" y2="18" />
       <circle cx="8" cy="18" r="2" fill="currentColor" />
-    </svg>
-  );
-}
-
-function TravelExploreIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="18"
-      height="18"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className={className}
-    >
-      <circle cx="12" cy="12" r="9" />
-      <path d="M16 8l-2 6-6 2 2-6 6-2z" />
     </svg>
   );
 }
