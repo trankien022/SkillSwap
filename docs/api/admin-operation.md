@@ -4,7 +4,7 @@
 
 ## What it is for
 
-Admin operations module lifecycle probe.
+Administrator oversight (FR-015, ADR-034). The append-only audit log plus the operations dashboard aggregate over the student-verification and Verifier queues.
 
 4 endpoints.
 

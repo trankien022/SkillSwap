@@ -10,7 +10,7 @@ All routes are prefixed with `/api`. Authenticated routes need `Authorization: B
 | Module | Endpoints | What it is for |
 |---|---|---|
 | [account-profile](./account-profile.md) | 2 | Account profile module lifecycle probe. |
-| [admin-operation](./admin-operation.md) | 4 | Admin operations module lifecycle probe. |
+| [admin-operation](./admin-operation.md) | 4 | Administrator oversight (FR-015, ADR-034) |
 | [auth](./auth.md) | 5 | Account identity (FR-001, ADR-016) |
 | [classes](./classes.md) | 13 | The marketplace core (FR-005/FR-007/FR-009/FR-011/FR-020) |
 | [health](./health.md) | 1 | Liveness/readiness for the load balancer and CI. |
