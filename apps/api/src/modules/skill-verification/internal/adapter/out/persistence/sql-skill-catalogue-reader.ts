@@ -1,5 +1,6 @@
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { qualified } from '../../../../../../shared/sql/ident';
+import { MAX_PAGE_LIMIT } from '@skillswap/contracts';
 import type { SkillCursorTuple } from '../../../application/port/in/list-skills';
 import type {
   FindSkillsParams,
@@ -32,7 +33,7 @@ export class SqlSkillCatalogueReader implements SkillCatalogueReader {
 
   async findSkills(params: FindSkillsParams): Promise<SkillCatalogueReaderResult> {
     const source = this.registry.get(this.moduleName);
-    const limit = Math.max(1, Math.min(params.limit, 100));
+    const limit = Math.max(1, Math.min(params.limit, MAX_PAGE_LIMIT));
 
     const conditions: string[] = ['"active" = true'];
     const queryParams: unknown[] = [];

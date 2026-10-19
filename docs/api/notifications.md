@@ -16,7 +16,18 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 
 Register or rotate a push token for the caller (app launch, token refresh). Idempotent per installation.
 
-- Auth: Public
+- Auth: 🔒 Bearer token required
+- Response: `DeviceSubscriptionDto`
+
+**Response — `DeviceSubscriptionDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `installationId` | string | yes | min 1 chars |
+| `platform` | enum | yes | one of `ios`, `android`, `web` |
+| `isActive` | boolean | yes |  |
+| `createdAt` | string | yes | date-time |
 
 ### `DELETE /api/notification-devices/{id}`
 
@@ -24,12 +35,12 @@ Register or rotate a push token for the caller (app launch, token refresh). Idem
 
 Deactivate an owned device on sign-out. Answers 204 No Content; a foreign or unknown id is 404.
 
-- Auth: Public
+- Auth: 🔒 Bearer token required
 - Response: `no content`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
-| `id` | path | string | yes |  |
+| `id` | path | string | yes | The device subscription id |
 
 ### `GET /api/notifications`
 
@@ -37,4 +48,32 @@ Deactivate an owned device on sign-out. Answers 204 No Content; a foreign or unk
 
 Paginated notifications for the caller, optionally only unread ones. Use on the bell/notification list.
 
-- Auth: Public
+- Auth: 🔒 Bearer token required
+- Response: `NotificationsPageDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `cursor` | query | string | no | Opaque cursor from the previous `nextCursor` |
+| `limit` | query | string | no | Page size, 1–100 (default 20) |
+| `unreadOnly` | query | string | no | When `true`, only unread notifications are returned |
+
+**Response — `NotificationsPageDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `items` | object[] | yes |  |
+| `nextCursor` | string | yes | nullable |
+| `unreadCount` | integer | yes | ≥ 0 |
+
+**`items`[]** — NotificationsPageDto.items fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `type` | enum | yes | one of `verification_outcome`, `booking_confirmed`, `booking_cancelled`, `class_starting_soon`, `wallet_transaction`, `withdrawal_outcome` |
+| `title` | string | yes | min 1 chars |
+| `body` | string | yes | min 1 chars |
+| `targetType` | enum | yes | one of `class`, `booking`, `wallet`, `verification` |
+| `targetId` | string | yes | min 1 chars |
+| `read` | boolean | yes |  |
+| `createdAt` | string | yes | date-time |
