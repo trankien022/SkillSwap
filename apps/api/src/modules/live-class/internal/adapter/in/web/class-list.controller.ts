@@ -13,6 +13,7 @@ import {
   encodeClassCursor,
   listClassesPageSchema,
   listClassesQuerySchema,
+  resolveSearchTerm,
   type ListClassesQueryInput,
   type ListClassesPageView,
 } from '@skillswap/contracts';
@@ -53,7 +54,7 @@ export class ClassListController {
 
     const page = await this.listClasses.execute({
       callerId: userId,
-      keyword: query.keyword,
+      keyword: resolveSearchTerm(query),
       skillId: query.skillId,
       startDate: query.startDate,
       endDate: query.endDate,

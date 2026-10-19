@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MAX_PAGE_LIMIT } from './pagination';
 
 export const notificationTypeSchema = z.enum(['verification_outcome','booking_confirmed','booking_cancelled','class_starting_soon','wallet_transaction','withdrawal_outcome']);
 export const notificationTargetTypeSchema = z.enum(['class','booking','wallet','verification']);
@@ -8,7 +9,7 @@ export const notificationItemSchema = z.object({
   createdAt: z.string().datetime({ offset: true }),
 });
 export const notificationsPageSchema = z.object({ items: z.array(notificationItemSchema), nextCursor: z.string().nullable(), unreadCount: z.number().int().nonnegative() });
-export const listNotificationsQuerySchema = z.object({ unreadOnly: z.coerce.boolean().optional(), limit: z.coerce.number().int().min(1).max(50).default(20), cursor: z.string().min(1).optional() });
+export const listNotificationsQuerySchema = z.object({ unreadOnly: z.coerce.boolean().optional(), limit: z.coerce.number().int().min(1).max(MAX_PAGE_LIMIT).default(20), cursor: z.string().min(1).optional() });
 export const upsertDeviceSchema = z.object({ token: z.string().min(1), platform: z.enum(['ios','android','web']), installationId: z.string().min(1).max(128), locale: z.enum(['vi', 'en']).optional(), appVersion: z.string().max(32).optional() });
 export const deviceSubscriptionSchema = z.object({ id: z.string().min(1), installationId: z.string().min(1), platform: z.enum(['ios','android','web']), isActive: z.boolean(), createdAt: z.string().datetime({ offset: true }) });
 export type NotificationItem = z.infer<typeof notificationItemSchema>;

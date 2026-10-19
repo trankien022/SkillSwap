@@ -50,7 +50,7 @@ export class ClassReadGateway {
     const params = new URLSearchParams();
 
     if (query?.keyword !== undefined && query.keyword.trim().length > 0) {
-      params.set('keyword', query.keyword.trim());
+      params.set('q', query.keyword.trim());
     }
     if (query?.skillId !== undefined && query.skillId.trim().length > 0) {
       params.set('skillId', query.skillId.trim());
@@ -91,7 +91,7 @@ export class ClassReadGateway {
       params.set('category', query.category.trim());
     }
     if (query?.keyword !== undefined && query.keyword.trim().length > 0) {
-      params.set('keyword', query.keyword.trim());
+      params.set('q', query.keyword.trim());
     }
     if (query?.limit !== undefined && query.limit > 0) {
       params.set('limit', String(query.limit));

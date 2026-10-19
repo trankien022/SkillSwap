@@ -50,7 +50,9 @@ export class HttpTeacherPublishGateway {
    * out here rather than shown and then rejected at publish time.
    */
   async getVerifiedSkills(): Promise<VerifiedSkill[]> {
-    const res = await callApi('/profile-skills/me?limit=50');
+    // Bounded collection (`page: null`): it returns every approved skill, so a
+    // `limit` here would be accepted-and-ignored. Ask for the resource, not a page.
+    const res = await callApi('/profile-skills/me');
     if (res.status === 401) throw new TeacherPublishAuthError();
     if (!res.ok) {
       throw new Error(await readErrorMessage(res, 'Could not load your verified skills'));

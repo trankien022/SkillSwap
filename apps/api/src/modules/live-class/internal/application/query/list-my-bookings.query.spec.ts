@@ -1,3 +1,4 @@
+import { MAX_PAGE_LIMIT } from '@skillswap/contracts';
 import type { Clock } from '../port/out/clock';
 import type {
   LearnerBookingRecord,
@@ -86,13 +87,18 @@ describe('ListMyBookingsQueryHandler', () => {
       );
     });
 
-    it('bounds limit between 1 and 50 and handles cursor parsing', async () => {
+    it('bounds limit between 1 and the shared max page size and handles cursor parsing', async () => {
       mockReader.findBookings.mockResolvedValue({ items: [], nextCursor: null });
       mockReader.countTotalUpcoming.mockResolvedValue(0);
 
       await handler.execute({ learnerId: 'user-1', limit: 100 });
       expect(mockReader.findBookings).toHaveBeenCalledWith(
-        expect.objectContaining({ limit: 50 }),
+        expect.objectContaining({ limit: 100 }),
+      );
+
+      await handler.execute({ learnerId: 'user-1', limit: 1000 });
+      expect(mockReader.findBookings).toHaveBeenCalledWith(
+        expect.objectContaining({ limit: MAX_PAGE_LIMIT }),
       );
 
       await handler.execute({ learnerId: 'user-1', limit: -5 });

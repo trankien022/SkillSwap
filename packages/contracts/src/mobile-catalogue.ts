@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MAX_PAGE_LIMIT, searchQuerySchema } from './pagination';
 
 export type SkillCursorTuple = readonly [category: string, name: string, id: string];
 
@@ -120,13 +121,13 @@ export function isValidSkillCursor(cursor: unknown): boolean {
 
 /**
  * Route 09 / FR-003: query parameters for listing standardized catalogue skills.
- * Keyset cursor pagination bounded to max 100 per page.
- * Uses agreed 'keyword' search only (no duplicate undocumented search alias).
+ * Keyset cursor pagination bounded to the shared max page size (100).
+ * Search is `q` (legacy `keyword` alias), the same name every collection uses.
  */
 export const listSkillsQuerySchema = z.object({
   category: z.string().trim().min(1).optional(),
-  keyword: z.string().trim().min(1).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  ...searchQuerySchema.shape,
+  limit: z.coerce.number().int().min(1).max(MAX_PAGE_LIMIT).default(50),
   cursor: z
     .string()
     .trim()

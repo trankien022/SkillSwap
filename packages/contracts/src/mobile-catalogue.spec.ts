@@ -149,14 +149,20 @@ describe('mobile-catalogue contracts (portable cursor codec)', () => {
     it('defaults limit to 50 and accepts valid portable cursor', () => {
       const cursor = encodeSkillCursor(['Technology', 'TypeScript', 'sk-123']);
       const parsed = listSkillsQuerySchema.parse({
-        keyword: 'Type',
+        q: 'Type',
         cursor,
       });
       expect(parsed).toEqual({
         limit: 50,
-        keyword: 'Type',
+        q: 'Type',
         cursor,
       });
+    });
+
+    it('keeps `keyword` as a deprecated alias and caps the page at 100', () => {
+      expect(listSkillsQuerySchema.parse({ keyword: 'Type' }).keyword).toBe('Type');
+      expect(listSkillsQuerySchema.parse({ limit: 100 }).limit).toBe(100);
+      expect(() => listSkillsQuerySchema.parse({ limit: 101 })).toThrow();
     });
 
     it('rejects malformed or padded cursor with validation error', () => {

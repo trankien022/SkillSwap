@@ -4,6 +4,7 @@ import {
   decodeSkillCursor,
   encodeSkillCursor,
   listSkillsQuerySchema,
+  resolveSearchTerm,
   skillCataloguePageSchema,
   type ListSkillsQueryInput,
   type SkillCataloguePageView,
@@ -45,7 +46,7 @@ export class SkillsController {
 
     const page = await this.listSkills.execute({
       category: query.category,
-      keyword: query.keyword,
+      keyword: resolveSearchTerm(query),
       limit: query.limit,
       cursor: cursorTuple,
     });

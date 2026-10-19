@@ -4,6 +4,7 @@ import type {
   ListClassesPort,
   ListClassesQuery,
 } from '../port/in/list-classes';
+import { MAX_PAGE_LIMIT } from '@skillswap/contracts';
 import type {
   ClassListReader,
   ClassListRecord,
@@ -29,7 +30,7 @@ export class ListClassesQueryHandler implements ListClassesPort {
   async execute(query: ListClassesQuery): Promise<ListClassesPageDto> {
     const now = this.clock.now();
     const isOwnMode = query.teacherId === 'me';
-    const limit = Math.max(1, Math.min(query.limit ?? 20, 50));
+    const limit = Math.max(1, Math.min(query.limit ?? 20, MAX_PAGE_LIMIT));
 
     let parsedStartDate: Date | undefined;
     if (query.startDate) {

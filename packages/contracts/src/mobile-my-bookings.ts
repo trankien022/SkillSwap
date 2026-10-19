@@ -8,6 +8,7 @@ import {
   type ClassLifecycleState,
 } from './mobile-classes';
 import { bookingStateSchema, type BookingState } from './mobile-class-detail';
+import { MAX_PAGE_LIMIT } from './pagination';
 
 export type BookingCursorTuple = readonly [startsAtISO: string, bookingId: string];
 
@@ -18,7 +19,7 @@ export const isValidBookingCursor = isValidClassCursor;
 /**
  * Route 22 / FR-007, FR-009, FR-011, FR-020: query parameters for learner bookings.
  * Owner is strictly bound to currentUserId in controller; no callerId/learnerId query override.
- * Keyset cursor pagination bounded to max 50 per page, default 20.
+ * Keyset cursor pagination bounded to the shared max page size (100), default 20.
  * Upcoming string transform: 'true' -> true, 'false' -> false, omitted -> undefined (all histories).
  */
 export const myBookingsQuerySchema = z.object({
@@ -27,7 +28,7 @@ export const myBookingsQuerySchema = z.object({
     .enum(['true', 'false'])
     .transform((v) => v === 'true')
     .optional(),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
+  limit: z.coerce.number().int().min(1).max(MAX_PAGE_LIMIT).default(20),
   cursor: z
     .string()
     .trim()
