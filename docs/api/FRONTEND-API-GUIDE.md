@@ -6,9 +6,13 @@ comes back".
 
 > Status: covers the implemented critical path — **auth (FR-001), wallet top-up (FR-008),
 > settlement (FR-009), booking lifecycle + refunds (FR-007), room access (FR-011), class
-> completion + income release (FR-020), wallet reads (FR-010)**.
-> Rating (FR-013), withdrawals (FR-014), chat (FR-012) and teacher/skill verification
-> (FR-002–FR-005) are **not** implemented yet.
+> completion + income release (FR-020), wallet reads (FR-010), ratings (FR-013),
+> skill-catalogue and evidence/verifier workflows (FR-002–FR-005), student verification,
+> notifications, and the admin operations reads (FR-015)**.
+> Withdrawals (FR-014) and chat (FR-012) are **not** implemented yet.
+>
+> This page walks the booking flow end to end. For the full route inventory —
+> every endpoint, which client calls it, and where — see `docs/api/FRONTEND-API-MAP.md`.
 
 ---
 
@@ -70,6 +74,13 @@ Error:
 Read the payload from `body.data`; branch on `body.success` and `body.code` / `body.errors[].code`
 (never on `message`). The HTTP status code still reflects the real outcome.
 
+Some errors report a **stable lowercase code** instead of the class name, and those are
+the ones to branch on: `class_not_found`, and the booking rejections `class_not_bookable`,
+`class_started`, `booking_window_closed`, `class_full`, `duplicate_booking`,
+`self_booking`, `invalid_duration`. Every booking rejection is the same
+`BookingNotAllowedError` class, so the class name cannot tell them apart. Full list:
+`docs/api/RESPONSE-CONVENTIONS.md` §2.
+
 Common status codes: `400` invalid body/query, `401` missing/expired token or bad credentials,
 `403` forbidden (not a party / suspended / not owner), `404` not found, `409` conflict
 (duplicate email, class locked, illegal transition), `503` room provider unavailable.
@@ -108,7 +119,8 @@ const res = await fetch(`${API}/api/auth/register`, {
   // role is optional; only 'user' is accepted (ADR-030). Verifier/admin are provisioned out of band.
   body: JSON.stringify({ email: 'an@b.co', displayName: 'An', password: 'secret-password' }),
 });
-const { accessToken, refreshToken } = await res.json(); // store these
+const body = await res.json();
+const { accessToken, refreshToken } = body.data; // NFR-013 envelope: payload is under `data`
 ```
 
 > The `accessToken` is short-lived (`expiresIn` seconds, 900 by default). On `401`, call
@@ -162,6 +174,9 @@ const bal = await (await fetch(`${API}/api/wallet/balance`, { headers: auth })).
 
 | Method | Path | Who | Body | Returns |
 |---|---|---|---|---|
+| GET | `/api/classes` | none | `?state=&teacherId=&skillId=&startDate=&endDate=&q=&limit=&cursor=` | `200` paged list |
+| GET | `/api/classes/:id` | none | — | `200` class detail (includes `skills`) |
+| GET | `/api/classes/bookings/me` | **yes** | `?state=&upcoming=&limit=&cursor=` | `200` paged bookings |
 | POST | `/api/classes` | **Teacher** | `createClassSchema` | `201` class |
 | PATCH | `/api/classes/:id` | **Teacher** (owner) | `updateClassSchema` | `200` class |
 | POST | `/api/classes/:id/cancel` | **Teacher** (owner) | — | `200` `{ classCancelled, bookingsCancelled }` |
@@ -169,8 +184,11 @@ const bal = await (await fetch(`${API}/api/wallet/balance`, { headers: auth })).
 | POST | `/api/classes/:id/complete` | **Teacher** (owner) | — | `200` `{ completed, basis }` |
 | POST | `/api/classes/:id/bookings` | **Learner** | `{ idempotencyKey }` | `201` `{ booking, created }` |
 | POST | `/api/classes/bookings/:bookingId/confirm` | **Learner** (owner) | — | `200` confirm result |
+| POST | `/api/classes/bookings/:bookingId/rating` | **Learner** (owner) | `{ stars, comment }` | `201` rating |
 | POST | `/api/classes/bookings/:bookingId/room-access` | **party** | `{ displayName? }` | `200` room access |
 | POST | `/api/classes/bookings/:bookingId/no-show` | system/Teacher | — | `200` `{ cancelled }` |
+
+`q` is the search term (`keyword` is a deprecated alias). `limit` is capped at **100**.
 
 **Create class** (`createClassSchema`):
 ```json
@@ -270,8 +288,10 @@ const access = await post(`/api/classes/bookings/${booking.bookingId}/room-acces
 
 | Situation | Where | Response |
 |---|---|---|
-| Booking < 24 h before start | `POST …/bookings` | `409` `BookingNotAllowedError` (`booking_window_closed`) |
-| Class full / duplicate / self-booking | `POST …/bookings` | `409` `BookingNotAllowedError` (`class_full` / `duplicate_booking` / `self_booking`) |
+| Booking < 24 h before start | `POST …/bookings` | `409` `booking_window_closed` |
+| Class full / duplicate / self-booking | `POST …/bookings` | `409` `class_full` / `duplicate_booking` / `self_booking` |
+| Class not published / already started | `POST …/bookings` | `409` `class_not_bookable` / `class_started` |
+| Class id does not exist | any `/classes/:id…` | `404` `class_not_found` (not the generic `HTTP_404`) |
 | Not enough credits at confirm | `POST …/confirm` | `200` then booking stays `pending` (no balance change) |
 | Pending hold not confirmed in ~15 min | system | booking auto-`cancelled` (reason `expired`), seat freed |
 | Teacher cancels class | `POST /classes/:id/cancel` | active bookings cancelled; **confirmed ones refunded** to the Learner |
@@ -279,6 +299,8 @@ const access = await post(`/api/classes/bookings/${booking.bookingId}/room-acces
 | Edit a class after a confirmed booking | `PATCH /classes/:id` | `409` `ClassLockedError` |
 | Room access outside the window / not a party | `POST …/room-access` | `403` `RoomAccessDeniedError` |
 | Room provider down | `POST …/room-access` | `503` `RoomUnavailableError` (with a trace id) |
+| Rate the same booking twice | `POST …/rating` | `409` `HTTP_409` |
+| Rate a class that has not completed | `POST …/rating` | `400` `HTTP_400` |
 | Duplicate top-up callback | `POST /wallet/top-ups/callback` | `200` `{ applied: false }` (idempotent) |
 
 Refunds are **internal credits only** (no real money). A Learner sees the refund as a
@@ -317,7 +339,8 @@ async function refreshSession() {
     body: JSON.stringify({ refreshToken }),
   });
   if (!res.ok) { accessToken = refreshToken = null; throw new Error('session expired'); }
-  ({ accessToken, refreshToken } = await res.json());
+  const body = await res.json();
+  ({ accessToken, refreshToken } = body.data);   // the envelope wraps the pair in `data`
 }
 ```
 
@@ -337,7 +360,8 @@ Key reminders for the UI:
 | Request/response schemas (source of truth) | `packages/contracts/src/index.ts` |
 | Auth endpoints | `apps/api/src/modules/account-profile/internal/adapter/in/web/auth.controller.ts` |
 | Wallet endpoints | `apps/api/src/modules/wallet-ledger/internal/adapter/in/web/wallet.controller.ts` |
-| Class/booking endpoints | `apps/api/src/modules/live-class/internal/adapter/in/web/classes.controller.ts` |
+| Class/booking endpoints | `apps/api/src/modules/live-class/internal/adapter/in/web/{classes,class-list,class-detail,my-bookings,ratings}.controller.ts` |
+| Every route each client calls | `docs/api/FRONTEND-API-MAP.md` (pinned by `api-map.test.ts` / `api-evidence.spec.ts`) |
 | Status → error mapping | `apps/api/src/shared/http/domain-error.filter.ts` |
 | Decisions (ADR-016…022) | `docs/adr/` |
 | End-to-end usage proof | `apps/api/test/booking-flow.e2e-spec.ts` |

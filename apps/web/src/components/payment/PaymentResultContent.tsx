@@ -19,13 +19,16 @@ export interface PaymentResultContentProps {
   providerRef: string | null;
 }
 
-/** The URL path that reads one intent, whichever handle we hold. */
-function intentPath(intentId: string | null, providerRef: string | null): string | null {
+/**
+ * The two routes that read one intent, whichever handle we hold. Both are
+ * literals at the call sites so `api-map.test.ts` can see them.
+ */
+function readIntent(intentId: string | null, providerRef: string | null): Promise<Response> | null {
   if (providerRef !== null && providerRef !== '') {
-    return `/wallet/top-ups/by-provider-ref/${encodeURIComponent(providerRef)}`;
+    return callApiOk(`/wallet/top-ups/by-provider-ref/${encodeURIComponent(providerRef)}`);
   }
   if (intentId !== null && intentId !== '') {
-    return `/wallet/top-ups/${encodeURIComponent(intentId)}`;
+    return callApiOk(`/wallet/top-ups/${encodeURIComponent(intentId)}`);
   }
   return null;
 }
@@ -43,7 +46,11 @@ function intentPath(intentId: string | null, providerRef: string | null): string
 export function PaymentResultContent({ intentId, providerRef }: PaymentResultContentProps) {
   const t = useTranslations('PaymentResult');
   const locale = useLocale();
-  const path = intentPath(intentId, providerRef);
+  const readPath = useCallback(
+    async (): Promise<Response | null> => readIntent(intentId, providerRef),
+    [intentId, providerRef],
+  );
+  const hasIntent = intentId !== null || providerRef !== null;
 
   const [phase, setPhase] = useState<Phase>('loading');
   const [intent, setIntent] = useState<TopUpIntentStatusView | null>(null);
@@ -56,7 +63,7 @@ export function PaymentResultContent({ intentId, providerRef }: PaymentResultCon
   const readAll = useCallback(async () => {
     // Both reads are independent: a failed balance must not hide the intent.
     const [intentResult, balanceResult] = await Promise.allSettled([
-      path === null ? Promise.resolve(null) : callApiOk(path),
+      readPath().then((res) => res ?? Promise.resolve(null)),
       callApiOk('/wallet/balance'),
     ]);
 
@@ -85,7 +92,7 @@ export function PaymentResultContent({ intentId, providerRef }: PaymentResultCon
     }
 
     setPhase('ready');
-  }, [path]);
+  }, [readPath]);
 
   // Initial read, then keep reading while the intent can still change.
   useEffect(() => {
@@ -96,13 +103,14 @@ export function PaymentResultContent({ intentId, providerRef }: PaymentResultCon
     const run = async () => {
       await readAll();
       if (cancelled) return;
-      if (path === null) return;
+      if (!hasIntent) return;
 
       const tick = async () => {
         timer = null;
         if (cancelled) return;
         try {
-          const res = await callApiOk(path);
+          const res = await readPath();
+          if (res === null) return;
           const status = await unwrapEnvelope<TopUpIntentStatusView>(res);
           if (cancelled) return;
           setIntent(status);
@@ -133,7 +141,7 @@ export function PaymentResultContent({ intentId, providerRef }: PaymentResultCon
       cancelled = true;
       if (timer !== null) clearTimeout(timer);
     };
-  }, [path, readAll]);
+  }, [hasIntent, readAll]);
 
   const handleRefresh = async () => {
     setBusy(true);
@@ -156,7 +164,7 @@ export function PaymentResultContent({ intentId, providerRef }: PaymentResultCon
   // No intent in the URL at all: this is a page someone opened by hand (or an
   // old link). Say so, and point at the wallet, which is the only place the
   // truth can be read without a handle.
-  if (path === null) {
+  if (!hasIntent) {
     return (
       <div className="flex flex-col gap-4">
         <h1 className="workspace-title">{t('title')}</h1>

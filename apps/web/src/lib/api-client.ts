@@ -251,7 +251,6 @@ export async function authenticate(
   },
   remember = false,
 ): Promise<{ tokens: TokenPair; role?: string }> {
-  const endpoint = mode === 'register' ? '/api/auth/register' : '/api/auth/login';
   const bodyPayload = mode === 'register'
     ? {
         email: payload.email,
@@ -264,11 +263,16 @@ export async function authenticate(
         password: payload.password,
       };
 
-  const res = await fetch(`${API}${endpoint}`, {
+  const init: RequestInit = {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(bodyPayload),
-  });
+  };
+  // Both targets are literals so `api-map.test.ts` can see them.
+  const res =
+    mode === 'register'
+      ? await fetch(`${API}/api/auth/register`, init)
+      : await fetch(`${API}/api/auth/login`, init);
 
   if (!res.ok) {
     const errorBody = (await res.json().catch(() => null)) as ApiEnvelope<unknown> | null;

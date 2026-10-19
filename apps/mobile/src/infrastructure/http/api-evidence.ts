@@ -9,6 +9,7 @@ const routes = [
   /^\/notification-devices$/,
   /^\/classes$/,
   /^\/classes\/bookings\/me$/,
+  /^\/verifiers\/me\/queue$/,
 ];
 
 export function evidenceRoute(url: string): string | null {
@@ -21,12 +22,22 @@ export function evidenceRoute(url: string): string | null {
   if (/^\/wallet\/top-ups\/by-provider-ref\/[^/]+$/.test(path))
     return '/api/wallet/top-ups/by-provider-ref/:providerRef';
   if (routes.some((route) => route.test(path))) return `/api${path}`;
+  // Booking actions. Declared before the bare `:id` templates below so a booking
+  // route can never be recorded as a class route.
   if (/^\/classes\/bookings\/[^/]+\/confirm$/.test(path))
     return '/api/classes/bookings/:bookingId/confirm';
+  if (/^\/classes\/bookings\/[^/]+\/rating$/.test(path))
+    return '/api/classes/bookings/:bookingId/rating';
+  if (/^\/classes\/bookings\/[^/]+\/room-access$/.test(path))
+    return '/api/classes/bookings/:bookingId/room-access';
+  if (/^\/classes\/bookings\/[^/]+\/no-show$/.test(path))
+    return '/api/classes/bookings/:bookingId/no-show';
+  // Class actions (`cancel`, `start`, `complete`) and the bare class resource.
+  if (/^\/classes\/[^/]+\/(cancel|start|complete)$/.test(path)) return `/api${path}`;
   if (/^\/classes\/[^/]+\/bookings$/.test(path)) return '/api/classes/:id/bookings';
-  if (/^\/classes\/[^/]+\/cancel$/.test(path)) return '/api/classes/:id/cancel';
   if (/^\/classes\/[^/]+$/.test(path)) return '/api/classes/:id';
   if (/^\/skill-evidence\/[^/]+\/history$/.test(path)) return '/api/skill-evidence/:id/history';
+  if (/^\/skill-evidence\/[^/]+\/(claim|decision)$/.test(path)) return `/api${path}`;
   if (/^\/notification-devices\/[^/]+$/.test(path)) return '/api/notification-devices/:id';
   return null;
 }

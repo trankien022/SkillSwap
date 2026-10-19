@@ -62,15 +62,25 @@ Every domain JSON response uses the same five keys.
 
 `errors[].code` is one of:
 
-1. A **domain error class name** (66 known — e.g. `ReasonRequiredError`, `InactiveVerifierError`,
-   `OutOfExpertiseError`). See `NAME_TO_STATUS` in
+1. A **stable domain value** where the domain has one — lowercase snake, e.g.
+   `class_not_found`, or a booking rejection reason (`class_full`,
+   `duplicate_booking`, …). See `NAME_TO_CODE` and `BookingNotAllowedError` in
    `apps/api/src/shared/http/domain-error.filter.ts`.
-2. `VALIDATION_FAILED` — request validation failed (`ZodValidationPipe`); one `errors[]` entry per
+2. A **domain error class name** for errors with no declared value
+   (e.g. `ReasonRequiredError`, `InactiveVerifierError`, `OutOfExpertiseError`).
+   See `NAME_TO_STATUS` in the same file.
+3. `VALIDATION_FAILED` — request validation failed (`ZodValidationPipe`); one `errors[]` entry per
    invalid field.
-3. `HTTP_<status>` — a Nest `HttpException` with no domain mapping (e.g. `HTTP_401`).
-4. `INTERNAL_ERROR` — unhandled failure (HTTP 500).
+4. `HTTP_<status>` — a Nest `HttpException` with no domain mapping (e.g. `HTTP_401`).
+5. `INTERNAL_ERROR` — unhandled failure (HTTP 500).
 
 The top-level `code` mirrors `errors[0].code` (or the summary code when `errors` is empty).
+
+A stable value is the right code wherever the client branches on *which*
+condition occurred: the class name is an implementation detail that a rename
+would break, and several errors share a class while differing in meaning (every
+rejected booking is a `BookingNotAllowedError`). Add a mapping to `NAME_TO_CODE`
+rather than teaching the client to read `message`.
 
 Common status codes: `400` invalid body/query, `401` missing/expired token or bad credentials,
 `403` forbidden, `404` not found, `409` conflict (duplicate, locked, illegal transition),
@@ -116,11 +126,16 @@ All optional; each endpoint documents which it supports.
 
 | Param | Meaning | Notes |
 |---|---|---|
-| `limit` | Page size | int 1–100, default 20. |
+| `limit` | Page size | int 1–100, default 20. `MAX_PAGE_LIMIT` in `packages/contracts/src/pagination.ts`; every schema, use case and SQL reader uses that constant, never a literal. |
 | `cursor` | Next-page cursor | Opaque; from the previous `page.nextCursor`. Invalid → `400 INVALID_CURSOR`. |
 | `sort` | Sort field | `<field>` ascending, `-<field>` descending. Whitelist per endpoint. Invalid → `400 INVALID_SORT`. |
-| `q` | Free-text search | Trimmed; min length 1. |
+| `q` | Free-text search | Trimmed; min length 1. The only search parameter — see below. |
 | *(filters)* | Endpoint-specific | e.g. `level`, `type`, `category`. |
+
+**`q` is the search parameter.** `keyword` was the older name and is accepted as a
+**deprecated alias** for one release, resolved by `resolveSearchTerm` (an explicit
+`q` wins over `keyword`). New clients send `q`; the alias exists only so a
+deployed client does not break mid-release.
 
 Example:
 
@@ -132,6 +147,10 @@ GET /api/verifiers/me/queue?limit=20&level=advanced&type=certificate&sort=submit
 
 | Endpoint | Pagination | Filter | Sort | Search |
 |---|---|---|---|---|
+| `GET /api/classes` | ✅ keyset + `total` | `state`, `teacherId`, `skillId`, `startDate`, `endDate` | fixed soonest-first | `q` (skill/teacher) |
+| `GET /api/classes/bookings/me` | ✅ keyset + `total` | `state`, `upcoming` | fixed soonest-first | — |
+| `GET /api/skills` | ✅ keyset + `total` | `category` | fixed category/name | `q` (skill name) |
+| `GET /api/notifications` | ✅ keyset + `total` | `unreadOnly` | fixed newest-first | — |
 | `GET /api/verifiers/me/queue` | ✅ keyset + `total` | `level`, `type` | `submittedAt` (default `submittedAt` asc) | `q` (skill name) |
 | `GET /api/verifiers/admin/queue` | ✅ keyset + `total` | `domain`, `status` | `submittedAt` (default asc) | `q` (skill name) |
 | `GET /api/student-verifications` | ✅ keyset + `total` | `status` | `submittedAt` / `decidedAt` (default `submittedAt` asc) | `q` (school name) |

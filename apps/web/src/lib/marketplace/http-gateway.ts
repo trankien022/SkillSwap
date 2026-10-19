@@ -66,7 +66,8 @@ export class HttpMarketplaceGateway {
     params.set('startDate', new Date().toISOString());
 
     const qs = params.toString();
-    const res = await callApi(`/classes${qs ? `?${qs}` : ''}`);
+    // `limit` is always set, so the query string is never empty.
+    const res = await callApi(`/classes?${qs}`);
     const page = listClassesPageSchema.parse(await unwrapEnvelope<unknown>(res));
     return page.items;
   }
