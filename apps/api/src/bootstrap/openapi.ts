@@ -4,19 +4,22 @@ import type { INestApplication } from '@nestjs/common';
 
 export type OpenApiDocument = ReturnType<typeof SwaggerModule.createDocument>;
 
-/** Public API surface, grouped by tag. Order drives docs grouping. */
+/**
+ * Public API surface, grouped by tag. Order drives docs grouping.
+ *
+ * Only tags that own at least one business endpoint are listed. The module lifecycle probes
+ * (`account-profile`, `live-class`, `schedule`, `wallet-ledger`) were removed because they exposed
+ * a module's internal bookkeeping, not a capability a client could use.
+ */
 export const API_TAGS = [
-  'account-profile',
   'admin-operation',
   'auth',
   'classes',
   'health',
-  'live-class',
-  'schedule',
+  'notifications',
   'skill-verification',
   'student-verification',
   'wallet',
-  'wallet-ledger',
 ] as const;
 
 /**

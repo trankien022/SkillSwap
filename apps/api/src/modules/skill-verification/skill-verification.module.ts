@@ -5,8 +5,6 @@ import { EventHandlerRegistry, type BusMessage } from '../../shared/messaging/ev
 import { ModuleDataSourceRegistry } from '../../shared/messaging/module-registry';
 import { createModuleDataSource } from './internal/adapter/out/persistence/data-source';
 import { SCHEMA } from './internal/adapter/out/persistence/schema';
-import { SqlModuleStatusReader } from './internal/adapter/out/persistence/sql-module-status-reader';
-import { SqlModuleStatusWriter } from './internal/adapter/out/persistence/sql-module-status-writer';
 import { SqlSkillRepository, SqlProfileSkillRepository } from './internal/adapter/out/persistence/sql-skill-repository';
 import { SqlSkillEvidenceRepository } from './internal/adapter/out/persistence/sql-skill-evidence-repository';
 import { SqlVerifierRepository } from './internal/adapter/out/persistence/sql-verifier-repository';
@@ -19,14 +17,12 @@ import {
 } from './api/evidence-summary-reader';
 import { SqlEvidenceSummaryReader } from './internal/adapter/out/persistence/sql-evidence-summary-reader';
 import { SystemClock } from './internal/adapter/out/crypto/system-clock';
-import { StatusController } from './internal/adapter/in/web/status.controller';
 import {
   ProfileSkillController,
   SkillEvidenceController,
 } from './internal/adapter/in/web/skill-evidence.controller';
 import { VerifierController, SkillEvidenceDecisionController } from './internal/adapter/in/web/verifier.controller';
 import { SkillsController } from './internal/adapter/in/web/skills.controller';
-import { AdvanceStatusUseCase } from './internal/application/advance-status.use-case';
 import { SubmitSkillEvidenceUseCase } from './internal/application/submit-skill-evidence.use-case';
 import { ChangeVerifierStatusUseCase } from './internal/application/change-verifier-status.use-case';
 import { ClaimSkillEvidenceUseCase } from './internal/application/claim-skill-evidence.use-case';
@@ -37,8 +33,6 @@ import { GetSkillEvidenceHistoryUseCase } from './internal/application/get-skill
 import { VerifierAuthority } from './internal/application/verifier-authority';
 import { GetMyProfileSkillsQueryHandler } from './internal/application/query/get-my-profile-skills.query';
 import { ListSkillsQueryHandler } from './internal/application/query/list-skills.query';
-import { GET_MODULE_STATUS } from './internal/application/port/in/get-module-status';
-import { ADVANCE_STATUS } from './internal/application/port/in/advance-status';
 import { SUBMIT_SKILL_EVIDENCE } from './internal/application/port/in/submit-skill-evidence';
 import {
   GET_MY_PROFILE_SKILLS,
@@ -72,8 +66,6 @@ import {
   GET_SKILL_EVIDENCE_HISTORY,
   type GetSkillEvidenceHistoryPort,
 } from './internal/application/port/in/get-skill-evidence-history';
-import { STATUS_READER, type ModuleStatusReader } from './internal/application/port/out/module-status-reader';
-import { STATUS_WRITER, type ModuleStatusWriter } from './internal/application/port/out/module-status-writer';
 import { CLOCK, type Clock } from './internal/application/port/out/clock';
 import { SKILL_REPOSITORY, type SkillRepository } from './internal/application/port/out/skill-repository';
 import {
@@ -94,7 +86,6 @@ import {
   SKILL_CATALOGUE_READER,
   type SkillCatalogueReader,
 } from './internal/application/port/out/skill-catalogue-reader';
-import { GetModuleStatusQueryHandler } from './internal/application/query/get-module-status.query';
 import { MODULE_NAME } from './internal/domain/module-status';
 
 /** Registers this module's DataSource pool and the FR-003 verified-student consumer. */
@@ -134,7 +125,6 @@ export class SkillVerificationRegistrar implements OnModuleInit {
 
 @Module({
   controllers: [
-    StatusController,
     SkillEvidenceController,
     ProfileSkillController,
     VerifierController,
@@ -142,18 +132,6 @@ export class SkillVerificationRegistrar implements OnModuleInit {
     SkillsController,
   ],
   providers: [
-    {
-      provide: STATUS_READER,
-      useFactory: (registry: ModuleDataSourceRegistry) =>
-        new SqlModuleStatusReader(registry, MODULE_NAME),
-      inject: [ModuleDataSourceRegistry],
-    },
-    {
-      provide: STATUS_WRITER,
-      useFactory: (registry: ModuleDataSourceRegistry) =>
-        new SqlModuleStatusWriter(registry, MODULE_NAME),
-      inject: [ModuleDataSourceRegistry],
-    },
     { provide: CLOCK, useFactory: (): Clock => new SystemClock() },
     {
       provide: SKILL_REPOSITORY,
@@ -195,12 +173,6 @@ export class SkillVerificationRegistrar implements OnModuleInit {
       provide: VerifierAuthority,
       useFactory: (verifiers: VerifierRepository) => new VerifierAuthority(verifiers),
       inject: [VERIFIER_REPOSITORY],
-    },
-    {
-      provide: ADVANCE_STATUS,
-      useFactory: (reader: ModuleStatusReader, writer: ModuleStatusWriter) =>
-        new AdvanceStatusUseCase(reader, writer),
-      inject: [STATUS_READER, STATUS_WRITER],
     },
     {
       provide: SUBMIT_SKILL_EVIDENCE,
@@ -302,11 +274,6 @@ export class SkillVerificationRegistrar implements OnModuleInit {
         VerifierAuthority,
         CLOCK,
       ],
-    },
-    {
-      provide: GET_MODULE_STATUS,
-      useFactory: (reader: ModuleStatusReader) => new GetModuleStatusQueryHandler(reader),
-      inject: [STATUS_READER],
     },
     {
       provide: SKILL_CATALOGUE_READER,

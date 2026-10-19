@@ -15,16 +15,10 @@ import {
 import { createModuleDataSource } from './internal/adapter/out/persistence/data-source';
 import { SCHEMA } from './internal/adapter/out/persistence/schema';
 import { SqlAdminAuditEventRepository } from './internal/adapter/out/persistence/sql-admin-audit-event-repository';
-import { SqlModuleStatusReader } from './internal/adapter/out/persistence/sql-module-status-reader';
-import { SqlModuleStatusWriter } from './internal/adapter/out/persistence/sql-module-status-writer';
 import { AuditLogController } from './internal/adapter/in/web/audit-log.controller';
 import { AdminDashboardController } from './internal/adapter/in/web/admin-dashboard.controller';
-import { StatusController } from './internal/adapter/in/web/status.controller';
-import { AdvanceStatusUseCase } from './internal/application/advance-status.use-case';
 import { AUDITED_EVENT_TYPE_LIST } from './internal/application/audit-actions';
 import { RecordAdminAuditEventUseCase } from './internal/application/record-admin-audit-event.use-case';
-import { GET_MODULE_STATUS } from './internal/application/port/in/get-module-status';
-import { ADVANCE_STATUS } from './internal/application/port/in/advance-status';
 import { LIST_AUDIT_LOG, type ListAuditLogPort } from './internal/application/port/in/list-audit-log';
 import {
   GET_ADMIN_DASHBOARD,
@@ -34,9 +28,6 @@ import {
   ADMIN_AUDIT_EVENT_REPOSITORY,
   type AdminAuditEventRepository,
 } from './internal/application/port/out/admin-audit-event-repository';
-import { STATUS_READER, type ModuleStatusReader } from './internal/application/port/out/module-status-reader';
-import { STATUS_WRITER, type ModuleStatusWriter } from './internal/application/port/out/module-status-writer';
-import { GetModuleStatusQueryHandler } from './internal/application/query/get-module-status.query';
 import { ListAuditLogQueryHandler } from './internal/application/query/list-audit-log.query';
 import { GetAdminDashboardQueryHandler } from './internal/application/query/get-admin-dashboard.query';
 import { MODULE_NAME } from './internal/domain/module-status';
@@ -82,36 +73,13 @@ export class AdminOperationRegistrar implements OnModuleInit {
   // FR-015 / ADR-008/ADR-012: the dashboard composes counts by asking each owning module, so it
   // imports them and injects the readers they export rather than reading their schemas.
   imports: [StudentVerificationModule, SkillVerificationModule],
-  controllers: [StatusController, AuditLogController, AdminDashboardController],
+  controllers: [AuditLogController, AdminDashboardController],
   providers: [
     {
       provide: ADMIN_AUDIT_EVENT_REPOSITORY,
       useFactory: (registry: ModuleDataSourceRegistry) =>
         new SqlAdminAuditEventRepository(registry, MODULE_NAME),
       inject: [ModuleDataSourceRegistry],
-    },
-    {
-      provide: STATUS_READER,
-      useFactory: (registry: ModuleDataSourceRegistry) =>
-        new SqlModuleStatusReader(registry, MODULE_NAME),
-      inject: [ModuleDataSourceRegistry],
-    },
-    {
-      provide: STATUS_WRITER,
-      useFactory: (registry: ModuleDataSourceRegistry) =>
-        new SqlModuleStatusWriter(registry, MODULE_NAME),
-      inject: [ModuleDataSourceRegistry],
-    },
-    {
-      provide: ADVANCE_STATUS,
-      useFactory: (reader: ModuleStatusReader, writer: ModuleStatusWriter) =>
-        new AdvanceStatusUseCase(reader, writer),
-      inject: [STATUS_READER, STATUS_WRITER],
-    },
-    {
-      provide: GET_MODULE_STATUS,
-      useFactory: (reader: ModuleStatusReader) => new GetModuleStatusQueryHandler(reader),
-      inject: [STATUS_READER],
     },
     {
       provide: LIST_AUDIT_LOG,

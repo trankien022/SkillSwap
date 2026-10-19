@@ -11,13 +11,10 @@ import { ModuleDataSourceRegistry } from '../../shared/messaging/module-registry
 import { PermanentHandlerError } from '../../shared/errors';
 import { createModuleDataSource } from './internal/adapter/out/persistence/data-source';
 import { SCHEMA } from './internal/adapter/out/persistence/schema';
-import { SqlModuleStatusReader } from './internal/adapter/out/persistence/sql-module-status-reader';
-import { SqlModuleStatusWriter } from './internal/adapter/out/persistence/sql-module-status-writer';
 import { SqlClassRepository } from './internal/adapter/out/persistence/sql-class-repository';
 import { SqlBookingRepository } from './internal/adapter/out/persistence/sql-booking-repository';
 import { SqlBookingPaymentRepository } from './internal/adapter/out/persistence/sql-booking-payment-repository';
 import { SqlTeacherTrustProjector } from './internal/adapter/out/persistence/sql-teacher-trust-projector';
-import { StatusController } from './internal/adapter/in/web/status.controller';
 import { ClassesController } from './internal/adapter/in/web/classes.controller';
 import {
   AccountProfileModule,
@@ -67,7 +64,6 @@ import {
   PUBLIC_TEACHER_READER,
   type PublicTeacherReader,
 } from './internal/application/port/out/public-teacher-reader';
-import { AdvanceStatusUseCase } from './internal/application/advance-status.use-case';
 import { CreateClassUseCase } from './internal/application/create-class.use-case';
 import { ProjectTeacherTrustUseCase } from './internal/application/project-teacher-trust.use-case';
 import { BookClassUseCase } from './internal/application/book-class.use-case';
@@ -87,8 +83,6 @@ import { PendingHoldSweeper } from './internal/adapter/in/scheduler/pending-hold
 import { ClassCompletionSweeper } from './internal/adapter/in/scheduler/class-completion.sweeper';
 import { JitsiRoomTokenIssuer } from './internal/adapter/out/jitsi/jitsi-room-token-issuer';
 import { SqlRoomIncidentRecorder } from './internal/adapter/out/persistence/sql-room-incident-recorder';
-import { GET_MODULE_STATUS } from './internal/application/port/in/get-module-status';
-import { ADVANCE_STATUS } from './internal/application/port/in/advance-status';
 import { CREATE_CLASS, type CreateClassPort } from './internal/application/port/in/create-class';
 import { UPDATE_CLASS, type UpdateClassPort } from './internal/application/port/in/update-class';
 import { BOOK_CLASS, type BookClassPort } from './internal/application/port/in/book-class';
@@ -119,8 +113,7 @@ import {
 import {
   ROOM_INCIDENT_RECORDER,
   type RoomIncidentRecorder,
-} from './internal/application/port/out/room-incident-recorder';import { STATUS_READER, type ModuleStatusReader } from './internal/application/port/out/module-status-reader';
-import { STATUS_WRITER, type ModuleStatusWriter } from './internal/application/port/out/module-status-writer';
+} from './internal/application/port/out/room-incident-recorder';
 import { CLASS_REPOSITORY, type ClassRepository } from './internal/application/port/out/class-repository';
 import { BOOKING_REPOSITORY, type BookingRepository } from './internal/application/port/out/booking-repository';
 import { CLOCK, type Clock } from './internal/application/port/out/clock';
@@ -130,7 +123,6 @@ import {
   type TeacherTrustReader,
   type TeacherTrustWriter,
 } from './internal/application/port/out/teacher-trust';
-import { GetModuleStatusQueryHandler } from './internal/application/query/get-module-status.query';
 import { MODULE_NAME } from './internal/domain/module-status';
 
 /** Registers this module's DataSource pool and the FR-005 trust consumers. */
@@ -215,7 +207,6 @@ const systemClock: Clock = { now: () => new Date() };
 @Module({
   imports: [AccountProfileModule],
   controllers: [
-    StatusController,
     ClassesController,
     ClassListController,
     MyBookingsController,
@@ -223,18 +214,6 @@ const systemClock: Clock = { now: () => new Date() };
     ClassDetailController,
   ],
   providers: [
-    {
-      provide: STATUS_READER,
-      useFactory: (registry: ModuleDataSourceRegistry) =>
-        new SqlModuleStatusReader(registry, MODULE_NAME),
-      inject: [ModuleDataSourceRegistry],
-    },
-    {
-      provide: STATUS_WRITER,
-      useFactory: (registry: ModuleDataSourceRegistry) =>
-        new SqlModuleStatusWriter(registry, MODULE_NAME),
-      inject: [ModuleDataSourceRegistry],
-    },
     {
       provide: CLASS_REPOSITORY,
       useFactory: (registry: ModuleDataSourceRegistry) =>
@@ -281,17 +260,6 @@ const systemClock: Clock = { now: () => new Date() };
       useFactory: (registry: ModuleDataSourceRegistry): TeacherTrustWriter =>
         new SqlTeacherTrustProjector(registry, MODULE_NAME),
       inject: [ModuleDataSourceRegistry],
-    },
-    {
-      provide: ADVANCE_STATUS,
-      useFactory: (reader: ModuleStatusReader, writer: ModuleStatusWriter) =>
-        new AdvanceStatusUseCase(reader, writer),
-      inject: [STATUS_READER, STATUS_WRITER],
-    },
-    {
-      provide: GET_MODULE_STATUS,
-      useFactory: (reader: ModuleStatusReader) => new GetModuleStatusQueryHandler(reader),
-      inject: [STATUS_READER],
     },
     {
       provide: CREATE_CLASS,

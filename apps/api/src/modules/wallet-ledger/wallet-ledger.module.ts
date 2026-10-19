@@ -6,17 +6,13 @@ import { EventHandlerRegistry, type BusMessage } from '../../shared/messaging/ev
 import { ModuleDataSourceRegistry } from '../../shared/messaging/module-registry';
 import { createModuleDataSource } from './internal/adapter/out/persistence/data-source';
 import { SCHEMA } from './internal/adapter/out/persistence/schema';
-import { SqlModuleStatusReader } from './internal/adapter/out/persistence/sql-module-status-reader';
-import { SqlModuleStatusWriter } from './internal/adapter/out/persistence/sql-module-status-writer';
 import { SqlWalletRepository } from './internal/adapter/out/persistence/sql-wallet-repository';
 import { SqlWalletReader } from './internal/adapter/out/persistence/sql-wallet-reader';
 import { SqlTopUpIntentRepository } from './internal/adapter/out/persistence/sql-top-up-intent-repository';
 import { SepayPaymentGateway } from './internal/adapter/out/payment/sepay-payment-gateway';
 import { SepayRestOrderClient } from './internal/adapter/out/payment/sepay-rest-order-client';
 import { TopUpReconciliationSweeper } from './internal/adapter/in/scheduler/topup-reconciliation.sweeper';
-import { StatusController } from './internal/adapter/in/web/status.controller';
 import { WalletController } from './internal/adapter/in/web/wallet.controller';
-import { AdvanceStatusUseCase } from './internal/application/advance-status.use-case';
 import { RecordBookingConfirmedUseCase } from './internal/application/record-booking-confirmed.use-case';
 import { RefundCancelledBookingUseCase } from './internal/application/refund-cancelled-booking.use-case';
 import { ReleaseIncomeUseCase } from './internal/application/release-income.use-case';
@@ -28,8 +24,6 @@ import { GetTopUpIntentUseCase } from './internal/application/get-top-up-intent.
 import { GetWalletHistoryQueryHandler } from './internal/application/get-wallet-history.query';
 import { GET_WALLET_HISTORY } from './internal/application/port/in/get-wallet-history';
 import { WALLET_READER, type WalletReader } from './internal/application/port/out/wallet-reader';
-import { GET_MODULE_STATUS } from './internal/application/port/in/get-module-status';
-import { ADVANCE_STATUS } from './internal/application/port/in/advance-status';
 import { INITIATE_TOP_UP } from './internal/application/port/in/initiate-top-up';
 import { HANDLE_TOP_UP_CALLBACK } from './internal/application/port/in/handle-top-up-callback';
 import type { HandleTopUpCallbackPort } from './internal/application/port/in/handle-top-up-callback';
@@ -58,9 +52,6 @@ import {
   SEPAY_ORDER_CLIENT,
   type SepayOrderClient,
 } from './internal/application/port/out/sepay-order-client';
-import { STATUS_READER, type ModuleStatusReader } from './internal/application/port/out/module-status-reader';
-import { STATUS_WRITER, type ModuleStatusWriter } from './internal/application/port/out/module-status-writer';
-import { GetModuleStatusQueryHandler } from './internal/application/query/get-module-status.query';
 import { MODULE_NAME } from './internal/domain/module-status';
 
 /** Registers the wallet DataSource pool and the booking.confirmed consumer. */
@@ -113,31 +104,8 @@ export class WalletLedgerRegistrar implements OnModuleInit {
 }
 
 @Module({
-  controllers: [StatusController, WalletController],
+  controllers: [WalletController],
   providers: [
-    {
-      provide: STATUS_READER,
-      useFactory: (registry: ModuleDataSourceRegistry) =>
-        new SqlModuleStatusReader(registry, MODULE_NAME),
-      inject: [ModuleDataSourceRegistry],
-    },
-    {
-      provide: STATUS_WRITER,
-      useFactory: (registry: ModuleDataSourceRegistry) =>
-        new SqlModuleStatusWriter(registry, MODULE_NAME),
-      inject: [ModuleDataSourceRegistry],
-    },
-    {
-      provide: ADVANCE_STATUS,
-      useFactory: (reader: ModuleStatusReader, writer: ModuleStatusWriter) =>
-        new AdvanceStatusUseCase(reader, writer),
-      inject: [STATUS_READER, STATUS_WRITER],
-    },
-    {
-      provide: GET_MODULE_STATUS,
-      useFactory: (reader: ModuleStatusReader) => new GetModuleStatusQueryHandler(reader),
-      inject: [STATUS_READER],
-    },
     {
       provide: RECORD_BOOKING_CONFIRMED,
       useFactory: (wallets: WalletRepository) => new RecordBookingConfirmedUseCase(wallets),

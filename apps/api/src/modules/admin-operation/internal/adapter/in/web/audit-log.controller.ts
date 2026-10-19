@@ -10,16 +10,13 @@ import {
   ResponseCode,
   ResponseMessage,
 } from '../../../../../../shared/http/response-code.decorator';
-import { AuditLogPageDto, AuditLogQueryDto } from './dto/status.dto';
+import { AuditLogPageDto, AuditLogQueryDto } from './dto/admin-operation.dto';
 
 /**
  * FR-015 / ADR-034: the Admin audit log.
  *
- * A separate controller from `StatusController` because the two are different resources with
- * different audiences — the module-status endpoints describe the module's own lifecycle, while
- * this is the cross-cutting record of privileged actions. Both live under `admin-operation`, and
- * both are `admin`-only: an audit log is only useful if it is not readable by the people it
- * audits.
+ * The cross-cutting record of privileged actions. It is `admin`-only: an audit log is only
+ * useful if it is not readable by the people it audits.
  */
 @Controller('audit-log')
 @ApiTags('admin-operation')

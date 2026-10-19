@@ -3,14 +3,10 @@ import { ApiConfig } from '../../shared/config/api-config';
 import { ModuleDataSourceRegistry } from '../../shared/messaging/module-registry';
 import { createModuleDataSource } from './internal/adapter/out/persistence/data-source';
 import { SCHEMA } from './internal/adapter/out/persistence/schema';
-import { SqlModuleStatusReader } from './internal/adapter/out/persistence/sql-module-status-reader';
-import { SqlModuleStatusWriter } from './internal/adapter/out/persistence/sql-module-status-writer';
 import { SqlVerificationRepository } from './internal/adapter/out/persistence/sql-verification-repository';
 import { SqlVerificationDocumentRepository } from './internal/adapter/out/persistence/sql-verification-document-repository';
 import { S3DocumentStore } from './internal/adapter/out/storage/s3-document-store';
-import { StatusController } from './internal/adapter/in/web/status.controller';
 import { StudentVerificationController } from './internal/adapter/in/web/student-verification.controller';
-import { AdvanceStatusUseCase } from './internal/application/advance-status.use-case';
 import { SubmitStudentVerificationUseCase } from './internal/application/submit-student-verification.use-case';
 import { RequestDocumentUploadUseCase } from './internal/application/request-document-upload.use-case';
 import { DecideStudentVerificationUseCase } from './internal/application/decide-student-verification.use-case';
@@ -22,16 +18,12 @@ import {
   type VerificationSummaryReader,
 } from './api/verification-summary-reader';
 import { SqlVerificationSummaryReader } from './internal/adapter/out/persistence/sql-verification-summary-reader';
-import { GET_MODULE_STATUS } from './internal/application/port/in/get-module-status';
-import { ADVANCE_STATUS } from './internal/application/port/in/advance-status';
 import { SUBMIT_STUDENT_VERIFICATION } from './internal/application/port/in/submit-student-verification';
 import { REQUEST_DOCUMENT_UPLOAD } from './internal/application/port/in/request-document-upload';
 import { DECIDE_STUDENT_VERIFICATION } from './internal/application/port/in/decide-student-verification';
 import { REVOKE_STUDENT_VERIFICATION } from './internal/application/port/in/revoke-student-verification';
 import { GET_MY_VERIFICATION } from './internal/application/port/in/get-my-verification';
 import { LIST_ADMIN_VERIFICATIONS } from './internal/application/port/in/list-admin-verifications';
-import { STATUS_READER, type ModuleStatusReader } from './internal/application/port/out/module-status-reader';
-import { STATUS_WRITER, type ModuleStatusWriter } from './internal/application/port/out/module-status-writer';
 import {
   VERIFICATION_REPOSITORY,
   type VerificationRepository,
@@ -42,7 +34,6 @@ import {
 } from './internal/application/port/out/verification-document-repository';
 import { DOCUMENT_STORE, type DocumentStore } from './internal/application/port/out/document-store';
 import { CLOCK, type Clock } from './internal/application/port/out/clock';
-import { GetModuleStatusQueryHandler } from './internal/application/query/get-module-status.query';
 import { MODULE_NAME } from './internal/domain/module-status';
 
 /** Registers this module's DataSource pool on the shared registry (ARCHITECTURE.md §5). */
@@ -61,31 +52,8 @@ export class StudentVerificationRegistrar implements OnModuleInit {
 }
 
 @Module({
-  controllers: [StatusController, StudentVerificationController],
+  controllers: [StudentVerificationController],
   providers: [
-    {
-      provide: STATUS_READER,
-      useFactory: (registry: ModuleDataSourceRegistry) =>
-        new SqlModuleStatusReader(registry, MODULE_NAME),
-      inject: [ModuleDataSourceRegistry],
-    },
-    {
-      provide: STATUS_WRITER,
-      useFactory: (registry: ModuleDataSourceRegistry) =>
-        new SqlModuleStatusWriter(registry, MODULE_NAME),
-      inject: [ModuleDataSourceRegistry],
-    },
-    {
-      provide: ADVANCE_STATUS,
-      useFactory: (reader: ModuleStatusReader, writer: ModuleStatusWriter) =>
-        new AdvanceStatusUseCase(reader, writer),
-      inject: [STATUS_READER, STATUS_WRITER],
-    },
-    {
-      provide: GET_MODULE_STATUS,
-      useFactory: (reader: ModuleStatusReader) => new GetModuleStatusQueryHandler(reader),
-      inject: [STATUS_READER],
-    },
     { provide: CLOCK, useFactory: (): Clock => ({ now: () => new Date() }) },
     {
       provide: VERIFICATION_REPOSITORY,

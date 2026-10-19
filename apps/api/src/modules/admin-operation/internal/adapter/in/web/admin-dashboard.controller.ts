@@ -10,7 +10,7 @@ import {
   ResponseCode,
   ResponseMessage,
 } from '../../../../../../shared/http/response-code.decorator';
-import { AdminDashboardDto } from './dto/status.dto';
+import { AdminDashboardDto } from './dto/admin-operation.dto';
 
 /**
  * FR-015 / ADR-034 §7: the Administrator's operations dashboard.

@@ -6,45 +6,9 @@
 
 Proving a learner is a real student (FR-002/FR-019, ADR-023/ADR-025). A submission is reviewed by an admin; an approved verification is what unlocks teaching (via the publish gate).
 
-8 endpoints.
+6 endpoints.
 
 Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
-
-### `GET /api/student-verification/status`
-
-**Read Student verification module status**
-
-- Auth: Public
-- Response: `ModuleStatusDto`
-
-**Response — `ModuleStatusDto`** (inside the `data` envelope key)
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `module` | string | yes | min 1 chars |
-| `state` | string | yes | min 1 chars |
-| `updatedAt` | string | yes | date-time; nullable |
-
-### `POST /api/student-verification/status/advance`
-
-**Advance Student verification module status**
-
-- Auth: Public
-- Request body: `AdvanceStatusDto`
-- Response: `AdvanceStatusResultDto`
-
-**Request body — `AdvanceStatusDto`**
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `toState` | string | yes | min 1 chars |
-
-**Response — `AdvanceStatusResultDto`** (inside the `data` envelope key)
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `previousState` | string | yes | min 1 chars |
-| `newState` | string | yes | min 1 chars |
 
 ### `GET /api/student-verifications`
 
