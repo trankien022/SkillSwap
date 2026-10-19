@@ -25,6 +25,7 @@ Register or rotate a push token for the caller (app launch, token refresh). Idem
 Deactivate an owned device on sign-out. Answers 204 No Content; a foreign or unknown id is 404.
 
 - Auth: Public
+- Response: `no content`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|

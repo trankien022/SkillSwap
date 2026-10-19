@@ -1,6 +1,6 @@
-import { Body, Controller, Delete, Inject, Param, Post, Req, UnauthorizedException } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { deviceSubscriptionSchema, deleteDeviceResultSchema, upsertDeviceSchema, type UpsertDeviceInput } from '@skillswap/contracts';
+import { Body, Controller, Delete, HttpCode, HttpStatus, Inject, Param, Post, Req, UnauthorizedException } from '@nestjs/common';
+import { ApiNoContentResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { deviceSubscriptionSchema, upsertDeviceSchema, type UpsertDeviceInput } from '@skillswap/contracts';
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
 import { ZodValidationPipe } from '../../../../../../shared/http/zod-validation.pipe';
 import { NOTIFICATION_MANAGEMENT, type NotificationManagementPort } from '../../../application/port/notification-management';
@@ -22,9 +22,10 @@ export class NotificationDevicesController {
     return deviceSubscriptionSchema.parse(await this.notifications.upsertDevice(owner(request), body));
   }
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Deactivate an owned notification device (Route 30)' })
-  @ApiOkResponse({ description: 'Device unregistration result' })
-  async remove(@Param('id') id: string, @Req() request: RequestWithIdentity) {
-    return deleteDeviceResultSchema.parse(await this.notifications.deleteDevice(owner(request), id));
+  @ApiNoContentResponse({ description: 'Device deactivated; no body' })
+  async remove(@Param('id') id: string, @Req() request: RequestWithIdentity): Promise<void> {
+    await this.notifications.deleteDevice(owner(request), id);
   }
 }

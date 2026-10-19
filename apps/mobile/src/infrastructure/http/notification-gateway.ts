@@ -1,4 +1,4 @@
-import { deviceSubscriptionSchema, deleteDeviceResultSchema, notificationsPageSchema, upsertDeviceSchema, type ListNotificationsQuery, type UpsertDeviceInput } from '@skillswap/contracts';
+import { deviceSubscriptionSchema, notificationsPageSchema, upsertDeviceSchema, type ListNotificationsQuery, type UpsertDeviceInput } from '@skillswap/contracts';
 import type { GatewayClient } from './gateway-client';
 
 export class NotificationGateway {
@@ -15,7 +15,9 @@ export class NotificationGateway {
     const body = upsertDeviceSchema.parse(input);
     return deviceSubscriptionSchema.parse(await this.gateway.authenticatedRequest<unknown>('/notification-devices', { method: 'POST', body }));
   }
-  async removeDevice(id: string) {
-    return deleteDeviceResultSchema.parse(await this.gateway.authenticatedRequest<unknown>(`/notification-devices/${encodeURIComponent(id)}`, { method: 'DELETE' }));
+  async removeDevice(id: string): Promise<void> {
+    // `DELETE /notification-devices/:id` answers 204 with no body; the gateway
+    // client already resolves a 204 to `undefined`, so there is nothing to parse.
+    await this.gateway.authenticatedRequest<unknown>(`/notification-devices/${encodeURIComponent(id)}`, { method: 'DELETE' });
   }
 }

@@ -11,7 +11,6 @@ export const notificationsPageSchema = z.object({ items: z.array(notificationIte
 export const listNotificationsQuerySchema = z.object({ unreadOnly: z.coerce.boolean().optional(), limit: z.coerce.number().int().min(1).max(50).default(20), cursor: z.string().min(1).optional() });
 export const upsertDeviceSchema = z.object({ token: z.string().min(1), platform: z.enum(['ios','android','web']), installationId: z.string().min(1).max(128), locale: z.enum(['vi', 'en']).optional(), appVersion: z.string().max(32).optional() });
 export const deviceSubscriptionSchema = z.object({ id: z.string().min(1), installationId: z.string().min(1), platform: z.enum(['ios','android','web']), isActive: z.boolean(), createdAt: z.string().datetime({ offset: true }) });
-export const deleteDeviceResultSchema = z.object({ success: z.literal(true) });
 export type NotificationItem = z.infer<typeof notificationItemSchema>;
 export type NotificationsPage = z.infer<typeof notificationsPageSchema>;
 export type ListNotificationsQuery = z.infer<typeof listNotificationsQuerySchema>;

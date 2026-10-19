@@ -25,6 +25,24 @@ class UnknownStateError extends Error {
   }
 }
 
+/** Mirrors `BookingNotAllowedError`: the envelope code must be the reason, not the name. */
+class BookingNotAllowedError extends Error {
+  constructor(
+    readonly reason: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'BookingNotAllowedError';
+  }
+}
+
+class ClassNotFoundError extends Error {
+  constructor(classId: string) {
+    super(`Class ${classId} was not found`);
+    this.name = 'ClassNotFoundError';
+  }
+}
+
 interface Captured extends HttpResponseLike {
   statusCode?: number;
   body?: unknown;
@@ -85,6 +103,38 @@ describe('DomainErrorFilter', () => {
 
   it('maps ModuleNotInitialisedError to 500', () => {
     expect(run(new ModuleNotInitialisedError('schedule')).statusCode).toBe(500);
+  });
+
+  it.each([
+    'class_not_bookable',
+    'class_started',
+    'booking_window_closed',
+    'class_full',
+    'duplicate_booking',
+    'self_booking',
+    'invalid_duration',
+  ])('reports the booking rejection reason %s as the envelope code (409)', (reason) => {
+    const error = new BookingNotAllowedError(reason, 'rejected');
+    const captured = run(error);
+    expect(captured.statusCode).toBe(409);
+    expect(captured.body).toMatchObject({
+      success: false,
+      code: reason,
+      message: 'rejected',
+      data: null,
+      errors: [{ code: reason, message: 'rejected' }],
+    });
+  });
+
+  it('maps ClassNotFoundError to 404 with a class_not_found code', () => {
+    const captured = run(new ClassNotFoundError('class-1'));
+    expect(captured.statusCode).toBe(404);
+    expect(captured.body).toMatchObject({
+      success: false,
+      code: 'class_not_found',
+      message: 'Class class-1 was not found',
+      data: null,
+    });
   });
 
   it('wraps an HttpException string payload (validation) in the failure envelope', () => {

@@ -23,6 +23,24 @@ export interface ErrorEnvelope {
   errors: ErrorItem[];
 }
 
+/**
+ * A domain error that carries the stable machine-readable code clients branch on.
+ * `RESTful-CONVENTIONS.md` §8 requires that code to be a value, not a class name.
+ */
+interface ReasonBearingError {
+  reason: unknown;
+}
+
+/**
+ * Errors whose envelope `code` is a domain value rather than the class name.
+ * `BookingNotAllowedError` carries one of `BOOKING_REJECTION_REASONS`
+ * (`class_full`, `duplicate_booking`, …); `ClassNotFoundError` reports
+ * `class_not_found` so a missing class is distinguishable from a missing route.
+ */
+const NAME_TO_CODE: Record<string, string> = {
+  ClassNotFoundError: 'class_not_found',
+};
+
 const NAME_TO_STATUS: Record<string, number> = {
   StatusConflictError: 409,
   StatusTransitionError: 409,
@@ -141,13 +159,23 @@ export class DomainErrorFilter implements ExceptionFilter {
     if (name !== undefined && name in NAME_TO_STATUS) {
       const statusCode = NAME_TO_STATUS[name];
       const message = exception instanceof Error ? exception.message : name;
-      return { statusCode, body: this.failure(name, message) };
+      const code = this.domainCode(name, exception) ?? name;
+      return { statusCode, body: this.failure(code, message) };
     }
 
     return {
       statusCode: 500,
       body: this.failure(INTERNAL_ERROR_CODE, 'Internal server error'),
     };
+  }
+
+  /** The stable code a domain error declares, if it declares one at all. */
+  private domainCode(name: string, exception: unknown): string | null {
+    if (name === 'BookingNotAllowedError') {
+      const reason = (exception as Partial<ReasonBearingError> | null)?.reason;
+      return typeof reason === 'string' && reason.length > 0 ? reason : null;
+    }
+    return NAME_TO_CODE[name] ?? null;
   }
 
   private fromHttpException(statusCode: number, payload: string | object): ErrorEnvelope {

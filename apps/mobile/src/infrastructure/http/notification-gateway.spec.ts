@@ -8,7 +8,7 @@ describe('NotificationGateway', () => {
     const fetchMock = jest.fn()
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ success: true, code: 'OK', message: 'OK', data: { items: [], nextCursor: null, unreadCount: 0 }, errors: [] }) })
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ success: true, code: 'OK', message: 'OK', data: { id: 'dev1', installationId: 'install1', platform: 'ios', isActive: true, createdAt: '2026-10-20T10:00:00.000Z' }, errors: [] }) })
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ success: true, code: 'OK', message: 'OK', data: { success: true }, errors: [] }) });
+      .mockResolvedValueOnce({ ok: true, status: 204, json: async () => { throw new Error('no body'); } });
     const client = new GatewayClient(config, { fetchFn: fetchMock as unknown as typeof fetch });
     client.setTokenProvider({ getAccessToken: async () => 'access', refreshSession: async () => ({ tokens: { accessToken: 'next' } }) });
     const gateway = new NotificationGateway(client);
@@ -20,5 +20,15 @@ describe('NotificationGateway', () => {
       ['http://localhost:4000/api/notification-devices', 'POST'],
       ['http://localhost:4000/api/notification-devices/dev%2F1', 'DELETE'],
     ]);
+  });
+
+  it('treats a 204 device deletion as complete without parsing a body', async () => {
+    const body = jest.fn();
+    const fetchMock = jest.fn().mockResolvedValueOnce({ ok: true, status: 204, json: body });
+    const client = new GatewayClient(config, { fetchFn: fetchMock as unknown as typeof fetch });
+    client.setTokenProvider({ getAccessToken: async () => 'access', refreshSession: async () => ({ tokens: { accessToken: 'next' } }) });
+    const gateway = new NotificationGateway(client);
+    await expect(gateway.removeDevice('dev1')).resolves.toBeUndefined();
+    expect(body).not.toHaveBeenCalled();
   });
 });
