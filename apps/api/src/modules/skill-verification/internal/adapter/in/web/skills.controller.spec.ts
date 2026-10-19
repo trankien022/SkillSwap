@@ -84,7 +84,7 @@ describe('SkillsController', () => {
 
     it('decodes incoming base64url cursor, calls port, and encodes outgoing nextCursor', async () => {
       const incomingCursor = encodeSkillCursor(['Technology', 'Java', 'sk-0']);
-      const query = { category: 'Technology', keyword: 'Type', limit: 10, cursor: incomingCursor };
+      const query = { category: 'Technology', q: 'Type', limit: 10, cursor: incomingCursor };
 
       const result = await controller.list(query, authRequest);
 
@@ -141,22 +141,36 @@ describe('SkillsController', () => {
   describe('Query pipe validation', () => {
     const pipe = new ZodValidationPipe(listSkillsQuerySchema);
 
-    it('coerces and defaults valid query with keyword', () => {
-      const parsed = pipe.transform({ limit: '25', keyword: 'React' });
+    it('coerces and defaults valid query with q', () => {
+      const parsed = pipe.transform({ limit: '25', q: 'React' });
       expect(parsed).toEqual({
         limit: 25,
+        q: 'React',
+      });
+    });
+
+    it('accepts the legacy keyword alias alongside q', () => {
+      expect(pipe.transform({ keyword: 'React' })).toEqual({
         keyword: 'React',
+        limit: 50,
+      });
+      expect(pipe.transform({ q: 'React', keyword: 'Legacy' })).toEqual({
+        q: 'React',
+        keyword: 'Legacy',
+        limit: 50,
       });
     });
 
     it('rejects limit exceeding maximum 100 or below 1', () => {
       expect(() => pipe.transform({ limit: '150' })).toThrow(BadRequestException);
+      expect(() => pipe.transform({ limit: '101' })).toThrow(BadRequestException);
       expect(() => pipe.transform({ limit: '0' })).toThrow(BadRequestException);
       expect(() => pipe.transform({ limit: '-10' })).toThrow(BadRequestException);
     });
 
-    it('rejects empty category string or empty keyword string', () => {
+    it('rejects empty category string or empty search string', () => {
       expect(() => pipe.transform({ category: '' })).toThrow(BadRequestException);
+      expect(() => pipe.transform({ q: '' })).toThrow(BadRequestException);
       expect(() => pipe.transform({ keyword: '' })).toThrow(BadRequestException);
     });
 
@@ -164,11 +178,11 @@ describe('SkillsController', () => {
       const validCursor = encodeSkillCursor(['Design', 'Figma', 'sk-figma']);
       const parsed = pipe.transform({
         cursor: validCursor,
-        keyword: 'design',
+        q: 'design',
       });
       expect(parsed).toEqual({
         cursor: validCursor,
-        keyword: 'design',
+        q: 'design',
         limit: 50,
       });
     });

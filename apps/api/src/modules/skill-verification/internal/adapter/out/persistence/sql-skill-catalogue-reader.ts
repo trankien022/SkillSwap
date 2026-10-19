@@ -1,5 +1,6 @@
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { qualified } from '../../../../../../shared/sql/ident';
+import { MAX_PAGE_LIMIT } from '@skillswap/contracts';
 import type { SkillCursorTuple } from '../../../application/port/in/list-skills';
 import type {
   FindSkillsParams,
@@ -32,7 +33,7 @@ export class SqlSkillCatalogueReader implements SkillCatalogueReader {
 
   async findSkills(params: FindSkillsParams): Promise<SkillCatalogueReaderResult> {
     const source = this.registry.get(this.moduleName);
-    const limit = Math.max(1, Math.min(params.limit, 100));
+    const limit = Math.max(1, Math.min(params.limit, MAX_PAGE_LIMIT));
 
     const conditions: string[] = ['"active" = true'];
     const queryParams: unknown[] = [];
@@ -87,5 +88,28 @@ export class SqlSkillCatalogueReader implements SkillCatalogueReader {
       hasMore && last !== undefined ? [last.category, last.name, last.id] : null;
 
     return { items, nextCursor };
+  }
+
+  async findSkillsByIds(ids: readonly string[]): Promise<readonly SkillCatalogueRecord[]> {
+    const unique = [...new Set(ids)];
+    if (unique.length === 0) {
+      return [];
+    }
+
+    const source = this.registry.get(this.moduleName);
+    const sql = `
+      SELECT "id", "name", "category", "active"
+        FROM ${this.table}
+       WHERE "active" = true
+         AND "id" = ANY($1::text[])
+    `;
+
+    const rows = (await source.query(sql, [unique])) as SkillRow[];
+    return rows.map((r) => ({
+      id: String(r.id),
+      name: r.name,
+      category: r.category,
+      active: r.active,
+    }));
   }
 }

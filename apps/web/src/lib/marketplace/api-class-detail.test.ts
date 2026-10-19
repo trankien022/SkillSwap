@@ -54,12 +54,35 @@ describe('ClassDetailApiGateway', () => {
     expect(webView.teacherStats).toBeNull();
     expect(webView.schoolCode).toBeNull();
     expect(webView.schoolName).toBeNull();
-    expect(webView.skillName).toBeNull();
-    expect(webView.skillCategory).toBeNull();
-    expect(webView.level).toBeNull();
     expect(webView.verified).toBeNull();
     // The reviewer's school is not returned, so none is claimed.
     expect(webView.reviews[0]?.schoolName).toBeNull();
+  });
+
+  it('renders the skill the API resolved in `skills`, and its absence as "not provided"', () => {
+    const withSkills = mapContractDetailToWeb({
+      ...sampleContractDetail,
+      skills: [
+        {
+          id: 'skill-ds-1',
+          name: 'Data structures',
+          category: 'Programming',
+          levels: ['beginner', 'intermediate', 'advanced'],
+        },
+      ],
+    });
+    expect(withSkills.skillName).toBe('Data structures');
+    expect(withSkills.skillCategory).toBe('programming');
+    // The lowest advertised level is shown, exactly as the list page does.
+    expect(withSkills.level).toBe('beginner');
+
+    // `skills` is optional: a failed catalogue read leaves the field off the
+    // response, and the page says so instead of guessing a skill.
+    expect(sampleContractDetail.skills).toBeUndefined();
+    const withoutSkills = mapContractDetailToWeb(sampleContractDetail);
+    expect(withoutSkills.skillName).toBeNull();
+    expect(withoutSkills.skillCategory).toBeNull();
+    expect(withoutSkills.level).toBeNull();
   });
 
   it('keeps a real rating and does not coerce an absent one to 5.0', () => {

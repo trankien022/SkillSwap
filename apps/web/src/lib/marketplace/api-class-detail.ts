@@ -1,5 +1,6 @@
 import { callApi, unwrapEnvelope } from '../api-client';
 import type { ClassDetailView as ContractClassDetailView } from '@skillswap/contracts';
+import { toSkillCategory, toSkillLevel } from './api-mapping';
 import { MockClassDetailGateway } from './mock-class-detail';
 import type { ClassDetailView } from './types';
 
@@ -9,10 +10,15 @@ import type { ClassDetailView } from './types';
  *
  * The API answers with `teacher { displayName, averageRating, ratingsCount }`,
  * `description`, `startsAt`, `durationMinutes`, `priceCredits`, `capacity`,
- * `availableSeats`, `state`, `skillIds` and `recentRatings` — nothing else.
+ * `availableSeats`, `state`, `skillIds`, `skills` and `recentRatings` — nothing else.
+ *
+ * `skills` is the catalogue join the API performs, so the page no longer has to fetch
+ * the whole catalogue (or scan the class list) to learn what the class teaches. It is
+ * optional on the contract: when the catalogue read failed the field is absent, and
+ * skill name/category/level fall back to their "not provided" state.
  *
  * Everything the richer web layout can also show but the API does **not**
- * provide (school, skill category, level, syllabus, prerequisites, teacher bio,
+ * provide (school, syllabus, prerequisites, teacher bio,
  * teacher stats, credentials) is therefore left genuinely empty or null rather
  * than invented. An earlier version of this function filled them with
  * plausible-looking constants — `schoolCode: 'bk'`, `ratingAvg ?? 5.0`,
@@ -21,6 +27,13 @@ import type { ClassDetailView } from './types';
  * visible; a fabricated 5.0 rating is not.
  */
 export function mapContractDetailToWeb(detail: ContractClassDetailView): ClassDetailView {
+  /**
+   * The class's first skill, resolved by the API. Absent when the catalogue read
+   * failed, so `skillName`/`skillCategory`/`level` fall back to their "not provided"
+   * state rather than to a guess.
+   */
+  const skill = detail.skills?.[0];
+
   return {
     id: detail.id,
     teacherId: detail.teacher.id,
@@ -34,9 +47,9 @@ export function mapContractDetailToWeb(detail: ContractClassDetailView): ClassDe
     // "not provided" state rather than a placeholder that reads as fact.
     schoolCode: null,
     schoolName: null,
-    skillName: null,
-    skillCategory: null,
-    level: null,
+    skillName: skill?.name ?? null,
+    skillCategory: skill === undefined ? null : toSkillCategory(skill.category),
+    level: skill === undefined ? null : toSkillLevel({ levels: skill.levels }),
     // Derived only from data the API actually returns.
     format: detail.capacity <= 1 ? 'one-on-one' : 'group-2-4',
     // `averageRating` is nullable: a teacher with no ratings has no average, and

@@ -4,9 +4,9 @@
 
 ## What it is for
 
-Admin operations module lifecycle probe.
+Administrator oversight (FR-015, ADR-034). The append-only audit log plus the operations dashboard aggregate over the student-verification and Verifier queues.
 
-4 endpoints.
+2 endpoints.
 
 Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
 
@@ -61,42 +61,6 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 | `traceId` | string | yes | min 1 chars; nullable |
 | `metadata` | object | yes | nullable |
 | `sourceEventId` | string | yes | min 1 chars; nullable |
-
-### `GET /api/admin-operation/status`
-
-**Read Admin operation module status**
-
-- Auth: Public
-- Response: `ModuleStatusDto`
-
-**Response — `ModuleStatusDto`** (inside the `data` envelope key)
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `module` | string | yes | min 1 chars |
-| `state` | string | yes | min 1 chars |
-| `updatedAt` | string | yes | date-time; nullable |
-
-### `POST /api/admin-operation/status/advance`
-
-**Advance Admin operation module status**
-
-- Auth: Public
-- Request body: `AdvanceStatusDto`
-- Response: `AdvanceStatusResultDto`
-
-**Request body — `AdvanceStatusDto`**
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `toState` | string | yes | min 1 chars |
-
-**Response — `AdvanceStatusResultDto`** (inside the `data` envelope key)
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `previousState` | string | yes | min 1 chars |
-| `newState` | string | yes | min 1 chars |
 
 ### `GET /api/audit-log`
 

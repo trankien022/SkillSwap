@@ -14,7 +14,47 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 
 **List classes for marketplace or own teaching (FR-005, FR-006 / Route 13)**
 
-- Auth: Public
+- Auth: 🔒 Bearer token required
+- Response: `ClassListPageDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `cursor` | query | string | no | Opaque cursor from the previous `nextCursor` |
+| `limit` | query | string | no | Page size, 1–100 (default 20) |
+| `state` | query | string | no | Lifecycle state of the class |
+| `teacherId` | query | string | no | A teacher id, or `me` for the caller own classes |
+| `endDate` | query | string | no | ISO-8601 upper bound on `startsAt` |
+| `startDate` | query | string | no | ISO-8601 lower bound on `startsAt` |
+| `skillId` | query | string | no | Only classes teaching this skill id |
+| `keyword` | query | string | no | Deprecated alias for `q`; removed after one release |
+| `q` | query | string | no | Free-text search over the class description (canonical search parameter) |
+
+**Response — `ClassListPageDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `items` | object[] | yes |  |
+| `nextCursor` | string | yes | nullable |
+| `totalActiveTeachingCount` | integer | no | ≥ 0 |
+
+**`items`[]** — ClassListPageDto.items fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `teacherId` | string | yes | min 1 chars |
+| `teacherDisplayName` | string | yes | min 1 chars |
+| `skillIds` | string[] | yes |  |
+| `description` | string | yes | min 1 chars |
+| `startsAt` | string | yes | date-time |
+| `durationMinutes` | integer | yes |  |
+| `priceCredits` | integer | yes | > 0 |
+| `capacity` | integer | yes | > 0 |
+| `confirmedBookingsCount` | integer | yes | ≥ 0 |
+| `availableSeats` | integer | yes | ≥ 0 |
+| `state` | enum | yes | one of `draft`, `published`, `full`, `in_progress`, `completed`, `cancelled` |
+| `averageRating` | number | yes | ≥ 0; ≤ 5; nullable |
+| `ratingsCount` | integer | yes | ≥ 0 |
 
 ### `POST /api/classes`
 
@@ -53,11 +93,67 @@ Publish a new class (FR-005). Requires the teacher to be a verified student appr
 
 **Get class detail (FR-005, FR-006, FR-007 / Route 14)**
 
-- Auth: Public
+- Auth: 🔒 Bearer token required
+- Response: `ClassDetailViewDto`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
-| `id` | path | string | yes |  |
+| `id` | path | string | yes | The class id |
+
+**Response — `ClassDetailViewDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `teacher` | object | yes |  |
+| `skillIds` | string[] | yes |  |
+| `skills` | object[] | no |  |
+| `description` | string | yes | min 1 chars |
+| `startsAt` | string | yes | date-time |
+| `durationMinutes` | integer | yes |  |
+| `priceCredits` | integer | yes | > 0 |
+| `capacity` | integer | yes | > 0 |
+| `availableSeats` | integer | yes | ≥ 0 |
+| `state` | enum | yes | one of `draft`, `published`, `full`, `in_progress`, `completed`, `cancelled` |
+| `canBook` | boolean | yes |  |
+| `recentRatings` | object[] | yes |  |
+| `ownBooking` | object | no | nullable |
+
+**`teacher`** — ClassDetailViewDto.teacher fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `displayName` | string | yes | min 1 chars |
+| `averageRating` | number | yes | ≥ 0; ≤ 5; nullable |
+| `ratingsCount` | integer | yes | ≥ 0 |
+
+**`skills`[]** — ClassDetailViewDto.skills fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `name` | string | yes | min 1 chars |
+| `category` | string | yes | min 1 chars |
+| `levels` | string[] | yes |  |
+
+**`recentRatings`[]** — ClassDetailViewDto.recentRatings fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `learnerDisplayName` | string | yes | min 1 chars |
+| `stars` | integer | yes | ≥ 1; ≤ 5 |
+| `comment` | string | yes | min 1 chars |
+| `createdAt` | string | yes | date-time |
+
+**`ownBooking`** — ClassDetailViewDto.ownBooking fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `bookingId` | string | yes | min 1 chars |
+| `state` | enum | yes | one of `pending`, `confirmed`, `completed`, `cancelled`, `disputed` |
+| `expiresAt` | string | yes | date-time; nullable |
 
 ### `PATCH /api/classes/{id}`
 
@@ -247,11 +343,23 @@ Mark that the teacher never joined, cancelling and refunding the booking (AC-024
 
 **Submit one rating for an eligible completed class (FR-013 / Route 27)**
 
-- Auth: Public
+- Auth: 🔒 Bearer token required
+- Response: `RatingViewDto`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
-| `bookingId` | path | string | yes |  |
+| `bookingId` | path | string | yes | The booking being rated |
+
+**Response — `RatingViewDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `bookingId` | string | yes | min 1 chars |
+| `classId` | string | yes | min 1 chars |
+| `stars` | integer | yes | ≥ 1; ≤ 5 |
+| `comment` | string | yes | min 1 chars |
+| `createdAt` | string | yes | date-time |
 
 ### `POST /api/classes/bookings/{bookingId}/room-access`
 
@@ -286,4 +394,47 @@ Issue a short-lived Jitsi room token for a party to the booking (FR-011). Use wh
 
 **Get learner bookings and exact upcoming count (FR-007, FR-009, FR-011, FR-020 / Route 22)**
 
-- Auth: Public
+- Auth: 🔒 Bearer token required
+- Response: `MyBookingsPageDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `cursor` | query | string | no | Opaque cursor from the previous `nextCursor` |
+| `limit` | query | string | no | Page size, 1–100 (default 20) |
+| `upcoming` | query | string | no | `true` for upcoming only, `false` for the full history, omitted for all |
+| `state` | query | string | no | Only bookings in this state |
+
+**Response — `MyBookingsPageDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `items` | object[] | yes |  |
+| `nextCursor` | string | yes | nullable |
+| `totalUpcomingCount` | integer | yes | ≥ 0 |
+
+**`items`[]** — MyBookingsPageDto.items fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `bookingId` | string | yes | min 1 chars |
+| `classId` | string | yes | min 1 chars |
+| `state` | enum | yes | one of `pending`, `confirmed`, `completed`, `cancelled`, `disputed` |
+| `priceCredits` | integer | yes | > 0 |
+| `createdAt` | string | yes | date-time |
+| `expiresAt` | string | yes | date-time; nullable |
+| `classSummary` | object | yes |  |
+| `roomAccessEligible` | boolean | yes |  |
+| `ratingEligible` | boolean | yes |  |
+| `hasRated` | boolean | yes |  |
+
+**`classSummary`** — MyBookingsPageDto.items.classSummary fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `description` | string | yes | min 1 chars |
+| `skillIds` | string[] | yes |  |
+| `startsAt` | string | yes | date-time |
+| `durationMinutes` | integer | yes |  |
+| `teacherId` | string | yes | min 1 chars |
+| `teacherDisplayName` | string | yes | min 1 chars |
+| `classState` | enum | yes | one of `draft`, `published`, `full`, `in_progress`, `completed`, `cancelled` |

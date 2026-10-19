@@ -6,7 +6,7 @@
 
 Proving a specific skill at a level (FR-003/FR-004/FR-018, ADR-026/ADR-027/ADR-028). Evidence is submitted, claimed by a Verifier with matching expertise, then approved or rejected; the decision history is append-only.
 
-11 endpoints.
+9 endpoints.
 
 Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
 
@@ -225,47 +225,36 @@ Read every version and its audit trail (FR-018).
 | `approvedLevel` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert`; nullable |
 | `reason` | string | yes | min 1 chars; nullable |
 
-### `GET /api/skill-verification/status`
-
-**Read Skill verification module status**
-
-- Auth: Public
-- Response: `ModuleStatusDto`
-
-**Response — `ModuleStatusDto`** (inside the `data` envelope key)
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `module` | string | yes | min 1 chars |
-| `state` | string | yes | min 1 chars |
-| `updatedAt` | string | yes | date-time; nullable |
-
-### `POST /api/skill-verification/status/advance`
-
-**Advance Skill verification module status**
-
-- Auth: Public
-- Request body: `AdvanceStatusDto`
-- Response: `AdvanceStatusResultDto`
-
-**Request body — `AdvanceStatusDto`**
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `toState` | string | yes | min 1 chars |
-
-**Response — `AdvanceStatusResultDto`** (inside the `data` envelope key)
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `previousState` | string | yes | min 1 chars |
-| `newState` | string | yes | min 1 chars |
-
 ### `GET /api/skills`
 
 **List available skills catalogue (mobile / T12)**
 
-- Auth: Public
+- Auth: 🔒 Bearer token required
+- Response: `SkillCataloguePageDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `cursor` | query | string | no | Opaque cursor from the previous `nextCursor` |
+| `limit` | query | string | no | Page size, 1–100 (default 50) |
+| `category` | query | string | no | Only skills in this category |
+| `keyword` | query | string | no | Deprecated alias for `q`; removed after one release |
+| `q` | query | string | no | Free-text search over skill name and category (canonical search parameter) |
+
+**Response — `SkillCataloguePageDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `items` | object[] | yes |  |
+| `nextCursor` | string | yes | nullable |
+
+**`items`[]** — SkillCataloguePageDto.items fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `name` | string | yes | min 1 chars |
+| `category` | string | yes | min 1 chars |
+| `levels` | enum[] | yes |  |
 
 ### `POST /api/verifiers/{accountId}/status`
 

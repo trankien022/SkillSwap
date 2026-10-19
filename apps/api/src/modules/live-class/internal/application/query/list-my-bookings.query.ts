@@ -4,6 +4,7 @@ import type {
   ListMyBookingsQuery,
   MyBookingsPageDto,
 } from '../port/in/list-my-bookings';
+import { MAX_PAGE_LIMIT } from '@skillswap/contracts';
 import type {
   MyBookingsReader,
 } from '../port/out/my-bookings-reader';
@@ -29,7 +30,7 @@ export class ListMyBookingsQueryHandler implements ListMyBookingsPort {
 
   async execute(query: ListMyBookingsQuery): Promise<MyBookingsPageDto> {
     const now = this.clock.now();
-    const limit = Math.max(1, Math.min(query.limit ?? 20, 50));
+    const limit = Math.max(1, Math.min(query.limit ?? 20, MAX_PAGE_LIMIT));
 
     let parsedCursor: readonly [Date, string] | undefined;
     if (query.cursor) {

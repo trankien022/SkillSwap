@@ -3,8 +3,6 @@ import {
   adminDashboardSchema,
   adminVerificationQuerySchema,
   adminVerifierQueueQuerySchema,
-  advanceStatusResultSchema,
-  advanceStatusSchema,
   apiEnvelopeSchema,
   apiErrorItemSchema,
   apiErrorSchema,
@@ -39,7 +37,6 @@ import {
   loginSchema,
   markTeacherNoShowResultSchema,
   meResponseSchema,
-  moduleStatusSchema,
   pageMetaSchema,
   pagedSchema,
   paginationQuerySchema,
@@ -81,56 +78,6 @@ import {
   walletHistoryQuerySchema,
 } from './index';
 import { z } from 'zod';
-
-describe('advanceStatusSchema', () => {
-  it('accepts a target state', () => {
-    expect(advanceStatusSchema.parse({ toState: 'reviewing' })).toEqual({
-      toState: 'reviewing',
-    });
-  });
-
-  it('rejects an empty target state', () => {
-    expect(() => advanceStatusSchema.parse({ toState: '' })).toThrow();
-  });
-
-  it('rejects a missing target state', () => {
-    expect(() => advanceStatusSchema.parse({})).toThrow();
-  });
-});
-
-describe('moduleStatusSchema', () => {
-  it('accepts a status with a timestamp', () => {
-    const parsed = moduleStatusSchema.parse({
-      module: 'admin-operation',
-      state: 'open',
-      updatedAt: '2026-10-04T00:00:00.000Z',
-    });
-    expect(parsed.module).toBe('admin-operation');
-  });
-
-  it('accepts a null timestamp', () => {
-    expect(moduleStatusSchema.parse({ module: 'wallet-ledger', state: 'active', updatedAt: null })).toEqual({
-      module: 'wallet-ledger',
-      state: 'active',
-      updatedAt: null,
-    });
-  });
-
-  it('rejects a malformed timestamp', () => {
-    expect(() =>
-      moduleStatusSchema.parse({ module: 'schedule', state: 'open', updatedAt: 'yesterday' }),
-    ).toThrow();
-  });
-});
-
-describe('advanceStatusResultSchema', () => {
-  it('round-trips previous and new state', () => {
-    expect(advanceStatusResultSchema.parse({ previousState: 'draft', newState: 'submitted' })).toEqual({
-      previousState: 'draft',
-      newState: 'submitted',
-    });
-  });
-});
 
 describe('eventEnvelopeSchema', () => {
   it('accepts a well-formed envelope', () => {

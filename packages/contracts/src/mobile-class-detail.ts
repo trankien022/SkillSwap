@@ -44,6 +44,14 @@ export const ownBookingSummarySchema = z.object({
 });
 export type OwnBookingSummaryView = z.infer<typeof ownBookingSummarySchema>;
 
+export const classDetailSkillSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  category: z.string().min(1),
+  levels: z.array(z.string().min(1)),
+});
+export type ClassDetailSkillView = z.infer<typeof classDetailSkillSchema>;
+
 /**
  * Route 14 / FR-005, FR-006, FR-007: detailed class view.
  * Includes public teacher summary, seat availability, canBook calculation,
@@ -53,6 +61,11 @@ export const classDetailViewSchema = z.object({
   id: z.string().min(1),
   teacher: classDetailTeacherSchema,
   skillIds: z.array(z.string().min(1)),
+  /**
+   * The catalogue facts for `skillIds`, resolved by the API. Absent (not empty) when the
+   * catalogue could not be read, so a client can keep its "not provided" state.
+   */
+  skills: z.array(classDetailSkillSchema).optional(),
   description: z.string().min(1),
   startsAt: z.string().datetime({ offset: true }),
   durationMinutes: z.number().int(),

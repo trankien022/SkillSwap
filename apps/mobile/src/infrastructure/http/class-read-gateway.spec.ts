@@ -109,7 +109,9 @@ describe('ClassReadGateway', () => {
       const parsedUrl = new URL(url);
 
       expect(parsedUrl.pathname).toBe('/api/classes');
-      expect(parsedUrl.searchParams.get('keyword')).toBe('typescript search');
+      expect(parsedUrl.searchParams.get('q')).toBe('typescript search');
+      // The legacy `keyword` alias is never sent; `q` is the canonical name.
+      expect(parsedUrl.searchParams.has('keyword')).toBe(false);
       expect(parsedUrl.searchParams.get('skillId')).toBe('e7b0a708-3011-4f16-9d32-2339c1b74737');
       expect(parsedUrl.searchParams.get('limit')).toBe('20');
       expect(parsedUrl.searchParams.get('cursor')).toBe('cursor-token');

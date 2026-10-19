@@ -165,6 +165,25 @@ describe('mobile-class-detail contracts', () => {
       expect(parsed.ownBooking).toBeUndefined();
     });
 
+    it('accepts the optional resolved `skills` and treats an absent one as absent', () => {
+      const skills = [
+        { id: 'sk-cs-101', name: 'Computer science', category: 'Programming', levels: ['beginner'] },
+      ];
+      const withSkills = { ...baseClassDetail, skills };
+      expect(classDetailViewSchema.parse(withSkills).skills).toEqual(skills);
+      // Absent, not empty: a failed catalogue read must stay distinguishable.
+      expect(classDetailViewSchema.parse(baseClassDetail).skills).toBeUndefined();
+    });
+
+    it('rejects a malformed skill entry', () => {
+      expect(() =>
+        classDetailViewSchema.parse({
+          ...baseClassDetail,
+          skills: [{ id: 'sk-cs-101', name: '', category: 'Programming', levels: [] }],
+        }),
+      ).toThrow();
+    });
+
     it('rejects invalid class lifecycle state', () => {
       expect(() =>
         classDetailViewSchema.parse({

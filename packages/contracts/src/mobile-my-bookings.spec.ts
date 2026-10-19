@@ -71,13 +71,13 @@ describe('mobile-my-bookings contracts', () => {
       expect(() => myBookingsQuerySchema.parse({ state: 'expired' })).toThrow();
     });
 
-    it('coerces string limit and bounds to 1..50', () => {
+    it('coerces string limit and bounds to 1..100', () => {
       expect(myBookingsQuerySchema.parse({ limit: '10' }).limit).toBe(10);
       expect(myBookingsQuerySchema.parse({ limit: 1 }).limit).toBe(1);
-      expect(myBookingsQuerySchema.parse({ limit: 50 }).limit).toBe(50);
+      expect(myBookingsQuerySchema.parse({ limit: 100 }).limit).toBe(100);
 
       expect(() => myBookingsQuerySchema.parse({ limit: 0 })).toThrow();
-      expect(() => myBookingsQuerySchema.parse({ limit: 51 })).toThrow();
+      expect(() => myBookingsQuerySchema.parse({ limit: 101 })).toThrow();
       expect(() => myBookingsQuerySchema.parse({ limit: -5 })).toThrow();
     });
 

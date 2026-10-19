@@ -1,5 +1,6 @@
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { qualified } from '../../../../../../shared/sql/ident';
+import { MAX_PAGE_LIMIT } from '@skillswap/contracts';
 import type { ClassCursorTuple, ClassLifecycleStateDto } from '../../../application/port/in/list-classes';
 import type {
   ClassListReader,
@@ -116,7 +117,7 @@ export class SqlClassListReader implements ClassListReader {
       conditions.push(`(c."starts_at", c."id"::text) > ($${startsAtIdx}, $${idIdx})`);
     }
 
-    const limit = Math.max(1, Math.min(criteria.limit, 50));
+    const limit = Math.max(1, Math.min(criteria.limit, MAX_PAGE_LIMIT));
     queryParams.push(limit + 1);
     const limitIdx = queryParams.length;
 

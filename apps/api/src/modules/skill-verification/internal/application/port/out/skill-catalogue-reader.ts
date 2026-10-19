@@ -23,4 +23,9 @@ export interface SkillCatalogueReaderResult {
 
 export interface SkillCatalogueReader {
   findSkills(params: FindSkillsParams): Promise<SkillCatalogueReaderResult>;
+  /**
+   * FR-006 class detail: resolve specific ids to catalogue metadata. Unknown and inactive ids
+   * are omitted from the result; duplicates in `ids` are collapsed.
+   */
+  findSkillsByIds(ids: readonly string[]): Promise<readonly SkillCatalogueRecord[]>;
 }

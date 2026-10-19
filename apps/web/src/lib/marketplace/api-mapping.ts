@@ -72,9 +72,9 @@ const LEVELS: readonly SkillLevel[] = ['beginner', 'intermediate', 'advanced', '
  * The catalogue lists which levels a skill supports; the first (lowest) level
  * is shown. This is real catalogue data, not a per-class guess.
  */
-export function toSkillLevel(skill: SkillCatalogueItemView | undefined): SkillLevel {
+export function toSkillLevel(skill: { readonly levels: readonly string[] } | undefined): SkillLevel {
   const first = skill?.levels[0];
-  return first !== undefined && LEVELS.includes(first) ? first : 'intermediate';
+  return first !== undefined && LEVELS.includes(first as SkillLevel) ? (first as SkillLevel) : 'intermediate';
 }
 
 /**

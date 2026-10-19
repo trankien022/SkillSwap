@@ -19,10 +19,13 @@ import type { MarketplaceClass, MarketplacePage, MarketplaceQuery } from './type
  * which attaches the bearer token and refreshes it once on 401.
  *
  * Endpoints:
- * - GET /classes  — keyset-paginated class list (keyword, skillId, date range, state)
+ * - GET /classes  — keyset-paginated class list (q, skillId, date range, state)
  * - GET /skills   — standardized catalogue, needed to resolve skill names
  *
- * The API only understands `keyword`/`skillId`/dates/state, so the remaining
+ * The detail page does not use this gateway: `GET /classes/:id` returns the class
+ * and its resolved skills on its own (see `api-class-detail.ts`).
+ *
+ * The API only understands `q`/`skillId`/dates/state, so the remaining
  * sidebar filters (university, format, rating, price, time window) are applied
  * over the fetched page here. They are client-side refinements of real data,
  * never substitutes for it.
@@ -54,7 +57,7 @@ export class HttpMarketplaceGateway {
   private async fetchClasses(query: MarketplaceQuery): Promise<readonly ClassListItemView[]> {
     const params = new URLSearchParams();
     if (query.keyword && query.keyword.trim().length > 0) {
-      params.set('keyword', query.keyword.trim());
+      params.set('q', query.keyword.trim());
     }
     // The seed only publishes bookable classes; asking for `published` keeps the
     // grid to what a learner can actually book.
@@ -63,25 +66,10 @@ export class HttpMarketplaceGateway {
     params.set('startDate', new Date().toISOString());
 
     const qs = params.toString();
-    const res = await callApi(`/classes${qs ? `?${qs}` : ''}`);
+    // `limit` is always set, so the query string is never empty.
+    const res = await callApi(`/classes?${qs}`);
     const page = listClassesPageSchema.parse(await unwrapEnvelope<unknown>(res));
     return page.items;
-  }
-
-  /** One class for the detail page; returns null so the route can 404. */
-  async findById(id: string): Promise<MarketplaceClass | null> {
-    const catalogue = await this.getCatalogue();
-    // No single-class marketplace route exists, so the list is scanned for the
-    // id. The window is wide enough to include published classes not yet started.
-    const params = new URLSearchParams({
-      limit: '50',
-      state: 'published',
-      startDate: new Date().toISOString(),
-    });
-    const res = await callApi(`/classes?${params.toString()}`);
-    const page = listClassesPageSchema.parse(await unwrapEnvelope<unknown>(res));
-    const found = page.items.find((item) => item.id === id);
-    return found === undefined ? null : toMarketplaceClass(found, catalogue);
   }
 }
 

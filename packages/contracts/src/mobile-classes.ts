@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MAX_PAGE_LIMIT, searchQuerySchema } from './pagination';
 
 export type ClassCursorTuple = readonly [startsAtISO: string, id: string];
 
@@ -136,18 +137,18 @@ export type ClassLifecycleState = z.infer<typeof classLifecycleStateSchema>;
 
 /**
  * Route 13 / FR-005, FR-006: query parameters for listing classes.
- * Keyset cursor pagination bounded to max 50 per page, default 20.
- * Supports keyword description search, skillId filter, date range, teacherId ('me' or UUID), state filter, and portable cursor.
+ * Keyset cursor pagination bounded to the shared max page size (100), default 20.
+ * Supports `q` search (legacy `keyword` alias), skillId filter, date range, teacherId ('me' or UUID), state filter, and portable cursor.
  */
 export const listClassesQuerySchema = z
   .object({
-    keyword: z.string().trim().min(1).optional(),
+    ...searchQuerySchema.shape,
     skillId: z.string().trim().min(1).optional(),
     startDate: z.string().datetime({ offset: true }).optional(),
     endDate: z.string().datetime({ offset: true }).optional(),
     teacherId: z.union([z.literal('me'), z.string().uuid()]).optional(),
     state: classLifecycleStateSchema.optional(),
-    limit: z.coerce.number().int().min(1).max(50).default(20),
+    limit: z.coerce.number().int().min(1).max(MAX_PAGE_LIMIT).default(20),
     cursor: z
       .string()
       .trim()

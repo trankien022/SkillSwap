@@ -130,4 +130,28 @@ describe('SqlSkillCatalogueReader', () => {
     await reader.findSkills({ limit: -5 });
     expect((mockQuery.mock.calls[1] as [string, unknown[]])[1]).toEqual([2]);
   });
+
+  describe('findSkillsByIds (FR-006 class detail)', () => {
+    it('resolves only active rows for the requested ids, collapsing duplicates', async () => {
+      mockQuery.mockResolvedValueOnce([
+        { id: 'sk-1', name: 'TypeScript', category: 'Programming', active: true },
+      ]);
+
+      const result = await reader.findSkillsByIds(['sk-1', 'sk-1', 'sk-missing']);
+
+      const [sql, params] = mockQuery.mock.calls[0] as [string, unknown[]];
+      expect(sql).toContain('"skill_verification"."skills"');
+      expect(sql).toContain('"active" = true');
+      expect(sql).toContain('"id" = ANY($1::text[])');
+      expect(params).toEqual([['sk-1', 'sk-missing']]);
+      expect(result).toEqual([
+        { id: 'sk-1', name: 'TypeScript', category: 'Programming', active: true },
+      ]);
+    });
+
+    it('issues no query when there are no ids', async () => {
+      await expect(reader.findSkillsByIds([])).resolves.toEqual([]);
+      expect(mockQuery).not.toHaveBeenCalled();
+    });
+  });
 });

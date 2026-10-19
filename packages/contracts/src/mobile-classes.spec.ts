@@ -7,6 +7,7 @@ import {
   classListItemSchema,
   CLASS_CURSOR_MAX_LENGTH,
 } from './mobile-classes';
+import { resolveSearchTerm } from './pagination';
 
 describe('mobile-classes contracts (portable cursor codec & schemas)', () => {
   describe('Buffer-free environment compatibility', () => {
@@ -131,7 +132,7 @@ describe('mobile-classes contracts (portable cursor codec & schemas)', () => {
     it('defaults limit to 20 and accepts valid parameters', () => {
       const cursor = encodeClassCursor(['2026-10-15T10:00:00.000Z', 'cls-123']);
       const parsed = listClassesQuerySchema.parse({
-        keyword: 'Guitar',
+        q: 'Guitar',
         skillId: 'sk-1',
         teacherId: 'me',
         state: 'published',
@@ -139,12 +140,19 @@ describe('mobile-classes contracts (portable cursor codec & schemas)', () => {
       });
       expect(parsed).toEqual({
         limit: 20,
-        keyword: 'Guitar',
+        q: 'Guitar',
         skillId: 'sk-1',
         teacherId: 'me',
         state: 'published',
         cursor,
       });
+    });
+
+    it('accepts the deprecated `keyword` alias and prefers `q` through resolveSearchTerm', () => {
+      expect(listClassesQuerySchema.parse({ keyword: 'Guitar' }).keyword).toBe('Guitar');
+      expect(resolveSearchTerm({ q: 'piano', keyword: 'Guitar' })).toBe('piano');
+      expect(resolveSearchTerm({ keyword: '  Guitar  ' })).toBe('Guitar');
+      expect(resolveSearchTerm({})).toBeUndefined();
     });
 
     it('validates startDate <= endDate', () => {
@@ -162,9 +170,10 @@ describe('mobile-classes contracts (portable cursor codec & schemas)', () => {
       ).toThrow(/startDate must be less than or equal to endDate/);
     });
 
-    it('rejects limit > 50 or < 1', () => {
+    it('rejects limit > 100 or < 1 (the documented max page size)', () => {
       expect(() => listClassesQuerySchema.parse({ limit: 0 })).toThrow();
-      expect(() => listClassesQuerySchema.parse({ limit: 51 })).toThrow();
+      expect(() => listClassesQuerySchema.parse({ limit: 101 })).toThrow();
+      expect(listClassesQuerySchema.parse({ limit: 100 }).limit).toBe(100);
     });
 
     it('rejects malformed cursor in schema', () => {

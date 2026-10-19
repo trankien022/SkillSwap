@@ -120,16 +120,24 @@ const MODULE_NOTES = {
         'Admin suspends, revokes or reactivates a Verifier (FR-004, ADR-027).',
     },
   },
-  'account-profile': { purpose: 'Account profile module lifecycle probe.', endpoints: {} },
   'admin-operation': {
     purpose:
       'Administrator oversight (FR-015, ADR-034). The append-only audit log plus the operations dashboard aggregate over the student-verification and Verifier queues.',
     endpoints: {},
   },
+  notifications: {
+    purpose:
+      'Per-account notifications (FR-012) and the push device subscriptions that receive them. Reads are owner-scoped; a foreign id is 404, never a leak.',
+    endpoints: {
+      'GET /api/notifications':
+        'Paginated notifications for the caller, optionally only unread ones. Use on the bell/notification list.',
+      'POST /api/notification-devices':
+        'Register or rotate a push token for the caller (app launch, token refresh). Idempotent per installation.',
+      'DELETE /api/notification-devices/{id}':
+        'Deactivate an owned device on sign-out. Answers 204 No Content; a foreign or unknown id is 404.',
+    },
+  },
   health: { purpose: 'Liveness/readiness for the load balancer and CI.', endpoints: {} },
-  'live-class': { purpose: 'Live class module lifecycle probe.', endpoints: {} },
-  schedule: { purpose: 'Schedule module lifecycle probe.', endpoints: {} },
-  'wallet-ledger': { purpose: 'Wallet ledger module lifecycle probe.', endpoints: {} },
 };
 
 const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options'];

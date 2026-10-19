@@ -59,7 +59,7 @@ describe('ClassListController', () => {
 
     const result = await controller.list(
       {
-        keyword: 'Algo',
+        q: 'Algo',
         limit: 10,
       },
       authRequest('user-456'),
@@ -81,6 +81,28 @@ describe('ClassListController', () => {
     expect(result.items[0].teacherDisplayName).toBe('Prof. Alice');
     expect(result.nextCursor).toBe(encodeClassCursor(['2026-10-15T10:00:00.000Z', 'cls-1']));
     expect(result.totalActiveTeachingCount).toBeUndefined();
+  });
+
+  it('resolves the search term from the legacy keyword alias and prefers q', async () => {
+    mockListClassesPort.execute.mockResolvedValue({ items: [], nextCursor: null });
+
+    await controller.list({ keyword: 'legacy', limit: 20 }, authRequest('user-1'));
+    expect(mockListClassesPort.execute).toHaveBeenLastCalledWith(
+      expect.objectContaining({ keyword: 'legacy' }),
+    );
+
+    await controller.list(
+      { q: 'canonical', keyword: 'legacy', limit: 20 },
+      authRequest('user-1'),
+    );
+    expect(mockListClassesPort.execute).toHaveBeenLastCalledWith(
+      expect.objectContaining({ keyword: 'canonical' }),
+    );
+
+    await controller.list({ limit: 20 }, authRequest('user-1'));
+    expect(mockListClassesPort.execute).toHaveBeenLastCalledWith(
+      expect.objectContaining({ keyword: undefined }),
+    );
   });
 
   it('passes decoded cursor to use case when cursor is provided', async () => {

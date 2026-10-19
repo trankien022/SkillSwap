@@ -340,6 +340,42 @@ describe('E2E: book → settle → room → complete → release', () => {
     expect(learner?.availableCredits ?? 0).toBe(0);
   });
 
+  it('reports a stable booking rejection code, not the domain class name (RESTful-CONVENTIONS §8)', async () => {
+    // A 1-seat class the teacher booked as themselves can never be booked by the
+    // teacher, so `self_booking` exercises the reason → code mapping end to end.
+    api.actAs(teacherId);
+    const created = await api.post('/api/classes', {
+      skillIds: ['skill-guitar'],
+      description: 'Self-booking class',
+      startsAt: new Date(Date.now() + 48 * hour).toISOString(),
+      durationMinutes: 60,
+      priceCredits: 100,
+      capacity: 1,
+    });
+    classId = created.json.id;
+
+    const selfBooked = await api.post(`/api/classes/${classId}/bookings`, {
+      idempotencyKey: 'k-self',
+    });
+    expect(selfBooked.status).toBe(409);
+    expect(selfBooked.envelope).toMatchObject({
+      success: false,
+      code: 'self_booking',
+      data: null,
+    });
+    expect(selfBooked.envelope.errors).toEqual([
+      { code: 'self_booking', message: expect.any(String) },
+    ]);
+
+    // A class id that does not exist reports `class_not_found`, not the class name.
+    api.actAs(learnerId);
+    const missing = await api.post('/api/classes/00000000-0000-4000-8000-000000000000/bookings', {
+      idempotencyKey: 'k-missing',
+    });
+    expect(missing.status).toBe(404);
+    expect(missing.envelope).toMatchObject({ success: false, code: 'class_not_found', data: null });
+  });
+
   it('refunds the learner when the teacher no-shows (AC-024)', async () => {
     await topUpLearner(100_000); // 100 credits
 

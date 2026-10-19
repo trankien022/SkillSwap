@@ -1,6 +1,7 @@
 import {
   ClassDetailNotFoundError,
   type ClassDetailDto,
+  type ClassDetailSkillDto,
   type ClassDetailTeacherDto,
   type GetClassDetailPort,
   type GetClassDetailQuery,
@@ -10,6 +11,7 @@ import type {
   ClassDetailReader,
 } from '../port/out/class-detail-reader';
 import type { Clock } from '../port/out/clock';
+import type { ClassSkillReader } from '../port/out/class-skill-reader';
 import type { PublicTeacherReader } from '../port/out/public-teacher-reader';
 
 const BOOKING_LEAD_TIME_MS = 24 * 60 * 60 * 1000;
@@ -25,6 +27,7 @@ export class GetClassDetailQueryHandler implements GetClassDetailPort {
   constructor(
     private readonly classDetailReader: ClassDetailReader,
     private readonly publicTeacherReader: PublicTeacherReader,
+    private readonly classSkillReader: ClassSkillReader,
     private readonly clock: Clock,
   ) {}
 
@@ -110,10 +113,16 @@ export class GetClassDetailQueryHandler implements GetClassDetailPort {
       ratingsCount: 0,     // provisional until T16
     };
 
+    // 5. Resolve the skills the class teaches. This is the join every client used to do
+    //    itself (fetch the whole catalogue, match by id). A catalogue failure must not fail
+    //    the page: the field is omitted and the client falls back to its "not provided" state.
+    const skills = await this.resolveSkills(record.skillIds);
+
     return {
       id: record.id,
       teacher,
       skillIds: record.skillIds,
+      ...(skills === null ? {} : { skills }),
       description: record.description,
       startsAt: record.startsAt.toISOString(),
       durationMinutes: record.durationMinutes,
@@ -127,8 +136,27 @@ export class GetClassDetailQueryHandler implements GetClassDetailPort {
     };
   }
 
-  private async resolveTeacherDisplayName(teacherId: string): Promise<string> {
-    const profiles = await this.publicTeacherReader.readMany([teacherId]);
+  private async resolveSkills(
+    skillIds: readonly string[],
+  ): Promise<ClassDetailSkillDto[] | null> {
+    if (skillIds.length === 0) {
+      return [];
+    }
+    try {
+      const found = await this.classSkillReader.readMany(skillIds);
+      // Report in the class's own skill order, and only skills the catalogue confirmed.
+      return skillIds.flatMap((id) => {
+        const skill = found.find((candidate) => candidate.id === id);
+        return skill === undefined
+          ? []
+          : [{ id: skill.id, name: skill.name, category: skill.category, levels: [...skill.levels] }];
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  private async resolveTeacherDisplayName(teacherId: string): Promise<string> {    const profiles = await this.publicTeacherReader.readMany([teacherId]);
     const profile = profiles.find((p) => p.id === teacherId);
     if (profile?.displayName && profile.displayName.trim() !== '') {
       return profile.displayName.trim();

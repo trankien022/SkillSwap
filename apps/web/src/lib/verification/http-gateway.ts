@@ -129,7 +129,8 @@ export class HttpVerificationGateway {
     if (query.q) params.set('q', query.q);
     if (query.sort) params.set('sort', query.sort);
 
-    const path = `/verifiers/me/queue${params.toString() ? `?${params.toString()}` : ''}`;
+    const qs = params.toString();
+    const path = qs ? `/verifiers/me/queue?${qs}` : '/verifiers/me/queue';
     const res = await callApi(path);
     if (res.status === 401) throw new VerifierAuthError();
     if (!res.ok) throw new Error(await readErrorMessage(res, 'Could not load verifier queue'));

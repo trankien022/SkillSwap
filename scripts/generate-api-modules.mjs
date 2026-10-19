@@ -143,14 +143,6 @@ function emit(folder, rel, content) {
   written.push(`${folder}/${rel}`);
 }
 
-function illegalFromInitial(m) {
-  const to = m.states.find((state) => !m.transitions[m.initial].includes(state));
-  if (to === undefined) {
-    throw new Error(`${m.folder}: transition table from "${m.initial}" is total — need an illegal pair`);
-  }
-  return to;
-}
-
 function domainTemplate(m) {
   const states = m.states.map((state) => `'${state}'`).join(', ');
   const transitions = m.states
@@ -269,240 +261,6 @@ describe('${m.folder} module status state machine', () => {
 `;
 }
 
-function advancePortTemplate() {
-  return `export const ADVANCE_STATUS = Symbol('ADVANCE_STATUS');
-
-export interface AdvanceStatusCommand {
-  toState: string;
-  changedBy: string;
-}
-
-export interface AdvanceStatusResult {
-  module: string;
-  previousState: string;
-  newState: string;
-  changedAt: string;
-  changedBy: string;
-}
-
-export interface AdvanceStatusPort {
-  execute(command: AdvanceStatusCommand): Promise<AdvanceStatusResult>;
-}
-`;
-}
-
-function getPortTemplate() {
-  return `import type { ModuleStatusView } from '../out/module-status-reader';
-
-export const GET_MODULE_STATUS = Symbol('GET_MODULE_STATUS');
-
-export interface GetModuleStatusPort {
-  execute(): Promise<ModuleStatusView>;
-}
-`;
-}
-
-function readerPortTemplate() {
-  return `export const STATUS_READER = Symbol('STATUS_READER');
-
-export interface ModuleStatusView {
-  module: string;
-  state: string;
-  updatedAt: string | null;
-}
-
-export interface ModuleStatusReader {
-  find(): Promise<ModuleStatusView>;
-}
-`;
-}
-
-function writerPortTemplate() {
-  return `import type { ModuleStatusState } from '../../../domain/module-status';
-
-export const STATUS_WRITER = Symbol('STATUS_WRITER');
-
-export interface ModuleStatusWriteInput {
-  previousState: ModuleStatusState;
-  newState: ModuleStatusState;
-  changedBy: string;
-}
-
-export interface ModuleStatusTransition {
-  module: string;
-  previousState: string;
-  newState: string;
-  changedAt: string;
-  changedBy: string;
-}
-
-export interface ModuleStatusWriter {
-  apply(input: ModuleStatusWriteInput): Promise<ModuleStatusTransition>;
-}
-`;
-}
-
-function useCaseTemplate(m, firstTarget) {
-  return `import { assertModuleStatusState, assertTransition } from '../domain/module-status';
-import type {
-  AdvanceStatusCommand,
-  AdvanceStatusPort,
-  AdvanceStatusResult,
-} from './port/in/advance-status';
-import type { ModuleStatusReader } from './port/out/module-status-reader';
-import type { ModuleStatusWriter } from './port/out/module-status-writer';
-
-/** Validates and applies a status transition for the ${m.label} module (ADR-010). */
-export class AdvanceStatusUseCase implements AdvanceStatusPort {
-  constructor(
-    private readonly reader: ModuleStatusReader,
-    private readonly writer: ModuleStatusWriter,
-  ) {}
-
-  async execute(command: AdvanceStatusCommand): Promise<AdvanceStatusResult> {
-    const current = await this.reader.find();
-    assertModuleStatusState(current.state);
-    assertModuleStatusState(command.toState);
-    assertTransition(current.state, command.toState);
-    return this.writer.apply({
-      previousState: current.state,
-      newState: command.toState,
-      changedBy: command.changedBy,
-    });
-  }
-}
-`.replace('${firstTarget}', firstTarget);
-}
-
-function useCaseSpecTemplate(m, firstTarget, illegalTo) {
-  return `import { AdvanceStatusUseCase } from './advance-status.use-case';
-import type { ModuleStatusReader } from './port/out/module-status-reader';
-import type { ModuleStatusWriter } from './port/out/module-status-writer';
-import {
-  StatusConflictError,
-  StatusTransitionError,
-  UnknownStateError,
-  type ModuleStatusState,
-} from '../domain/module-status';
-
-describe('AdvanceStatusUseCase (${m.folder})', () => {
-  function setup(initialState: ModuleStatusState) {
-    const reader: ModuleStatusReader = {
-      find: jest.fn().mockResolvedValue({ module: '${m.folder}', state: initialState, updatedAt: null }),
-    };
-    const apply = jest.fn().mockResolvedValue({
-      module: '${m.folder}',
-      previousState: initialState,
-      newState: '${firstTarget}',
-      changedAt: '2026-01-01T00:00:00.000Z',
-      changedBy: 'user-1',
-    });
-    const writer: ModuleStatusWriter = { apply };
-    return { useCase: new AdvanceStatusUseCase(reader, writer), apply };
-  }
-
-  it('advances along a legal transition', async () => {
-    const { useCase, apply } = setup('${m.initial}');
-    const result = await useCase.execute({ toState: '${firstTarget}', changedBy: 'user-1' });
-    expect(apply).toHaveBeenCalledWith({
-      previousState: '${m.initial}',
-      newState: '${firstTarget}',
-      changedBy: 'user-1',
-    });
-    expect(result.newState).toBe('${firstTarget}');
-  });
-
-  it('rejects an illegal transition without writing', async () => {
-    const { useCase, apply } = setup('${m.initial}');
-    await expect(useCase.execute({ toState: '${illegalTo}', changedBy: 'user-1' })).rejects.toThrow(
-      StatusTransitionError,
-    );
-    expect(apply).not.toHaveBeenCalled();
-  });
-
-  it('rejects an unknown state without writing', async () => {
-    const { useCase, apply } = setup('${m.initial}');
-    await expect(useCase.execute({ toState: 'bogus', changedBy: 'user-1' })).rejects.toThrow(
-      UnknownStateError,
-    );
-    expect(apply).not.toHaveBeenCalled();
-  });
-
-  it('propagates optimistic-lock conflicts from the writer', async () => {
-    const { useCase, apply } = setup('${m.initial}');
-    apply.mockRejectedValue(new StatusConflictError('${m.initial}', '${firstTarget}'));
-    await expect(useCase.execute({ toState: '${firstTarget}', changedBy: 'user-1' })).rejects.toThrow(
-      StatusConflictError,
-    );
-  });
-});
-`;
-}
-
-function queryTemplate() {
-  return `import type { GetModuleStatusPort } from '../port/in/get-module-status';
-import type { ModuleStatusReader, ModuleStatusView } from '../port/out/module-status-reader';
-
-/** Query handler (ADR-012: the read path never imports the domain). */
-export class GetModuleStatusQueryHandler implements GetModuleStatusPort {
-  constructor(private readonly reader: ModuleStatusReader) {}
-
-  execute(): Promise<ModuleStatusView> {
-    return this.reader.find();
-  }
-}
-`;
-}
-
-function controllerTemplate(m) {
-  return `import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Post, Req } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { advanceStatusSchema } from '@skillswap/contracts';
-import {
-  ADVANCE_STATUS,
-  type AdvanceStatusPort,
-  type AdvanceStatusResult,
-} from '../../../application/port/in/advance-status';
-import {
-  GET_MODULE_STATUS,
-  type GetModuleStatusPort,
-} from '../../../application/port/in/get-module-status';
-import type { ModuleStatusView } from '../../../application/port/out/module-status-reader';
-import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
-import { ZodValidationPipe } from '../../../../../../shared/http/zod-validation.pipe';
-
-@Controller('${m.folder}')
-@ApiTags('${m.folder}')
-export class StatusController {
-  constructor(
-    @Inject(ADVANCE_STATUS) private readonly advanceStatus: AdvanceStatusPort,
-    @Inject(GET_MODULE_STATUS) private readonly getStatus: GetModuleStatusPort,
-  ) {}
-
-  @Get('status')
-  @ApiOperation({ summary: 'Read ${m.label} module status' })
-  @ApiOkResponse({ description: 'Current module status' })
-  readStatus(): Promise<ModuleStatusView> {
-    return this.getStatus.execute();
-  }
-
-  @Post('status/advance')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Advance ${m.label} module status' })
-  @ApiOkResponse({ description: 'Applied status transition' })
-  advance(
-    @Body(new ZodValidationPipe(advanceStatusSchema)) body: { toState: string },
-    @Req() request: RequestWithIdentity,
-  ): Promise<AdvanceStatusResult> {
-    return this.advanceStatus.execute({
-      toState: body.toState,
-      changedBy: currentUserId(request),
-    });
-  }
-}
-`;
-}
-
 function schemaTemplate(m) {
   return `/** Physical schema (PostgreSQL namespace) of the ${m.label} module. */
 export const SCHEMA = '${m.schema}';
@@ -612,100 +370,6 @@ ${ledgerSql}
 `;
 }
 
-function sqlReaderTemplate() {
-  return `import { ModuleNotInitialisedError } from '../../../../../../shared/errors';
-import { MODULE_STATUS_ID, MODULE_STATUS_TABLE } from '../../../../../../shared/messaging/constants';
-import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
-import { qualified } from '../../../../../../shared/sql/ident';
-import type {
-  ModuleStatusReader,
-  ModuleStatusView,
-} from '../../../application/port/out/module-status-reader';
-
-export class SqlModuleStatusReader implements ModuleStatusReader {
-  constructor(
-    private readonly registry: ModuleDataSourceRegistry,
-    private readonly moduleName: string,
-  ) {}
-
-  async find(): Promise<ModuleStatusView> {
-    const source = this.registry.get(this.moduleName);
-    const table = qualified(this.registry.getSchema(this.moduleName), MODULE_STATUS_TABLE);
-    const rows = (await source.query(
-      \`SELECT "state", "updated_at" FROM \${table} WHERE "id" = $1\`,
-      [MODULE_STATUS_ID],
-    )) as Array<{ state: string; updated_at: Date | string | null }>;
-    const row = rows[0];
-    if (row === undefined) {
-      throw new ModuleNotInitialisedError(this.moduleName);
-    }
-    const updatedAt = row.updated_at;
-    return {
-      module: this.moduleName,
-      state: row.state,
-      updatedAt:
-        updatedAt === null || updatedAt === undefined
-          ? null
-          : updatedAt instanceof Date
-            ? updatedAt.toISOString()
-            : new Date(updatedAt).toISOString(),
-    };
-  }
-}
-`;
-}
-
-function sqlWriterTemplate() {
-  return `import { MODULE_STATUS_ID, MODULE_STATUS_TABLE } from '../../../../../../shared/messaging/constants';
-import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
-import { insertOutboxStatement } from '../../../../../../shared/messaging/outbox-statements';
-import { qualified } from '../../../../../../shared/sql/ident';
-import type {
-  ModuleStatusTransition,
-  ModuleStatusWriteInput,
-  ModuleStatusWriter,
-} from '../../../application/port/out/module-status-writer';
-import { STATUS_CHANGED_EVENT, StatusConflictError } from '../../../domain/module-status';
-
-export class SqlModuleStatusWriter implements ModuleStatusWriter {
-  constructor(
-    private readonly registry: ModuleDataSourceRegistry,
-    private readonly moduleName: string,
-  ) {}
-
-  async apply(input: ModuleStatusWriteInput): Promise<ModuleStatusTransition> {
-    const source = this.registry.get(this.moduleName);
-    const schema = this.registry.getSchema(this.moduleName);
-    const table = qualified(schema, MODULE_STATUS_TABLE);
-    return source.transaction(async (manager) => {
-      const updated = (await manager.query(
-        \`UPDATE \${table} SET "state" = $1, "updated_at" = now() ` +
-          `WHERE "id" = $2 AND "state" = $3 RETURNING "updated_at"\`,
-        [input.newState, MODULE_STATUS_ID, input.previousState],
-      )) as Array<{ updated_at: Date | string }>;
-      const row = updated[0];
-      if (row === undefined) {
-        throw new StatusConflictError(input.previousState, input.newState);
-      }
-      const changedAt =
-        row.updated_at instanceof Date
-          ? row.updated_at.toISOString()
-          : new Date(row.updated_at).toISOString();
-      const transition: ModuleStatusTransition = {
-        module: this.moduleName,
-        previousState: input.previousState,
-        newState: input.newState,
-        changedAt,
-        changedBy: input.changedBy,
-      };
-      await manager.query(insertOutboxStatement(schema), [STATUS_CHANGED_EVENT, transition]);
-      return transition;
-    });
-  }
-}
-`;
-}
-
 function moduleTemplate(m) {
   if (m.extras) {
     return walletModuleTemplate(m);
@@ -715,15 +379,6 @@ import { ApiConfig } from '../../shared/config/api-config';
 import { ModuleDataSourceRegistry } from '../../shared/messaging/module-registry';
 import { createModuleDataSource } from './internal/adapter/out/persistence/data-source';
 import { SCHEMA } from './internal/adapter/out/persistence/schema';
-import { SqlModuleStatusReader } from './internal/adapter/out/persistence/sql-module-status-reader';
-import { SqlModuleStatusWriter } from './internal/adapter/out/persistence/sql-module-status-writer';
-import { StatusController } from './internal/adapter/in/web/status.controller';
-import { AdvanceStatusUseCase } from './internal/application/advance-status.use-case';
-import { GET_MODULE_STATUS } from './internal/application/port/in/get-module-status';
-import { ADVANCE_STATUS } from './internal/application/port/in/advance-status';
-import { STATUS_READER, type ModuleStatusReader } from './internal/application/port/out/module-status-reader';
-import { STATUS_WRITER, type ModuleStatusWriter } from './internal/application/port/out/module-status-writer';
-import { GetModuleStatusQueryHandler } from './internal/application/query/get-module-status.query';
 import { MODULE_NAME } from './internal/domain/module-status';
 
 /** Registers this module's DataSource pool on the shared registry (ARCHITECTURE.md §5). */
@@ -742,33 +397,8 @@ export class ${m.pascal}Registrar implements OnModuleInit {
 }
 
 @Module({
-  controllers: [StatusController],
-  providers: [
-    {
-      provide: STATUS_READER,
-      useFactory: (registry: ModuleDataSourceRegistry) =>
-        new SqlModuleStatusReader(registry, MODULE_NAME),
-      inject: [ModuleDataSourceRegistry],
-    },
-    {
-      provide: STATUS_WRITER,
-      useFactory: (registry: ModuleDataSourceRegistry) =>
-        new SqlModuleStatusWriter(registry, MODULE_NAME),
-      inject: [ModuleDataSourceRegistry],
-    },
-    {
-      provide: ADVANCE_STATUS,
-      useFactory: (reader: ModuleStatusReader, writer: ModuleStatusWriter) =>
-        new AdvanceStatusUseCase(reader, writer),
-      inject: [STATUS_READER, STATUS_WRITER],
-    },
-    {
-      provide: GET_MODULE_STATUS,
-      useFactory: (reader: ModuleStatusReader) => new GetModuleStatusQueryHandler(reader),
-      inject: [STATUS_READER],
-    },
-    ${m.pascal}Registrar,
-  ],
+  controllers: [],
+  providers: [${m.pascal}Registrar],
 })
 export class ${m.pascal}Module {}
 `;
@@ -783,13 +413,7 @@ import { ModuleDataSourceRegistry } from '../../shared/messaging/module-registry
 import { createModuleDataSource } from './internal/adapter/out/persistence/data-source';
 import { SCHEMA } from './internal/adapter/out/persistence/schema';
 import { SqlLedgerEntryWriter } from './internal/adapter/out/persistence/sql-ledger-entry-writer';
-import { SqlModuleStatusReader } from './internal/adapter/out/persistence/sql-module-status-reader';
-import { SqlModuleStatusWriter } from './internal/adapter/out/persistence/sql-module-status-writer';
-import { StatusController } from './internal/adapter/in/web/status.controller';
-import { AdvanceStatusUseCase } from './internal/application/advance-status.use-case';
 import { RecordBookingConfirmedUseCase } from './internal/application/record-booking-confirmed.use-case';
-import { GET_MODULE_STATUS } from './internal/application/port/in/get-module-status';
-import { ADVANCE_STATUS } from './internal/application/port/in/advance-status';
 import {
   RECORD_BOOKING_CONFIRMED,
   type RecordBookingConfirmedPort,
@@ -798,9 +422,6 @@ import {
   LEDGER_ENTRY_WRITER,
   type LedgerEntryWriter,
 } from './internal/application/port/out/ledger-entry-writer';
-import { STATUS_READER, type ModuleStatusReader } from './internal/application/port/out/module-status-reader';
-import { STATUS_WRITER, type ModuleStatusWriter } from './internal/application/port/out/module-status-writer';
-import { GetModuleStatusQueryHandler } from './internal/application/query/get-module-status.query';
 import { MODULE_NAME } from './internal/domain/module-status';
 
 /** Registers the wallet DataSource pool and the booking.confirmed consumer. */
@@ -830,31 +451,8 @@ export class ${m.pascal}Registrar implements OnModuleInit {
 }
 
 @Module({
-  controllers: [StatusController],
+  controllers: [],
   providers: [
-    {
-      provide: STATUS_READER,
-      useFactory: (registry: ModuleDataSourceRegistry) =>
-        new SqlModuleStatusReader(registry, MODULE_NAME),
-      inject: [ModuleDataSourceRegistry],
-    },
-    {
-      provide: STATUS_WRITER,
-      useFactory: (registry: ModuleDataSourceRegistry) =>
-        new SqlModuleStatusWriter(registry, MODULE_NAME),
-      inject: [ModuleDataSourceRegistry],
-    },
-    {
-      provide: ADVANCE_STATUS,
-      useFactory: (reader: ModuleStatusReader, writer: ModuleStatusWriter) =>
-        new AdvanceStatusUseCase(reader, writer),
-      inject: [STATUS_READER, STATUS_WRITER],
-    },
-    {
-      provide: GET_MODULE_STATUS,
-      useFactory: (reader: ModuleStatusReader) => new GetModuleStatusQueryHandler(reader),
-      inject: [STATUS_READER],
-    },
     {
       provide: LEDGER_ENTRY_WRITER,
       useFactory: (registry: ModuleDataSourceRegistry) =>
@@ -1112,23 +710,12 @@ export class SqlLedgerEntryWriter implements LedgerEntryWriter {
 }
 
 for (const m of MODULES) {
-  const firstTarget = m.transitions[m.initial][0];
-  const illegalTo = illegalFromInitial(m);
-
+  // The HTTP status scaffold (`GET /<module>/status`, `POST /<module>/status/advance`) is not
+  // emitted: it exposed no business capability, only a probe into module lifecycle bookkeeping.
+  // The domain transition table (`module-status.ts`) stays because it names the schema and the
+  // transition rules that later real endpoints reuse.
   emit(m.folder, `internal/domain/module-status.ts`, domainTemplate(m));
   emit(m.folder, `internal/domain/module-status.spec.ts`, domainSpecTemplate(m));
-  emit(m.folder, `internal/application/port/in/advance-status.ts`, advancePortTemplate());
-  emit(m.folder, `internal/application/port/in/get-module-status.ts`, getPortTemplate());
-  emit(m.folder, `internal/application/port/out/module-status-reader.ts`, readerPortTemplate());
-  emit(m.folder, `internal/application/port/out/module-status-writer.ts`, writerPortTemplate());
-  emit(m.folder, `internal/application/advance-status.use-case.ts`, useCaseTemplate(m, firstTarget));
-  emit(
-    m.folder,
-    `internal/application/advance-status.use-case.spec.ts`,
-    useCaseSpecTemplate(m, firstTarget, illegalTo),
-  );
-  emit(m.folder, `internal/application/query/get-module-status.query.ts`, queryTemplate());
-  emit(m.folder, `internal/adapter/in/web/status.controller.ts`, controllerTemplate(m));
   emit(m.folder, `internal/adapter/out/persistence/schema.ts`, schemaTemplate(m));
   emit(m.folder, `internal/adapter/out/persistence/data-source.ts`, dataSourceTemplate());
   emit(
@@ -1136,8 +723,6 @@ for (const m of MODULES) {
     `internal/adapter/out/persistence/migrations/${MIGRATION_FILE}.ts`,
     migrationTemplate(m),
   );
-  emit(m.folder, `internal/adapter/out/persistence/sql-module-status-reader.ts`, sqlReaderTemplate());
-  emit(m.folder, `internal/adapter/out/persistence/sql-module-status-writer.ts`, sqlWriterTemplate());
   emit(m.folder, `${m.folder}.module.ts`, moduleTemplate(m));
   emit(m.folder, `api/index.ts`, apiIndexTemplate(m));
 
