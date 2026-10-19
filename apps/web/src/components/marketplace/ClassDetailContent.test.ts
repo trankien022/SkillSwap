@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { demoClassDetails, demoMarketplaceClasses } from '../../lib/marketplace/mock-data';
 import { toClassDetailView } from '../../lib/marketplace/api-mapping';
+import { ClassDetailApiGateway } from '../../lib/marketplace/api-class-detail';
 import type { ClassDetailView } from '../../lib/marketplace/types';
 
 /**
@@ -104,13 +105,12 @@ describe('Class detail page content-guard (data boundary)', () => {
     }
   });
 
-  it('real-data mapping: an unknown id resolves to null so the page renders 404', () => {
-    // `HttpMarketplaceGateway.findById` scans the list and returns null when no
-    // class matches; this guards that contract without network access.
-    const gatewayResult: ClassDetailView | null = demoMarketplaceClasses()
-      .map((item) => toClassDetailView(item))
-      .find((item) => item.id === 'not-a-real-class-id') ?? null;
-    expect(gatewayResult).toBeNull();
+  it('real-data mapping: an unknown id resolves to null so the page renders 404', async () => {
+    // `GET /classes/:id` answers 404 for an id the API cannot resolve;
+    // `ClassDetailApiGateway.getById` turns that into null. A non-UUID id misses the
+    // demo fixtures and the request path alike, so no network call is needed here.
+    const gateway = new ClassDetailApiGateway();
+    await expect(gateway.getById('not-a-real-class-id')).resolves.toBeNull();
   });
 
   it('real-data mapping: every marketplace class promotes to a valid detail view', () => {

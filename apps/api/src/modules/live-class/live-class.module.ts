@@ -21,6 +21,16 @@ import {
   PUBLIC_PROFILE_READER,
   type PublicProfileReader,
 } from '../account-profile/api';
+import {
+  SKILL_CATALOGUE_SUMMARY_READER,
+  SkillVerificationModule,
+  type SkillCatalogueSummaryReader,
+} from '../skill-verification/api';
+import { SkillVerificationClassSkillReader } from './internal/adapter/out/skill-verification/skill-verification-class-skill-reader';
+import {
+  CLASS_SKILL_READER,
+  type ClassSkillReader,
+} from './internal/application/port/out/class-skill-reader';
 import { SqlClassListReader } from './internal/adapter/out/persistence/sql-class-list-reader';
 import { SqlClassDetailReader } from './internal/adapter/out/persistence/sql-class-detail-reader';
 import { SqlMyBookingsReader } from './internal/adapter/out/persistence/sql-my-bookings-reader';
@@ -205,7 +215,7 @@ export class LiveClassRegistrar implements OnModuleInit {
 const systemClock: Clock = { now: () => new Date() };
 
 @Module({
-  imports: [AccountProfileModule],
+  imports: [AccountProfileModule, SkillVerificationModule],
   controllers: [
     ClassesController,
     ClassListController,
@@ -416,14 +426,26 @@ const systemClock: Clock = { now: () => new Date() };
       inject: [ModuleDataSourceRegistry],
     },
     {
+      provide: CLASS_SKILL_READER,
+      useFactory: (reader: SkillCatalogueSummaryReader): ClassSkillReader =>
+        new SkillVerificationClassSkillReader(reader),
+      inject: [SKILL_CATALOGUE_SUMMARY_READER],
+    },
+    {
       provide: GET_CLASS_DETAIL,
       useFactory: (
         classDetailReader: ClassDetailReader,
         publicTeacherReader: PublicTeacherReader,
+        classSkillReader: ClassSkillReader,
         clock: Clock,
       ): GetClassDetailPort =>
-        new GetClassDetailQueryHandler(classDetailReader, publicTeacherReader, clock),
-      inject: [CLASS_DETAIL_READER, PUBLIC_TEACHER_READER, CLOCK],
+        new GetClassDetailQueryHandler(
+          classDetailReader,
+          publicTeacherReader,
+          classSkillReader,
+          clock,
+        ),
+      inject: [CLASS_DETAIL_READER, PUBLIC_TEACHER_READER, CLASS_SKILL_READER, CLOCK],
     },
     {
       provide: MY_BOOKINGS_READER,

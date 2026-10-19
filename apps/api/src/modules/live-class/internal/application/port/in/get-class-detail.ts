@@ -45,10 +45,23 @@ export interface OwnBookingSummaryDto {
   readonly expiresAt: string | null;
 }
 
+export interface ClassDetailSkillDto {
+  readonly id: string;
+  readonly name: string;
+  readonly category: string;
+  readonly levels: readonly string[];
+}
+
 export interface ClassDetailDto {
   readonly id: string;
   readonly teacher: ClassDetailTeacherDto;
   readonly skillIds: readonly string[];
+  /**
+   * The catalogue facts for `skillIds`, resolved in this module through the
+   * skill-verification facade. Omitted (not empty) when the catalogue could not be
+   * read, so a client can tell "no catalogue data" from "the skill was deleted".
+   */
+  readonly skills?: readonly ClassDetailSkillDto[];
   readonly description: string;
   readonly startsAt: string;
   readonly durationMinutes: number;

@@ -5,6 +5,7 @@ import type {
   ClassDetailRecord,
 } from '../port/out/class-detail-reader';
 import type { Clock } from '../port/out/clock';
+import type { ClassSkillReader } from '../port/out/class-skill-reader';
 import type { PublicTeacherReader } from '../port/out/public-teacher-reader';
 
 describe('GetClassDetailQueryHandler', () => {
@@ -14,6 +15,7 @@ describe('GetClassDetailQueryHandler', () => {
 
   let mockClassDetailReader: jest.Mocked<ClassDetailReader>;
   let mockPublicTeacherReader: jest.Mocked<PublicTeacherReader>;
+  let mockClassSkillReader: jest.Mocked<ClassSkillReader>;
   let mockClock: Clock;
   let handler: GetClassDetailQueryHandler;
 
@@ -45,11 +47,74 @@ describe('GetClassDetailQueryHandler', () => {
     mockClock = {
       now: () => fixedNow,
     };
+    mockClassSkillReader = {
+      readMany: jest.fn().mockResolvedValue([
+        { id: 'sk-math', name: 'Mathematics', category: 'Math', levels: ['beginner', 'intermediate'] },
+        { id: 'sk-physics', name: 'Physics', category: 'Science', levels: ['intermediate'] },
+      ]),
+    };
     handler = new GetClassDetailQueryHandler(
       mockClassDetailReader,
       mockPublicTeacherReader,
+      mockClassSkillReader,
       mockClock,
     );
+  });
+
+  describe('Skill catalogue enrichment (FR-006)', () => {
+    it("reports the class's skills in skillIds order with their catalogue facts", async () => {
+      const result = await handler.execute({
+        classId: baseRecord.id,
+        callerId: 'stranger-caller',
+      });
+
+      expect(mockClassSkillReader.readMany).toHaveBeenCalledWith(['sk-math', 'sk-physics']);
+      expect(result.skills).toEqual([
+        { id: 'sk-math', name: 'Mathematics', category: 'Math', levels: ['beginner', 'intermediate'] },
+        { id: 'sk-physics', name: 'Physics', category: 'Science', levels: ['intermediate'] },
+      ]);
+      expect(result.skillIds).toEqual(['sk-math', 'sk-physics']);
+    });
+
+    it('omits skills the catalogue does not confirm instead of inventing them', async () => {
+      mockClassSkillReader.readMany.mockResolvedValueOnce([
+        { id: 'sk-physics', name: 'Physics', category: 'Science', levels: [] },
+      ]);
+
+      const result = await handler.execute({
+        classId: baseRecord.id,
+        callerId: 'stranger-caller',
+      });
+
+      expect(result.skills).toEqual([
+        { id: 'sk-physics', name: 'Physics', category: 'Science', levels: [] },
+      ]);
+    });
+
+    it('omits the field entirely when the catalogue read fails, without failing the page', async () => {
+      mockClassSkillReader.readMany.mockRejectedValueOnce(new Error('catalogue down'));
+
+      const result = await handler.execute({
+        classId: baseRecord.id,
+        callerId: 'stranger-caller',
+      });
+
+      expect(result.skills).toBeUndefined();
+      expect(result).not.toHaveProperty('skills');
+      expect(result.id).toBe(baseRecord.id);
+    });
+
+    it('reports an empty list for a class with no skills', async () => {
+      mockClassDetailReader.readDetail.mockResolvedValueOnce({ ...baseRecord, skillIds: [] });
+
+      const result = await handler.execute({
+        classId: baseRecord.id,
+        callerId: 'stranger-caller',
+      });
+
+      expect(mockClassSkillReader.readMany).not.toHaveBeenCalled();
+      expect(result.skills).toEqual([]);
+    });
   });
 
   describe('Absence and not-found behavior', () => {
@@ -96,8 +161,7 @@ describe('GetClassDetailQueryHandler', () => {
       expect(result.canBook).toBe(false);
     });
 
-    it('allows any authenticated caller to view published and full classes at any scheduled time', async () => {
-      mockClassDetailReader.readDetail.mockResolvedValueOnce({
+    it('allows any authenticated caller to view published and full classes at any scheduled time', async () => {      mockClassDetailReader.readDetail.mockResolvedValueOnce({
         ...baseRecord,
         state: 'full',
         availableSeats: 0,

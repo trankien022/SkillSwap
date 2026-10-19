@@ -7,16 +7,24 @@ import type {
   FindSkillsParams,
   SkillCatalogueReader,
   SkillCatalogueReaderResult,
+  SkillCatalogueRecord,
 } from '../port/out/skill-catalogue-reader';
 import type { SkillCursorTuple } from '../port/in/list-skills';
 
 class MockSkillCatalogueReader implements SkillCatalogueReader {
   lastParams?: FindSkillsParams;
   result: SkillCatalogueReaderResult = { items: [], nextCursor: null };
+  lastIds?: readonly string[];
+  byId: readonly SkillCatalogueRecord[] = [];
 
   async findSkills(params: FindSkillsParams): Promise<SkillCatalogueReaderResult> {
     this.lastParams = params;
     return this.result;
+  }
+
+  async findSkillsByIds(ids: readonly string[]): Promise<readonly SkillCatalogueRecord[]> {
+    this.lastIds = ids;
+    return this.byId;
   }
 }
 

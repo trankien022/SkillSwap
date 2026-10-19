@@ -22,6 +22,9 @@ import type { MarketplaceClass, MarketplacePage, MarketplaceQuery } from './type
  * - GET /classes  — keyset-paginated class list (keyword, skillId, date range, state)
  * - GET /skills   — standardized catalogue, needed to resolve skill names
  *
+ * The detail page does not use this gateway: `GET /classes/:id` returns the class
+ * and its resolved skills on its own (see `api-class-detail.ts`).
+ *
  * The API only understands `keyword`/`skillId`/dates/state, so the remaining
  * sidebar filters (university, format, rating, price, time window) are applied
  * over the fetched page here. They are client-side refinements of real data,
@@ -66,22 +69,6 @@ export class HttpMarketplaceGateway {
     const res = await callApi(`/classes${qs ? `?${qs}` : ''}`);
     const page = listClassesPageSchema.parse(await unwrapEnvelope<unknown>(res));
     return page.items;
-  }
-
-  /** One class for the detail page; returns null so the route can 404. */
-  async findById(id: string): Promise<MarketplaceClass | null> {
-    const catalogue = await this.getCatalogue();
-    // No single-class marketplace route exists, so the list is scanned for the
-    // id. The window is wide enough to include published classes not yet started.
-    const params = new URLSearchParams({
-      limit: '50',
-      state: 'published',
-      startDate: new Date().toISOString(),
-    });
-    const res = await callApi(`/classes?${params.toString()}`);
-    const page = listClassesPageSchema.parse(await unwrapEnvelope<unknown>(res));
-    const found = page.items.find((item) => item.id === id);
-    return found === undefined ? null : toMarketplaceClass(found, catalogue);
   }
 }
 

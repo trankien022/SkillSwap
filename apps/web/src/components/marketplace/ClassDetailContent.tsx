@@ -3,9 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
-import { HttpMarketplaceGateway } from '../../lib/marketplace/http-gateway';
 import { ClassDetailApiGateway } from '../../lib/marketplace/api-class-detail';
-import { toClassDetailView } from '../../lib/marketplace/api-mapping';
 import { DetailHeader } from './DetailHeader';
 import { ScheduleSection } from './ScheduleSection';
 import { SyllabusSection } from './SyllabusSection';
@@ -15,7 +13,6 @@ import { ReviewsSection } from './ReviewsSection';
 import { StickyBookingCard } from './StickyBookingCard';
 import type { ClassDetailView } from '../../lib/marketplace/types';
 
-const gateway = new HttpMarketplaceGateway();
 const verdictGateway = new ClassDetailApiGateway();
 
 type LoadState =
@@ -28,18 +25,16 @@ type LoadState =
 /**
  * Class detail composition (FR-006 detail).
  *
- * `GET /classes` is an authenticated endpoint, so the class is fetched
- * after mount (the bearer token lives in localStorage). The fetch drives
- * four honest states: loading skeleton, sign-in prompt when the session
- * is missing/expired, a retryable error, and the composed body once real
- * data arrives. The detail-only sections are derived from the real class
- * by `toClassDetailView` — never mocked.
+ * Every documented endpoint is authenticated, so the class is fetched after mount
+ * (the bearer token lives in localStorage). The fetch drives four honest states:
+ * loading skeleton, sign-in prompt when the session is missing/expired, a retryable
+ * error, and the composed body once real data arrives.
  *
- * Booking is read separately from `GET /classes/:id`, the only route that
- * answers *for this caller*: `canBook`, an existing hold (`ownBooking`) and
- * the free-seat count. Merging them is what lets the booking action refuse a
- * second seat, reuse a hold, and name why a class cannot be booked — with the
- * server's words rather than a guess.
+ * One read feeds the whole page: `GET /classes/:id` carries the class facts, the
+ * resolved skills (`skills`) and the verdict *for this caller* — `canBook`, an
+ * existing hold (`ownBooking`) and the free-seat count. Nothing here scans the list
+ * endpoint: a class outside the first page of `GET /classes` is still addressable
+ * by id, and its skill names no longer depend on a client-side catalogue join.
  */
 export function ClassDetailContent({ id }: { id: string }) {
   const [state, setState] = useState<LoadState>({ phase: 'loading' });
@@ -47,33 +42,18 @@ export function ClassDetailContent({ id }: { id: string }) {
   useEffect(() => {
     let active = true;
     setState({ phase: 'loading' });
-    Promise.all([
-      gateway.findById(id),
-      // A failed verdict read must not hide a class the catalogue already
-      // resolved: it resolves to null and the view keeps its honest defaults
-      // (not bookable, no known hold). The server is the only thing allowed to
-      // say yes, so "unknown" stays closed rather than optimistically open.
-      verdictGateway.getById(id).catch(() => null),
-    ])
-      .then(([item, verdict]) => {
+    // `GET /classes/:id` is the whole source for this page: it carries the class
+    // facts, the resolved skills, and the caller's booking verdict. A missing or
+    // invisible class is a 404, so an unresolved read is the not-found state.
+    verdictGateway
+      .getById(id)
+      .then((item) => {
         if (!active) return;
         if (item === null) {
           setState({ phase: 'not_found' });
           return;
         }
-        const view = toClassDetailView(item);
-        setState({
-          phase: 'ready',
-          item:
-            verdict === null
-              ? view
-              : {
-                  ...view,
-                  canBook: verdict.canBook,
-                  ownBooking: verdict.ownBooking,
-                  availableSeats: verdict.availableSeats,
-                },
-        });
+        setState({ phase: 'ready', item });
       })
       .catch((error) => {
         if (!active) return;

@@ -1,10 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import type { SkillCatalogueItemView } from '@skillswap/contracts';
 import { colors } from '@/design/tokens';
 import { BookingHttpGateway } from '@/infrastructure/http/booking-http-gateway';
-import { ClassReadGateway } from '@/infrastructure/http/class-read-gateway';
 import { BookButton } from './book-button';
 import { ClassDetailCoordinator, type CoordinatorState } from './class-detail-coordinator';
 import { classDetailStyles as styles } from './class-detail-styles';
@@ -41,7 +39,6 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
   const accountId = user?.id ?? '';
 
   const isMountedRef = useRef(true);
-  const [skillsList, setSkillsList] = useState<SkillCatalogueItemView[]>([]);
   const [coordinatorState, setCoordinatorState] = useState<CoordinatorState>({
     phase: 'idle',
     classDetail: null,
@@ -112,28 +109,6 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
       };
     }, [coordinator]),
   );
-
-  // Load skills catalogue in background to map skill IDs to readable names
-  useEffect(() => {
-    if (!gatewayClient) return;
-    let active = true;
-    const readGateway = new ClassReadGateway(gatewayClient);
-    readGateway
-      .getAllSkills(10, 50)
-      .then((res) => {
-        if (active && isMountedRef.current) {
-          setSkillsList(res.items);
-        }
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, [gatewayClient]);
-
-  const skillMap = useMemo(() => {
-    return new Map(skillsList.map((s) => [s.id, s.name]));
-  }, [skillsList]);
 
   const onRefresh = useCallback(async () => {
     if (!coordinator) return;
@@ -359,13 +334,16 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
         <Text style={styles.sectionTitle}>{t('ClassDetail.description')}</Text>
         <Text style={styles.descriptionText}>{detail.description}</Text>
 
-        {/* Skills: fallback localized label instead of raw UUID */}
+        {/* Skills: the API resolves the names in `GET /classes/:id`; an id the
+            catalogue does not confirm falls back to a localized label, never a raw UUID. */}
         {detail.skillIds.length > 0 && (
           <View style={styles.skillsSection}>
             <Text style={styles.fieldSubTitle}>{t('ClassDetail.skills')}</Text>
             <View style={styles.skillChipsRow}>
               {detail.skillIds.map((skillId) => {
-                const name = skillMap.get(skillId) ?? t('ClassDetail.skillPending');
+                const name =
+                  detail.skills?.find((skill) => skill.id === skillId)?.name ??
+                  t('ClassDetail.skillPending');
                 return (
                   <View key={skillId} style={styles.skillChip}>
                     <Text style={styles.skillChipText}>{name}</Text>

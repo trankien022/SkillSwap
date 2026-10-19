@@ -86,6 +86,11 @@ import {
   SKILL_CATALOGUE_READER,
   type SkillCatalogueReader,
 } from './internal/application/port/out/skill-catalogue-reader';
+import { mapSkillToCatalogueItem } from './internal/application/query/list-skills.query';
+import {
+  SKILL_CATALOGUE_SUMMARY_READER,
+  type SkillCatalogueSummaryReader,
+} from './api/skill-catalogue-summary-reader';
 import { MODULE_NAME } from './internal/domain/module-status';
 
 /** Registers this module's DataSource pool and the FR-003 verified-student consumer. */
@@ -287,8 +292,16 @@ export class SkillVerificationRegistrar implements OnModuleInit {
         new ListSkillsQueryHandler(reader),
       inject: [SKILL_CATALOGUE_READER],
     },
+    {
+      provide: SKILL_CATALOGUE_SUMMARY_READER,
+      useFactory: (reader: SkillCatalogueReader): SkillCatalogueSummaryReader => ({
+        readMany: async (skillIds) =>
+          (await reader.findSkillsByIds(skillIds)).map(mapSkillToCatalogueItem),
+      }),
+      inject: [SKILL_CATALOGUE_READER],
+    },
     SkillVerificationRegistrar,
   ],
-  exports: [EVIDENCE_SUMMARY_READER],
+  exports: [EVIDENCE_SUMMARY_READER, SKILL_CATALOGUE_SUMMARY_READER],
 })
 export class SkillVerificationModule {}

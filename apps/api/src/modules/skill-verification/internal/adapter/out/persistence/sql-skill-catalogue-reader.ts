@@ -88,4 +88,27 @@ export class SqlSkillCatalogueReader implements SkillCatalogueReader {
 
     return { items, nextCursor };
   }
+
+  async findSkillsByIds(ids: readonly string[]): Promise<readonly SkillCatalogueRecord[]> {
+    const unique = [...new Set(ids)];
+    if (unique.length === 0) {
+      return [];
+    }
+
+    const source = this.registry.get(this.moduleName);
+    const sql = `
+      SELECT "id", "name", "category", "active"
+        FROM ${this.table}
+       WHERE "active" = true
+         AND "id" = ANY($1::text[])
+    `;
+
+    const rows = (await source.query(sql, [unique])) as SkillRow[];
+    return rows.map((r) => ({
+      id: String(r.id),
+      name: r.name,
+      category: r.category,
+      active: r.active,
+    }));
+  }
 }
