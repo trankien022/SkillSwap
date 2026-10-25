@@ -3,7 +3,7 @@ title: W5 — In-class chat (FR-012)
 type: plan
 date: 2026-10-24
 topic: w5-in-class-chat
-status: Unblocked — OQ-009 resolved 2026-10-25 (chat ships, contact sharing blocked)
+status: Phase 0 done — ADR-036 written 2026-10-26; Phases 1+ await the D4 detector table
 owner: Group 4
 ---
 
