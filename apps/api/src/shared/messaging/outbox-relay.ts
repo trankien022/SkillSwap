@@ -128,6 +128,11 @@ export class OutboxRelay implements OnApplicationBootstrap, OnApplicationShutdow
             id: row.id,
             eventType: row.event_type,
             occurredAt: row.created_at.toISOString(),
+            // ADR-013 Amendment A (W2 C1): rows written before the column carry null, which
+            // stays absent so consumers read them as unstamped rather than as sequence 0.
+            ...(row.sequence === null || row.sequence === undefined
+              ? {}
+              : { sequence: row.sequence }),
             payload: row.payload,
           });
         }

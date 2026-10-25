@@ -7,6 +7,8 @@ import { CreateWalletTopUpTables1791072000001 } from './migrations/1791072000001
 import { AddSettlementIdempotency1791072000002 } from './migrations/1791072000002-AddSettlementIdempotency';
 import { AddTopUpSettlementColumns1791072000003 } from './migrations/1791072000003-AddTopUpSettlementColumns';
 import { AddOutboxRetryBackoff1791072000500 } from './migrations/1791072000500-AddOutboxRetryBackoff';
+import { AddOutboxSequence1791072000600 } from './migrations/1791072000600-AddOutboxSequence';
+import { AddProcessedEventSequence1791072000601 } from './migrations/1791072000601-AddProcessedEventSequence';
 import { SCHEMA } from './schema';
 
 /** One connection pool per module schema (ARCHITECTURE.md §5). */
@@ -28,6 +30,10 @@ export function createModuleDataSource(config: ApiConfig, schema: string = SCHEM
       AddTopUpSettlementColumns1791072000003,
       // ADR-013 Amendment A (W2 C2): shared outbox backoff, one migration per schema.
       AddOutboxRetryBackoff1791072000500,
+      // ADR-013 Amendment A (W2 C1): per-aggregate sequence numbers, emitter half then
+      // consumer half, one pair of migrations per schema.
+      AddOutboxSequence1791072000600,
+      AddProcessedEventSequence1791072000601,
     ],
     migrationsTableName: MIGRATIONS_TABLE,
     synchronize: false,

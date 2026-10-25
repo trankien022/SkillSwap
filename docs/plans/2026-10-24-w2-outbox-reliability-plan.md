@@ -123,14 +123,40 @@ Only if Phase 0b shows a gap.
 
 ## Phase 4 — Ordering guards where needed (D4, after C1)
 
-Only for consumers identified in Phase 0b.3 as order-sensitive:
+C1 was answered **(c): per-aggregate sequence numbers**, so this phase is not the per-consumer
+`occurredAt` comparison originally sketched here. Last-writer-wins by `occurredAt` stays as each
+projection's own rule; it is no longer what orders delivery, because a replayed `DEAD` row can
+carry a correct timestamp and still arrive after a newer one.
 
-- `live-class` trust projection (`project-teacher-trust.use-case.ts`) already applies "last-writer-wins by occurredAt" for `upsertVerified`/`upsertSkillApproval` — verify and test that guarantee explicitly rather than by reading the comment.
-- `account-profile` notification registrar: confirmed-before-cancelled inversion would show "cancelled" then "confirmed". Compare `occurredAt` before writing an out-of-order notification, or accept and document.
+What shipped, all inside `shared/messaging` so no handler can forget it:
 
-**Tests:** deliver events out of order, assert final projection state is the newest one.
+- **Stamp at insert.** `insertOutboxStatement` allocates `COALESCE(MAX(sequence), -1) + 1` grouped
+  by the aggregate id lifted from `bookingId` / `classId` / `accountId` / `transactionId` — inside
+  the writing statement, so two concurrent writers cannot receive the same number.
+- **Carry on the wire.** `BusMessage.sequence`; `parseEnvelope` tolerates its absence, because
+  rows written before this phase are still deliverable and a missing sequence means "oldest",
+  never "invalid" (E8: emitters first, consumer strictness last).
+- **Guard in the store.** `PostgresProcessedEventStore.runOnce` ignores an event whose sequence is
+  below the watermark it has already applied for that aggregate, recording it `DONE` rather than
+  leaving it pending forever. The watermark is a `DONE` row in `processed_events` keyed
+  `<queue>:seq:<aggregateId>`, written only **after** the handler, so a failed handler cannot
+  advance it.
+- **Schema.** Two migrations × seven schemas: `outbox_messages.aggregate_id`/`sequence` (nullable,
+  with `ix_outbox_messages_aggregate`) and `processed_events.sequence` (nullable).
 
-**Commit:** `test(shared): prove consumers are order-tolerant across modules`
+An aggregate with no watermark has seen nothing, so its first event always applies — and
+`loadWatermark` returns `undefined`, not `null`, for that state. Collapsing the two silently
+disables the guard for every consumer; that bug was found by the E2E below and is pinned by it.
+
+**Tests:** `test/event-ordering.e2e-spec.ts` delivers sequence 2 then sequence 1 through one real
+consumer and asserts the stale state is not applied, a genuinely newer change still is, an
+unstamped first event is honoured, and sequences are independent per aggregate. Verified by
+disabling the guard: 3 of its 5 cases fail. `test/room-idle-payment.e2e-spec.ts` proves the money
+path (`room_idle` → Teacher paid 45 credits, nothing left pending) and the admission refusals.
+`test(spec-guards)` — each module now carries its own migration-registration guard, because module
+isolation forbids `bootstrap/` from reaching module internals.
+
+**Commit:** `feat(shared): order events per aggregate on the outbox`
 
 ---
 

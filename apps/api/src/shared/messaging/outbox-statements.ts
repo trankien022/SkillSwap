@@ -8,18 +8,38 @@ export interface OutboxRow {
   created_at: Date;
   /** Attempts already burned by terminal failures; absent on rows claimed before the column. */
   attempts?: number;
+  /** ADR-013 Amendment A (W2 C1): position within the aggregate; null on legacy rows. */
+  sequence?: number | null;
 }
 
-/** Inserts the event body only — id, status and timestamps are owned by the outbox. */
+/**
+ * Inserts the event body only — id, status, timestamps and the aggregate sequence are owned
+ * by the outbox.
+ *
+ * ADR-013 Amendment A (W2 C1): the sequence is computed **inside this statement**, from the
+ * rows already in this table for the same aggregate. Doing it here rather than in the caller
+ * is what makes it correct — the caller's transaction is the one that also writes the
+ * aggregate's state change, so the number cannot be handed out to an event whose change is
+ * later rolled back, and the `COALESCE(MAX(...), -1) + 1` is evaluated under the table lock of
+ * the enclosing transaction. The aggregate id is lifted from the payload by key, which is the
+ * same key the consumers read.
+ */
 export function insertOutboxStatement(schema: string): string {
   const table = qualified(schema, OUTBOX_TABLE);
-  return `INSERT INTO ${table} (event_type, payload) VALUES ($1, $2::jsonb) RETURNING id`;
+  return (
+    `INSERT INTO ${table} (event_type, payload, aggregate_id, sequence) ` +
+    `SELECT $1, $2::jsonb, agg.value, COALESCE(MAX(o.sequence), -1) + 1 ` +
+    `FROM (SELECT COALESCE($2::jsonb->>'bookingId', $2::jsonb->>'classId', ` +
+    `$2::jsonb->>'accountId', $2::jsonb->>'transactionId') AS value) agg ` +
+    `LEFT JOIN ${table} o ON o.aggregate_id = agg.value ` +
+    `GROUP BY agg.value RETURNING id, sequence`
+  );
 }
 
 export function claimPendingStatement(schema: string): string {
   const table = qualified(schema, OUTBOX_TABLE);
   return (
-    `SELECT id, event_type, payload, created_at, attempts FROM ${table} ` +
+    `SELECT id, event_type, payload, created_at, attempts, sequence FROM ${table} ` +
     // ADR-013 Amendment A (W2 C2): a row backing off from a retryable failure is not due yet.
     // `NULL` means "due now", which is every row written before the column existed.
     `WHERE status = 'PENDING' AND (next_attempt_at IS NULL OR next_attempt_at <= now()) ` +
