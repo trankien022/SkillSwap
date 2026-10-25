@@ -80,4 +80,10 @@ export interface ClassRepository {
   ): Promise<{ cancelled: boolean }>;
   /** FR-020: classes past their scheduled end that still need an outcome. */
   findAwaitingCompletion(now: Date): Promise<CompletableClass[]>;
+  /**
+   * FR-020 / AC-035: classes that have started but have not reached their scheduled end
+   * and still carry a live state, so the idle rule may close them early. Bounded by
+   * `hasStarted` so an unstarted class can never be handed to the idle rule.
+   */
+  findInProgressBeforeEnd(now: Date): Promise<CompletableClass[]>;
 }

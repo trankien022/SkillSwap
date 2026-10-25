@@ -187,11 +187,17 @@ export class SqlClassRepository implements ClassRepository {
     const classes = qualified(this.schema, CLASSES_TABLE);
     const bookings = qualified(this.schema, BOOKINGS_TABLE);
     return source.transaction(async (manager) => {
+      // AC-035: an idle room may only end a class that has already started. The
+      // condition lives in the UPDATE, not only in the caller, so the basis cannot be
+      // recorded for an unstarted class by any code path — this is the statement that
+      // releases the Teacher's income, and "completed before it started" must stay
+      // unrepresentable rather than merely forbidden (ADR-021 Amendment A).
+      const basisGuard = basis === 'room_idle' ? ` AND "starts_at" <= now()` : '';
       const rows = returnedRows<{ id: string; teacher_id: string }>(
         await manager.query(
           `UPDATE ${classes}
              SET "state" = 'completed', "completed_at" = now(), "completion_basis" = $2, "updated_at" = now()
-           WHERE "id" = $1 AND "state" IN ('published', 'full', 'in_progress')
+           WHERE "id" = $1 AND "state" IN ('published', 'full', 'in_progress')${basisGuard}
            RETURNING "id", "teacher_id"`,
           [classId, basis],
         ),
@@ -249,6 +255,31 @@ export class SqlClassRepository implements ClassRepository {
       ]);
       return { cancelled: true };
     });
+  }
+
+  async findInProgressBeforeEnd(now: Date): Promise<CompletableClass[]> {
+    const source = this.registry.get(this.moduleName);
+    const classes = qualified(this.schema, CLASSES_TABLE);
+    const rows = (await source.query(
+      `SELECT "id", "teacher_id", "state", "starts_at", "duration_minutes" FROM ${classes}
+        WHERE "state" IN ('published', 'full', 'in_progress')
+          AND "starts_at" <= $1
+          AND ("starts_at" + ("duration_minutes" || ' minutes')::interval) > $1`,
+      [now.toISOString()],
+    )) as Array<{
+      id: string;
+      teacher_id: string;
+      state: string;
+      starts_at: Date | string;
+      duration_minutes: number;
+    }>;
+    return rows.map((row) => ({
+      id: row.id,
+      teacherId: row.teacher_id,
+      state: row.state as ClassState,
+      startsAt: toDate(row.starts_at),
+      durationMinutes: row.duration_minutes,
+    }));
   }
 
   async findAwaitingCompletion(now: Date): Promise<CompletableClass[]> {

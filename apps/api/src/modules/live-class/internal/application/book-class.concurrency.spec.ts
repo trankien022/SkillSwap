@@ -149,6 +149,7 @@ function classRepo(view: PersistedClass): ClassRepository {
     completeAndEmit: jest.fn(async () => ({ completed: false, bookingIds: [] })),
     cancelWithReason: jest.fn(async () => ({ cancelled: false })),
     findAwaitingCompletion: jest.fn(async () => []),
+    findInProgressBeforeEnd: jest.fn(async () => []),
   };
 }
 

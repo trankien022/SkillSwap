@@ -61,6 +61,10 @@ describe('E2E: book → settle → room → complete → release', () => {
       verified: true,
       approvedLevels: { 'skill-guitar': 'advanced' },
     });
+    // AC-034: booking is gated on an effective approved student verification. This suite
+    // exercises booking, so the learner must hold one; the refusal itself is covered by
+    // the live-class unit and controller specs.
+    await seedTeacherTrust(harness, { teacherId: learnerId, verified: true });
     api.actAs(learnerId);
   });
 

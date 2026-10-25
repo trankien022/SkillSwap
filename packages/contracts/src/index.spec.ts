@@ -493,6 +493,19 @@ describe('classCompletedSchema (FR-020 / ADR-021)', () => {
       }),
     ).toThrow();
   });
+
+  // AC-035: the empty-room path publishes the same event with its own basis. A consumer
+  // that dropped it would dead-letter a real payout and strand the Teacher's income.
+  it('accepts the room_idle basis', () => {
+    const event = {
+      classId: 'cls-1',
+      teacherId: 't1',
+      basis: 'room_idle',
+      completedAt: '2026-10-12T11:00:00.000Z',
+      bookings: [{ bookingId: 'b1', learnerId: 'l1', priceCredits: 100 }],
+    };
+    expect(classCompletedSchema.parse(event)).toEqual(event);
+  });
 });
 
 describe('bookingRequestSchema', () => {

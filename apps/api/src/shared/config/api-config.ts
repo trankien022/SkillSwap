@@ -47,6 +47,8 @@ export class ApiConfig {
   readonly jitsiDomain: string;
   readonly jitsiTokenTtlSeconds: number;
   readonly jitsiOpenMinutes: number;
+  /** FR-011 / AC-035: shared secret the Jitsi presence webhook must present. Empty = refuse all. */
+  readonly jitsiWebhookSecret: string;
   readonly logLevel: string;
 
   // FR-008 / ADR-033: SePay Payment Gateway (hosted checkout + IPN).
@@ -130,6 +132,9 @@ export class ApiConfig {
     this.jitsiDomain = readString('JITSI_DOMAIN', 'localhost:8443');
     this.jitsiTokenTtlSeconds = readInt('JITSI_TOKEN_TTL_SECONDS', 3600);
     this.jitsiOpenMinutes = readInt('JITSI_OPEN_MINUTES', 15);
+    // Deliberately empty by default: an unset secret must refuse presence rather than
+    // accept it, so a misconfigured deployment cannot have its classes closed by strangers.
+    this.jitsiWebhookSecret = readString('JITSI_WEBHOOK_SECRET', '');
 
     this.s3Endpoint = readString('S3_ENDPOINT', 'http://localhost:9000');
     this.s3Region = readString('S3_REGION', 'us-east-1');

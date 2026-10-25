@@ -22,6 +22,7 @@ function setup(trust = new FakeTeacherTrustReader()) {
     completeAndEmit: jest.fn(async () => ({ completed: false, bookingIds: [] })),
     cancelWithReason: jest.fn(async () => ({ cancelled: false })),
     findAwaitingCompletion: jest.fn(async () => []),
+    findInProgressBeforeEnd: jest.fn(async () => []),
   };
   const clock: Clock = { now: () => NOW };
   return { useCase: new CreateClassUseCase(classes, clock, trust), classes, calls };

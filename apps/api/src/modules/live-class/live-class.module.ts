@@ -40,6 +40,20 @@ import { ClassDetailController } from './internal/adapter/in/web/class-detail.co
 import { MyBookingsController } from './internal/adapter/in/web/my-bookings.controller';
 import { RatingsController } from './internal/adapter/in/web/ratings.controller';
 import { SqlRatingRepository } from './internal/adapter/out/persistence/sql-rating-repository';
+import { SqlPresenceRepository } from './internal/adapter/out/persistence/sql-presence-repository';
+import {
+  PRESENCE_REPOSITORY,
+  type PresenceRepository,
+} from './internal/application/port/out/presence-repository';
+import {
+  RECORD_PRESENCE,
+  type RecordPresencePort,
+} from './internal/application/port/in/record-presence';
+import { RecordPresenceUseCase } from './internal/application/record-presence.use-case';
+import {
+  JITSI_WEBHOOK_SECRET,
+  JitsiPresenceController,
+} from './internal/adapter/in/web/jitsi-presence.controller';
 import { RATING_REPOSITORY, type RatingRepository } from './internal/application/port/out/rating-repository';
 import { SUBMIT_RATING, type SubmitRatingPort } from './internal/application/port/in/submit-rating';
 import { SubmitRatingUseCase } from './internal/application/submit-rating.use-case';
@@ -220,6 +234,7 @@ const systemClock: Clock = { now: () => new Date() };
     MyBookingsController,
     RatingsController,
     ClassDetailController,
+    JitsiPresenceController,
   ],
   providers: [
     {
@@ -317,9 +332,11 @@ const systemClock: Clock = { now: () => new Date() };
       useFactory: (
         bookings: BookingRepository,
         classes: ClassRepository,
+        presence: PresenceRepository,
         clock: Clock,
-      ): MarkTeacherNoShowPort => new MarkTeacherNoShowUseCase(bookings, classes, clock),
-      inject: [BOOKING_REPOSITORY, CLASS_REPOSITORY, CLOCK],
+      ): MarkTeacherNoShowPort =>
+        new MarkTeacherNoShowUseCase(bookings, classes, presence, clock),
+      inject: [BOOKING_REPOSITORY, CLASS_REPOSITORY, PRESENCE_REPOSITORY, CLOCK],
     },
     {
       provide: EXPIRE_PENDING_BOOKINGS,
@@ -383,9 +400,33 @@ const systemClock: Clock = { now: () => new Date() };
       useFactory: (
         classes: ClassRepository,
         bookings: BookingRepository,
+        presence: PresenceRepository,
         clock: Clock,
-      ): CompleteElapsedClassesPort => new CompleteElapsedClassesUseCase(classes, bookings, clock),
-      inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY, CLOCK],
+      ): CompleteElapsedClassesPort =>
+        new CompleteElapsedClassesUseCase(classes, bookings, presence, clock),
+      inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY, PRESENCE_REPOSITORY, CLOCK],
+    },
+    {
+      provide: PRESENCE_REPOSITORY,
+      useFactory: (registry: ModuleDataSourceRegistry): PresenceRepository =>
+        new SqlPresenceRepository(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
+      provide: RECORD_PRESENCE,
+      useFactory: (
+        classes: ClassRepository,
+        bookings: BookingRepository,
+        presence: PresenceRepository,
+      ): RecordPresencePort => new RecordPresenceUseCase(classes, bookings, presence),
+      inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY, PRESENCE_REPOSITORY],
+    },
+    {
+      // AC-035: the presence webhook's shared secret. An empty value makes the endpoint
+      // refuse every request, which is the safe reading of "not configured".
+      provide: JITSI_WEBHOOK_SECRET,
+      useFactory: (config: ApiConfig): string => config.jitsiWebhookSecret,
+      inject: [ApiConfig],
     },
     {
       provide: ClassCompletionSweeper,

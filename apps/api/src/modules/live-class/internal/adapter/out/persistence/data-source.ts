@@ -9,6 +9,7 @@ import { CreateRoomAccessIncidents1791072000003 } from './migrations/17910720000
 import { AddClassCompletionColumns1791072000004 } from './migrations/1791072000004-AddClassCompletionColumns';
 import { CreateTeacherTrustProjection1791072000005 } from './migrations/1791072000005-CreateTeacherTrustProjection';
 import { CreateClassRatings1791072000006 } from './migrations/1791072000006-CreateClassRatings';
+import { CreateClassPresence1791072000007 } from './migrations/1791072000007-CreateClassPresence';
 import { AddOutboxRetryBackoff1791072000500 } from './migrations/1791072000500-AddOutboxRetryBackoff';
 import { SCHEMA } from './schema';
 
@@ -32,6 +33,8 @@ export function createModuleDataSource(config: ApiConfig, schema: string = SCHEM
       AddClassCompletionColumns1791072000004,
       CreateTeacherTrustProjection1791072000005,
       CreateClassRatings1791072000006,
+      // AC-035: room presence for the early-completion rule.
+      CreateClassPresence1791072000007,
       // ADR-013 Amendment A (W2 C2): shared outbox backoff, one migration per schema.
       AddOutboxRetryBackoff1791072000500,
     ],

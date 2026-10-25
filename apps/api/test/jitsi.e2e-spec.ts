@@ -102,6 +102,8 @@ describeJitsi('E2E: Jitsi room access (real host)', () => {
       verified: true,
       approvedLevels: { 'skill-guitar': 'advanced' },
     });
+    // AC-034: the learner must hold an approved student verification to book at all.
+    await seedTeacherTrust(harness, { teacherId: learnerId, verified: true });
 
     api.actAs(learnerId);
     const topUp = await api.post('/api/wallet/top-ups', { amountVnd: 100_000 });

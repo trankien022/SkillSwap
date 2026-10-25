@@ -145,8 +145,9 @@ export class ClassesController {
   @ApiOperation({ summary: 'Mark a teacher no-show for a booking (FR-007 / AC-024)' })
   @ApiOkResponse({ type: MarkTeacherNoShowResultDto, description: 'Whether the booking was cancelled for no-show' })
   noShow(@Param('bookingId') bookingId: string): Promise<MarkTeacherNoShowResult> {
-    // Join evidence comes from FR-011 room access; until then a null join is assumed.
-    return this.markNoShow.execute({ bookingId, teacherJoinedAt: null });
+    // AC-024 / AC-035: join evidence comes from `class_presence`, so the caller supplies
+    // nothing. A Learner pressing this can no longer assert an absence that did not happen.
+    return this.markNoShow.execute({ bookingId });
   }
 
   @Post('bookings/:bookingId/room-access')

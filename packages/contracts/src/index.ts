@@ -42,11 +42,18 @@ export const bookingCancelledSchema = z.object({
 });
 export type BookingCancelled = z.infer<typeof bookingCancelledSchema>;
 
-/** FR-020 / ADR-021 Amendment A: only the scheduled end completes a class. */
+/**
+ * FR-020 / ADR-021: how a class completed.
+ *
+ * `scheduled_end` — the scheduled end passed. `room_idle` — everyone left the room and
+ * stayed away past the grace period (AC-035). Both are published, because the wallet's
+ * release does not depend on which one happened, and a consumer that rejected `room_idle`
+ * would dead-letter a legitimate payout and leave the Teacher's income in pending.
+ */
 export const classCompletedSchema = z.object({
   classId: z.string().min(1),
   teacherId: z.string().min(1),
-  basis: z.enum(['scheduled_end']),
+  basis: z.enum(['scheduled_end', 'room_idle']),
   completedAt: z.string().datetime({ offset: true }),
   bookings: z.array(
     z.object({
