@@ -140,7 +140,7 @@ The requirements above are stated as `FR`/`BR`/`NFR` clauses. This section resta
 | US-M1 | As a teacher, I want to publish a class for an approved skill, so that learners can find and book it. | FR-005, UC-010 |
 | US-M2 | As a learner, I want to search and filter classes by skill, schedule and price, so that I can find one that fits. | FR-006, UC-011 |
 | US-M3 | As a learner, I want to read a class detail page with the teacher, syllabus and reviews, so that I can judge whether it is worth booking. | FR-006, UC-011 |
-| US-M4 | As a learner, I want a booking to be rejected clearly when I lack balance, the seat is gone or I am too late, so that I never hold a seat I cannot pay for. | FR-007, BR-024/BR-025, UC-003 |
+| US-M4 | As a learner, I want a booking to be rejected clearly when I lack balance, the seat is gone, I am too late or **my student verification is not approved**, so that I never hold a seat I cannot pay for. | FR-007, BR-001/BR-024/BR-025, UC-003, AC-034 |
 | US-M5 | As a learner, I want my booking and its payment to either both happen or neither, so that wallet and bookings never disagree. | FR-007, FR-009, AC-003–AC-005, AC-010 |
 
 **US-W — Traceable wallet**
@@ -167,9 +167,10 @@ The requirements above are stated as `FR`/`BR`/`NFR` clauses. This section resta
 | US-O1 | As an administrator, I want an operations view over the audit trail, so that I can resolve exceptions and see platform health. | FR-015, UC-014 |
 
 **Honest gaps.** The following are recorded because a story above implies them but the implementation does not yet enforce them; they are not claims that the story is met:
-- there is no withdrawal endpoint, so US-W4 cannot be exercised (see §3.7 and Appendix C.3);
-- `BookClassUseCase` does not check that the learner is a verified student, so US-M4's eligibility gate is partial;
+- **US-W4 (Teacher withdrawal) is out of MVP scope** (2026-10-25, OQ-011: no payout rail). This is a **scope exclusion, not a gap**: FR-014 and AC-008/AC-013/AC-014 are deferred with it.
 - class completion commits before wallet settlement and does not check booking expiry, so US-M5's atomicity holds for booking but not for completion.
+
+> **Resolved 2026-10-25 (Product Owner — W1 gate C1/C2):** an account **without an effective approved student verification may not book a class** (BR-001 applies to booking as well as teaching; BR-004 makes it depend on the current status). Enforcing this is therefore a **defect to fix**, not a design choice, and it closes with AC-034. Explore/browse remains open to unverified accounts (US-T1). Until the code enforces it, US-M4's eligibility gate is partial.
 
 ### 2.4 Constraints
 
@@ -183,7 +184,7 @@ The requirements above are stated as `FR`/`BR`/`NFR` clauses. This section resta
 | C-006 | Mobile-first responsive web; no horizontal scrolling at 360 px/390 px. | PRD NFR-001, Confirmed |
 | C-007 | Vietnamese and English only; no mixed language on one screen. | PRD NFR-002, Confirmed |
 | C-008 | Stack: Next.js web frontend, Expo/React Native mobile client, NestJS backend, PostgreSQL with TypeORM. | Engineering decision (ADR-015 for mobile) |
-| C-009 | All class communication stays in-platform; contact sharing is prohibited per approved policy. | SR-BR-008, Confirmed (enforcement mechanism deferred — OQ-009) |
+| C-009 | All class communication stays in-platform; contact sharing is prohibited per approved policy. | SR-BR-008, Confirmed — **policy approved 2026-10-25: `block`** (message rejected, nothing stored; OQ-009). The off-platform-bypass risk (BRD RISK-009) is accepted, not solved |
 | C-010 | MVP has no automated report/account-lock system; ratings + comments surface bad behavior. | intent.md, Confirmed |
 
 ### 2.5 Assumptions and dependencies
@@ -229,7 +230,7 @@ None. The clients are browser-based web plus a native mobile app; the only clien
 - All client–server traffic over HTTPS; JSON request/response bodies.
 - REST API surface API-001–API-014 and webhook EVT-001 per PRD §10, each with defined auth, payload and error classes.
 - Every command with financial effect carries an **idempotency key** and **trace ID**; gateway webhooks carry signature, timestamp and replay nonce.
-- Notifications (FR-016) are emitted for: verification outcome, booking confirmed/cancelled, class starting soon, wallet transaction completed, withdrawal outcome. The delivery channel mix (in-app required; push/email optional) is not fixed by an approved requirement and is treated as in-app notification center for MVP scope (see Appendix A, OQ cross-reference).
+- Notifications (FR-016) are emitted for: verification outcome, booking confirmed/cancelled, class starting soon, wallet transaction completed, withdrawal outcome. `withdrawal_outcome` is **declared but has no producer and will not get one this release** (FR-014 deferred, 2026-10-25). The delivery channel mix (in-app required; push/email optional) is not fixed by an approved requirement and is treated as in-app notification center for MVP scope (see Appendix A, OQ cross-reference).
 - Jitsi media flows directly between participants and Jitsi (WebRTC); the application never carries media.
 
 ### 3.2 Functional requirements
@@ -246,20 +247,20 @@ Priority follows MoSCoW from the PRD (`Must` / `Should`). Status preserves the P
 | FR-004 | The system shall let a Verifier review skill evidence requests whose skill is within their expertise: they shall see only matching pending requests, claim one (which locks it to them permanently), and approve or reject it; only such an active, expertise-matched, non-owner Verifier may decide, and an Administrator may suspend or revoke a Verifier. | Must | intent.md | Confirmed core; expertise seeded (ADR-027) |
 | FR-005 | Only a verified Teacher shall be able to create and publish an online class with skill, description, schedule, duration, price and approved capacity rules. | Must | intent.md | Confirmed core; price resolved (OQ-002, self-price); capacity resolved (OQ-007, AC-028–AC-030) |
 | FR-006 | The system shall let a Learner browse and search open classes by class information and Teacher profile. | Must | intent.md | Confirmed core; taxonomy resolved (OQ-001, ADR-026); search granularity open (FR-006 Phase 0) |
-| FR-007 | The system shall only allow booking a class that has capacity, starts at least 24 hours from now, and lasts 30 minutes to 3 hours. | Must | intent.md | Confirmed core; capacity resolved (OQ-007, AC-028–AC-030); refund/cancellation resolved (OQ-003, AC-022–AC-027) |
+| FR-007 | The system shall only allow booking a class that has capacity, starts at least 24 hours from now, and lasts 30 minutes to 3 hours, **and only by an account holding an effective approved student verification**. | Must | intent.md | Confirmed core; capacity resolved (OQ-007, AC-028–AC-030); refund/cancellation resolved (OQ-003, AC-022–AC-027); learner-verification gate decided 2026-10-25 (BR-001/BR-004, AC-034) |
 | FR-008 | The system shall allow top-up through a payment gateway at the applied rate, with exactly-once callback processing. | Must | intent.md | Confirmed core; gateway selected (OQ-011 / ADR-033) |
 | FR-009 | When a Learner buys a class, the system shall atomically debit the full price and allocate 90% to the Teacher and 10% platform fee. | Must | intent.md | Confirmed split; release timing open (OQ-006) |
 | FR-010 | The system shall let a wallet owner view balance and history of top-ups, payments, income, fees and withdrawals. | Must | intent.md | Confirmed core |
 | FR-011 | The system shall grant the Learner and Teacher of a booking access to the correct Jitsi room within the permitted time window. | Must | intent.md | Confirmed core |
-| FR-012 | The system shall provide in-class chat to booking participants only; outsiders shall be denied and contact sharing handled per approved policy. | Should | intent.md | Confirmed; enforcement open (OQ-009) |
+| FR-012 | The system shall provide in-class chat to booking participants only; outsiders shall be denied and contact sharing handled per approved policy. | Should | intent.md | Confirmed; **enforcement policy decided 2026-10-25 — OQ-009 answered as `block`**; implementation pending (W5) |
 | FR-013 | After class, the system shall allow the Learner to submit exactly one rating/comment per valid booking. | Must | intent.md | Confirmed core; threshold open (OQ-004) |
-| FR-014 | The system shall reserve credit atomically with a Teacher withdrawal request before gateway payout, retain the hold while the result is unknown, and post exactly one payout or release on a definitive outcome with complete ledger records. | Must | intent.md | Confirmed core; policy/gateway open (OQ-005, OQ-011) |
-| FR-015 | The system shall provide an Administrator dashboard aggregating the student-verification queue, Verifier queue by domain, dispute/account-lock lists, and an audit log filterable by actor, time and action type. | Must | intent.md | **Partially implemented** — queues + audit log built (ADR-034); dispute/account-lock **deferred** pending its own spec + ADR; audit **actor attribution not yet wired** (ADR-034 §9) |
+| FR-014 | The system shall reserve credit atomically with a Teacher withdrawal request before gateway payout, retain the hold while the result is unknown, and post exactly one payout or release on a definitive outcome with complete ledger records. | Must | intent.md | **Deferred — out of MVP scope (2026-10-25).** Reason: no provider payout rail (OQ-011 unresolved for payout) and the Product Owner declined an admin-manual substitute that would record a payout the ledger cannot verify. FR-014 and AC-008/AC-013/AC-014 return when a payout API exists; see W7 |
+| FR-015 | The system shall provide an Administrator dashboard aggregating the student-verification queue, Verifier queue by domain, account-lock list, and an audit log filterable by actor, time and action type. | Must | intent.md | **Partially implemented** — queues + audit log built (ADR-034); the **dispute list is removed from the MVP** (2026-10-25: no dispute was ever defined; BR-045/047/048 already cover every refund case) and the **account-lock list is scoped, not built** (admin-initiated suspension, OQ-015); audit **actor attribution not yet wired** (W4) |
 | FR-016 | The system shall notify users on verification outcomes, booking confirmed/cancelled, class starting soon, completed wallet transactions and withdrawal outcomes. | Should | intent.md | Confirmed |
 | FR-017 | The system shall show the Learner their account status and any rejection reason on the main screen. | Must | intent.md | Confirmed |
 | FR-018 | The system shall show a Teacher the complete decision history for each immutable submitted evidence version, retaining old/new decisions when superseded, revoked or expired. | Must | intent.md | Confirmed; audit contract ADR-028; retention keep (OQ-008) |
 | FR-019 | The system shall support student re-verification and invalidate rights requiring VERIFIED when approval expires or is revoked; treatment of existing commitments follows the approved cascade policy. | Must | BRD BR-006 | Confirmed core; cascade/validity policy open (OQ-008) |
-| FR-020 | The system shall treat each Class as one scheduled online session, record its completion time and audited source/rule, and gate rating and income release on their eligibility conditions. | Must | BRD BR-042–BR-043 | Confirmed core; completion/release rule open (OQ-006) |
+| FR-020 | The system shall treat each Class as one scheduled online session, record its completion time and audited source/rule, and gate rating and income release on their eligibility conditions. | Must | BRD BR-042–BR-043 | Confirmed core; completion/release rule resolved (OQ-006); **self-service completion removed 2026-10-25 (C3, AC-035)** |
 
 #### 3.2.2 Business rules
 
@@ -274,8 +275,8 @@ Shortlist of business rules governing the FRs below. The canonical business rule
 | SR-BR-005 | Initial rate is 1 credit = 1,000 VND; the applied rate is stored per transaction for audit. | FR-008, FR-010, FR-014 | BR-027 |
 | SR-BR-006 | Platform fee is 10% of class price; the remaining 90% is allocated to the Teacher per settlement state. | FR-009, FR-014 | BR-034, BR-035, BR-036 |
 | SR-BR-007 | MVP supports online classes only. | FR-005, FR-011 | BR-018 |
-| SR-BR-008 | Class-serving communication happens in-platform; contact sharing is prohibited per approved policy. | FR-012 | BR-055, BR-056 |
-| SR-BR-009 | Low-quality profiles are down-ranked per approved threshold, never deleted. | FR-006, FR-013 | BR-053, BR-054 |
+| SR-BR-008 | Class-serving communication happens in-platform; contact sharing is prohibited per approved policy. | FR-012 | BR-055, BR-056 — **policy approved 2026-10-25: `block`** |
+| SR-BR-009 | Low-quality profiles are down-ranked per approved threshold, never deleted. | FR-006, FR-013 | BR-053, BR-054 — **excluded from the MVP (2026-10-25): no approved threshold exists (OQ-004); the filtered list is the MVP behaviour** |
 | SR-BR-010 | A Teacher may not book or rate their own class. | FR-007, FR-013 | BR-068 |
 | SR-BR-011 | One account holds at most one effective student verification at a time. | FR-002 | BR-070 |
 | SR-BR-012 | Credit may not be converted to cash outside the official Teacher withdrawal flow. | FR-014 | BR-069 |
@@ -298,9 +299,9 @@ Detailed use cases UC-001–UC-005 are specified in the PRD §11 and restated he
 
 **UC-003 — Book and pay for a class**
 - Actors: Learner, Teacher, Wallet. Trigger: Learner selects an open class.
-- Main flow: check eligibility (≥24 h, capacity, balance) → hold seat → write booking + ledger entries in one atomic transaction → confirm.
-- Alternate flows: insufficient balance / full / duplicate booking / settlement error → no partial success state may exist.
-- Postconditions: booking and ledger entries share the same outcome (AC-003–AC-005, AC-010).
+- Main flow: check eligibility (≥24 h, capacity, balance, **effective student verification**) → hold seat → write booking + ledger entries in one atomic transaction → confirm.
+- Alternate flows: insufficient balance / full / duplicate booking / learner not verified / settlement error → no partial success state may exist.
+- Postconditions: booking and ledger entries share the same outcome (AC-003–AC-005, AC-010, AC-034).
 
 **UC-004 — Attend and review**
 - Actors: Learner, Teacher, Jitsi. Trigger: valid booking reaches class start time.
@@ -334,7 +335,7 @@ One row per required use case, ordered by subsystem then code. Codes and names a
 | UC-001 | Verify a student | Learner | Administrator | Verification | Submit student-status evidence; an Administrator approves or rejects it, activating the account on approval (FR-002). | Logged in; verification not yet Approved. | — | Must |
 | UC-002 | Verify a Teacher skill | Teacher | Verifier | Verification | Submit skill evidence; an active Verifier sees only requests matching their expertise, claims one (locking it to them), and approves or rejects it, preserving version/decision history and enabling publication at the approved level (FR-003, FR-004, FR-018). | Logged in as a verified student; initial or replacement evidence submitted; Verifier has seeded expertise for the skill. | — | Must |
 | UC-009 | Supervise verifiers | Administrator | — | Verification | Suspend or revoke a Verifier's access (FR-004). Verifier accounts and their expertise are provisioned outside the app (seeded); there is no invite/assign-domain step (ADR-027). | Logged in as Administrator. | — | Must |
-| UC-003 | Book and pay for a class | Learner | Teacher | Marketplace | Book an open class and pay from the wallet; booking and ledger entries commit atomically (FR-007, FR-009). | Logged in; class Published with a free seat and sufficient balance. | — | Must |
+| UC-003 | Book and pay for a class | Learner | Teacher | Marketplace | Book an open class and pay from the wallet; booking and ledger entries commit atomically (FR-007, FR-009). | Logged in; **effective approved student verification**; class Published with a free seat and sufficient balance. | Account not verified (`learner_not_verified`, AC-034); insufficient balance; class full; duplicate booking. | Must |
 | UC-010 | Publish class | Teacher | — | Marketplace | Create and publish a class listing for an Approved skill so Learners can discover and book it (FR-005). | Logged in as Teacher; at least one skill Approved. | — | Must |
 | UC-011 | Search classes | Learner | — | Marketplace | Discover classes by skill, schedule, price and rating (FR-006). | Registered account. | — | Must |
 | UC-005 | Withdraw earnings | Teacher | Payment Gateway | Finance | Withdraw available balance through the gateway; the payout completes exactly once (FR-014). | Logged in as Teacher; available balance > 0. | — | Must |
@@ -440,9 +441,8 @@ stateDiagram-v2
   Pending --> [*] : eligibility failed — no side effects
   Confirmed --> Completed : class held, rating window open
   Confirmed --> Cancelled : cancellation per approved policy (OQ-003 resolved; AC-027)
-  Completed --> Disputed : dispute raised (manual process)
+  Completed --> [*]
   Cancelled --> [*]
-  Disputed --> [*]
   note right of Confirmed
     No partial success state exists:
     booking and ledger commit or
@@ -450,7 +450,9 @@ stateDiagram-v2
   end note
 ```
 
-**5. WithdrawalRequest (FR-014, SR-BR-005, SR-BR-012)**
+**5. WithdrawalRequest (FR-014, SR-BR-005, SR-BR-012) — out of MVP scope (2026-10-25)**
+
+> Retained as the requirement model for when a payout rail exists. **No part of this is implemented or claimed.** The `(step-up auth)` annotation reflects the pre-amendment NFR-009 and must be revisited together with the auth control required at FR-014's return.
 
 ```mermaid
 stateDiagram-v2
@@ -488,7 +490,7 @@ stateDiagram-v2
 1. **Architecture:** Next.js web frontend, Expo/React Native mobile client (ADR-015), NestJS backend, PostgreSQL via TypeORM (C-008); Jitsi room provisioning and token issuance by backend; media flows directly over WebRTC.
 2. **Atomicity:** all booking/settlement writes occur in a single database transaction; no partial financial success (NFR-003, AC-005).
 3. **Idempotency:** every financially effective command requires an idempotency key and trace ID (PRD §10 integration rules).
-4. **Authorization:** server-side role/ownership checks on every endpoint; Administrator/Verifier require MFA; payouts and payout-destination changes require step-up authentication (NFR-009).
+4. **Authorization:** server-side role/ownership checks on every endpoint (NFR-009). **Amended 2026-10-25:** MFA for Administrator/Verifier and step-up authentication for payouts are **not required in this release** — no MFA implementation exists, and the only feature that required step-up (Teacher payout) is out of MVP scope (FR-014). Any return of FR-014 is preconditioned on having **both** a payout rail and an authentication control. Role checks themselves are unchanged and remain mandatory (AC-033).
 5. **Mobile-first:** responsive layouts validated at 360 px, 390 px and desktop (NFR-001, C-006).
 6. **Localization:** Vietnamese/English with locale-complete routes (NFR-002, C-007).
 7. **Legal:** personal-data handling for identity documents must follow applicable data-protection rules; funds flow exclusively through a licensed gateway; Terms of Service must state Teacher tax responsibility and the under-18 policy (BRD §12).
@@ -503,6 +505,7 @@ stateDiagram-v2
 - Uploads validated by extension, MIME and file signature, size-limited (10 MB images/PDF per PRD §6.2), malware-scanned, stored outside executable paths, previewed in a sandboxed frame.
 - Webhooks authenticated by signature, timestamp and replay nonce; secrets stored outside source control, separated per environment, rotatable.
 - Chat/rating content treated as untrusted, context-encoded, rendered under a Content Security Policy (stored-XSS tests).
+- **MFA / step-up authentication is out of this release** (see §3.4 item 4, amended 2026-10-25). NFR-009's remaining clause — role checks on every endpoint — is fully in force.
 - Jitsi access uses short-lived tokens for booking participants inside the permitted window only (AC-006).
 - Privileged actions, verification decisions, role changes, financial transitions and payout-destination changes are audited with actor, timestamp and trace ID (FR-015, NFR-005).
 
@@ -536,15 +539,16 @@ Confirmed cores of these requirements appear in §3.2.1; the following **depende
 |---|---|---|---|---|
 | OQ-001 | Skill taxonomy structure and search granularity. | Product Owner | FR-003, FR-005, FR-006 | **Resolved (2026-10-11, FR-003 scope, ADR-026):** (1) **managed catalogue (1a)** — skills live in an admin-seeded `skills` catalogue owned by `skill-verification`; evidence/classes must reference a known skill, no free tagging; (2) **two-level tree (B)** — `category → skill` (fixed categories, exact depth 2); (3) **fixed ordered level scale (2a)** — `beginner < intermediate < advanced < expert` for requested/approved level. Search granularity (index/ranking) remains open for FR-006 Phase 0. |
 | OQ-002 | Teacher self-pricing vs. price bands vs. hybrid with floor/cap. | Product Owner | FR-005, FR-007–FR-009 | **Resolved (2026-10-11, FR-005 scope, ADR-024 extension):** **pure self-price** — a Teacher sets any positive integer credit price; there is **no** band, floor or cap. Publish validation is `price >= 1` (unchanged). No min/max price rules apply in the MVP. |
-| OQ-003 | Cancellation, no-show, dispute, manual refund and Admin enforcement workflow. | Product Owner + Administrator | FR-007, FR-009–FR-011, FR-013 | **Resolved (2026-10-08):** refunds are app-wallet credits only (no real-money refund); no booking-cancellation policy; Teacher no-show = not joined within the first 15 minutes → credit refund, no penalty; Learner no-show has no automatic rule; Pending holds a seat and auto-cancels after ~15 minutes; Confirmed→Cancelled refunds credits. See AC-022–AC-027. |
-| OQ-004 | Rating threshold, minimum review count, visibility recovery. | Product Owner | FR-006, FR-013 | Down-ranking threshold mechanics (SR-BR-009 value). |
-| OQ-005 | Withdrawal conditions, limits, fees, processing time. | Product Owner + Finance | FR-010, FR-014 | **Partially resolved (2026-10-09, FR-008 scope):** only active accounts may top up; suspended accounts are rejected (ADR-017). Withdrawal limits/fees/SLA remain open for FR-014. |
-| OQ-006 | Completion rule, release timing, chargeback/reversal and funding/recovery after payout. | Product Owner + Finance | FR-008, FR-009, FR-014, FR-020 | **Resolved (2026-10-10):** chargeback/reversal posts an offsetting debit with a trace id (ADR-017); Teacher income is held in `pending_credits` on settlement and released **on class completion** (ADR-018). Completion = the Teacher held the class: auto-completed at `starts_at + duration` with basis `scheduled_end` (or `teacher_ended`), **unless** a Teacher no-show (FR-007) cancels the class instead — Learner no-shows do not affect it (ADR-021). |
+| OQ-003 | Cancellation, no-show, manual refund and Admin enforcement workflow. | Product Owner + Administrator | FR-007, FR-009–FR-011, FR-013 | **Resolved (2026-10-08):** refunds are app-wallet credits only (no real-money refund); no booking-cancellation policy; Teacher no-show = not joined within the first 15 minutes → credit refund, no penalty; Learner no-show has no automatic rule; Pending holds a seat and auto-cancels after ~15 minutes; Confirmed→Cancelled refunds credits. See AC-022–AC-027. **Amended 2026-10-25:** the title's "dispute" is settled by **removing it** — there is no dispute workflow in the MVP, and the cases it would have covered go through the manual BR-048 ledger adjustment (OQ-015 note). |
+| OQ-004 | Rating threshold, minimum review count, visibility recovery. | Product Owner | FR-006, FR-013 | Down-ranking threshold mechanics (SR-BR-009 value). **Closed 2026-10-25: ranking is excluded from the MVP.** The question is not answered; the feature is not in scope, and SR-BR-009 is marked excluded rather than left "deferred" |
+| OQ-005 | Withdrawal conditions, limits, fees, processing time. | Product Owner + Finance | FR-010, FR-014 | **Partially resolved (2026-10-09, FR-008 scope):** only active accounts may top up; suspended accounts are rejected (ADR-017). **2026-10-25:** **no withdrawal fee** — the 10% commission is the platform's only cut, and a payout-time fee would charge twice. **Limits, SLA and eligibility for withdrawal remain undecided and must be re-decided if FR-014 returns**; they are not inferred from this. Withdrawal is out of the MVP regardless (OQ-011) |
+| OQ-006 | Completion rule, release timing, chargeback/reversal and funding/recovery after payout. | Product Owner + Finance | FR-008, FR-009, FR-014, FR-020 | **Resolved (2026-10-10):** chargeback/reversal posts an offsetting debit with a trace id (ADR-017); Teacher income is held in `pending_credits` on settlement and released **on class completion** (ADR-018). Completion = the Teacher held the class: auto-completed at `starts_at + duration` with basis `scheduled_end` (or `teacher_ended`), **unless** a Teacher no-show (FR-007) cancels the class instead — Learner no-shows do not affect it (ADR-021). **Amended 2026-10-25 (C3):** the `teacher_ended` basis is **removed** — a Teacher cannot end a class themselves; the room closing (scheduled end, or empty past the grace period) is what completes it and publishes the event (AC-035). |
 | OQ-007 | 1-1 vs. group classes; capacity and seat hold/release rules. | Product Owner | FR-005, FR-007 | **Resolved (2026-10-08):** capacity is a Teacher-supplied integer ≥ 1 at publish time (1 = 1-1, >1 = group); 0/negative rejected. Pending and Confirmed bookings both hold a seat; class becomes Full when seats reach capacity. Seats release only on booking Cancelled (MVP: only via Pending ~15-minute expiry, AC-026). Last-seat races are protected by a Class-row lock / uniqueness (AC-010). See AC-028–AC-030. |
 | OQ-008 | Verification validity period, document retention/deletion, expiry cascade. | Product Owner + Security | FR-002–FR-005, FR-007, FR-011, FR-014, NFR-004 | **Room-access clause resolved (2026-10-10):** room access is re-checked per request (party + confirmed booking + window) against a short-lived JWT, so a cancelled/rescheduled class or changed user status cascades immediately; no grandfather exception in MVP (ADR-020). **Storage/validity clause resolved by the developer (2026-10-10, FR-002 scope, ADR-023):** (1) **no expiry** — an approved verification does not expire in the MVP; (2) **block** — a new submission is refused while a `pending`/`approved` verification exists (SR-BR-011), no supersede; (3) **keep** — verification records are retained, no deletion in the MVP; (4) **upload** — documents are uploaded and stored via **S3 object storage with Postgres metadata**, validated by type/size, never logged (NFR-004/008). **Cascade clause resolved by the developer (2026-10-10, FR-019 scope, ADR-025):** demotion is triggered by **admin revocation only** (no time-based expiry); rights **cascade immediately with no grandfather** (consistent with ADR-020) via the `student.verification.revoked` event; re-verification reuses the FR-002 submission path. |
-| OQ-009 | Chat handling of detected personal contact info: block / warn+log / log only. | Product Owner | FR-012 | Enforcement mechanism behind SR-BR-008. |
+| OQ-009 | Chat handling of detected personal contact info: block / warn+log / log only. | Product Owner | FR-012 | Enforcement mechanism behind SR-BR-008. **Resolved 2026-10-25: `block`** — the message is rejected and nothing is stored. This deliberately departs from the BRD's "warn + log" recommendation, because warning requires an admin moderation surface that C-010 rules out. The off-platform-bypass risk (BRD RISK-009) is **accepted and recorded**, not solved |
 | OQ-010 | Target values for success metrics and pilot scope. | Product Owner | Product rollout | Quantified performance/availability targets for NFR-011/NFR-012. |
-| OQ-011 | Payment gateway selection (top-up, payout, webhook, reconciliation, reversal). | Engineering + Finance | FR-008, FR-014 | **Resolved for top-up (2026-10-14):** the **SePay Payment Gateway** (hosted checkout + IPN) replaces the mock adapter behind the unchanged `PaymentGateway` port; `top_up_intents` stay idempotent on a unique provider ref and settlement status. Authenticity is an IP allow-list plus the invoice lookup, not a body signature. Reconciliation is a documented, disabled stub. See ADR-033 (supersedes ADR-017 §1–§2). Payout (FR-014) still pending. |
+| OQ-011 | Payment gateway selection (top-up, payout, webhook, reconciliation, reversal). | Engineering + Finance | FR-008, FR-014 | **Resolved for top-up (2026-10-14):** the **SePay Payment Gateway** (hosted checkout + IPN) replaces the mock adapter behind the unchanged `PaymentGateway` port; `top_up_intents` stay idempotent on a unique provider ref and settlement status. Authenticity is an IP allow-list plus the invoice lookup, not a body signature. Reconciliation is a documented, disabled stub. See ADR-033 (supersedes ADR-017 §1–§2). **Payout (2026-10-25): no rail is adopted. The Product Owner chose to wait for a real provider payout API rather than substitute an admin-manual transfer, so FR-014 is deferred out of the MVP.** |
+| OQ-015 | Scope of the Administrator account-lock list. | Product Owner | FR-015 | **Resolved (2026-10-25):** admin-initiated suspension only. An Administrator may set an account to `Suspended` with a required reason, recorded with actor and timestamp; **nothing automatic** — C-010 forbids automated reporting/locking, not admin action. A locked Teacher's already-confirmed bookings stay joinable (BR-016 commitment lock); only new bookings are refused. **OQ-014 is deliberately unused** — its intended subject (a dispute workflow) was removed from the MVP rather than specified. |
 | OQ-012 | Commission rounding method and precision. | Product Owner + Finance | FR-009, FR-014 | **Resolved (2026-10-09):** `fee = floor(price × feeBps / 10000)`, `teacher = price − fee` (remainder to the Teacher); invariant `teacher + fee == price` holds with integers. See ADR-018. |
 
 ## Appendix B — Data dictionary
@@ -562,11 +566,11 @@ Derived from PRD §9. Access is server-authorized by role and ownership; sensiti
 | SkillEvidence | id, profile_skill_id, evidence_type, document_ref/description, version, requested_level, approved_level, status, reviewer_id, claimed_by, claimed_at, decided_at | Belongs to ProfileSkill; certificate or Verifier recognition; reviewer updates status directly, no assignment table (claim locks the row, ADR-027) | Draft → Pending → Claimed → Approved/Rejected; claim locks permanently (no release) | Sensitive credential | Teacher/Verifier |
 | Class | id, teacher_id, starts_at, duration_minutes, price_credits, capacity, status, commitments_locked_at, completed_at/completed_by | One scheduled online session per Class; has Bookings/ClassSkills; Teacher/content/schedule/skills freeze at first confirmed Booking | Draft → Published/Full → In progress → Completed; cancellation by policy | Public marketplace data | Teacher |
 | ClassSkill | class_id, skill_id, target_level | Class ↔ Skill is many-to-many; Teacher approved level must cover target level | Managed with Class | Public marketplace data | Teacher |
-| Booking | id, class_id, learner_id, status, price_credits, idempotency_key | Links Class/Learner/ledger; price snapshot; at most one valid booking per Learner/Class and one full release operation | Pending → Confirmed → Completed/Cancelled/Disputed | Private transaction data | Learner/Teacher |
+| Booking | id, class_id, learner_id, status, price_credits, idempotency_key | Links Class/Learner/ledger; price snapshot; at most one valid booking per Learner/Class and one full release operation | Pending → Confirmed → Completed/Cancelled | Private transaction data | Learner/Teacher |
 | Wallet | id, owner_user_id, kind; available/pending/payout_hold derived from posted postings | At most one wallet per User; system wallets have no owner; payout_hold is reserved and not spendable | Active → Restricted/Closed | Financial | User/Platform |
 | LedgerTransaction | id, kind, booking_id, withdrawal_request_id, initiated_by_user_id, amount_vnd, gateway_credits, rate, provider/reference, reverses_transaction_id, status, trace_id, idempotency_key | Groups balanced kind-specific postings; unique booking/release operations; withdrawal request has hold/payout/hold-release/reversal transactions; original has 0..1 full reversal, linked only for kind reversal | Pending → Posted/Failed; Posted → Reversed with compensating transaction; posted financial fields immutable | Sensitive financial | Platform |
 | LedgerPosting | id, transaction_id, wallet_id, user_id, class_id, bucket, amount_credits | Links transaction/wallet owner/Class; buckets available/pending/payout_hold; system user and non-class transfer Class are NULL | Immutable once posted, including no late inserts; corrections compensate actual transfer chain | Sensitive financial | Platform |
-| Message | id, class_id, sender_id, body, created_at | Belongs to class conversation | Active → Retained/Deleted | Private communication | Participants/Platform |
+| Message | id, class_id, sender_id, body, created_at | Belongs to class conversation | Active → Retained (no deletion in MVP) | Private communication | Participants/Platform |
 | Rating | id, booking_id, learner_id, score, comment | One policy-valid rating per Booking | Published → Hidden/Updated by policy | Public content + private provenance | Learner/Platform |
 | WithdrawalRequest | id, teacher_id, amount_credits, exchange_rate_vnd, destination_ref, status, trace_id | Has many LedgerTransactions through withdrawal_request_id; hold commits before payout; amount/rate/destination frozen | Pending → Processing → Completed/Failed; timeout retains hold until reconciliation; authorized payout reversal → Reversed | Sensitive financial | Teacher/Platform |
 | AuditEvent | id, actor_id, action, target_type/id, old_state_json, new_state_json, occurred_at, trace_id, metadata_json | Commits with state change; whitelisted decision snapshots preserve full evidence/role/completion/financial history | Append-only | Internal audit; no document content or payout destinations | Platform |
@@ -584,10 +588,11 @@ ERD chi tiết và các ràng buộc triển khai: [data model](../diagrams/data
 - **AC-005 / FR-009:** Given a settlement step failure, the transaction ends with no booking or balance in a partially successful state.
 - **AC-006 / FR-011:** Given a user outside the booking or outside the access window, when they open the room, access is denied.
 - **AC-007 / FR-013:** Given a completed class and an eligible Learner, when a valid rating/comment is submitted, the review links to the booking and cannot be duplicated.
-- **AC-008 / FR-014:** Given a valid payout callback replayed, the withdrawal completes exactly once.
+- **AC-008 / FR-014 (deferred, out of MVP 2026-10-25):** Given a valid payout callback replayed, the withdrawal completes exactly once. Kept for when a payout rail exists.
 - **AC-009 / EVT-001:** Given a valid callback older than the processed gateway state, the system acknowledges it but does not lower the status.
 - **AC-010 / FR-007:** Given a class with one seat left, when two Learners book near-simultaneously, exactly one booking confirms; the other receives a full-class error with no credit deducted.
 - **AC-011 / FR-020:** Given một Class đã tới giờ diễn ra, when buổi học thỏa quy tắc hoàn tất đã được duyệt, then Class chuyển Completed với thời gian/căn cứ audit và cho phép rating; release chỉ thực hiện khi đạt điều kiện OQ-006, hủy lớp xử lý booking/ledger theo OQ-003.
+- **AC-035 / FR-020, BR-043 (decision 2026-10-25, W1 C3):** Given một Class đã Published hoặc đang InProgress, when Teacher cố kết thúc lớp bằng một lệnh của chính họ, then **không có** thao tác kết thúc nào tồn tại (route đã bị gỡ, trả 404/405 — không chỉ 403) và không credit nào được release. Lớp chỉ chuyển Completed khi phòng học đóng: hoặc đã tới `starts_at + duration`, hoặc không còn ai trong lớp sau thời gian ân hạn; lúc đó sự kiện `class.completed` được publish. Một lớp chưa tới `starts_at` **không bao giờ** được tự động Complete.
 - **AC-012 / FR-019:** Given một hồ sơ xác minh sinh viên đã hết hiệu lực hoặc bị thu hồi, when hệ thống xử lý sự kiện, then các quyền yêu cầu VERIFIED bị hạ ngay và người dùng thấy trạng thái kèm hướng dẫn re-verification.
 - **AC-013 / FR-014:** Given available 100 credit, when request rút 80 được xác nhận, then available còn 20 và payout_hold là 80; request rút thêm 80 bị từ chối mà không phát sinh hold hoặc payout mới.
 - **AC-014 / FR-014:** Given payout 80 đang chờ và gateway timeout, then hold vẫn là 80; callback/đối soát thành công đến sau chỉ post payout một lần, không vừa payout vừa nhả tiền.
@@ -610,6 +615,7 @@ ERD chi tiết và các ràng buộc triển khai: [data model](../diagrams/data
 - **AC-031 / FR-015, ADR-034:** Given một Administrator, when mở dashboard vận hành, then thấy được hàng đợi xác minh sinh viên, hàng đợi Verifier theo lĩnh vực, và nhật ký kiểm toán gần nhất; mỗi danh sách phân trang có giới hạn và tổng số.
 - **AC-032 / FR-015, ADR-034:** Given nhật ký kiểm toán, when lọc theo người thực hiện, khoảng thời gian và loại hành động, then chỉ trả về các bản ghi khớp; mỗi bản ghi là chỉ-ghi-thêm (append-only) và không chứa nội dung tài liệu (NFR-005). **Lưu ý:** lọc theo khoảng thời gian và loại hành động đã hoạt động; lọc theo người thực hiện hiện chưa khớp bản ghi nào vì sự kiện miền không mang theo người thực hiện (ADR-034 §9).
 - **AC-033 / FR-015, ADR-034:** Given một người dùng không phải Administrator, when gọi bất kỳ endpoint vận hành nào, then bị từ chối 403 và giao diện hiển thị thông báo không có quyền — không có danh sách giả.
+- **AC-034 / FR-007, BR-001, BR-004 (decision 2026-10-25, W1 C1/C2):** Given một tài khoản chưa có xác minh sinh viên đang hiệu lực (UNVERIFIED/PENDING/REJECTED, hoặc đã bị thu hồi), when tài khoản đó đặt lớp, then không có booking nào được tạo, không credit nào bị trừ, và hệ thống trả lỗi `learner_not_verified`; một tài khoản đã VERIFIED đặt lớp bình thường. Việc duyệt/tìm lớp vẫn mở cho tài khoản chưa xác minh (US-T1).
 
 ### C.2 Traceability matrix
 
@@ -617,10 +623,10 @@ ERD chi tiết và các ràng buộc triển khai: [data model](../diagrams/data
 |---|---|---|---|
 | Trusted student identity | FR-001, FR-002, FR-017, FR-019 | UC-001, UC-006–UC-008 | API-001, User, StudentVerification, NFR-004/008/009 |
 | Trusted Teacher capability | FR-003–FR-005, FR-018 | UC-002, UC-009, UC-010 | API-002–API-004, ProfileSkill, SkillEvidence, NFR-004/009 |
-| Discover and book online learning | FR-005–FR-007 | UC-003, UC-011 | API-004–API-005, Class, Booking, NFR-001/006/007 |
-| Traceable wallet settlement | FR-008–FR-010, FR-014, FR-020 | UC-003, UC-005, UC-012, UC-013 | API-005–API-007, EVT-001, Wallet/Ledger/Withdrawal, NFR-003/005/009 |
+| Discover and book online learning | FR-005–FR-007 (learner-verification gate decided 2026-10-25, AC-034) | UC-003, UC-011 | API-004–API-005, Class, Booking, NFR-001/006/007 |
+| Traceable wallet settlement | FR-008–FR-010, FR-020 (FR-014 deferred out of MVP 2026-10-25) | UC-003, UC-012, UC-013 (UC-005 deferred with FR-014) | API-005–API-006, EVT-001, Wallet/Ledger, NFR-003/005 |
 | Secure class participation | FR-011–FR-013, FR-016 | UC-004 | API-008–API-010, Message/Rating, NFR-006/007/010 |
-| Platform operations | FR-015 | UC-014 | API-011–API-014 (ADR-013/ADR-014), AuditEvent (ADR-028/ADR-034), NFR-005/014 |
+| Platform operations | FR-015 (dispute list removed 2026-10-25; account-lock list per OQ-015) | UC-014 | API-011–API-014 (ADR-013/ADR-014), AuditEvent (ADR-028/ADR-034), NFR-005/014 |
 
 ### C.3 Diagrams index
 
@@ -636,7 +642,7 @@ The maintained diagram set is [Week 6 checkpoint](../diagrams/checkpoint/README.
 | Booking lifecycle | [PlantUML](../diagrams/checkpoint/source/state-booking.puml) | [PNG](../diagrams/checkpoint/generated/state-booking.png) |
 | Sequence, activity and additional architecture views | [Complete checkpoint index](../diagrams/checkpoint/README.md) | SVG and PNG linked in index |
 
-The inline state models in §3.2.6 remain requirement models; current-code diagrams record implementation differences separately. No WithdrawalRequest endpoint is claimed as implemented.
+The inline state models in §3.2.6 remain requirement models; current-code diagrams record implementation differences separately. **Withdrawal (FR-014) is out of MVP scope (2026-10-25)** — no `WithdrawalRequest` endpoint is claimed as implemented, and none is planned for this release.
 
 ### C.4 FR-007 implementation traceability
 
@@ -689,7 +695,7 @@ The product is delivered on two clients (web, mobile) that must show the same fe
 | S8 | Top-up / checkout | US-W1, US-M4, US-M5 | `/{locale}/classes/[id]/checkout` | `wallet-view.tsx` | `POST /wallet/top-ups`, `POST /classes/{id}/bookings`, `POST /classes/bookings/{bookingId}/confirm` |
 | S9 | Student verification | US-T3 | `/{locale}/verification` | `(features)/verification.tsx` | `GET/POST /student-verifications` |
 | S10 | Skills / evidence | US-S1–US-S3 | `/{locale}/skills` | `(features)/skills.tsx` | `GET /skills`, `GET /profile-skills/me`, `POST /skill-evidence`, `GET /skill-evidence/:id/history` |
-| S11 | Withdrawal | US-W4 | `/{locale}/wallet/withdrawal` | — | **none — honest unavailable state** |
+| S11 | Withdrawal | US-W4 | `/{locale}/wallet/withdrawal` | — | **none — not offered in this release** (FR-014 deferred, 2026-10-25) |
 | S12 | Teaching / my classes | US-M1 | `/{locale}/instructor`, `/{locale}/teach/classes/new` | `(features)/teaching.tsx` | `POST /classes`, `POST /classes/{id}/complete` |
 | S13 | Post-class rating | US-L3 | `/{locale}/bookings/[id]/review` | `my-bookings-view.tsx` | `POST /classes/bookings/{bookingId}/rating` |
 | S14 | Live room | US-L1, US-L2 | `/{locale}/bookings/[id]/live` | `bookings/[id]/live` | `POST /classes/bookings/{bookingId}/room-access` |
@@ -697,4 +703,4 @@ The product is delivered on two clients (web, mobile) that must show the same fe
 | S16 | Notifications | — | `/{locale}/notifications` | `(features)/notifications.tsx` | `GET /notifications` |
 | S17 | Admin operations | US-O1 | none | none | `GET /audit` (API-only) |
 
-Both clients are API-backed after the 2026-10-12 parity pass. Two screens have no browser route (S15, S17) because they are operator/verifier surfaces with no requirement for a client screen; S11 is deliberately rendered as an honest "unavailable" state rather than a form that cannot submit, because no withdrawal endpoint exists (§3.7, Appendix C.3). Mobile falls back to fixtures when `EXPO_PUBLIC_API_BASE_URL` is unset (ADR-015, update 2026-10-12); the demo must set it.
+Both clients are API-backed after the 2026-10-12 parity pass. Two screens have no browser route (S15, S17) because they are operator/verifier surfaces with no requirement for a client screen; S11 is deliberately rendered as "not offered in this release" rather than a form that cannot submit, because **FR-014 is out of MVP scope** (no payout rail, 2026-10-25 — a scope exclusion, not a gap). Mobile falls back to fixtures when `EXPO_PUBLIC_API_BASE_URL` is unset (ADR-015, update 2026-10-12); the demo must set it.
