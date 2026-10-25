@@ -15,11 +15,25 @@ import {
 import { createModuleDataSource } from './internal/adapter/out/persistence/data-source';
 import { SCHEMA } from './internal/adapter/out/persistence/schema';
 import { SqlAdminAuditEventRepository } from './internal/adapter/out/persistence/sql-admin-audit-event-repository';
+import { SqlOutboxDeadLetterRepository } from './internal/adapter/out/persistence/sql-outbox-dead-letter-repository';
 import { AuditLogController } from './internal/adapter/in/web/audit-log.controller';
 import { AdminDashboardController } from './internal/adapter/in/web/admin-dashboard.controller';
+import { OutboxDeadLetterController } from './internal/adapter/in/web/outbox-dead-letter.controller';
 import { AUDITED_EVENT_TYPE_LIST } from './internal/application/audit-actions';
 import { RecordAdminAuditEventUseCase } from './internal/application/record-admin-audit-event.use-case';
+import { ReplayOutboxDeadLetterUseCase } from './internal/application/replay-outbox-dead-letter.use-case';
 import { LIST_AUDIT_LOG, type ListAuditLogPort } from './internal/application/port/in/list-audit-log';
+import {
+  LIST_OUTBOX_DEAD_LETTERS,
+  REPLAY_OUTBOX_DEAD_LETTER,
+  type ListOutboxDeadLettersPort,
+  type ReplayOutboxDeadLetterPort,
+} from './internal/application/port/in/outbox-dead-letters';
+import {
+  OUTBOX_DEAD_LETTER_REPOSITORY,
+  type OutboxDeadLetterRepository,
+} from './internal/application/port/out/outbox-dead-letter-repository';
+import { ListOutboxDeadLettersQueryHandler } from './internal/application/query/list-outbox-dead-letters.query';
 import {
   GET_ADMIN_DASHBOARD,
   type GetAdminDashboardPort,
@@ -73,13 +87,36 @@ export class AdminOperationRegistrar implements OnModuleInit {
   // FR-015 / ADR-008/ADR-012: the dashboard composes counts by asking each owning module, so it
   // imports them and injects the readers they export rather than reading their schemas.
   imports: [StudentVerificationModule, SkillVerificationModule],
-  controllers: [AuditLogController, AdminDashboardController],
+  controllers: [AuditLogController, AdminDashboardController, OutboxDeadLetterController],
   providers: [
     {
       provide: ADMIN_AUDIT_EVENT_REPOSITORY,
       useFactory: (registry: ModuleDataSourceRegistry) =>
         new SqlAdminAuditEventRepository(registry, MODULE_NAME),
       inject: [ModuleDataSourceRegistry],
+    },
+    // FR-015 / ADR-013 Amendment A (W2 C3): the dead-letter inbox reads the shared outbox
+    // tables across every module, which is the one cross-schema read this module is allowed.
+    {
+      provide: OUTBOX_DEAD_LETTER_REPOSITORY,
+      useFactory: (registry: ModuleDataSourceRegistry) =>
+        new SqlOutboxDeadLetterRepository(registry),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
+      provide: LIST_OUTBOX_DEAD_LETTERS,
+      useFactory: (deadLetters: OutboxDeadLetterRepository): ListOutboxDeadLettersPort =>
+        new ListOutboxDeadLettersQueryHandler(deadLetters),
+      inject: [OUTBOX_DEAD_LETTER_REPOSITORY],
+    },
+    {
+      provide: REPLAY_OUTBOX_DEAD_LETTER,
+      useFactory: (
+        deadLetters: OutboxDeadLetterRepository,
+        audit: AdminAuditEventRepository,
+      ): ReplayOutboxDeadLetterPort =>
+        new ReplayOutboxDeadLetterUseCase(deadLetters, audit),
+      inject: [OUTBOX_DEAD_LETTER_REPOSITORY, ADMIN_AUDIT_EVENT_REPOSITORY],
     },
     {
       provide: LIST_AUDIT_LOG,

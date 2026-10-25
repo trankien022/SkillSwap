@@ -6,7 +6,7 @@
 
 Administrator oversight (FR-015, ADR-034). The append-only audit log plus the operations dashboard aggregate over the student-verification and Verifier queues.
 
-2 endpoints.
+4 endpoints.
 
 Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
 
@@ -112,3 +112,64 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 | `limit` | integer | yes | ≥ 1; ≤ 100 |
 | `nextCursor` | string | yes | min 1 chars; nullable |
 | `total` | integer | yes | ≥ 0 |
+
+### `GET /api/operations/outbox-dead-letters`
+
+**Outbox rows the relay proved it cannot publish (FR-015 / ADR-013 Amendment A)**
+
+- Auth: 🔒 Bearer token required
+- Response: `OutboxDeadLetterPageDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `limit` | query | integer | no |  |
+| `cursor` | query | string | no |  |
+| `module` | query | string | no |  |
+| `eventType` | query | string | no |  |
+
+**Response — `OutboxDeadLetterPageDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `items` | object[] | yes |  |
+| `page` | object | yes |  |
+
+**`items`[]** — OutboxDeadLetterPageDto.items fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `module` | string | yes | min 2 chars; max 60 chars |
+| `id` | string | yes | uuid |
+| `eventType` | string | yes | min 1 chars |
+| `attempts` | integer | yes | ≥ 0 |
+| `lastError` | string | yes | nullable |
+| `createdAt` | string | yes | date-time |
+| `failedAt` | string | yes | date-time |
+| `payload` | object | yes | `null` for a bounded list (no pagination) |
+
+**`page`** — OutboxDeadLetterPageDto.page fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `limit` | integer | yes | ≥ 1; ≤ 100 |
+| `nextCursor` | string | yes | min 1 chars; nullable |
+| `total` | integer | yes | ≥ 0 |
+
+### `POST /api/operations/outbox-dead-letters/{id}/replay`
+
+**Reset one dead letter to PENDING and audit the action (W2 C3)**
+
+- Auth: 🔒 Bearer token required
+- Response: `ReplayDeadLetterResultDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `id` | path | string | yes | The outbox row id |
+| `module` | query | string | yes |  |
+
+**Response — `ReplayDeadLetterResultDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `replayed` | boolean | yes |  |
+| `status` | enum | yes | one of `PENDING`, `PUBLISHED`, `DEAD` |

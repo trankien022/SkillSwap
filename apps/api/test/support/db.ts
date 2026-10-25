@@ -48,6 +48,13 @@ export async function resetDatabase(harness: Harness): Promise<void> {
     'skill-verification',
     'TRUNCATE skill_evidence, skill_evidence_audit, profile_skills, skills, verified_students, verifier_expertise, verifiers, outbox_messages, processed_events CASCADE',
   );
+  // FR-015 / ADR-034: the audit log is append-only for the application, but a test reset is
+  // the one caller allowed to empty it — otherwise an assertion like "exactly one audited
+  // replay" would pass or fail depending on how many times the suite had run before.
+  await harness.query(
+    'admin-operation',
+    'TRUNCATE admin_audit_event, outbox_messages, processed_events CASCADE',
+  );
 }
 
 /** Seeds a skill into the managed catalogue and returns its id (FR-003 / ADR-026). */
