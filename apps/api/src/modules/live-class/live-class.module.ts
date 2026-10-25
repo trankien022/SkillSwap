@@ -284,8 +284,11 @@ const systemClock: Clock = { now: () => new Date() };
         classes: ClassRepository,
         bookings: BookingRepository,
         clock: Clock,
-      ): BookClassPort => new BookClassUseCase(classes, bookings, clock),
-      inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY, CLOCK],
+        teacherTrust: TeacherTrustReader,
+      ): BookClassPort => new BookClassUseCase(classes, bookings, clock, teacherTrust),
+      // AC-034 / BR-001: the booking gate reads the same trust projection as the
+      // publish gate, never a cross-schema read (ADR-024) or the caller's claim.
+      inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY, CLOCK, TEACHER_TRUST_READER],
     },
     {
       provide: CONFIRM_BOOKING,

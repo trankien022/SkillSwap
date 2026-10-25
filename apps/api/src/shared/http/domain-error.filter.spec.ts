@@ -25,6 +25,16 @@ class UnknownStateError extends Error {
   }
 }
 
+/** Mirrors `LearnerNotVerifiedError` (AC-034 / BR-001): reason-bearing, distinct name. */
+class LearnerNotVerifiedError extends Error {
+  readonly reason = 'learner_not_verified';
+
+  constructor(learnerId: string) {
+    super(`Account ${learnerId} has no approved student verification`);
+    this.name = 'LearnerNotVerifiedError';
+  }
+}
+
 /** Mirrors `BookingNotAllowedError`: the envelope code must be the reason, not the name. */
 class BookingNotAllowedError extends Error {
   constructor(
@@ -123,6 +133,20 @@ describe('DomainErrorFilter', () => {
       message: 'rejected',
       data: null,
       errors: [{ code: reason, message: 'rejected' }],
+    });
+  });
+
+  // AC-034 / BR-001 (decided 2026-10-25): the booking trust gate has its own code,
+  // so the client can explain *why* it cannot book rather than showing a generic 409.
+  it('reports an unverified booker as `learner_not_verified` (409)', () => {
+    const error = new LearnerNotVerifiedError('learner-1');
+    const captured = run(error);
+    expect(captured.statusCode).toBe(409);
+    expect(captured.body).toMatchObject({
+      success: false,
+      code: 'learner_not_verified',
+      data: null,
+      errors: [{ code: 'learner_not_verified' }],
     });
   });
 

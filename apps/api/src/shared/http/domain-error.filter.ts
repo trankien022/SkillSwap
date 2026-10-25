@@ -47,6 +47,8 @@ const NAME_TO_STATUS: Record<string, number> = {
   UnknownStateError: 400,
   ModuleNotInitialisedError: 500,
   BookingNotAllowedError: 409,
+  // FR-007 / AC-034 / BR-001: an unverified account may not book.
+  LearnerNotVerifiedError: 409,
   ClassNotFoundError: 404,
   UnknownClassStateError: 400,
   ClassTransitionError: 409,
@@ -171,7 +173,8 @@ export class DomainErrorFilter implements ExceptionFilter {
 
   /** The stable code a domain error declares, if it declares one at all. */
   private domainCode(name: string, exception: unknown): string | null {
-    if (name === 'BookingNotAllowedError') {
+    // BR-001 (AC-034): the booking gate family declares its own reason code.
+    if (name === 'BookingNotAllowedError' || name === 'LearnerNotVerifiedError') {
       const reason = (exception as Partial<ReasonBearingError> | null)?.reason;
       return typeof reason === 'string' && reason.length > 0 ? reason : null;
     }
