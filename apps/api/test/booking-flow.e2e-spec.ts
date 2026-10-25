@@ -2,6 +2,7 @@ import { startHarness, type Harness } from './harness';
 import { accountIdFromToken, ApiClient, waitFor } from './support/api-client';
 import { resetDatabase, seedTeacherTrust, walletRow } from './support/db';
 import { PendingHoldSweeper } from '../src/modules/live-class/internal/adapter/in/scheduler/pending-hold.sweeper';
+import { ClassCompletionSweeper } from '../src/modules/live-class/internal/adapter/in/scheduler/class-completion.sweeper';
 
 jest.setTimeout(60_000);
 
@@ -178,16 +179,19 @@ describe('E2E: book → settle → room → complete → release', () => {
     const denied = await api.post(`/api/classes/bookings/${bookingId}/room-access`, {});
     expect(denied.status).toBe(403);
 
-    // Complete the class (teacher held it) → releases the teacher's income.
-    const elapsed = new Date(Date.now() + 2 * hour).toISOString();
+    // ADR-021 Amendment A / AC-035: the Teacher has no completion command. The
+    // class completes on its own once the scheduled end passes, via the sweeper.
+    const elapsed = new Date(Date.now() - 2 * hour).toISOString();
     await harness.query('live-class', 'UPDATE classes SET "starts_at" = $1 WHERE "id" = $2', [
       elapsed,
       classId,
     ]);
+    await harness.resolve<ClassCompletionSweeper>(ClassCompletionSweeper).sweep();
+
+    // The removed route must not exist (404/405), not merely be forbidden (403).
     api.actAs(teacherId);
-    const completed = await api.post(`/api/classes/${classId}/complete`);
-    expect(completed.status).toBe(200);
-    expect(completed.json).toEqual({ completed: true, basis: 'teacher_ended' });
+    const removedRoute = await api.post(`/api/classes/${classId}/complete`);
+    expect([404, 405]).toContain(removedRoute.status);
 
     const released = await waitFor(async () => {
       const teacher = await walletRow(harness, teacherId);

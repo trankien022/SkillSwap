@@ -214,7 +214,13 @@ export function assertClassEditable(classId: string, confirmedBookingCount: numb
 
 // ── FR-020 class lifecycle & completion (ADR-021) ───────────────────────────
 
-export const COMPLETION_BASES = ['scheduled_end', 'teacher_ended'] as const;
+/**
+ * ADR-021 Amendment A (2026-10-25): a Teacher may not end a class themselves, so
+ * there is deliberately no `teacher_ended` member — an unrepresentable basis
+ * cannot be produced by a bug. `room_idle` is added by the empty-room path (W1
+ * Phase 1b) and must only ever be reachable after `starts_at`.
+ */
+export const COMPLETION_BASES = ['scheduled_end'] as const;
 export type CompletionBasis = (typeof COMPLETION_BASES)[number];
 
 export const CLASS_CANCELLATION_REASONS = [

@@ -33,7 +33,6 @@ const WEB_ROUTES = [
   '/classes/:id',
   '/classes/:id/bookings',
   '/classes/:id/cancel',
-  '/classes/:id/complete',
   '/classes/:id/start',
   '/classes/bookings/:bookingId/confirm',
   '/classes/bookings/:bookingId/no-show',

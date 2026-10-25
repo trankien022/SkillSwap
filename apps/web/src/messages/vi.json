@@ -44,6 +44,7 @@
       "duplicate_booking": "Bạn đã có booking cho lớp này.",
       "self_booking": "Bạn không thể đặt lớp của chính mình.",
       "invalid_duration": "Lớp này có thời lượng không hợp lệ.",
+      "learner_not_verified": "Bạn cần có xác minh sinh viên đã được duyệt trước khi đặt lớp.",
       "unknown": "Đã xảy ra lỗi. Vui lòng thử lại."
     }
   },
@@ -1574,9 +1575,6 @@
       "couldNotStartTheClass": "Không bắt đầu được lớp",
       "classStarted": "Đã bắt đầu lớp học.",
       "thisClassWasAlreadyStarted": "Lớp này đã bắt đầu trước đó.",
-      "couldNotCompleteTheClass": "Không hoàn thành được lớp",
-      "classCompletedEarningsHaveBeenReleased": "Đã hoàn thành lớp. Doanh thu đã được giải ngân vào ví.",
-      "thereIsNothingLeftToComplete": "Lớp này không còn gì để hoàn thành.",
       "couldNotSaveChanges": "Không lưu được thay đổi",
       "changesSaved": "Đã lưu thay đổi.",
       "errorundefined": "Lỗi: ",
