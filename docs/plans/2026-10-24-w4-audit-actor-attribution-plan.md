@@ -3,7 +3,7 @@ title: W4 — Audit actor attribution (FR-015 §9)
 type: plan
 date: 2026-10-24
 topic: w4-audit-actor-attribution
-status: Unblocked — gates closed 2026-10-25 (actor on the command; ADR-035)
+status: Done — 2026-10-26 (ADR-035; actor on the command; `SYSTEM_ACTOR_ID`; emitters validate)
 owner: Group 4
 ---
 
@@ -66,7 +66,9 @@ Write one test that fails today: a verifier approves evidence, then `GET /audit-
 - `skill.evidence.claimed|approved|rejected`
 - `skill.verifier.suspended|revoked`
 - `wallet.topup.settled` (and future withdrawal events)
-- `class.completed|cancelled` (system)
+- ~~`class.completed|cancelled` (system)~~ — **superseded by ADR-035 §1**: these are effects of
+  time and of the participants' own actions, already recorded in their own rows, and are
+  deliberately *not* audited. The plan's list was written before that distinction was drawn.
 
 Add a contracts spec asserting each schema **rejects** a payload without `actorId` — that is the enforcement that stops a future producer forgetting it.
 
@@ -115,6 +117,30 @@ Files touched (one commit per module):
 - `docs/api/admin-operation.md`: document the actor filter as functional.
 
 **Commit:** `docs(adr): mark the audit actor limitation closed`
+
+**Phase 4 outcome (2026-10-26).**
+
+- **ADR-034 §9** carries a supersede note pointing at ADR-035 (the original text is kept, per the
+  append-mostly rule).
+- **SRS AC-032** note rewritten: all three filters work; `SYSTEM_ACTOR_ID` marks actions no person
+  took; rows written before ADR-035 keep `null` and the no-backfill ruling (C3) makes that seam
+  deliberate and visible.
+- **`docs/api/admin-operation.md`** needed no change, and that is not an omission: the audit-read
+  response shape was already correct, and this wave changed which *values* the `actorId` column
+  holds, not the schema of the response. Regenerating confirmed no diff for this module. The
+  generator *did* produce unrelated drift in `classes.md` / `index.md` plus a new `internal.md`;
+  that drift predates W4 and was left out of this commit rather than folded into it, so the W4
+  diff stays reviewable. It should be regenerated and committed on its own.
+- **A gap the phase uncovered, now recorded in ADR-035 Amendment A:** the emitters were writing
+  audited payloads as untyped object literals, so neither `tsc` nor any runtime check caught a
+  missing actor — the event reached the broker and died at a consumer. Every audited emitter now
+  calls its schema's `parse` inside the writing transaction. This was the difference between a
+  missing actor being a rejected request and being a dead-lettered message days later.
+- **Fixture fallout, fixed rather than papered over:** with emitter validation in place, E2E
+  fixtures that wrote audited rows with readable ids (`vf-art`, `admin-fr3-1`, `stranger-id`, …)
+  began failing with `Invalid uuid`. Real account ids are UUIDs, so the fixtures were corrected;
+  `actorIdSchema` was **not** loosened to accommodate them.
+
 
 ---
 
