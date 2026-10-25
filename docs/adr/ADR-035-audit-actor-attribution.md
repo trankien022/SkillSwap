@@ -53,7 +53,28 @@ and wrong about these events. This ADR records why, and what changes.
    warm-up path — would inherit that request's identity and attribute a system action to a person.
    That is a silent wrong answer in an audit log, which is the one place a silent wrong answer is
    worse than a missing one. An explicit parameter cannot be inherited by accident: if it is
-   absent, the code does not compile.
+   absent at a call site, the call does not compile.
+
+   **Amendment A (found during implementation).** That last sentence is true of the *call sites*
+   it reaches, and of every plain `z.object` schema, but it is not a whole-codebase guarantee, in
+   two ways worth recording because both were observed rather than imagined:
+
+   1. **A refined schema does not typecheck its input.** `walletTransactionCompletedEventSchema`
+      ends in `.superRefine(...)`, which makes it a `ZodEffects`. Its `parse` argument is typed as
+      `unknown`, so an emitter could omit `actorId` and still compile. It failed at **runtime**,
+      not at build time. The runtime guarantee therefore holds everywhere the compile-time one
+      would have; the compile-time one was overstated for refined schemas only.
+   2. **A payload built as a bare object literal is not checked by anything.** The outbox insert
+      takes the payload as a parameter; the four emitting repositories built theirs as inline
+      literals without a schema type annotation, so `tsc` accepted them with no actor and the
+      requirement did not bite until the consumer parsed the message. The event therefore reached
+      the broker, dead-lettered downstream, and the emitter looked clean — which is exactly the
+      failure mode C4's emitter-first ordering is meant to make impossible to ship unnoticed.
+
+   The lesson is the deploy-order rule below, not a code change: **the emitter must validate
+   before it publishes**, not rely on the consumer's strictness to discover a bad payload. Until
+   every emitter calls `schema.parse` on what it writes, `actorId` is enforced at the consumer,
+   which is the wrong end of the wire.
 
 3. **`SYSTEM_ACTOR_ID` is a constant, not `NULL`.** Auto-cancel on teacher no-show (OQ-003),
    auto-complete at `starts_at + duration` (OQ-006), the revocation cascade (ADR-025) and IPN
@@ -92,19 +113,30 @@ and wrong about these events. This ADR records why, and what changes.
   re-records the correct actor rather than whoever ran the replay.
 - (+) A system action is distinguishable from a legacy row, which makes C3's ruling observable.
 - (+) No ambient state, so no emitter can inherit an identity it did not receive.
-- (−) Every audited command signature changes; `pnpm typecheck` is what enforces that no call site
-  was missed.
+- (−) Every audited command signature changes; `pnpm typecheck` catches the call sites that pass a
+  *typed* command or payload, but not the two gaps in Amendment A. A missed emitter is caught by
+  the consumer's strictness at runtime, not at build time.
 - (−) The payload contract is breaking, so the two-step deploy is mandatory rather than advisory.
 - (−) Rows before this ADR remain unattributed forever. The audit log has a visible seam at the
   deploy date, which is the correct outcome and will look like a defect to anyone who does not
   read this.
 
 **Verification.** Contract: every audited event schema rejects a payload with no `actorId`, and
-`SYSTEM_ACTOR_ID` validates as an actor. Use case: the actor on the command appears in the outbox
-payload. End to end: a verifier approves evidence, then `GET /audit-log?actorId=<verifier id>`
-returns exactly that row — the test the pre-ADR implementation could not pass. Consumer: a
-duplicate delivery appends one row carrying the same actor; a row attributed to `SYSTEM_ACTOR_ID`
-is distinguishable from one written with `NULL`.
+`SYSTEM_ACTOR_ID` validates as an actor. Emitter: each audited outbox write calls its schema's
+`parse` inside the writing transaction, so a payload without an actor fails the request instead of
+reaching the broker (proved by removing the actor: 5 of 7 adapter tests fail with a `ZodError` on
+`actorId`). Use case: the actor on the command appears in the outbox payload. End to end: a
+verifier approves evidence, then `GET /audit-log?actorId=<verifier id>` returns exactly that row —
+the test the pre-ADR implementation could not pass; and an Administrator's decision appears under
+the Administrator's id, not the student's. Consumer: a duplicate delivery appends one row carrying
+the same actor; a row attributed to `SYSTEM_ACTOR_ID` is distinguishable from one written with
+`NULL`.
+
+**Amendment A consequence for fixtures.** Because the emitter now validates, any test that writes
+an audited outbox row must use a real account id, and real ids are UUIDs (`accounts.id` is `uuid`).
+Several end-to-end fixtures used readable placeholders (`vf-art`, `admin-fr3-1`); those were
+replaced with UUID-shaped values rather than relaxing `actorIdSchema`, because widening the schema
+to fit a fixture would have made the column accept values the database cannot hold.
 
 **Related:** ADR-034 (admin audit log; §9 closed by this ADR), ADR-013 (outbox, idempotent
 consumers, Amendment A), ADR-014 (per-module schema), ADR-025 (revocation cascade), ADR-033

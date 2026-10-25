@@ -1,3 +1,4 @@
+import { SYSTEM_ACTOR_ID } from '@skillswap/contracts';
 import { ReleaseCompletedClassUseCase } from './release-completed-class.use-case';
 import { FakeWalletRepository } from './testing/fakes';
 
@@ -14,6 +15,8 @@ describe('ReleaseCompletedClassUseCase (FR-020 / ADR-021)', () => {
       priceCredits: 100,
       teacherCredits: 90,
       platformFeeCredits: 10,
+      // ADR-035: settlement is a system effect, not a human act.
+      actorId: SYSTEM_ACTOR_ID,
       traceId: 'x',
     });
     await wallets.settleBooking({
@@ -23,6 +26,8 @@ describe('ReleaseCompletedClassUseCase (FR-020 / ADR-021)', () => {
       priceCredits: 100,
       teacherCredits: 90,
       platformFeeCredits: 10,
+      // ADR-035: settlement is a system effect, not a human act.
+      actorId: SYSTEM_ACTOR_ID,
       traceId: 'y',
     });
     return { wallets, useCase: new ReleaseCompletedClassUseCase(wallets) };

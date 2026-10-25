@@ -241,10 +241,10 @@ describe('E2E: room-idle completion (FR-020 / AC-035)', () => {
     await startTwentyMinutesAgo(classId);
 
     const at = new Date(Date.now() - 10 * minute);
-    const strangerJoin = await presence(classId, 'participant-joined', 'stranger-id', at);
+    const strangerJoin = await presence(classId, 'participant-joined', 'a1d00000-0000-4000-8000-000000000a04', at);
     expect(strangerJoin.status).toBe(200);
     expect(strangerJoin.json).toEqual({ accepted: false, reason: 'not_a_party' });
-    const strangerLeave = await presence(classId, 'participant-left', 'stranger-id', at);
+    const strangerLeave = await presence(classId, 'participant-left', 'a1d00000-0000-4000-8000-000000000a04', at);
     expect(strangerLeave.json).toEqual({ accepted: false, reason: 'not_a_party' });
 
     const rows = await harness.query<{ id: string }>(

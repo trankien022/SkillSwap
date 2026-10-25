@@ -1,3 +1,4 @@
+import { SYSTEM_ACTOR_ID } from '@skillswap/contracts';
 import { RefundCancelledBookingUseCase } from './refund-cancelled-booking.use-case';
 import { FakeWalletRepository } from './testing/fakes';
 
@@ -13,6 +14,8 @@ describe('RefundCancelledBookingUseCase (FR-007 / AC-022/AC-027)', () => {
         priceCredits: 100,
         teacherCredits: 90,
         platformFeeCredits: 10,
+        // ADR-035: settlement is a system effect, not a human act.
+        actorId: SYSTEM_ACTOR_ID,
         traceId: 't0',
       });
     }

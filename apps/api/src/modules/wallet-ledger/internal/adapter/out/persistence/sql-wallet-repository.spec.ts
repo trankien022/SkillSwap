@@ -1,3 +1,4 @@
+import { SYSTEM_ACTOR_ID } from '@skillswap/contracts';
 import { SqlWalletRepository } from './sql-wallet-repository';
 import { InsufficientBalanceError } from '../../../domain/wallet';
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
@@ -93,6 +94,8 @@ const sampleSettleRequest: SettleBookingRequest = {
   priceCredits: 100,
   teacherCredits: 90,
   platformFeeCredits: 10,
+  // ADR-035: settlement is a system effect, not a human act.
+  actorId: SYSTEM_ACTOR_ID,
   traceId: 'trace-settle-1',
 };
 
@@ -170,6 +173,9 @@ describe('SqlWalletRepository (ADR-032 / Phase C2)', () => {
         direction: 'debit',
         occurredAt: NOW.toISOString(), // durable timestamp from persisted created_at
         bookingId: 'bk-100',
+        // ADR-035: the actor is the system, because settlement follows the booking.confirmed
+        // event rather than a request. `accountId` above is the learner, who is not the actor.
+        actorId: SYSTEM_ACTOR_ID,
       });
     });
 
@@ -181,6 +187,8 @@ describe('SqlWalletRepository (ADR-032 / Phase C2)', () => {
         priceCredits: 1,
         teacherCredits: 1,
         platformFeeCredits: 0,
+        // ADR-035: settlement is a system effect, not a human act.
+        actorId: SYSTEM_ACTOR_ID,
         traceId: 'trace-price-1',
       };
 
@@ -247,6 +255,7 @@ describe('SqlWalletRepository (ADR-032 / Phase C2)', () => {
         direction: 'debit',
         occurredAt: NOW.toISOString(),
         bookingId: 'bk-price-1',
+        actorId: SYSTEM_ACTOR_ID,
       });
     });
 
@@ -301,6 +310,7 @@ describe('SqlWalletRepository (ADR-032 / Phase C2)', () => {
         direction: 'debit',
         occurredAt: NOW.toISOString(),
         bookingId: 'bk-100',
+        actorId: SYSTEM_ACTOR_ID,
       });
     });
 

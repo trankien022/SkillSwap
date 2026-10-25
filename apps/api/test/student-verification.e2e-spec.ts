@@ -85,7 +85,7 @@ describe('E2E: student verification (FR-002)', () => {
     expect(forbidden.status).toBe(403);
 
     // The Administrator rejects with a reason.
-    api.actAs('admin-1', 'admin');
+    api.actAs('a1d00000-0000-4000-8000-000000000a01', 'admin');
     const decided = await api.post(`/api/student-verifications/${verificationId}/decision`, {
       decision: 'reject',
       reason: 'Illegible document',
@@ -93,7 +93,7 @@ describe('E2E: student verification (FR-002)', () => {
     expect(decided.status).toBe(200);
     expect(decided.json.status).toBe('rejected');
     expect(decided.json.reason).toBe('Illegible document');
-    expect(decided.json.reviewerId).toBe('admin-1');
+    expect(decided.json.reviewerId).toBe('a1d00000-0000-4000-8000-000000000a01');
 
     // The owner-scoped read (FR-017) reflects status + reason.
     api.actAs(learnerId, 'user');
@@ -123,7 +123,7 @@ describe('E2E: student verification (FR-002)', () => {
     });
     const verificationId = submitted.json.id as string;
 
-    api.actAs('admin-2', 'admin');
+    api.actAs('a1d00000-0000-4000-8000-000000000a02', 'admin');
     const decided = await api.post(`/api/student-verifications/${verificationId}/decision`, {
       decision: 'approve',
       approvedMajor: 'Computer Science',

@@ -98,10 +98,10 @@ describe('E2E: publish gate (FR-005 / AC-002)', () => {
     expect(denied.status).toBe(403);
 
     // Verify + approve the skill, then publish succeeds.
-    await verifyStudent(teacherId, 'admin-fr5-1');
+    await verifyStudent(teacherId, 'a1d00000-0000-4000-8000-000000000a17');
     await waitVerified(teacherId);
-    await seedVerifier(harness, { accountId: 'vf-react', expertise: [skillId] });
-    await approveSkill(teacherId, skillId, 'vf-react', 'intermediate');
+    await seedVerifier(harness, { accountId: 'a1d00000-0000-4000-8000-000000000a09', expertise: [skillId] });
+    await approveSkill(teacherId, skillId, 'a1d00000-0000-4000-8000-000000000a09', 'intermediate');
 
     const published = await publishUntilAllowed(teacherId, [skillId]);
     expect(published.status).toBe(201);
@@ -112,10 +112,10 @@ describe('E2E: publish gate (FR-005 / AC-002)', () => {
     const approvedSkill = await seedSkill(harness, { name: 'Guitar', category: 'Music' });
     const otherSkill = await seedSkill(harness, { name: 'Piano', category: 'Music' });
     const teacherId = await registerLearner('fr5-partial@skillswap.test');
-    await verifyStudent(teacherId, 'admin-fr5-2');
+    await verifyStudent(teacherId, 'a1d00000-0000-4000-8000-000000000a18');
     await waitVerified(teacherId);
-    await seedVerifier(harness, { accountId: 'vf-guitar', expertise: [approvedSkill] });
-    await approveSkill(teacherId, approvedSkill, 'vf-guitar', 'advanced');
+    await seedVerifier(harness, { accountId: 'a1d00000-0000-4000-8000-000000000a08', expertise: [approvedSkill] });
+    await approveSkill(teacherId, approvedSkill, 'a1d00000-0000-4000-8000-000000000a08', 'advanced');
 
     // Wait for the approved skill to project, then require BOTH skills.
     await waitFor(async () => {
@@ -133,10 +133,10 @@ describe('E2E: publish gate (FR-005 / AC-002)', () => {
   it('demotes publish rights when student verification is revoked (FR-019)', async () => {
     const skillId = await seedSkill(harness, { name: 'Chess', category: 'Games' });
     const teacherId = await registerLearner('fr5-revoked@skillswap.test');
-    await verifyStudent(teacherId, 'admin-fr5-3');
+    await verifyStudent(teacherId, 'a1d00000-0000-4000-8000-000000000a06');
     await waitVerified(teacherId);
-    await seedVerifier(harness, { accountId: 'vf-chess', expertise: [skillId] });
-    await approveSkill(teacherId, skillId, 'vf-chess', 'intermediate');
+    await seedVerifier(harness, { accountId: 'a1d00000-0000-4000-8000-000000000a07', expertise: [skillId] });
+    await approveSkill(teacherId, skillId, 'a1d00000-0000-4000-8000-000000000a07', 'intermediate');
     await publishUntilAllowed(teacherId, [skillId]);
 
     // Revoke the student verification; the projection demotes publish rights.
@@ -144,7 +144,7 @@ describe('E2E: publish gate (FR-005 / AC-002)', () => {
       api.actAs(teacherId, 'user');
       return api.get('/api/student-verifications/me');
     })()).json.id as string;
-    api.actAs('admin-fr5-3', 'admin');
+    api.actAs('a1d00000-0000-4000-8000-000000000a06', 'admin');
     await api.post(`/api/student-verifications/${verificationId}/revocation`, { reason: 'fake document' });
 
     await waitFor(async () => {

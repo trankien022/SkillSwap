@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { actorIdSchema } from './audit-actor';
 
 /**
  * FR-007 / ADR-018 / ADR-032: canonical booking.confirmed event contract.
@@ -50,6 +51,13 @@ export const walletTransactionCompletedEventSchema = z
     direction: z.enum(['credit', 'debit']),
     occurredAt: z.string().datetime({ offset: true }),
     bookingId: z.string().min(1).optional(),
+    /**
+     * ADR-035: who acted. For a SePay IPN this is `SYSTEM_ACTOR_ID`, while `accountId` is the
+     * **beneficiary** — the person whose balance moved. They are different facts and in the IPN
+     * case they are different values: conflating them would record the person who received money
+     * as the one who authorised it.
+     */
+    actorId: actorIdSchema,
   })
   .superRefine((data, ctx) => {
     if (data.type === 'booking_payment') {

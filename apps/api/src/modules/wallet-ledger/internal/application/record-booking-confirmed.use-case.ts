@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { SYSTEM_ACTOR_ID } from '@skillswap/contracts';
 import { splitSettlement } from '../domain/wallet';
 import type {
   BookingConfirmedInput,
@@ -32,6 +33,7 @@ export class RecordBookingConfirmedUseCase implements RecordBookingConfirmedPort
       teacherCredits,
       platformFeeCredits,
       traceId: randomUUID(),
+      actorId: SYSTEM_ACTOR_ID,
     });
     return {
       applied: outcome.applied,

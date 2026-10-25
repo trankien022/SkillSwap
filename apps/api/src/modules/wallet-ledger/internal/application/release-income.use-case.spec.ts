@@ -1,3 +1,4 @@
+import { SYSTEM_ACTOR_ID } from '@skillswap/contracts';
 import { ReleaseIncomeUseCase } from './release-income.use-case';
 import { FakeWalletRepository } from './testing/fakes';
 
@@ -13,6 +14,8 @@ describe('ReleaseIncomeUseCase (FR-009 / OQ-006)', () => {
       priceCredits: 100,
       teacherCredits: 90,
       platformFeeCredits: 10,
+      // ADR-035: settlement is a system effect, not a human act.
+      actorId: SYSTEM_ACTOR_ID,
       traceId: 't0',
     });
     return { wallets, useCase: new ReleaseIncomeUseCase(wallets) };
@@ -52,6 +55,8 @@ describe('ReleaseIncomeUseCase (FR-009 / OQ-006)', () => {
       priceCredits: 100,
       teacherCredits: 90,
       platformFeeCredits: 10,
+      // ADR-035: settlement is a system effect, not a human act.
+      actorId: SYSTEM_ACTOR_ID,
       traceId: 't1',
     });
     await useCase.execute({ bookingId: 'bk-1', teacherId: 'tc-1', amountCredits: 90, releaseKey: 'k1' });

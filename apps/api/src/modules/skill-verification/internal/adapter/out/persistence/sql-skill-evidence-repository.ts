@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { skillEvidenceEventSchema } from '@skillswap/contracts';
 import { InvalidCursorError } from '../../../../../../shared/errors';
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { insertOutboxStatement } from '../../../../../../shared/messaging/outbox-statements';
@@ -146,7 +147,9 @@ export class SqlSkillEvidenceRepository implements SkillEvidenceRepository {
       }
       await manager.query(insertOutboxStatement(this.schema), [
         SKILL_EVIDENCE_EVENTS.submitted,
-        {
+        // ADR-035 Amendment A: validated here, so a bad payload fails the request rather than
+        // reaching the broker and dead-lettering downstream.
+        skillEvidenceEventSchema.parse({
           evidenceId: row.id,
           profileSkillId: row.profile_skill_id,
           accountId: request.accountId,
@@ -155,7 +158,9 @@ export class SqlSkillEvidenceRepository implements SkillEvidenceRepository {
           requestedLevel: row.requested_level,
           status: row.status,
           occurredAt: request.submittedAt.toISOString(),
-        },
+          // ADR-035: the owner submits their own evidence.
+          actorId: request.accountId,
+        }),
       ]);
       await appendEvidenceAudit(manager, this.schema, {
         id: randomUUID(),
@@ -410,7 +415,7 @@ export class SqlSkillEvidenceRepository implements SkillEvidenceRepository {
       }
       await manager.query(insertOutboxStatement(this.schema), [
         SKILL_EVIDENCE_EVENTS.claimed,
-        {
+        skillEvidenceEventSchema.parse({
           evidenceId: row.id,
           profileSkillId: row.profile_skill_id,
           accountId: request.ownerId,
@@ -420,7 +425,9 @@ export class SqlSkillEvidenceRepository implements SkillEvidenceRepository {
           status: row.status,
           claimedBy: request.verifierId,
           occurredAt: request.claimedAt.toISOString(),
-        },
+          // ADR-035: the Verifier who claimed it.
+          actorId: request.verifierId,
+        }),
       ]);
       await appendEvidenceAudit(manager, this.schema, {
         id: randomUUID(),
@@ -512,7 +519,7 @@ export class SqlSkillEvidenceRepository implements SkillEvidenceRepository {
       }
       await manager.query(insertOutboxStatement(this.schema), [
         request.status === 'approved' ? SKILL_EVIDENCE_EVENTS.approved : SKILL_EVIDENCE_EVENTS.rejected,
-        {
+        skillEvidenceEventSchema.parse({
           evidenceId: row.id,
           profileSkillId: row.profile_skill_id,
           accountId: request.ownerId,
@@ -523,7 +530,9 @@ export class SqlSkillEvidenceRepository implements SkillEvidenceRepository {
           approvedLevel: row.approved_level,
           reason: row.reason,
           occurredAt: request.decidedAt.toISOString(),
-        },
+          // ADR-035: the deciding Verifier — the same account the evidence-audit row above names.
+          actorId: request.reviewerId,
+        }),
       ]);
       await appendEvidenceAudit(manager, this.schema, {
         id: randomUUID(),

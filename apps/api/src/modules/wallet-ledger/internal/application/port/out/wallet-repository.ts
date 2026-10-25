@@ -8,6 +8,12 @@ export interface ApplyTopUpRequest {
   readonly amountCredits: number;
   readonly direction: 'credit' | 'debit';
   readonly traceId: string;
+  /**
+   * ADR-035: who acted. A SePay IPN is a settlement confirmed by the provider, not by a person,
+   * so it is `SYSTEM_ACTOR_ID`; `ownerId` remains the **beneficiary**. They are separate fields
+   * because the person whose balance moved did not authorise it.
+   */
+  readonly actorId: string;
 }
 
 export interface SettleBookingRequest {
@@ -18,6 +24,12 @@ export interface SettleBookingRequest {
   readonly teacherCredits: number;
   readonly platformFeeCredits: number;
   readonly traceId: string;
+  /**
+   * ADR-035: who acted. Settlement is driven by the `booking.confirmed` consumer rather than by a
+   * request, so it is `SYSTEM_ACTOR_ID` — and it is passed in rather than imported here so the
+   * wallet module does not make the audit decision itself.
+   */
+  readonly actorId: string;
 }
 
 export interface SettleBookingResult {

@@ -165,6 +165,7 @@ export class SqlWalletRepository implements WalletRepository {
             direction: 'debit',
             occurredAt,
             bookingId: request.bookingId,
+            actorId: request.actorId,
           });
           await manager.query(insertOutboxStatement(this.schema), [
             WALLET_TRANSACTION_COMPLETED_EVENT,
@@ -252,6 +253,7 @@ export class SqlWalletRepository implements WalletRepository {
         direction: 'debit',
         occurredAt,
         bookingId: request.bookingId,
+        actorId: request.actorId,
       });
 
       await manager.query(insertOutboxStatement(this.schema), [

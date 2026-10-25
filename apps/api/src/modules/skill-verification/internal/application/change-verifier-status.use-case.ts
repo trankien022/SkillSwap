@@ -20,7 +20,11 @@ export class ChangeVerifierStatusUseCase implements ChangeVerifierStatusPort {
       throw new UnknownVerifierError(command.verifierId);
     }
     assertVerifierTransition(current.status, command.status);
-    const updated = await this.verifiers.setStatus(command.verifierId, command.status);
+    const updated = await this.verifiers.setStatus(
+      command.verifierId,
+      command.status,
+      command.actorId,
+    );
     if (updated === null) {
       throw new UnknownVerifierError(command.verifierId);
     }

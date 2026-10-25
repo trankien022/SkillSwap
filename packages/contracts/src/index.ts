@@ -1,6 +1,8 @@
 import { z } from 'zod';
+import { actorIdSchema } from './audit-actor';
 
 export * from './envelope';
+export * from './audit-actor';
 export * from './pagination';
 export * from './skill-evidence';
 export * from './verification';
@@ -447,6 +449,8 @@ export const verifierStatusChangedSchema = z.object({
   status: verifierStatusSchema,
   previousStatus: verifierStatusSchema,
   occurredAt: z.string().datetime({ offset: true }),
+  /** ADR-035: the Administrator who changed the status. */
+  actorId: actorIdSchema,
 });
 export type VerifierStatusChangedEvent = z.infer<typeof verifierStatusChangedSchema>;
 

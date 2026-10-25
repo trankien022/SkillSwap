@@ -6,6 +6,11 @@ export const CHANGE_VERIFIER_STATUS = Symbol('ChangeVerifierStatus');
 export interface ChangeVerifierStatusCommand {
   verifierId: string;
   status: 'active' | 'suspended' | 'revoked';
+  /**
+   * ADR-035: the Administrator performing the change. Required, not optional — the audited event
+   * records an act by a person, and `SYSTEM_ACTOR_ID` is reserved for actions nobody took.
+   */
+  actorId: string;
 }
 
 export interface ChangeVerifierStatusPort {

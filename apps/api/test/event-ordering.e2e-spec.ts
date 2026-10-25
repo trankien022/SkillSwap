@@ -1,3 +1,4 @@
+import { SYSTEM_ACTOR_ID } from '@skillswap/contracts';
 import { startHarness, type Harness } from './harness';
 import { resetDatabase } from './support/db';
 import { PostgresProcessedEventStore } from '../src/shared/messaging/processed-event-store';
@@ -80,6 +81,9 @@ describe('E2E: an out-of-order delivery converges on the newest sequence (W2 C1)
       schoolName: 'FPT University',
       reason: status === 'pending' ? null : 'exercising the ordering guard',
       occurredAt: occurredAt.toISOString(),
+      // ADR-035: required on the wire. This suite is about ordering, not attribution, so the
+      // system actor is the honest value for a fixture no person performed.
+      actorId: SYSTEM_ACTOR_ID,
     };
   }
 
@@ -154,6 +158,8 @@ describe('E2E: an out-of-order delivery converges on the newest sequence (W2 C1)
       schoolName: 'FPT University',
       reason: status === 'pending' ? null : 'exercising the ordering guard',
       occurredAt: occurredAt.toISOString(),
+      // ADR-035: see `verificationPayload` — the contract requires an actor.
+      actorId: SYSTEM_ACTOR_ID,
     });
 
     // Both deliveries go to the same consumer queue. Sequence 2 says "rejected" and is written
@@ -206,6 +212,8 @@ describe('E2E: an out-of-order delivery converges on the newest sequence (W2 C1)
             schoolName: 'FPT University',
             reason: null,
             occurredAt: delivery.occurredAt.toISOString(),
+            // ADR-035: required on the wire. This test is about ordering, not attribution.
+            actorId: SYSTEM_ACTOR_ID,
           }),
         { aggregateId: account, sequence: delivery.sequence },
       );
@@ -292,6 +300,8 @@ describe('E2E: an out-of-order delivery converges on the newest sequence (W2 C1)
         approvedLevel: 'advanced',
         reason: null,
         occurredAt: now.toISOString(),
+        // ADR-035: required on the wire; the contract is not the thing under test here.
+        actorId: SYSTEM_ACTOR_ID,
       },
       now,
     );

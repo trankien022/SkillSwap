@@ -20,6 +20,9 @@ function event(overrides: Partial<StudentVerificationEvent> = {}): StudentVerifi
     schoolName: 'FPT University',
     reason: null,
     occurredAt: '2026-10-10T00:00:00.000Z',
+    // ADR-035: the Administrator who decided. The projection does not read it -- it is asserted
+    // absent from the write below -- but the payload cannot exist without it.
+    actorId: '8a1e0000-0000-4000-8000-000000000a01',
     ...overrides,
   };
 }

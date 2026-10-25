@@ -1,5 +1,9 @@
+import { verifierStatusChangedSchema } from '@skillswap/contracts';
 import { SqlVerifierRepository } from './sql-verifier-repository';
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
+
+/** ADR-035: the Administrator performing the change, distinct from the Verifier. */
+const ADMIN_ACTOR = '8a1e0000-0000-4000-8000-000000000b02';
 
 /**
  * FR-004 / ADR-027 + FR-015 / ADR-034: a Verifier status change is a privileged action, and the
@@ -68,7 +72,7 @@ describe('SqlVerifierRepository.setStatus', () => {
     ]);
     const repository = new SqlVerifierRepository(registry, 'skill-verification');
 
-    await repository.setStatus('vf-1', 'suspended');
+    await repository.setStatus('vf-1', 'suspended', ADMIN_ACTOR);
 
     // `RETURNING` sees the post-update row, so the old value must be read first.
     expect(recordedQueries[0].sql).toContain('SELECT "status"');
@@ -85,7 +89,7 @@ describe('SqlVerifierRepository.setStatus', () => {
     ]);
     const repository = new SqlVerifierRepository(registry, 'skill-verification');
 
-    await repository.setStatus('vf-1', 'suspended');
+    await repository.setStatus('vf-1', 'suspended', ADMIN_ACTOR);
 
     expect(dataSource.transaction).toHaveBeenCalledTimes(1);
   });
@@ -100,7 +104,7 @@ describe('SqlVerifierRepository.setStatus', () => {
     ]);
     const repository = new SqlVerifierRepository(registry, 'skill-verification');
 
-    await repository.setStatus('vf-1', 'suspended');
+    await repository.setStatus('vf-1', 'suspended', ADMIN_ACTOR);
 
     const insert = recordedQueries.find((q) => q.sql.includes('INSERT INTO'));
     expect(insert?.sql).toContain('outbox_messages');
@@ -110,6 +114,11 @@ describe('SqlVerifierRepository.setStatus', () => {
       status: 'suspended',
       previousStatus: 'active',
     });
+    // ADR-035 Amendment A: the emitter validates before publishing, and the actor is the
+    // Administrator who acted -- `verifierId` above is the account being changed.
+    const payload = verifierStatusChangedSchema.parse(insert?.params?.[1]);
+    expect(payload.actorId).toBe(ADMIN_ACTOR);
+    expect(payload.actorId).not.toBe(payload.verifierId);
   });
 
   it('emits skill.verifier.revoked for a revocation', async () => {
@@ -122,7 +131,7 @@ describe('SqlVerifierRepository.setStatus', () => {
     ]);
     const repository = new SqlVerifierRepository(registry, 'skill-verification');
 
-    await repository.setStatus('vf-1', 'revoked');
+    await repository.setStatus('vf-1', 'revoked', ADMIN_ACTOR);
 
     const insert = recordedQueries.find((q) => q.sql.includes('INSERT INTO'));
     expect(insert?.params?.[0]).toBe('skill.verifier.revoked');
@@ -137,7 +146,7 @@ describe('SqlVerifierRepository.setStatus', () => {
     ]);
     const repository = new SqlVerifierRepository(registry, 'skill-verification');
 
-    await repository.setStatus('vf-1', 'active');
+    await repository.setStatus('vf-1', 'active', ADMIN_ACTOR);
 
     expect(recordedQueries.some((q) => q.sql.includes('INSERT INTO'))).toBe(false);
   });
@@ -146,7 +155,7 @@ describe('SqlVerifierRepository.setStatus', () => {
     const { registry, recordedQueries } = createRecordingRegistry([[]]);
     const repository = new SqlVerifierRepository(registry, 'skill-verification');
 
-    await expect(repository.setStatus('nope', 'suspended')).resolves.toBeNull();
+    await expect(repository.setStatus('nope', 'suspended', ADMIN_ACTOR)).resolves.toBeNull();
     expect(recordedQueries.some((q) => q.sql.includes('INSERT INTO'))).toBe(false);
   });
 
@@ -159,7 +168,7 @@ describe('SqlVerifierRepository.setStatus', () => {
     ]);
     const repository = new SqlVerifierRepository(registry, 'skill-verification');
 
-    await expect(repository.setStatus('vf-1', 'suspended')).resolves.toEqual({
+    await expect(repository.setStatus('vf-1', 'suspended', ADMIN_ACTOR)).resolves.toEqual({
       accountId: 'vf-1',
       status: 'suspended',
       expertise: ['sk-1'],

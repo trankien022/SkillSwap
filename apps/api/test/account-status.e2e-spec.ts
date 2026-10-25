@@ -75,7 +75,7 @@ describe('E2E: learner account status (FR-017)', () => {
 
     // Admin rejects → the reason is projected onto the owner's view.
     const verificationId = (await api.get('/api/student-verifications/me')).json.id as string;
-    api.actAs('admin-1', 'admin');
+    api.actAs('a1d00000-0000-4000-8000-000000000a01', 'admin');
     await api.post(`/api/student-verifications/${verificationId}/decision`, {
       decision: 'reject',
       reason: 'Illegible document',
@@ -99,7 +99,7 @@ describe('E2E: learner account status (FR-017)', () => {
     });
     const verificationId = submitted.json.id as string;
 
-    api.actAs('admin-2', 'admin');
+    api.actAs('a1d00000-0000-4000-8000-000000000a02', 'admin');
     await api.post(`/api/student-verifications/${verificationId}/decision`, { decision: 'approve' });
 
     const approved = await meUntilStatus(learnerId, 'approved');
@@ -118,12 +118,12 @@ describe('E2E: learner account status (FR-017)', () => {
     });
     const verificationId = submitted.json.id as string;
 
-    api.actAs('admin-3', 'admin');
+    api.actAs('a1d00000-0000-4000-8000-000000000a03', 'admin');
     await api.post(`/api/student-verifications/${verificationId}/decision`, { decision: 'approve' });
     await meUntilStatus(learnerId, 'approved');
 
     // Revoke — the cascade event demotes the projected status to revoked + reason.
-    api.actAs('admin-3', 'admin');
+    api.actAs('a1d00000-0000-4000-8000-000000000a03', 'admin');
     const revoked = await api.post(`/api/student-verifications/${verificationId}/revocation`, {
       reason: 'Fake document',
     });

@@ -1,3 +1,4 @@
+import { verifierStatusChangedSchema } from '@skillswap/contracts';
 import { insertOutboxStatement } from '../../../../../../shared/messaging/outbox-statements';
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { qualified } from '../../../../../../shared/sql/ident';
@@ -68,6 +69,7 @@ export class SqlVerifierRepository implements VerifierRepository {
   async setStatus(
     accountId: string,
     status: 'active' | 'suspended' | 'revoked',
+    actorId: string,
   ): Promise<VerifierRecord | null> {
     const source = this.registry.get(this.moduleName);
     const schema = this.registry.getSchema(this.moduleName);
@@ -104,12 +106,15 @@ export class SqlVerifierRepository implements VerifierRepository {
           status === 'suspended' ? VERIFIER_EVENTS.suspended : VERIFIER_EVENTS.revoked;
         await manager.query(insertOutboxStatement(schema), [
           eventType,
-          {
+          // ADR-035 Amendment A: validated at the emitter, in the same transaction as the write.
+          verifierStatusChangedSchema.parse({
             verifierId: row.account_id,
             status,
             previousStatus: row.previous_status,
             occurredAt: new Date().toISOString(),
-          },
+            // ADR-035: the Administrator who demoted this Verifier, not the Verifier themselves.
+            actorId,
+          }),
         ]);
       }
       return row.account_id;

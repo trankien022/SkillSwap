@@ -1,3 +1,4 @@
+import { SYSTEM_ACTOR_ID } from './audit-actor';
 import {
   bookingConfirmedSchema,
   walletTransactionCompletedEventSchema,
@@ -118,6 +119,8 @@ describe('booking-payment-events contracts (ADR-031 / ADR-032 / Phase C1)', () =
         amountCredits: 25,
         direction: 'debit',
         occurredAt: validOccurredAt,
+        // ADR-035: required on the wire; this fixture is about another rule.
+        actorId: SYSTEM_ACTOR_ID,
         bookingId: 'bk-123',
       });
       expect(payment.type).toBe('booking_payment');
@@ -133,6 +136,8 @@ describe('booking-payment-events contracts (ADR-031 / ADR-032 / Phase C1)', () =
           amountCredits: 25,
           direction: 'credit',
           occurredAt: validOccurredAt,
+          // ADR-035: required on the wire; this fixture is about another rule.
+          actorId: SYSTEM_ACTOR_ID,
           bookingId: 'bk-123',
         }),
       ).toThrow(/booking_payment must have direction debit/);
@@ -145,6 +150,8 @@ describe('booking-payment-events contracts (ADR-031 / ADR-032 / Phase C1)', () =
         amountCredits: 25,
         direction: 'credit',
         occurredAt: validOccurredAt,
+        // ADR-035: required on the wire; this fixture is about another rule.
+        actorId: SYSTEM_ACTOR_ID,
         bookingId: 'bk-123',
       });
       expect(refund.type).toBe('booking_refund');
@@ -160,6 +167,8 @@ describe('booking-payment-events contracts (ADR-031 / ADR-032 / Phase C1)', () =
           amountCredits: 25,
           direction: 'debit',
           occurredAt: validOccurredAt,
+          // ADR-035: required on the wire; this fixture is about another rule.
+          actorId: SYSTEM_ACTOR_ID,
           bookingId: 'bk-123',
         }),
       ).toThrow(/booking_refund must have direction credit/);
@@ -175,6 +184,8 @@ describe('booking-payment-events contracts (ADR-031 / ADR-032 / Phase C1)', () =
           amountCredits: 25,
           direction: 'debit',
           occurredAt: validOccurredAt,
+          // ADR-035: required on the wire; this fixture is about another rule.
+          actorId: SYSTEM_ACTOR_ID,
         }),
       ).toThrow(/bookingId is required and non-empty for booking_payment/);
 
@@ -187,6 +198,8 @@ describe('booking-payment-events contracts (ADR-031 / ADR-032 / Phase C1)', () =
           amountCredits: 25,
           direction: 'debit',
           occurredAt: validOccurredAt,
+          // ADR-035: required on the wire; this fixture is about another rule.
+          actorId: SYSTEM_ACTOR_ID,
           bookingId: '',
         }),
       ).toThrow();
@@ -200,6 +213,8 @@ describe('booking-payment-events contracts (ADR-031 / ADR-032 / Phase C1)', () =
           amountCredits: 25,
           direction: 'debit',
           occurredAt: validOccurredAt,
+          // ADR-035: required on the wire; this fixture is about another rule.
+          actorId: SYSTEM_ACTOR_ID,
           bookingId: '   ',
         }),
       ).toThrow(/bookingId is required and non-empty for booking_payment/);
@@ -213,6 +228,8 @@ describe('booking-payment-events contracts (ADR-031 / ADR-032 / Phase C1)', () =
           amountCredits: 25,
           direction: 'credit',
           occurredAt: validOccurredAt,
+          // ADR-035: required on the wire; this fixture is about another rule.
+          actorId: SYSTEM_ACTOR_ID,
         }),
       ).toThrow(/bookingId is required and non-empty for booking_refund/);
 
@@ -225,6 +242,8 @@ describe('booking-payment-events contracts (ADR-031 / ADR-032 / Phase C1)', () =
           amountCredits: 25,
           direction: 'credit',
           occurredAt: validOccurredAt,
+          // ADR-035: required on the wire; this fixture is about another rule.
+          actorId: SYSTEM_ACTOR_ID,
           bookingId: '',
         }),
       ).toThrow();
@@ -238,6 +257,8 @@ describe('booking-payment-events contracts (ADR-031 / ADR-032 / Phase C1)', () =
           amountCredits: 25,
           direction: 'credit',
           occurredAt: validOccurredAt,
+          // ADR-035: required on the wire; this fixture is about another rule.
+          actorId: SYSTEM_ACTOR_ID,
           bookingId: '   ',
         }),
       ).toThrow(/bookingId is required and non-empty for booking_refund/);
@@ -252,6 +273,8 @@ describe('booking-payment-events contracts (ADR-031 / ADR-032 / Phase C1)', () =
         amountCredits: 100,
         direction: 'credit',
         occurredAt: validOccurredAt,
+        // ADR-035: required on the wire; this fixture is about another rule.
+        actorId: SYSTEM_ACTOR_ID,
       });
       expect(topUp.type).toBe('top_up');
       expect(topUp.bookingId).toBeUndefined();
@@ -264,6 +287,8 @@ describe('booking-payment-events contracts (ADR-031 / ADR-032 / Phase C1)', () =
         amountCredits: 100,
         direction: 'credit',
         occurredAt: validOccurredAt,
+        // ADR-035: required on the wire; this fixture is about another rule.
+        actorId: SYSTEM_ACTOR_ID,
         bookingId: 'bk-optional',
       });
       expect(topUpWithBooking.bookingId).toBe('bk-optional');
@@ -276,6 +301,8 @@ describe('booking-payment-events contracts (ADR-031 / ADR-032 / Phase C1)', () =
         amountCredits: 90,
         direction: 'credit',
         occurredAt: validOccurredAt,
+        // ADR-035: required on the wire; this fixture is about another rule.
+        actorId: SYSTEM_ACTOR_ID,
       });
       expect(income.type).toBe('income_release');
 
@@ -287,6 +314,8 @@ describe('booking-payment-events contracts (ADR-031 / ADR-032 / Phase C1)', () =
         amountCredits: 10,
         direction: 'credit',
         occurredAt: validOccurredAt,
+        // ADR-035: required on the wire; this fixture is about another rule.
+        actorId: SYSTEM_ACTOR_ID,
       });
       expect(fee.type).toBe('platform_fee');
     });
@@ -298,6 +327,8 @@ describe('booking-payment-events contracts (ADR-031 / ADR-032 / Phase C1)', () =
         type: 'top_up',
         direction: 'credit' as const,
         occurredAt: validOccurredAt,
+        // ADR-035: required on the wire; these fixtures test other rules.
+        actorId: SYSTEM_ACTOR_ID,
       };
 
       // Zero credits rejected
@@ -327,6 +358,8 @@ describe('booking-payment-events contracts (ADR-031 / ADR-032 / Phase C1)', () =
         amountCredits: 100,
         direction: 'credit' as const,
         occurredAt: validOccurredAt,
+        // ADR-035: required on the wire; these fixtures test other rules.
+        actorId: SYSTEM_ACTOR_ID,
       };
 
       // Invented / unapproved event kinds are rejected
@@ -366,6 +399,8 @@ describe('booking-payment-events contracts (ADR-031 / ADR-032 / Phase C1)', () =
         type: 'top_up',
         amountCredits: 100,
         direction: 'credit' as const,
+        // ADR-035: required on the wire; this fixture is about occurredAt.
+        actorId: SYSTEM_ACTOR_ID,
       };
 
       // Valid UTC ISO string accepted

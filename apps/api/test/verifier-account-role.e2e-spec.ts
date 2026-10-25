@@ -72,7 +72,7 @@ describe('E2E: verifier is a provisioned account role (ADR-029)', () => {
     expect(queue.status).toBe(200);
 
     // A learner identity is refused on the same route.
-    api.actAs('some-learner', 'user');
+    api.actAs('a1d00000-0000-4000-8000-000000000a0a', 'user');
     const denied = await api.get('/api/verifiers/me/queue');
     expect(denied.status).toBe(403);
   });

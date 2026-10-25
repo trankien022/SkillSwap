@@ -54,9 +54,9 @@ export function describeAuditedAction(message: AuditableMessage): AdminAuditEven
     case AUDITED_EVENT_TYPES.verificationRevoked: {
       const event = studentVerificationEventSchema.parse(payload);
       return {
-        // The event carries no actor: an administrator's id is not in this payload. Recorded as
-        // null rather than guessed — see the ADR-034 consequence note on actor attribution.
-        actorId: null,
+        // ADR-035: the Administrator who decided, carried on the event by the emitter. Rows
+        // written before ADR-035 have null here; that seam is deliberate (C3, no backfill).
+        actorId: event.actorId,
         action: eventType,
         targetType: 'verification',
         targetId: event.verificationId,
@@ -79,7 +79,8 @@ export function describeAuditedAction(message: AuditableMessage): AdminAuditEven
     case AUDITED_EVENT_TYPES.evidenceRejected: {
       const event = skillEvidenceEventSchema.parse(payload);
       return {
-        actorId: null,
+        // ADR-035: the account that acted — the submitter, the claimant, or the decider.
+        actorId: event.actorId,
         action: eventType,
         targetType: 'skill_evidence',
         targetId: event.evidenceId,
@@ -104,7 +105,9 @@ export function describeAuditedAction(message: AuditableMessage): AdminAuditEven
     case AUDITED_EVENT_TYPES.verifierRevoked: {
       const event = verifierStatusChangedSchema.parse(payload);
       return {
-        actorId: null,
+        // ADR-035: the Administrator who demoted them. `targetId` is the Verifier; this is
+        // the person who acted, and they are deliberately different accounts.
+        actorId: event.actorId,
         action: eventType,
         targetType: 'verifier_account',
         targetId: event.verifierId,
@@ -122,7 +125,9 @@ export function describeAuditedAction(message: AuditableMessage): AdminAuditEven
     case AUDITED_EVENT_TYPES.walletTransactionCompleted: {
       const event = walletTransactionCompletedEventSchema.parse(payload);
       return {
-        actorId: null,
+        // ADR-035: usually SYSTEM_ACTOR_ID (a settlement), never the beneficiary — that is
+        // `event.accountId`, which stays in the payload and is not the actor.
+        actorId: event.actorId,
         action: eventType,
         targetType: 'wallet_transaction',
         targetId: event.transactionId,

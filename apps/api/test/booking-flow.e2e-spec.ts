@@ -179,7 +179,7 @@ describe('E2E: book → settle → room → complete → release', () => {
     expect(access.json.room).toBe(`skillswap-${classId}`);
     expect(access.json.token).toBeTruthy();
 
-    api.actAs('stranger-id');
+    api.actAs('a1d00000-0000-4000-8000-000000000a04');
     const denied = await api.post(`/api/classes/bookings/${bookingId}/room-access`, {});
     expect(denied.status).toBe(403);
 

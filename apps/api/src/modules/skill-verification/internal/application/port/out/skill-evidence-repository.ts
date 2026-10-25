@@ -191,8 +191,18 @@ export interface VerifierRecord {
 export interface VerifierRepository {
   /** The Verifier by account id, or null when the account is not a Verifier. */
   findById(accountId: string): Promise<VerifierRecord | null>;
-  /** FR-004: an Administrator sets a Verifier's lifecycle status. */
-  setStatus(accountId: string, status: 'active' | 'suspended' | 'revoked'): Promise<VerifierRecord | null>;
+  /**
+   * FR-004: an Administrator sets a Verifier's lifecycle status.
+   *
+   * `actorId` (ADR-035) is a parameter of the write rather than something the adapter can look
+   * up: the account whose status is changing and the account making the change are different
+   * people, and only the command knows the second one.
+   */
+  setStatus(
+    accountId: string,
+    status: 'active' | 'suspended' | 'revoked',
+    actorId: string,
+  ): Promise<VerifierRecord | null>;
 }
 
 export const EVIDENCE_AUDIT_REPOSITORY = Symbol('EvidenceAuditRepository');

@@ -830,6 +830,8 @@ describe('student verification contracts', () => {
       schoolName: 'FPT University',
       reason: null,
       occurredAt: '2026-10-10T00:00:00.000Z',
+      // ADR-035: the Administrator who decided.
+      actorId: '8a1e0000-0000-4000-8000-000000000e5f',
     };
     expect(studentVerificationEventSchema.parse(event)).toEqual(event);
     expect(() => studentVerificationEventSchema.parse({ ...event, status: 'nope' })).toThrow();
@@ -900,6 +902,8 @@ describe('student verification contracts', () => {
         requestedLevel: 'intermediate',
         status: 'pending',
         occurredAt: '2026-10-11T00:00:00.000Z',
+        // ADR-035: the account that submitted.
+        actorId: '8a1e0000-0000-4000-8000-000000000e5f',
       };
       expect(skillEvidenceEventSchema.parse(event)).toEqual(event);
       expect(() => skillEvidenceEventSchema.parse({ ...event, status: 'nope' })).toThrow();

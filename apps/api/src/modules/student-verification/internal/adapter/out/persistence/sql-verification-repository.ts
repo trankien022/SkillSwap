@@ -1,3 +1,4 @@
+import { studentVerificationEventSchema } from '@skillswap/contracts';
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { insertOutboxStatement } from '../../../../../../shared/messaging/outbox-statements';
 import { InvalidCursorError } from '../../../../../../shared/errors';
@@ -104,14 +105,18 @@ export class SqlVerificationRepository implements VerificationRepository {
         // so FR-017/FR-016/FR-019 can project the pending status.
         await manager.query(insertOutboxStatement(this.schema), [
           VERIFICATION_EVENTS.submitted,
-          {
+          // ADR-035 Amendment A: validated here, in the writing transaction, so a malformed
+          // payload fails the request instead of reaching the broker and dead-lettering later.
+          studentVerificationEventSchema.parse({
             verificationId: row.id,
             accountId: row.account_id,
             status: row.status,
             schoolName: row.school_name,
             reason: row.reason,
             occurredAt: request.submittedAt.toISOString(),
-          },
+            // ADR-035: the student submitted their own verification, so the actor is the owner.
+            actorId: request.accountId,
+          }),
         ]);
         return toDomain(row);
       });
@@ -185,14 +190,16 @@ export class SqlVerificationRepository implements VerificationRepository {
           : VERIFICATION_EVENTS.rejected;
       await manager.query(insertOutboxStatement(this.schema), [
         eventType,
-        {
+        studentVerificationEventSchema.parse({
           verificationId: row.id,
           accountId: row.account_id,
           status: row.status,
           schoolName: row.school_name,
           reason: row.reason,
           occurredAt: request.decidedAt.toISOString(),
-        },
+          // ADR-035: the Administrator who decided, which is not the student it is about.
+          actorId: request.reviewerId,
+        }),
       ]);
       return { applied: true };
     });
@@ -223,14 +230,16 @@ export class SqlVerificationRepository implements VerificationRepository {
       }
       await manager.query(insertOutboxStatement(this.schema), [
         VERIFICATION_EVENTS.revoked,
-        {
+        studentVerificationEventSchema.parse({
           verificationId: row.id,
           accountId: row.account_id,
           status: row.status,
           schoolName: row.school_name,
           reason: row.revocation_reason,
           occurredAt: request.revokedAt.toISOString(),
-        },
+          // ADR-035: the Administrator who revoked.
+          actorId: request.reviewerId,
+        }),
       ]);
       return { applied: true };
     });
