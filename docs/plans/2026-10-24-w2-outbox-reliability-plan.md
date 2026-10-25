@@ -180,17 +180,19 @@ isolation forbids `bootstrap/` from reaching module internals.
 | Transactional handler change touches every consumer | Medium | Do it module by module in Phase 3, each with its own test |
 | Admin replay endpoint becomes a privilege-escalation path | Low | Admin-only, audited, and it can only re-publish rows that already exist (C3) |
 
-## Decisions required (summary) — **3 of 5 open**
+## Decisions required (summary) — **all closed**
 
 | Decision | Owner | Status |
 |---|---|---|
-| C1 — ordering guarantee or order-tolerant consumers | Engineering + Product Owner | **OPEN** — default: declare no ordering |
-| C2 — retryable vs non-retryable classification | Engineering (ADR-013 amendment) | **OPEN** — default: only schema-validation failures are terminal |
-| C3 — who may replay a dead letter | Product Owner + Admin | **OPEN** — default: admin-only, audited, single row |
+| C1 — ordering guarantee or order-tolerant consumers | Engineering + Product Owner | **Closed — (c) per-aggregate sequence numbers** (implemented in Phase 4) |
+| C2 — retryable vs non-retryable classification | Engineering (ADR-013 amendment) | **Closed — (a) only schema-validation failures are terminal**, reusing `isTransient()` |
+| C3 — who may replay a dead letter | Product Owner + Admin | **Closed — (a) admin-only, audited, single row** |
 | C4 — `DEAD` retention | Product Owner | Closed — keep forever in MVP |
 | C5 — backoff column | Engineering | Closed — `next_attempt_at` |
 
-These are engineering calls with recorded defaults (Appendix A.2/A.4 of the master plan): a developer may adopt the default and record it in the ADR-013 amendment; the Product Owner may override. **They are the last P0 gate in the programme.**
+C4 and C5 were engineering calls with recorded defaults (Appendix A.2/A.4 of the master plan);
+C1–C3 were put to the Product Owner and answered as above. Everything here is recorded in
+ADR-013 Amendment A, which is the binding contract — this table is the summary, not the source.
 
 ## Definition of done
 

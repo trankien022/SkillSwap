@@ -78,7 +78,28 @@ After W4 lands, the replay records the operator as `actorId`; until then the row
   during rollout (mitigated above).
 - (−) Six per-schema `next_attempt_at` migrations (one per module schema, ADR-014).
 
-**Verification.** A generic publish error leaves the row `PENDING` without burning an
-attempt; an explicit schema-validation failure goes `DEAD` immediately; backoff delays
-the next attempt; an out-of-order delivery converges to the newest sequence; a replay is
-idempotent and writes exactly one audit row; a non-admin replay returns 403.
+**Verification.** Each claim below names the test that would go red if it stopped being true.
+
+| Claim | Evidence |
+|---|---|
+| A generic publish error leaves the row `PENDING` without burning an attempt | `outbox-relay.spec` — "does NOT burn an attempt when the error is transient (ECONNRESET)", "…unrecognised but not provably the payload", "…broker connection is unavailable" |
+| Only a payload that cannot pass schema validation goes `DEAD` | `outbox-relay.spec` — "marks the row DEAD when the payload fails schema validation" |
+| Backoff delays the next attempt instead of retrying on every tick | `outbox-relay.spec` — "schedules a backed-off retry instead of retrying on the next tick"; `outbox-statements.spec` — "does not claim a row that is still backing off" |
+| A terminal failure still burns the attempt budget, a retryable one does not | `outbox-statements.spec` — "still lets a terminal failure burn the budget", "keeps a retryable failure away from the attempt counter" |
+| An out-of-order delivery converges to the newest sequence | `event-sequence.spec` — "converges on the newest sequence regardless of delivery order"; `event-ordering.e2e-spec` — "applies the newest state even when the older event arrives last" |
+| The ordering guard is real, not decorative | Disabling the guard fails 3 of the 5 `event-ordering` cases. The suite itself does not prove this; the run recorded here does. |
+| Sequences are independent per aggregate | `event-sequence.spec` — "keeps the newest sequence per aggregate"; `event-ordering.e2e-spec` — "keeps sequences independent per aggregate" |
+| An unstamped or aggregate-less event stays deliverable | `event-ordering.e2e-spec` — "still applies an unstamped event to an aggregate it has never seen", "leaves an event with no aggregate id deliverable instead of blocking it" |
+| A replay is idempotent and writes exactly one audit row | `outbox-dead-letter.e2e-spec` — "lists a dead letter with its event body and replays it exactly once, audited" |
+| A non-Administrator is refused | `outbox-dead-letter.e2e-spec` — "refuses the inbox to a non-Administrator" |
+
+Two gaps are recorded rather than papered over:
+
+- **No E2E covers a retry through a real broker outage.** The relay's retry path is proven at the
+  unit seam (`outbox-relay.spec` + `outbox-statements.spec`), which is where the classification
+  decision actually lives; an integration test that stops RabbitMQ is left to the W8 environment
+  work. The claim "a transient publish failure no longer strands events" therefore rests on unit
+  tests plus the SQL of `claimPendingStatement`, not on an end-to-end outage run.
+- **`processed-event-store.spec` covers deduplication only.** The guard lives in the same method
+  but its cases are the `event-ordering` E2E, which needs a real schema per module.
+
