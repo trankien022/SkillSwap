@@ -116,6 +116,14 @@ cannot describe "an administrator suspended a Verifier" or "a payout destination
    actor column and its filter exist but are inert, and the ADR says so rather than implying the
    feature works.
 
+   > **Superseded by ADR-035 (2026-10-25).** That ADR took the first of the two options — the actor
+   > on the command, carried into the payload — and rejected the ambient-context one with a
+   > concrete argument: the same emitters also run from sweepers and consumers, where inherited
+   > request identity would attribute a system action to a person. System-originated events carry
+   > `SYSTEM_ACTOR_ID` rather than `NULL`, so `NULL` keeps exactly one meaning ("before this
+   > decision, or unknown") and the no-backfill ruling stays visible. The paragraph above is left
+   > as written, because it is what was believed at the time.
+
 **Rationale.** FR-018's immediate, single-schema read stays exactly as it is, so the split costs
 nothing at runtime; FR-015 gets the general row ADR-028 always intended. Consuming events keeps
 the modules decoupled in the direction ADR-013 established — the audit log is a **downstream
