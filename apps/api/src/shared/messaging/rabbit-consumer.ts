@@ -27,9 +27,19 @@ function isPermanent(error: unknown): boolean {
   return typeof error === 'object' && error !== null && (error as { name?: string }).name === 'ZodError';
 }
 
-function isTransient(error: unknown): boolean {
+/**
+ * Transport-level failures that are worth retrying. Shared with `OutboxRelay`
+ * (ADR-013 Amendment A) so the publish and consume paths cannot drift apart on
+ * what counts as transient.
+ */
+export function isTransient(error: unknown): boolean {
   if (error instanceof ModuleNotInitialisedError || error instanceof BrokerUnavailableError) {
     return true;
+  }
+  // Guard against a non-object `error` (a thrown string, or `catch` with no value).
+  // The relay can now pass anything into this check, so it must not throw.
+  if (error === null || typeof error !== 'object') {
+    return false;
   }
   const code = (error as NodeJS.ErrnoException).code;
   return typeof code === 'string' && /^(ECONN|EPIPE|ETIMEDOUT|08|57)/.test(code);

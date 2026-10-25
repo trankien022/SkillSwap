@@ -10,6 +10,7 @@ import {
   recordAttemptStatement,
   type OutboxRow,
 } from './outbox-statements';
+import { isRetryablePublishError } from './publish-error-classification';
 
 type ModuleOutcome = 'ok' | 'broker-down';
 
@@ -117,6 +118,18 @@ export class OutboxRelay implements OnApplicationBootstrap, OnApplicationShutdow
         return { outcome: 'broker-down', count: claimed.length };
       }
       const message = describeError(error);
+
+      // ADR-013 Amendment A (W2 C2): only a payload defect may burn an attempt.
+      // A transient or unrecognised failure leaves every claimed row PENDING — the
+      // transaction above already rolled the mark back — so the next tick retries.
+      if (isRetryablePublishError(error)) {
+        this.logger.warn(
+          { module: moduleName, err: message, rows: claimed.length },
+          'Outbox publish failed; rows left pending for retry',
+        );
+        return { outcome: 'ok', count: claimed.length };
+      }
+
       for (const row of claimed) {
         await source
           .query(record, [row.id, message, this.config.maxDeliveryAttempts])

@@ -28,6 +28,19 @@ export class PermanentHandlerError extends Error {
 }
 
 /**
+ * ADR-013 Amendment A (W2 C2, decided 2026-10-25): the payload itself failed
+ * validation at publish time. This is the **only** publish failure allowed to mark
+ * an outbox row `DEAD` — retrying it can never succeed, so burning the row is
+ * correct rather than lossy.
+ */
+export class OutboxPayloadInvalidError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = 'OutboxPayloadInvalidError';
+  }
+}
+
+/**
  * NFR-014: a keyset cursor that cannot be honoured — malformed, truncated, or carrying the
  * wrong number of key parts for the endpoint's sort.
  *
