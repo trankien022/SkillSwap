@@ -151,8 +151,10 @@ describe('SqlOutboxDeadLetterRepository (ADR-013 Amendment A, W2 C3)', () => {
     const result = await repository.replay('live-class', 'row-1');
 
     expect(result).toEqual({ replayed: true, status: 'PENDING' });
-    expect(recorded[0]?.sql).toContain('"status" = \'DEAD\'');
-    expect(recorded[0]?.sql).toContain('"attempts" = 0');
+    // Guarded on the status that makes a replay legal, and due immediately on retry.
+    expect(recorded[0]?.sql).toContain('status = \'DEAD\'');
+    expect(recorded[0]?.sql).toContain('attempts = 0');
+    expect(recorded[0]?.sql).toContain('next_attempt_at = NULL');
     expect(recorded[0]?.params).toEqual(['row-1']);
   });
 

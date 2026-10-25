@@ -1,6 +1,7 @@
 import type { OutboxDeadLetterView } from '@skillswap/contracts';
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { OUTBOX_TABLE } from '../../../../../../shared/messaging/constants';
+import { replayDeadLetterStatement } from '../../../../../../shared/messaging/outbox-statements';
 import { qualified } from '../../../../../../shared/sql/ident';
 import { returnedRows } from '../../../../../../shared/sql/result';
 import type {
@@ -121,13 +122,7 @@ export class SqlOutboxDeadLetterRepository implements OutboxDeadLetterRepository
     const table = qualified(this.registry.getSchema(moduleName), OUTBOX_TABLE);
 
     const rows = returnedRows<{ status: string }>(
-      await source.query(
-        `UPDATE ${table}
-            SET "status" = 'PENDING', "attempts" = 0, "last_error" = NULL
-          WHERE "id" = $1 AND "status" = 'DEAD'
-          RETURNING "status"`,
-        [id],
-      ),
+      await source.query(replayDeadLetterStatement(this.registry.getSchema(moduleName)), [id]),
     );
     if (rows.length > 0) {
       return { replayed: true, status: 'PENDING' };

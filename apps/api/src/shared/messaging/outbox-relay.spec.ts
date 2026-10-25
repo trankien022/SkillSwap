@@ -86,7 +86,13 @@ function createHarness(options: {
 
   const relay = new OutboxRelay(config, registry, publisher, logger);
 
-  return { relay, recorded, recordedAttempts: () => recorded.filter((q) => /attempts = attempts \+ 1/i.test(q.sql)) };
+  return {
+    relay,
+    recorded,
+    recordedAttempts: () => recorded.filter((q) => /attempts = attempts \+ 1/i.test(q.sql)),
+    scheduledRetries: () =>
+      recorded.filter((q) => /next_attempt_at = \$3/i.test(q.sql)),
+  };
 }
 
 /** Runs one drain tick. `drainModule` is private by design; the tick is the public path. */
@@ -105,12 +111,30 @@ describe('OutboxRelay publish-error classification (ADR-013 Amendment A)', () =>
     expect(harness.recordedAttempts()).toHaveLength(0);
   });
 
+  it('schedules a backed-off retry instead of retrying on the next tick', async () => {
+    // ADR-013 Amendment A (W2 C2): the row stays PENDING but is not due until the delay
+    // elapses, so a broker that is up but resetting gets room to recover.
+    const reset = Object.assign(new Error('read ECONNRESET'), { code: 'ECONNRESET' });
+    const harness = createHarness({ error: reset });
+
+    await tick(harness.relay);
+
+    const scheduled = harness.scheduledRetries();
+    expect(scheduled).toHaveLength(1);
+    expect(scheduled[0]?.params?.[0]).toBe('row-1');
+    // First failure backs off by one poll interval, not a fixed constant.
+    const dueAt = new Date(String(scheduled[0]?.params?.[2]));
+    expect(dueAt.getTime()).toBeGreaterThan(Date.now());
+    expect(dueAt.getTime()).toBeLessThanOrEqual(Date.now() + 5000);
+  });
+
   it('does NOT burn an attempt when the error is unrecognised but not provably the payload', async () => {
     const harness = createHarness({ error: new Error('channel write failed') });
 
     await tick(harness.relay);
 
     expect(harness.recordedAttempts()).toHaveLength(0);
+    expect(harness.scheduledRetries()).toHaveLength(1);
   });
 
   it('does NOT burn an attempt when the broker connection is unavailable', async () => {
@@ -119,6 +143,9 @@ describe('OutboxRelay publish-error classification (ADR-013 Amendment A)', () =>
     await tick(harness.relay);
 
     expect(harness.recordedAttempts()).toHaveLength(0);
+    // A broker that is down is not the row's fault: the connection is retried on the normal
+    // tick, so no per-row backoff is written and a recovery publishes immediately.
+    expect(harness.scheduledRetries()).toHaveLength(0);
   });
 
   it('marks the row DEAD when the payload fails schema validation', async () => {

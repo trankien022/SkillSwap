@@ -8,6 +8,7 @@ import { DropVerificationExpiryAndSuperseded1791072000101 } from './migrations/1
 import { CreateVerificationDocuments1791072000102 } from './migrations/1791072000102-CreateVerificationDocuments';
 import { AddVerificationRevocation1791072000103 } from './migrations/1791072000103-AddVerificationRevocation';
 import { AddAdminVerificationQueueIndex1791072000104 } from './migrations/1791072000104-AddAdminVerificationQueueIndex';
+import { AddOutboxRetryBackoff1791072000500 } from './migrations/1791072000500-AddOutboxRetryBackoff';
 import { SCHEMA } from './schema';
 
 /** One connection pool per module schema (ARCHITECTURE.md §5). */
@@ -29,6 +30,8 @@ export function createModuleDataSource(config: ApiConfig, schema: string = SCHEM
       CreateVerificationDocuments1791072000102,
       AddVerificationRevocation1791072000103,
       AddAdminVerificationQueueIndex1791072000104,
+      // ADR-013 Amendment A (W2 C2): shared outbox backoff, one migration per schema.
+      AddOutboxRetryBackoff1791072000500,
     ],
     migrationsTableName: MIGRATIONS_TABLE,
     synchronize: false,

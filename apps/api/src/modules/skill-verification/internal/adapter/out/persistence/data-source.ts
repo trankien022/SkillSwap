@@ -8,6 +8,7 @@ import { CreateVerifiedStudentProjection1791072000601 } from './migrations/17910
 import { CreateVerifiersAndEvidenceClaim1791072000602 } from './migrations/1791072000602-CreateVerifiersAndEvidenceClaim';
 import { CreateSkillEvidenceAudit1791072000603 } from './migrations/1791072000603-CreateSkillEvidenceAudit';
 import { AddVerifierQueueIndex1791072000604 } from './migrations/1791072000604-AddVerifierQueueIndex';
+import { AddOutboxRetryBackoff1791072000500 } from './migrations/1791072000500-AddOutboxRetryBackoff';
 import { SCHEMA } from './schema';
 
 /** One connection pool per module schema (ARCHITECTURE.md §5). */
@@ -29,6 +30,8 @@ export function createModuleDataSource(config: ApiConfig, schema: string = SCHEM
       CreateVerifiersAndEvidenceClaim1791072000602,
       CreateSkillEvidenceAudit1791072000603,
       AddVerifierQueueIndex1791072000604,
+      // ADR-013 Amendment A (W2 C2): shared outbox backoff, one migration per schema.
+      AddOutboxRetryBackoff1791072000500,
     ],
     migrationsTableName: MIGRATIONS_TABLE,
     synchronize: false,

@@ -1,4 +1,5 @@
 import { AddNotificationDeviceLocale1791072000008 } from './migrations/1791072000008-AddNotificationDeviceLocale';
+import { AddOutboxRetryBackoff1791072000500 } from './migrations/1791072000500-AddOutboxRetryBackoff';
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import { ApiConfig } from '../../../../../../shared/config/api-config';
@@ -35,6 +36,8 @@ export function createModuleDataSource(config: ApiConfig, schema: string = SCHEM
       CreateNotificationStorage1791072000006,
       AddPushDeliveryLeasesAndReceipts1791072000007,
       AddNotificationDeviceLocale1791072000008,
+      // ADR-013 Amendment A (W2 C2): shared outbox backoff, one migration per schema.
+      AddOutboxRetryBackoff1791072000500,
     ],
     migrationsTableName: MIGRATIONS_TABLE,
     synchronize: false,
