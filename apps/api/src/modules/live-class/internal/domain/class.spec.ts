@@ -22,6 +22,7 @@ import {
   hasEnded,
   hasStarted,
   isClassState,
+  isCompletionBasis,
   isRatingEligible,
   scheduledEnd,
   publishClass,
@@ -163,7 +164,12 @@ describe('class lifecycle & completion (FR-020 / ADR-021)', () => {
 
   it('validates the completion basis', () => {
     expect(() => assertCompletionBasis('scheduled_end')).not.toThrow();
-    expect(() => assertCompletionBasis('teacher_ended')).not.toThrow();
     expect(() => assertCompletionBasis('guess')).toThrow(InvalidCompletionBasisError);
+  });
+
+  // ADR-021 Amendment A / AC-035: the teacher-initiated basis is gone, not merely unguarded.
+  it('rejects the removed teacher_ended basis', () => {
+    expect(() => assertCompletionBasis('teacher_ended')).toThrow(InvalidCompletionBasisError);
+    expect(isCompletionBasis('teacher_ended')).toBe(false);
   });
 });

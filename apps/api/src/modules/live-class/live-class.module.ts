@@ -87,7 +87,6 @@ import { MarkTeacherNoShowUseCase } from './internal/application/mark-teacher-no
 import { ExpirePendingBookingsUseCase } from './internal/application/expire-pending-bookings.use-case';
 import { RequestRoomAccessUseCase } from './internal/application/request-room-access.use-case';
 import { StartClassUseCase } from './internal/application/start-class.use-case';
-import { CompleteClassUseCase } from './internal/application/complete-class.use-case';
 import { CompleteElapsedClassesUseCase } from './internal/application/complete-elapsed-classes.use-case';
 import { PendingHoldSweeper } from './internal/adapter/in/scheduler/pending-hold.sweeper';
 import { ClassCompletionSweeper } from './internal/adapter/in/scheduler/class-completion.sweeper';
@@ -111,7 +110,6 @@ import {
   type RequestRoomAccessPort,
 } from './internal/application/port/in/request-room-access';
 import { START_CLASS, type StartClassPort } from './internal/application/port/in/start-class';
-import { COMPLETE_CLASS, type CompleteClassPort } from './internal/application/port/in/complete-class';
 import {
   COMPLETE_ELAPSED_CLASSES,
   type CompleteElapsedClassesPort,
@@ -286,8 +284,11 @@ const systemClock: Clock = { now: () => new Date() };
         classes: ClassRepository,
         bookings: BookingRepository,
         clock: Clock,
-      ): BookClassPort => new BookClassUseCase(classes, bookings, clock),
-      inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY, CLOCK],
+        teacherTrust: TeacherTrustReader,
+      ): BookClassPort => new BookClassUseCase(classes, bookings, clock, teacherTrust),
+      // AC-034 / BR-001: the booking gate reads the same trust projection as the
+      // publish gate, never a cross-schema read (ADR-024) or the caller's claim.
+      inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY, CLOCK, TEACHER_TRUST_READER],
     },
     {
       provide: CONFIRM_BOOKING,
@@ -375,11 +376,6 @@ const systemClock: Clock = { now: () => new Date() };
     {
       provide: START_CLASS,
       useFactory: (classes: ClassRepository): StartClassPort => new StartClassUseCase(classes),
-      inject: [CLASS_REPOSITORY],
-    },
-    {
-      provide: COMPLETE_CLASS,
-      useFactory: (classes: ClassRepository): CompleteClassPort => new CompleteClassUseCase(classes),
       inject: [CLASS_REPOSITORY],
     },
     {

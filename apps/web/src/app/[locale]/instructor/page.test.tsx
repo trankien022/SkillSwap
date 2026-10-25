@@ -46,7 +46,6 @@ function stubApi(overrides: {
   classes?: () => Response;
   onPatch?: (init: RequestInit) => Response;
   onStart?: () => Response;
-  onComplete?: () => Response;
 } = {}) {
   const calls: Array<{ url: string; init: RequestInit }> = [];
   vi.stubGlobal(
@@ -62,13 +61,6 @@ function stubApi(overrides: {
       }
       if (url.match(/\/classes\/[^/]+\/start$/)) {
         return Promise.resolve(overrides.onStart ? overrides.onStart() : jsonResponse(envelopeOk({ started: true })));
-      }
-      if (url.match(/\/classes\/[^/]+\/complete$/)) {
-        return Promise.resolve(
-          overrides.onComplete
-            ? overrides.onComplete()
-            : jsonResponse(envelopeOk({ completed: true, basis: 'teacher_ended' })),
-        );
       }
       if (url.match(/\/classes\/[^/?]+$/) && method === 'PATCH') {
         return Promise.resolve(
@@ -155,17 +147,16 @@ describe('InstructorDashboard lifecycle controls', () => {
     expect(screen.queryByText(en.Workspace.copy.classStarted)).toBeNull();
   });
 
-  it('only mentions released income when the server actually completed the class', async () => {
-    // completed:false means nothing was settled; the money claim must not appear.
+  // ADR-021 Amendment A / AC-035: a Teacher cannot end a class themselves, so the
+  // control must not exist — and no request may be made to the removed route.
+  it('offers no way for a Teacher to end a class', async () => {
+    const calls: string[] = [];
     vi.stubGlobal(
       'fetch',
       vi.fn((url: string, init: RequestInit = {}) => {
-        const method = (init.method ?? 'GET').toUpperCase();
+        calls.push(`${(init.method ?? 'GET').toUpperCase()} ${url}`);
         if (url.includes('/classes?teacherId=me')) {
           return Promise.resolve(jsonResponse(envelopeOk({ items: [classItem()] })));
-        }
-        if (url.match(/\/classes\/[^/]+\/complete$/) && method === 'POST') {
-          return Promise.resolve(jsonResponse(envelopeOk({ completed: false, basis: null })));
         }
         if (url.includes('/wallet/balance')) {
           return Promise.resolve(
@@ -177,10 +168,10 @@ describe('InstructorDashboard lifecycle controls', () => {
     );
     renderPage();
 
-    fireEvent.click(await screen.findByRole('button', { name: /Complete/ }));
+    await screen.findByRole('button', { name: /Start/ });
 
-    expect(await screen.findByText(/nothing left to complete/)).toBeTruthy();
-    expect(screen.queryByText(/Earnings have been released/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /Complete/i })).toBeNull();
+    expect(calls.some((c) => c.includes('/complete'))).toBe(false);
   });
 
   it('shows the server message when the class is locked and keeps the panel honest', async () => {

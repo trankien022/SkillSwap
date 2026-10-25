@@ -36,6 +36,7 @@ export const BOOKING_REJECTION_REASONS = [
   'duplicate_booking',
   'self_booking',
   'invalid_duration',
+  'learner_not_verified',
 ] as const;
 
 export type BookingRejectionReason = (typeof BOOKING_REJECTION_REASONS)[number];
@@ -44,6 +45,26 @@ export class BookingNotAllowedError extends Error {
   constructor(readonly reason: BookingRejectionReason, message: string) {
     super(message);
     this.name = 'BookingNotAllowedError';
+  }
+}
+
+/**
+ * FR-007 / AC-034 / BR-001 (decided 2026-10-25, W1 gate C1/C2): an account with
+ * **no effective approved student verification** may neither teach nor book. This
+ * is the booking half of BR-001; the teaching half is `UnverifiedTeacherError` on
+ * the publish gate.
+ *
+ * It carries `reason` so the HTTP filter maps it to a stable 409 code, exactly as
+ * it does for `BookingNotAllowedError`. It does NOT extend that class: the
+ * decision was to gate booking, and a distinct type makes the two trust failures
+ * separable in logs and telemetry.
+ */
+export class LearnerNotVerifiedError extends Error {
+  readonly reason: BookingRejectionReason = 'learner_not_verified';
+
+  constructor(learnerId: string) {
+    super(`Account ${learnerId} has no approved student verification`);
+    this.name = 'LearnerNotVerifiedError';
   }
 }
 
@@ -155,8 +176,8 @@ function reject(reason: BookingRejectionReason, message: string): never {
 }
 
 /**
- * Enforces every FR-007 booking rule (AC-003, AC-010, BR-021/024/025, SR-BR-010)
- * and returns nothing when the booking may proceed as `pending`.
+ * Enforces every FR-007 booking rule (AC-003, AC-010, AC-034, BR-001/021/024/025,
+ * SR-BR-010) and returns nothing when the booking may proceed as `pending`.
  */
 export function assertBookable(input: BookingEligibilityInput): void {
   const { classView, learnerId, existingBookings, now } = input;
@@ -195,5 +216,31 @@ export function assertBookable(input: BookingEligibilityInput): void {
 
   if (availableSeats(classView.capacity, existingBookings) <= 0) {
     reject('class_full', 'Class has no available seats');
+  }
+}
+
+/** The verifying capability this gate consumes — never the Learner's own claim. */
+export interface LearnerVerification {
+  /** True only for an effective `approved` student verification. */
+  readonly verified: boolean;
+}
+
+/**
+ * FR-007 / AC-034 / BR-001 (decided 2026-10-25): the **booking** trust gate.
+ *
+ * An account with no effective approved student verification may not book. The
+ * gate lives on *booking*, not on confirmation, because BR-001 is a precondition
+ * of using the service — so a rejected attempt leaves **no booking row, no
+ * `pending` hold and no credit movement**. Browsing and searching stay open to
+ * everyone (US-T1); only committing does not.
+ *
+ * "Effective" is decided by the caller from this module's trust projection
+ * (ADR-024, `teacher_verified.verified`): the flag is only `true` while the latest
+ * `student.verification.*` event for the account was `approved`. A revoked or
+ * rejected account therefore loses the ability to book on its next attempt.
+ */
+export function assertBookerVerified(learnerId: string, verification: LearnerVerification): void {
+  if (!verification.verified) {
+    throw new LearnerNotVerifiedError(learnerId);
   }
 }

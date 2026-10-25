@@ -18,7 +18,6 @@ import {
   cancelClassResultSchema,
   classCompletedSchema,
   classSchema,
-  completeClassResultSchema,
   confirmBookingResultSchema,
   createClassSchema,
   documentUploadRequestSchema,
@@ -480,6 +479,20 @@ describe('classCompletedSchema (FR-020 / ADR-021)', () => {
       }),
     ).toThrow();
   });
+
+  // ADR-021 Amendment A / AC-035: a Teacher cannot end a class, so the event that
+  // releases income must not be producible with a teacher-initiated basis.
+  it('rejects the removed teacher_ended basis', () => {
+    expect(() =>
+      classCompletedSchema.parse({
+        classId: 'cls-1',
+        teacherId: 't1',
+        basis: 'teacher_ended',
+        completedAt: '2026-10-12T11:00:00.000Z',
+        bookings: [],
+      }),
+    ).toThrow();
+  });
 });
 
 describe('bookingRequestSchema', () => {
@@ -546,16 +559,6 @@ describe('class lifecycle result schemas (FR-007 / FR-020)', () => {
     expect(startClassResultSchema.parse({ started: false })).toEqual({ started: false });
   });
 
-  it('completeClassResultSchema allows a null basis when not completed', () => {
-    expect(completeClassResultSchema.parse({ completed: false, basis: null })).toEqual({
-      completed: false,
-      basis: null,
-    });
-    expect(completeClassResultSchema.parse({ completed: true, basis: 'scheduled_end' })).toEqual({
-      completed: true,
-      basis: 'scheduled_end',
-    });
-  });
 });
 
 describe('auth schemas (ADR-016)', () => {

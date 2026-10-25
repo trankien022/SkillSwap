@@ -42,11 +42,11 @@ export const bookingCancelledSchema = z.object({
 });
 export type BookingCancelled = z.infer<typeof bookingCancelledSchema>;
 
-/** FR-020 / ADR-021: a completed class releases the teacher's pending income. */
+/** FR-020 / ADR-021 Amendment A: only the scheduled end completes a class. */
 export const classCompletedSchema = z.object({
   classId: z.string().min(1),
   teacherId: z.string().min(1),
-  basis: z.enum(['scheduled_end', 'teacher_ended']),
+  basis: z.enum(['scheduled_end']),
   completedAt: z.string().datetime({ offset: true }),
   bookings: z.array(
     z.object({
@@ -164,12 +164,8 @@ export const startClassResultSchema = z.object({
 });
 export type StartClassResultView = z.infer<typeof startClassResultSchema>;
 
-/** FR-020 / ADR-021: complete a class; `basis` is the completion reason, null when not completed. */
-export const completeClassResultSchema = z.object({
-  completed: z.boolean(),
-  basis: z.string().min(1).nullable(),
-});
-export type CompleteClassResultView = z.infer<typeof completeClassResultSchema>;
+/** FR-020 / ADR-021 Amendment A: the teacher-initiated completion result was removed with the route. */
+export type CompleteClassResultView = never;
 
 /** FR-001 / ADR-030: an account has exactly one access role. Learner/Teacher are capabilities, not roles. */
 export const accountRoleSchema = z.enum(['user', 'verifier', 'admin']);

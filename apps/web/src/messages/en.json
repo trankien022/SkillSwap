@@ -44,6 +44,7 @@
       "duplicate_booking": "You already have a booking for this class.",
       "self_booking": "You cannot book your own class.",
       "invalid_duration": "This class has an invalid duration.",
+      "learner_not_verified": "You need an approved student verification before you can book a class.",
       "unknown": "Something went wrong. Please try again."
     }
   },
@@ -1574,9 +1575,6 @@
       "couldNotStartTheClass": "Could not start the class",
       "classStarted": "Class started.",
       "thisClassWasAlreadyStarted": "This class was already started.",
-      "couldNotCompleteTheClass": "Could not complete the class",
-      "classCompletedEarningsHaveBeenReleased": "Class completed. Earnings have been released to your wallet.",
-      "thereIsNothingLeftToComplete": "There is nothing left to complete for this class.",
       "couldNotSaveChanges": "Could not save changes",
       "changesSaved": "Changes saved.",
       "errorundefined": "Error: ",

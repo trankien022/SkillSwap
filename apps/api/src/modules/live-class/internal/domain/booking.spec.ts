@@ -8,6 +8,7 @@ import {
   SEAT_HOLDING_STATES,
   TEACHER_NO_SHOW_WINDOW_MS,
   assertBookable,
+  assertBookerVerified,
   assertCancellable,
   assertConfirmable,
   availableSeats,
@@ -16,6 +17,7 @@ import {
   isPendingExpired,
   isRefundable,
   isTeacherNoShow,
+  LearnerNotVerifiedError,
   type BookingEligibilityInput,
   type ExistingBooking,
 } from './booking';
@@ -145,6 +147,36 @@ describe('booking eligibility', () => {
       BookingNotAllowedError,
     );
     expect(() => assertBookable(input({ classView: classView({ durationMinutes: 181 }) }))).toThrow(
+      BookingNotAllowedError,
+    );
+  });
+});
+
+// AC-034 / BR-001 (decided 2026-10-25): "no unverified book".
+describe('booking trust gate (AC-034 / BR-001)', () => {
+  it('refuses an unverified account with a stable reason code', () => {
+    try {
+      assertBookerVerified('learner-1', { verified: false });
+      throw new Error('expected rejection');
+    } catch (error) {
+      expect(error).toBeInstanceOf(LearnerNotVerifiedError);
+      expect((error as LearnerNotVerifiedError).reason).toBe('learner_not_verified');
+      // The message names the account to the caller but never leaks a class,
+      // a booking or a price (NFR-004).
+      expect((error as Error).message).toContain('learner-1');
+    }
+  });
+
+  it('lets a verified account through', () => {
+    expect(() => assertBookerVerified('learner-1', { verified: true })).not.toThrow();
+  });
+
+  it('is a distinct failure from the other booking refusals', () => {
+    // Telemetry needs to tell "you are not verified" apart from "the seat is gone".
+    expect(() => assertBookerVerified('learner-1', { verified: false })).toThrow(
+      LearnerNotVerifiedError,
+    );
+    expect(() => assertBookerVerified('learner-1', { verified: false })).not.toThrow(
       BookingNotAllowedError,
     );
   });

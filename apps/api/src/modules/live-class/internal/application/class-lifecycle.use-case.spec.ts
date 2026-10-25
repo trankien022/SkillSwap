@@ -1,5 +1,6 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { StartClassUseCase } from './start-class.use-case';
-import { CompleteClassUseCase } from './complete-class.use-case';
 import { CompleteElapsedClassesUseCase } from './complete-elapsed-classes.use-case';
 import { ClassNotFoundError } from './book-class.use-case';
 import { NotClassOwnerError } from './cancel-class.use-case';
@@ -29,12 +30,13 @@ describe('StartClassUseCase (FR-020)', () => {
   });
 });
 
-describe('CompleteClassUseCase (FR-020)', () => {
-  it('ends a class with basis teacher_ended', async () => {
-    const classes = new InMemoryClassRepository(classView({ teacherId: 't1', state: 'in_progress' }));
-    const result = await new CompleteClassUseCase(classes).execute({ classId: 'cls-1', teacherId: 't1' });
-    expect(result).toEqual({ completed: true, basis: 'teacher_ended' });
-    expect(classes.completedBasis).toBe('teacher_ended');
+describe('CompleteClassUseCase (FR-020) — removed by ADR-021 Amendment A', () => {
+  it('no longer exists as a module', () => {
+    // AC-035: the capability is gone, not guarded. If someone re-adds the use case,
+    // this spec fails and the decision must be re-taken against ADR-021 rather than
+    // the guard quietly disappearing.
+    expect(existsSync(join(__dirname, 'complete-class.use-case.ts'))).toBe(false);
+    expect(existsSync(join(__dirname, 'port/in/complete-class.ts'))).toBe(false);
   });
 });
 

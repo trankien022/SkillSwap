@@ -160,34 +160,6 @@ export default function InstructorDashboard() {
   };
 
   /**
-   * Completes a class and releases the teacher's income. The server answers
-   * `{ completed, basis }`: `completed: false` means nothing was settled (the
-   * class was already completed, or it had not started), so the income message is
-   * only shown when money actually moved — `basis` is the server's own reason.
-   */
-  const handleCompleteClass = async (classId: string) => {
-    try {
-      setIsProcessing(true);
-      const res = await callApi(`/classes/${classId}/complete`, { method: 'POST' });
-      if (!res.ok) throw new Error(await readApiMessage(res, ui('couldNotCompleteTheClass')));
-      const result = await unwrapEnvelope<{ completed: boolean; basis: string | null }>(res);
-      showToast(
-        result?.completed
-          ? ui('classCompletedEarningsHaveBeenReleased')
-          : ui('thereIsNothingLeftToComplete'),
-      );
-
-      // Re-read the wallet and the class list, so the screen shows server truth
-      // after the money moved.
-      await refreshServerState();
-    } catch (e) {
-      showToast(ui('errorundefined') + (e as Error).message);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  /**
    * Saves an edit to price and capacity. Only changed fields are sent, so an
    * unrelated field is never overwritten with the same value. A `409` means the
    * class is locked by a confirmed booking; the panel closes without changing
@@ -508,22 +480,9 @@ export default function InstructorDashboard() {
                               {ui('start')}
                             </button>
                           )}
-                          {!isCompleted && (
-                            <button
-                              onClick={() => handleCompleteClass(item.id)}
-                              type="button"
-                              className="px-4 py-2 rounded-full text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white transition-colors flex items-center gap-1.5 disabled:opacity-60"
-                              disabled={isProcessing}
-                            >
-                              <span
-                                aria-hidden="true"
-                                className="material-symbols-outlined text-[16px]"
-                              >
-                                check_circle
-                              </span>{' '}
-                              {ui('complete')}
-                            </button>
-                          )}
+                          {/* ADR-021 Amendment A / AC-035: no "complete" button. A
+                              class ends when its scheduled time elapses; a Teacher
+                              cannot end it themselves. */}
                         </div>
                       </div>
 
