@@ -172,6 +172,8 @@ The requirements above are stated as `FR`/`BR`/`NFR` clauses. This section resta
 
 > **Resolved 2026-10-25 (Product Owner — W1 gate C1/C2):** an account **without an effective approved student verification may not book a class** (BR-001 applies to booking as well as teaching; BR-004 makes it depend on the current status). Enforcing this is therefore a **defect to fix**, not a design choice, and it closes with AC-034. Explore/browse remains open to unverified accounts (US-T1). Until the code enforces it, US-M4's eligibility gate is partial.
 
+> **Implemented 2026-10-26 (AC-034, AC-035):** the booking gate is enforced — an unverified learner's request is refused before any booking row, hold or credit movement exists — and class completion no longer depends on a Teacher command. Class completion now has two automatic bases: `scheduled_end` and `room_idle` (everyone left the room and stayed away past the 5-minute grace period, never before `starts_at`). Presence is fed by an authenticated Jitsi webhook; while that feed is unavailable, presence is **unknown** and classes fall back to `scheduled_end` only. In-class chat (FR-013, US-M4) remains unimplemented, so the story is still partial for that reason alone.
+
 ### 2.4 Constraints
 
 | ID | Constraint | Source |
