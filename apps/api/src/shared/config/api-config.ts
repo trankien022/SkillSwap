@@ -49,6 +49,14 @@ export class ApiConfig {
   readonly jitsiOpenMinutes: number;
   /** FR-011 / AC-035: shared secret the Jitsi presence webhook must present. Empty = refuse all. */
   readonly jitsiWebhookSecret: string;
+  /**
+   * FR-016 (W3 C1): how long before `starts_at` the "class starting soon" reminder fires.
+   *
+   * Defaults to 15 to match `jitsiOpenMinutes`: the reminder should arrive when the room door
+   * becomes usable. It is separate config rather than a derived value because the Product Owner
+   * may move one without moving the other, and a silent coupling would make that impossible.
+   */
+  readonly classReminderOffsetMinutes: number;
   readonly logLevel: string;
 
   // FR-008 / ADR-033: SePay Payment Gateway (hosted checkout + IPN).
@@ -132,6 +140,7 @@ export class ApiConfig {
     this.jitsiDomain = readString('JITSI_DOMAIN', 'localhost:8443');
     this.jitsiTokenTtlSeconds = readInt('JITSI_TOKEN_TTL_SECONDS', 3600);
     this.jitsiOpenMinutes = readInt('JITSI_OPEN_MINUTES', 15);
+    this.classReminderOffsetMinutes = readInt('CLASS_REMINDER_OFFSET_MINUTES', 15);
     // Deliberately empty by default: an unset secret must refuse presence rather than
     // accept it, so a misconfigured deployment cannot have its classes closed by strangers.
     this.jitsiWebhookSecret = readString('JITSI_WEBHOOK_SECRET', '');

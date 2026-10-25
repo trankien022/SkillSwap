@@ -23,6 +23,9 @@ function setup(trust = new FakeTeacherTrustReader()) {
     cancelWithReason: jest.fn(async () => ({ cancelled: false })),
     findAwaitingCompletion: jest.fn(async () => []),
     findInProgressBeforeEnd: jest.fn(async () => []),
+    // FR-016 (W3): not exercised here; present so this mock stays a whole ClassRepository.
+    findAwaitingReminder: jest.fn(async () => []),
+    claimReminderAndEmit: jest.fn(async () => ({ reminded: false, participants: 0 })),
   };
   const clock: Clock = { now: () => NOW };
   return { useCase: new CreateClassUseCase(classes, clock, trust), classes, calls };

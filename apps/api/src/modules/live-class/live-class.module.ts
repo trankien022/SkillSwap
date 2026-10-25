@@ -104,6 +104,8 @@ import { StartClassUseCase } from './internal/application/start-class.use-case';
 import { CompleteElapsedClassesUseCase } from './internal/application/complete-elapsed-classes.use-case';
 import { PendingHoldSweeper } from './internal/adapter/in/scheduler/pending-hold.sweeper';
 import { ClassCompletionSweeper } from './internal/adapter/in/scheduler/class-completion.sweeper';
+import { ClassReminderSweeper } from './internal/adapter/in/scheduler/class-reminder.sweeper';
+import { SendClassRemindersUseCase } from './internal/application/send-class-reminders.use-case';
 import { JitsiRoomTokenIssuer } from './internal/adapter/out/jitsi/jitsi-room-token-issuer';
 import { SqlRoomIncidentRecorder } from './internal/adapter/out/persistence/sql-room-incident-recorder';
 import { CREATE_CLASS, type CreateClassPort } from './internal/application/port/in/create-class';
@@ -128,6 +130,10 @@ import {
   COMPLETE_ELAPSED_CLASSES,
   type CompleteElapsedClassesPort,
 } from './internal/application/port/in/complete-elapsed-classes';
+import {
+  SEND_CLASS_REMINDERS,
+  type SendClassRemindersPort,
+} from './internal/application/port/in/send-class-reminders';
 import {
   ROOM_TOKEN_ISSUER,
   type RoomTokenIssuer,
@@ -435,6 +441,23 @@ const systemClock: Clock = { now: () => new Date() };
       inject: [COMPLETE_ELAPSED_CLASSES, AppLogger],
     },
     {
+      // FR-016 (W3): the offset is a Product Owner decision, so it travels from config into the
+      // use case rather than being read from a constant at the point of use.
+      provide: SEND_CLASS_REMINDERS,
+      useFactory: (
+        classes: ClassRepository,
+        clock: Clock,
+        config: ApiConfig,
+      ): SendClassRemindersPort =>
+        new SendClassRemindersUseCase(classes, clock, config.classReminderOffsetMinutes),
+      inject: [CLASS_REPOSITORY, CLOCK, ApiConfig],
+    },
+    {
+      provide: ClassReminderSweeper,
+      useFactory: (send: SendClassRemindersPort, logger: AppLogger) =>
+        new ClassReminderSweeper(send, logger),
+      inject: [SEND_CLASS_REMINDERS, AppLogger],
+    },    {
       provide: CLASS_LIST_READER,
       useFactory: (registry: ModuleDataSourceRegistry): ClassListReader =>
         new SqlClassListReader(registry, MODULE_NAME),

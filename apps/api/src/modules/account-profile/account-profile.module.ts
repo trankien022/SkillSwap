@@ -1,5 +1,12 @@
 import { Inject, Injectable, Module, type OnModuleInit } from '@nestjs/common';
-import { bookingCancelledSchema, bookingConfirmedSchema, studentVerificationEventSchema, walletTransactionCompletedEventSchema } from '@skillswap/contracts';
+import {
+  CLASS_STARTING_SOON_EVENT,
+  bookingCancelledSchema,
+  bookingConfirmedSchema,
+  classStartingSoonSchema,
+  studentVerificationEventSchema,
+  walletTransactionCompletedEventSchema,
+} from '@skillswap/contracts';
 import { ApiConfig } from '../../shared/config/api-config';
 import { AppLogger } from '../../shared/logger/app-logger';
 import { EventHandlerRegistry, type BusMessage } from '../../shared/messaging/event-handler-registry';
@@ -124,6 +131,28 @@ export class AccountProfileRegistrar implements OnModuleInit {
       handler: async (message: BusMessage): Promise<void> => {
         const event = walletTransactionCompletedEventSchema.parse(message.payload);
         await this.notificationManagement.recordInboxNotification({ eventId: message.id, accountId: event.accountId, type: 'wallet_transaction', targetType: 'wallet', targetId: event.transactionId });
+      },
+    });
+    this.handlers.register({
+      // FR-016 (W3): one event carries every participant, so the fan-out happens here rather than
+      // multiplying outbox rows by seats. `eventId` is the message id for every person, which is
+      // what makes a redelivered event leave each inbox with one row instead of one per retry.
+      moduleName: MODULE_NAME,
+      eventType: CLASS_STARTING_SOON_EVENT,
+      queue: 'account-profile.notification-class-starting-soon',
+      handler: async (message: BusMessage): Promise<void> => {
+        const event = classStartingSoonSchema.parse(message.payload);
+        // A participant may legitimately appear twice (a repeat booking by the same learner); the
+        // reminder is one per person, so the roles are collapsed rather than sent twice.
+        for (const accountId of new Set(event.participants.map((p) => p.accountId))) {
+          await this.notificationManagement.recordInboxNotification({
+            eventId: message.id,
+            accountId,
+            type: 'class_starting_soon',
+            targetType: 'class',
+            targetId: event.classId,
+          });
+        }
       },
     });
   }

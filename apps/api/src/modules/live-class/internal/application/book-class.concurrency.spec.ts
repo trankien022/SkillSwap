@@ -150,6 +150,9 @@ function classRepo(view: PersistedClass): ClassRepository {
     cancelWithReason: jest.fn(async () => ({ cancelled: false })),
     findAwaitingCompletion: jest.fn(async () => []),
     findInProgressBeforeEnd: jest.fn(async () => []),
+    // FR-016 (W3): not exercised here; present so this mock stays a whole ClassRepository.
+    findAwaitingReminder: jest.fn(async () => []),
+    claimReminderAndEmit: jest.fn(async () => ({ reminded: false, participants: 0 })),
   };
 }
 

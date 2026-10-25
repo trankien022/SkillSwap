@@ -1,5 +1,5 @@
 import type { BookingState, CancelReason } from '../../domain/booking';
-import type { ClassCancellationReason, CompletionBasis } from '../../domain/class';
+import type { ClassCancellationReason, ClassView, CompletionBasis } from '../../domain/class';
 import type { SkillLevel } from '../../domain/skill-level';
 import type { TeacherTrust } from '../../domain/publish-policy';
 import type {
@@ -8,6 +8,7 @@ import type {
 } from '../port/out/booking-repository';
 import type {
   ClassEdit,
+  ClassReminderKind,
   ClassRepository,
   CompletableClass,
   PersistedClass,
@@ -143,6 +144,10 @@ export class InMemoryClassRepository implements ClassRepository {
   confirmedBookingIds: string[] = [];
   completedBasis: CompletionBasis | null = null;
   lastCancelReason: ClassCancellationReason | null = null;
+  /** FR-016 (W3): what the scan returns, and what was actually claimed. */
+  reminderCandidates: Array<Pick<ClassView, 'id' | 'state' | 'startsAt'>> = [];
+  readonly reminders: Array<{ classId: string; kind: ClassReminderKind; startsAt: Date }> = [];
+  private readonly reminderClaims = new Set<string>();
 
   constructor(private value: PersistedClass | null = classView()) {}
 
@@ -206,6 +211,29 @@ export class InMemoryClassRepository implements ClassRepository {
 
   async findInProgressBeforeEnd(_now: Date): Promise<CompletableClass[]> {
     return this.beforeEnd;
+  }
+
+  async findAwaitingReminder(
+    _now: Date,
+    _offsetMinutes: number,
+  ): Promise<Array<Pick<ClassView, 'id' | 'state' | 'startsAt'>>> {
+    return this.reminderCandidates;
+  }
+
+  async claimReminderAndEmit(
+    id: string,
+    kind: ClassReminderKind,
+    startsAt: Date,
+  ): Promise<{ reminded: boolean; participants: number }> {
+    // Mirrors the lease: the same (class, kind) may be claimed exactly once, which is how the
+    // use-case tests observe a second instance losing.
+    const key = `${id}:${kind}`;
+    if (this.reminderClaims.has(key)) {
+      return { reminded: false, participants: 0 };
+    }
+    this.reminderClaims.add(key);
+    this.reminders.push({ classId: id, kind, startsAt });
+    return { reminded: true, participants: 1 };
   }
 }
 

@@ -4,19 +4,27 @@ import { qualified } from '../../../../../../shared/sql/ident';
 import { returnedRows } from '../../../../../../shared/sql/result';
 import type {
   ClassEdit,
+  ClassReminderKind,
   ClassRepository,
   CompletableClass,
   CreateClassRecord,
   PersistedClass,
 } from '../../../application/port/out/class-repository';
-import type { ClassCancellationReason, ClassState, CompletionBasis } from '../../../domain/class';
+import type {
+  ClassCancellationReason,
+  ClassState,
+  ClassView,
+  CompletionBasis,
+} from '../../../domain/class';
 
 const CLASSES_TABLE = 'classes';
 const CLASS_SKILLS_TABLE = 'class_skills';
 const BOOKINGS_TABLE = 'bookings';
+const CLASS_REMINDERS_TABLE = 'class_reminders';
 const CLASS_STARTED_EVENT = 'class.started';
 const CLASS_COMPLETED_EVENT = 'class.completed';
 const CLASS_CANCELLED_EVENT = 'class.cancelled';
+const CLASS_STARTING_SOON_EVENT = 'class.starting.soon';
 
 interface ClassRow {
   id: string;
@@ -304,5 +312,109 @@ export class SqlClassRepository implements ClassRepository {
       startsAt: toDate(row.starts_at),
       durationMinutes: row.duration_minutes,
     }));
+  }
+
+  /**
+   * FR-016 (W3 C1/C2): classes inside the reminder window that have not been reminded.
+   *
+   * The window is half-open `[starts_at - offset, starts_at)`, matching `isReminderDue`: it is an
+   * interval rather than an instant so a 60-second sweep cannot miss a class between ticks, and it
+   * closes at `starts_at` because by then the reminder would be a late arrival.
+   *
+   * The state filter and the "already reminded" exclusion both live in this statement, not in the
+   * caller, so a second sweep path cannot forget them. `LIMIT` is deliberately absent: the window
+   * is 15 minutes wide and a bounded batch would silently starve the tail of a busy slot.
+   */
+  async findAwaitingReminder(
+    now: Date,
+    offsetMinutes: number,
+  ): Promise<Array<Pick<ClassView, 'id' | 'state' | 'startsAt'>>> {
+    const source = this.registry.get(this.moduleName);
+    const classes = qualified(this.schema, CLASSES_TABLE);
+    const reminders = qualified(this.schema, CLASS_REMINDERS_TABLE);
+    const rows = (await source.query(
+      `SELECT c."id", c."state", c."starts_at" FROM ${classes} c
+        WHERE c."state" IN ('published', 'full')
+          AND c."starts_at" - ($2::int * interval '1 minute') <= $1
+          AND c."starts_at" > $1
+          AND NOT EXISTS (
+            SELECT 1 FROM ${reminders} r
+             WHERE r."class_id" = c."id" AND r."kind" = 'starting_soon'
+          )`,
+      [now.toISOString(), offsetMinutes],
+    )) as Array<{ id: string; state: string; starts_at: Date | string }>;
+    return rows.map((row) => ({
+      id: row.id,
+      state: row.state as ClassState,
+      startsAt: toDate(row.starts_at),
+    }));
+  }
+
+  /**
+   * FR-016 (W3): claims the reminder and emits it, in one transaction.
+   *
+   * The claim is the lease. `ON CONFLICT DO NOTHING` means a second sweep — another instance, or
+   * this one on its next tick — gets no row back and returns without emitting, so exactly one
+   * `class.starting.soon` exists per class per kind. Because the claim and the outbox insert share
+   * a transaction, a failure between them rolls both back: the class is then simply still due, and
+   * the next sweep tries again. There is no state where a reminder is marked sent but never
+   * queued.
+   *
+   * Participants are confirmed bookings plus the class's Teacher (W3 C4: both parties). A Pending
+   * booking is excluded (W3 C2): its hold has not settled, so that learner is not yet a party.
+   */
+  async claimReminderAndEmit(
+    classId: string,
+    kind: ClassReminderKind,
+    startsAt: Date,
+  ): Promise<{ reminded: boolean; participants: number }> {
+    const source = this.registry.get(this.moduleName);
+    const classes = qualified(this.schema, CLASSES_TABLE);
+    const bookings = qualified(this.schema, BOOKINGS_TABLE);
+    const reminders = qualified(this.schema, CLASS_REMINDERS_TABLE);
+    return source.transaction(async (manager) => {
+      const claimed = returnedRows<{ class_id: string }>(
+        await manager.query(
+          `INSERT INTO ${reminders} ("class_id", "kind") VALUES ($1, $2)
+           ON CONFLICT ("class_id", "kind") DO NOTHING
+           RETURNING "class_id"`,
+          [classId, kind],
+        ),
+      );
+      if (claimed.length === 0) {
+        return { reminded: false, participants: 0 };
+      }
+
+      // Read the class inside the same transaction, after the claim: if it was cancelled between
+      // the scan and now, the state filter below drops it and we must not emit a reminder for a
+      // class that will not happen.
+      const owner = returnedRows<{ teacher_id: string; state: string }>(
+        await manager.query(
+          `SELECT "teacher_id", "state" FROM ${classes}
+            WHERE "id" = $1 AND "state" IN ('published', 'full')`,
+          [classId],
+        ),
+      )[0];
+      if (owner === undefined) {
+        return { reminded: false, participants: 0 };
+      }
+
+      const learners = (await manager.query(
+        `SELECT DISTINCT "learner_id" FROM ${bookings}
+          WHERE "class_id" = $1 AND "state" = 'confirmed'`,
+        [classId],
+      )) as Array<{ learner_id: string }>;
+
+      const participants = [
+        ...learners.map((row) => ({ accountId: row.learner_id, role: 'learner' as const })),
+        { accountId: owner.teacher_id, role: 'teacher' as const },
+      ];
+
+      await manager.query(insertOutboxStatement(this.schema), [
+        CLASS_STARTING_SOON_EVENT,
+        { classId, startsAt: startsAt.toISOString(), participants },
+      ]);
+      return { reminded: true, participants: participants.length };
+    });
   }
 }
