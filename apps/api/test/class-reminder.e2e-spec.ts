@@ -104,7 +104,12 @@ describe('E2E: class starting soon (FR-016 / W3)', () => {
    * A published class with a confirmed booking, aged so it starts in `minutesFromNow`
    * (negative = already started).
    */
-  async function bookedClass(label: string, minutesFromNow: number): Promise<Scenario> {
+  async function bookedClass(
+    label: string,
+    minutesFromNow: number,
+    /** W3 C2: a Pending booking has not settled, so that learner is not yet a party. */
+    options: { confirm?: boolean } = {},
+  ): Promise<Scenario> {
     const teacherId = await registerUser(`w3-teacher-${label}@skillswap.test`);
     const learnerId = await registerUser(`w3-learner-${label}@skillswap.test`);
     await seedTeacherTrust(harness, {
@@ -148,17 +153,19 @@ describe('E2E: class starting soon (FR-016 / W3)', () => {
     });
     expect(booked.status).toBe(201);
     const bookingId = booked.json.booking.bookingId as string;
-    const confirmed = await api.post(`/api/classes/bookings/${bookingId}/confirm`);
-    expect(confirmed.status).toBe(200);
-    // Confirmation settles asynchronously; a Pending booking is not a party (W3 C2).
-    await waitFor(async () => {
-      const rows = await harness.query<{ state: string }>(
-        'live-class',
-        'SELECT "state" FROM bookings WHERE "id" = $1',
-        [bookingId],
-      );
-      return rows[0]?.state === 'confirmed';
-    });
+    if (options.confirm !== false) {
+      const confirmed = await api.post(`/api/classes/bookings/${bookingId}/confirm`);
+      expect(confirmed.status).toBe(200);
+      // Confirmation settles asynchronously; a Pending booking is not a party (W3 C2).
+      await waitFor(async () => {
+        const rows = await harness.query<{ state: string }>(
+          'live-class',
+          'SELECT "state" FROM bookings WHERE "id" = $1',
+          [bookingId],
+        );
+        return rows[0]?.state === 'confirmed';
+      });
+    }
 
     // Move the class into (or out of) its window. The booking is aged with it so the 24h lead
     // time never becomes the thing under test.
@@ -207,8 +214,23 @@ describe('E2E: class starting soon (FR-016 / W3)', () => {
     expect(await reminderRows(started.classId)).toEqual([]);
   });
 
-  it('emits nothing for a cancelled class, however close the start', async () => {
-    const scenario = await bookedClass('cancelled', 5);
+  it('reminds the Teacher but not a learner whose booking is still Pending (W3 C2)', async () => {
+    // A Pending hold has not settled, so that learner is not yet a party. The reminder still goes
+    // out -- the class is a fact regardless -- but the participants list must exclude them. If the
+    // query joined bookings without the state filter, this learner would be told about a class
+    // their hold may never pay for.
+    const scenario = await bookedClass('pending', 10, { confirm: false });
+
+    await sweep();
+
+    const events = await reminderEvents(scenario.classId);
+    expect(events).toHaveLength(1);
+    const participants = events[0].payload.participants as Array<{ accountId: string; role: string }>;
+    expect(participants.map((p) => p.role)).toEqual(['teacher']);
+    expect(participants.some((p) => p.accountId === scenario.learnerId)).toBe(false);
+  });
+
+  it('emits nothing for a cancelled class, however close the start', async () => {    const scenario = await bookedClass('cancelled', 5);
     await harness.query('live-class', `UPDATE classes SET "state" = 'cancelled' WHERE "id" = $1`, [
       scenario.classId,
     ]);

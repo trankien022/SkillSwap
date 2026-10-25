@@ -170,6 +170,19 @@ Deep link: `targetType: 'class'` must already resolve in web and mobile (the S16
 - `docs/api/notifications.md`: add the type.
 - SRS FR-016 status: unchanged (confirmed) — but the "confirmed" claim now matches reality.
 
+**What actually shipped.** Mobile needed no change: `app/(features)/notifications.tsx` renders
+`Notifications.type_<type>` and `body_<type>`, and both `en.json` and `vi.json` already carried
+`type_class_starting_soon` / `body_class_starting_soon` (the copy existed before the trigger did).
+Web routes the type through the `booking` category, which is the correct bucket for a class
+reminder, so it also rendered without a code change.
+
+**A gap found and left open, deliberately.** The web inbox renders server-copied `title`/`body`
+alongside hardcoded Vietnamese labels (`Lớp học`, `Giao dịch…`). The inbox row stores one copy for
+all readers — the per-device locale applies to push (`notification-copy.ts`), not to the inbox — so
+an English reader sees English text under Vietnamese chrome. That is a pre-existing NFR-002 defect
+in the notifications page, not something this wave introduced, and fixing it means deciding whether
+inbox copy is rendered client-side or stored per-locale. That decision is not W3's to make.
+
 **Commit(s):** `feat(web): render class reminder notifications` , `feat(mobile): render class reminder notifications` , `docs(api): document class starting soon`
 
 ---
