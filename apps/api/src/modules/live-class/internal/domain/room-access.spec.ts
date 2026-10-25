@@ -43,7 +43,7 @@ describe('room access domain (FR-011 / AC-006)', () => {
   });
 
   it('denies a booking that is not confirmed', () => {
-    for (const state of ['pending', 'cancelled', 'completed', 'disputed'] as const) {
+    for (const state of ['pending', 'cancelled', 'completed'] as const) {
       expect(() =>
         authorizeRoomAccess(request({ booking: { id: 'b1', classId: 'cls-1', learnerId: 'learner-1', state } })),
       ).toThrow(RoomAccessDeniedError);

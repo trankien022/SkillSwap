@@ -23,6 +23,36 @@ export interface Account {
   readonly role: AccountRole;
   readonly status: AccountStatus;
   readonly createdAt: string;
+  /**
+   * FR-015 / OQ-015 / ADR-037: an admin-initiated suspension carries a required reason and the
+   * account that applied it. Present only while `status === 'suspended'`; a lock is an extension of
+   * the status that already existed, not a second condition.
+   */
+  readonly suspension?: AccountSuspension;
+}
+
+export interface AccountSuspension {
+  readonly reason: string;
+  readonly suspendedBy: string;
+  readonly suspendedAt: string;
+}
+
+/**
+ * ADR-037 decision 2: a suspension without a reason cannot be told apart from a bug, and the
+ * Administrator who applied it could not be held to account for it. Validated in the domain so
+ * every entry point (REST today, anything later) inherits the rule.
+ */
+export function assertSuspensionReason(reason: string): void {
+  if (reason.trim() === '') {
+    throw new InvalidSuspensionReasonError();
+  }
+}
+
+export class InvalidSuspensionReasonError extends Error {
+  constructor() {
+    super('A suspension requires a reason');
+    this.name = 'InvalidSuspensionReasonError';
+  }
 }
 
 export class EmailTakenError extends Error {

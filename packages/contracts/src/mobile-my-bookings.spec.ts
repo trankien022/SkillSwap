@@ -58,8 +58,8 @@ describe('mobile-my-bookings contracts', () => {
       expect(() => myBookingsQuerySchema.parse({ upcoming: 'null' })).toThrow();
     });
 
-    it('accepts the 5 domain booking states', () => {
-      const states = ['pending', 'confirmed', 'completed', 'cancelled', 'disputed'] as const;
+    it('accepts the 4 domain booking states', () => {
+      const states = ['pending', 'confirmed', 'completed', 'cancelled'] as const;
       for (const st of states) {
         const parsed = myBookingsQuerySchema.parse({ state: st });
         expect(parsed.state).toBe(st);

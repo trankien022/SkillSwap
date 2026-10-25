@@ -18,7 +18,6 @@ export const BOOKING_STATES = [
   'confirmed',
   'completed',
   'cancelled',
-  'disputed',
 ] as const;
 
 export type BookingState = (typeof BOOKING_STATES)[number];

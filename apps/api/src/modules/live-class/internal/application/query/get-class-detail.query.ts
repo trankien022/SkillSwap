@@ -93,7 +93,6 @@ export class GetClassDetailQueryHandler implements GetClassDetailPort {
       (b) =>
         b.state === 'confirmed' ||
         b.state === 'completed' ||
-        b.state === 'disputed' ||
         (b.state === 'pending' && (b.expiresAt === null || b.expiresAt.getTime() > now.getTime())),
     );
 

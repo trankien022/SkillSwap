@@ -25,11 +25,15 @@ describe('mobile-class-detail contracts', () => {
   });
 
   describe('bookingStateSchema', () => {
-    it('accepts the 5 domain booking states', () => {
-      const states = ['pending', 'confirmed', 'completed', 'cancelled', 'disputed'];
+    it('accepts the 4 domain booking states', () => {
+      const states = ['pending', 'confirmed', 'completed', 'cancelled'];
       for (const st of states) {
         expect(bookingStateSchema.parse(st)).toBe(st);
       }
+    });
+
+    it('rejects `disputed`, which ADR-037 removed from the vocabulary', () => {
+      expect(() => bookingStateSchema.parse('disputed')).toThrow();
     });
 
     it('rejects unknown booking states', () => {

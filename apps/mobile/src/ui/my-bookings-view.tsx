@@ -152,7 +152,6 @@ export function MyBookingsView() {
       case 'pending':
         return 'warning';
       case 'cancelled':
-      case 'disputed':
         return 'danger';
       case 'completed':
       default:
@@ -169,8 +168,6 @@ export function MyBookingsView() {
           return t('MyBookings.statePending');
         case 'cancelled':
           return t('MyBookings.stateCancelled');
-        case 'disputed':
-          return t('MyBookings.stateDisputed');
         case 'completed':
           return t('MyBookings.stateCompleted');
         default:

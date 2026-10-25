@@ -528,6 +528,7 @@ export type SkillEvidenceHistoryView = z.infer<typeof skillEvidenceHistorySchema
 
 export * from './audit-event';
 export * from './outbox-dead-letter';
+export * from './account-lock';
 export * from './admin-verifications';
 export * from './admin-verifier-queue';
 export * from './verification';

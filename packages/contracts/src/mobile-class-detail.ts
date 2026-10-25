@@ -2,14 +2,15 @@ import { z } from 'zod';
 import { classLifecycleStateSchema, type ClassLifecycleState } from './mobile-classes';
 
 /**
- * 5 domain lifecycle states of a Booking (FR-007, FR-009, FR-011).
+ * 4 domain lifecycle states of a Booking (FR-007, FR-009, FR-011).
+ * `disputed` was removed by ADR-037 decision 6: no dispute workflow exists, and no transition ever
+ * produced that state, so advertising it in the contract promised a value the API cannot return.
  */
 export const bookingStateSchema = z.enum([
   'pending',
   'confirmed',
   'completed',
   'cancelled',
-  'disputed',
 ]);
 export type BookingState = z.infer<typeof bookingStateSchema>;
 

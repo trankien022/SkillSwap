@@ -1,4 +1,5 @@
 import { AddNotificationDeviceLocale1791072000008 } from './migrations/1791072000008-AddNotificationDeviceLocale';
+import { AddAccountSuspension1791072000009 } from './migrations/1791072000009-AddAccountSuspension';
 import { AddOutboxRetryBackoff1791072000500 } from './migrations/1791072000500-AddOutboxRetryBackoff';
 import { AddOutboxSequence1791072000600 } from './migrations/1791072000600-AddOutboxSequence';
 import { AddProcessedEventSequence1791072000601 } from './migrations/1791072000601-AddProcessedEventSequence';
@@ -38,6 +39,8 @@ export function createModuleDataSource(config: ApiConfig, schema: string = SCHEM
       CreateNotificationStorage1791072000006,
       AddPushDeliveryLeasesAndReceipts1791072000007,
       AddNotificationDeviceLocale1791072000008,
+      // FR-015 / OQ-015 / ADR-037: the admin-initiated account lock.
+      AddAccountSuspension1791072000009,
       // ADR-013 Amendment A (W2 C2): shared outbox backoff, one migration per schema.
       AddOutboxRetryBackoff1791072000500,
       // ADR-013 Amendment A (W2 C1): per-aggregate sequence numbers, emitter half then

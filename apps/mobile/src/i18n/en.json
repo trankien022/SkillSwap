@@ -359,7 +359,6 @@
     "retry": "Try again",
     "classStateFull": "Full",
     "filterNotice": "Upcoming includes confirmed classes. Other includes pending, past or cancelled bookings.",
-    "stateDisputed": "Disputed",
     "reportNoShow": "Report teacher no-show",
     "noShowConfirmTitle": "Report teacher no-show",
     "noShowConfirmMessage": "You can only report a no-show if 15 minutes have passed since class start and the teacher has not joined. If eligible, your booking will be cancelled and credits refunded.",

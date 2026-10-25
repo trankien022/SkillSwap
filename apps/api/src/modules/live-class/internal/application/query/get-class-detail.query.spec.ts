@@ -390,7 +390,7 @@ describe('GetClassDetailQueryHandler', () => {
     });
 
     it('returns canBook=false when caller has confirmed, completed, or disputed booking', async () => {
-      for (const blockingState of ['confirmed', 'completed', 'disputed'] as const) {
+      for (const blockingState of ['confirmed', 'completed'] as const) {
         mockClassDetailReader.readDetail.mockResolvedValueOnce({
           ...baseRecord,
           callerBookings: [
