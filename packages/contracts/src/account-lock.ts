@@ -67,8 +67,19 @@ export const suspendedAccountSchema = z.object({
 });
 export type SuspendedAccountView = z.infer<typeof suspendedAccountSchema>;
 
-/** FR-015 / NFR-014: the account-lock list reuses the shared pagination query (limit ≤ 100). */
-export type SuspendedAccountsQueryInput = z.infer<typeof paginationQuerySchema>;
+/**
+ * FR-015 / NFR-014: query for the account-lock list.
+ *
+ * The plan wrote `?status=suspended`; here it is a **closed enum with one value** rather than a free
+ * string. The endpoint only ever lists suspensions, so accepting `status=active` would be a filter
+ * that silently returns nothing — and a client would read that emptiness as "no locked accounts".
+ * `suspended` is the only value the route answers, so naming it explicitly is honest and anything
+ * else is rejected.
+ */
+export const suspendedAccountsQuerySchema = paginationQuerySchema.extend({
+  status: z.enum(['suspended']).optional(),
+});
+export type SuspendedAccountsQueryInput = z.infer<typeof suspendedAccountsQuerySchema>;
 
 /** FR-015 / ADR-034 §7: a live-read page, uncached like the rest of the dashboard. */
 export const suspendedAccountsPageSchema = pagedSchema(suspendedAccountSchema);

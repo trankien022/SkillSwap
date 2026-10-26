@@ -139,6 +139,13 @@ export const adminDashboardSchema = z.object({
   evidenceByDomain: z.record(z.number().int().min(0)),
   /** The most recent audited actions, newest first — the same rows `GET /audit-log` returns. */
   recentAuditEvents: z.array(auditEventSchema),
+  /**
+   * FR-015 / OQ-015 / ADR-037: suspended accounts, counted by account-profile.
+   *
+   * Live-read like every other figure here (ADR-034 §7) and, crucially, derived from the same read
+   * the lock list uses — so the count and the list it points at cannot disagree.
+   */
+  suspendedAccounts: z.object({ total: z.number().int().min(0) }),
   /** When the aggregate was assembled, so a client can show its freshness. */
   generatedAt: z.string().datetime({ offset: true }),
 });

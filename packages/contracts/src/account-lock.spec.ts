@@ -2,6 +2,7 @@ import {
   SYSTEM_ACTOR_ID,
   accountStatusChangedSchema,
   suspendedAccountSchema,
+  suspendedAccountsQuerySchema,
   suspendAccountSchema,
 } from './index';
 
@@ -69,6 +70,25 @@ describe('accountStatusChangedSchema', () => {
     expect(accountStatusChangedSchema.parse(event({ actorId: SYSTEM_ACTOR_ID })).actorId).toBe(
       SYSTEM_ACTOR_ID,
     );
+  });
+});
+
+describe('suspendedAccountsQuerySchema', () => {
+  it('accepts the only status the route answers', () => {
+    expect(suspendedAccountsQuerySchema.parse({ status: 'suspended' }).status).toBe('suspended');
+  });
+
+  it('accepts no status at all, because the route only lists suspensions', () => {
+    expect(suspendedAccountsQuerySchema.parse({}).status).toBeUndefined();
+  });
+
+  it('rejects `active`: a filter that can only return nothing reads as "no locks"', () => {
+    expect(() => suspendedAccountsQuerySchema.parse({ status: 'active' })).toThrow();
+  });
+
+  it('caps the page size', () => {
+    expect(() => suspendedAccountsQuerySchema.parse({ limit: 101 })).toThrow();
+    expect(suspendedAccountsQuerySchema.parse({ limit: 100 }).limit).toBe(100);
   });
 });
 

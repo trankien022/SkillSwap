@@ -12,6 +12,11 @@ import {
   EVIDENCE_SUMMARY_READER,
   type EvidenceSummaryReader,
 } from '../skill-verification/api';
+import {
+  AccountProfileModule,
+  SUSPENDED_ACCOUNT_READER,
+  type SuspendedAccountReader,
+} from '../account-profile/api';
 import { createModuleDataSource } from './internal/adapter/out/persistence/data-source';
 import { SCHEMA } from './internal/adapter/out/persistence/schema';
 import { SqlAdminAuditEventRepository } from './internal/adapter/out/persistence/sql-admin-audit-event-repository';
@@ -44,6 +49,12 @@ import {
 } from './internal/application/port/out/admin-audit-event-repository';
 import { ListAuditLogQueryHandler } from './internal/application/query/list-audit-log.query';
 import { GetAdminDashboardQueryHandler } from './internal/application/query/get-admin-dashboard.query';
+import { ListSuspendedAccountsQueryHandler } from './internal/application/query/list-suspended-accounts.query';
+import {
+  LIST_SUSPENDED_ACCOUNTS,
+  type ListSuspendedAccountsPort,
+} from './internal/application/port/in/list-suspended-accounts';
+import { SuspendedAccountsController } from './internal/adapter/in/web/suspended-accounts.controller';
 import { MODULE_NAME } from './internal/domain/module-status';
 
 /** Registers this module's DataSource pool and its FR-015 audit consumers (ARCHITECTURE.md §5). */
@@ -86,8 +97,13 @@ export class AdminOperationRegistrar implements OnModuleInit {
 @Module({
   // FR-015 / ADR-008/ADR-012: the dashboard composes counts by asking each owning module, so it
   // imports them and injects the readers they export rather than reading their schemas.
-  imports: [StudentVerificationModule, SkillVerificationModule],
-  controllers: [AuditLogController, AdminDashboardController, OutboxDeadLetterController],
+  imports: [StudentVerificationModule, SkillVerificationModule, AccountProfileModule],
+  controllers: [
+    AuditLogController,
+    AdminDashboardController,
+    OutboxDeadLetterController,
+    SuspendedAccountsController,
+  ],
   providers: [
     {
       provide: ADMIN_AUDIT_EVENT_REPOSITORY,
@@ -130,9 +146,21 @@ export class AdminOperationRegistrar implements OnModuleInit {
         verifications: VerificationSummaryReader,
         evidence: EvidenceSummaryReader,
         audit: AdminAuditEventRepository,
+        suspended: SuspendedAccountReader,
       ): GetAdminDashboardPort =>
-        new GetAdminDashboardQueryHandler(verifications, evidence, audit),
-      inject: [VERIFICATION_SUMMARY_READER, EVIDENCE_SUMMARY_READER, ADMIN_AUDIT_EVENT_REPOSITORY],
+        new GetAdminDashboardQueryHandler(verifications, evidence, audit, suspended),
+      inject: [
+        VERIFICATION_SUMMARY_READER,
+        EVIDENCE_SUMMARY_READER,
+        ADMIN_AUDIT_EVENT_REPOSITORY,
+        SUSPENDED_ACCOUNT_READER,
+      ],
+    },
+    {
+      provide: LIST_SUSPENDED_ACCOUNTS,
+      useFactory: (suspended: SuspendedAccountReader): ListSuspendedAccountsPort =>
+        new ListSuspendedAccountsQueryHandler(suspended),
+      inject: [SUSPENDED_ACCOUNT_READER],
     },
     AdminOperationRegistrar,
   ],

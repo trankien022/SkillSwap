@@ -1,4 +1,4 @@
-import { AccountNotFoundError, assertSuspensionReason } from '../domain/account';
+import { AccountNotFoundError, assertSuspensionReason, InvalidReactivationReasonError } from '../domain/account';
 import type { AccountLockRepository } from './port/out/account-repository';
 import type { LockAccountCommand, LockAccountPort, LockAccountResult } from './port/in/lock-account';
 
@@ -48,12 +48,5 @@ export class LockAccountUseCase implements LockAccountPort {
       changed: updated.changed,
       reason: updated.account.suspension?.reason ?? null,
     };
-  }
-}
-
-export class InvalidReactivationReasonError extends Error {
-  constructor() {
-    super('Reactivating an account does not take a reason');
-    this.name = 'InvalidReactivationReasonError';
   }
 }

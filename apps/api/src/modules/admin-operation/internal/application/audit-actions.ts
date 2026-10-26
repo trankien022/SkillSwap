@@ -1,4 +1,5 @@
 import {
+  accountStatusChangedSchema,
   skillEvidenceEventSchema,
   studentVerificationEventSchema,
   verifierStatusChangedSchema,
@@ -39,6 +40,9 @@ export const AUDITED_EVENT_TYPES = {
   verifierSuspended: 'skill.verifier.suspended',
   verifierRevoked: 'skill.verifier.revoked',
   walletTransactionCompleted: 'wallet.transaction.completed',
+  // FR-015 / ADR-037 decision 2: a lock is a privileged act by a person, so it is audited under
+  // the same rule ADR-035 §1 established. Effects of time stay out; administrator actions do not.
+  accountStatusChanged: 'account.status.changed',
 } as const;
 
 /** Every event type this module subscribes to, derived from the table above so they cannot drift. */
@@ -142,6 +146,27 @@ export function describeAuditedAction(message: AuditableMessage): AdminAuditEven
         occurredAt: new Date(event.occurredAt),
         traceId: null,
         metadata: event.bookingId === undefined ? null : { bookingId: event.bookingId },
+        sourceEventId,
+      };
+    }
+
+    // --- FR-015 / ADR-037: Administrator locks or unlocks an account ---------
+    case AUDITED_EVENT_TYPES.accountStatusChanged: {
+      const event = accountStatusChangedSchema.parse(payload);
+      return {
+        // ADR-035: the Administrator who acted. `targetId` is the account they suspended, and
+        // attributing this act to its subject is the exact mistake this row exists to prevent.
+        actorId: event.actorId,
+        action: eventType,
+        targetType: 'account',
+        targetId: event.accountId,
+        oldState: { status: event.previousStatus },
+        // ADR-037 decision 2: the reason is part of the record. A suspension whose reason was
+        // dropped would let an Administrator be held to an act they cannot explain.
+        newState: { status: event.status, reason: event.reason },
+        occurredAt: new Date(event.occurredAt),
+        traceId: null,
+        metadata: null,
         sourceEventId,
       };
     }

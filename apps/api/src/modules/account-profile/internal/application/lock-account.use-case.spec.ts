@@ -1,5 +1,9 @@
-import { AccountNotFoundError, InvalidSuspensionReasonError } from '../domain/account';
-import { InvalidReactivationReasonError, LockAccountUseCase } from './lock-account.use-case';
+import {
+  AccountNotFoundError,
+  InvalidReactivationReasonError,
+  InvalidSuspensionReasonError,
+} from '../domain/account';
+import { LockAccountUseCase } from './lock-account.use-case';
 import type { AccountLockRepository } from './port/out/account-repository';
 
 const ADMIN_ACTOR = '8a1e0000-0000-4000-8000-0000000000a1';

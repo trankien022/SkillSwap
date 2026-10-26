@@ -172,6 +172,29 @@ describe('describeAuditedAction', () => {
     expect(input?.metadata).toEqual({ bookingId: 'b-1' });
   });
 
+  it('maps an account lock to the Administrator, with the reason, never to the subject', () => {
+    const SUBJECT = '8a1e0000-0000-4000-8000-0000000000b2';
+    const input = describeAuditedAction(
+      message(AUDITED_EVENT_TYPES.accountStatusChanged, audited({
+        accountId: SUBJECT,
+        status: 'suspended',
+        previousStatus: 'active',
+        reason: 'Repeated payment fraud',
+        occurredAt: '2026-10-15T00:00:00.000Z',
+      })),
+    );
+
+    // ADR-037 decision 2: the reason is part of the record, so a suspension cannot be an
+    // unexplained administrative act.
+    expect(input?.newState).toEqual({ status: 'suspended', reason: 'Repeated payment fraud' });
+    expect(input?.oldState).toEqual({ status: 'active' });
+    // The act is attributed to the Administrator; the suspended account is the target.
+    expect(input?.actorId).toBe(ACTOR);
+    expect(input?.actorId).not.toBe(SUBJECT);
+    expect(input?.targetType).toBe('account');
+    expect(input?.targetId).toBe(SUBJECT);
+  });
+
   it('ignores an event it does not audit', () => {
     expect(
       describeAuditedAction(
@@ -252,6 +275,13 @@ describe('describeAuditedAction', () => {
       [AUDITED_EVENT_TYPES.walletTransactionCompleted]: {
         transactionId: 'tx', accountId: 'a', type: 'top_up', amountCredits: 1000,
         direction: 'credit', occurredAt: '2026-10-15T00:00:00.000Z',
+        actorId: ACTOR,
+      },
+      [AUDITED_EVENT_TYPES.accountStatusChanged]: {
+        // The schema genuinely requires UUIDs here (ADR-037), unlike the older loose payloads.
+        accountId: '5e1e0000-0000-4000-8000-0000000000c1', status: 'suspended',
+        previousStatus: 'active', reason: 'r',
+        occurredAt: '2026-10-15T00:00:00.000Z',
         actorId: ACTOR,
       },
     };

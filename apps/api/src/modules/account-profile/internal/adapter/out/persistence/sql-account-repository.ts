@@ -2,6 +2,7 @@ import { accountStatusChangedSchema } from '@skillswap/contracts';
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { insertOutboxStatement } from '../../../../../../shared/messaging/outbox-statements';
 import { qualified } from '../../../../../../shared/sql/ident';
+import { returnedRows } from '../../../../../../shared/sql/result';
 import type { Account, AccountRole, AccountStatus } from '../../../domain/account';
 import { normalizeEmail } from '../../../domain/account';
 import type {
@@ -54,7 +55,7 @@ function toAccount(row: AccountRow): Account {
       : {
           suspension: {
             reason: row.suspended_reason,
-            suspendedBy: row.suspended_by ?? '',
+            suspendedBy: row.suspended_by ?? null,
             suspendedAt,
           },
         }),
@@ -150,7 +151,11 @@ export class SqlAccountRepository implements AccountRepository, AccountLockRepos
       }
 
       const suspended = command.status === 'suspended';
-      const rows = (await manager.query(
+      // `returnedRows` exists for exactly this: an `UPDATE ... RETURNING` on a transactional
+      // manager yields `[rows, count]`, so indexing the raw result gives the row array, not a row —
+      // `row.id` would be `undefined` and the audited payload would fail its own schema (ADR-035
+      // Amendment A caught this, which is why the payload is parsed in the writing transaction).
+      const row = returnedRows<AccountRow>(await manager.query(
         `UPDATE ${this.table}
             SET "status" = $2,
                 "suspended_reason" = $3,
@@ -166,8 +171,12 @@ export class SqlAccountRepository implements AccountRepository, AccountLockRepos
           suspended ? command.actorId : null,
           suspended ? command.occurredAt.toISOString() : null,
         ],
-      )) as AccountRow[];
-      const row = rows[0];
+      ))[0];
+      if (row === undefined) {
+        // Unreachable after `FOR UPDATE` found the row, but a silent `undefined` here would put a
+        // malformed payload in the outbox — the failure must be loud, not dead-lettered later.
+        throw new Error(`Account ${command.accountId} disappeared during the status change`);
+      }
 
       await manager.query(insertOutboxStatement(this.registry.getSchema(this.moduleName)), [
         'account.status.changed',

@@ -1,6 +1,7 @@
 import { GetAdminDashboardQueryHandler, RECENT_AUDIT_EVENT_LIMIT } from './get-admin-dashboard.query';
 import type { EvidenceSummaryReader } from '../../../../skill-verification/api';
 import type { VerificationSummaryReader } from '../../../../student-verification/api';
+import type { SuspendedAccountReader } from '../../../../account-profile/api';
 import type {
   AdminAuditEventRepository,
   AdminAuditPage,
@@ -73,8 +74,9 @@ function handler(
   verifications: VerificationSummaryReader,
   evidence: EvidenceSummaryReader,
   audit: AdminAuditEventRepository,
+  suspended: SuspendedAccountReader | null = null,
 ): GetAdminDashboardQueryHandler {
-  return new GetAdminDashboardQueryHandler(verifications, evidence, audit, {
+  return new GetAdminDashboardQueryHandler(verifications, evidence, audit, suspended, {
     now: () => FIXED_NOW,
   });
 }
@@ -169,5 +171,33 @@ describe('GetAdminDashboardQueryHandler', () => {
     expect(result.recentAuditEvents).toEqual([]);
     expect(result.evidenceByDomain).toEqual({});
     expect(result.generatedAt).toBe('2026-10-15T12:00:00.000Z');
+  });
+
+  it('takes the suspended-account count from the account-profile reader', async () => {
+    const suspended: SuspendedAccountReader = {
+      count: jest.fn().mockResolvedValue(4),
+      readPage: jest.fn(),
+    };
+
+    const result = await handler(
+      verificationReader({ pending: 0, approved: 0, rejected: 0, revoked: 0 }),
+      evidenceReader({ pending: 0, claimed: 0, approved: 0, rejected: 0, superseded: 0 }, {}),
+      new StubAuditRepository(),
+      suspended,
+    ).execute();
+
+    // ADR-034 §7: the same count the lock list points at, so the two can never disagree.
+    expect(result.suspendedAccounts).toEqual({ total: 4 });
+    expect(suspended.count).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports zero suspensions without a reader rather than inventing a number', async () => {
+    const result = await handler(
+      verificationReader({ pending: 0, approved: 0, rejected: 0, revoked: 0 }),
+      evidenceReader({ pending: 0, claimed: 0, approved: 0, rejected: 0, superseded: 0 }, {}),
+      new StubAuditRepository(),
+    ).execute();
+
+    expect(result.suspendedAccounts).toEqual({ total: 0 });
   });
 });

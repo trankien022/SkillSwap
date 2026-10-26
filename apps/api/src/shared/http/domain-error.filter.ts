@@ -62,6 +62,9 @@ const NAME_TO_STATUS: Record<string, number> = {
   AccountSuspendedError: 403,
   AccountNotFoundError: 404,
   InvalidAccountRoleError: 400,
+  // FR-015 account lock (ADR-037).
+  InvalidSuspensionReasonError: 400,
+  InvalidReactivationReasonError: 400,
   WeakPasswordError: 400,
   SessionExpiredError: 401,
   SessionRevokedError: 401,

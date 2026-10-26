@@ -3,7 +3,7 @@ title: W6 — Admin account locks (dispute half removed)
 type: plan
 date: 2026-10-24
 topic: w6-admin-dashboard-completion
-status: Reduced — no dispute half; account-lock list decided 2026-10-25
+status: In progress — Phases 0–3 landed 2026-10-26; Phase 4 (web screen) next
 owner: Group 4
 ---
 
@@ -111,6 +111,55 @@ There is currently **no web route** for S17 (`/audit` is API-only, SRS Appendix 
 - vi/en, 360 px, status as text + colour.
 
 **Commit(s):** `feat(admin-operation): aggregate suspended-account counts` , `feat(web): admin operations dashboard`
+
+---
+
+## Deviations recorded during Phases 2–3 (2026-10-26)
+
+Written down because each one moved work the plan did not predict, and a silent change
+here would leave the plan claiming something the code does not do.
+
+1. **Removing `disputed` was not a docs change.** The plan said Phase 2's `live-class` work was
+   "nothing". Following the identifier found it in nine places: the domain tuple, three port DTOs,
+   the mobile contract, the mobile renderer, the web mapping, the table's `CHECK` and the partial
+   unique index `uq_bookings_active_learner_class`. It needed a **migration**
+   (`1791072000009-RemoveBookingDisputedState`), which asserts no row holds the value before
+   rewriting the constraint. The workspace-wide build is what surfaced the client sites — an
+   `apps/api`-only typecheck passed while `apps/mobile` and `apps/web` still referenced the state.
+
+2. **A second `account-profile` migration was needed.**
+   `1791072000009-AddAccountSuspension` required a reason but not a timestamp, so a suspended row
+   could exist with no `suspended_at` — and the lock list orders and paginates by it.
+   `1791072000010-RequireSuspendedAt` tightens the constraint and **refuses to run** if such a row
+   already exists, rather than inventing a date.
+
+3. **The dashboard answers on two paths.** The plan names `GET /operations/dashboard`; ADR-034 §7
+   already shipped `GET /admin-operation/dashboard`. Moving the route would break callers, so the
+   controller answers on both. Same handler, so the two cannot disagree.
+
+4. **`?status=` is a one-value enum.** The plan wrote `?status=suspended`; a free string would let a
+   caller send `status=active`, get an empty page, and read that emptiness as "no locked accounts".
+   The contract rejects anything but `suspended`.
+
+5. **The lock action needed HTTP routes the plan did not list.** Phase 3 described reads only, but a
+   list with nothing behind it cannot produce a row. Two routes on
+   `account-profile`'s own controller serve it: `POST /operations/accounts/:id/suspension` (reason
+   required) and `POST /operations/accounts/:id/reinstatement` (no reason). Separate routes, not one
+   route with a status field, because the reason is required in one case and forbidden in the other.
+
+6. **`account.status.changed` was added to `AUDITED_EVENT_TYPES`.** ADR-037 decision 2 requires lock
+   and unlock to be audited with their actor; that only happens if the audit consumer's closed table
+   names the event.
+
+7. **A defect the unit tests could not see, found by E2E.** `changeStatus` read its updated row as
+   `rows[0]` from `(await manager.query('UPDATE … RETURNING …'))`. Inside a transaction the pg driver
+   returns `[rows, affectedCount]` for a writing statement, so `rows[0]` was the *row array*, not a
+   row: `row.id` was `undefined`, and the audited payload failed its own schema. Every suspension
+   returned 500. The existing specs handed back a bare `[row]` and passed; the repository already had
+   `returnedRows()` for exactly this shape, and every other `UPDATE … RETURNING` in the codebase uses
+   it. Fixed by using `returnedRows()`, plus a spec case that feeds the real `[rows, count]` tuple —
+   confirmed to fail against the buggy version and pass against the fix.
+
 
 ---
 

@@ -1105,7 +1105,8 @@ describe('student verification contracts', () => {
         evidence: { pending: 4, claimed: 2, approved: 9, rejected: 1, superseded: 1 },
         evidenceByDomain: { Programming: 6, Languages: 1 },
         recentAuditEvents: [event],
-        generatedAt: '2026-10-15T00:00:00.000Z',
+        suspendedAccounts: { total: 0 },
+          generatedAt: '2026-10-15T00:00:00.000Z',
       };
       expect(adminDashboardSchema.parse(dashboard)).toEqual(dashboard);
     });
@@ -1117,6 +1118,7 @@ describe('student verification contracts', () => {
           evidence: { pending: 0, claimed: 0, approved: 0, rejected: 0, superseded: 0 },
           evidenceByDomain: {},
           recentAuditEvents: [],
+          suspendedAccounts: { total: 0 },
           generatedAt: '2026-10-15T00:00:00.000Z',
         }),
       ).toThrow();
@@ -1129,13 +1131,33 @@ describe('student verification contracts', () => {
           evidence: { pending: 0, claimed: 0, approved: 0, rejected: 0, superseded: 0 },
           evidenceByDomain: {},
           recentAuditEvents: [],
+          suspendedAccounts: { total: 0 },
           generatedAt: '2026-10-15T00:00:00.000Z',
         }),
       ).toThrow();
     });
 
-    it('pages the audit log with the shared page metadata', () => {
-      const page = auditLogPageSchema.parse({
+    it('requires the suspended-account count, so zero is stated rather than omitted (ADR-037)', () => {
+      // A missing group would let a client render "not loaded" as "nobody is locked". The count is
+      // required precisely so that zero has to be said out loud, and it cannot go negative.
+      const base = {
+        verifications: { pending: 0, approved: 0, rejected: 0, revoked: 0 },
+        evidence: { pending: 0, claimed: 0, approved: 0, rejected: 0, superseded: 0 },
+        evidenceByDomain: {},
+        recentAuditEvents: [],
+        generatedAt: '2026-10-15T00:00:00.000Z',
+      };
+      expect(() => adminDashboardSchema.parse(base)).toThrow();
+      expect(() =>
+        adminDashboardSchema.parse({ ...base, suspendedAccounts: { total: -1 } }),
+      ).toThrow();
+      expect(adminDashboardSchema.parse({ ...base, suspendedAccounts: { total: 0 } })).toEqual({
+        ...base,
+        suspendedAccounts: { total: 0 },
+      });
+    });
+
+    it('pages the audit log with the shared page metadata', () => {      const page = auditLogPageSchema.parse({
         items: [event],
         page: { limit: 20, nextCursor: null, total: 1 },
       });

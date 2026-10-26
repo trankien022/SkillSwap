@@ -33,7 +33,8 @@ export interface Account {
 
 export interface AccountSuspension {
   readonly reason: string;
-  readonly suspendedBy: string;
+  /** The Administrator who applied it; `null` only for a suspension with no recorded actor. */
+  readonly suspendedBy: string | null;
   readonly suspendedAt: string;
 }
 
@@ -52,6 +53,17 @@ export class InvalidSuspensionReasonError extends Error {
   constructor() {
     super('A suspension requires a reason');
     this.name = 'InvalidSuspensionReasonError';
+  }
+}
+
+/**
+ * ADR-037 decision 2: a reason is meaningless when reactivating, and is rejected rather than
+ * silently dropped — an ignored field is how a caller comes to believe it recorded something.
+ */
+export class InvalidReactivationReasonError extends Error {
+  constructor() {
+    super('Reactivating an account does not take a reason');
+    this.name = 'InvalidReactivationReasonError';
   }
 }
 

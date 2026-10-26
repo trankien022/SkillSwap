@@ -31,6 +31,8 @@ const REQUIRED: string[] = [
   '1791072000500', // outbox retry backoff (W2 C2)
   '1791072000600', // outbox aggregate sequence (W2 C1)
   '1791072000601', // consumer sequence watermark (W2 C1)
+  '1791072000009', // admin-initiated account lock (FR-015 / OQ-015 / ADR-037)
+  '1791072000010', // a suspension must carry a timestamp, not just a reason (ADR-037)
 ];
 
 describe('account-profile migrations are registered (ADR-014)', () => {

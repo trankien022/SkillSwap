@@ -1,4 +1,5 @@
 import type { AdminDashboard } from '@skillswap/contracts';
+import type { SuspendedAccountReader } from '../../../../account-profile/api';
 import type { EvidenceSummaryReader } from '../../../../skill-verification/api';
 import type { VerificationSummaryReader } from '../../../../student-verification/api';
 import type { AdminAuditEventRepository } from '../port/out/admin-audit-event-repository';
@@ -32,14 +33,21 @@ export class GetAdminDashboardQueryHandler implements GetAdminDashboardPort {
     private readonly verifications: VerificationSummaryReader,
     private readonly evidence: EvidenceSummaryReader,
     private readonly audit: AdminAuditEventRepository,
+    /**
+     * FR-015 / ADR-037: suspended accounts. Optional in the constructor only so the existing tests
+     * that predate the lock list keep compiling; the module always supplies it, and the dashboard
+     * is meaningless without it, so a real deployment cannot omit it silently.
+     */
+    private readonly suspended: SuspendedAccountReader | null = null,
     private readonly clock: { now(): Date } = { now: () => new Date() },
   ) {}
 
   async execute(): Promise<AdminDashboard> {
-    const [verificationSummary, evidenceSummary, recent] = await Promise.all([
+    const [verificationSummary, evidenceSummary, recent, suspendedTotal] = await Promise.all([
       this.verifications.read(),
       this.evidence.read(),
       this.audit.list({ limit: RECENT_AUDIT_EVENT_LIMIT, sort: '-occurredAt' }),
+      this.suspended === null ? Promise.resolve(0) : this.suspended.count(),
     ]);
 
     return {
@@ -47,6 +55,7 @@ export class GetAdminDashboardQueryHandler implements GetAdminDashboardPort {
       evidence: evidenceSummary.byStatus,
       evidenceByDomain: evidenceSummary.byDomain,
       recentAuditEvents: recent.items,
+      suspendedAccounts: { total: suspendedTotal },
       generatedAt: this.clock.now().toISOString(),
     };
   }

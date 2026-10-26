@@ -175,7 +175,7 @@ export class SqlBookingPaymentRepository implements BookingPaymentRepository {
       }
 
       // A duplicate payment for an already-settled or otherwise terminal booking
-      // must not cancel/refund a legitimate completed or disputed booking.
+      // must not cancel/refund a legitimate completed booking.
       return { disposition: 'ignored' };
     });
   }

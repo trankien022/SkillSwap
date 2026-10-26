@@ -144,6 +144,43 @@ describe('SqlAccountRepository.changeStatus (FR-015 / ADR-037)', () => {
     expect(recordedQueries.some((q) => q.sql.includes('SET "status"'))).toBe(false);
   });
 
+  it('reads the row out of the `[rows, count]` tuple a transactional UPDATE yields', async () => {
+    // The pg driver wraps an UPDATE's result as `[rows, affectedCount]`. A spec that hands back a
+    // bare `[row]` cannot tell the two apart, which is how the first version of this method shipped
+    // with `row` being the row *array* — the audited payload then failed its own schema at runtime
+    // while these tests stayed green. Feeding the real shape is the whole point of this case.
+    const { registry, recordedQueries } = createRecordingRegistry([
+      [{ status: 'active' }],
+      [
+        [
+          accountRow({
+            status: 'suspended',
+            suspended_reason: 'Repeated payment fraud',
+            suspended_by: ADMIN_ACTOR,
+            suspended_at: new Date('2026-10-26T09:00:00.000Z'),
+          }),
+        ],
+        1,
+      ],
+      [{ id: 'evt-1' }],
+    ]);
+    const repository = new SqlAccountRepository(registry, 'account-profile');
+
+    const result = await repository.changeStatus({
+      accountId: SUBJECT,
+      status: 'suspended',
+      reason: 'Repeated payment fraud',
+      actorId: ADMIN_ACTOR,
+      occurredAt: new Date('2026-10-26T09:00:00.000Z'),
+    });
+
+    expect(result?.account.id).toBe(SUBJECT);
+    const payload = accountStatusChangedSchema.parse(
+      recordedQueries.find((q) => q.sql.includes('INSERT INTO'))?.params?.[1],
+    );
+    expect(payload.accountId).toBe(SUBJECT);
+  });
+
   it('returns null for an unknown account', async () => {
     const { registry } = createRecordingRegistry([[]]);
     const repository = new SqlAccountRepository(registry, 'account-profile');
