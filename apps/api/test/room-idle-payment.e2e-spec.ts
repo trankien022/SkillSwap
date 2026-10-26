@@ -53,7 +53,16 @@ describe('E2E: an idle room completes the class and pays the Teacher (AC-035)', 
   beforeAll(async () => {
     harness = await startHarness();
     api = new ApiClient(harness.baseUrl);
-    secret = process.env.JITSI_WEBHOOK_SECRET ?? 'e2e-jitsi-webhook-secret';
+    secret = process.env.JITSI_WEBHOOK_SECRET ?? '';
+    // Same rule as room-idle.e2e-spec.ts: no guessed secret. An empty one is a configuration
+    // error, and saying so beats nine confusing 401s.
+    if (secret === '') {
+      throw new Error(
+        'JITSI_WEBHOOK_SECRET is not set. The presence webhook refuses every request when its ' +
+          'secret is empty (ADR-020 Amendment A). Set it in the environment (CI does this in ' +
+          '.github/workflows/ci.yml) or in the repo-root .env.',
+      );
+    }
     await resetDatabase(harness);
   });
 

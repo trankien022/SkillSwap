@@ -5,7 +5,11 @@ import { ClassCompletionSweeper } from '../src/modules/live-class/internal/adapt
 
 jest.setTimeout(60_000);
 
-const WEBHOOK_SECRET = process.env.JITSI_WEBHOOK_SECRET ?? 'skillswap_jitsi_webhook_dev_secret';
+// No default. The webhook refuses every request when its secret is empty, so a spec that
+// quietly assumed one would be signing requests with a value the server never loaded -- which
+// is exactly how these suites broke in CI while passing locally. A guess cannot fail in a way
+// that says "the secret is missing", so there is no guess.
+const WEBHOOK_SECRET = process.env.JITSI_WEBHOOK_SECRET ?? '';
 
 /**
  * FR-020 / AC-035 (W1 C3a/C3b, decided 2026-10-25): a class completes early when the
@@ -29,6 +33,16 @@ describe('E2E: room-idle completion (FR-020 / AC-035)', () => {
   const minute = 60 * 1000;
 
   beforeAll(async () => {
+    // Fail before the stack starts, with the actual reason. Without this the first webhook
+    // returns 401 and the failure reads as "presence was rejected" rather than "no secret was
+    // configured", which is the wrong problem to go debug.
+    if (WEBHOOK_SECRET === '') {
+      throw new Error(
+        'JITSI_WEBHOOK_SECRET is not set. The presence webhook refuses every request when its ' +
+          'secret is empty (ADR-020 Amendment A), so these specs cannot run without one. Set it ' +
+          'in the environment (CI does this in .github/workflows/ci.yml) or in the repo-root .env.',
+      );
+    }
     harness = await startHarness();
     api = new ApiClient(harness.baseUrl);
   });
