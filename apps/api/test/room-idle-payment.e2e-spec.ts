@@ -402,4 +402,75 @@ describe('E2E: an idle room completes the class and pays the Teacher (AC-035)', 
     );
     expect(rows).toEqual([]);
   });
+
+  /**
+   * FR-016 / W9 R4: a settled top-up announces itself.
+   *
+   * The W9 trace walkthrough found this missing: a real top-up wrote its ledger row and moved the
+   * balance, then stopped — no outbox row, so `account-profile.notification-wallet-completed` never
+   * fired and a learner's money arrived silently. The booking path had the event all along, which
+   * is why nothing caught it: every test that looked at settlement looked at the *booking*.
+   */
+  it('emits wallet.transaction.completed for a settled top-up', async () => {
+    const learnerId = await registerUser('w9-trace-topup@skillswap.test');
+
+    api.actAs(learnerId);
+    const topUp = await api.post('/api/wallet/top-ups', { amountVnd: 50_000 });
+    expect(topUp.status).toBe(201);
+    const providerRef = topUp.json.providerRef as string;
+
+    expect((await api.post('/api/wallet/top-ups/callback', sepayIpn(providerRef, 50_000))).status).toBe(200);
+
+    const ledger = await harness.query<{ id: string; trace_id: string }>(
+      'wallet-ledger',
+      `SELECT "id", "trace_id" FROM ledger_entries
+        WHERE "entry_type" = 'top_up' AND "owner_id" = $1`,
+      [learnerId],
+    );
+    expect(ledger).toHaveLength(1);
+
+    const outbox = await harness.query<{ event_type: string; payload: Record<string, unknown> }>(
+      'wallet-ledger',
+      `SELECT "event_type", "payload" FROM outbox_messages
+        WHERE "payload"->>'accountId' = $1`,
+      [learnerId],
+    );
+    expect(outbox).toHaveLength(1);
+    expect(outbox[0]?.event_type).toBe('wallet.transaction.completed');
+    // The event's transaction id is the ledger id — the durable identity a consumer can follow
+    // back to the money it was told about.
+    expect(outbox[0]?.payload.type).toBe('top_up');
+    expect(outbox[0]?.payload.transactionId).toBe(ledger[0]?.id);
+    expect(outbox[0]?.payload.amountCredits).toBe(50);
+    // ADR-035: the beneficiary is the learner, the actor is the system (a SePay IPN acted).
+    expect(outbox[0]?.payload.accountId).toBe(learnerId);
+    expect(outbox[0]?.payload.actorId).toBe('00000000-0000-4000-8000-000000000000');
+  });
+
+  it('stays silent on a replayed IPN, so the learner is notified once', async () => {
+    const learnerId = await registerUser('w9-trace-replay@skillswap.test');
+
+    api.actAs(learnerId);
+    const topUp = await api.post('/api/wallet/top-ups', { amountVnd: 50_000 });
+    const providerRef = topUp.json.providerRef as string;
+    const body = sepayIpn(providerRef, 50_000);
+
+    expect((await api.post('/api/wallet/top-ups/callback', body)).status).toBe(200);
+    // SePay retries. A second acknowledgement must not credit twice *or* announce twice.
+    expect((await api.post('/api/wallet/top-ups/callback', body)).status).toBe(200);
+
+    const outbox = await harness.query<{ id: string }>(
+      'wallet-ledger',
+      `SELECT "id" FROM outbox_messages WHERE "payload"->>'accountId' = $1`,
+      [learnerId],
+    );
+    expect(outbox).toHaveLength(1);
+
+    const ledger = await harness.query<{ id: string }>(
+      'wallet-ledger',
+      `SELECT "id" FROM ledger_entries WHERE "entry_type" = 'top_up' AND "owner_id" = $1`,
+      [learnerId],
+    );
+    expect(ledger).toHaveLength(1);
+  });
 });

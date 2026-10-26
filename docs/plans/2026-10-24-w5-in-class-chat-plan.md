@@ -3,7 +3,7 @@ title: W5 — In-class chat (FR-012)
 type: plan
 date: 2026-10-24
 topic: w5-in-class-chat
-status: Phase 0 done — ADR-036 + Amendment A written; Phases 1–5 proceed (contact rule withdrawn, D4 retired)
+status: Phases 1–5 done; Phase 6 (mobile) and Phase 7 (docs close-out) remain
 owner: Group 4
 ---
 
@@ -160,6 +160,23 @@ Index on `(class_id, created_at desc, id)` for keyset pagination. No cross-schem
 - The Jitsi-embedded chat stays available; add one line of copy telling users the in-platform chat is the recorded one.
 
 **Commit:** `feat(web): in-class chat panel`
+
+**As implemented (2026-10-26).** Landed with Phase 4 in reach of the browser.
+
+- The polling hook the plan sketched was **not** written: the panel loads once and appends what the
+  user sends, plus an explicit "load earlier messages" button following `nextCursor`. A poll with no
+  new-message event to watch would spend a request per interval to learn nothing, and ADR-036
+  decision 6 keeps history readable afterwards — the thread is not a live feed.
+- `aria-live="polite"` was **dropped**. A polite region wrapping the list would read the entire
+  history on first render; the sent-message append is the only thing that changes. Flagged as a
+  follow-up rather than claimed (NFR-007).
+- The warning/blocked copy is gone with the detector (Amendment A); the panel instead carries the
+  neutral refusal copy in both locales, chosen by the server's stable `code`.
+- **Phase 4 defect found here:** the routes wrapped refusals in `ForbiddenException({ code })`, and
+  `fromHttpException` reports `HTTP_403` for every 403 while discarding the payload `code` — so
+  `CHAT_NOT_A_PARTY` / `CHAT_WINDOW_CLOSED` never reached a client. Now a domain error mapped by
+  reason in `domain-error.filter.ts`, pinned by a filter test and an E2E wire assertion.
+- The panel marks own messages from `senderId` vs the session, so "You" is a fact.
 
 ---
 
