@@ -5,7 +5,6 @@ import {
   bookingSchema,
   cancelClassResultSchema,
   classSchema,
-  completeClassResultSchema,
   confirmBookingResultSchema,
   createClassSchema,
   markTeacherNoShowResultSchema,
@@ -44,9 +43,6 @@ export class MarkTeacherNoShowResultDto extends createZodDto(markTeacherNoShowRe
 
 /** FR-020 / ADR-021: result of starting a class. */
 export class StartClassResultDto extends createZodDto(startClassResultSchema) {}
-
-/** FR-020 / ADR-021: result of completing a class. */
-export class CompleteClassResultDto extends createZodDto(completeClassResultSchema) {}
 
 /** FR-011: join an online class room. Body for POST /classes/bookings/:bookingId/room-access. */
 export class RoomAccessRequestDto extends createZodDto(roomAccessRequestSchema) {}

@@ -18,6 +18,7 @@ describe('AdminDashboardController', () => {
     evidence: { pending: 0, claimed: 0, approved: 0, rejected: 0, superseded: 0 },
     evidenceByDomain: {},
     recentAuditEvents: [],
+    suspendedAccounts: { total: 0 },
     generatedAt: '2026-10-15T00:00:00.000Z',
   };
 
@@ -34,13 +35,15 @@ describe('AdminDashboardController', () => {
     expect(roles).toEqual(['admin']);
   });
 
-  it('serves the aggregate at GET /admin-operation/dashboard', () => {
-    const controllerPath = Reflect.getMetadata(PATH_METADATA, AdminDashboardController) as string;
+  it('serves the aggregate at both the shipped and the operations path', () => {
+    const controllerPath = Reflect.getMetadata(PATH_METADATA, AdminDashboardController) as unknown;
     const handlerPath = Reflect.getMetadata(
       PATH_METADATA,
       AdminDashboardController.prototype.read,
     ) as string;
-    expect(controllerPath).toBe('admin-operation/dashboard');
+    // Two paths, one handler: the shipped route keeps working while the lock list lands under
+    // `operations/`, so the aggregate is reachable from both (ADR-034 §7 / W6 plan).
+    expect(controllerPath).toEqual(['admin-operation/dashboard', 'operations/dashboard']);
     expect(handlerPath).toBe('/');
   });
 });

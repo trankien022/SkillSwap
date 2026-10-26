@@ -95,6 +95,10 @@ cannot describe "an administrator suspended a Verifier" or "a payout destination
    a model to fill a dashboard table is the failure mode ADR-028 and the task-01 plan forbid.
    FR-015 is recorded as **partially implemented** until a separate spec + ADR covers them.
 
+   **Closed 2026-10-25 by ADR-037**, which supplies that spec: the dispute half is removed from the
+   MVP, and the account-lock half is an extension of the existing `active | suspended` status. §8 is
+   therefore no longer a gap; the actor-attribution half was closed separately by ADR-035.
+
 9. **Actor attribution is not wired, and the log says so.** Every audited event is mapped with
    `actorId: null`, so the `actor` filter on `GET /audit-log` currently matches only rows written
    without an actor (i.e. every row it can write). This is a **known limitation, not a bug left
@@ -115,6 +119,14 @@ cannot describe "an administrator suspended a Verifier" or "a payout destination
    therefore its own decision with its own ADR, not a rider on this one. Until it lands, the
    actor column and its filter exist but are inert, and the ADR says so rather than implying the
    feature works.
+
+   > **Superseded by ADR-035 (2026-10-25).** That ADR took the first of the two options — the actor
+   > on the command, carried into the payload — and rejected the ambient-context one with a
+   > concrete argument: the same emitters also run from sweepers and consumers, where inherited
+   > request identity would attribute a system action to a person. System-originated events carry
+   > `SYSTEM_ACTOR_ID` rather than `NULL`, so `NULL` keeps exactly one meaning ("before this
+   > decision, or unknown") and the no-backfill ruling stays visible. The paragraph above is left
+   > as written, because it is what was believed at the time.
 
 **Rationale.** FR-018's immediate, single-schema read stays exactly as it is, so the split costs
 nothing at runtime; FR-015 gets the general row ADR-028 always intended. Consuming events keeps

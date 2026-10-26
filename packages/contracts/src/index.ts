@@ -1,6 +1,8 @@
 import { z } from 'zod';
+import { actorIdSchema } from './audit-actor';
 
 export * from './envelope';
+export * from './audit-actor';
 export * from './pagination';
 export * from './skill-evidence';
 export * from './verification';
@@ -30,6 +32,7 @@ export type EventEnvelope<TPayload = unknown> = z.infer<typeof eventEnvelopeSche
 };
 
 export * from './booking-payment-events';
+export * from './class-starting-soon';
 
 /** FR-007 / ADR-019: a cancelled booking that the wallet may need to refund. */
 export const bookingCancelledSchema = z.object({
@@ -42,11 +45,18 @@ export const bookingCancelledSchema = z.object({
 });
 export type BookingCancelled = z.infer<typeof bookingCancelledSchema>;
 
-/** FR-020 / ADR-021: a completed class releases the teacher's pending income. */
+/**
+ * FR-020 / ADR-021: how a class completed.
+ *
+ * `scheduled_end` — the scheduled end passed. `room_idle` — everyone left the room and
+ * stayed away past the grace period (AC-035). Both are published, because the wallet's
+ * release does not depend on which one happened, and a consumer that rejected `room_idle`
+ * would dead-letter a legitimate payout and leave the Teacher's income in pending.
+ */
 export const classCompletedSchema = z.object({
   classId: z.string().min(1),
   teacherId: z.string().min(1),
-  basis: z.enum(['scheduled_end', 'teacher_ended']),
+  basis: z.enum(['scheduled_end', 'room_idle']),
   completedAt: z.string().datetime({ offset: true }),
   bookings: z.array(
     z.object({
@@ -164,12 +174,8 @@ export const startClassResultSchema = z.object({
 });
 export type StartClassResultView = z.infer<typeof startClassResultSchema>;
 
-/** FR-020 / ADR-021: complete a class; `basis` is the completion reason, null when not completed. */
-export const completeClassResultSchema = z.object({
-  completed: z.boolean(),
-  basis: z.string().min(1).nullable(),
-});
-export type CompleteClassResultView = z.infer<typeof completeClassResultSchema>;
+/** FR-020 / ADR-021 Amendment A: the teacher-initiated completion result was removed with the route. */
+export type CompleteClassResultView = never;
 
 /** FR-001 / ADR-030: an account has exactly one access role. Learner/Teacher are capabilities, not roles. */
 export const accountRoleSchema = z.enum(['user', 'verifier', 'admin']);
@@ -443,6 +449,8 @@ export const verifierStatusChangedSchema = z.object({
   status: verifierStatusSchema,
   previousStatus: verifierStatusSchema,
   occurredAt: z.string().datetime({ offset: true }),
+  /** ADR-035: the Administrator who changed the status. */
+  actorId: actorIdSchema,
 });
 export type VerifierStatusChangedEvent = z.infer<typeof verifierStatusChangedSchema>;
 
@@ -519,6 +527,8 @@ export const skillEvidenceHistorySchema = z.object({
 export type SkillEvidenceHistoryView = z.infer<typeof skillEvidenceHistorySchema>;
 
 export * from './audit-event';
+export * from './outbox-dead-letter';
+export * from './account-lock';
 export * from './admin-verifications';
 export * from './admin-verifier-queue';
 export * from './verification';
@@ -529,4 +539,5 @@ export * from './mobile-class-detail';
 export * from './mobile-my-bookings';
 export * from './mobile-ratings';
 export * from './mobile-notifications';
+export * from './chat';
 

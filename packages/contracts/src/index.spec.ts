@@ -18,7 +18,6 @@ import {
   cancelClassResultSchema,
   classCompletedSchema,
   classSchema,
-  completeClassResultSchema,
   confirmBookingResultSchema,
   createClassSchema,
   documentUploadRequestSchema,
@@ -480,6 +479,33 @@ describe('classCompletedSchema (FR-020 / ADR-021)', () => {
       }),
     ).toThrow();
   });
+
+  // ADR-021 Amendment A / AC-035: a Teacher cannot end a class, so the event that
+  // releases income must not be producible with a teacher-initiated basis.
+  it('rejects the removed teacher_ended basis', () => {
+    expect(() =>
+      classCompletedSchema.parse({
+        classId: 'cls-1',
+        teacherId: 't1',
+        basis: 'teacher_ended',
+        completedAt: '2026-10-12T11:00:00.000Z',
+        bookings: [],
+      }),
+    ).toThrow();
+  });
+
+  // AC-035: the empty-room path publishes the same event with its own basis. A consumer
+  // that dropped it would dead-letter a real payout and strand the Teacher's income.
+  it('accepts the room_idle basis', () => {
+    const event = {
+      classId: 'cls-1',
+      teacherId: 't1',
+      basis: 'room_idle',
+      completedAt: '2026-10-12T11:00:00.000Z',
+      bookings: [{ bookingId: 'b1', learnerId: 'l1', priceCredits: 100 }],
+    };
+    expect(classCompletedSchema.parse(event)).toEqual(event);
+  });
 });
 
 describe('bookingRequestSchema', () => {
@@ -546,16 +572,6 @@ describe('class lifecycle result schemas (FR-007 / FR-020)', () => {
     expect(startClassResultSchema.parse({ started: false })).toEqual({ started: false });
   });
 
-  it('completeClassResultSchema allows a null basis when not completed', () => {
-    expect(completeClassResultSchema.parse({ completed: false, basis: null })).toEqual({
-      completed: false,
-      basis: null,
-    });
-    expect(completeClassResultSchema.parse({ completed: true, basis: 'scheduled_end' })).toEqual({
-      completed: true,
-      basis: 'scheduled_end',
-    });
-  });
 });
 
 describe('auth schemas (ADR-016)', () => {
@@ -814,6 +830,8 @@ describe('student verification contracts', () => {
       schoolName: 'FPT University',
       reason: null,
       occurredAt: '2026-10-10T00:00:00.000Z',
+      // ADR-035: the Administrator who decided.
+      actorId: '8a1e0000-0000-4000-8000-000000000e5f',
     };
     expect(studentVerificationEventSchema.parse(event)).toEqual(event);
     expect(() => studentVerificationEventSchema.parse({ ...event, status: 'nope' })).toThrow();
@@ -884,6 +902,8 @@ describe('student verification contracts', () => {
         requestedLevel: 'intermediate',
         status: 'pending',
         occurredAt: '2026-10-11T00:00:00.000Z',
+        // ADR-035: the account that submitted.
+        actorId: '8a1e0000-0000-4000-8000-000000000e5f',
       };
       expect(skillEvidenceEventSchema.parse(event)).toEqual(event);
       expect(() => skillEvidenceEventSchema.parse({ ...event, status: 'nope' })).toThrow();
@@ -1085,7 +1105,8 @@ describe('student verification contracts', () => {
         evidence: { pending: 4, claimed: 2, approved: 9, rejected: 1, superseded: 1 },
         evidenceByDomain: { Programming: 6, Languages: 1 },
         recentAuditEvents: [event],
-        generatedAt: '2026-10-15T00:00:00.000Z',
+        suspendedAccounts: { total: 0 },
+          generatedAt: '2026-10-15T00:00:00.000Z',
       };
       expect(adminDashboardSchema.parse(dashboard)).toEqual(dashboard);
     });
@@ -1097,6 +1118,7 @@ describe('student verification contracts', () => {
           evidence: { pending: 0, claimed: 0, approved: 0, rejected: 0, superseded: 0 },
           evidenceByDomain: {},
           recentAuditEvents: [],
+          suspendedAccounts: { total: 0 },
           generatedAt: '2026-10-15T00:00:00.000Z',
         }),
       ).toThrow();
@@ -1109,13 +1131,33 @@ describe('student verification contracts', () => {
           evidence: { pending: 0, claimed: 0, approved: 0, rejected: 0, superseded: 0 },
           evidenceByDomain: {},
           recentAuditEvents: [],
+          suspendedAccounts: { total: 0 },
           generatedAt: '2026-10-15T00:00:00.000Z',
         }),
       ).toThrow();
     });
 
-    it('pages the audit log with the shared page metadata', () => {
-      const page = auditLogPageSchema.parse({
+    it('requires the suspended-account count, so zero is stated rather than omitted (ADR-037)', () => {
+      // A missing group would let a client render "not loaded" as "nobody is locked". The count is
+      // required precisely so that zero has to be said out loud, and it cannot go negative.
+      const base = {
+        verifications: { pending: 0, approved: 0, rejected: 0, revoked: 0 },
+        evidence: { pending: 0, claimed: 0, approved: 0, rejected: 0, superseded: 0 },
+        evidenceByDomain: {},
+        recentAuditEvents: [],
+        generatedAt: '2026-10-15T00:00:00.000Z',
+      };
+      expect(() => adminDashboardSchema.parse(base)).toThrow();
+      expect(() =>
+        adminDashboardSchema.parse({ ...base, suspendedAccounts: { total: -1 } }),
+      ).toThrow();
+      expect(adminDashboardSchema.parse({ ...base, suspendedAccounts: { total: 0 } })).toEqual({
+        ...base,
+        suspendedAccounts: { total: 0 },
+      });
+    });
+
+    it('pages the audit log with the shared page metadata', () => {      const page = auditLogPageSchema.parse({
         items: [event],
         page: { limit: 20, nextCursor: null, total: 1 },
       });

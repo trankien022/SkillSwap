@@ -4,6 +4,11 @@ export interface BusMessage {
   id: string;
   eventType: string;
   occurredAt: string;
+  /**
+   * ADR-013 Amendment A (W2 C1): position of this event within its aggregate. Absent on
+   * events published before the field existed, which consumers must treat as "old".
+   */
+  sequence?: number;
   payload: unknown;
 }
 
@@ -34,7 +39,14 @@ export function parseEnvelope(raw: unknown): BusMessage {
   if (payload === undefined) {
     throw new PermanentHandlerError('Event envelope is missing payload');
   }
-  return { id, eventType, occurredAt, payload };
+  // ADR-013 Amendment A (W2 C1): a missing sequence is legal and means "unstamped". A present
+  // but unusable one is a producer defect, and `sequenceOf` reads it as unstamped so the event
+  // is still applied rather than dead-lettered over a field it does not need.
+  const sequence =
+    typeof record.sequence === 'number' && Number.isSafeInteger(record.sequence)
+      ? record.sequence
+      : undefined;
+  return { id, eventType, occurredAt, sequence, payload };
 }
 
 /** Module-scoped consumers registry: queue name → handler (ADR-010 consumers). */

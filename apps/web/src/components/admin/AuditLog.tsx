@@ -182,13 +182,6 @@ export function AuditLog() {
         </label>
       </div>
 
-      {/* Stated next to the control it affects, not hidden: an actor filter that
-          quietly matches nothing reads as a broken filter, and an operations screen
-          that lies about its own limits is worse than one that admits them. */}
-      <p className="text-xs leading-relaxed text-slate-500" data-testid="audit-actor-notice">
-        {t('actorGap')}
-      </p>
-
       {state.kind === 'loading' && (
         <p className="text-sm text-slate-600" data-testid="audit-log-loading">
           {t('loading')}

@@ -25,6 +25,16 @@ class UnknownStateError extends Error {
   }
 }
 
+/** Mirrors `LearnerNotVerifiedError` (AC-034 / BR-001): reason-bearing, distinct name. */
+class LearnerNotVerifiedError extends Error {
+  readonly reason = 'learner_not_verified';
+
+  constructor(learnerId: string) {
+    super(`Account ${learnerId} has no approved student verification`);
+    this.name = 'LearnerNotVerifiedError';
+  }
+}
+
 /** Mirrors `BookingNotAllowedError`: the envelope code must be the reason, not the name. */
 class BookingNotAllowedError extends Error {
   constructor(
@@ -40,6 +50,17 @@ class ClassNotFoundError extends Error {
   constructor(classId: string) {
     super(`Class ${classId} was not found`);
     this.name = 'ClassNotFoundError';
+  }
+}
+
+/** Mirrors `ChatAccessDeniedError` (FR-012 / ADR-036): the reason decides the envelope code. */
+class ChatAccessDeniedError extends Error {
+  constructor(
+    readonly reason: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'ChatAccessDeniedError';
   }
 }
 
@@ -126,6 +147,20 @@ describe('DomainErrorFilter', () => {
     });
   });
 
+  // AC-034 / BR-001 (decided 2026-10-25): the booking trust gate has its own code,
+  // so the client can explain *why* it cannot book rather than showing a generic 409.
+  it('reports an unverified booker as `learner_not_verified` (409)', () => {
+    const error = new LearnerNotVerifiedError('learner-1');
+    const captured = run(error);
+    expect(captured.statusCode).toBe(409);
+    expect(captured.body).toMatchObject({
+      success: false,
+      code: 'learner_not_verified',
+      data: null,
+      errors: [{ code: 'learner_not_verified' }],
+    });
+  });
+
   it('maps ClassNotFoundError to 404 with a class_not_found code', () => {
     const captured = run(new ClassNotFoundError('class-1'));
     expect(captured.statusCode).toBe(404);
@@ -136,6 +171,30 @@ describe('DomainErrorFilter', () => {
       data: null,
     });
   });
+
+  // FR-012 (ADR-036): a chat refusal carries its own code so a client can tell "not yours"
+  // from "come back later" without matching English. This is the case that caught the bug:
+  // the controller used to wrap these in ForbiddenException({ code }), and the HTTP branch
+  // below reports HTTP_403 for every 403 -- discarding the code entirely.
+  it('reports a chat party refusal as CHAT_NOT_A_PARTY (403)', () => {
+    const captured = run(new ChatAccessDeniedError('not_a_party', 'Requester is not a party'));
+    expect(captured.statusCode).toBe(403);
+    expect(captured.body).toMatchObject({
+      success: false,
+      code: 'CHAT_NOT_A_PARTY',
+      data: null,
+      errors: [{ code: 'CHAT_NOT_A_PARTY' }],
+    });
+  });
+
+  it.each(['booking_not_confirmed', 'window_not_open', 'window_closed'] as const)(
+    'reports a %s chat refusal as CHAT_WINDOW_CLOSED',
+    (reason) => {
+      const captured = run(new ChatAccessDeniedError(reason, reason));
+      expect(captured.statusCode).toBe(403);
+      expect(captured.body).toMatchObject({ code: 'CHAT_WINDOW_CLOSED' });
+    },
+  );
 
   it('wraps an HttpException string payload (validation) in the failure envelope', () => {
     const captured = run(new BadRequestException('name: required'));

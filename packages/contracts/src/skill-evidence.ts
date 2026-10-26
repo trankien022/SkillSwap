@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { actorIdSchema } from './audit-actor';
 
 /**
  * FR-003 / ADR-026 + FR-004: the skill-evidence wire shapes.
@@ -100,5 +101,11 @@ export const skillEvidenceEventSchema = z.object({
   approvedLevel: skillLevelSchema.nullable().optional(),
   reason: z.string().min(1).nullable().optional(),
   occurredAt: z.string().datetime({ offset: true }),
+  /**
+   * ADR-035: who acted. The submitter on `skill.evidence.submitted`, the Verifier on `claimed`,
+   * and the deciding Verifier on `approved`/`rejected` — the same field, because in each case the
+   * event is an act by exactly one account.
+   */
+  actorId: actorIdSchema,
 });
 export type SkillEvidenceEvent = z.infer<typeof skillEvidenceEventSchema>;

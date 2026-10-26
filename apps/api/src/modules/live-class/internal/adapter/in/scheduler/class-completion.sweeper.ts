@@ -30,6 +30,15 @@ export class ClassCompletionSweeper implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /**
+   * Whether the sweep is scheduled. Read only by the boot E2E, which is the only place that can
+   * tell a running timer from a sweeper that exists but is never ticked — every other test calls
+   * `sweep()` directly and would pass either way.
+   */
+  isRunning(): boolean {
+    return this.timer !== undefined;
+  }
+
   onModuleDestroy(): void {
     if (this.timer !== undefined) {
       clearInterval(this.timer);

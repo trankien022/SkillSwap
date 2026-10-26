@@ -31,7 +31,10 @@ describe('LiveClassRegistrar wallet outcome handler (ADR-032)', () => {
     return { handler: handler.handler, record };
   }
 
-  const envelope = (payload: unknown) => ({
+  // ADR-035: the emitter records an actor; this consumer does not read it.
+const ACTOR = '8a1e0000-0000-4000-8000-000000000b04';
+
+const envelope = (payload: unknown) => ({
     id: 'envelope-1',
     eventType: 'wallet.transaction.completed',
     occurredAt: '2026-10-12T03:00:00.000Z',
@@ -48,6 +51,7 @@ describe('LiveClassRegistrar wallet outcome handler (ADR-032)', () => {
       amountCredits: 100,
       direction: 'debit',
       occurredAt: '2026-10-12T03:00:00.000Z',
+      actorId: ACTOR,
       bookingId: 'booking-1',
     }));
     expect(record.execute).toHaveBeenCalledWith({
@@ -69,6 +73,7 @@ describe('LiveClassRegistrar wallet outcome handler (ADR-032)', () => {
       amountCredits: 100,
       direction: 'credit',
       occurredAt: '2026-10-12T03:00:00.000Z',
+      actorId: ACTOR,
     }));
     expect(record.execute).not.toHaveBeenCalled();
   });
@@ -85,6 +90,8 @@ describe('LiveClassRegistrar wallet outcome handler (ADR-032)', () => {
       direction: 'debit',
       occurredAt: '2026-10-12T03:00:00.000Z',
       bookingId: 'booking-1',
+      // ADR-035: present so the failure under test is the mismatch, not a schema rejection.
+      actorId: ACTOR,
     });
     await expect(mismatchHandler(event)).rejects.toBeInstanceOf(PermanentHandlerError);
 

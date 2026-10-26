@@ -1,5 +1,5 @@
 import type { BookingState, CancelReason } from '../../domain/booking';
-import type { ClassCancellationReason, CompletionBasis } from '../../domain/class';
+import type { ClassCancellationReason, ClassView, CompletionBasis } from '../../domain/class';
 import type { SkillLevel } from '../../domain/skill-level';
 import type { TeacherTrust } from '../../domain/publish-policy';
 import type {
@@ -8,6 +8,7 @@ import type {
 } from '../port/out/booking-repository';
 import type {
   ClassEdit,
+  ClassReminderKind,
   ClassRepository,
   CompletableClass,
   PersistedClass,
@@ -19,6 +20,11 @@ import type {
 } from '../port/out/room-token-issuer';
 import { RoomProviderUnavailableError } from '../port/out/room-token-issuer';
 import type { RoomIncident, RoomIncidentRecorder } from '../port/out/room-incident-recorder';
+import type {
+  PresenceRecord,
+  PresenceRepository,
+} from '../port/out/presence-repository';
+import type { PresenceSession } from '../../domain/presence';
 
 export function makeBooking(
   partial: Partial<PersistedBooking> & Pick<PersistedBooking, 'id'>,
@@ -134,9 +140,14 @@ export class InMemoryClassRepository implements ClassRepository {
   cancelled: string[] = [];
   updated: ClassEdit | null = null;
   awaiting: CompletableClass[] = [];
+  beforeEnd: CompletableClass[] = [];
   confirmedBookingIds: string[] = [];
   completedBasis: CompletionBasis | null = null;
   lastCancelReason: ClassCancellationReason | null = null;
+  /** FR-016 (W3): what the scan returns, and what was actually claimed. */
+  reminderCandidates: Array<Pick<ClassView, 'id' | 'state' | 'startsAt'>> = [];
+  readonly reminders: Array<{ classId: string; kind: ClassReminderKind; startsAt: Date }> = [];
+  private readonly reminderClaims = new Set<string>();
 
   constructor(private value: PersistedClass | null = classView()) {}
 
@@ -197,6 +208,98 @@ export class InMemoryClassRepository implements ClassRepository {
     if (this.value === null || this.awaiting.length === 0) return this.awaiting;
     return this.awaiting;
   }
+
+  async findInProgressBeforeEnd(_now: Date): Promise<CompletableClass[]> {
+    return this.beforeEnd;
+  }
+
+  async findAwaitingReminder(
+    _now: Date,
+    _offsetMinutes: number,
+  ): Promise<Array<Pick<ClassView, 'id' | 'state' | 'startsAt'>>> {
+    return this.reminderCandidates;
+  }
+
+  async claimReminderAndEmit(
+    id: string,
+    kind: ClassReminderKind,
+    startsAt: Date,
+  ): Promise<{ reminded: boolean; participants: number }> {
+    // Mirrors the lease: the same (class, kind) may be claimed exactly once, which is how the
+    // use-case tests observe a second instance losing.
+    const key = `${id}:${kind}`;
+    if (this.reminderClaims.has(key)) {
+      return { reminded: false, participants: 0 };
+    }
+    this.reminderClaims.add(key);
+    this.reminders.push({ classId: id, kind, startsAt });
+    return { reminded: true, participants: 1 };
+  }
+}
+
+/**
+ * FR-011 / FR-020 (AC-035): an in-memory presence table with the same idempotency as the
+ * SQL one — a duplicate join opens no second session, an unmatched leave is ignored.
+ */
+export class InMemoryPresenceRepository implements PresenceRepository {
+  readonly sessions: Array<{ classId: string; session: PresenceSession }> = [];
+  readonly teacherJoins = new Map<string, Date>();
+
+  constructor(initial: Array<{ classId: string; session: PresenceSession }> = []) {
+    this.sessions.push(...initial);
+  }
+
+  async recordJoin(record: PresenceRecord): Promise<void> {
+    const open = this.sessions.find(
+      (row) =>
+        row.classId === record.classId &&
+        row.session.accountId === record.accountId &&
+        row.session.leftAt === null,
+    );
+    if (open !== undefined) {
+      return;
+    }
+    this.sessions.push({
+      classId: record.classId,
+      session: { accountId: record.accountId, joinedAt: record.joinedAt, leftAt: null },
+    });
+  }
+
+  async recordLeave(record: PresenceRecord): Promise<void> {
+    const open = [...this.sessions]
+      .reverse()
+      .find(
+        (row) =>
+          row.classId === record.classId &&
+          row.session.accountId === record.accountId &&
+          row.session.leftAt === null,
+      );
+    if (open === undefined) {
+      return;
+    }
+    open.session = { ...open.session, leftAt: record.joinedAt };
+  }
+
+  async listSessions(classId: string): Promise<PresenceSession[]> {
+    return this.sessions.filter((row) => row.classId === classId).map((row) => row.session);
+  }
+
+  async findTeacherFirstJoin(classId: string, teacherId: string): Promise<Date | null> {
+    const key = `${classId}:${teacherId}`;
+    const replayed = this.teacherJoins.get(key);
+    if (replayed !== undefined) {
+      return replayed;
+    }
+    const sessions = (await this.listSessions(classId)).filter(
+      (session) => session.accountId === teacherId,
+    );
+    if (sessions.length === 0) {
+      return null;
+    }
+    return sessions.reduce((earliest, session) =>
+      session.joinedAt.getTime() < earliest.joinedAt.getTime() ? session : earliest,
+    ).joinedAt;
+  }
 }
 
 export class FakeRoomTokenIssuer implements RoomTokenIssuer {
@@ -224,7 +327,7 @@ export class FakeRoomIncidentRecorder implements RoomIncidentRecorder {
  * approved at `expert` for **any** skill (happy path); pass overrides to test refusals.
  * `approvedLevels` overrides specific skills; `defaultLevel` covers the rest (null = none).
  */
-export class FakeTeacherTrustReader {
+export class FakeAccountTrustReader {
   constructor(
     private readonly trust: {
       verified?: boolean;

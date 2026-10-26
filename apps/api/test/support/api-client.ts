@@ -35,11 +35,11 @@ export class ApiClient {
     method: string,
     path: string,
     body?: unknown,
-    options: { signature?: string } = {},
+    options: { signature?: string; headers?: Record<string, string> } = {},
     // Response bodies are untyped test fixtures; `any` keeps the specs readable.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<{ status: number; json: any; envelope: any; text: string }> {
-    const headers = this.headers({ 'content-type': 'application/json' });
+    const headers = this.headers({ 'content-type': 'application/json', ...options.headers });
     if (options.signature !== undefined) {
       headers['x-signature'] = options.signature;
     }

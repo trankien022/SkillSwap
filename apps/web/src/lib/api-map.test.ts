@@ -33,14 +33,20 @@ const WEB_ROUTES = [
   '/classes/:id',
   '/classes/:id/bookings',
   '/classes/:id/cancel',
-  '/classes/:id/complete',
   '/classes/:id/start',
   '/classes/bookings/:bookingId/confirm',
+  // FR-012 / ADR-036: in-class chat. The query string is not part of the route
+  // identity, so the read registers once, exactly as the API-map scanner sees it.
+  '/classes/bookings/:bookingId/messages',
   '/classes/bookings/:bookingId/no-show',
   '/classes/bookings/:bookingId/rating',
   '/classes/bookings/:bookingId/room-access',
   '/classes/bookings/me',
   '/notifications',
+  // FR-015 / ADR-037: the account-lock list and its two actions.
+  '/operations/accounts',
+  '/operations/accounts/:accountId/reinstatement',
+  '/operations/accounts/:accountId/suspension',
   '/profile-skills/me',
   '/skill-evidence',
   '/skill-evidence/:id/claim',

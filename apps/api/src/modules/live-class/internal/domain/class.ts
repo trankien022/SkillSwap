@@ -214,8 +214,22 @@ export function assertClassEditable(classId: string, confirmedBookingCount: numb
 
 // ── FR-020 class lifecycle & completion (ADR-021) ───────────────────────────
 
-export const COMPLETION_BASES = ['scheduled_end', 'teacher_ended'] as const;
+/**
+ * FR-020: why a class completed.
+ *
+ * - `scheduled_end` — the scheduled end passed.
+ * - `room_idle` — everyone left the room and stayed away for the grace period (AC-035 /
+ *   W1 C3a/C3b, decided 2026-10-25).
+ *
+ * `teacher_ended` is deliberately absent: ADR-021 Amendment A removed the capability rather
+ * than guarding it, so the illegal state cannot be produced. Rows recorded before that
+ * amendment are read as history (see `HISTORICAL_COMPLETION_BASES`).
+ */
+export const COMPLETION_BASES = ['scheduled_end', 'room_idle'] as const;
 export type CompletionBasis = (typeof COMPLETION_BASES)[number];
+
+/** Every basis that may appear in storage, including ones no longer producible. */
+export const HISTORICAL_COMPLETION_BASES = ['scheduled_end', 'room_idle', 'teacher_ended'] as const;
 
 export const CLASS_CANCELLATION_REASONS = [
   'teacher_cancelled',
@@ -288,4 +302,52 @@ export function completionOutcome(
 /** A completed class is the authorized basis for rating (FR-013 consumes this). */
 export function isRatingEligible(state: ClassState): boolean {
   return state === 'completed';
+}
+
+/**
+ * FR-016 "class starting soon": how long before `starts_at` the reminder fires.
+ *
+ * The Product Owner chose 15 minutes (W3 C1, 2026-10-25) precisely because it is also the
+ * default room-access window (`DEFAULT_OPEN_MINUTES`, ADR-020): the reminder arrives at the
+ * moment the door becomes usable, so it tells the participant when they can actually act. That
+ * coupling is the reason this is not "feels about right" — if the room window changes, the
+ * reminder should move with it, which is why the caller passes the value in rather than reading
+ * a constant here.
+ */
+export const CLASS_REMINDER_OFFSET_MINUTES = 15;
+
+/** States from which a reminder may still be honest: the class will happen. */
+export const REMINDABLE_STATES: readonly ClassState[] = ['published', 'full'];
+
+/**
+ * True when a reminder for this class is due now (W3 C1/C2).
+ *
+ * The window is `[starts_at - offset, starts_at)`: not a single instant, because the sweep runs
+ * on an interval and a class must not go unreminded merely because no tick landed on one exact
+ * millisecond. It closes at `starts_at` — a reminder for a class already under way is not a
+ * reminder, it is a late arrival, and the room itself is the better signal by then.
+ *
+ * Only `published`/`full` may remind. Everything else is explicitly false: `cancelled` and
+ * `completed` because the class will not happen or already did, `in_progress` because the window
+ * has closed, and `draft` because the class is not visible to anyone yet.
+ *
+ * This rule is deliberately **state-agnostic about bookings** (W3 C2): whether a *participant*
+ * gets the reminder depends on their booking being Confirmed, which is a different fact and is
+ * filtered by the query that gathers recipients. Keeping bookable facts in one place is what stops
+ * the rule from existing twice and drifting.
+ *
+ * "Already reminded" is the caller's fact (`class_reminders` holds it), not this function's:
+ * a pure predicate cannot know what the database has recorded, and pretending otherwise would
+ * make the function lie about its own inputs.
+ */
+export function isReminderDue(
+  cls: Pick<ClassView, 'state' | 'startsAt'>,
+  now: Date,
+  offsetMinutes: number = CLASS_REMINDER_OFFSET_MINUTES,
+): boolean {
+  if (!REMINDABLE_STATES.includes(cls.state)) {
+    return false;
+  }
+  const windowOpensAt = cls.startsAt.getTime() - offsetMinutes * 60 * 1000;
+  return now.getTime() >= windowOpensAt && now.getTime() < cls.startsAt.getTime();
 }

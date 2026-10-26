@@ -1,3 +1,4 @@
+import { SYSTEM_ACTOR_ID } from '@skillswap/contracts';
 import { randomUUID } from 'node:crypto';
 import { canAdvanceTopUp, type TopUpStatus } from '../domain/wallet';
 import type { WalletRepository } from './port/out/wallet-repository';
@@ -44,6 +45,7 @@ export class HandleTopUpCallbackUseCase implements HandleTopUpCallbackPort {
         amountCredits: intent.amountCredits,
         direction: 'credit',
         traceId: randomUUID(),
+        actorId: SYSTEM_ACTOR_ID,
       });
     } else if (next === 'reversed') {
       await this.wallets.applyTopUp({
@@ -52,6 +54,7 @@ export class HandleTopUpCallbackUseCase implements HandleTopUpCallbackPort {
         amountCredits: intent.amountCredits,
         direction: 'debit',
         traceId: randomUUID(),
+        actorId: SYSTEM_ACTOR_ID,
       });
     }
 

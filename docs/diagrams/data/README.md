@@ -145,7 +145,7 @@ CREATE UNIQUE INDEX uq_skill_approval
   ON skill_evidence (profile_skill_id) WHERE status = 'approved';
 CREATE UNIQUE INDEX uq_valid_booking
   ON bookings (class_id, learner_id)
-  WHERE status IN ('confirmed', 'completed', 'disputed');
+  WHERE status IN ('pending', 'confirmed', 'completed');
 CREATE UNIQUE INDEX uq_booking_settlement
   ON ledger_transactions (booking_id) WHERE kind = 'booking';
 CREATE UNIQUE INDEX uq_booking_release

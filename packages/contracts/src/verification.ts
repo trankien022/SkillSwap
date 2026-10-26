@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { actorIdSchema } from './audit-actor';
 
 /**
  * FR-002 / ADR-023 + FR-019 / ADR-025: the student-verification wire shapes.
@@ -60,5 +61,7 @@ export const studentVerificationEventSchema = z.object({
   schoolName: z.string().min(1),
   reason: z.string().min(1).nullable(),
   occurredAt: z.string().datetime({ offset: true }),
+  /** ADR-035: the Administrator who made the decision. */
+  actorId: actorIdSchema,
 });
 export type StudentVerificationEvent = z.infer<typeof studentVerificationEventSchema>;

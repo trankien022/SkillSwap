@@ -47,6 +47,16 @@ export class ApiConfig {
   readonly jitsiDomain: string;
   readonly jitsiTokenTtlSeconds: number;
   readonly jitsiOpenMinutes: number;
+  /** FR-011 / AC-035: shared secret the Jitsi presence webhook must present. Empty = refuse all. */
+  readonly jitsiWebhookSecret: string;
+  /**
+   * FR-016 (W3 C1): how long before `starts_at` the "class starting soon" reminder fires.
+   *
+   * Defaults to 15 to match `jitsiOpenMinutes`: the reminder should arrive when the room door
+   * becomes usable. It is separate config rather than a derived value because the Product Owner
+   * may move one without moving the other, and a silent coupling would make that impossible.
+   */
+  readonly classReminderOffsetMinutes: number;
   readonly logLevel: string;
 
   // FR-008 / ADR-033: SePay Payment Gateway (hosted checkout + IPN).
@@ -74,6 +84,19 @@ export class ApiConfig {
   readonly sepayReconIntervalMs: number;
   /** Only intents older than this are re-queried, so a live checkout is left alone. */
   readonly sepayReconMinAgeMs: number;
+
+  /**
+   * BR-027 (decision D3, closed 2026-10-26): VND per credit for a top-up.
+   *
+   * Was hardcoded at `wallet.ts:4`. Configurable because the exchange rate is a business
+   * parameter, not a law of physics, and a rate change must be a deployment change rather
+   * than a code change plus a migration. Every intent stores the rate it was created under
+   * (`top_up_intents.vnd_per_credit`), so a later change cannot silently re-price money that
+   * was already paid for.
+   *
+   * Withdrawal is out of the MVP (FR-014 deferred), so this is top-up-only for now.
+   */
+  readonly vndPerCredit: number;
 
   // FR-002 / ADR-023: document storage (S3-compatible object storage).
   readonly s3Endpoint: string;
@@ -125,11 +148,23 @@ export class ApiConfig {
     this.sepayReconIntervalMs = readInt('SEPAY_RECON_INTERVAL_MS', 5 * 60 * 1000);
     this.sepayReconMinAgeMs = readInt('SEPAY_RECON_MIN_AGE_MS', 15 * 60 * 1000);
 
+    // BR-027 (D3): 1000 VND per credit, matching the historical hardcoded value, so an
+    // existing deployment that sets nothing keeps pricing top-ups exactly as it did.
+    //
+    // `readInt` already refuses a non-positive or non-integer value at boot, which is the
+    // important part: a zero rate would divide by zero and a negative one would invert the sign
+    // of real money, so there is no safe fallback to degrade to.
+    this.vndPerCredit = readInt('VND_PER_CREDIT', 1000);
+
     this.jitsiAppId = readString('JITSI_APP_ID', 'skillswap');
     this.jitsiAppSecret = readString('JITSI_APP_SECRET', 'skillswap_jitsi_dev_secret');
     this.jitsiDomain = readString('JITSI_DOMAIN', 'localhost:8443');
     this.jitsiTokenTtlSeconds = readInt('JITSI_TOKEN_TTL_SECONDS', 3600);
     this.jitsiOpenMinutes = readInt('JITSI_OPEN_MINUTES', 15);
+    this.classReminderOffsetMinutes = readInt('CLASS_REMINDER_OFFSET_MINUTES', 15);
+    // Deliberately empty by default: an unset secret must refuse presence rather than
+    // accept it, so a misconfigured deployment cannot have its classes closed by strangers.
+    this.jitsiWebhookSecret = readString('JITSI_WEBHOOK_SECRET', '');
 
     this.s3Endpoint = readString('S3_ENDPOINT', 'http://localhost:9000');
     this.s3Region = readString('S3_REGION', 'us-east-1');

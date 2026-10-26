@@ -52,8 +52,6 @@ export function toPresentationState(item: LearnerBookingItemView): BookingState 
       return 'completed';
     case 'cancelled':
       return 'cancelled';
-    case 'disputed':
-      return 'no_show_reported';
     case 'confirmed':
     default: {
       const startsAt = new Date(item.classSummary.startsAt);

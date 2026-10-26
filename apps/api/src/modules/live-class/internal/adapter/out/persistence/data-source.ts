@@ -9,6 +9,13 @@ import { CreateRoomAccessIncidents1791072000003 } from './migrations/17910720000
 import { AddClassCompletionColumns1791072000004 } from './migrations/1791072000004-AddClassCompletionColumns';
 import { CreateTeacherTrustProjection1791072000005 } from './migrations/1791072000005-CreateTeacherTrustProjection';
 import { CreateClassRatings1791072000006 } from './migrations/1791072000006-CreateClassRatings';
+import { CreateClassPresence1791072000007 } from './migrations/1791072000007-CreateClassPresence';
+import { CreateClassReminders1791072000008 } from './migrations/1791072000008-CreateClassReminders';
+import { RemoveBookingDisputedState1791072000009 } from './migrations/1791072000009-RemoveBookingDisputedState';
+import { CreateClassChatMessages1791072000010 } from './migrations/1791072000010-CreateClassChatMessages';
+import { AddOutboxRetryBackoff1791072000500 } from './migrations/1791072000500-AddOutboxRetryBackoff';
+import { AddOutboxSequence1791072000600 } from './migrations/1791072000600-AddOutboxSequence';
+import { AddProcessedEventSequence1791072000601 } from './migrations/1791072000601-AddProcessedEventSequence';
 import { SCHEMA } from './schema';
 
 /** One connection pool per module schema (ARCHITECTURE.md §5). */
@@ -31,6 +38,20 @@ export function createModuleDataSource(config: ApiConfig, schema: string = SCHEM
       AddClassCompletionColumns1791072000004,
       CreateTeacherTrustProjection1791072000005,
       CreateClassRatings1791072000006,
+      // AC-035: room presence for the early-completion rule.
+      CreateClassPresence1791072000007,
+      // FR-016 (W3): one reminder per class per kind; the unique key is the lease.
+      CreateClassReminders1791072000008,
+      // ADR-037 decision 6: `disputed` was never reachable, so it is removed from the vocabulary.
+      RemoveBookingDisputedState1791072000009,
+      // FR-012 (W5): the append-only chat log. No `flagged` column -- BR-056 withdrawn.
+      CreateClassChatMessages1791072000010,
+      // ADR-013 Amendment A (W2 C2): shared outbox backoff, one migration per schema.
+      AddOutboxRetryBackoff1791072000500,
+      // ADR-013 Amendment A (W2 C1): per-aggregate sequence numbers, emitter half then
+      // consumer half, one pair of migrations per schema.
+      AddOutboxSequence1791072000600,
+      AddProcessedEventSequence1791072000601,
     ],
     migrationsTableName: MIGRATIONS_TABLE,
     synchronize: false,

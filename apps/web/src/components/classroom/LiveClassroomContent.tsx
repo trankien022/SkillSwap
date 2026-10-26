@@ -21,6 +21,7 @@ import {
   buildJitsiOptions,
   type JitsiApi,
 } from './jitsi-external-api';
+import { ChatPanel } from './ChatPanel';
 
 export interface LiveClassroomProps {
   bookingId?: string;
@@ -37,7 +38,7 @@ type Phase =
   | { kind: 'booking_not_found' }
   | { kind: 'requesting_access'; booking: LearnerBookingView }
   | { kind: 'denied'; booking: LearnerBookingView; reason: RoomAccessReason }
-  | { kind: 'embed_error'; booking: LearnerBookingView }
+  | { kind: 'embed_error'; booking: LearnerBookingView; access: RequestRoomAccessResult }
   | { kind: 'connecting'; booking: LearnerBookingView; access: RequestRoomAccessResult }
   /**
    * The conference iframe is constructed and interactive (Jitsi's own prejoin
@@ -159,8 +160,13 @@ export function LiveClassroomContent({ bookingId = '', roomCode = '' }: LiveClas
   // lands, which re-runs this effect with nulls and its cleanup disposes the
   // conference we just created: the iframe vanished while the UI still claimed
   // "connected".
+  // `embed_error` carries the access it was built from, so the retry button can rebuild the
+  // conference with the same token instead of asking the API for a new one.
   const access =
-    phase.kind === 'connecting' || phase.kind === 'prejoin' || phase.kind === 'connected'
+    phase.kind === 'connecting' ||
+    phase.kind === 'prejoin' ||
+    phase.kind === 'connected' ||
+    phase.kind === 'embed_error'
       ? phase.access
       : null;
   const accessUrl = access?.url ?? null;
@@ -234,8 +240,12 @@ export function LiveClassroomContent({ bookingId = '', roomCode = '' }: LiveClas
         setPhase((prev) => (prev.kind === 'connecting' ? { ...prev, kind: 'prejoin' } : prev));
       } catch {
         if (!cancelled) {
+          // Keep the access values: the retry button rebuilds the conference from them rather
+          // than spending a second room-access request on a transient script failure.
           setPhase((prev) =>
-            prev.kind === 'connecting' ? { kind: 'embed_error', booking: prev.booking } : prev,
+            prev.kind === 'connecting'
+              ? { kind: 'embed_error', booking: prev.booking, access: prev.access }
+              : prev,
           );
         }
       }
@@ -564,6 +574,22 @@ export function LiveClassroomContent({ bookingId = '', roomCode = '' }: LiveClas
                     </span>
                     <h3 className="text-base font-bold">{t('states.embedErrorTitle')}</h3>
                     <p className="max-w-md text-sm text-slate-300">{t('states.embedErrorBody')}</p>
+                    {/*
+                      NFR-006 asks for an *actionable* error, not just an accurate one. Before this
+                      button the only way forward was to reload the browser, which also threw away
+                      the room token the API had already granted. Re-entering `connecting` rebuilds
+                      the conference with the SAME access values, so the learner retries the video
+                      without spending another access request.
+                    */}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPhase({ kind: 'connecting', booking: phase.booking, access: phase.access })
+                      }
+                      className="rounded-full bg-campus-emerald-deep px-4 py-2 text-sm font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+                    >
+                      {t('states.retry')}
+                    </button>
                   </>
                 )}
 
@@ -591,7 +617,10 @@ export function LiveClassroomContent({ bookingId = '', roomCode = '' }: LiveClas
                   {booking === null ? t('nav.classFallback') : booking.teacherName}
                 </span>
                 {booking !== null && (
-                  <span className="text-sm text-slate-300">({booking.teacherSchoolLabel})</span>
+                  // `teacherSchoolLabel` is a fixed value from the view mapper, so it is
+                  // translated here rather than rendered raw: it used to print the English
+                  // "Peer student" on the Vietnamese screen.
+                  <span className="text-sm text-slate-300">({t('participants.peerStudent')})</span>
                 )}
               </div>
 
@@ -742,8 +771,11 @@ export function LiveClassroomContent({ bookingId = '', roomCode = '' }: LiveClas
           </div>
         </div>
 
-        {/* Right Column: Participants + Escrow */}
+        {/* Right Column: Participants + Chat + Escrow */}
         <div className="space-y-5 lg:col-span-4">
+          {/* FR-012 (ADR-036): the in-class chat. Rendered only once a real booking is
+              resolved, so the panel never asks the API about an id it does not have. */}
+          {booking !== null && <ChatPanel bookingId={booking.id} />}
           <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white ">
             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3">
               <div className="flex items-center gap-2">
@@ -778,7 +810,7 @@ export function LiveClassroomContent({ bookingId = '', roomCode = '' }: LiveClas
                     {booking === null ? t('participants.teacherFallback') : booking.teacherName}
                   </div>
                   <div className="truncate text-sm text-slate-500">
-                    {booking === null ? '—' : booking.teacherSchoolLabel}
+                    {booking === null ? '—' : t('participants.peerStudent')}
                   </div>
                 </div>
               </li>

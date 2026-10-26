@@ -42,23 +42,37 @@ function message(eventType: string, payload: unknown) {
   return { id: `evt-${eventType}`, eventType, payload };
 }
 
+/** ADR-035: the account that acted. Distinct from `accountId`, which is the subject. */
+const ACTOR = '8a1e0000-0000-4000-8000-000000000b03';
+
+/**
+ * Every audited payload requires an actor now. Adding it here keeps each fixture focused on the
+ * rule it pins, and makes it plain that the actor is a fixed, known account rather than something
+ * derived from the payload.
+ */
+function audited(payload: Record<string, unknown>): Record<string, unknown> {
+  return { actorId: ACTOR, ...payload };
+}
+
 describe('describeAuditedAction', () => {
   it('maps an approved student verification', () => {
     const input = describeAuditedAction(
-      message(AUDITED_EVENT_TYPES.verificationApproved, {
+      message(AUDITED_EVENT_TYPES.verificationApproved, audited({
         verificationId: 'v-1',
         accountId: 'acc-1',
         status: 'approved',
         schoolName: 'Test University',
         reason: null,
         occurredAt: '2026-10-15T00:00:00.000Z',
-      }),
+      })),
     );
 
     expect(input).toMatchObject({
       action: 'student.verification.approved',
       targetType: 'verification',
       targetId: 'v-1',
+      // ADR-035 / AC-032: the row names the Administrator, not the student it is about.
+      actorId: ACTOR,
       newState: { status: 'approved', schoolName: 'Test University', reason: null },
       sourceEventId: 'evt-student.verification.approved',
     });
@@ -67,23 +81,24 @@ describe('describeAuditedAction', () => {
 
   it('maps a rejected verification and keeps the reason', () => {
     const input = describeAuditedAction(
-      message(AUDITED_EVENT_TYPES.verificationRejected, {
+      message(AUDITED_EVENT_TYPES.verificationRejected, audited({
         verificationId: 'v-2',
         accountId: 'acc-2',
         status: 'rejected',
         schoolName: 'Other School',
         reason: 'Illegible document',
         occurredAt: '2026-10-15T00:00:00.000Z',
-      }),
+      })),
     );
 
     expect(input?.action).toBe('student.verification.rejected');
     expect(input?.newState).toMatchObject({ reason: 'Illegible document' });
+    expect(input?.actorId).toBe(ACTOR);
   });
 
   it('maps a skill-evidence decision with its taxonomy context', () => {
     const input = describeAuditedAction(
-      message(AUDITED_EVENT_TYPES.evidenceApproved, {
+      message(AUDITED_EVENT_TYPES.evidenceApproved, audited({
         evidenceId: 'e-1',
         profileSkillId: 'ps-1',
         accountId: 'acc-1',
@@ -94,13 +109,14 @@ describe('describeAuditedAction', () => {
         approvedLevel: 'intermediate',
         reason: null,
         occurredAt: '2026-10-15T00:00:00.000Z',
-      }),
+      })),
     );
 
     expect(input).toMatchObject({
       action: 'skill.evidence.approved',
       targetType: 'skill_evidence',
       targetId: 'e-1',
+      actorId: ACTOR,
       newState: {
         status: 'approved',
         skillId: 'sk-1',
@@ -113,18 +129,19 @@ describe('describeAuditedAction', () => {
 
   it('maps a Verifier suspension and keeps the old→new pair', () => {
     const input = describeAuditedAction(
-      message(AUDITED_EVENT_TYPES.verifierSuspended, {
+      message(AUDITED_EVENT_TYPES.verifierSuspended, audited({
         verifierId: 'vf-1',
         status: 'suspended',
         previousStatus: 'active',
         occurredAt: '2026-10-15T00:00:00.000Z',
-      }),
+      })),
     );
 
     expect(input).toMatchObject({
       action: 'skill.verifier.suspended',
       targetType: 'verifier_account',
       targetId: 'vf-1',
+      actorId: ACTOR,
       oldState: { status: 'active' },
       newState: { status: 'suspended' },
     });
@@ -132,7 +149,7 @@ describe('describeAuditedAction', () => {
 
   it('maps a wallet transaction while keeping money an integer', () => {
     const input = describeAuditedAction(
-      message(AUDITED_EVENT_TYPES.walletTransactionCompleted, {
+      message(AUDITED_EVENT_TYPES.walletTransactionCompleted, audited({
         transactionId: 'tx-1',
         accountId: 'acc-1',
         type: 'booking_payment',
@@ -140,14 +157,42 @@ describe('describeAuditedAction', () => {
         direction: 'debit',
         occurredAt: '2026-10-15T00:00:00.000Z',
         bookingId: 'b-1',
-      }),
+      })),
     );
 
     expect(input?.newState).toMatchObject({ amountCredits: 150000, direction: 'debit' });
+    // ADR-035: the actor is who acted (here the system; for an IPN the provider confirmed it),
+    // and `accountId: 'acc-1'` above is the beneficiary. Conflating them would name the person
+    // whose money moved as the person who authorised the move.
+    expect(input?.actorId).toBe(ACTOR);
+    expect(input?.actorId).not.toBe('acc-1');
     // Never a float, and never converted to VND here — the ledger owns that.
     expect(typeof (input?.newState as Record<string, unknown>).amountCredits).toBe('number');
     expect(Number.isInteger((input?.newState as Record<string, unknown>).amountCredits)).toBe(true);
     expect(input?.metadata).toEqual({ bookingId: 'b-1' });
+  });
+
+  it('maps an account lock to the Administrator, with the reason, never to the subject', () => {
+    const SUBJECT = '8a1e0000-0000-4000-8000-0000000000b2';
+    const input = describeAuditedAction(
+      message(AUDITED_EVENT_TYPES.accountStatusChanged, audited({
+        accountId: SUBJECT,
+        status: 'suspended',
+        previousStatus: 'active',
+        reason: 'Repeated payment fraud',
+        occurredAt: '2026-10-15T00:00:00.000Z',
+      })),
+    );
+
+    // ADR-037 decision 2: the reason is part of the record, so a suspension cannot be an
+    // unexplained administrative act.
+    expect(input?.newState).toEqual({ status: 'suspended', reason: 'Repeated payment fraud' });
+    expect(input?.oldState).toEqual({ status: 'active' });
+    // The act is attributed to the Administrator; the suspended account is the target.
+    expect(input?.actorId).toBe(ACTOR);
+    expect(input?.actorId).not.toBe(SUBJECT);
+    expect(input?.targetType).toBe('account');
+    expect(input?.targetId).toBe(SUBJECT);
   });
 
   it('ignores an event it does not audit', () => {
@@ -160,7 +205,7 @@ describe('describeAuditedAction', () => {
 
   it('never puts a nested value in a snapshot (NFR-005)', () => {
     const input = describeAuditedAction(
-      message(AUDITED_EVENT_TYPES.verificationApproved, {
+      message(AUDITED_EVENT_TYPES.verificationApproved, audited({
         verificationId: 'v-1',
         accountId: 'acc-1',
         status: 'approved',
@@ -169,7 +214,7 @@ describe('describeAuditedAction', () => {
         occurredAt: '2026-10-15T00:00:00.000Z',
         // A field a future payload might gain: it must not appear in the row.
         document: { contents: 'base64…' },
-      }),
+      })),
     );
 
     const snapshot = { ...(input?.newState ?? {}), ...(input?.metadata ?? {}) };
@@ -188,40 +233,56 @@ describe('describeAuditedAction', () => {
       [AUDITED_EVENT_TYPES.verificationApproved]: {
         verificationId: 'v', accountId: 'a', status: 'approved', schoolName: 's',
         reason: null, occurredAt: '2026-10-15T00:00:00.000Z',
+        actorId: ACTOR,
       },
       [AUDITED_EVENT_TYPES.verificationRejected]: {
         verificationId: 'v', accountId: 'a', status: 'rejected', schoolName: 's',
         reason: 'r', occurredAt: '2026-10-15T00:00:00.000Z',
+        actorId: ACTOR,
       },
       [AUDITED_EVENT_TYPES.verificationRevoked]: {
         verificationId: 'v', accountId: 'a', status: 'revoked', schoolName: 's',
         reason: 'r', occurredAt: '2026-10-15T00:00:00.000Z',
+        actorId: ACTOR,
       },
       [AUDITED_EVENT_TYPES.evidenceClaimed]: {
         evidenceId: 'e', profileSkillId: 'ps', accountId: 'a', skillId: 'sk', version: 1,
         requestedLevel: 'beginner', status: 'claimed', occurredAt: '2026-10-15T00:00:00.000Z',
+        actorId: ACTOR,
       },
       [AUDITED_EVENT_TYPES.evidenceApproved]: {
         evidenceId: 'e', profileSkillId: 'ps', accountId: 'a', skillId: 'sk', version: 1,
         requestedLevel: 'beginner', status: 'approved', approvedLevel: 'beginner',
         occurredAt: '2026-10-15T00:00:00.000Z',
+        actorId: ACTOR,
       },
       [AUDITED_EVENT_TYPES.evidenceRejected]: {
         evidenceId: 'e', profileSkillId: 'ps', accountId: 'a', skillId: 'sk', version: 1,
         requestedLevel: 'beginner', status: 'rejected', reason: 'r',
         occurredAt: '2026-10-15T00:00:00.000Z',
+        actorId: ACTOR,
       },
       [AUDITED_EVENT_TYPES.verifierSuspended]: {
         verifierId: 'vf', status: 'suspended', previousStatus: 'active',
         occurredAt: '2026-10-15T00:00:00.000Z',
+        actorId: ACTOR,
       },
       [AUDITED_EVENT_TYPES.verifierRevoked]: {
         verifierId: 'vf', status: 'revoked', previousStatus: 'suspended',
         occurredAt: '2026-10-15T00:00:00.000Z',
+        actorId: ACTOR,
       },
       [AUDITED_EVENT_TYPES.walletTransactionCompleted]: {
         transactionId: 'tx', accountId: 'a', type: 'top_up', amountCredits: 1000,
         direction: 'credit', occurredAt: '2026-10-15T00:00:00.000Z',
+        actorId: ACTOR,
+      },
+      [AUDITED_EVENT_TYPES.accountStatusChanged]: {
+        // The schema genuinely requires UUIDs here (ADR-037), unlike the older loose payloads.
+        accountId: '5e1e0000-0000-4000-8000-0000000000c1', status: 'suspended',
+        previousStatus: 'active', reason: 'r',
+        occurredAt: '2026-10-15T00:00:00.000Z',
+        actorId: ACTOR,
       },
     };
 
@@ -240,12 +301,12 @@ describe('RecordAdminAuditEventUseCase', () => {
     const useCase = new RecordAdminAuditEventUseCase(repository);
 
     const written = await useCase.execute(
-      message(AUDITED_EVENT_TYPES.verifierSuspended, {
+      message(AUDITED_EVENT_TYPES.verifierSuspended, audited({
         verifierId: 'vf-1',
         status: 'suspended',
         previousStatus: 'active',
         occurredAt: '2026-10-15T00:00:00.000Z',
-      }),
+      })),
     );
 
     expect(written).toBe(true);
@@ -270,12 +331,12 @@ describe('RecordAdminAuditEventUseCase', () => {
     const useCase = new RecordAdminAuditEventUseCase(repository);
 
     const written = await useCase.execute(
-      message(AUDITED_EVENT_TYPES.verifierSuspended, {
+      message(AUDITED_EVENT_TYPES.verifierSuspended, audited({
         verifierId: 'vf-1',
         status: 'suspended',
         previousStatus: 'active',
         occurredAt: '2026-10-15T00:00:00.000Z',
-      }),
+      })),
     );
 
     // The repository reported "already present"; that is success, not an error to retry.

@@ -84,7 +84,7 @@ export class GetClassDetailQueryHandler implements GetClassDetailPort {
     // - Available seats > 0
     // - startsAt >= now + 24 hours (exact edge included)
     // - Caller is not the owning teacher
-    // - Caller does not have an active booking: confirmed, completed, disputed, or unexpired pending
+    // - Caller does not have an active booking: confirmed, completed, or unexpired pending
     const isPublished = record.state === 'published';
     const hasAvailableSeats = record.availableSeats > 0;
     const meetsLeadTime = record.startsAt.getTime() >= now.getTime() + BOOKING_LEAD_TIME_MS;
@@ -93,7 +93,6 @@ export class GetClassDetailQueryHandler implements GetClassDetailPort {
       (b) =>
         b.state === 'confirmed' ||
         b.state === 'completed' ||
-        b.state === 'disputed' ||
         (b.state === 'pending' && (b.expiresAt === null || b.expiresAt.getTime() > now.getTime())),
     );
 

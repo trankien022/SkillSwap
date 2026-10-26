@@ -43,6 +43,7 @@ paths follow and `FRONTEND-API-GUIDE.md` for how to call them.
 | `/classes/bookings/:bookingId/confirm` | POST | `lib/booking/http-gateway.ts`, `lib/dashboard/http-gateway.ts` | `infrastructure/http/booking-http-gateway.ts` | |
 | `/classes/bookings/:bookingId/rating` | POST | `lib/dashboard/http-gateway.ts`, `components/dashboard/PostSessionReviewContent.tsx` | `infrastructure/http/rating-gateway.ts` | |
 | `/classes/bookings/:bookingId/room-access` | POST | `lib/classroom/room-access-client.ts` | `infrastructure/http/room-access-gateway.ts` | |
+| `/classes/bookings/:bookingId/messages` | GET, POST | `lib/classroom/chat-client.ts` | — | FR-012 / ADR-036. Read is cursor-paginated (`?limit&cursor`), capped at 100; write is refused outside the class window (`CHAT_WINDOW_CLOSED`) or to a non-party (`CHAT_NOT_A_PARTY`), both 403. Mobile reaches chat through the same web screen: the app opens the room with `Linking.openURL`, so there is no native live screen to mount a panel on. |
 | `/classes/bookings/:bookingId/no-show` | POST | `lib/dashboard/http-gateway.ts` | `infrastructure/http/booking-http-gateway.ts` | |
 
 ### Skill catalogue and evidence — `skill-verification`
@@ -83,8 +84,16 @@ paths follow and `FRONTEND-API-GUIDE.md` for how to call them.
 
 | Route | Method | Web | Mobile | Notes |
 |---|---|---|---|---|
-| `/admin-operation/dashboard` | GET | `lib/verification/http-gateway.ts` | — | Counts only; links on to `/audit-log`. |
+| `/admin-operation/dashboard` | GET | `lib/verification/http-gateway.ts` | — | Counts only; links on to `/audit-log`. Answers on `/operations/dashboard` too (ADR-037). |
 | `/audit-log` | GET | `lib/verification/http-gateway.ts` | — | Admin-only, cursor-paged, filterable. |
+
+### Operations (FR-015 / OQ-015 / ADR-037)
+
+| Route | Method | Web | Mobile | Notes |
+|---|---|---|---|---|
+| `/operations/accounts` | GET | `lib/verification/http-gateway.ts` | — | Admin-only. `status` is a one-value enum (`suspended`); `?status=active` is a 400, not an empty page. |
+| `/operations/accounts/:accountId/suspension` | POST | `lib/verification/http-gateway.ts` | — | Reason **required**; 400 when blank. Audited as `account.status.changed`. |
+| `/operations/accounts/:accountId/reinstatement` | POST | `lib/verification/http-gateway.ts` | — | No body: a reason on a release is rejected, not dropped. |
 
 ### Notifications
 
@@ -115,7 +124,7 @@ These are deliberate, recorded in
   versioned in lock-step. A version segment buys nothing while both clients
   ship with the API.
 - **Booking actions are sub-resources of a booking**, not of a class:
-  `/classes/bookings/:bookingId/{confirm,rating,no-show,room-access}`. This
+  `/classes/bookings/:bookingId/{confirm,rating,no-show,room-access,messages}`. This
   reads oddly next to `/classes/:id/bookings` but is stable and already
   published; the mobile telemetry explicitly refuses to template a booking id
   as a class id.

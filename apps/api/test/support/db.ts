@@ -34,7 +34,11 @@ export async function resetDatabase(harness: Harness): Promise<void> {
   );
   await harness.query(
     'live-class',
-    'TRUNCATE classes, class_skills, bookings, room_access_incidents, teacher_verified, teacher_skill_approval, outbox_messages, processed_events CASCADE',
+    // `chat_messages` (FR-012) is listed explicitly: it carries no foreign key to `classes`
+    // (ADR-014 forbids cross-schema keys, and the denormalised class id is not a constraint),
+    // so a CASCADE from `classes` would not reach it and chat rows would pile up across runs --
+    // making any `total` assertion depend on how often the suite had run before.
+    'TRUNCATE classes, class_skills, bookings, room_access_incidents, teacher_verified, teacher_skill_approval, class_presence, class_reminders, chat_messages, outbox_messages, processed_events CASCADE',
   );
   await harness.query(
     'wallet-ledger',
@@ -47,6 +51,13 @@ export async function resetDatabase(harness: Harness): Promise<void> {
   await harness.query(
     'skill-verification',
     'TRUNCATE skill_evidence, skill_evidence_audit, profile_skills, skills, verified_students, verifier_expertise, verifiers, outbox_messages, processed_events CASCADE',
+  );
+  // FR-015 / ADR-034: the audit log is append-only for the application, but a test reset is
+  // the one caller allowed to empty it — otherwise an assertion like "exactly one audited
+  // replay" would pass or fail depending on how many times the suite had run before.
+  await harness.query(
+    'admin-operation',
+    'TRUNCATE admin_audit_event, outbox_messages, processed_events CASCADE',
   );
 }
 

@@ -19,8 +19,13 @@ import { AdminDashboardDto } from './dto/admin-operation.dto';
  * through that module's published reader, so the screen and the queue behind it cannot disagree.
  *
  * `admin`-only, like the audit log: this is the operational picture of the whole platform.
+ *
+ * **Two paths, one handler.** ADR-034 §7 shipped `GET /admin-operation/dashboard`, and the W6 plan
+ * names the same aggregate `GET /operations/dashboard` because the lock list lands beside it under
+ * `operations/`. Rather than move the route and break clients that already call the shipped path,
+ * the aggregate answers on both. Both routes are the same read, so they cannot disagree.
  */
-@Controller('admin-operation/dashboard')
+@Controller(['admin-operation/dashboard', 'operations/dashboard'])
 @ApiTags('admin-operation')
 @ApiBearerAuth('bearer')
 export class AdminDashboardController {
@@ -33,7 +38,8 @@ export class AdminDashboardController {
   @ApiOperation({ summary: 'The operations dashboard aggregate (FR-015)' })
   @ApiOkResponse({
     type: AdminDashboardDto,
-    description: 'Verification and evidence counts, queue depth by domain, and recent audit events',
+    description:
+      'Verification and evidence counts, queue depth by domain, recent audit events, and suspended accounts',
   })
   read(): Promise<AdminDashboard> {
     return this.dashboard.execute();

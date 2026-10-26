@@ -44,6 +44,7 @@
       "duplicate_booking": "Bạn đã có booking cho lớp này.",
       "self_booking": "Bạn không thể đặt lớp của chính mình.",
       "invalid_duration": "Lớp này có thời lượng không hợp lệ.",
+      "learner_not_verified": "Bạn cần có xác minh sinh viên đã được duyệt trước khi đặt lớp.",
       "unknown": "Đã xảy ra lỗi. Vui lòng thử lại."
     }
   },
@@ -586,10 +587,53 @@
     "exploreCta": "Về trang lớp học"
   },
   "Admin": {
+    "suspendedAccounts": {
+      "title": "Tài khoản bị khóa",
+      "subtitle": "Các tài khoản bị quản trị viên tạm khóa. Lý do và người thực hiện đều được ghi lại.",
+      "loading": "Đang tải danh sách tài khoản bị khóa…",
+      "retry": "Thử lại",
+      "empty": "Hiện không có tài khoản nào bị khóa.",
+      "showing": "Đang hiển thị {shown} trên {total} tài khoản bị khóa.",
+      "status": {
+        "suspended": "Đã khóa"
+      },
+      "reasonLabel": "Lý do:",
+      "sinceLabel": "Từ:",
+      "byLabel": "Người thực hiện:",
+      "byUnknown": "Chưa ghi nhận",
+      "release": "Mở khóa",
+      "confirmRelease": "Mở khóa tài khoản này? Tài khoản sẽ đăng nhập lại được.",
+      "releaseConfirm": "Có, mở khóa",
+      "releasing": "Đang mở khóa…",
+      "cancel": "Hủy",
+      "lockTitle": "Khóa một tài khoản",
+      "lockSubtitle": "Việc khóa bắt buộc phải có lý do, và hành động này được ghi vào nhật ký kiểm định dưới tên bạn.",
+      "accountIdLabel": "Account ID",
+      "reasonLabelInput": "Lý do khóa",
+      "lockCta": "Khóa tài khoản",
+      "locking": "Đang khóa…",
+      "lockSuccess": "Tài khoản đã bị khóa.",
+      "unauthorizedTitle": "Bạn không có quyền xem danh sách tài khoản bị khóa",
+      "unauthorizedBody": "Danh sách này chỉ dành cho quản trị viên. Hãy đăng nhập bằng tài khoản quản trị.",
+      "errors": {
+        "generic": "Không tải được danh sách tài khoản bị khóa. Vui lòng thử lại.",
+        "suspend": "Không khóa được tài khoản này. Vui lòng thử lại.",
+        "release": "Không mở khóa được tài khoản này. Vui lòng thử lại.",
+        "forbidden": "Bạn không được phép thực hiện hành động này. Hãy đăng nhập bằng tài khoản quản trị.",
+        "accountIdRequired": "Vui lòng nhập account ID.",
+        "reasonRequired": "Bắt buộc phải có lý do và không được để trống."
+      }
+    },
+    "operations": {
+      "pageTitle": "Vận hành",
+      "pageSubtitle": "Việc gì đang chờ, việc gì đã xử lý và ai đang bị khóa — trên cùng một trang."
+    },
     "Landing": {
       "title": "Trang quản trị",
       "subtitle": "Chỉ những công cụ đang vận hành thật trên hệ thống mới được mở từ đây.",
       "toolsTitle": "Công cụ vận hành",
+      "operations": "Vận hành",
+      "operationsBody": "Số liệu, hàng đợi và tài khoản bị khóa trên cùng một trang.",
       "studentVerifications": "Duyệt xác minh sinh viên",
       "verifierStatus": "Mở trạng thái Verifier theo Account ID",
       "accountIdPlaceholder": "Nhập Account ID",
@@ -732,7 +776,6 @@
       "actorUnknown": "Người thực hiện: chưa ghi nhận",
       "targetId": "Đối tượng: {id}",
       "stateChange": "Thay đổi: {from} → {to}",
-      "actorGap": "Bộ lọc theo người thực hiện hiện chưa khớp được sự kiện nào: các sự kiện trong nhật ký chưa mang theo id quản trị viên. Các bộ lọc còn lại hoạt động bình thường.",
       "unauthorizedTitle": "Bạn không có quyền truy cập nhật ký kiểm định",
       "unauthorizedBody": "Nhật ký kiểm định chỉ dành cho quản trị viên. Hãy đăng nhập bằng tài khoản quản trị.",
       "filters": {
@@ -757,7 +800,8 @@
         "skillEvidenceRejected": "Từ chối bằng chứng năng lực",
         "skillVerifierSuspended": "Tạm ngưng Verifier",
         "skillVerifierRevoked": "Thu hồi Verifier",
-        "walletTransactionCompleted": "Hoàn tất giao dịch ví"
+        "walletTransactionCompleted": "Hoàn tất giao dịch ví",
+        "accountStatusChanged": "Khóa hoặc mở khóa tài khoản"
       },
       "errors": {
         "generic": "Không thể tải nhật ký kiểm định. Vui lòng thử lại."
@@ -1258,7 +1302,8 @@
       "inCall": "Đang trong phòng",
       "notInCall": "Chưa vào phòng",
       "youLabel": "Bạn",
-      "teacherFallback": "Giảng viên"
+      "teacherFallback": "Giảng viên",
+      "peerStudent": "Sinh viên cùng học"
     },
     "states": {
       "loadingBooking": "Đang tải thông tin buổi học…",
@@ -1270,6 +1315,7 @@
       "connecting": "Đang kết nối phòng học…",
       "embedErrorTitle": "Không mở được phòng học",
       "embedErrorBody": "Không tải được phòng học trực tuyến. Kiểm tra kết nối mạng rồi thử lại.",
+      "retry": "Thử lại",
       "notAParty": {
         "title": "Bạn không thuộc buổi học này",
         "body": "Chỉ học viên đã đặt lớp và giảng viên phụ trách mới vào được phòng học này."
@@ -1300,7 +1346,46 @@
       }
     },
     "chat": {
-      "safetyNotice": "Bảo mật SkillSwap: Mọi tương tác diễn ra trên nền tảng để bảo đảm quyền lợi ký quỹ an toàn và giải quyết khiếu nại học thuật."
+      "safetyNotice": "Bảo mật SkillSwap: Mọi tương tác diễn ra trên nền tảng để bảo đảm quyền lợi ký quỹ an toàn và giải quyết khiếu nại học thuật.",
+      "title": "Trò chuyện lớp học",
+      "total": "{total} tin nhắn",
+      "you": "Bạn",
+      "roles": {
+        "learner": "Học viên",
+        "teacher": "Giảng viên"
+      },
+      "loading": "Đang tải cuộc trò chuyện…",
+      "empty": "Chưa có tin nhắn nào. Hãy chào nhau trước khi lớp bắt đầu.",
+      "loadMore": "Tải tin nhắn cũ hơn",
+      "loadingMore": "Đang tải…",
+      "composerLabel": "Tin nhắn cần gửi",
+      "composerPlaceholder": "Viết tin nhắn…",
+      "send": "Gửi",
+      "sending": "Đang gửi…",
+      "counter": "{length} / {max} ký tự",
+      "unavailableTitle": "Chưa mở được trò chuyện",
+      "denials": {
+        "CHAT_NOT_A_PARTY": "Bạn không thuộc buổi học này nên không mở được cuộc trò chuyện.",
+        "CHAT_WINDOW_CLOSED": "Trò chuyện mở trước giờ học 15 phút và đóng khi buổi học kết thúc.",
+        "booking_not_confirmed": "Buổi học chưa được xác nhận nên chưa có cuộc trò chuyện để đọc.",
+        "BookingNotFoundError": "Buổi học này không còn tồn tại.",
+        "HTTP_401": "Vui lòng đăng nhập lại để mở trò chuyện.",
+        "HTTP_403": "Bạn không thuộc buổi học này nên không mở được cuộc trò chuyện.",
+        "HTTP_404": "Buổi học này không còn tồn tại.",
+        "HTTP_409": "Hiện chưa mở trò chuyện cho lớp này.",
+        "UNAVAILABLE": "Không tải được cuộc trò chuyện. Vui lòng thử lại."
+      },
+      "sendErrors": {
+        "CHAT_WINDOW_CLOSED": "Trò chuyện của lớp đã đóng nên tin nhắn chưa được gửi. Nội dung vẫn còn trong ô soạn.",
+        "CHAT_MESSAGE_INVALID": "Hãy nhập nội dung trước khi gửi.",
+        "CHAT_NOT_A_PARTY": "Bạn không thuộc buổi học này.",
+        "BookingNotFoundError": "Buổi học này không còn tồn tại.",
+        "HTTP_401": "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để gửi.",
+        "HTTP_403": "Bạn không thuộc buổi học này.",
+        "HTTP_404": "Buổi học này không còn tồn tại.",
+        "HTTP_409": "Hiện chưa mở trò chuyện cho lớp này.",
+        "UNAVAILABLE": "Tin nhắn chưa được gửi. Nội dung vẫn còn trong ô soạn — vui lòng thử lại."
+      }
     },
     "escrow": {
       "title": "Ký quỹ Bảo chứng - Escrow Active",
@@ -1574,9 +1659,6 @@
       "couldNotStartTheClass": "Không bắt đầu được lớp",
       "classStarted": "Đã bắt đầu lớp học.",
       "thisClassWasAlreadyStarted": "Lớp này đã bắt đầu trước đó.",
-      "couldNotCompleteTheClass": "Không hoàn thành được lớp",
-      "classCompletedEarningsHaveBeenReleased": "Đã hoàn thành lớp. Doanh thu đã được giải ngân vào ví.",
-      "thereIsNothingLeftToComplete": "Lớp này không còn gì để hoàn thành.",
       "couldNotSaveChanges": "Không lưu được thay đổi",
       "changesSaved": "Đã lưu thay đổi.",
       "errorundefined": "Lỗi: ",

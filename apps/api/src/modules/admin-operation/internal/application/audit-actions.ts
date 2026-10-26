@@ -1,4 +1,5 @@
 import {
+  accountStatusChangedSchema,
   skillEvidenceEventSchema,
   studentVerificationEventSchema,
   verifierStatusChangedSchema,
@@ -39,6 +40,9 @@ export const AUDITED_EVENT_TYPES = {
   verifierSuspended: 'skill.verifier.suspended',
   verifierRevoked: 'skill.verifier.revoked',
   walletTransactionCompleted: 'wallet.transaction.completed',
+  // FR-015 / ADR-037 decision 2: a lock is a privileged act by a person, so it is audited under
+  // the same rule ADR-035 §1 established. Effects of time stay out; administrator actions do not.
+  accountStatusChanged: 'account.status.changed',
 } as const;
 
 /** Every event type this module subscribes to, derived from the table above so they cannot drift. */
@@ -54,9 +58,9 @@ export function describeAuditedAction(message: AuditableMessage): AdminAuditEven
     case AUDITED_EVENT_TYPES.verificationRevoked: {
       const event = studentVerificationEventSchema.parse(payload);
       return {
-        // The event carries no actor: an administrator's id is not in this payload. Recorded as
-        // null rather than guessed — see the ADR-034 consequence note on actor attribution.
-        actorId: null,
+        // ADR-035: the Administrator who decided, carried on the event by the emitter. Rows
+        // written before ADR-035 have null here; that seam is deliberate (C3, no backfill).
+        actorId: event.actorId,
         action: eventType,
         targetType: 'verification',
         targetId: event.verificationId,
@@ -79,7 +83,8 @@ export function describeAuditedAction(message: AuditableMessage): AdminAuditEven
     case AUDITED_EVENT_TYPES.evidenceRejected: {
       const event = skillEvidenceEventSchema.parse(payload);
       return {
-        actorId: null,
+        // ADR-035: the account that acted — the submitter, the claimant, or the decider.
+        actorId: event.actorId,
         action: eventType,
         targetType: 'skill_evidence',
         targetId: event.evidenceId,
@@ -104,7 +109,9 @@ export function describeAuditedAction(message: AuditableMessage): AdminAuditEven
     case AUDITED_EVENT_TYPES.verifierRevoked: {
       const event = verifierStatusChangedSchema.parse(payload);
       return {
-        actorId: null,
+        // ADR-035: the Administrator who demoted them. `targetId` is the Verifier; this is
+        // the person who acted, and they are deliberately different accounts.
+        actorId: event.actorId,
         action: eventType,
         targetType: 'verifier_account',
         targetId: event.verifierId,
@@ -122,7 +129,9 @@ export function describeAuditedAction(message: AuditableMessage): AdminAuditEven
     case AUDITED_EVENT_TYPES.walletTransactionCompleted: {
       const event = walletTransactionCompletedEventSchema.parse(payload);
       return {
-        actorId: null,
+        // ADR-035: usually SYSTEM_ACTOR_ID (a settlement), never the beneficiary — that is
+        // `event.accountId`, which stays in the payload and is not the actor.
+        actorId: event.actorId,
         action: eventType,
         targetType: 'wallet_transaction',
         targetId: event.transactionId,
@@ -137,6 +146,27 @@ export function describeAuditedAction(message: AuditableMessage): AdminAuditEven
         occurredAt: new Date(event.occurredAt),
         traceId: null,
         metadata: event.bookingId === undefined ? null : { bookingId: event.bookingId },
+        sourceEventId,
+      };
+    }
+
+    // --- FR-015 / ADR-037: Administrator locks or unlocks an account ---------
+    case AUDITED_EVENT_TYPES.accountStatusChanged: {
+      const event = accountStatusChangedSchema.parse(payload);
+      return {
+        // ADR-035: the Administrator who acted. `targetId` is the account they suspended, and
+        // attributing this act to its subject is the exact mistake this row exists to prevent.
+        actorId: event.actorId,
+        action: eventType,
+        targetType: 'account',
+        targetId: event.accountId,
+        oldState: { status: event.previousStatus },
+        // ADR-037 decision 2: the reason is part of the record. A suspension whose reason was
+        // dropped would let an Administrator be held to an act they cannot explain.
+        newState: { status: event.status, reason: event.reason },
+        occurredAt: new Date(event.occurredAt),
+        traceId: null,
+        metadata: null,
         sourceEventId,
       };
     }

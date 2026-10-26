@@ -34,3 +34,30 @@ Two decisions shape the increment: where the video service runs, and how access 
 - Use case: a party within the window gets a token; an outsider/closed window is refused; an issuer failure yields 503 + a persisted incident.
 - Compose: `docker compose config` validates; Jitsi services are present with JWT auth env.
 - Architecture tests stay green.
+
+---
+
+## Amendment A (2026-10-26) — inbound presence feed
+
+**Context.** AC-035 lets a class complete once everybody has left the room for a grace period, which needs the server to know who is in the room. Until now nothing inbound ever told the API that. This amendment records how that feed is trusted and what a payload is allowed to affect.
+
+**Decision.**
+
+1. **Presence arrives by webhook, authenticated by a shared secret header** (`x-jitsi-webhook-secret`, served at `POST /api/internal/jitsi/presence`). Not by source IP: self-hosted Jitsi may sit behind any proxy, so an allow-list would be fragile and would provide no real assurance. If the secret is unset the endpoint refuses **every** request, so a misconfigured deployment cannot have its classes closed by outsiders.
+2. **Occupancy is party-only.** An event is applied only when the room name resolves through `roomName()` to a real class **and** the occupant id is that class's Teacher or a learner holding a confirmed booking. Anyone else is acknowledged and ignored — a stranger who guesses a room name must not be able to keep a class looking occupied, nor to be the last departure that completes it.
+3. **Identity comes from the token, not the display name.** The occupant is the `context.user.id` claim of the token issued at `request-room-access`, which is why two participants cannot be confused with each other.
+4. **Sessions, not a boolean.** `class_presence` holds one row per participation session (`joined_at`, `left_at`, null while present), with a partial unique index allowing one open session per (class, participant). A redelivered join is a no-op; a leave with nothing open is ignored rather than invented; a re-join correctly makes the room occupied again.
+5. **A webhook is always acknowledged.** Well-formed events return 200 even when they change nothing, because a non-2xx makes Jitsi retry an event that will never become valid. A malformed body also returns 200 with `accepted: false`.
+6. **Missing data is unknown, never empty.** If the feed is down, no rows are written, and the idle rule declines to fire; classes fall back to `scheduled_end`.
+
+**Consequences.**
+
+- (+) Early completion rests on evidence the server holds, not on a caller's claim — which also closes AC-024: the no-show decision now reads the Teacher's first join from `class_presence` instead of accepting `teacherJoinedAt: null`.
+- (−) Presence is only as good as the Jitsi webhook integration; the self-hosted stack needs `event_sync` configured with the shared secret. Until that is installed in a given environment, every class completes on `scheduled_end` — the documented degradation, not a gap.
+- (−) Room tokens are short-lived (ADR-020 §4), so a participant may legitimately have no presence row if their join event was missed; that under-reports presence, which can delay an idle completion but cannot cause an early one.
+
+**Verification.**
+- Domain: `evaluateRoomIdle` truth table, including before-`starts_at` (always false, even with zero participants), teacher-left-but-learner-stayed, and unknown presence.
+- Controller: missing, wrong, prefix-matching and unconfigured secrets all refuse; unknown rooms and malformed bodies change nothing.
+- Use case and E2E: a stranger's join/leave leaves no row; redelivered events are idempotent; an idle room completes with `room_idle` and releases the Teacher's income; an occupied room, an unstarted class and a silent feed all do not.
+- CI (added 2026-10-26, after a real CI failure): the workflow exports `JITSI_WEBHOOK_SECRET`, because CI copies `.env.example`, where the secret is deliberately blank — without the export every webhook is refused and the room-idle suites fail. The E2E specs no longer fall back to a guessed secret: an unset one now fails with a message naming the variable, since a guess signs requests with a value the server never loaded and turns one configuration error into nine confusing 401s.

@@ -74,6 +74,5 @@ describe('toPresentationState', () => {
   it('passes the terminal backend states straight through', () => {
     expect(toPresentationState(item({ state: 'completed' }))).toBe('completed');
     expect(toPresentationState(item({ state: 'cancelled' }))).toBe('cancelled');
-    expect(toPresentationState(item({ state: 'disputed' }))).toBe('no_show_reported');
   });
 });

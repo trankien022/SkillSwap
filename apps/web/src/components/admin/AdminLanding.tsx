@@ -113,6 +113,14 @@ export function AdminLanding() {
         <h2 className="text-sm font-semibold text-slate-700">{t('toolsTitle')}</h2>
 
         <a
+          href={`/${locale}/operations`}
+          className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-emerald-300"
+        >
+          <h3 className="text-sm font-semibold text-slate-900">{t('operations')}</h3>
+          <p className="mt-1 text-xs leading-relaxed text-slate-600">{t('operationsBody')}</p>
+        </a>
+
+        <a
           href={`/${locale}/admin/student-verifications`}
           className="rounded-2xl border border-slate-200 bg-white p-5 transition-colors hover:border-emerald-300"
         >

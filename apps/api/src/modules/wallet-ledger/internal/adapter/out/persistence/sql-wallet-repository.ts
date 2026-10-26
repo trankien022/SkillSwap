@@ -83,14 +83,30 @@ export class SqlWalletRepository implements WalletRepository {
     return { availableCredits: row.available_credits, pendingCredits: row.pending_credits };
   }
 
+  /**
+   * FR-008 / FR-016: applies a settled (or reversed) top-up.
+   *
+   * The ledger row, the balance change and the `wallet.transaction.completed` event are written in
+   * **one** transaction, exactly as `settleBooking` does. Until this was fixed the top-up wrote the
+   * ledger and the balance but emitted nothing, so `account-profile.notification-wallet-completed`
+   * never fired for a top-up: a learner's money arrived silently. The booking path had the event
+   * and the top-up path did not, which is precisely the kind of asymmetry a trace walkthrough
+   * catches and a unit test does not.
+   *
+   * A **reversal** (`direction: 'debit'`) deliberately emits nothing. The schema has no
+   * reversal type, and an invoice number produces at most one settlement — so there is no
+   * credit to pair it with, and inventing a type here would be inventing a contract. Recorded in
+   * the W9 R4 runbook rather than left as a silent gap.
+   */
   async applyTopUp(request: ApplyTopUpRequest): Promise<WalletBalance> {
     const source = this.registry.get(this.moduleName);
     const delta = request.direction === 'credit' ? request.amountCredits : -request.amountCredits;
     return source.transaction(async (manager) => {
-      await manager.query(
+      const inserted = await manager.query(
         `INSERT INTO ${this.ledgerTable}
            ("booking_id", "teacher_id", "amount_credits", "direction", "entry_type", "owner_id", "reference_id", "trace_id")
-         VALUES (NULL, $1, $2, $3, $4, $1, $5, $6)`,
+         VALUES (NULL, $1, $2, $3, $4, $1, $5, $6)
+         RETURNING "id", "created_at"`,
         [
           request.ownerId,
           request.amountCredits,
@@ -109,6 +125,36 @@ export class SqlWalletRepository implements WalletRepository {
         [request.ownerId, delta],
       )) as BalanceRow[];
       const row = rows[0];
+
+      if (request.direction === 'credit') {
+        // The ledger row is the durable identity, exactly as in settleBooking: the transaction id
+        // in the event IS the ledger id, so a consumer can always find the money it was told about.
+        const ledgerRows = returnedRows<{ id: string | number; created_at: Date | string }>(inserted);
+        const ledgerRow = ledgerRows[0];
+        if (ledgerRow === undefined) {
+          throw new Error('Failed to insert top-up ledger entry');
+        }
+        const occurredAt = (
+          ledgerRow.created_at instanceof Date ? ledgerRow.created_at : new Date(ledgerRow.created_at)
+        ).toISOString();
+
+        // ADR-035 Amendment A: parse before writing, so a payload that cannot satisfy the contract
+        // fails inside this transaction rather than becoming a dead letter after the credit lands.
+        const payload = walletTransactionCompletedEventSchema.parse({
+          transactionId: String(ledgerRow.id),
+          accountId: request.ownerId,
+          type: 'top_up',
+          amountCredits: request.amountCredits,
+          direction: 'credit',
+          occurredAt,
+          actorId: request.actorId,
+        });
+        await manager.query(insertOutboxStatement(this.schema), [
+          WALLET_TRANSACTION_COMPLETED_EVENT,
+          payload,
+        ]);
+      }
+
       return { availableCredits: row.available_credits, pendingCredits: row.pending_credits };
     });
   }
@@ -165,6 +211,7 @@ export class SqlWalletRepository implements WalletRepository {
             direction: 'debit',
             occurredAt,
             bookingId: request.bookingId,
+            actorId: request.actorId,
           });
           await manager.query(insertOutboxStatement(this.schema), [
             WALLET_TRANSACTION_COMPLETED_EVENT,
@@ -252,6 +299,7 @@ export class SqlWalletRepository implements WalletRepository {
         direction: 'debit',
         occurredAt,
         bookingId: request.bookingId,
+        actorId: request.actorId,
       });
 
       await manager.query(insertOutboxStatement(this.schema), [

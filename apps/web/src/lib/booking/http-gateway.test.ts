@@ -95,7 +95,14 @@ describe('HttpBookingGateway', () => {
     expect(result.created).toBe(false);
   });
 
-  it.each(['class_full', 'duplicate_booking', 'self_booking', 'booking_window_closed'])(
+  it.each([
+    'class_full',
+    'duplicate_booking',
+    'self_booking',
+    'booking_window_closed',
+    // AC-034 / BR-001: the trust gate must reach the UI as a translated reason.
+    'learner_not_verified',
+  ])(
     'maps the backend code %s onto the matching BookingError reason',
     async (code) => {
       vi.stubGlobal(

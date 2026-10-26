@@ -1,8 +1,11 @@
 import {
+  accountLockResultSchema,
   adminDashboardSchema,
   adminVerificationPageSchema,
   adminVerifierQueuePageSchema,
   auditLogPageSchema,
+  suspendAccountSchema,
+  suspendedAccountsPageSchema,
   verifierSchema,
   verifierStatusChangeSchema,
   verifierQueuePageSchema,
@@ -11,10 +14,13 @@ import {
   verificationDecisionSchema,
   verificationRevocationSchema,
   studentVerificationSchema,
+  type AccountLockResult,
   type AdminDashboard,
   type AdminVerificationPage,
   type AdminVerifierQueuePage,
   type AuditLogPage,
+  type SuspendAccountInput,
+  type SuspendedAccountsPage,
   type VerifierStatusChangeInput,
   type VerifierView,
   type VerifierQueuePage,
@@ -293,6 +299,74 @@ export class HttpVerificationGateway {
 
     const body = (await res.json().catch(() => null)) as { data?: unknown } | null;
     return adminDashboardSchema.parse(body?.data);
+  }
+
+  // ---------------------------------------------------------------------------
+  // FR-015 / OQ-015 / ADR-037: the admin-initiated account lock.
+  //
+  // `status` is fixed to `suspended` in the call rather than exposed as an option:
+  // the route answers nothing else, and a caller that could pass it could pass
+  // `active` and read the resulting empty page as "nobody is locked".
+  // ---------------------------------------------------------------------------
+
+  /** GET /operations/accounts — the account-lock list. */
+  async listSuspendedAccounts(query: { limit?: number; cursor?: string } = {}): Promise<SuspendedAccountsPage> {
+    // `status` is set here rather than exposed: the route answers nothing but suspensions,
+    // and a caller that could pass `active` would get an empty page it might read as
+    // "nobody is locked" (see the contract's one-value enum).
+    const params = new URLSearchParams({ status: 'suspended' });
+    if (query.limit !== undefined) params.set('limit', String(query.limit));
+    if (query.cursor) params.set('cursor', query.cursor);
+
+    const res = await callApi(`/operations/accounts?${params.toString()}`);
+    if (res.status === 401 || res.status === 403) throw new AdminAuthError();
+    if (!res.ok) {
+      throw new Error(await readErrorMessage(res, 'Could not load suspended accounts'));
+    }
+
+    const body = (await res.json().catch(() => null)) as { data?: unknown } | null;
+    return suspendedAccountsPageSchema.parse(body?.data);
+  }
+
+  /**
+   * POST /operations/accounts/{id}/suspension — lock an account.
+   *
+   * The reason is validated against the shared schema before the request leaves the
+   * browser, so a blank form is an inline error rather than a 400 the Administrator
+   * has to decode. A blank is the one refusal ADR-037 makes here: a lock nobody can
+   * explain cannot be reviewed later.
+   */
+  async suspendAccount(accountId: string, input: SuspendAccountInput): Promise<AccountLockResult> {
+    if (!accountId.trim()) throw new Error('Account id is required');
+    const payload = suspendAccountSchema.parse(input);
+
+    const res = await callApi(`/operations/accounts/${encodeURIComponent(accountId.trim())}/suspension`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    if (res.status === 401 || res.status === 403) throw new AdminAuthError();
+    if (!res.ok) throw new Error(await readErrorMessage(res, 'Could not suspend this account'));
+
+    const body = (await res.json().catch(() => null)) as { data?: unknown } | null;
+    return accountLockResultSchema.parse(body?.data);
+  }
+
+  /** POST /operations/accounts/{id}/reinstatement — release a lock. */
+  async reinstateAccount(accountId: string): Promise<AccountLockResult> {
+    if (!accountId.trim()) throw new Error('Account id is required');
+
+    // No body: a reason describes a suspension, and ADR-037 rejects one here rather
+    // than silently dropping it.
+    const res = await callApi(`/operations/accounts/${encodeURIComponent(accountId.trim())}/reinstatement`, {
+      method: 'POST',
+    });
+
+    if (res.status === 401 || res.status === 403) throw new AdminAuthError();
+    if (!res.ok) throw new Error(await readErrorMessage(res, 'Could not reinstate this account'));
+
+    const body = (await res.json().catch(() => null)) as { data?: unknown } | null;
+    return accountLockResultSchema.parse(body?.data);
   }
 }
 

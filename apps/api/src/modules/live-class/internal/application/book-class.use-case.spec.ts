@@ -7,7 +7,8 @@ import type {
 } from './port/out/booking-repository';
 import type { ClassRepository, CreateClassRecord, PersistedClass } from './port/out/class-repository';
 import type { Clock } from './port/out/clock';
-import { BookingNotAllowedError } from '../domain/booking';
+import type { AccountTrustReader } from './port/out/account-trust';
+import { BookingNotAllowedError, LearnerNotVerifiedError } from '../domain/booking';
 
 const NOW = new Date('2026-10-08T00:00:00.000Z');
 const HOUR = 60 * 60 * 1000;
@@ -31,6 +32,8 @@ function setup(options: {
   classView?: PersistedClass | null;
   seatRows?: BookingSeatRow[];
   replay?: PersistedBooking | null;
+  /** AC-034 / BR-001: which accounts hold an effective approved verification. */
+  verifications?: Record<string, boolean>;
 } = {}) {
   const classView = options.classView === undefined ? persistedClass() : options.classView;
   const classes: ClassRepository = {
@@ -46,6 +49,10 @@ function setup(options: {
     completeAndEmit: jest.fn(async () => ({ completed: false, bookingIds: [] })),
     cancelWithReason: jest.fn(async () => ({ cancelled: false })),
     findAwaitingCompletion: jest.fn(async () => []),
+    findInProgressBeforeEnd: jest.fn(async () => []),
+    // FR-016 (W3): not exercised here; present so this mock stays a whole ClassRepository.
+    findAwaitingReminder: jest.fn(async () => []),
+    claimReminderAndEmit: jest.fn(async () => ({ reminded: false, participants: 0 })),
   };
 
   const bookings: BookingRepository = {
@@ -79,10 +86,108 @@ function setup(options: {
   };
 
   const clock: Clock = { now: () => NOW };
-  return { useCase: new BookClassUseCase(classes, bookings, clock), classes, bookings };
+  // AC-034 / BR-001: the booking gate reads the trust projection, not a claim.
+  const verifications = options.verifications ?? { 'learner-1': true };
+  const teacherTrust: AccountTrustReader = {
+    read: jest.fn(async (accountId: string) => ({
+      verified: verifications[accountId] ?? false,
+      approvedLevel: () => null,
+    })),
+  };
+  return {
+    useCase: new BookClassUseCase(classes, bookings, clock, teacherTrust),
+    classes,
+    bookings,
+    teacherTrust,
+  };
 }
 
 describe('BookClassUseCase', () => {
+  // ── AC-034 / BR-001 (decided 2026-10-25): verified students only ──────────
+  describe('booking trust gate (AC-034 / BR-001)', () => {
+    it('refuses an account with no approved student verification', async () => {
+      const { useCase } = setup({ verifications: { 'learner-1': false } });
+
+      await expect(
+        useCase.execute({ classId: 'cls-1', learnerId: 'learner-1', idempotencyKey: 'key-1' }),
+      ).rejects.toBeInstanceOf(LearnerNotVerifiedError);
+    });
+
+    it('leaves no booking row, no seat hold and no credit movement behind', async () => {
+      // The gate is on *booking*, not on confirmation, so a rejection must not
+      // reach the write at all — otherwise a `pending` hold would occupy a seat
+      // and a checkout could still be started for it.
+      const { useCase, bookings } = setup({ verifications: { 'learner-1': false } });
+
+      await expect(
+        useCase.execute({ classId: 'cls-1', learnerId: 'learner-1', idempotencyKey: 'key-1' }),
+      ).rejects.toBeInstanceOf(LearnerNotVerifiedError);
+
+      expect(bookings.createWithSeatGuard).not.toHaveBeenCalled();
+      expect(bookings.confirmAndEmit).not.toHaveBeenCalled();
+    });
+
+    it('treats a missing projection row as unverified', async () => {
+      // A brand-new account has never had a `student.verification.*` event, so
+      // the projection has no row. Absence must fail closed.
+      const { useCase, bookings } = setup({ verifications: {} });
+
+      await expect(
+        useCase.execute({ classId: 'cls-1', learnerId: 'learner-1', idempotencyKey: 'key-1' }),
+      ).rejects.toBeInstanceOf(LearnerNotVerifiedError);
+      expect(bookings.createWithSeatGuard).not.toHaveBeenCalled();
+    });
+
+    it('carries the stable `learner_not_verified` reason code', async () => {
+      const { useCase } = setup({ verifications: { 'learner-1': false } });
+
+      try {
+        await useCase.execute({ classId: 'cls-1', learnerId: 'learner-1', idempotencyKey: 'key-1' });
+        throw new Error('expected the booking to be refused');
+      } catch (error: unknown) {
+        expect(error).toBeInstanceOf(LearnerNotVerifiedError);
+        expect((error as LearnerNotVerifiedError).reason).toBe('learner_not_verified');
+      }
+    });
+
+    it('lets a verified account book', async () => {
+      const { useCase } = setup({ verifications: { 'learner-1': true } });
+
+      const result = await useCase.execute({
+        classId: 'cls-1',
+        learnerId: 'learner-1',
+        idempotencyKey: 'key-1',
+      });
+
+      expect(result.created).toBe(true);
+    });
+
+    it('does not re-gate an idempotent replay of a booking made before revocation', async () => {
+      // A replay returns the booking that already exists; it is not a new attempt.
+      // Gate-on-booking, decided 2026-10-25: only *new* bookings are refused.
+      const replay: PersistedBooking = {
+        id: 'bkg-old',
+        classId: 'cls-1',
+        learnerId: 'learner-1',
+        state: 'pending',
+        priceCredits: 100,
+        idempotencyKey: 'key-1',
+        createdAt: NOW,
+        expiresAt: new Date(NOW.getTime() + 15 * 60 * 1000),
+      };
+      const { useCase } = setup({ replay, verifications: { 'learner-1': false } });
+
+      const result = await useCase.execute({
+        classId: 'cls-1',
+        learnerId: 'learner-1',
+        idempotencyKey: 'key-1',
+      });
+
+      expect(result.created).toBe(false);
+      expect(result.booking.bookingId).toBe('bkg-old');
+    });
+  });
+
   it('creates a pending booking holding a seat', async () => {
     const { useCase, bookings } = setup();
     const result = await useCase.execute({

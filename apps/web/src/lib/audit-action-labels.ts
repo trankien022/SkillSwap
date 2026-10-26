@@ -29,6 +29,7 @@ export const AUDITED_ACTIONS = [
   'skill.verifier.suspended',
   'skill.verifier.revoked',
   'wallet.transaction.completed',
+  'account.status.changed',
 ] as const;
 
 /** Dotted wire identifier → flat camelCase key under the `Admin.auditLog.action` namespace. */
@@ -42,4 +43,5 @@ export const ACTION_MESSAGE_KEY: Record<string, string> = {
   'skill.verifier.suspended': 'skillVerifierSuspended',
   'skill.verifier.revoked': 'skillVerifierRevoked',
   'wallet.transaction.completed': 'walletTransactionCompleted',
+  'account.status.changed': 'accountStatusChanged',
 };

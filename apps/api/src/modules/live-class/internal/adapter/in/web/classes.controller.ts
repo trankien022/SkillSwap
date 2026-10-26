@@ -39,18 +39,12 @@ import {
   type StartClassPort,
   type StartClassResult,
 } from '../../../application/port/in/start-class';
-import {
-  COMPLETE_CLASS,
-  type CompleteClassPort,
-  type CompleteClassResult,
-} from '../../../application/port/in/complete-class';
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
 import {
   BookClassResultDto,
   BookingRequestDto,
   CancelClassResultDto,
   ClassDto,
-  CompleteClassResultDto,
   ConfirmBookingResultDto,
   CreateClassDto,
   MarkTeacherNoShowResultDto,
@@ -73,7 +67,6 @@ export class ClassesController {
     @Inject(MARK_TEACHER_NO_SHOW) private readonly markNoShow: MarkTeacherNoShowPort,
     @Inject(REQUEST_ROOM_ACCESS) private readonly roomAccess: RequestRoomAccessPort,
     @Inject(START_CLASS) private readonly startClass: StartClassPort,
-    @Inject(COMPLETE_CLASS) private readonly completeClass: CompleteClassPort,
   ) {}
 
   @Post()
@@ -152,8 +145,9 @@ export class ClassesController {
   @ApiOperation({ summary: 'Mark a teacher no-show for a booking (FR-007 / AC-024)' })
   @ApiOkResponse({ type: MarkTeacherNoShowResultDto, description: 'Whether the booking was cancelled for no-show' })
   noShow(@Param('bookingId') bookingId: string): Promise<MarkTeacherNoShowResult> {
-    // Join evidence comes from FR-011 room access; until then a null join is assumed.
-    return this.markNoShow.execute({ bookingId, teacherJoinedAt: null });
+    // AC-024 / AC-035: join evidence comes from `class_presence`, so the caller supplies
+    // nothing. A Learner pressing this can no longer assert an absence that did not happen.
+    return this.markNoShow.execute({ bookingId });
   }
 
   @Post('bookings/:bookingId/room-access')
@@ -182,15 +176,7 @@ export class ClassesController {
     return this.startClass.execute({ classId, teacherId: currentUserId(request) });
   }
 
-  @Post(':id/complete')
-  @HttpCode(HttpStatus.OK)
-  @ApiParam({ name: 'id', description: 'The class id' })
-  @ApiOperation({ summary: 'End a class the teacher held (FR-020 / ADR-021)' })
-  @ApiOkResponse({ type: CompleteClassResultDto, description: 'Whether the class completed and on what basis' })
-  complete(
-    @Param('id') classId: string,
-    @Req() request: RequestWithIdentity,
-  ): Promise<CompleteClassResult> {
-    return this.completeClass.execute({ classId, teacherId: currentUserId(request) });
-  }
+  // ADR-021 Amendment A / AC-035: there is deliberately no teacher-initiated
+  // "complete" route. A class ends when the scheduled time elapses (or, later,
+  // when the room stays empty past the grace period); a Teacher cannot end it.
 }

@@ -57,9 +57,9 @@ describe('E2E: evidence decision history (FR-018)', () => {
   it('shows both versions with decisions and the supersession', async () => {
     const skillId = await seedSkill(harness, { name: 'Rust', category: 'Programming' });
     const learnerId = await registerLearner('fr18-owner@skillswap.test');
-    await verifyStudent(learnerId, 'admin-fr18-1');
+    await verifyStudent(learnerId, '4b1d0000-0000-4000-8000-00000000b101');
     await waitVerified(learnerId);
-    await seedVerifier(harness, { accountId: 'vf-rust', expertise: [skillId] });
+    await seedVerifier(harness, { accountId: '4b1d0000-0000-4000-8000-00000000a101', expertise: [skillId] });
 
     // v1: submit → reject.
     api.actAs(learnerId, 'user');
@@ -70,7 +70,7 @@ describe('E2E: evidence decision history (FR-018)', () => {
       documentRef: 'docs/rust-1.pdf',
     });
     expect(v1.status).toBe(201);
-    api.actAs('vf-rust', 'verifier');
+    api.actAs('4b1d0000-0000-4000-8000-00000000a101', 'verifier');
     await api.post(`/api/skill-evidence/${v1.json.id}/claim`);
     const rejected = await api.post(`/api/skill-evidence/${v1.json.id}/decision`, {
       decision: 'reject',
@@ -87,7 +87,7 @@ describe('E2E: evidence decision history (FR-018)', () => {
       documentRef: 'docs/rust-2.pdf',
     });
     expect(v2.json.version).toBe(2);
-    api.actAs('vf-rust', 'verifier');
+    api.actAs('4b1d0000-0000-4000-8000-00000000a101', 'verifier');
     await api.post(`/api/skill-evidence/${v2.json.id}/claim`);
     const approved = await api.post(`/api/skill-evidence/${v2.json.id}/decision`, {
       decision: 'approve',
@@ -123,9 +123,9 @@ describe('E2E: evidence decision history (FR-018)', () => {
   it('supersedes a prior approval and records it in history (AC-016)', async () => {
     const skillId = await seedSkill(harness, { name: 'Go', category: 'Programming' });
     const learnerId = await registerLearner('fr18-supersede@skillswap.test');
-    await verifyStudent(learnerId, 'admin-fr18-2');
+    await verifyStudent(learnerId, '4b1d0000-0000-4000-8000-00000000b102');
     await waitVerified(learnerId);
-    await seedVerifier(harness, { accountId: 'vf-go', expertise: [skillId] });
+    await seedVerifier(harness, { accountId: '4b1d0000-0000-4000-8000-00000000a102', expertise: [skillId] });
 
     // v1 approved at intermediate.
     api.actAs(learnerId, 'user');
@@ -135,7 +135,7 @@ describe('E2E: evidence decision history (FR-018)', () => {
       evidenceType: 'certificate',
       documentRef: 'docs/go-1.pdf',
     });
-    api.actAs('vf-go', 'verifier');
+    api.actAs('4b1d0000-0000-4000-8000-00000000a102', 'verifier');
     await api.post(`/api/skill-evidence/${v1.json.id}/claim`);
     await api.post(`/api/skill-evidence/${v1.json.id}/decision`, { decision: 'approve' });
 
@@ -147,7 +147,7 @@ describe('E2E: evidence decision history (FR-018)', () => {
       evidenceType: 'certificate',
       documentRef: 'docs/go-2.pdf',
     });
-    api.actAs('vf-go', 'verifier');
+    api.actAs('4b1d0000-0000-4000-8000-00000000a102', 'verifier');
     await api.post(`/api/skill-evidence/${v2.json.id}/claim`);
     const approve2 = await api.post(`/api/skill-evidence/${v2.json.id}/decision`, {
       decision: 'approve',
@@ -166,7 +166,7 @@ describe('E2E: evidence decision history (FR-018)', () => {
   it('refuses an unrelated account reading the history', async () => {
     const skillId = await seedSkill(harness, { name: 'Swift', category: 'Programming' });
     const learnerId = await registerLearner('fr18-private@skillswap.test');
-    await verifyStudent(learnerId, 'admin-fr18-3');
+    await verifyStudent(learnerId, '4b1d0000-0000-4000-8000-00000000b103');
     await waitVerified(learnerId);
 
     api.actAs(learnerId, 'user');
@@ -177,7 +177,7 @@ describe('E2E: evidence decision history (FR-018)', () => {
       documentRef: 'docs/swift.pdf',
     });
 
-    api.actAs('nosy-user', 'user');
+    api.actAs('a1d00000-0000-4000-8000-000000000a05', 'user');
     const denied = await api.get(`/api/skill-evidence/${submitted.json.id}/history`);
     expect(denied.status).toBe(403);
     expect(denied.envelope.code).toBe('AccessDeniedError');

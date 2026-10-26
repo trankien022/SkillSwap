@@ -47,6 +47,8 @@ const NAME_TO_STATUS: Record<string, number> = {
   UnknownStateError: 400,
   ModuleNotInitialisedError: 500,
   BookingNotAllowedError: 409,
+  // FR-007 / AC-034 / BR-001: an unverified account may not book.
+  LearnerNotVerifiedError: 409,
   ClassNotFoundError: 404,
   UnknownClassStateError: 400,
   ClassTransitionError: 409,
@@ -60,6 +62,9 @@ const NAME_TO_STATUS: Record<string, number> = {
   AccountSuspendedError: 403,
   AccountNotFoundError: 404,
   InvalidAccountRoleError: 400,
+  // FR-015 account lock (ADR-037).
+  InvalidSuspensionReasonError: 400,
+  InvalidReactivationReasonError: 400,
   WeakPasswordError: 400,
   SessionExpiredError: 401,
   SessionRevokedError: 401,
@@ -69,6 +74,8 @@ const NAME_TO_STATUS: Record<string, number> = {
   ClassAlreadyCancelledError: 409,
   BookingTransitionError: 409,
   InvalidClassEditError: 400,
+  // FR-012 in-class chat (ADR-036, amended).
+  ChatAccessDeniedError: 403,
   // FR-011 room access (ADR-020).
   RoomAccessDeniedError: 403,
   BookingNotFoundError: 404,
@@ -171,9 +178,22 @@ export class DomainErrorFilter implements ExceptionFilter {
 
   /** The stable code a domain error declares, if it declares one at all. */
   private domainCode(name: string, exception: unknown): string | null {
-    if (name === 'BookingNotAllowedError') {
+    // BR-001 (AC-034): the booking gate family declares its own reason code.
+    if (name === 'BookingNotAllowedError' || name === 'LearnerNotVerifiedError') {
       const reason = (exception as Partial<ReasonBearingError> | null)?.reason;
       return typeof reason === 'string' && reason.length > 0 ? reason : null;
+    }
+    // FR-012 (ADR-036): a chat refusal is `CHAT_NOT_A_PARTY` or `CHAT_WINDOW_CLOSED`.
+    //
+    // This deliberately does NOT go through `fromHttpException`. A controller that threw
+    // `new ForbiddenException({ code, message })` looked right, but the HTTP branch below reports
+    // `HTTP_403` for every 403 and discards the payload's `code` -- so the documented codes never
+    // reached a client, and each one had to guess from prose. The reason is already on the error.
+    if (name === 'ChatAccessDeniedError') {
+      const reason = (exception as Partial<ReasonBearingError> | null)?.reason;
+      if (reason === 'not_a_party') return 'CHAT_NOT_A_PARTY';
+      if (typeof reason === 'string' && reason.length > 0) return 'CHAT_WINDOW_CLOSED';
+      return null;
     }
     return NAME_TO_CODE[name] ?? null;
   }

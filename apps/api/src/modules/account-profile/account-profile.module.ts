@@ -1,5 +1,12 @@
 import { Inject, Injectable, Module, type OnModuleInit } from '@nestjs/common';
-import { bookingCancelledSchema, bookingConfirmedSchema, studentVerificationEventSchema, walletTransactionCompletedEventSchema } from '@skillswap/contracts';
+import {
+  CLASS_STARTING_SOON_EVENT,
+  bookingCancelledSchema,
+  bookingConfirmedSchema,
+  classStartingSoonSchema,
+  studentVerificationEventSchema,
+  walletTransactionCompletedEventSchema,
+} from '@skillswap/contracts';
 import { ApiConfig } from '../../shared/config/api-config';
 import { AppLogger } from '../../shared/logger/app-logger';
 import { EventHandlerRegistry, type BusMessage } from '../../shared/messaging/event-handler-registry';
@@ -7,6 +14,7 @@ import { ModuleDataSourceRegistry } from '../../shared/messaging/module-registry
 import { createModuleDataSource } from './internal/adapter/out/persistence/data-source';
 import { SCHEMA } from './internal/adapter/out/persistence/schema';
 import { SqlAccountRepository } from './internal/adapter/out/persistence/sql-account-repository';
+import { SqlSuspendedAccountReader } from './internal/adapter/out/persistence/sql-suspended-account-reader';
 import { SqlCredentialRepository } from './internal/adapter/out/persistence/sql-credential-repository';
 import { SqlSessionRepository } from './internal/adapter/out/persistence/sql-session-repository';
 import { SqlVerificationStatusProjector } from './internal/adapter/out/persistence/sql-verification-status-projector';
@@ -14,6 +22,7 @@ import { ScryptPasswordHasher } from './internal/adapter/out/crypto/scrypt-passw
 import { NodeTokenService } from './internal/adapter/out/crypto/node-token-service';
 import { SystemClock } from './internal/adapter/out/crypto/system-clock';
 import { AuthController } from './internal/adapter/in/web/auth.controller';
+import { AccountLockController } from './internal/adapter/in/web/account-lock.controller';
 import { RegisterAccountUseCase } from './internal/application/register-account.use-case';
 import { LoginUseCase } from './internal/application/login.use-case';
 import { RefreshSessionUseCase } from './internal/application/refresh-session.use-case';
@@ -25,7 +34,15 @@ import { LOGIN } from './internal/application/port/in/login';
 import { REFRESH_SESSION } from './internal/application/port/in/refresh-session';
 import { LOGOUT } from './internal/application/port/in/logout';
 import { GET_ME } from './internal/application/port/in/get-me';
-import { ACCOUNT_REPOSITORY, type AccountRepository } from './internal/application/port/out/account-repository';
+import {
+  ACCOUNT_LOCK_REPOSITORY,
+  ACCOUNT_REPOSITORY,
+  type AccountLockRepository,
+  type AccountRepository,
+} from './internal/application/port/out/account-repository';
+import { SUSPENDED_ACCOUNT_READER, type SuspendedAccountReader } from './api/suspended-account-reader';
+import { LockAccountUseCase } from './internal/application/lock-account.use-case';
+import { LOCK_ACCOUNT_PORT, type LockAccountPort } from './internal/application/port/in/lock-account';
 import {
   CREDENTIAL_REPOSITORY,
   type CredentialRepository,
@@ -126,17 +143,68 @@ export class AccountProfileRegistrar implements OnModuleInit {
         await this.notificationManagement.recordInboxNotification({ eventId: message.id, accountId: event.accountId, type: 'wallet_transaction', targetType: 'wallet', targetId: event.transactionId });
       },
     });
+    this.handlers.register({
+      // FR-016 (W3): one event carries every participant, so the fan-out happens here rather than
+      // multiplying outbox rows by seats. `eventId` is the message id for every person, which is
+      // what makes a redelivered event leave each inbox with one row instead of one per retry.
+      moduleName: MODULE_NAME,
+      eventType: CLASS_STARTING_SOON_EVENT,
+      queue: 'account-profile.notification-class-starting-soon',
+      handler: async (message: BusMessage): Promise<void> => {
+        const event = classStartingSoonSchema.parse(message.payload);
+        // A participant may legitimately appear twice (a repeat booking by the same learner); the
+        // reminder is one per person, so the roles are collapsed rather than sent twice.
+        for (const accountId of new Set(event.participants.map((p) => p.accountId))) {
+          await this.notificationManagement.recordInboxNotification({
+            eventId: message.id,
+            accountId,
+            type: 'class_starting_soon',
+            targetType: 'class',
+            targetId: event.classId,
+          });
+        }
+      },
+    });
   }
 }
 
 @Module({
-  controllers: [AuthController, NotificationsController, NotificationDevicesController],
+  controllers: [
+    AuthController,
+    NotificationsController,
+    NotificationDevicesController,
+    // FR-015 / ADR-037: the account lock lives here because this module owns `accounts`.
+    AccountLockController,
+  ],
   providers: [
     {
       provide: ACCOUNT_REPOSITORY,
       useFactory: (registry: ModuleDataSourceRegistry): AccountRepository =>
         new SqlAccountRepository(registry, MODULE_NAME),
       inject: [ModuleDataSourceRegistry],
+    },
+    // FR-015 / ADR-037: same adapter, separate capability — the dashboard may read the lock list
+    // without being able to suspend anyone.
+    {
+      provide: ACCOUNT_LOCK_REPOSITORY,
+      useFactory: (registry: ModuleDataSourceRegistry): AccountLockRepository =>
+        new SqlAccountRepository(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
+      provide: SUSPENDED_ACCOUNT_READER,
+      useFactory: (
+        registry: ModuleDataSourceRegistry,
+        locks: AccountLockRepository,
+      ): SuspendedAccountReader => new SqlSuspendedAccountReader(locks, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry, ACCOUNT_LOCK_REPOSITORY],
+    },
+    {
+      // FR-015 / OQ-015 / ADR-037: the Administrator's suspend / reactivate action.
+      provide: LOCK_ACCOUNT_PORT,
+      useFactory: (locks: AccountLockRepository, clock: Clock): LockAccountPort =>
+        new LockAccountUseCase(locks, clock),
+      inject: [ACCOUNT_LOCK_REPOSITORY, CLOCK],
     },
     {
       provide: CREDENTIAL_REPOSITORY,
@@ -250,6 +318,6 @@ export class AccountProfileRegistrar implements OnModuleInit {
     },
     AccountProfileRegistrar,
   ],
-  exports: [PUBLIC_PROFILE_READER],
+  exports: [PUBLIC_PROFILE_READER, SUSPENDED_ACCOUNT_READER, ACCOUNT_LOCK_REPOSITORY],
 })
 export class AccountProfileModule {}

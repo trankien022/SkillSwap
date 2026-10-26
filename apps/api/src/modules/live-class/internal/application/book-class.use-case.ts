@@ -1,4 +1,9 @@
-import { assertBookable, computeHoldExpiry, BookingNotAllowedError } from '../domain/booking';
+import {
+  assertBookable,
+  assertBookerVerified,
+  computeHoldExpiry,
+  BookingNotAllowedError,
+} from '../domain/booking';
 import type {
   BookClassCommand,
   BookClassPort,
@@ -8,13 +13,23 @@ import type {
 import type { BookingRepository } from './port/out/booking-repository';
 import type { ClassRepository } from './port/out/class-repository';
 import type { Clock } from './port/out/clock';
+import type { AccountTrustReader } from './port/out/account-trust';
 
-/** FR-007 / API-005: create a pending booking that holds a seat. */
+/**
+ * FR-007 / API-005: create a pending booking that holds a seat.
+ *
+ * AC-034 (BR-001, decided 2026-10-25): booking is gated on an effective approved
+ * student verification. The check runs **first**, before the seat guard and before
+ * any row is written, so an unverified attempt leaves nothing behind — no booking,
+ * no `pending` hold, no credit movement. A replayed idempotency key still wins,
+ * because a booking that already exists is not a new attempt to book.
+ */
 export class BookClassUseCase implements BookClassPort {
   constructor(
     private readonly classes: ClassRepository,
     private readonly bookings: BookingRepository,
     private readonly clock: Clock,
+    private readonly teacherTrust: AccountTrustReader,
   ) {}
 
   async execute(command: BookClassCommand): Promise<BookClassResult> {
@@ -28,6 +43,10 @@ export class BookClassUseCase implements BookClassPort {
       }
       return { booking: toResource(replay), created: false };
     }
+
+    // AC-034 / BR-001: verified students only. The trust projection is the same one
+    // the publish gate reads; it is not the Learner's own claim.
+    assertBookerVerified(command.learnerId, await this.teacherTrust.read(command.learnerId));
 
     const classView = await this.classes.findById(command.classId);
     if (classView === null) {

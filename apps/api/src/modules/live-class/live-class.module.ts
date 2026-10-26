@@ -39,7 +39,35 @@ import { ClassListController } from './internal/adapter/in/web/class-list.contro
 import { ClassDetailController } from './internal/adapter/in/web/class-detail.controller';
 import { MyBookingsController } from './internal/adapter/in/web/my-bookings.controller';
 import { RatingsController } from './internal/adapter/in/web/ratings.controller';
+import { ChatMessagesController } from './internal/adapter/in/web/chat-messages.controller';
+import { SqlChatRepository } from './internal/adapter/out/persistence/sql-chat-repository';
+import {
+  CHAT_REPOSITORY,
+  type ChatRepository,
+} from './internal/application/port/out/chat-repository';
+import {
+  GET_CHAT_MESSAGES,
+  POST_CHAT_MESSAGE,
+  type GetChatMessagesPort,
+  type PostChatMessagePort,
+} from './internal/application/port/in/chat-messages';
+import { PostChatMessageUseCase } from './internal/application/post-chat-message.use-case';
+import { GetChatMessagesUseCase } from './internal/application/get-chat-messages.use-case';
 import { SqlRatingRepository } from './internal/adapter/out/persistence/sql-rating-repository';
+import { SqlPresenceRepository } from './internal/adapter/out/persistence/sql-presence-repository';
+import {
+  PRESENCE_REPOSITORY,
+  type PresenceRepository,
+} from './internal/application/port/out/presence-repository';
+import {
+  RECORD_PRESENCE,
+  type RecordPresencePort,
+} from './internal/application/port/in/record-presence';
+import { RecordPresenceUseCase } from './internal/application/record-presence.use-case';
+import {
+  JITSI_WEBHOOK_SECRET,
+  JitsiPresenceController,
+} from './internal/adapter/in/web/jitsi-presence.controller';
 import { RATING_REPOSITORY, type RatingRepository } from './internal/application/port/out/rating-repository';
 import { SUBMIT_RATING, type SubmitRatingPort } from './internal/application/port/in/submit-rating';
 import { SubmitRatingUseCase } from './internal/application/submit-rating.use-case';
@@ -87,10 +115,11 @@ import { MarkTeacherNoShowUseCase } from './internal/application/mark-teacher-no
 import { ExpirePendingBookingsUseCase } from './internal/application/expire-pending-bookings.use-case';
 import { RequestRoomAccessUseCase } from './internal/application/request-room-access.use-case';
 import { StartClassUseCase } from './internal/application/start-class.use-case';
-import { CompleteClassUseCase } from './internal/application/complete-class.use-case';
 import { CompleteElapsedClassesUseCase } from './internal/application/complete-elapsed-classes.use-case';
 import { PendingHoldSweeper } from './internal/adapter/in/scheduler/pending-hold.sweeper';
 import { ClassCompletionSweeper } from './internal/adapter/in/scheduler/class-completion.sweeper';
+import { ClassReminderSweeper } from './internal/adapter/in/scheduler/class-reminder.sweeper';
+import { SendClassRemindersUseCase } from './internal/application/send-class-reminders.use-case';
 import { JitsiRoomTokenIssuer } from './internal/adapter/out/jitsi/jitsi-room-token-issuer';
 import { SqlRoomIncidentRecorder } from './internal/adapter/out/persistence/sql-room-incident-recorder';
 import { CREATE_CLASS, type CreateClassPort } from './internal/application/port/in/create-class';
@@ -111,11 +140,14 @@ import {
   type RequestRoomAccessPort,
 } from './internal/application/port/in/request-room-access';
 import { START_CLASS, type StartClassPort } from './internal/application/port/in/start-class';
-import { COMPLETE_CLASS, type CompleteClassPort } from './internal/application/port/in/complete-class';
 import {
   COMPLETE_ELAPSED_CLASSES,
   type CompleteElapsedClassesPort,
 } from './internal/application/port/in/complete-elapsed-classes';
+import {
+  SEND_CLASS_REMINDERS,
+  type SendClassRemindersPort,
+} from './internal/application/port/in/send-class-reminders';
 import {
   ROOM_TOKEN_ISSUER,
   type RoomTokenIssuer,
@@ -128,11 +160,11 @@ import { CLASS_REPOSITORY, type ClassRepository } from './internal/application/p
 import { BOOKING_REPOSITORY, type BookingRepository } from './internal/application/port/out/booking-repository';
 import { CLOCK, type Clock } from './internal/application/port/out/clock';
 import {
-  TEACHER_TRUST_READER,
+  ACCOUNT_TRUST_READER,
   TEACHER_TRUST_WRITER,
-  type TeacherTrustReader,
+  type AccountTrustReader,
   type TeacherTrustWriter,
-} from './internal/application/port/out/teacher-trust';
+} from './internal/application/port/out/account-trust';
 import { MODULE_NAME } from './internal/domain/module-status';
 
 /** Registers this module's DataSource pool and the FR-005 trust consumers. */
@@ -221,7 +253,9 @@ const systemClock: Clock = { now: () => new Date() };
     ClassListController,
     MyBookingsController,
     RatingsController,
+    ChatMessagesController,
     ClassDetailController,
+    JitsiPresenceController,
   ],
   providers: [
     {
@@ -247,6 +281,38 @@ const systemClock: Clock = { now: () => new Date() };
       inject: [RATING_REPOSITORY],
     },
     {
+      provide: CHAT_REPOSITORY,
+      useFactory: (registry: ModuleDataSourceRegistry): ChatRepository =>
+        new SqlChatRepository(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
+      // FR-012: the open window is the same Product Owner-set value the door uses, so chat and
+      // the room can never disagree about when a class is "live".
+      provide: POST_CHAT_MESSAGE,
+      useFactory: (
+        bookings: BookingRepository,
+        classes: ClassRepository,
+        chat: ChatRepository,
+        clock: Clock,
+        config: ApiConfig,
+      ): PostChatMessagePort =>
+        new PostChatMessageUseCase(bookings, classes, chat, clock, config.jitsiOpenMinutes),
+      inject: [BOOKING_REPOSITORY, CLASS_REPOSITORY, CHAT_REPOSITORY, CLOCK, ApiConfig],
+    },
+    {
+      provide: GET_CHAT_MESSAGES,
+      useFactory: (
+        bookings: BookingRepository,
+        classes: ClassRepository,
+        chat: ChatRepository,
+        clock: Clock,
+        config: ApiConfig,
+      ): GetChatMessagesPort =>
+        new GetChatMessagesUseCase(bookings, classes, chat, clock, config.jitsiOpenMinutes),
+      inject: [BOOKING_REPOSITORY, CLASS_REPOSITORY, CHAT_REPOSITORY, CLOCK, ApiConfig],
+    },
+    {
       provide: BOOKING_PAYMENT_REPOSITORY,
       useFactory: (registry: ModuleDataSourceRegistry): BookingPaymentRepository =>
         new SqlBookingPaymentRepository(registry, MODULE_NAME),
@@ -260,8 +326,8 @@ const systemClock: Clock = { now: () => new Date() };
     },
     { provide: CLOCK, useValue: systemClock },
     {
-      provide: TEACHER_TRUST_READER,
-      useFactory: (registry: ModuleDataSourceRegistry): TeacherTrustReader =>
+      provide: ACCOUNT_TRUST_READER,
+      useFactory: (registry: ModuleDataSourceRegistry): AccountTrustReader =>
         new SqlTeacherTrustProjector(registry, MODULE_NAME),
       inject: [ModuleDataSourceRegistry],
     },
@@ -276,9 +342,9 @@ const systemClock: Clock = { now: () => new Date() };
       useFactory: (
         classes: ClassRepository,
         clock: Clock,
-        trust: TeacherTrustReader,
+        trust: AccountTrustReader,
       ): CreateClassPort => new CreateClassUseCase(classes, clock, trust),
-      inject: [CLASS_REPOSITORY, CLOCK, TEACHER_TRUST_READER],
+      inject: [CLASS_REPOSITORY, CLOCK, ACCOUNT_TRUST_READER],
     },
     {
       provide: BOOK_CLASS,
@@ -286,8 +352,11 @@ const systemClock: Clock = { now: () => new Date() };
         classes: ClassRepository,
         bookings: BookingRepository,
         clock: Clock,
-      ): BookClassPort => new BookClassUseCase(classes, bookings, clock),
-      inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY, CLOCK],
+        teacherTrust: AccountTrustReader,
+      ): BookClassPort => new BookClassUseCase(classes, bookings, clock, teacherTrust),
+      // AC-034 / BR-001: the booking gate reads the same trust projection as the
+      // publish gate, never a cross-schema read (ADR-024) or the caller's claim.
+      inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY, CLOCK, ACCOUNT_TRUST_READER],
     },
     {
       provide: CONFIRM_BOOKING,
@@ -301,9 +370,9 @@ const systemClock: Clock = { now: () => new Date() };
         classes: ClassRepository,
         bookings: BookingRepository,
         clock: Clock,
-        trust: TeacherTrustReader,
+        trust: AccountTrustReader,
       ): UpdateClassPort => new UpdateClassUseCase(classes, bookings, clock, trust),
-      inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY, CLOCK, TEACHER_TRUST_READER],
+      inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY, CLOCK, ACCOUNT_TRUST_READER],
     },
     {
       provide: CANCEL_CLASS,
@@ -316,9 +385,11 @@ const systemClock: Clock = { now: () => new Date() };
       useFactory: (
         bookings: BookingRepository,
         classes: ClassRepository,
+        presence: PresenceRepository,
         clock: Clock,
-      ): MarkTeacherNoShowPort => new MarkTeacherNoShowUseCase(bookings, classes, clock),
-      inject: [BOOKING_REPOSITORY, CLASS_REPOSITORY, CLOCK],
+      ): MarkTeacherNoShowPort =>
+        new MarkTeacherNoShowUseCase(bookings, classes, presence, clock),
+      inject: [BOOKING_REPOSITORY, CLASS_REPOSITORY, PRESENCE_REPOSITORY, CLOCK],
     },
     {
       provide: EXPIRE_PENDING_BOOKINGS,
@@ -378,18 +449,37 @@ const systemClock: Clock = { now: () => new Date() };
       inject: [CLASS_REPOSITORY],
     },
     {
-      provide: COMPLETE_CLASS,
-      useFactory: (classes: ClassRepository): CompleteClassPort => new CompleteClassUseCase(classes),
-      inject: [CLASS_REPOSITORY],
-    },
-    {
       provide: COMPLETE_ELAPSED_CLASSES,
       useFactory: (
         classes: ClassRepository,
         bookings: BookingRepository,
+        presence: PresenceRepository,
         clock: Clock,
-      ): CompleteElapsedClassesPort => new CompleteElapsedClassesUseCase(classes, bookings, clock),
-      inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY, CLOCK],
+      ): CompleteElapsedClassesPort =>
+        new CompleteElapsedClassesUseCase(classes, bookings, presence, clock),
+      inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY, PRESENCE_REPOSITORY, CLOCK],
+    },
+    {
+      provide: PRESENCE_REPOSITORY,
+      useFactory: (registry: ModuleDataSourceRegistry): PresenceRepository =>
+        new SqlPresenceRepository(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
+      provide: RECORD_PRESENCE,
+      useFactory: (
+        classes: ClassRepository,
+        bookings: BookingRepository,
+        presence: PresenceRepository,
+      ): RecordPresencePort => new RecordPresenceUseCase(classes, bookings, presence),
+      inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY, PRESENCE_REPOSITORY],
+    },
+    {
+      // AC-035: the presence webhook's shared secret. An empty value makes the endpoint
+      // refuse every request, which is the safe reading of "not configured".
+      provide: JITSI_WEBHOOK_SECRET,
+      useFactory: (config: ApiConfig): string => config.jitsiWebhookSecret,
+      inject: [ApiConfig],
     },
     {
       provide: ClassCompletionSweeper,
@@ -398,6 +488,23 @@ const systemClock: Clock = { now: () => new Date() };
       inject: [COMPLETE_ELAPSED_CLASSES, AppLogger],
     },
     {
+      // FR-016 (W3): the offset is a Product Owner decision, so it travels from config into the
+      // use case rather than being read from a constant at the point of use.
+      provide: SEND_CLASS_REMINDERS,
+      useFactory: (
+        classes: ClassRepository,
+        clock: Clock,
+        config: ApiConfig,
+      ): SendClassRemindersPort =>
+        new SendClassRemindersUseCase(classes, clock, config.classReminderOffsetMinutes),
+      inject: [CLASS_REPOSITORY, CLOCK, ApiConfig],
+    },
+    {
+      provide: ClassReminderSweeper,
+      useFactory: (send: SendClassRemindersPort, logger: AppLogger) =>
+        new ClassReminderSweeper(send, logger),
+      inject: [SEND_CLASS_REMINDERS, AppLogger],
+    },    {
       provide: CLASS_LIST_READER,
       useFactory: (registry: ModuleDataSourceRegistry): ClassListReader =>
         new SqlClassListReader(registry, MODULE_NAME),

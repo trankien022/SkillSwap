@@ -1,3 +1,4 @@
+import { SYSTEM_ACTOR_ID } from '@skillswap/contracts';
 import { SqlWalletRepository } from './sql-wallet-repository';
 import { InsufficientBalanceError } from '../../../domain/wallet';
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
@@ -93,6 +94,8 @@ const sampleSettleRequest: SettleBookingRequest = {
   priceCredits: 100,
   teacherCredits: 90,
   platformFeeCredits: 10,
+  // ADR-035: settlement is a system effect, not a human act.
+  actorId: SYSTEM_ACTOR_ID,
   traceId: 'trace-settle-1',
 };
 
@@ -105,6 +108,96 @@ const sampleRefundRequest: RefundBookingRequest = {
 };
 
 describe('SqlWalletRepository (ADR-032 / Phase C2)', () => {
+  /**
+   * FR-016 / NFR-003: a settled top-up must announce itself.
+   *
+   * This is the regression guard for a defect found by the W9 R4 trace walkthrough: a real
+   * top-up wrote its ledger row and moved the balance but left the outbox empty, so
+   * `account-profile.notification-wallet-completed` had nothing to consume and money arrived
+   * silently. Asserting "an outbox row exists" is the point; asserting the ledger row alone would
+   * have passed against the broken code.
+   */
+  describe('applyTopUp', () => {
+    it('writes the ledger, the balance and the completed event in one transaction', async () => {
+      const harness = createQueueRegistry([
+        [{ id: '3045', created_at: NOW }], // 1. Insert ledger entry RETURNING id, created_at
+        [{ available_credits: 550, pending_credits: 0 }], // 2. Credit the balance
+        [{ id: 'outbox-uuid-2' }], // 3. Insert outbox message
+      ]);
+
+      const repo = new SqlWalletRepository(harness.registry, 'wallet-ledger');
+      const balance = await repo.applyTopUp({
+        ownerId: 'owner-1',
+        intentId: 'intent-1',
+        amountCredits: 50,
+        direction: 'credit',
+        traceId: 'trace-topup-1',
+        actorId: SYSTEM_ACTOR_ID,
+      });
+
+      expect(balance).toEqual({ availableCredits: 550, pendingCredits: 0 });
+      expect(harness.transactionCommitted).toBe(true);
+
+      const outbox = harness.recordedQueries.find((q) => q.sql.includes('outbox_messages'));
+      expect(outbox).toBeDefined();
+      const [eventType, payload] = outbox!.params as [string, WalletTransactionCompletedEvent];
+      expect(eventType).toBe('wallet.transaction.completed');
+      // The transaction id IS the ledger id, so the consumer can always find the money.
+      expect(payload.transactionId).toBe('3045');
+      expect(payload.type).toBe('top_up');
+      expect(payload.direction).toBe('credit');
+      expect(payload.amountCredits).toBe(50);
+      expect(payload.accountId).toBe('owner-1');
+      // ADR-035: the IPN is a system effect; the beneficiary is not the actor.
+      expect(payload.actorId).toBe(SYSTEM_ACTOR_ID);
+      expect(payload.occurredAt).toBe(NOW.toISOString());
+    });
+
+    it('emits nothing for a reversal, because the contract has no reversal type', async () => {
+      const harness = createQueueRegistry([
+        [{ id: '3046', created_at: NOW }],
+        [{ available_credits: 500, pending_credits: 0 }],
+      ]);
+
+      const repo = new SqlWalletRepository(harness.registry, 'wallet-ledger');
+      await repo.applyTopUp({
+        ownerId: 'owner-1',
+        intentId: 'intent-1',
+        amountCredits: 50,
+        direction: 'debit',
+        traceId: 'trace-topup-2',
+        actorId: SYSTEM_ACTOR_ID,
+      });
+
+      expect(harness.recordedQueries.some((q) => q.sql.includes('outbox_messages'))).toBe(false);
+    });
+
+    it('rolls the credit back when the event cannot be written', async () => {
+      // The balance must never move without the event that announces it.
+      const harness = createQueueRegistry([
+        [{ id: '3047', created_at: NOW }],
+        [{ available_credits: 550, pending_credits: 0 }],
+        new Error('outbox unavailable'),
+      ]);
+
+      const repo = new SqlWalletRepository(harness.registry, 'wallet-ledger');
+      const error = await repo
+        .applyTopUp({
+          ownerId: 'owner-1',
+          intentId: 'intent-1',
+          amountCredits: 50,
+          direction: 'credit',
+          traceId: 'trace-topup-3',
+          actorId: SYSTEM_ACTOR_ID,
+        })
+        .catch((e: unknown) => e);
+
+      expect((error as Error).message).toBe('outbox unavailable');
+      expect(harness.transactionRolledBack).toBe(true);
+      expect(harness.transactionCommitted).toBe(false);
+    });
+  });
+
   describe('settleBooking', () => {
     it('executes successful settlement with durable identity and atomic outbox outcome', async () => {
       const harness = createQueueRegistry([
@@ -170,6 +263,9 @@ describe('SqlWalletRepository (ADR-032 / Phase C2)', () => {
         direction: 'debit',
         occurredAt: NOW.toISOString(), // durable timestamp from persisted created_at
         bookingId: 'bk-100',
+        // ADR-035: the actor is the system, because settlement follows the booking.confirmed
+        // event rather than a request. `accountId` above is the learner, who is not the actor.
+        actorId: SYSTEM_ACTOR_ID,
       });
     });
 
@@ -181,6 +277,8 @@ describe('SqlWalletRepository (ADR-032 / Phase C2)', () => {
         priceCredits: 1,
         teacherCredits: 1,
         platformFeeCredits: 0,
+        // ADR-035: settlement is a system effect, not a human act.
+        actorId: SYSTEM_ACTOR_ID,
         traceId: 'trace-price-1',
       };
 
@@ -247,6 +345,7 @@ describe('SqlWalletRepository (ADR-032 / Phase C2)', () => {
         direction: 'debit',
         occurredAt: NOW.toISOString(),
         bookingId: 'bk-price-1',
+        actorId: SYSTEM_ACTOR_ID,
       });
     });
 
@@ -301,6 +400,7 @@ describe('SqlWalletRepository (ADR-032 / Phase C2)', () => {
         direction: 'debit',
         occurredAt: NOW.toISOString(),
         bookingId: 'bk-100',
+        actorId: SYSTEM_ACTOR_ID,
       });
     });
 

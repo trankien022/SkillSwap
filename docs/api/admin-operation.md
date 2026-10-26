@@ -6,7 +6,7 @@
 
 Administrator oversight (FR-015, ADR-034). The append-only audit log plus the operations dashboard aggregate over the student-verification and Verifier queues.
 
-2 endpoints.
+8 endpoints.
 
 Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
 
@@ -25,6 +25,7 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 | `evidence` | object | yes |  |
 | `evidenceByDomain` | object | yes |  |
 | `recentAuditEvents` | object[] | yes |  |
+| `suspendedAccounts` | object | yes |  |
 | `generatedAt` | string | yes | date-time |
 
 **`verifications`** — AdminDashboardDto.verifications fields:
@@ -61,6 +62,12 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 | `traceId` | string | yes | min 1 chars; nullable |
 | `metadata` | object | yes | nullable |
 | `sourceEventId` | string | yes | min 1 chars; nullable |
+
+**`suspendedAccounts`** — AdminDashboardDto.suspendedAccounts fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `total` | integer | yes | ≥ 0 |
 
 ### `GET /api/audit-log`
 
@@ -112,3 +119,190 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 | `limit` | integer | yes | ≥ 1; ≤ 100 |
 | `nextCursor` | string | yes | min 1 chars; nullable |
 | `total` | integer | yes | ≥ 0 |
+
+### `GET /api/operations/accounts`
+
+**The account-lock list: suspended accounts (FR-015)**
+
+- Auth: 🔒 Bearer token required
+- Response: `SuspendedAccountsPageDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `limit` | query | integer | no |  |
+| `cursor` | query | string | no |  |
+| `status` | query | string | no |  |
+
+**Response — `SuspendedAccountsPageDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `items` | object[] | yes |  |
+| `page` | object | yes |  |
+
+**`items`[]** — SuspendedAccountsPageDto.items fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `accountId` | string | yes | uuid |
+| `email` | string | yes | email |
+| `displayName` | string | yes | min 1 chars |
+| `role` | string | yes | min 1 chars |
+| `reason` | string | yes | min 1 chars |
+| `suspendedBy` | string | yes | uuid; nullable |
+| `suspendedAt` | string | yes | date-time |
+
+**`page`** — SuspendedAccountsPageDto.page fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `limit` | integer | yes | ≥ 1; ≤ 100 |
+| `nextCursor` | string | yes | min 1 chars; nullable |
+| `total` | integer | yes | ≥ 0 |
+
+### `POST /api/operations/accounts/{accountId}/reinstatement`
+
+**Reactivate a suspended account (admin, FR-015)**
+
+- Auth: 🔒 Bearer token required
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `accountId` | path | string | yes | The account id to reactivate |
+
+### `POST /api/operations/accounts/{accountId}/suspension`
+
+**Suspend an account with a required reason (admin, FR-015)**
+
+- Auth: 🔒 Bearer token required
+- Request body: `SuspendAccountDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `accountId` | path | string | yes | The account id to suspend |
+
+**Request body — `SuspendAccountDto`**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `reason` | string | yes | min 1 chars; max 500 chars |
+
+### `GET /api/operations/dashboard`
+
+**The operations dashboard aggregate (FR-015)**
+
+- Auth: 🔒 Bearer token required
+- Response: `AdminDashboardDto`
+
+**Response — `AdminDashboardDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `verifications` | object | yes |  |
+| `evidence` | object | yes |  |
+| `evidenceByDomain` | object | yes |  |
+| `recentAuditEvents` | object[] | yes |  |
+| `suspendedAccounts` | object | yes |  |
+| `generatedAt` | string | yes | date-time |
+
+**`verifications`** — AdminDashboardDto.verifications fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `pending` | integer | yes | ≥ 0 |
+| `approved` | integer | yes | ≥ 0 |
+| `rejected` | integer | yes | ≥ 0 |
+| `revoked` | integer | yes | ≥ 0 |
+
+**`evidence`** — AdminDashboardDto.evidence fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `pending` | integer | yes | ≥ 0 |
+| `claimed` | integer | yes | ≥ 0 |
+| `approved` | integer | yes | ≥ 0 |
+| `rejected` | integer | yes | ≥ 0 |
+| `superseded` | integer | yes | ≥ 0 |
+
+**`recentAuditEvents`[]** — AdminDashboardDto.recentAuditEvents fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `actorId` | string | yes | min 1 chars; nullable |
+| `action` | string | yes | min 3 chars; max 120 chars |
+| `targetType` | string | yes | min 2 chars; max 60 chars |
+| `targetId` | string | yes | min 1 chars; nullable |
+| `oldState` | object | yes | nullable |
+| `newState` | object | yes | nullable |
+| `occurredAt` | string | yes | date-time |
+| `traceId` | string | yes | min 1 chars; nullable |
+| `metadata` | object | yes | nullable |
+| `sourceEventId` | string | yes | min 1 chars; nullable |
+
+**`suspendedAccounts`** — AdminDashboardDto.suspendedAccounts fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `total` | integer | yes | ≥ 0 |
+
+### `GET /api/operations/outbox-dead-letters`
+
+**Outbox rows the relay proved it cannot publish (FR-015 / ADR-013 Amendment A)**
+
+- Auth: 🔒 Bearer token required
+- Response: `OutboxDeadLetterPageDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `limit` | query | integer | no |  |
+| `cursor` | query | string | no |  |
+| `module` | query | string | no |  |
+| `eventType` | query | string | no |  |
+
+**Response — `OutboxDeadLetterPageDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `items` | object[] | yes |  |
+| `page` | object | yes |  |
+
+**`items`[]** — OutboxDeadLetterPageDto.items fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `module` | string | yes | min 2 chars; max 60 chars |
+| `id` | string | yes | uuid |
+| `eventType` | string | yes | min 1 chars |
+| `attempts` | integer | yes | ≥ 0 |
+| `lastError` | string | yes | nullable |
+| `createdAt` | string | yes | date-time |
+| `failedAt` | string | yes | date-time |
+| `payload` | object | yes | `null` for a bounded list (no pagination) |
+
+**`page`** — OutboxDeadLetterPageDto.page fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `limit` | integer | yes | ≥ 1; ≤ 100 |
+| `nextCursor` | string | yes | min 1 chars; nullable |
+| `total` | integer | yes | ≥ 0 |
+
+### `POST /api/operations/outbox-dead-letters/{id}/replay`
+
+**Reset one dead letter to PENDING and audit the action (W2 C3)**
+
+- Auth: 🔒 Bearer token required
+- Response: `ReplayDeadLetterResultDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `id` | path | string | yes | The outbox row id |
+| `module` | query | string | yes |  |
+
+**Response — `ReplayDeadLetterResultDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `replayed` | boolean | yes |  |
+| `status` | enum | yes | one of `PENDING`, `PUBLISHED`, `DEAD` |

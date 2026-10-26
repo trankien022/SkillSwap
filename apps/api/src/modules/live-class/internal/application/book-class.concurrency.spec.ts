@@ -8,6 +8,7 @@ import type {
 } from './port/out/booking-repository';
 import type { ClassRepository, PersistedClass } from './port/out/class-repository';
 import type { Clock } from './port/out/clock';
+import type { AccountTrustReader } from './port/out/account-trust';
 
 /**
  * AC-010 acceptance at the application boundary.
@@ -148,11 +149,22 @@ function classRepo(view: PersistedClass): ClassRepository {
     completeAndEmit: jest.fn(async () => ({ completed: false, bookingIds: [] })),
     cancelWithReason: jest.fn(async () => ({ cancelled: false })),
     findAwaitingCompletion: jest.fn(async () => []),
+    findInProgressBeforeEnd: jest.fn(async () => []),
+    // FR-016 (W3): not exercised here; present so this mock stays a whole ClassRepository.
+    findAwaitingReminder: jest.fn(async () => []),
+    claimReminderAndEmit: jest.fn(async () => ({ reminded: false, participants: 0 })),
   };
 }
 
 function fixedClock(now: Date): Clock {
   return { now: () => now };
+}
+
+/** AC-034: a trust projection where every account is a verified student. */
+function verifiedTrust(): AccountTrustReader {
+  return {
+    read: jest.fn(async () => ({ verified: true, approvedLevel: () => null })),
+  };
 }
 
 describe('BookClassUseCase concurrency (AC-010)', () => {
@@ -171,7 +183,7 @@ describe('BookClassUseCase concurrency (AC-010)', () => {
 
   it('confirms exactly one booking when two learners race for the last seat', async () => {
     const bookings = new LockingInMemoryBookingRepository();
-    const useCase = new BookClassUseCase(classRepo(classView), bookings, fixedClock(now));
+    const useCase = new BookClassUseCase(classRepo(classView), bookings, fixedClock(now), verifiedTrust());
 
     const results = await Promise.allSettled([
       useCase.execute({ classId: 'cls-1', learnerId: 'learner-a', idempotencyKey: 'key-a' }),
@@ -188,7 +200,7 @@ describe('BookClassUseCase concurrency (AC-010)', () => {
 
   it('is idempotent under a concurrent replay of the same key', async () => {
     const bookings = new LockingInMemoryBookingRepository();
-    const useCase = new BookClassUseCase(classRepo(classView), bookings, fixedClock(now));
+    const useCase = new BookClassUseCase(classRepo(classView), bookings, fixedClock(now), verifiedTrust());
 
     const [first, second] = await Promise.all([
       useCase.execute({ classId: 'cls-1', learnerId: 'learner-a', idempotencyKey: 'same' }),
@@ -202,7 +214,7 @@ describe('BookClassUseCase concurrency (AC-010)', () => {
   it('rejects a second booking by the same learner on the same class (BR-024)', async () => {
     const bookings = new LockingInMemoryBookingRepository();
     const multiSeat = { ...classView, capacity: 5 };
-    const useCase = new BookClassUseCase(classRepo(multiSeat), bookings, fixedClock(now));
+    const useCase = new BookClassUseCase(classRepo(multiSeat), bookings, fixedClock(now), verifiedTrust());
 
     await useCase.execute({ classId: 'cls-1', learnerId: 'learner-a', idempotencyKey: 'k1' });
     await expect(

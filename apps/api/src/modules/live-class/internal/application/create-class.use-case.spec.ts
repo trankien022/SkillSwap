@@ -3,12 +3,12 @@ import type { ClassRepository, CreateClassRecord, PersistedClass } from './port/
 import type { Clock } from './port/out/clock';
 import { InvalidCapacityError } from '../domain/class';
 import { SkillNotApprovedError, UnverifiedTeacherError } from '../domain/publish-policy';
-import { FakeTeacherTrustReader } from './testing/live-class-fakes';
+import { FakeAccountTrustReader } from './testing/live-class-fakes';
 
 const NOW = new Date('2026-10-08T00:00:00.000Z');
 const HOUR = 60 * 60 * 1000;
 
-function setup(trust = new FakeTeacherTrustReader()) {
+function setup(trust = new FakeAccountTrustReader()) {
   const calls: CreateClassRecord[] = [];
   const classes: ClassRepository = {
     insert: jest.fn(async (record: CreateClassRecord) => {
@@ -22,6 +22,10 @@ function setup(trust = new FakeTeacherTrustReader()) {
     completeAndEmit: jest.fn(async () => ({ completed: false, bookingIds: [] })),
     cancelWithReason: jest.fn(async () => ({ cancelled: false })),
     findAwaitingCompletion: jest.fn(async () => []),
+    findInProgressBeforeEnd: jest.fn(async () => []),
+    // FR-016 (W3): not exercised here; present so this mock stays a whole ClassRepository.
+    findAwaitingReminder: jest.fn(async () => []),
+    claimReminderAndEmit: jest.fn(async () => ({ reminded: false, participants: 0 })),
   };
   const clock: Clock = { now: () => NOW };
   return { useCase: new CreateClassUseCase(classes, clock, trust), classes, calls };
@@ -72,14 +76,14 @@ describe('CreateClassUseCase', () => {
   });
 
   it('refuses an unverified teacher (AC-002)', async () => {
-    const { useCase, classes } = setup(new FakeTeacherTrustReader({ verified: false }));
+    const { useCase, classes } = setup(new FakeAccountTrustReader({ verified: false }));
     await expect(useCase.execute(command())).rejects.toThrow(UnverifiedTeacherError);
     expect(classes.insert).not.toHaveBeenCalled();
   });
 
   it('refuses a class skill the teacher is not approved for (SR-BR-002)', async () => {
     const { useCase, classes } = setup(
-      new FakeTeacherTrustReader({ approvedLevels: { 'skill-1': null } }),
+      new FakeAccountTrustReader({ approvedLevels: { 'skill-1': null } }),
     );
     await expect(useCase.execute(command())).rejects.toThrow(SkillNotApprovedError);
     expect(classes.insert).not.toHaveBeenCalled();

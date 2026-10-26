@@ -110,14 +110,18 @@ Các task dưới đây thuộc kế hoạch mobile đầy đủ, không mặc �
 - [ ] T18. Durable inbox/events + list UI.
   - AC: source-event handoff durable; consumer dedup; list owner-only/cursor; deep link auth lại.
   - Verify: retry event không duplicate; outsider denied; inbox backend reload.
+  - Ghi chú T18 (W2): nền tảng đã xong trong `shared/messaging` — outbox có `next_attempt_at` (backoff), `aggregate_id`/`sequence`, consumer dedup theo queue **và** watermark thứ tự theo aggregate (ADR-013 Amendment A). Kênh bằng chứng cho dead-letter là `GET /operations/outbox-dead-letters` (admin), không phải log. Phần còn lại của T18 là hộp thư trong `account-profile` + UI, chưa làm.
   - Depends: T17,T10,T12,T14. Files: account-profile inbox consumer/persistence/query/controller + UI; chia persistence/consumer, REST, UI. Scope: 3 x M.
 - [ ] T19. Push dispatch/ticket/receipt.
   - AC: retry/backoff; invalid token disabled; payload không lộ dữ liệu; five base business outcomes mapped.
   - Verify: real phone foreground/background/cold start và correct deep link; receipt chỉ provider evidence.
+  - Ghi chú T19 (W2): cơ chế retry/backoff đã có và đã test ở tầng relay (`outbox-relay.spec`, `outbox-statements.spec`), nhưng **chưa xác nhận được kênh push thật** — xem W3 trong `docs/plans/`. Nếu W3 không xác nhận được, T19 chuyển sang thông báo in-app và ghi rõ là đã hoãn.
   - Depends: T18. Files: dispatch port/adapter/durable delivery worker/config. Scope: M.
-- [ ] T20. Class-start reminder.
+- [x] T20. Class-start reminder.
   - AC: agreed offset; cancelled class không nhắc; retries/restart không gửi duplicate theo logical reminder.
   - Verify: controllable clock, cancellation/race/restart tests + device reminder.
+  - Bằng chứng T20 (W3): offset **starts_at − 15 phút** (PO, C1), cả hai phía (C4), chỉ lớp Published/Full + booking Confirmed (C2); huỷ trước khi gửi vẫn nhận nhắc (C3, chấp nhận). "Chỉ một lần" không dựa vào bộ nhớ tiến trình mà dựa vào khoá chính `(class_id, kind)` của `class_reminders` — hai instance quét cùng phút thì chỉ một thắng, và lần quét thứ hai không tạo event nào. Kiểm chứng: `apps/api/test/class-reminder.e2e-spec.ts` (6 case trên stack thật: cửa sổ, trước cửa sổ, sau giờ bắt đầu, lớp đã huỷ, booking Pending bị loại khỏi danh sách người nhận, quét hai lần chỉ ra một event, và cả hai inbox nhận đúng một thông báo qua RabbitMQ). Đơn vị: `send-class-reminders.use-case.spec.ts`, `class-reminder.sweeper.spec.ts`, `class.spec.ts` (rule), `class-starting-soon.spec.ts` (contract).
+  - Ghi chú T20: **push thật tới thiết bị chưa xác nhận được** (T19 vẫn mở) — phần đã kiểm chứng là inbox. Thiết bị có đăng ký sẽ nhận `push_deliveries` qua worker; chưa có bằng chứng trên máy thật.
   - Depends: T19,T15. Files: schedule reminder/application/adapter/contracts if approved. Scope: M.
 - [ ] Checkpoint 5: notification event → inbox → actual phone push; pnpm verify green.
 

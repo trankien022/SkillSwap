@@ -1,5 +1,5 @@
 import type { SkillEvidenceEvent, StudentVerificationEvent } from '@skillswap/contracts';
-import type { TeacherTrustWriter } from './port/out/teacher-trust';
+import type { TeacherTrustWriter } from './port/out/account-trust';
 
 /**
  * FR-005 / ADR-024 (extension): projects trust events into the `live-class` publish-rights

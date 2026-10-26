@@ -37,6 +37,7 @@ async function seedPending(intents: FakeTopUpIntentRepository, providerRef: stri
     providerRef,
     amountVnd: 50_000,
     amountCredits: 50,
+    vndPerCredit: 1000,
   });
 }
 

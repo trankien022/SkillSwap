@@ -30,6 +30,11 @@ export class PendingHoldSweeper implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /** See `ClassCompletionSweeper.isRunning`: the boot E2E's only way to see a live timer. */
+  isRunning(): boolean {
+    return this.timer !== undefined;
+  }
+
   onModuleDestroy(): void {
     if (this.timer !== undefined) {
       clearInterval(this.timer);

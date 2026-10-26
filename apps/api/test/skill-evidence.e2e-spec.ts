@@ -80,7 +80,7 @@ describe('E2E: skill evidence submission (FR-003)', () => {
     expect(denied.status).toBe(403);
 
     // Verify the student, then submit succeeds once the projection catches up.
-    await verifyStudent(learnerId, 'admin-fr3-1');
+    await verifyStudent(learnerId, 'a1d00000-0000-4000-8000-000000000a11');
     const accepted = await submitEvidence(learnerId, {
       skillId,
       requestedLevel: 'intermediate',
@@ -96,7 +96,7 @@ describe('E2E: skill evidence submission (FR-003)', () => {
 
   it('rejects an unknown skill', async () => {
     const learnerId = await registerLearner('fr3-unknown@skillswap.test');
-    await verifyStudent(learnerId, 'admin-fr3-2');
+    await verifyStudent(learnerId, 'a1d00000-0000-4000-8000-000000000a12');
 
     const res = await submitEvidence(learnerId, {
       skillId: '00000000-0000-0000-0000-000000000000',
@@ -111,7 +111,7 @@ describe('E2E: skill evidence submission (FR-003)', () => {
   it('creates a new version on resubmission (AC-016)', async () => {
     const learnerId = await registerLearner('fr3-version@skillswap.test');
     const skillId = await seedSkill(harness, { name: 'Guitar', category: 'Music' });
-    await verifyStudent(learnerId, 'admin-fr3-3');
+    await verifyStudent(learnerId, 'a1d00000-0000-4000-8000-000000000a13');
 
     const first = await submitEvidence(learnerId, {
       skillId,

@@ -62,8 +62,14 @@ export class VerifierController {
   setStatus(
     @Param('accountId') accountId: string,
     @Body() body: VerifierStatusChangeDto,
+    @Req() request: RequestWithIdentity,
   ): Promise<VerifierView> {
-    return this.changeStatus.execute({ verifierId: accountId, status: body.status });
+    return this.changeStatus.execute({
+      verifierId: accountId,
+      status: body.status,
+      // ADR-035: the caller is the Administrator acting; the path parameter is the subject.
+      actorId: currentUserId(request),
+    });
   }
 
   @Get('me/queue')

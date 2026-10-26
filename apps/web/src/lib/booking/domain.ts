@@ -19,6 +19,8 @@ export const BOOKING_REJECTION_REASONS = [
   'duplicate_booking',
   'self_booking',
   'invalid_duration',
+  // AC-034 / BR-001 (decided 2026-10-25): an unverified account may not book.
+  'learner_not_verified',
 ] as const;
 
 export type BookingRejectionReason = (typeof BOOKING_REJECTION_REASONS)[number];

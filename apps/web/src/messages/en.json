@@ -44,6 +44,7 @@
       "duplicate_booking": "You already have a booking for this class.",
       "self_booking": "You cannot book your own class.",
       "invalid_duration": "This class has an invalid duration.",
+      "learner_not_verified": "You need an approved student verification before you can book a class.",
       "unknown": "Something went wrong. Please try again."
     }
   },
@@ -586,6 +587,47 @@
     "exploreCta": "Back to classes"
   },
   "Admin": {
+    "suspendedAccounts": {
+      "title": "Locked accounts",
+      "subtitle": "Accounts an Administrator has suspended. The reason and the Administrator are part of the record.",
+      "loading": "Loading locked accounts…",
+      "retry": "Try again",
+      "empty": "No account is locked right now.",
+      "showing": "Showing {shown} of {total} locked accounts.",
+      "status": {
+        "suspended": "Suspended"
+      },
+      "reasonLabel": "Reason:",
+      "sinceLabel": "Since:",
+      "byLabel": "By:",
+      "byUnknown": "Not recorded",
+      "release": "Reinstate",
+      "confirmRelease": "Reinstate this account? It will be able to sign in again.",
+      "releaseConfirm": "Yes, reinstate",
+      "releasing": "Reinstating…",
+      "cancel": "Cancel",
+      "lockTitle": "Lock an account",
+      "lockSubtitle": "A suspension requires a reason, and the act is recorded against your account in the audit log.",
+      "accountIdLabel": "Account id",
+      "reasonLabelInput": "Reason for the suspension",
+      "lockCta": "Suspend account",
+      "locking": "Suspending…",
+      "lockSuccess": "The account is suspended.",
+      "unauthorizedTitle": "You do not have access to locked accounts",
+      "unauthorizedBody": "This list is for administrators only. Sign in with an administrator account.",
+      "errors": {
+        "generic": "Could not load locked accounts. Please try again.",
+        "suspend": "Could not suspend this account. Please try again.",
+        "release": "Could not reinstate this account. Please try again.",
+        "forbidden": "You are not allowed to perform this action. Sign in with an administrator account.",
+        "accountIdRequired": "Enter the account id.",
+        "reasonRequired": "A reason is required. It cannot be empty."
+      }
+    },
+    "operations": {
+      "pageTitle": "Operations",
+      "pageSubtitle": "What is waiting, what has been decided, and who has been locked out — on one page."
+    },
     "Landing": {
       "title": "Admin home",
       "subtitle": "Only tools that actually work on the system can be opened from here.",
@@ -594,7 +636,9 @@
       "accountIdPlaceholder": "Enter an account id",
       "accountIdRequired": "Enter an account id.",
       "openCta": "Open",
-      "toolsTitle": "Operations tools"
+      "toolsTitle": "Operations tools",
+      "operations": "Operations",
+      "operationsBody": "Counts, queues and locked accounts on one page."
     },
     "dashboard": {
       "loading": "Assembling the figures…",
@@ -732,7 +776,6 @@
       "actorUnknown": "Actor: not recorded",
       "targetId": "Target: {id}",
       "stateChange": "Change: {from} → {to}",
-      "actorGap": "The actor filter currently matches no events: audit entries do not carry the administrator's id yet. The other filters work normally.",
       "unauthorizedTitle": "You do not have access to the audit log",
       "unauthorizedBody": "The audit log is for administrators only. Sign in with an administrator account.",
       "filters": {
@@ -757,7 +800,8 @@
         "skillEvidenceRejected": "Skill evidence rejected",
         "skillVerifierSuspended": "Verifier suspended",
         "skillVerifierRevoked": "Verifier revoked",
-        "walletTransactionCompleted": "Wallet transaction completed"
+        "walletTransactionCompleted": "Wallet transaction completed",
+        "accountStatusChanged": "Account suspended or reinstated"
       },
       "errors": {
         "generic": "Could not load the audit log. Please try again."
@@ -1258,7 +1302,8 @@
       "inCall": "In the room",
       "notInCall": "Not in the room",
       "youLabel": "You",
-      "teacherFallback": "Instructor"
+      "teacherFallback": "Instructor",
+      "peerStudent": "Peer student"
     },
     "states": {
       "loadingBooking": "Loading session details…",
@@ -1270,6 +1315,7 @@
       "connecting": "Connecting to the room…",
       "embedErrorTitle": "Could not open the room",
       "embedErrorBody": "The online room failed to load. Check your connection and try again.",
+      "retry": "Try again",
       "notAParty": {
         "title": "You are not part of this session",
         "body": "Only the learner who booked it and the assigned instructor can enter this room."
@@ -1300,7 +1346,46 @@
       }
     },
     "chat": {
-      "safetyNotice": "SkillSwap Safety: Keep all interactions within the platform to maintain escrow protection and academic support guarantees."
+      "safetyNotice": "SkillSwap Safety: Keep all interactions within the platform to maintain escrow protection and academic support guarantees.",
+      "title": "Class chat",
+      "total": "{total} messages",
+      "you": "You",
+      "roles": {
+        "learner": "Learner",
+        "teacher": "Teacher"
+      },
+      "loading": "Loading the conversation…",
+      "empty": "No messages yet. Say hello before the lesson starts.",
+      "loadMore": "Load earlier messages",
+      "loadingMore": "Loading…",
+      "composerLabel": "Message to send",
+      "composerPlaceholder": "Write a message…",
+      "send": "Send",
+      "sending": "Sending…",
+      "counter": "{length} / {max} characters",
+      "unavailableTitle": "Chat is not available",
+      "denials": {
+        "CHAT_NOT_A_PARTY": "You are not part of this booking, so its chat is not open to you.",
+        "CHAT_WINDOW_CLOSED": "Chat opens 15 minutes before the lesson and closes when it ends.",
+        "booking_not_confirmed": "The booking is not confirmed yet, so there is no conversation to read.",
+        "BookingNotFoundError": "This booking no longer exists.",
+        "HTTP_401": "Please sign in again to open the chat.",
+        "HTTP_403": "You are not part of this booking, so its chat is not open to you.",
+        "HTTP_404": "This booking no longer exists.",
+        "HTTP_409": "Chat is not open for this class right now.",
+        "UNAVAILABLE": "The chat could not be loaded. Please try again."
+      },
+      "sendErrors": {
+        "CHAT_WINDOW_CLOSED": "Chat is closed for this class, so your message was not sent. It is still in the box.",
+        "CHAT_MESSAGE_INVALID": "Write something before sending.",
+        "CHAT_NOT_A_PARTY": "You are not part of this booking.",
+        "BookingNotFoundError": "This booking no longer exists.",
+        "HTTP_401": "Your session expired. Sign in again to send.",
+        "HTTP_403": "You are not part of this booking.",
+        "HTTP_404": "This booking no longer exists.",
+        "HTTP_409": "Chat is not open for this class right now.",
+        "UNAVAILABLE": "Your message was not sent. It is still in the box — please try again."
+      }
     },
     "escrow": {
       "title": "Escrow Protection - Escrow Active",
@@ -1574,9 +1659,6 @@
       "couldNotStartTheClass": "Could not start the class",
       "classStarted": "Class started.",
       "thisClassWasAlreadyStarted": "This class was already started.",
-      "couldNotCompleteTheClass": "Could not complete the class",
-      "classCompletedEarningsHaveBeenReleased": "Class completed. Earnings have been released to your wallet.",
-      "thereIsNothingLeftToComplete": "There is nothing left to complete for this class.",
       "couldNotSaveChanges": "Could not save changes",
       "changesSaved": "Changes saved.",
       "errorundefined": "Error: ",

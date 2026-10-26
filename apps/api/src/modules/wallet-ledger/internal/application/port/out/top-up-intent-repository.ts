@@ -11,6 +11,8 @@ export interface TopUpIntent {
   readonly providerOrderId: string | null;
   readonly amountVnd: number;
   readonly amountCredits: number;
+  /** BR-027 / D3: the rate this intent was priced at, snapshotted when it was created. */
+  readonly vndPerCredit: number;
   /** FR-008 / ADR-033: the amount the provider actually captured, if settled. */
   readonly paidAmountVnd: number | null;
   readonly paidAt: Date | null;
@@ -23,6 +25,13 @@ export interface NewTopUpIntent {
   readonly providerRef: string;
   readonly amountVnd: number;
   readonly amountCredits: number;
+  /**
+   * BR-027 / decision D3: the rate this intent was priced at, stored on the row.
+   *
+   * A snapshot, not a lookup: if the configured rate changes after a payer has opened a
+   * checkout, the intent must still mean what it said when it was created.
+   */
+  readonly vndPerCredit: number;
 }
 
 /** FR-008 / ADR-033: settlement facts a verified IPN contributes to the intent. */
