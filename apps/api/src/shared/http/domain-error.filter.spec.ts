@@ -53,6 +53,17 @@ class ClassNotFoundError extends Error {
   }
 }
 
+/** Mirrors `ChatAccessDeniedError` (FR-012 / ADR-036): the reason decides the envelope code. */
+class ChatAccessDeniedError extends Error {
+  constructor(
+    readonly reason: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'ChatAccessDeniedError';
+  }
+}
+
 interface Captured extends HttpResponseLike {
   statusCode?: number;
   body?: unknown;
@@ -160,6 +171,30 @@ describe('DomainErrorFilter', () => {
       data: null,
     });
   });
+
+  // FR-012 (ADR-036): a chat refusal carries its own code so a client can tell "not yours"
+  // from "come back later" without matching English. This is the case that caught the bug:
+  // the controller used to wrap these in ForbiddenException({ code }), and the HTTP branch
+  // below reports HTTP_403 for every 403 -- discarding the code entirely.
+  it('reports a chat party refusal as CHAT_NOT_A_PARTY (403)', () => {
+    const captured = run(new ChatAccessDeniedError('not_a_party', 'Requester is not a party'));
+    expect(captured.statusCode).toBe(403);
+    expect(captured.body).toMatchObject({
+      success: false,
+      code: 'CHAT_NOT_A_PARTY',
+      data: null,
+      errors: [{ code: 'CHAT_NOT_A_PARTY' }],
+    });
+  });
+
+  it.each(['booking_not_confirmed', 'window_not_open', 'window_closed'] as const)(
+    'reports a %s chat refusal as CHAT_WINDOW_CLOSED',
+    (reason) => {
+      const captured = run(new ChatAccessDeniedError(reason, reason));
+      expect(captured.statusCode).toBe(403);
+      expect(captured.body).toMatchObject({ code: 'CHAT_WINDOW_CLOSED' });
+    },
+  );
 
   it('wraps an HttpException string payload (validation) in the failure envelope', () => {
     const captured = run(new BadRequestException('name: required'));

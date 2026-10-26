@@ -43,6 +43,17 @@ export class ChatAccessDeniedError extends Error {
   }
 }
 
+/**
+ * The stable wire code for each refusal, so a client can branch without matching English.
+ *
+ * A `not_a_party` refusal and a `window_closed` one are different screens: the first is "this is
+ * not yours", the second is "come back later". Collapsing them into one `HTTP_409` would force
+ * every client to re-derive which it was from the message text.
+ */
+export function chatDenialCode(reason: ChatDenial): string {
+  return reason === 'not_a_party' ? 'CHAT_NOT_A_PARTY' : 'CHAT_WINDOW_CLOSED';
+}
+
 export interface ChatBooking {
   id: string;
   classId: string;

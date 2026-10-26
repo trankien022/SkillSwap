@@ -1302,7 +1302,8 @@
       "inCall": "Đang trong phòng",
       "notInCall": "Chưa vào phòng",
       "youLabel": "Bạn",
-      "teacherFallback": "Giảng viên"
+      "teacherFallback": "Giảng viên",
+      "peerStudent": "Sinh viên cùng học"
     },
     "states": {
       "loadingBooking": "Đang tải thông tin buổi học…",
@@ -1344,7 +1345,46 @@
       }
     },
     "chat": {
-      "safetyNotice": "Bảo mật SkillSwap: Mọi tương tác diễn ra trên nền tảng để bảo đảm quyền lợi ký quỹ an toàn và giải quyết khiếu nại học thuật."
+      "safetyNotice": "Bảo mật SkillSwap: Mọi tương tác diễn ra trên nền tảng để bảo đảm quyền lợi ký quỹ an toàn và giải quyết khiếu nại học thuật.",
+      "title": "Trò chuyện lớp học",
+      "total": "{total} tin nhắn",
+      "you": "Bạn",
+      "roles": {
+        "learner": "Học viên",
+        "teacher": "Giảng viên"
+      },
+      "loading": "Đang tải cuộc trò chuyện…",
+      "empty": "Chưa có tin nhắn nào. Hãy chào nhau trước khi lớp bắt đầu.",
+      "loadMore": "Tải tin nhắn cũ hơn",
+      "loadingMore": "Đang tải…",
+      "composerLabel": "Tin nhắn cần gửi",
+      "composerPlaceholder": "Viết tin nhắn…",
+      "send": "Gửi",
+      "sending": "Đang gửi…",
+      "counter": "{length} / {max} ký tự",
+      "unavailableTitle": "Chưa mở được trò chuyện",
+      "denials": {
+        "CHAT_NOT_A_PARTY": "Bạn không thuộc buổi học này nên không mở được cuộc trò chuyện.",
+        "CHAT_WINDOW_CLOSED": "Trò chuyện mở trước giờ học 15 phút và đóng khi buổi học kết thúc.",
+        "booking_not_confirmed": "Buổi học chưa được xác nhận nên chưa có cuộc trò chuyện để đọc.",
+        "BookingNotFoundError": "Buổi học này không còn tồn tại.",
+        "HTTP_401": "Vui lòng đăng nhập lại để mở trò chuyện.",
+        "HTTP_403": "Bạn không thuộc buổi học này nên không mở được cuộc trò chuyện.",
+        "HTTP_404": "Buổi học này không còn tồn tại.",
+        "HTTP_409": "Hiện chưa mở trò chuyện cho lớp này.",
+        "UNAVAILABLE": "Không tải được cuộc trò chuyện. Vui lòng thử lại."
+      },
+      "sendErrors": {
+        "CHAT_WINDOW_CLOSED": "Trò chuyện của lớp đã đóng nên tin nhắn chưa được gửi. Nội dung vẫn còn trong ô soạn.",
+        "CHAT_MESSAGE_INVALID": "Hãy nhập nội dung trước khi gửi.",
+        "CHAT_NOT_A_PARTY": "Bạn không thuộc buổi học này.",
+        "BookingNotFoundError": "Buổi học này không còn tồn tại.",
+        "HTTP_401": "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để gửi.",
+        "HTTP_403": "Bạn không thuộc buổi học này.",
+        "HTTP_404": "Buổi học này không còn tồn tại.",
+        "HTTP_409": "Hiện chưa mở trò chuyện cho lớp này.",
+        "UNAVAILABLE": "Tin nhắn chưa được gửi. Nội dung vẫn còn trong ô soạn — vui lòng thử lại."
+      }
     },
     "escrow": {
       "title": "Ký quỹ Bảo chứng - Escrow Active",

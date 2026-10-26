@@ -201,24 +201,32 @@ describe('E2E: in-class chat (W5 / FR-012 / ADR-036)', () => {
     const before = await countMessages(s.classId);
     const res = await api.post(`/api/classes/bookings/${s.bookingId}/messages`, { body: 'let me in' });
     expect(res.status).toBe(403);
+    // The code has to survive the error filter. The first version of these routes answered
+    // HTTP_403 and dropped the code, so a client had to match English prose.
+    expect(res.envelope?.code).toBe('CHAT_NOT_A_PARTY');
     expect(await countMessages(s.classId)).toBe(before);
 
     const read = await api.get(`/api/classes/bookings/${s.bookingId}/messages`);
     expect(read.status).toBe(403);
+    expect(read.envelope?.code).toBe('CHAT_NOT_A_PARTY');
   });
 
   it('refuses a send before the room opens and after it closes', async () => {
     const early = await confirmedClass('early', -60);
     api.actAs(early.learnerId);
-    expect(
-      (await api.post(`/api/classes/bookings/${early.bookingId}/messages`, { body: 'too early' })).status,
-    ).toBe(409);
+    const tooEarly = await api.post(`/api/classes/bookings/${early.bookingId}/messages`, {
+      body: 'too early',
+    });
+    expect(tooEarly.status).toBe(403);
+    expect(tooEarly.envelope?.code).toBe('CHAT_WINDOW_CLOSED');
 
     const late = await confirmedClass('late', 90);
     api.actAs(late.learnerId);
-    expect(
-      (await api.post(`/api/classes/bookings/${late.bookingId}/messages`, { body: 'too late' })).status,
-    ).toBe(409);
+    const tooLate = await api.post(`/api/classes/bookings/${late.bookingId}/messages`, {
+      body: 'too late',
+    });
+    expect(tooLate.status).toBe(403);
+    expect(tooLate.envelope?.code).toBe('CHAT_WINDOW_CLOSED');
   });
 
   it('keeps history readable after the class window has closed', async () => {
@@ -230,7 +238,9 @@ describe('E2E: in-class chat (W5 / FR-012 / ADR-036)', () => {
     await harness.query('live-class', 'UPDATE classes SET "starts_at" = now() - interval \'1 day\' WHERE "id" = $1', [
       s.classId,
     ]);
-    expect((await api.post(`/api/classes/bookings/${s.bookingId}/messages`, { body: 'hello?' })).status).toBe(409);
+    const afterWindow = await api.post(`/api/classes/bookings/${s.bookingId}/messages`, { body: 'hello?' });
+    expect(afterWindow.status).toBe(403);
+    expect(afterWindow.envelope?.code).toBe('CHAT_WINDOW_CLOSED');
 
     const page = await api.get(`/api/classes/bookings/${s.bookingId}/messages`);
     expect(page.status).toBe(200);

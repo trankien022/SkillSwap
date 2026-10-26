@@ -21,6 +21,7 @@ import {
   buildJitsiOptions,
   type JitsiApi,
 } from './jitsi-external-api';
+import { ChatPanel } from './ChatPanel';
 
 export interface LiveClassroomProps {
   bookingId?: string;
@@ -591,7 +592,10 @@ export function LiveClassroomContent({ bookingId = '', roomCode = '' }: LiveClas
                   {booking === null ? t('nav.classFallback') : booking.teacherName}
                 </span>
                 {booking !== null && (
-                  <span className="text-sm text-slate-300">({booking.teacherSchoolLabel})</span>
+                  // `teacherSchoolLabel` is a fixed value from the view mapper, so it is
+                  // translated here rather than rendered raw: it used to print the English
+                  // "Peer student" on the Vietnamese screen.
+                  <span className="text-sm text-slate-300">({t('participants.peerStudent')})</span>
                 )}
               </div>
 
@@ -742,8 +746,11 @@ export function LiveClassroomContent({ bookingId = '', roomCode = '' }: LiveClas
           </div>
         </div>
 
-        {/* Right Column: Participants + Escrow */}
+        {/* Right Column: Participants + Chat + Escrow */}
         <div className="space-y-5 lg:col-span-4">
+          {/* FR-012 (ADR-036): the in-class chat. Rendered only once a real booking is
+              resolved, so the panel never asks the API about an id it does not have. */}
+          {booking !== null && <ChatPanel bookingId={booking.id} />}
           <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white ">
             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3">
               <div className="flex items-center gap-2">
@@ -778,7 +785,7 @@ export function LiveClassroomContent({ bookingId = '', roomCode = '' }: LiveClas
                     {booking === null ? t('participants.teacherFallback') : booking.teacherName}
                   </div>
                   <div className="truncate text-sm text-slate-500">
-                    {booking === null ? '—' : booking.teacherSchoolLabel}
+                    {booking === null ? '—' : t('participants.peerStudent')}
                   </div>
                 </div>
               </li>

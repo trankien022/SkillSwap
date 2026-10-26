@@ -1,12 +1,9 @@
 import {
   BadRequestException,
   Body,
-  ConflictException,
   Controller,
-  ForbiddenException,
   Get,
   Inject,
-  NotFoundException,
   Param,
   Post,
   Query,
@@ -36,7 +33,6 @@ import { currentUserId, type RequestWithIdentity } from '../../../../../../share
 import { decodeCursor, encodeCursor } from '../../../../../../shared/http/keyset-cursor';
 import { ResponseCode, ResponseMessage } from '../../../../../../shared/http/response-code.decorator';
 import { ZodValidationPipe } from '../../../../../../shared/http/zod-validation.pipe';
-import { ChatAccessDeniedError } from '../../../domain/chat';
 import {
   GET_CHAT_MESSAGES,
   POST_CHAT_MESSAGE,
@@ -44,7 +40,6 @@ import {
   type PostChatMessagePort,
 } from '../../../application/port/in/chat-messages';
 import type { ChatCursorParts } from '../../../application/port/out/chat-repository';
-import { BookingNotFoundError } from '../../../application/request-room-access.use-case';
 import { ChatMessageDto, ChatMessagesPageDto } from './dto/chat-messages.dto';
 
 /**
@@ -170,21 +165,13 @@ export class ChatMessagesController {
   }
 
   /**
-   * Maps the domain's refusals onto HTTP without inventing a status the domain did not decide.
+   * Rethrows as-is; the filter maps the error class and attaches the stable code.
    *
-   * `not_a_party` is a 403 — the caller is authenticated but not entitled. The other three are a
-   * 409: the request is well-formed and the caller is entitled in principle, but the booking's
-   * state or the clock says "not now".
+   * Wrapping these in `ForbiddenException({ code }).` was the first attempt and it silently lost
+   * the code: `fromHttpException` reports `HTTP_403` for any 403 and ignores a payload `code`. A
+   * client then had to match English to tell "not yours" from "come back later".
    */
   private translate(error: unknown): Error {
-    if (error instanceof BookingNotFoundError) {
-      return new NotFoundException(error.message);
-    }
-    if (error instanceof ChatAccessDeniedError) {
-      return error.reason === 'not_a_party'
-        ? new ForbiddenException({ code: 'CHAT_NOT_A_PARTY', message: error.message })
-        : new ConflictException({ code: 'CHAT_WINDOW_CLOSED', message: error.message });
-    }
     if (error instanceof Error) {
       return error;
     }

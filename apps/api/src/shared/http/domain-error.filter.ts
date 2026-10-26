@@ -74,6 +74,8 @@ const NAME_TO_STATUS: Record<string, number> = {
   ClassAlreadyCancelledError: 409,
   BookingTransitionError: 409,
   InvalidClassEditError: 400,
+  // FR-012 in-class chat (ADR-036, amended).
+  ChatAccessDeniedError: 403,
   // FR-011 room access (ADR-020).
   RoomAccessDeniedError: 403,
   BookingNotFoundError: 404,
@@ -180,6 +182,18 @@ export class DomainErrorFilter implements ExceptionFilter {
     if (name === 'BookingNotAllowedError' || name === 'LearnerNotVerifiedError') {
       const reason = (exception as Partial<ReasonBearingError> | null)?.reason;
       return typeof reason === 'string' && reason.length > 0 ? reason : null;
+    }
+    // FR-012 (ADR-036): a chat refusal is `CHAT_NOT_A_PARTY` or `CHAT_WINDOW_CLOSED`.
+    //
+    // This deliberately does NOT go through `fromHttpException`. A controller that threw
+    // `new ForbiddenException({ code, message })` looked right, but the HTTP branch below reports
+    // `HTTP_403` for every 403 and discards the payload's `code` -- so the documented codes never
+    // reached a client, and each one had to guess from prose. The reason is already on the error.
+    if (name === 'ChatAccessDeniedError') {
+      const reason = (exception as Partial<ReasonBearingError> | null)?.reason;
+      if (reason === 'not_a_party') return 'CHAT_NOT_A_PARTY';
+      if (typeof reason === 'string' && reason.length > 0) return 'CHAT_WINDOW_CLOSED';
+      return null;
     }
     return NAME_TO_CODE[name] ?? null;
   }

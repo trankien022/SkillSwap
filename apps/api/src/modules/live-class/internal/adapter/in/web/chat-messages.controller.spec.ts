@@ -1,4 +1,4 @@
-import { ConflictException, ForbiddenException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedException } from '@nestjs/common';
 import { ChatAccessDeniedError } from '../../../domain/chat';
 import { BookingNotFoundError } from '../../../application/request-room-access.use-case';
 import type { GetChatMessagesPort, PostChatMessagePort } from '../../../application/port/in/chat-messages';
@@ -48,31 +48,30 @@ describe('ChatMessagesController (FR-012)', () => {
   });
 
   describe('403 vs 404 vs 409', () => {
-    it('maps not_a_party to 403', async () => {
+    it('lets a party refusal through as a domain error, so the filter can attach its code', async () => {
+      // Wrapping this in ForbiddenException({ code }) looked right but lost the code: the filter
+      // reports HTTP_403 for every 403 and ignores a payload code. The reason must survive.
       const { controller, postExecute } = setup();
-      postExecute.mockRejectedValueOnce(new ChatAccessDeniedError('not_a_party', 'nope'));
-      await expect(controller.post(BOOKING_ID, { body: 'hi' }, request())).rejects.toBeInstanceOf(
-        ForbiddenException,
-      );
+      const denied = new ChatAccessDeniedError('not_a_party', 'nope');
+      postExecute.mockRejectedValueOnce(denied);
+      await expect(controller.post(BOOKING_ID, { body: 'hi' }, request())).rejects.toBe(denied);
     });
 
     it.each(['booking_not_confirmed', 'window_not_open', 'window_closed'] as const)(
-      'maps %s to 409',
+      'lets a %s refusal through unchanged',
       async (reason) => {
         const { controller, postExecute } = setup();
-        postExecute.mockRejectedValueOnce(new ChatAccessDeniedError(reason, reason));
-        const error = await controller.post(BOOKING_ID, { body: 'hi' }, request()).catch((e) => e);
-        expect(error).toBeInstanceOf(ConflictException);
-        expect((error as ConflictException).getResponse()).toMatchObject({ code: 'CHAT_WINDOW_CLOSED' });
+        const denied = new ChatAccessDeniedError(reason, reason);
+        postExecute.mockRejectedValueOnce(denied);
+        await expect(controller.post(BOOKING_ID, { body: 'hi' }, request())).rejects.toBe(denied);
       },
     );
 
-    it('maps a missing booking to 404, not 403', async () => {
+    it('lets a missing booking through, which the filter maps to 404', async () => {
       const { controller, getExecute } = setup();
-      getExecute.mockRejectedValueOnce(new BookingNotFoundError('nope'));
-      await expect(controller.list(BOOKING_ID, {} as never, request())).rejects.toBeInstanceOf(
-        NotFoundException,
-      );
+      const missing = new BookingNotFoundError('nope');
+      getExecute.mockRejectedValueOnce(missing);
+      await expect(controller.list(BOOKING_ID, {} as never, request())).rejects.toBe(missing);
     });
   });
 

@@ -1302,7 +1302,8 @@
       "inCall": "In the room",
       "notInCall": "Not in the room",
       "youLabel": "You",
-      "teacherFallback": "Instructor"
+      "teacherFallback": "Instructor",
+      "peerStudent": "Peer student"
     },
     "states": {
       "loadingBooking": "Loading session details…",
@@ -1344,7 +1345,46 @@
       }
     },
     "chat": {
-      "safetyNotice": "SkillSwap Safety: Keep all interactions within the platform to maintain escrow protection and academic support guarantees."
+      "safetyNotice": "SkillSwap Safety: Keep all interactions within the platform to maintain escrow protection and academic support guarantees.",
+      "title": "Class chat",
+      "total": "{total} messages",
+      "you": "You",
+      "roles": {
+        "learner": "Learner",
+        "teacher": "Teacher"
+      },
+      "loading": "Loading the conversation…",
+      "empty": "No messages yet. Say hello before the lesson starts.",
+      "loadMore": "Load earlier messages",
+      "loadingMore": "Loading…",
+      "composerLabel": "Message to send",
+      "composerPlaceholder": "Write a message…",
+      "send": "Send",
+      "sending": "Sending…",
+      "counter": "{length} / {max} characters",
+      "unavailableTitle": "Chat is not available",
+      "denials": {
+        "CHAT_NOT_A_PARTY": "You are not part of this booking, so its chat is not open to you.",
+        "CHAT_WINDOW_CLOSED": "Chat opens 15 minutes before the lesson and closes when it ends.",
+        "booking_not_confirmed": "The booking is not confirmed yet, so there is no conversation to read.",
+        "BookingNotFoundError": "This booking no longer exists.",
+        "HTTP_401": "Please sign in again to open the chat.",
+        "HTTP_403": "You are not part of this booking, so its chat is not open to you.",
+        "HTTP_404": "This booking no longer exists.",
+        "HTTP_409": "Chat is not open for this class right now.",
+        "UNAVAILABLE": "The chat could not be loaded. Please try again."
+      },
+      "sendErrors": {
+        "CHAT_WINDOW_CLOSED": "Chat is closed for this class, so your message was not sent. It is still in the box.",
+        "CHAT_MESSAGE_INVALID": "Write something before sending.",
+        "CHAT_NOT_A_PARTY": "You are not part of this booking.",
+        "BookingNotFoundError": "This booking no longer exists.",
+        "HTTP_401": "Your session expired. Sign in again to send.",
+        "HTTP_403": "You are not part of this booking.",
+        "HTTP_404": "This booking no longer exists.",
+        "HTTP_409": "Chat is not open for this class right now.",
+        "UNAVAILABLE": "Your message was not sent. It is still in the box — please try again."
+      }
     },
     "escrow": {
       "title": "Escrow Protection - Escrow Active",
