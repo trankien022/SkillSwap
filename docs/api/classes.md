@@ -6,7 +6,7 @@
 
 The marketplace core (FR-005/FR-007/FR-009/FR-011/FR-020). A student teacher publishes a class; learners book and pay; the teacher starts, completes, or cancels; room access issues a Jitsi token.
 
-13 endpoints.
+14 endpoints.
 
 Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
 
@@ -152,7 +152,7 @@ Publish a new class (FR-005). Requires the teacher to be a verified student appr
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `bookingId` | string | yes | min 1 chars |
-| `state` | enum | yes | one of `pending`, `confirmed`, `completed`, `cancelled`, `disputed` |
+| `state` | enum | yes | one of `pending`, `confirmed`, `completed`, `cancelled` |
 | `expiresAt` | string | yes | date-time; nullable |
 
 ### `PATCH /api/classes/{id}`
@@ -250,26 +250,6 @@ Cancel a class and refund every affected learner (AC-022). Teacher-only.
 | `classCancelled` | boolean | yes |  |
 | `bookingsCancelled` | integer | yes | ≥ 0 |
 
-### `POST /api/classes/{id}/complete`
-
-**End a class the teacher held (FR-020 / ADR-021)**
-
-Teacher ends a class; completion releases the teacher income (FR-020, ADR-021).
-
-- Auth: 🔒 Bearer token required
-- Response: `CompleteClassResultDto`
-
-| Param | In | Type | Required | Description |
-|---|---|---|---|---|
-| `id` | path | string | yes | The class id |
-
-**Response — `CompleteClassResultDto`** (inside the `data` envelope key)
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `completed` | boolean | yes |  |
-| `basis` | string | yes | min 1 chars; nullable |
-
 ### `POST /api/classes/{id}/start`
 
 **Start a class the teacher is holding (FR-020 / ADR-021)**
@@ -318,6 +298,69 @@ Confirm a pending booking and settle payment from the wallet (FR-009). Fails whe
 | `learnerId` | string | yes | min 1 chars |
 | `state` | string | yes | min 1 chars |
 | `priceCredits` | integer | yes |  |
+| `createdAt` | string | yes | date-time |
+
+### `GET /api/classes/bookings/{bookingId}/messages`
+
+**Read a class chat (FR-012 / NFR-014)**
+
+- Auth: 🔒 Bearer token required
+- Response: `ChatMessagesPageDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `bookingId` | path | string | yes | A booking the caller is a party to |
+| `cursor` | query | string | no | Opaque cursor from the previous `nextCursor` |
+| `limit` | query | string | no | Page size, 1–100 (default 20) |
+
+**Response — `ChatMessagesPageDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `items` | object[] | yes |  |
+| `page` | object | yes |  |
+
+**`items`[]** — ChatMessagesPageDto.items fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | uuid |
+| `classId` | string | yes | uuid |
+| `bookingId` | string | yes | uuid |
+| `senderId` | string | yes | uuid |
+| `senderRole` | enum | yes | one of `learner`, `teacher` |
+| `body` | string | yes | min 1 chars; max 1000 chars |
+| `createdAt` | string | yes | date-time |
+
+**`page`** — ChatMessagesPageDto.page fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `limit` | integer | yes | ≥ 1; ≤ 100 |
+| `nextCursor` | string | yes | min 1 chars; nullable |
+| `total` | integer | yes | ≥ 0 |
+
+### `POST /api/classes/bookings/{bookingId}/messages`
+
+**Post one message to a class chat (FR-012)**
+
+- Auth: 🔒 Bearer token required
+- Response: `ChatMessageDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `bookingId` | path | string | yes | A booking the caller is a party to |
+
+**Response — `ChatMessageDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | uuid |
+| `classId` | string | yes | uuid |
+| `bookingId` | string | yes | uuid |
+| `senderId` | string | yes | uuid |
+| `senderRole` | enum | yes | one of `learner`, `teacher` |
+| `body` | string | yes | min 1 chars; max 1000 chars |
 | `createdAt` | string | yes | date-time |
 
 ### `POST /api/classes/bookings/{bookingId}/no-show`
@@ -418,7 +461,7 @@ Issue a short-lived Jitsi room token for a party to the booking (FR-011). Use wh
 |---|---|---|---|
 | `bookingId` | string | yes | min 1 chars |
 | `classId` | string | yes | min 1 chars |
-| `state` | enum | yes | one of `pending`, `confirmed`, `completed`, `cancelled`, `disputed` |
+| `state` | enum | yes | one of `pending`, `confirmed`, `completed`, `cancelled` |
 | `priceCredits` | integer | yes | > 0 |
 | `createdAt` | string | yes | date-time |
 | `expiresAt` | string | yes | date-time; nullable |

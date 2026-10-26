@@ -3,7 +3,7 @@ title: W5 — In-class chat (FR-012)
 type: plan
 date: 2026-10-24
 topic: w5-in-class-chat
-status: Phases 1–5 done; Phase 6 (mobile) and Phase 7 (docs close-out) remain
+status: Phases 1–5 done; Phase 6 not applicable (no native live screen — see the phase note); Phase 7 docs owed
 owner: Group 4
 ---
 
@@ -180,11 +180,17 @@ Index on `(class_id, created_at desc, id)` for keyset pagination. No cross-schem
 
 ---
 
-## Phase 6 — Mobile client
+## Phase 6 — Mobile client — **NOT APPLICABLE as written (found 2026-10-26)**
 
 - Chat section on the existing live screen (`bookings/[id]/live`), same polling port behind `src/infrastructure/http/`, same copy, 360 px safe, keyboard-avoiding input.
 
-**Commit:** `feat(mobile): in-class chat panel`
+**There is no mobile live screen.** `openRoom` in `apps/mobile/src/ui/my-bookings-view.tsx` calls `Linking.openURL(access.url)`, so the Jitsi room opens in the **device's browser**, outside the app. A chat panel cannot mount on a screen the app never renders, and the plan's premise ("the existing live screen") was wrong about the client, not about chat.
+
+**Consequence, stated rather than hidden:** on mobile, in-class chat is reached through the same web classroom the join button already hands off to. That screen is mobile-first and browser-verified at 360 px, so a learner on a phone *does* get chat — just not inside the native shell. FR-012 does not require a native surface, and no requirement says the room must be embedded in the app.
+
+**If a native classroom is ever built**, the chat port goes behind `src/infrastructure/http/` as planned and this phase becomes real work. Until then there is nothing to build, and writing a mobile chat client coupled to no screen would be inventing one. Recorded here so the gap is a decision, not an oversight.
+
+**Commit:** none.
 
 ---
 
@@ -194,6 +200,8 @@ Index on `(class_id, created_at desc, id)` for keyset pagination. No cross-schem
 - SRS Appendix B `Message` row: match the real table name and columns; no `flagged` column exists.
 - `docs/api/` entry for the two routes; `docs/diagrams/checkpoint/source/sequence-room.puml` gains the chat exchange, then re-render.
 - UC-004 main flow updated to name the endpoints, including the blocked-contact-sharing alternate flow.
+
+**Note:** the "blocked-contact-sharing alternate flow" is gone with the detector (Amendment A) — UC-004 names the endpoints and the window, and says nothing about content. Also verified on the wire during Phase 5: the two refusal codes had to be moved onto `ChatAccessDeniedError`, because the controller's `ForbiddenException({ code })` was flattened to `HTTP_403` by the error filter.
 
 **Commit:** `docs(srs): record in-class chat implementation`
 

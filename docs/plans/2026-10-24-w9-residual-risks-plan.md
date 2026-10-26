@@ -3,7 +3,7 @@ title: W9 — Residual risks: ranking, MFA, failure UX
 type: plan
 date: 2026-10-24
 topic: w9-residual-risks
-status: Unblocked — ranking excluded, NFR-009 amended (2026-10-25)
+status: Phases 0–5 done (2026-10-26) — ranking excluded, MFA amended, trace walkthrough written, failure UX verified, accessibility rubric written
 owner: Group 4
 ---
 
@@ -43,6 +43,8 @@ AC-033 covers authorization (403), not authentication strength, so this was a ge
 
 **State:** covered structurally by W8 Phase 4. Kept here as a cross-reference so it is not lost if W8 is descoped.
 
+**Verified 2026-10-26** (`16f77ba`). Checked rather than assumed: the embed error had the right sentence and **no action**, so NFR-006's "actionable" clause was not met. The retry now re-enters the connecting phase with the access it already holds, so a transient Jitsi failure costs no extra room-access request. Verified against a genuinely failing embed in the browser, in both locales.
+
 ---
 
 ## R4 — End-to-end trace (NFR-003, NFR-005)
@@ -51,6 +53,8 @@ AC-033 covers authorization (403), not authentication strength, so this was a ge
 
 **Sketch, small:** write `docs/runbooks/transaction-trace.md` with one real top-up + one settlement traced by id across tables, plus a scripted assertion (or a test) that the ids match. No code change expected; if the ids do **not** join, that itself is the finding and becomes a fix.
 
+**Done 2026-10-26.** The runbook was written from a real top-up on the local stack, and the ids did **not** join: a settled top-up wrote its ledger row and moved the balance but emitted **no** outbox event, so `account-profile.notification-wallet-completed` (FR-016's "completed wallet transactions") never fired. Fixed in `83f3bd5` — `applyTopUp` now writes ledger → balance → event in one transaction, pinned by 3 unit tests and 2 E2E tests. The same trace re-run after the fix closes end to end on one ledger id. Reversals, refunds and income releases still emit nothing; recorded as named gaps rather than invented contract members.
+
 ---
 
 ## R5 — Accessibility spot-check (NFR-007)
@@ -58,6 +62,8 @@ AC-033 covers authorization (403), not authentication strength, so this was a ge
 **State:** status is text + colour everywhere (verified by design rules), but keyboard traversal and screen-reader labels on the two newest surfaces (admin operations W6, chat W5) are not checked.
 
 **Sketch:** extend the acceptance rubric in `tasks/mobile-week6-acceptance.md` with a keyboard-only pass and a screen-reader pass for those two screens, once they exist. No standalone work.
+
+**Done 2026-10-26.** The rubric is in `tasks/mobile-week6-acceptance.md` (§ "Accessibility spot-check"), with the known gap recorded: the chat list deliberately has no `aria-live` region, so a sent message is not announced. It stays **unrun** until a human sits at a keyboard — that is the honest state, and it is the one item in W9 an agent cannot close.
 
 ---
 
