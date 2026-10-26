@@ -82,4 +82,26 @@ describe('TrustedIdentityGuard', () => {
     const guard = new TrustedIdentityGuard('strict');
     expect(() => guard.canActivate(contextFor({}, '/api/auth/me'))).toThrow();
   });
+
+  /**
+   * ADR-020 Amendment A: the Jitsi presence webhook authenticates with its own shared secret,
+   * because Jitsi is not a user and cannot carry `x-user-*` headers.
+   *
+   * This case exists because the omission it guards was invisible until CI: local runs use
+   * `AUTH_MODE=off`, where every request passes regardless, so the endpoint appeared to work
+   * while being unreachable in any environment that actually authenticates.
+   */
+  it('lets the Jitsi presence webhook through in strict mode', () => {
+    const guard = new TrustedIdentityGuard('strict');
+    const context = contextFor({}, '/api/internal/jitsi/presence');
+    expect(guard.canActivate(context)).toBe(true);
+    expect(context.switchToHttp().getRequest<{ user: CapturedUser }>().user?.id).toBe('anonymous');
+  });
+
+  it('does not widen the public list to unrelated internal routes', () => {
+    // The prefix is `/api/internal/jitsi`, not `/api/internal`: a future internal endpoint must
+    // opt in deliberately rather than inherit this exemption from a broader prefix.
+    const guard = new TrustedIdentityGuard('strict');
+    expect(() => guard.canActivate(contextFor({}, '/api/internal/other'))).toThrow();
+  });
 });
