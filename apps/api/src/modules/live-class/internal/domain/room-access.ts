@@ -71,6 +71,43 @@ function windowBounds(
   };
 }
 
+/**
+ * FR-012 / ADR-036 decision 2: chat is open exactly when the door is.
+ *
+ * Exported so `domain/chat.ts` can reuse the same arithmetic instead of repeating it. A chat
+ * window that drifts from the room window is a bug generator: a participant would be able to
+ * speak but not join, or the reverse, and no test would notice unless the two were compared.
+ * Taking the class view rather than a computed instant keeps the one definition here.
+ */
+export function isWithinAccessWindow(
+  classView: RoomAccessClass,
+  now: Date,
+  openMinutes: number = DEFAULT_OPEN_MINUTES,
+): { opensAt: Date; closesAt: Date; open: boolean } {
+  const { opensAt, closesAt } = windowBounds(classView, openMinutes);
+  const at = now.getTime();
+  return {
+    opensAt: new Date(opensAt),
+    closesAt: new Date(closesAt),
+    open: at >= opensAt && at <= closesAt,
+  };
+}
+
+/** The two parties of a booking, by role. `null` for anyone else. */
+export function partyRole(
+  booking: Pick<RoomAccessBooking, 'learnerId'>,
+  classView: Pick<RoomAccessClass, 'teacherId'>,
+  accountId: string,
+): 'learner' | 'teacher' | null {
+  if (accountId === booking.learnerId) {
+    return 'learner';
+  }
+  if (accountId === classView.teacherId) {
+    return 'teacher';
+  }
+  return null;
+}
+
 function deny(reason: RoomAccessDenial, message: string): never {
   throw new RoomAccessDeniedError(reason, message);
 }
