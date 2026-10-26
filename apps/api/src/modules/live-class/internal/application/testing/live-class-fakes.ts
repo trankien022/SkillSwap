@@ -327,7 +327,7 @@ export class FakeRoomIncidentRecorder implements RoomIncidentRecorder {
  * approved at `expert` for **any** skill (happy path); pass overrides to test refusals.
  * `approvedLevels` overrides specific skills; `defaultLevel` covers the rest (null = none).
  */
-export class FakeTeacherTrustReader {
+export class FakeAccountTrustReader {
   constructor(
     private readonly trust: {
       verified?: boolean;

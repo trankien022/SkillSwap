@@ -160,11 +160,11 @@ import { CLASS_REPOSITORY, type ClassRepository } from './internal/application/p
 import { BOOKING_REPOSITORY, type BookingRepository } from './internal/application/port/out/booking-repository';
 import { CLOCK, type Clock } from './internal/application/port/out/clock';
 import {
-  TEACHER_TRUST_READER,
+  ACCOUNT_TRUST_READER,
   TEACHER_TRUST_WRITER,
-  type TeacherTrustReader,
+  type AccountTrustReader,
   type TeacherTrustWriter,
-} from './internal/application/port/out/teacher-trust';
+} from './internal/application/port/out/account-trust';
 import { MODULE_NAME } from './internal/domain/module-status';
 
 /** Registers this module's DataSource pool and the FR-005 trust consumers. */
@@ -326,8 +326,8 @@ const systemClock: Clock = { now: () => new Date() };
     },
     { provide: CLOCK, useValue: systemClock },
     {
-      provide: TEACHER_TRUST_READER,
-      useFactory: (registry: ModuleDataSourceRegistry): TeacherTrustReader =>
+      provide: ACCOUNT_TRUST_READER,
+      useFactory: (registry: ModuleDataSourceRegistry): AccountTrustReader =>
         new SqlTeacherTrustProjector(registry, MODULE_NAME),
       inject: [ModuleDataSourceRegistry],
     },
@@ -342,9 +342,9 @@ const systemClock: Clock = { now: () => new Date() };
       useFactory: (
         classes: ClassRepository,
         clock: Clock,
-        trust: TeacherTrustReader,
+        trust: AccountTrustReader,
       ): CreateClassPort => new CreateClassUseCase(classes, clock, trust),
-      inject: [CLASS_REPOSITORY, CLOCK, TEACHER_TRUST_READER],
+      inject: [CLASS_REPOSITORY, CLOCK, ACCOUNT_TRUST_READER],
     },
     {
       provide: BOOK_CLASS,
@@ -352,11 +352,11 @@ const systemClock: Clock = { now: () => new Date() };
         classes: ClassRepository,
         bookings: BookingRepository,
         clock: Clock,
-        teacherTrust: TeacherTrustReader,
+        teacherTrust: AccountTrustReader,
       ): BookClassPort => new BookClassUseCase(classes, bookings, clock, teacherTrust),
       // AC-034 / BR-001: the booking gate reads the same trust projection as the
       // publish gate, never a cross-schema read (ADR-024) or the caller's claim.
-      inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY, CLOCK, TEACHER_TRUST_READER],
+      inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY, CLOCK, ACCOUNT_TRUST_READER],
     },
     {
       provide: CONFIRM_BOOKING,
@@ -370,9 +370,9 @@ const systemClock: Clock = { now: () => new Date() };
         classes: ClassRepository,
         bookings: BookingRepository,
         clock: Clock,
-        trust: TeacherTrustReader,
+        trust: AccountTrustReader,
       ): UpdateClassPort => new UpdateClassUseCase(classes, bookings, clock, trust),
-      inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY, CLOCK, TEACHER_TRUST_READER],
+      inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY, CLOCK, ACCOUNT_TRUST_READER],
     },
     {
       provide: CANCEL_CLASS,

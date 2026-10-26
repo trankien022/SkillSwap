@@ -1,14 +1,20 @@
 import type { TeacherTrust } from '../../../domain/publish-policy';
 
-export const TEACHER_TRUST_READER = Symbol('TeacherTrustReader');
+export const ACCOUNT_TRUST_READER = Symbol('AccountTrustReader');
 
 /**
- * FR-005 / ADR-024 extension: read the locally-projected publish rights for a Teacher
- * (is a verified student; effective approved level per skill). Fed by events; never a
- * cross-schema read (ADR-014).
+ * FR-005 / ADR-024 extension: read the locally-projected trust rights for one account —
+ * is it a verified student, and what is its effective approved level per skill.
+ *
+ * Named for the **account**, not the Teacher (decision D2, closed 2026-10-26). The same
+ * projection answers two gates that have nothing to do with teaching: the publish gate
+ * (FR-005) and the booking gate (AC-034 / BR-001, a learner must be a verified student to
+ * book at all). Calling it `TeacherTrustReader` made the second caller look like a mistake.
+ *
+ * Fed by events; never a cross-schema read (ADR-014).
  */
-export interface TeacherTrustReader {
-  read(teacherId: string): Promise<TeacherTrust>;
+export interface AccountTrustReader {
+  read(accountId: string): Promise<TeacherTrust>;
 }
 
 export const TEACHER_TRUST_WRITER = Symbol('TeacherTrustWriter');

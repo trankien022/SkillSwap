@@ -5,7 +5,7 @@ import { NotClassOwnerError } from './cancel-class.use-case';
 import { ClassNotFoundError } from './book-class.use-case';
 import type { Clock } from './port/out/clock';
 import {
-  FakeTeacherTrustReader,
+  FakeAccountTrustReader,
   InMemoryBookingRepository,
   InMemoryClassRepository,
   makeBooking,
@@ -13,7 +13,7 @@ import {
 
 const NOW = new Date('2026-10-10T00:00:00.000Z');
 const clock: Clock = { now: () => NOW };
-const trust = new FakeTeacherTrustReader();
+const trust = new FakeAccountTrustReader();
 
 describe('UpdateClassUseCase (FR-007 / AC-017)', () => {
   it('edits a class before its first confirmed booking', async () => {
@@ -31,7 +31,7 @@ describe('UpdateClassUseCase (FR-007 / AC-017)', () => {
   it('re-checks the publish gate when the skill set changes (FR-005)', async () => {
     const classes = new InMemoryClassRepository();
     const bookings = new InMemoryBookingRepository();
-    const denying = new FakeTeacherTrustReader({ approvedLevels: { 'skill-2': null } });
+    const denying = new FakeAccountTrustReader({ approvedLevels: { 'skill-2': null } });
     await expect(
       new UpdateClassUseCase(classes, bookings, clock, denying).execute({
         classId: 'cls-1',

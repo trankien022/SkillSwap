@@ -13,7 +13,7 @@ import type {
 import type { BookingRepository } from './port/out/booking-repository';
 import type { ClassRepository } from './port/out/class-repository';
 import type { Clock } from './port/out/clock';
-import type { TeacherTrustReader } from './port/out/teacher-trust';
+import type { AccountTrustReader } from './port/out/account-trust';
 
 /**
  * FR-007 / API-005: create a pending booking that holds a seat.
@@ -29,7 +29,7 @@ export class BookClassUseCase implements BookClassPort {
     private readonly classes: ClassRepository,
     private readonly bookings: BookingRepository,
     private readonly clock: Clock,
-    private readonly teacherTrust: TeacherTrustReader,
+    private readonly teacherTrust: AccountTrustReader,
   ) {}
 
   async execute(command: BookClassCommand): Promise<BookClassResult> {

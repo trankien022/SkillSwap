@@ -3,7 +3,7 @@ import { startHarness, type Harness } from './harness';
 import { resetDatabase } from './support/db';
 import { PostgresProcessedEventStore } from '../src/shared/messaging/processed-event-store';
 import { ProjectTeacherTrustUseCase } from '../src/modules/live-class/internal/application/project-teacher-trust.use-case';
-import { TEACHER_TRUST_WRITER, type TeacherTrustWriter } from '../src/modules/live-class/internal/application/port/out/teacher-trust';
+import { TEACHER_TRUST_WRITER, type TeacherTrustWriter } from '../src/modules/live-class/internal/application/port/out/account-trust';
 
 jest.setTimeout(180_000);
 

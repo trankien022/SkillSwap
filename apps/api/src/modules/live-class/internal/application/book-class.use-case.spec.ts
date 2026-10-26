@@ -7,7 +7,7 @@ import type {
 } from './port/out/booking-repository';
 import type { ClassRepository, CreateClassRecord, PersistedClass } from './port/out/class-repository';
 import type { Clock } from './port/out/clock';
-import type { TeacherTrustReader } from './port/out/teacher-trust';
+import type { AccountTrustReader } from './port/out/account-trust';
 import { BookingNotAllowedError, LearnerNotVerifiedError } from '../domain/booking';
 
 const NOW = new Date('2026-10-08T00:00:00.000Z');
@@ -88,7 +88,7 @@ function setup(options: {
   const clock: Clock = { now: () => NOW };
   // AC-034 / BR-001: the booking gate reads the trust projection, not a claim.
   const verifications = options.verifications ?? { 'learner-1': true };
-  const teacherTrust: TeacherTrustReader = {
+  const teacherTrust: AccountTrustReader = {
     read: jest.fn(async (accountId: string) => ({
       verified: verifications[accountId] ?? false,
       approvedLevel: () => null,

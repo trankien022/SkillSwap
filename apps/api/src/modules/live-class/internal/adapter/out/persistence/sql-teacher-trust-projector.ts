@@ -3,18 +3,18 @@ import { qualified } from '../../../../../../shared/sql/ident';
 import type { SkillLevel, TeacherTrust } from '../../../domain/publish-policy';
 import { isSkillLevel } from '../../../domain/skill-level';
 import type {
-  TeacherTrustReader,
+  AccountTrustReader,
   TeacherTrustWriter,
   UpsertSkillApprovalRequest,
   UpsertVerifiedTeacherRequest,
-} from '../../../application/port/out/teacher-trust';
+} from '../../../application/port/out/account-trust';
 
 /**
  * FR-005 / ADR-024 extension: the `live-class` local projection of Teacher publish rights.
  * Written by event consumers (idempotent, last-writer-wins by `occurred_at`); read by the
  * publish gate. No cross-schema access (ADR-014).
  */
-export class SqlTeacherTrustProjector implements TeacherTrustReader, TeacherTrustWriter {
+export class SqlTeacherTrustProjector implements AccountTrustReader, TeacherTrustWriter {
   constructor(
     private readonly registry: ModuleDataSourceRegistry,
     private readonly moduleName: string,

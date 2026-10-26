@@ -8,7 +8,7 @@ import type {
 } from './port/in/create-class';
 import type { ClassRepository } from './port/out/class-repository';
 import type { Clock } from './port/out/clock';
-import type { TeacherTrustReader } from './port/out/teacher-trust';
+import type { AccountTrustReader } from './port/out/account-trust';
 
 /**
  * Publishes a class (FR-005 / API-004 / AC-002).
@@ -23,7 +23,7 @@ export class CreateClassUseCase implements CreateClassPort {
   constructor(
     private readonly classes: ClassRepository,
     private readonly clock: Clock,
-    private readonly teacherTrust: TeacherTrustReader,
+    private readonly teacherTrust: AccountTrustReader,
   ) {}
 
   async execute(command: CreateClassCommand): Promise<CreateClassResult> {

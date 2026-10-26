@@ -5,7 +5,7 @@ import type { UpdateClassCommand, UpdateClassPort } from './port/in/update-class
 import type { ClassRepository, PersistedClass } from './port/out/class-repository';
 import type { BookingRepository } from './port/out/booking-repository';
 import type { Clock } from './port/out/clock';
-import type { TeacherTrustReader } from './port/out/teacher-trust';
+import type { AccountTrustReader } from './port/out/account-trust';
 import { ClassNotFoundError } from './book-class.use-case';
 import { NotClassOwnerError } from './cancel-class.use-case';
 
@@ -28,7 +28,7 @@ export class UpdateClassUseCase implements UpdateClassPort {
     private readonly classes: ClassRepository,
     private readonly bookings: BookingRepository,
     private readonly clock: Clock,
-    private readonly teacherTrust: TeacherTrustReader,
+    private readonly teacherTrust: AccountTrustReader,
   ) {}
 
   async execute(command: UpdateClassCommand): Promise<ClassResource> {

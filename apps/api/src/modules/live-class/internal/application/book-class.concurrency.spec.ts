@@ -8,7 +8,7 @@ import type {
 } from './port/out/booking-repository';
 import type { ClassRepository, PersistedClass } from './port/out/class-repository';
 import type { Clock } from './port/out/clock';
-import type { TeacherTrustReader } from './port/out/teacher-trust';
+import type { AccountTrustReader } from './port/out/account-trust';
 
 /**
  * AC-010 acceptance at the application boundary.
@@ -161,7 +161,7 @@ function fixedClock(now: Date): Clock {
 }
 
 /** AC-034: a trust projection where every account is a verified student. */
-function verifiedTrust(): TeacherTrustReader {
+function verifiedTrust(): AccountTrustReader {
   return {
     read: jest.fn(async () => ({ verified: true, approvedLevel: () => null })),
   };
