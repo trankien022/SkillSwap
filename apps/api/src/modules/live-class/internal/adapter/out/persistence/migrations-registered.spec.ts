@@ -32,6 +32,7 @@ const REQUIRED: string[] = [
   '1791072000600', // outbox aggregate sequence (W2 C1)
   '1791072000601', // consumer sequence watermark (W2 C1)
   '1791072000009', // `disputed` removed from the booking vocabulary (ADR-037 decision 6)
+  '1791072000010', // FR-012 in-class chat log (ADR-036, Amendment A)
 ];
 
 describe('live-class migrations are registered (ADR-014)', () => {
