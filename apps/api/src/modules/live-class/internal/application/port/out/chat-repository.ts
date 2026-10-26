@@ -19,7 +19,15 @@ export interface NewChatMessage {
  * saw, rather than re-reading or skipping a tie.
  */
 export interface ChatCursorParts {
-  createdAt: Date;
+  /**
+   * The stored timestamp **as Postgres rendered it**, not a re-serialised `Date`.
+   *
+   * `created_at` is `timestamptz` with microsecond precision, while a JS `Date` only holds
+   * milliseconds. Round-tripping the cursor through a `Date` therefore truncates the fraction,
+   * and the next page re-includes the row it resumed after — caught by the E2E paging case, which
+   * saw "hai" twice. Keeping the string avoids inventing precision the wire format cannot carry.
+   */
+  createdAt: string;
   id: string;
 }
 

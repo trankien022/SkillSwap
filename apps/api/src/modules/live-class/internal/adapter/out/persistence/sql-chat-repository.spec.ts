@@ -117,13 +117,15 @@ describe('SqlChatRepository (FR-012)', () => {
       const result = await repository.list({
         classId: CLASS_ID,
         limit: 10,
-        cursor: { createdAt: new Date('2026-10-26T10:00:00.000Z'), id: MSG_1 },
+        cursor: { createdAt: '2026-10-26T10:00:00.000000Z', id: MSG_1 },
       });
 
       expect(result.nextCursor).toBeNull();
       const sql = (source.query as jest.Mock).mock.calls[0][0] as string;
       // `>` not `>=`: a page must not repeat the row it resumed after.
       expect(sql).toContain('(c."created_at", c."id") > ($2::timestamptz, $3::uuid)');
+      // The cursor timestamp travels as full-precision text, never as a JS Date.
+      expect((source.query as jest.Mock).mock.calls[0][1][1]).toBe('2026-10-26T10:00:00.000000Z');
     });
 
     it('counts the whole conversation, not the page, so total does not shrink while paging', async () => {
@@ -134,7 +136,7 @@ describe('SqlChatRepository (FR-012)', () => {
       const result = await repository.list({
         classId: CLASS_ID,
         limit: 10,
-        cursor: { createdAt: new Date('2026-10-26T10:00:00.000Z'), id: MSG_1 },
+        cursor: { createdAt: '2026-10-26T10:00:00.000000Z', id: MSG_1 },
       });
 
       expect(result.total).toBe(42);
@@ -143,10 +145,26 @@ describe('SqlChatRepository (FR-012)', () => {
       expect((source.query as jest.Mock).mock.calls[1][1]).toEqual([CLASS_ID]);
     });
 
-    it('accepts the pg string timestamp as well as a Date', async () => {
+    it('keeps the stored microsecond precision in the next cursor', async () => {
       (source.query as jest.Mock)
         .mockResolvedValueOnce([
-          { ...row(MSG_1, '2026-10-26T10:00:00.000Z'), created_at: '2026-10-26T10:00:00.000Z' },
+          // Shaped as the SQL's `to_char(...)` cast emits: microsecond precision, UTC, `Z`.
+          { ...row(MSG_1, '2026-10-26T10:00:00.046443Z'), created_at: '2026-10-26T10:00:00.046443Z' },
+          // limit + 1: this extra row is what tells the repository another page exists.
+          { ...row(MSG_2, '2026-10-26T10:01:00.000001Z'), created_at: '2026-10-26T10:01:00.000001Z' },
+        ])
+        .mockResolvedValueOnce([{ count: 2 }]);
+
+      const first = await repository.list({ classId: CLASS_ID, limit: 1, cursor: null });
+      // The cursor must carry the exact stored instant: a JS Date would hold .046, and the next
+      // page would then re-emit the row it resumed after (that was the bug).
+      expect(first.nextCursor?.createdAt).toBe('2026-10-26T10:00:00.046443Z');
+    });
+
+    it('accepts a Date as well as the pg text cast', async () => {
+      (source.query as jest.Mock)
+        .mockResolvedValueOnce([
+          { ...row(MSG_1, '2026-10-26T10:00:00.000Z'), created_at: new Date('2026-10-26T10:00:00.000Z') },
         ])
         .mockResolvedValueOnce([{ count: '1' }]);
 

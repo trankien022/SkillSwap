@@ -29,6 +29,16 @@ function toIso(value: Date | string): string {
   return value instanceof Date ? value.toISOString() : value;
 }
 
+/**
+ * The timestamp with the precision Postgres stored, for use as a cursor key.
+ *
+ * A `Date` is millisecond-only, so it cannot represent `…04.046443`. The full-precision text cast
+ * keeps the cursor exact and is still a valid `timestamptz` input when it is sent back.
+ */
+function toPreciseTimestamp(value: Date | string): string {
+  return value instanceof Date ? value.toISOString() : value;
+}
+
 function toView(row: ChatMessageRow): ChatMessageView {
   return chatMessageSchema.parse({
     id: row.id,
@@ -97,7 +107,7 @@ export class SqlChatRepository implements ChatRepository {
     const params: unknown[] = [criteria.classId];
 
     if (criteria.cursor !== null) {
-      params.push(criteria.cursor.createdAt.toISOString(), criteria.cursor.id);
+      params.push(criteria.cursor.createdAt, criteria.cursor.id);
       conditions.push(
         `(c."created_at", c."id") > ($${params.length - 1}::timestamptz, $${params.length}::uuid)`,
       );
@@ -108,7 +118,8 @@ export class SqlChatRepository implements ChatRepository {
 
     const rows = (await source.query(
       `SELECT c."id", c."class_id", c."booking_id", c."sender_id", c."sender_role",
-              c."body", c."created_at"
+              c."body",
+              to_char(c."created_at" AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS "created_at"
          FROM ${messages} c
         WHERE ${conditions.join(' AND ')}
         ORDER BY c."created_at" ASC, c."id" ASC
@@ -130,7 +141,12 @@ export class SqlChatRepository implements ChatRepository {
     const last = pageRows[pageRows.length - 1];
     const nextCursor: ChatCursorParts | null =
       hasMore && last !== undefined
-        ? { createdAt: new Date(toIso(last.created_at)), id: last.id }
+        ? {
+            // `created_at` is stored as microsecond precision; a single Date round-trip would
+            // truncate it and re-emit the resumed row. Force the full-precision text cast.
+            createdAt: toPreciseTimestamp(last.created_at),
+            id: last.id,
+          }
         : null;
 
     return { items, nextCursor, total: Number(countRows[0]?.count ?? 0) };

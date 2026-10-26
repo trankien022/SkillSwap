@@ -39,6 +39,20 @@ import { ClassListController } from './internal/adapter/in/web/class-list.contro
 import { ClassDetailController } from './internal/adapter/in/web/class-detail.controller';
 import { MyBookingsController } from './internal/adapter/in/web/my-bookings.controller';
 import { RatingsController } from './internal/adapter/in/web/ratings.controller';
+import { ChatMessagesController } from './internal/adapter/in/web/chat-messages.controller';
+import { SqlChatRepository } from './internal/adapter/out/persistence/sql-chat-repository';
+import {
+  CHAT_REPOSITORY,
+  type ChatRepository,
+} from './internal/application/port/out/chat-repository';
+import {
+  GET_CHAT_MESSAGES,
+  POST_CHAT_MESSAGE,
+  type GetChatMessagesPort,
+  type PostChatMessagePort,
+} from './internal/application/port/in/chat-messages';
+import { PostChatMessageUseCase } from './internal/application/post-chat-message.use-case';
+import { GetChatMessagesUseCase } from './internal/application/get-chat-messages.use-case';
 import { SqlRatingRepository } from './internal/adapter/out/persistence/sql-rating-repository';
 import { SqlPresenceRepository } from './internal/adapter/out/persistence/sql-presence-repository';
 import {
@@ -239,6 +253,7 @@ const systemClock: Clock = { now: () => new Date() };
     ClassListController,
     MyBookingsController,
     RatingsController,
+    ChatMessagesController,
     ClassDetailController,
     JitsiPresenceController,
   ],
@@ -264,6 +279,38 @@ const systemClock: Clock = { now: () => new Date() };
       provide: SUBMIT_RATING,
       useFactory: (ratings: RatingRepository): SubmitRatingPort => new SubmitRatingUseCase(ratings),
       inject: [RATING_REPOSITORY],
+    },
+    {
+      provide: CHAT_REPOSITORY,
+      useFactory: (registry: ModuleDataSourceRegistry): ChatRepository =>
+        new SqlChatRepository(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
+      // FR-012: the open window is the same Product Owner-set value the door uses, so chat and
+      // the room can never disagree about when a class is "live".
+      provide: POST_CHAT_MESSAGE,
+      useFactory: (
+        bookings: BookingRepository,
+        classes: ClassRepository,
+        chat: ChatRepository,
+        clock: Clock,
+        config: ApiConfig,
+      ): PostChatMessagePort =>
+        new PostChatMessageUseCase(bookings, classes, chat, clock, config.jitsiOpenMinutes),
+      inject: [BOOKING_REPOSITORY, CLASS_REPOSITORY, CHAT_REPOSITORY, CLOCK, ApiConfig],
+    },
+    {
+      provide: GET_CHAT_MESSAGES,
+      useFactory: (
+        bookings: BookingRepository,
+        classes: ClassRepository,
+        chat: ChatRepository,
+        clock: Clock,
+        config: ApiConfig,
+      ): GetChatMessagesPort =>
+        new GetChatMessagesUseCase(bookings, classes, chat, clock, config.jitsiOpenMinutes),
+      inject: [BOOKING_REPOSITORY, CLASS_REPOSITORY, CHAT_REPOSITORY, CLOCK, ApiConfig],
     },
     {
       provide: BOOKING_PAYMENT_REPOSITORY,
