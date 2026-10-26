@@ -43,6 +43,7 @@ paths follow and `FRONTEND-API-GUIDE.md` for how to call them.
 | `/classes/bookings/:bookingId/confirm` | POST | `lib/booking/http-gateway.ts`, `lib/dashboard/http-gateway.ts` | `infrastructure/http/booking-http-gateway.ts` | |
 | `/classes/bookings/:bookingId/rating` | POST | `lib/dashboard/http-gateway.ts`, `components/dashboard/PostSessionReviewContent.tsx` | `infrastructure/http/rating-gateway.ts` | |
 | `/classes/bookings/:bookingId/room-access` | POST | `lib/classroom/room-access-client.ts` | `infrastructure/http/room-access-gateway.ts` | |
+| `/classes/bookings/:bookingId/messages` | GET, POST | `lib/classroom/chat-client.ts` | — | FR-012 / ADR-036. Read is cursor-paginated (`?limit&cursor`), capped at 100; write is refused outside the class window (`CHAT_WINDOW_CLOSED`) or to a non-party (`CHAT_NOT_A_PARTY`), both 403. Mobile reaches chat through the same web screen: the app opens the room with `Linking.openURL`, so there is no native live screen to mount a panel on. |
 | `/classes/bookings/:bookingId/no-show` | POST | `lib/dashboard/http-gateway.ts` | `infrastructure/http/booking-http-gateway.ts` | |
 
 ### Skill catalogue and evidence — `skill-verification`
@@ -123,7 +124,7 @@ These are deliberate, recorded in
   versioned in lock-step. A version segment buys nothing while both clients
   ship with the API.
 - **Booking actions are sub-resources of a booking**, not of a class:
-  `/classes/bookings/:bookingId/{confirm,rating,no-show,room-access}`. This
+  `/classes/bookings/:bookingId/{confirm,rating,no-show,room-access,messages}`. This
   reads oddly next to `/classes/:id/bookings` but is stable and already
   published; the mobile telemetry explicitly refuses to template a booking id
   as a class id.
