@@ -1315,6 +1315,7 @@
       "connecting": "Connecting to the room…",
       "embedErrorTitle": "Could not open the room",
       "embedErrorBody": "The online room failed to load. Check your connection and try again.",
+      "retry": "Try again",
       "notAParty": {
         "title": "You are not part of this session",
         "body": "Only the learner who booked it and the assigned instructor can enter this room."

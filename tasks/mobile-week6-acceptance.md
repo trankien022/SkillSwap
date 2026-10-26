@@ -38,6 +38,30 @@ Ba luồng đi từ UI tới backend; >=5 resource persisted; 20–30 route temp
 2. Retry đồng bộ push preference với backoff1–30s, refresh khi app foreground, stop khi session/root effect đổi. Serialize device register/unregister để preference mới nhất không bị request cũ ghi đè; serialize locale storage writes.
 3. Focused regression tests, full verify, rebuild/install APK có JS; offline locale đổi được đồng bộ sau nối lại mà không cần restart. Sau đó hai full rehearsals trên binary cuối.
 
+## Accessibility spot-check for the two newest screens (NFR-007, W9 R5)
+
+Written after the screens existed. Applies to `/{locale}/operations` (admin account lock, W6) and the in-class chat panel inside the live classroom (W5).
+
+The design rules already guarantee status is **text + colour**, never colour alone; that is checked by review. What is *not* covered by review is keyboard traversal and screen-reader labelling, which need a runtime pass.
+
+**Keyboard only, no mouse:**
+
+1. Tab from the page load to the suspend form; every control in order, no focus trap, no unreachable control. Visible focus ring on each stop.
+2. Trigger a validation refusal (blank reason) and a confirmation (reinstate) with the keyboard alone — `Enter`/`Space` on buttons, never a click.
+3. In the chat panel: tab to the composer, type, submit with `Enter` **without** sending the newline (the textarea must keep its newline semantics; the panel sends on the button or a documented shortcut). Then tab to "load earlier messages" and activate it.
+4. Resize to 360 px with the keyboard only: no horizontal scroll, chat messages wrap instead of overflowing (`C-006`).
+
+**Screen reader (NVDA on Windows, or VoiceOver on macOS):**
+
+1. The suspend form's fields announce their label and the reason requirement; a refused submit announces the error, not just colours it.
+2. The suspended-account list announces each row's status as a word, and the total announces as a count.
+3. Chat: each message announces its author ("You", "Teacher", "Learner"), its time, and its body — the author must not be conveyed by bubble position or alignment alone, because a screen reader hears neither.
+4. A refused chat send announces the refusal *and* leaves the draft readable; the focus stays in the composer so the user is not dropped somewhere else.
+
+**Known gap to verify rather than assume:** the chat list has no `aria-live` region (deliberately — see the W5 plan's Phase 5 note: a live region around the whole list re-reads the entire history on first render). A sent message is therefore not announced automatically. If the screen-reader pass finds this unacceptable, the fix is a live region on the **last** message only, not on the list.
+
+To be recorded here (checked / not checked, with the reader and locale used) when W8's acceptance run happens — this needs a human at a keyboard, so it is not an agent-claimable item.
+
 ## Chuẩn bị PR vào main
 
 1. Kiểm kê file chưa theo dõi và diff với `origin/main`; chỉ ignore output công cụ, APK cục bộ và file khóa PowerPoint. Giữ tài liệu nguồn có giá trị ở trạng thái chưa theo dõi để người tạo quyết định riêng. Commit kế hoạch trước khi sửa cấu hình.

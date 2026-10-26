@@ -1315,6 +1315,7 @@
       "connecting": "Đang kết nối phòng học…",
       "embedErrorTitle": "Không mở được phòng học",
       "embedErrorBody": "Không tải được phòng học trực tuyến. Kiểm tra kết nối mạng rồi thử lại.",
+      "retry": "Thử lại",
       "notAParty": {
         "title": "Bạn không thuộc buổi học này",
         "body": "Chỉ học viên đã đặt lớp và giảng viên phụ trách mới vào được phòng học này."
