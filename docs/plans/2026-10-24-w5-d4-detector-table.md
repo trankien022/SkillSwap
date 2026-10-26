@@ -1,11 +1,22 @@
-# D4 — `detectContactSharing` decision table (for approval)
+# D4 — `detectContactSharing` decision table (**RETIRED 2026-10-26 — never implemented**)
 
-**Status:** awaiting one-pass approval from the Product Owner / user.
-**Blocks:** W5 Phase 2 (`feat(live-class): add chat authorisation and contact-sharing rules`).
-**Policy source:** ADR-036 decisions 1 and 5 — block, nothing stored, conservative patterns.
+**Status:** retired, not approved. The rule this table describes was withdrawn before any code was
+written. **Blocks:** nothing. **Authority:** ADR-036 Amendment A.
 
-ADR-036 decision 5 says the detector matches *explicit, unambiguous forms only* and accepts the
-false negatives. This table is the concrete reading of that sentence. Each row becomes a test case.
+Kept only as a record of the work that was avoided. The Product Owner withdrew BR-056 (contact
+sharing is prohibited) entirely, so chat detects no contact information: there is no detector, no
+pattern table, no `ContactSharingNotAllowedError`, and the five open questions in section D were never
+answered because they no longer have a subject.
+
+**Do not implement anything below.** If a contact rule is ever wanted again, it is a new decision and
+a new ADR — this table's 14 block rows, 15 pass rows and 5 accepted misses would all need re-deciding,
+starting with the phone-length bound and the word-boundary question that made `Bài 0901234567`
+ambiguous.
+
+---
+
+*(Historical content, retained below the line. It described ADR-036's original decision 5, which
+Amendment A withdrew.)*
 
 ---
 

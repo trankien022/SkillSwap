@@ -20,16 +20,17 @@ comment in `LiveClassroomContent.tsx` that names it is describing a third-party 
 
 | # | Question | Decision | Owner |
 |---|---|---|---|
-| C1 | OQ-009 — what happens on detected contact info? | **Block.** Message rejected, nothing stored | Product Owner |
+| C1 | OQ-009 — what happens on detected contact info? | **Block.** Message rejected, nothing stored. **Withdrawn 2026-10-26 (Amendment A): no detector at all** | Product Owner |
 | C2 | Scope of "participants only" | **Same window as room access**; history stays readable after the class | Product Owner |
-| C3 | Is BR-056's block the mitigation or the problem (RISK-009)? | Bypass risk **accepted and recorded** | Product Owner |
+| C3 | Is BR-056's block the mitigation or the problem (RISK-009)? | Bypass risk **accepted and recorded**. **Moot 2026-10-26: with the rule withdrawn the bypass is in scope by design** | Product Owner |
 | C4 | Retention and deletion | **Keep, no deletion in MVP** | Product Owner + Security |
 | C5 | Is chat in MVP at all (FR-012 is *Should*)? | **Yes, ship it** | Product Owner |
 | C6 | Where do messages live? | `live-class` schema | Engineering |
 
 **Decision.**
 
-1. **A message containing personal contact information is rejected and never stored.** Not warned,
+1. **~~A message containing personal contact information is rejected and never stored.~~
+   Withdrawn by Amendment A (2026-10-26): nothing is detected and nothing is rejected.** Not warned,
    not flagged, not logged with its body. `detectContactSharing` returning a match throws
    `ContactSharingNotAllowedError`, the transaction rolls back, and the sender sees a message saying
    contact sharing is not allowed. This is the one place the implementation departs from the BRD's
@@ -56,13 +57,15 @@ comment in `LiveClassroomContent.tsx` that names it is describing a third-party 
    transcript of a class you attended is a record of a past transaction, not participation in it.
    Both parties keep read access; there is no endpoint that lets anyone else read it.
 
-4. **No policy switch for the enforcement mode.** OQ-009 is decided, so `detectContactSharing`
+4. **~~No policy switch for the enforcement mode.~~ Withdrawn by Amendment A** — there is no
+   enforcement mode to switch, because there is no rule. OQ-009 is decided, so `detectContactSharing`
    returning a match *always* throws. A configurable `mode: 'block' | 'warn'` would create a
    dormant branch that no test exercises and no deployment uses, and the next reader would be unable
    to tell which mode production runs. If the policy ever changes, that is a new decision and a new
    ADR — not a flag.
 
-5. **The detector is deliberately conservative, and its false negatives are accepted.** A pattern
+5. **~~The detector is deliberately conservative, and its false negatives are accepted.~~
+   Withdrawn by Amendment A (2026-10-26): there is no detector.** A pattern
    that blocks a legitimate lesson reference ("Bài 3, trang 45", "buổi 2 lúc 19h") costs a user a
    message they were entitled to send, and there is no unblock path in the MVP. A pattern that misses
    an obfuscated contact address costs us a policy breach that the accepted RISK-009 bypass already
@@ -79,34 +82,77 @@ comment in `LiveClassroomContent.tsx` that names it is describing a third-party 
    honour. There is no edit endpoint either: FR-012 says nothing about editing, and inventing it
    would add a mutable-record problem the audit trail does not need.
 
-**Accepted risk (C3, BRD RISK-009).** Blocking contact information in chat will push some
-participants to exchange details elsewhere — the platform already knows both parties' identities for
-the duration of the booking, and no amount of pattern matching changes that. The Product Owner
-accepted this risk explicitly. This ADR records it as **accepted, not mitigated**, and the
-conservative detector in decision 5 is chosen partly so we do not tell ourselves otherwise.
+**~~Accepted risk (C3, BRD RISK-009).~~ Superseded by Amendment A.** With the contact-sharing rule
+withdrawn there is nothing being bypassed; RISK-009 becomes an in-scope product behaviour rather than
+a risk being tolerated. See Amendment A for what that means in practice.
 
 **Consequences.**
 
-- (+) BR-056 has an enforcement mechanism the MVP can actually enforce end to end, with no moderation
-  surface required.
-- (+) A rejected message stores no row, so the retention decision (C4) never has to reason about
-  content we told the user we would not keep.
 - (+) Reusing `room-access.ts` keeps one definition of "inside the class" for both the door and chat.
-- (−) Blocking is user-visible friction, with no appeal path. A legitimate message matching a pattern
-  is simply refused; the copy must be clear enough that the user knows what to remove.
-- (−) The RISK-009 bypass is unaddressed by design. This ADR must not be cited as a mitigation for
-  it.
+- (+) Messages are a plain record of what participants said, so there is no content rule whose false
+  positives cost a user a message they were entitled to send.
+- (−) BR-056 is withdrawn, not satisfied (Amendment A). Off-platform contact exchange is intended.
 - (−) Messages are permanent with no erasure path, which is a known retention liability accepted
   under C4.
 
-**Verification.** Domain: a table of true positives (each Vietnamese number format, an email, a URL,
-a handle) and true negatives ("Bài 3, trang 45", a price, a duration) — the negatives are the point,
-because a detector that only blocks is trivially "correct". Authorisation: window boundaries, a
-non-party requester, and a cancelled class all denied, plus a check that the denial reason comes from
-the shared room rule rather than a duplicate. End to end: a blocked send leaves **no row** in
-`live_class.chat_messages` and does not echo the attempted body in the error, and the body is never
-passed to the logger on either path.
+**Verification.** Authorisation: window boundaries, a non-party requester, and a cancelled class all
+denied, plus a check that the denial reason comes from the shared room rule rather than a duplicate.
+End to end no content rule is asserted, because there is none.
 
 **Related:** ADR-020 (room access; this ADR reuses its rule), ADR-014 (per-module schema and
 per-module credentials), ADR-013 (outbox, if a `chat.message.posted` event is added later — no push
 handler is registered in the MVP), ADR-034 §8 (the reason enforcement is not deferred further).
+
+---
+
+## Amendment A — the contact-sharing rule is withdrawn (2026-10-26)
+
+**Status:** Accepted. **Supersedes:** C1, C3, and decisions 1, 4 and 5. **Keeps:** C2, C4, C5, C6 and
+decisions 2, 3 and 6 unchanged.
+
+**What changed.** The Product Owner withdrew BR-056's contact-sharing prohibition entirely. In-class
+chat ships with **no contact-sharing detection at all**: no `detectContactSharing`, no pattern table,
+no `ContactSharingNotAllowedError`, no rejected message, no `flagged` column (which never existed
+here anyway). A message containing a phone number, an email address, a URL or a social handle is
+stored like any other message.
+
+The reasons were cost and honesty, not a change of heart about the risk:
+
+1. **The detector was the expensive part, not the chat.** Every pattern is a guess that has to hold
+   both ends at once — `0901234567` must block while `1.500.000` and `2026-10-25` must not — and the
+   D4 table needed five open questions settled before a single test could be written. That work bought
+   a rule that RISK-009 already described as cheaply bypassed. Paying the cost while the benefit is
+   the bypass was the wrong trade.
+2. **C-010 still holds, so neither "warn" nor "log" was ever reachable.** With no moderation surface,
+   the only enforceable form was Block — and Block is what the owner no longer wants. There is no
+   third option to fall back on, so the rule is not narrowed here; it is removed, and saying so is
+   more honest than shipping half of it.
+
+**What this means, stated plainly.** A Teacher and a Learner in a class can now exchange a phone
+number, an email address or a Zalo handle in chat. Someone who does so can move a lesson — or a
+payment — off SkillSwap, where the platform has no record, no refund path, and no way to mediate. That
+is no longer an accepted bypass of a rule; **it is the intended behaviour**. RISK-009 is therefore
+promoted from "accepted, not mitigated" to **in scope by design**, and this ADR must not be read as
+mitigating it — there is nothing left to mitigate.
+
+The one thing still true: BR-055 (communication between Learner and Teacher happens in the platform's
+messaging system) is unaffected and is what FR-012's participants-only rule enforces. Chat remains
+in-platform, authorised, and recorded; it is only the *content* rule that is gone.
+
+**Consequences.**
+
+- (+) Chat ships, and ships quickly: authorisation, persistence and the client were always the real
+  feature, and they no longer wait on five unanswered detector questions.
+- (+) Nothing pretends to moderate content. A future reader will find no detector to trust.
+- (−) Off-platform trades are now a supported outcome rather than a leak. The product's answer to
+  "someone asked me for my number in chat" is a warning, not a refusal — and no such warning is built
+  in the MVP.
+- (−) BR-056 is withdrawn from the SRS rather than satisfied. That is a scope reduction, and the SRS
+  records it as one.
+
+**Verification.** Chat authorisation is unchanged and still tested: window boundaries, non-party
+denial, cancelled class. The detector tests are deleted with the detector; there is no passing test
+that asserts a message was refused for its content, because no message is refused for its content.
+
+**Related:** ADR-020 (room access; decision 2 still reuses its rule and this amendment does not touch
+it), ADR-014, ADR-013.

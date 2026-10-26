@@ -3,7 +3,7 @@ title: W5 — In-class chat (FR-012)
 type: plan
 date: 2026-10-24
 topic: w5-in-class-chat
-status: Phase 0 done — ADR-036 written 2026-10-26; Phases 1+ await the D4 detector table
+status: Phase 0 done — ADR-036 + Amendment A written; Phases 1–5 proceed (contact rule withdrawn, D4 retired)
 owner: Group 4
 ---
 
@@ -63,6 +63,28 @@ The distraction to avoid: **"Jitsi already has chat, so FR-012 is met."** It is 
 
 ---
 
+## Phase 0 amendment — the contact rule is withdrawn (2026-10-26)
+
+**This supersedes C1, C3 and the "OQ-009 option table" section above.** The Product Owner withdrew
+BR-056 entirely: chat ships with **no contact-sharing detection**. Consequences for this plan:
+
+- **D4 is retired.** `docs/plans/2026-10-24-w5-d4-detector-table.md` is no longer a gate and its five
+  open questions are moot.
+- **Phase 1** has no `flagged` field and needs no content-rule copy.
+- **Phase 2** has no `detectContactSharing`, no `ContactSharingNotAllowedError`, and no detector
+  tests. `assertChatOpen` and `assertSenderIsParty` remain, unchanged.
+- **Phase 3** has no `flagged` column (it never shipped one).
+- **Phase 4** has no `CHAT_CONTACT_SHARING_BLOCKED` error code.
+- **Phase 5** mentions no block message.
+
+Everything else in ADR-036 stands: the room window is reused rather than re-derived, history stays
+readable after the window closes, messages are kept with no deletion path, and chat lives in the
+`live-class` schema.
+
+**Full reasoning:** ADR-036 Amendment A.
+
+---
+
 ## Phase 1 — Contract (gates closed)
 
 `packages/contracts/src/chat.ts`:
@@ -87,13 +109,13 @@ Validation: length, trimmed, reject control characters, **never log the body** (
 
 - `assertChatOpen({ booking, classView, now, openMinutes })` → reuses `room-access.ts` predicates rather than duplicating them; a chat window that drifts from the door window is a bug generator.
 - `assertSenderIsParty`.
-- `detectContactSharing(body)` → returns `{ kind: 'phone'|'email'|'url'|'handle' } | null`. Phone patterns must cover Vietnamese formats (`0xxxxxxxxx`, `+84…`, spaced/dashed variants); email and social handles. Keep it **conservative and tested** — a false positive that blocks a lesson reference is worse than a miss.
+- ~~`detectContactSharing(body)`~~ — **withdrawn 2026-10-26 (ADR-036 Amendment A): no content rule.**
 - `assertBookingRelationship({ booking, classView, now })` → BR-057: a chat right exists only while the business relationship is valid (C2).
-- No policy switch: OQ-009 (C1) is decided as **block**, so the rule is unconditional — `detectContactSharing` returning non-null **throws** `ContactSharingNotAllowedError` and nothing is persisted. A configurable mode here would be a dormant branch nobody tests.
 
-**Tests:** window boundaries, party check, cancelled-class denial (BR-040/BR-057), detector table (true positives, true negatives including "Bài 3, trang 45"), and that a blocked message writes **no row** and returns a non-leaking error.
+**Tests:** window boundaries, party check, cancelled-class denial (BR-040/BR-057). No detector table:
+there is no detector.
 
-**Commit:** `feat(live-class): add chat authorisation and contact-sharing rules`
+**Commit:** `feat(live-class): add chat authorisation`
 
 ---
 
@@ -104,7 +126,7 @@ Validation: length, trimmed, reject control characters, **never log the body** (
 ```
 id uuid pk, class_id uuid, booking_id uuid, sender_id uuid,
 sender_role text check in ('learner','teacher'),
-body text (length-checked), flagged boolean not null default false,
+body text (length-checked),
 created_at timestamptz
 ```
 
@@ -116,13 +138,13 @@ Index on `(class_id, created_at desc, id)` for keyset pagination. No cross-schem
 
 ## Phase 4 — Application + REST
 
-- `post-class-message.use-case.ts`: authorise (Phase 2) → policy (Phase 2) → persist → optionally emit `chat.message.posted` for a future push (do **not** register a push handler in MVP — messaging must not become a notification firehose).
+- `post-class-message.use-case.ts`: authorise (Phase 2) → persist → optionally emit `chat.message.posted` for a future push (do **not** register a push handler in MVP — messaging must not become a notification firehose).
 - `get-class-messages.use-case.ts`: owner-scoped, keyset paginated, capped at 100 (NFR-014).
 - Controller routes under the existing `classes` controller tree, following RESTful conventions:
   - `POST /classes/bookings/:bookingId/messages`
   - `GET  /classes/bookings/:bookingId/messages?limit&cursor`
   - Both `Roles('user')` + party check inside the use case (never trust the URL).
-- Error codes: `CHAT_WINDOW_CLOSED`, `CHAT_NOT_A_PARTY`, `CHAT_CONTACT_SHARING_BLOCKED`.
+- Error codes: `CHAT_WINDOW_CLOSED`, `CHAT_NOT_A_PARTY`.
 
 **Tests:** controller 403/404/409 matrix, pagination, no body in logs (assert the logger was not called with the body), outsider denied.
 

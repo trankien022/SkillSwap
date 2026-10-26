@@ -213,7 +213,7 @@ Every open question and ambiguity across all nine waves, in one place, so they c
 
 ### A.1 Residual notes on the decided items
 
-- **D4 (chat, enforcement).** The BRD's OQ-009 recommendation was "warn + log", but warning requires an admin moderation queue, and **C-010** says the MVP has no moderation system. Blocking therefore satisfies BR-056 ("không cho phép") without creating an unscoped queue. This deviation is recorded here deliberately, not silently. **The SRS still says OQ-009 is unresolved** — amending that row is W5's first commit.
+- **D4 (chat, enforcement).** ~~The BRD's OQ-009 recommendation was "warn + log", but warning requires an admin moderation queue, and **C-010** says the MVP has no moderation system. Blocking therefore satisfies BR-056 ("không cho phép") without creating an unscoped queue.~~ **Withdrawn 2026-10-26:** BR-056 is removed from scope entirely and chat ships with no contact-sharing rule (ADR-036 Amendment A). D4 is retired; its detector table was never implemented. This deviation is recorded here deliberately, not silently.
 - **D7 (withdrawal).** FR-014 and AC-008/013/014 are `Must` and now **out of MVP scope by decision**. That is exactly the case ✅27 governs: the SRS must state the exclusion and its reason, not leave the requirement looking implemented.
 - **D8 (MFA).** NFR-009 is another `Must` amendment under ✅27. The reason recorded is: no MFA implementation exists, and the only feature that required step-up (payout) is out of scope.
 - **D6 (dispute).** Removing `disputed` touches three artefacts: the SRS state machine (`Completed --> Disputed`), the data dictionary row, and `uq_bookings_active_learner_class`'s covered states. All three change in one docs commit.
