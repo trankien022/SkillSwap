@@ -587,10 +587,53 @@
     "exploreCta": "Về trang lớp học"
   },
   "Admin": {
+    "suspendedAccounts": {
+      "title": "Tài khoản bị khóa",
+      "subtitle": "Các tài khoản bị quản trị viên tạm khóa. Lý do và người thực hiện đều được ghi lại.",
+      "loading": "Đang tải danh sách tài khoản bị khóa…",
+      "retry": "Thử lại",
+      "empty": "Hiện không có tài khoản nào bị khóa.",
+      "showing": "Đang hiển thị {shown} trên {total} tài khoản bị khóa.",
+      "status": {
+        "suspended": "Đã khóa"
+      },
+      "reasonLabel": "Lý do:",
+      "sinceLabel": "Từ:",
+      "byLabel": "Người thực hiện:",
+      "byUnknown": "Chưa ghi nhận",
+      "release": "Mở khóa",
+      "confirmRelease": "Mở khóa tài khoản này? Tài khoản sẽ đăng nhập lại được.",
+      "releaseConfirm": "Có, mở khóa",
+      "releasing": "Đang mở khóa…",
+      "cancel": "Hủy",
+      "lockTitle": "Khóa một tài khoản",
+      "lockSubtitle": "Việc khóa bắt buộc phải có lý do, và hành động này được ghi vào nhật ký kiểm định dưới tên bạn.",
+      "accountIdLabel": "Account ID",
+      "reasonLabelInput": "Lý do khóa",
+      "lockCta": "Khóa tài khoản",
+      "locking": "Đang khóa…",
+      "lockSuccess": "Tài khoản đã bị khóa.",
+      "unauthorizedTitle": "Bạn không có quyền xem danh sách tài khoản bị khóa",
+      "unauthorizedBody": "Danh sách này chỉ dành cho quản trị viên. Hãy đăng nhập bằng tài khoản quản trị.",
+      "errors": {
+        "generic": "Không tải được danh sách tài khoản bị khóa. Vui lòng thử lại.",
+        "suspend": "Không khóa được tài khoản này. Vui lòng thử lại.",
+        "release": "Không mở khóa được tài khoản này. Vui lòng thử lại.",
+        "forbidden": "Bạn không được phép thực hiện hành động này. Hãy đăng nhập bằng tài khoản quản trị.",
+        "accountIdRequired": "Vui lòng nhập account ID.",
+        "reasonRequired": "Bắt buộc phải có lý do và không được để trống."
+      }
+    },
+    "operations": {
+      "pageTitle": "Vận hành",
+      "pageSubtitle": "Việc gì đang chờ, việc gì đã xử lý và ai đang bị khóa — trên cùng một trang."
+    },
     "Landing": {
       "title": "Trang quản trị",
       "subtitle": "Chỉ những công cụ đang vận hành thật trên hệ thống mới được mở từ đây.",
       "toolsTitle": "Công cụ vận hành",
+      "operations": "Vận hành",
+      "operationsBody": "Số liệu, hàng đợi và tài khoản bị khóa trên cùng một trang.",
       "studentVerifications": "Duyệt xác minh sinh viên",
       "verifierStatus": "Mở trạng thái Verifier theo Account ID",
       "accountIdPlaceholder": "Nhập Account ID",
@@ -733,7 +776,6 @@
       "actorUnknown": "Người thực hiện: chưa ghi nhận",
       "targetId": "Đối tượng: {id}",
       "stateChange": "Thay đổi: {from} → {to}",
-      "actorGap": "Bộ lọc theo người thực hiện hiện chưa khớp được sự kiện nào: các sự kiện trong nhật ký chưa mang theo id quản trị viên. Các bộ lọc còn lại hoạt động bình thường.",
       "unauthorizedTitle": "Bạn không có quyền truy cập nhật ký kiểm định",
       "unauthorizedBody": "Nhật ký kiểm định chỉ dành cho quản trị viên. Hãy đăng nhập bằng tài khoản quản trị.",
       "filters": {
@@ -758,7 +800,8 @@
         "skillEvidenceRejected": "Từ chối bằng chứng năng lực",
         "skillVerifierSuspended": "Tạm ngưng Verifier",
         "skillVerifierRevoked": "Thu hồi Verifier",
-        "walletTransactionCompleted": "Hoàn tất giao dịch ví"
+        "walletTransactionCompleted": "Hoàn tất giao dịch ví",
+        "accountStatusChanged": "Khóa hoặc mở khóa tài khoản"
       },
       "errors": {
         "generic": "Không thể tải nhật ký kiểm định. Vui lòng thử lại."

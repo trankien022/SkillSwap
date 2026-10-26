@@ -86,6 +86,8 @@ describe('i18n messages', () => {
       // Extended by FR-015: the operations surfaces added `verifierQueue`,
       // `auditLog` and `dashboard`. Listing them here means a future merge that
       // drops one is a failing test rather than an admin screen full of raw keys.
+      // Extended by FR-015 / ADR-037: the account lock added `suspendedAccounts`,
+      // and `/operations` (S17) added `operations`.
       for (const [locale, data] of [
         ['vi', vi],
         ['en', en],
@@ -98,6 +100,8 @@ describe('i18n messages', () => {
           'StudentVerification',
           'auditLog',
           'dashboard',
+          'operations',
+          'suspendedAccounts',
           'verifierQueue',
           'verifiers',
         ]);

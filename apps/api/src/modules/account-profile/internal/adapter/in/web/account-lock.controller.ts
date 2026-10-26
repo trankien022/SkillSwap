@@ -1,7 +1,7 @@
 import { Body, Controller, HttpCode, HttpStatus, Inject, Param, Post, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { createZodDto } from 'nestjs-zod';
-import { suspendAccountSchema } from '@skillswap/contracts';
+import { suspendAccountSchema, type AccountLockResult } from '@skillswap/contracts';
 import {
   LOCK_ACCOUNT_PORT,
   type LockAccountPort,
@@ -48,15 +48,15 @@ export class AccountLockController {
     @Param('accountId') accountId: string,
     @Body() body: SuspendAccountDto,
     @Req() request: RequestWithIdentity,
-  ): Promise<LockAccountResult> {
-    return this.lock.execute({
+  ): Promise<AccountLockResult> {
+    return toResult(await this.lock.execute({
       accountId,
       status: 'suspended',
       reason: body.reason,
       // ADR-035 / ADR-037: the caller is the Administrator acting; the path parameter is the
       // subject. Attributing the lock to the suspended account would make the audit log lie.
       actorId: currentUserId(request),
-    });
+    }));
   }
 
   @Post(':accountId/reinstatement')
@@ -70,14 +70,25 @@ export class AccountLockController {
   async reinstate(
     @Param('accountId') accountId: string,
     @Req() request: RequestWithIdentity,
-  ): Promise<LockAccountResult> {
+  ): Promise<AccountLockResult> {
     // No body: a reason describes a suspension, and ADR-037 decision 2 rejects one here rather
     // than dropping it.
-    return this.lock.execute({
-      accountId,
-      status: 'active',
-      reason: null,
-      actorId: currentUserId(request),
-    });
+    return toResult(
+      await this.lock.execute({
+        accountId,
+        status: 'active',
+        reason: null,
+        actorId: currentUserId(request),
+      }),
+    );
   }
+}
+
+/**
+ * FR-015 / ADR-037: the use case's result and the shared contract are structurally identical, so
+ * this is a type assertion rather than a mapping. It exists to make the dependency explicit: the
+ * wire shape is owned by `packages/contracts`, so the web client parses what this route sends.
+ */
+function toResult(result: LockAccountResult): AccountLockResult {
+  return result;
 }

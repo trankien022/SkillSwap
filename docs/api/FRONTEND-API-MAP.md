@@ -83,8 +83,16 @@ paths follow and `FRONTEND-API-GUIDE.md` for how to call them.
 
 | Route | Method | Web | Mobile | Notes |
 |---|---|---|---|---|
-| `/admin-operation/dashboard` | GET | `lib/verification/http-gateway.ts` | — | Counts only; links on to `/audit-log`. |
+| `/admin-operation/dashboard` | GET | `lib/verification/http-gateway.ts` | — | Counts only; links on to `/audit-log`. Answers on `/operations/dashboard` too (ADR-037). |
 | `/audit-log` | GET | `lib/verification/http-gateway.ts` | — | Admin-only, cursor-paged, filterable. |
+
+### Operations (FR-015 / OQ-015 / ADR-037)
+
+| Route | Method | Web | Mobile | Notes |
+|---|---|---|---|---|
+| `/operations/accounts` | GET | `lib/verification/http-gateway.ts` | — | Admin-only. `status` is a one-value enum (`suspended`); `?status=active` is a 400, not an empty page. |
+| `/operations/accounts/:accountId/suspension` | POST | `lib/verification/http-gateway.ts` | — | Reason **required**; 400 when blank. Audited as `account.status.changed`. |
+| `/operations/accounts/:accountId/reinstatement` | POST | `lib/verification/http-gateway.ts` | — | No body: a reason on a release is rejected, not dropped. |
 
 ### Notifications
 

@@ -81,6 +81,22 @@ export const suspendedAccountsQuerySchema = paginationQuerySchema.extend({
 });
 export type SuspendedAccountsQueryInput = z.infer<typeof suspendedAccountsQuerySchema>;
 
+/**
+ * FR-015 / ADR-037: what a lock or release answers.
+ *
+ * `changed` is reported rather than inferred from `status`, because ADR-037 makes a second suspend
+ * of an already-suspended account a no-op that emits **no** audit row — a client that assumed every
+ * 200 meant "this act just happened" would narrate an act that did not.
+ */
+export const accountLockResultSchema = z.object({
+  accountId: z.string().uuid(),
+  status: z.enum(['active', 'suspended']),
+  changed: z.boolean(),
+  /** Present exactly when `status === 'suspended'`, matching `suspendAccountSchema`. */
+  reason: z.string().min(1).max(500).nullable(),
+});
+export type AccountLockResult = z.infer<typeof accountLockResultSchema>;
+
 /** FR-015 / ADR-034 §7: a live-read page, uncached like the rest of the dashboard. */
 export const suspendedAccountsPageSchema = pagedSchema(suspendedAccountSchema);
 export type SuspendedAccountsPage = z.infer<typeof suspendedAccountsPageSchema>;

@@ -112,6 +112,33 @@ There is currently **no web route** for S17 (`/audit` is API-only, SRS Appendix 
 
 **Commit(s):** `feat(admin-operation): aggregate suspended-account counts` , `feat(web): admin operations dashboard`
 
+### As shipped
+
+`/{locale}/operations` renders the **dashboard aggregate** (counts by metric, backlog
+by domain, recent audited actions) plus the new suspended-accounts section. The
+verification queue and the verifier queue are **linked**, not embedded: both already
+ship as their own routes with their own filters and paging, and a second copy inside
+`/operations` would eventually disagree with them. The dashboard's metric cards are
+already links into both, so the operator's path is the same one click away.
+
+- `SuspendedAccountsPanel` — list, reason, `suspendedAt`, `suspendedBy`, and a
+  two-step **Reinstate**. A release asks for no reason, because ADR-037 rejects one;
+- `SuspendAccountForm` — lock by account id, reason **required**, refused in the form
+  and again by the shared schema before the request leaves the browser;
+- `unauthorized` renders its own block and is asserted **against** the empty state
+  (AC-033): "nobody is locked" and "you may not see this" must not look alike.
+
+Two stale things fell out of this and were removed rather than left to rot:
+
+1. `Admin.auditLog.actorGap` ("audit entries do not carry the administrator's id
+   yet") — false since W4. The notice and its spec are gone; the spec now asserts the
+   notice is **absent**, so the claim cannot creep back.
+2. `account.status.changed` was missing from `AUDITED_ACTIONS`, so the new action
+   would have rendered as a raw dotted identifier in the audit log and dashboard.
+
+`apps/web/src/lib/api-map.test.ts` gained the three `/operations/accounts` routes, so
+a rename cannot ship with the map still naming the old paths.
+
 ---
 
 ## Deviations recorded during Phases 2–3 (2026-10-26)

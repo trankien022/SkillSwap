@@ -113,14 +113,16 @@ describe('AdminLanding role gate', () => {
     expect(await screen.findByRole('heading', { name: 'Trang quản trị' })).toBeDefined();
 
     const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href'));
-    // The three operations surfaces, plus the per-domain links the dashboard renders.
+    // The three operations surfaces, the S17 operations page, plus the per-domain
+    // links the dashboard renders.
     expect(hrefs).toContain('/vi/admin/student-verifications');
     expect(hrefs).toContain('/vi/admin/verifiers');
     expect(hrefs).toContain('/vi/admin/audit-log');
-    // Every link goes to a route under this app's admin tree — no fabricated navigation,
-    // and nothing pointing at a page that does not exist.
+    expect(hrefs).toContain('/vi/operations');
+    // Every link goes to a route under this app's admin tree or the operations page —
+    // no fabricated navigation, and nothing pointing at a page that does not exist.
     for (const href of hrefs) {
-      expect(href).toMatch(/^\/vi\/admin(\/|$|\?)/);
+      expect(href).toMatch(/^\/vi\/(admin|operations)(\/|$|\?)/);
     }
   });
 

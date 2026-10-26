@@ -107,11 +107,13 @@ describe('AuditLog', () => {
     expect(labels).toHaveLength(2);
   });
 
-  it('states plainly that the actor filter matches nothing today', async () => {
+  it('shows the acting Administrator, now that audit rows carry one (W4)', async () => {
     renderLog();
 
-    // Without this an administrator concludes the filter is broken. With it, the limit is visible.
-    expect(await screen.findByTestId('audit-actor-notice')).toBeTruthy();
+    // W4 closed the attribution gap, so the notice that said the filter matches nothing
+    // is withdrawn — a screen that still claimed it would be describing older code.
+    await screen.findByText('Tạm ngưng Verifier');
+    expect(screen.queryByTestId('audit-actor-notice')).toBeNull();
   });
 
   it('renders a readable timestamp, not a raw ISO string', async () => {
