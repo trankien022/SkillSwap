@@ -29,6 +29,9 @@ The MVP's financial events are:
 
 A top-up is the best sample: it crosses the gateway, the payment provider's IPN, two tables and an outbox event, and it is reproducible locally without a real bank.
 
+The amount is priced by `VND_PER_CREDIT` (default 1,000, BR-027 / decision D3), and each intent stores the rate it was priced at in `top_up_intents.vnd_per_credit`. When reading a trace, trust that column rather than the current configuration: the configuration says what a *new* top-up would cost, the column says what this one did.
+
+
 ---
 
 ## Procedure
@@ -45,7 +48,7 @@ A top-up is the best sample: it crosses the gateway, the payment provider's IPN,
 
 ```sql
 -- 1. the intent: our reference and the provider's, and what was actually paid
-SELECT id, provider_ref, status, amount_vnd, amount_credits, paid_amount_vnd, paid_at
+SELECT id, provider_ref, status, amount_vnd, amount_credits, vnd_per_credit, paid_amount_vnd, paid_at
   FROM wallet_ledger.top_up_intents
  WHERE provider_ref = 'SS-…';
 
@@ -111,6 +114,17 @@ Re-run on the local stack, signed in as `user3@demo.skillswap.local`, 30,000 VND
 | Balance | 1,000 → 1,030 credits |
 
 The chain now closes: **intent → ledger id → event → inbox row, all keyed on `3089`.** That is the property NFR-003/NFR-005 is asking for, and it is checkable by hand in four queries.
+
+### The rate snapshot, checked at a non-default rate (D3)
+
+Default-rate runs only prove the column is written. Restarting the API with `VND_PER_CREDIT=500` proves the *configured* value is the one that prices the money:
+
+| Run | `VND_PER_CREDIT` | 100,000 VND produced | Stored `vnd_per_credit` |
+|---|---|---|---|
+| Default | (unset → 1000) | 100 credits | 1000 |
+| Verification | 500 | **200 credits** | **500** |
+
+`amount_credits = amount_vnd / vnd_per_credit` held in both rows, and the check constraint refused a `vnd_per_credit` of 0 in a deliberately rolled-back transaction. The 500 run was a verification; the default was restored afterwards.
 
 ---
 
