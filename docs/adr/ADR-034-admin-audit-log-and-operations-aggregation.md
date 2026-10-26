@@ -95,6 +95,10 @@ cannot describe "an administrator suspended a Verifier" or "a payout destination
    a model to fill a dashboard table is the failure mode ADR-028 and the task-01 plan forbid.
    FR-015 is recorded as **partially implemented** until a separate spec + ADR covers them.
 
+   **Closed 2026-10-25 by ADR-037**, which supplies that spec: the dispute half is removed from the
+   MVP, and the account-lock half is an extension of the existing `active | suspended` status. §8 is
+   therefore no longer a gap; the actor-attribution half was closed separately by ADR-035.
+
 9. **Actor attribution is not wired, and the log says so.** Every audited event is mapped with
    `actorId: null`, so the `actor` filter on `GET /audit-log` currently matches only rows written
    without an actor (i.e. every row it can write). This is a **known limitation, not a bug left

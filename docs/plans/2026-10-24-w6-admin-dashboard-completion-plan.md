@@ -51,7 +51,7 @@ The SRS data dictionary has no `Dispute` row and no "locked" state on `Account` 
 | **C2** | **What is a dispute?** | Nothing in the BRD/SRS ever defined it; OQ-003's title mentions it but its resolution does not | **Product Owner** | **CLOSED 2026-10-25 — no dispute workflow in the MVP** | FR-015's dispute list is **amended away**. The three real cases (wrong content, a no-show that slipped through, a post-completion money disagreement) are handled by the existing manual **BR-048** ledger adjustment |
 | C3 | **Does `disputed` become a real booking state?** | SRS Appendix B vs. `uq_bookings_active_learner_class` | Engineering + Product Owner | **CLOSED 2026-10-25 — NO** | Remove `disputed` from the state machine (`Completed --> Disputed`), the data dictionary row, and the index's covered states, in one docs commit |
 | C4 | **A new OQ id is required** | BRD defines OQ-001…013; **OQ-013 is taken** (verifier expertise, ADR-027) | **BA** | **CLOSED 2026-10-25** | **OQ-015** covers the account-lock scope. **OQ-014 is deliberately not minted** — there is no dispute to ask about |
-| C5 | **Is S17 a web screen at all?** | SRS Appendix D S17 vs. FR-015 saying "dashboard" | Product Owner | Decided by default | **API-only** for the lock list; the SRS states it. A screen can be requested later without re-opening the gate |
+| C5 | **Is S17 a web screen at all?** | SRS Appendix D S17 vs. FR-015 saying "dashboard" | Product Owner | Decided by default | **API-only** for the lock list; the SRS states it. A screen can be requested later without re-opening the gate. **Reversed 2026-10-26 — see ADR-037 Amendment A** |
 | C6 | **Moderation boundary** | §1.2 out of scope: "moderation/report tooling beyond ratings"; C-010 | Product Owner | Closed | ADR-037 restates the boundary; disputes are gone, so this is now only about locks |
 
 **Already resolved — do not reopen:** OQ-013 (verifier expertise — a different question that happens to share the number), ADR-030 (roles), ADR-034 (audit + queues, which stay as built).
@@ -200,6 +200,34 @@ here would leave the plan claiming something the code does not do.
 
 **Commit:** `docs(srs): close the FR-015 dashboard gap`
 
+### As shipped — and one decision that had to be reversed
+
+The plan called for a web screen in Phase 4, but the SRS and ADR-037 both said the lock list was
+**API-only by decision C5**. The screen was built and verified before the contradiction was noticed.
+The Product Owner was asked which won and chose the screen, so **C5 is withdrawn in an ADR-037
+Amendment A** rather than quietly violated. Everything below follows from that:
+
+- ADR-037 gained **Amendment A**, which records why C5 held when it was written (S17 had no browser
+  route at all), what changed (the lock carries a consequence for a person and decision 2 makes it
+  auditable — so an API-only lock asked the Administrator to hold a bearer token to discharge an
+  audited duty), and what the screen must therefore get right.
+- ADR-034 §8 is marked **closed by ADR-037**.
+- SRS FR-015 now reads **Implemented** with the screen, citing Amendment A; **S17** in Appendix D
+  gained its routes and its web layout, and the "two screens have no browser route" sentence became
+  "one (S15)".
+- `use-cases.puml` gained two Administrator goals — *Review the operations dashboard and audit log*
+  and *Lock or release an account, with a reason* — with a note that the lock is admin-initiated
+  only (C-010). The note claiming the dashboard was unimplemented is gone, and the PNG and SVG were
+  re-rendered.
+
+---
+
+## Status: **closed**
+
+W6 is complete. The account lock ships as model, API, audit and screen; the dispute clause is
+removed; the dashboard's count and its list come from one source; and C5's reversal is on the
+record rather than in a commit message.
+
 ---
 
 ## Risk register
@@ -221,7 +249,7 @@ here would leave the plan claiming something the code does not do.
 | C2 — dispute definition (or exclusion) | **Product Owner + Admin** | **Excluded — no dispute workflow** |
 | C4 — mint **OQ-015** (account lock) | **BA** | **OQ-015**; OQ-014 deliberately unused |
 | C3 — is `disputed` a real state | Engineering + PO | **No — removed** |
-| C5/C6 — S17 screen and moderation boundary | Product Owner | API-only lock list; boundary restated in ADR-037 |
+| C5/C6 — S17 screen and moderation boundary | Product Owner | API-only lock list (**C5 reversed 2026-10-26: ADR-037 Amendment A**); boundary restated in ADR-037 |
 
 ## Definition of done
 
