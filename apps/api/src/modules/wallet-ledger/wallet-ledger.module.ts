@@ -134,11 +134,14 @@ export class WalletLedgerRegistrar implements OnModuleInit {
         // FR-008: the configured return URL is both the fallback destination
         // and the base of the allow-list for the client's per-request URL; the
         // extra origins let the payer's own client (dev or prod) opt in.
+        // BR-027 / D3: the exchange rate is configured, and the intent stores the rate it was
+        // priced at, so changing the configuration never re-prices money already in flight.
         new InitiateTopUpUseCase(
           intents,
           gateway,
           config.sepayReturnUrl,
           config.sepayReturnUrlAllowedOrigins,
+          config.vndPerCredit,
         ),
       inject: [TOP_UP_INTENT_REPOSITORY, PAYMENT_GATEWAY, ApiConfig],
     },

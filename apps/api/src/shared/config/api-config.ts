@@ -85,6 +85,19 @@ export class ApiConfig {
   /** Only intents older than this are re-queried, so a live checkout is left alone. */
   readonly sepayReconMinAgeMs: number;
 
+  /**
+   * BR-027 (decision D3, closed 2026-10-26): VND per credit for a top-up.
+   *
+   * Was hardcoded at `wallet.ts:4`. Configurable because the exchange rate is a business
+   * parameter, not a law of physics, and a rate change must be a deployment change rather
+   * than a code change plus a migration. Every intent stores the rate it was created under
+   * (`top_up_intents.vnd_per_credit`), so a later change cannot silently re-price money that
+   * was already paid for.
+   *
+   * Withdrawal is out of the MVP (FR-014 deferred), so this is top-up-only for now.
+   */
+  readonly vndPerCredit: number;
+
   // FR-002 / ADR-023: document storage (S3-compatible object storage).
   readonly s3Endpoint: string;
   readonly s3Region: string;
@@ -134,6 +147,14 @@ export class ApiConfig {
     this.sepayReconEnabled = readString('SEPAY_RECON_ENABLED', 'false') === 'true';
     this.sepayReconIntervalMs = readInt('SEPAY_RECON_INTERVAL_MS', 5 * 60 * 1000);
     this.sepayReconMinAgeMs = readInt('SEPAY_RECON_MIN_AGE_MS', 15 * 60 * 1000);
+
+    // BR-027 (D3): 1000 VND per credit, matching the historical hardcoded value, so an
+    // existing deployment that sets nothing keeps pricing top-ups exactly as it did.
+    //
+    // `readInt` already refuses a non-positive or non-integer value at boot, which is the
+    // important part: a zero rate would divide by zero and a negative one would invert the sign
+    // of real money, so there is no safe fallback to degrade to.
+    this.vndPerCredit = readInt('VND_PER_CREDIT', 1000);
 
     this.jitsiAppId = readString('JITSI_APP_ID', 'skillswap');
     this.jitsiAppSecret = readString('JITSI_APP_SECRET', 'skillswap_jitsi_dev_secret');

@@ -224,12 +224,12 @@ Every open question and ambiguity across all nine waves, in one place, so they c
 
 | # | Question | Owner | Status |
 |---|---|---|---|
-| D10a | W2 C1 — ordering: is at-least-once enough? | Engineering | **Open** (recommended: declare no ordering, require order-tolerant consumers) |
-| D10b | W2 C2 — what is non-retryable? | Engineering | **Open** (recommended: only schema-validation failures) |
-| D10c | W2 C3 — who may replay a dead letter? | Engineering + Admin | **Open** (recommended: admin, audited, single row) |
-| E1–E8 | The engineering calls in Appendix A.4 | Engineering | **Recorded defaults** — implement them unless overridden |
+| D10a | W2 C1 — ordering: is at-least-once enough? | Engineering | **CLOSED 2026-10-25 (A1 = c)** — per-aggregate `sequence` on every event; consumers ignore anything at or below the watermark they have applied (`processed_events` row `DONE`, id `<queue>:seq:<aggregateId>`) |
+| D10b | W2 C2 — what is non-retryable? | Engineering | **CLOSED 2026-10-25 (A2 = a)** — only a payload that fails schema validation is terminal (`DEAD`); everything else stays `PENDING` with backoff, reusing `isTransient()` |
+| D10c | W2 C3 — who may replay a dead letter? | Engineering + Admin | **CLOSED 2026-10-25 (A3 = a)** — administrator only, audited with ADR-035 `actorId`, one row per replay |
+| E1–E8 | The engineering calls in Appendix A.4 | Engineering | **Recorded defaults** — implement them unless overridden (done; W1–W9 shipped on them) |
 | D12 | OQ-010 — pilot scope and success-metric targets | Product Owner | **Open**; no code depends on it, but it defines the demo's "done" |
-| D13 | C-009 / SR-BR-008 — chat contact-sharing enforced by **blocking** | Product Owner | **CLOSED 2026-10-25** — `block` is the approved policy. Recorded in SRS C-009, SR-BR-008 and OQ-009; no further confirmation needed |
+| D13 | C-009 / SR-BR-008 — chat contact-sharing enforced by **blocking** | Product Owner | **SUPERSEDED 2026-10-26** — the whole rule was withdrawn (BR-056, ADR-036 Amendment A). Chat ships with no contact-sharing enforcement; RISK-009 is in scope by design |
 
 The three D10 rows are engineering calls with recorded defaults; they do not need a product answer, but a PO may override them. **They are the only items blocking W2**, and W2 should not wait on a product meeting.
 
@@ -256,3 +256,14 @@ Everything else is unblocked. The P0 path is: **W1 → W2 (after D10) → W3/W4*
 | E7 | W8 | Does the room close when a class completes? | **Yes** — booking stops being joinable |
 | E8 | W4 | Deploy order for a required payload field | Emitters first, consumer strictness second |
 | E9 | W1 | Which `class_presence` rows exist before Jitsi is wired? | **None** — an empty table means "unknown", and unknown never completes a class early |
+
+### A.5 Post-wave cleanup calls (closed 2026-10-26)
+
+Decided during W9, after the waves they touch had shipped. Recorded here so the reasoning survives: each was a naming or configurability defect that no requirement named, which is exactly the kind of thing that otherwise gets fixed silently or not at all.
+
+| # | Decision | Outcome |
+|---|---|---|
+| D1 | Deferred-item hygiene (the SRS/deferred-FR bookkeeping left ragged by W7's descent and the D4 retirement) | **Deferred** — cosmetic only, no requirement depends on it. Recorded so it is a decision rather than an omission |
+| D2 | `TEACHER_TRUST_READER` named a projection both gates use | **Renamed to `ACCOUNT_TRUST_READER`** (`AccountTrustReader`, `account-trust.ts`). AC-034 made the booking gate read the same projection, so the old name described one caller and hid the other |
+| D3 | `VND_PER_CREDIT = 1000` was a constant (`wallet.ts`) | **Config-driven** (`VND_PER_CREDIT`, default 1,000) with a `vnd_per_credit` snapshot on every top-up intent (BR-027 / SR-BR-005). A rate change must be a deployment change, and must never re-price money already in flight |
+| D4 | A dedicated contact-sharing detector table | **Retired** — the rule itself was withdrawn (ADR-036 Amendment A) |

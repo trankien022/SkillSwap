@@ -16,13 +16,14 @@ interface IntentRow {
   provider_order_id: string | null;
   amount_vnd: number;
   amount_credits: number;
+  vnd_per_credit: number;
   paid_amount_vnd: number | null;
   paid_at: Date | null;
   status: string;
 }
 
 const COLUMNS = `"id", "owner_id", "provider", "provider_ref", "provider_order_id",
-   "amount_vnd", "amount_credits", "paid_amount_vnd", "paid_at", "status"`;
+   "amount_vnd", "amount_credits", "vnd_per_credit", "paid_amount_vnd", "paid_at", "status"`;
 
 function toIntent(row: IntentRow): TopUpIntent {
   return {
@@ -33,6 +34,7 @@ function toIntent(row: IntentRow): TopUpIntent {
     providerOrderId: row.provider_order_id,
     amountVnd: row.amount_vnd,
     amountCredits: row.amount_credits,
+    vndPerCredit: row.vnd_per_credit,
     paidAmountVnd: row.paid_amount_vnd,
     paidAt: row.paid_at,
     status: row.status as TopUpStatus,
@@ -53,10 +55,17 @@ export class SqlTopUpIntentRepository implements TopUpIntentRepository {
     const source = this.registry.get(this.moduleName);
     const rows = (await source.query(
       `INSERT INTO ${this.table}
-         ("owner_id", "provider", "provider_ref", "amount_vnd", "amount_credits")
-       VALUES ($1, $2, $3, $4, $5)
+         ("owner_id", "provider", "provider_ref", "amount_vnd", "amount_credits", "vnd_per_credit")
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING ${COLUMNS}`,
-      [input.ownerId, input.provider, input.providerRef, input.amountVnd, input.amountCredits],
+      [
+        input.ownerId,
+        input.provider,
+        input.providerRef,
+        input.amountVnd,
+        input.amountCredits,
+        input.vndPerCredit,
+      ],
     )) as IntentRow[];
     return toIntent(rows[0]);
   }

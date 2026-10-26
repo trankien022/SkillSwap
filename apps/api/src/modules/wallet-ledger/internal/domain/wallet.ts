@@ -1,6 +1,14 @@
 import type { ModuleStatusState } from './module-status';
 
 export const DEFAULT_FEE_BPS = 1000;
+
+/**
+ * BR-027 / decision D3: the default VND per credit.
+ *
+ * No longer the only value the system can use — `ApiConfig.vndPerCredit` supplies the rate and
+ * this is its default, kept here so the domain stays usable without config. Callers that price
+ * real money pass the configured rate explicitly.
+ */
 export const VND_PER_CREDIT = 1000;
 
 export interface FeeSplit {

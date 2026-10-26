@@ -5,6 +5,7 @@ import { FakePaymentGateway, FakeTopUpIntentRepository, FakeWalletRepository } f
 function build(
   configuredReturnUrl = 'https://app.example.test',
   allowedOrigins: string[] = [],
+  vndPerCredit = 1000,
 ) {
   const intents = new FakeTopUpIntentRepository();
   const wallets = new FakeWalletRepository();
@@ -13,12 +14,46 @@ function build(
     intents,
     wallets,
     gateway,
-    initiate: new InitiateTopUpUseCase(intents, gateway, configuredReturnUrl, allowedOrigins),
+    initiate: new InitiateTopUpUseCase(
+      intents,
+      gateway,
+      configuredReturnUrl,
+      allowedOrigins,
+      vndPerCredit,
+    ),
     callback: new HandleTopUpCallbackUseCase(intents, wallets, gateway.provider),
   };
 }
 
 describe('InitiateTopUpUseCase', () => {
+  /**
+   * BR-027 / D3: the exchange rate is configuration, and the intent snapshots the rate it used.
+   *
+   * The snapshot is the part worth testing. Reading the config at checkout *and* at settlement
+   * would mean a rate change during a live checkout silently re-prices money already in flight —
+   * the payer is shown one number and the ledger records another.
+   */
+  it('prices credits at the configured rate and stamps that rate on the intent', async () => {
+    const { initiate, intents } = build(undefined, undefined, 500);
+    const view = await initiate.execute({ ownerId: 'u1', amountVnd: 100_000 });
+
+    // 100,000 VND at 500 VND per credit is 200 credits, not the 100 a hardcoded 1,000 gives.
+    expect(view.amountCredits).toBe(200);
+    const stored = await intents.findById(view.id);
+    expect(stored?.vndPerCredit).toBe(500);
+    expect(stored?.amountCredits).toBe(200);
+  });
+
+  it('checks divisibility against the configured rate, not the default', async () => {
+    // 1,500 VND is 1.5 credits at 1,000 (refused) but exactly 3 credits at 500 (accepted).
+    // Pinning both directions proves the rate reaches the arithmetic rather than only the record.
+    await expect(build().initiate.execute({ ownerId: 'u1', amountVnd: 1_500 })).rejects.toThrow();
+
+    const atHalf = build(undefined, undefined, 500);
+    const view = await atHalf.initiate.execute({ ownerId: 'u1', amountVnd: 1_500 });
+    expect(view.amountCredits).toBe(3);
+  });
+
   it('creates a pending intent and returns a hosted SePay checkout URL', async () => {
     const { initiate, gateway } = build();
     const view = await initiate.execute({ ownerId: 'u1', amountVnd: 100_000 });

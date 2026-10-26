@@ -1,5 +1,5 @@
 import type { TopUpIntentCreated } from '@skillswap/contracts';
-import { vndToCredits } from '../domain/wallet';
+import { VND_PER_CREDIT, vndToCredits } from '../domain/wallet';
 import { generateInvoiceNumber } from '../domain/invoice-number';
 import { resolveReturnUrl, withProviderRef } from '../domain/return-url';
 import type { PaymentGateway } from './port/out/payment-gateway';
@@ -22,10 +22,18 @@ export class InitiateTopUpUseCase implements InitiateTopUpPort {
      * configured origin is always allowed). Same reason it is a value.
      */
     private readonly allowedOrigins: readonly string[] = [],
+    /**
+     * BR-027 / D3: VND per credit, from `ApiConfig.vndPerCredit`. Passed as a value for the same
+     * reason as the return URL — the use case stays free of config access, and a test can price
+     * at a different rate without touching a global.
+     */
+    private readonly vndPerCredit: number = VND_PER_CREDIT,
   ) {}
 
   async execute(input: InitiateTopUpInput): Promise<TopUpIntentCreated> {
-    const amountCredits = vndToCredits(input.amountVnd);
+    // The rate is resolved once and travels with the intent, so the credits the payer is told
+    // about at checkout are the credits the ledger will hold no matter when the IPN arrives.
+    const amountCredits = vndToCredits(input.amountVnd, this.vndPerCredit);
     // ADR-033: the invoice number is the `provider_ref` and the IPN's only
     // correlation key, so it is generated here rather than by the adapter.
     const providerRef = generateInvoiceNumber();
@@ -54,6 +62,7 @@ export class InitiateTopUpUseCase implements InitiateTopUpPort {
       providerRef,
       amountVnd: input.amountVnd,
       amountCredits,
+      vndPerCredit: this.vndPerCredit,
     });
     return {
       id: intent.id,

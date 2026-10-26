@@ -276,7 +276,7 @@ Shortlist of business rules governing the FRs below. The canonical business rule
 | SR-BR-002 | Only a Teacher whose skill was approved by a domain-matched Verifier may open a class for that skill; enforced at API layer, not UI only. | FR-003–FR-005 | BR-008, BR-011, BR-015 |
 | SR-BR-003 | Every class lasts at least 30 minutes and at most 3 hours, including Teacher edits to published classes. | FR-005, FR-007 | BR-016, BR-017 |
 | SR-BR-004 | A booking must be created at least 24 hours before class start, computed in the system timezone. | FR-007 | BR-021 |
-| SR-BR-005 | Initial rate is 1 credit = 1,000 VND; the applied rate is stored per transaction for audit. | FR-008, FR-010, FR-014 | BR-027 |
+| SR-BR-005 | Initial rate is 1 credit = 1,000 VND; the applied rate is stored per transaction for audit. | FR-008, FR-010, FR-014 | BR-027. **Implemented 2026-10-26 (D3)**: the rate is configuration (`VND_PER_CREDIT`, default 1,000) and every `top_up_intents` row stores `vnd_per_credit`, so a rate change cannot re-price money already in flight. FR-010/FR-014 parts remain out of MVP (withdrawal deferred) |
 | SR-BR-006 | Platform fee is 10% of class price; the remaining 90% is allocated to the Teacher per settlement state. | FR-009, FR-014 | BR-034, BR-035, BR-036 |
 | SR-BR-007 | MVP supports online classes only. | FR-005, FR-011 | BR-018 |
 | SR-BR-008 | Class-serving communication happens in-platform. | FR-012 | BR-055 — **BR-056 withdrawn from scope 2026-10-26** (ADR-036 Amendment A): contact sharing is no longer prohibited or detected |

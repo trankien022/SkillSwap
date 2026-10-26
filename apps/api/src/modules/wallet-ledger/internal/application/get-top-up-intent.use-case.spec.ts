@@ -14,6 +14,7 @@ async function seedIntent(
     providerRef: 'SS-1-A1B2C3',
     amountVnd: 100_000,
     amountCredits: 100,
+    vndPerCredit: 1000,
   });
   return intent.id;
 }
