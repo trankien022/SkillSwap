@@ -3,7 +3,7 @@ title: W9 — Residual risks: ranking, MFA, failure UX
 type: plan
 date: 2026-10-24
 topic: w9-residual-risks
-status: Phases 0–5 done (2026-10-26) — ranking excluded, MFA amended, trace walkthrough written, failure UX verified, accessibility rubric written
+status: Phases 0–5 done (2026-10-26) — ranking excluded, MFA amended, trace walkthrough written (and its defect fixed), failure UX verified, accessibility rubric written, D1–D3 cleanup landed
 owner: Group 4
 ---
 
