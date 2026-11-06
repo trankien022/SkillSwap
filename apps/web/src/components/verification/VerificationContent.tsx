@@ -76,6 +76,15 @@ export function VerificationContent() {
   }, []);
 
   const currentStatus = studentVerif?.status || me?.studentVerification?.status || 'unsubmitted';
+  /**
+   * FR-017: the reason an Administrator gave. It is rendered whenever it exists, which covers
+   * both `rejected` and `revoked` — a revocation carries a reason too, and the learner needs
+   * it for the same reason. When it is null (pending, approved, or no record at all) there is
+   * nothing to show, and a placeholder would imply a reviewer said something they did not.
+   *
+   * The text is the Administrator's own words, so it is never translated; only the label is.
+   */
+  const decisionReason = studentVerif?.reason || me?.studentVerification?.reason || null;
 
   const handleUploadAndSubmit = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0]) return;
@@ -243,6 +252,22 @@ export function VerificationContent() {
                     <dd>{studentVerif?.major || '—'}</dd>
                   </div>
                 </dl>
+                {decisionReason && (
+                  // FR-017: placed beside the status it explains, with role="status" so the
+                  // reason is announced when the panel loads rather than only when the pill
+                  // is read. `break-words` because the text is an administrator's free-form
+                  // sentence and a long one must not push the 360 px layout sideways.
+                  <div
+                    role="status"
+                    data-testid="verification-decision-reason"
+                    className="mt-5 rounded border-l-4 border-warning-ink bg-warning-tint px-4 py-3"
+                  >
+                    <p className="text-sm font-semibold text-ink">{t('reasonLabel')}</p>
+                    <p className="mt-1 break-words text-sm leading-relaxed text-ink-soft">
+                      {decisionReason}
+                    </p>
+                  </div>
+                )}
                 <button
                   className="workspace-secondary mt-5"
                   aria-expanded={isUploadOpen}

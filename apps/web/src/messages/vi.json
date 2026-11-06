@@ -1536,6 +1536,7 @@
       "signInBody": "Hồ sơ sinh viên và tài liệu xác minh chỉ hiển thị với tài khoản của bạn.",
       "signIn": "Đăng nhập",
       "loadError": "Không tải được trạng thái xác minh. Vui lòng thử lại.",
+      "reasonLabel": "Lý do từ người xét duyệt",
       "submitted": "Đã gửi hồ sơ. Theo dõi kết quả xét duyệt tại đây.",
       "submitError": "Không gửi được hồ sơ. Vui lòng thử lại.",
       "uploadError": "Không tải lên được tài liệu. Vui lòng thử lại.",

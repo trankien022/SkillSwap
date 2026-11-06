@@ -1536,6 +1536,7 @@
       "signInBody": "Your student profile and verification documents are only visible in your account.",
       "signIn": "Sign in",
       "loadError": "Could not load your verification status. Please try again.",
+      "reasonLabel": "Reason from the reviewer",
       "submitted": "Profile submitted. Follow the review result here.",
       "submitError": "Could not submit your profile. Please try again.",
       "uploadError": "Could not upload the document. Please try again.",

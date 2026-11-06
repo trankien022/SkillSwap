@@ -171,10 +171,11 @@ The requirements above are stated as `FR`/`BR`/`NFR` clauses. This section resta
 **Honest gaps.** The following are recorded because a story above implies them but the implementation does not yet enforce them; they are not claims that the story is met:
 - **US-W4 (Teacher withdrawal) is out of MVP scope** (2026-10-25, OQ-011: no payout rail). This is a **scope exclusion, not a gap**: FR-014 and AC-008/AC-013/AC-014 are deferred with it.
 - class completion commits before wallet settlement and does not check booking expiry, so US-M5's atomicity holds for booking but not for completion.
+- ~~**FR-017 on web is partial**~~ — **closed 2026-10-30.** The web client rendered the status but dropped the rejection reason; it now renders the reason verbatim beside the status, for `rejected` and `revoked` alike, with no box when the reviewer gave none. See `docs/plans/2026-10-30-fr017-web-verification-reason-plan.md`.
 
 > **Resolved 2026-10-25 (Product Owner — W1 gate C1/C2):** an account **without an effective approved student verification may not book a class** (BR-001 applies to booking as well as teaching; BR-004 makes it depend on the current status). Enforcing this is therefore a **defect to fix**, not a design choice, and it closes with AC-034. Explore/browse remains open to unverified accounts (US-T1). Until the code enforces it, US-M4's eligibility gate is partial.
 
-> **Implemented 2026-10-26 (AC-034, AC-035):** the booking gate is enforced — an unverified learner's request is refused before any booking row, hold or credit movement exists — and class completion no longer depends on a Teacher command. Class completion now has two automatic bases: `scheduled_end` and `room_idle` (everyone left the room and stayed away past the 5-minute grace period, never before `starts_at`). Presence is fed by an authenticated Jitsi webhook; while that feed is unavailable, presence is **unknown** and classes fall back to `scheduled_end` only. In-class chat (FR-013, US-M4) remains unimplemented, so the story is still partial for that reason alone.
+> **Implemented 2026-10-26 (AC-034, AC-035):** the booking gate is enforced — an unverified learner's request is refused before any booking row, hold or credit movement exists — and class completion no longer depends on a Teacher command. Class completion now has two automatic bases: `scheduled_end` and `room_idle` (everyone left the room and stayed away past the 5-minute grace period, never before `starts_at`). Presence is fed by an authenticated Jitsi webhook; while that feed is unavailable, presence is **unknown** and classes fall back to `scheduled_end` only. In-class chat (FR-012, US-L2) was implemented 2026-10-26 (W5); the sentence that stood here said "FR-013, US-M4 remains unimplemented", which named the wrong requirement and described a state the code had already left.
 
 ### 2.4 Constraints
 
@@ -261,10 +262,10 @@ Priority follows MoSCoW from the PRD (`Must` / `Should`). Status preserves the P
 | FR-014 | The system shall reserve credit atomically with a Teacher withdrawal request before gateway payout, retain the hold while the result is unknown, and post exactly one payout or release on a definitive outcome with complete ledger records. | Must | intent.md | **Deferred — out of MVP scope (2026-10-25).** Reason: no provider payout rail (OQ-011 unresolved for payout) and the Product Owner declined an admin-manual substitute that would record a payout the ledger cannot verify. FR-014 and AC-008/AC-013/AC-014 return when a payout API exists; see W7 |
 | FR-015 | The system shall provide an Administrator dashboard aggregating the student-verification queue, Verifier queue by domain, account-lock list, and an audit log filterable by actor, time and action type. | Must | intent.md | **Implemented** — queues + audit log (ADR-034); audit actor attribution (ADR-035, AC-032); **account-lock list, lock/unlock action and the S17 web screen** at `/{locale}/operations` (OQ-015, ADR-037, **ADR-037 Amendment A** — the earlier API-only decision C5 was withdrawn on 2026-10-26). The **dispute list is removed from the MVP** (2026-10-25: no dispute was ever defined; BR-045/047/048 cover every refund case) |
 | FR-016 | The system shall notify users on verification outcomes, booking confirmed/cancelled, class starting soon, completed wallet transactions and withdrawal outcomes. | Should | intent.md | Confirmed. **Completed wallet transactions implemented 2026-10-26**: the booking-payment path always emitted `wallet.transaction.completed`; the top-up path did not, so a settled top-up notified nobody (found by the W9 R4 trace walkthrough, fixed in `83f3bd5`). Remaining silent producers are named in `docs/runbooks/transaction-trace.md` § Open gaps |
-| FR-017 | The system shall show the Learner their account status and any rejection reason on the main screen. | Must | intent.md | Confirmed |
+| FR-017 | The system shall show the Learner their account status and any rejection reason on the main screen. | Must | intent.md | **Implemented 2026-10-30.** Mobile shows status and reason on the dashboard (`Dashboard.verificationReasonLabel`). Web shows both on the account surface — the verification workspace at `/{locale}/verification`, which is also where the resubmit path lives; it previously showed only the status and dropped the reason. The reason is rendered verbatim (an administrator's words, never translated) and appears for `rejected` and `revoked` alike, since both carry one. Web has no signed-in home route, so this screen is the "main screen" on that client; placing account state on the public marketing home would be a design change beyond this requirement |
 | FR-018 | The system shall show a Teacher the complete decision history for each immutable submitted evidence version, retaining old/new decisions when superseded, revoked or expired. | Must | intent.md | Confirmed; audit contract ADR-028; retention keep (OQ-008) |
-| FR-019 | The system shall support student re-verification and invalidate rights requiring VERIFIED when approval expires or is revoked; treatment of existing commitments follows the approved cascade policy. | Must | BRD BR-006 | Confirmed core; cascade/validity policy open (OQ-008) |
-| FR-020 | The system shall treat each Class as one scheduled online session, record its completion time and audited source/rule, and gate rating and income release on their eligibility conditions. | Must | BRD BR-042–BR-043 | Confirmed core; completion/release rule resolved (OQ-006); **self-service completion removed 2026-10-25 (C3, AC-035)** |
+| FR-019 | The system shall support student re-verification and invalidate rights requiring VERIFIED when approval expires or is revoked; treatment of existing commitments follows the approved cascade policy. | Must | BRD BR-006 | Confirmed core. **Corrected 2026-10-30:** this cell previously said "cascade/validity policy open (OQ-008)", but OQ-008's own row records those clauses as resolved on 2026-10-10 — **no time-based expiry in the MVP** (ADR-023) and **revocation-only cascade with no grandfather** (ADR-025). The code matches the resolution: an approval carries no `expiresAt`, and `RevokeStudentVerificationUseCase` cascades through `student.verification.revoked`. Re-verification reuses the FR-002 submission path |
+| FR-020 | The system shall treat each Class as one scheduled online session, record its completion time and audited source/rule, and gate rating and income release on their eligibility conditions. | Must | BRD BR-042–BR-043 | Confirmed core; completion/release rule resolved (OQ-006); **self-service completion removed 2026-10-25 (C3, AC-035)**. **Implemented 2026-10-26:** completion is recorded with its basis (`scheduled_end` or `room_idle`) and audited source; rating eligibility and income release both gate on it (W1) |
 
 #### 3.2.2 Business rules
 
@@ -362,20 +363,19 @@ stateDiagram-v2
   Draft --> Pending : submit school/major and document
   Pending --> Approved : Administrator approves
   Pending --> Rejected : Administrator rejects with reason
-  Approved --> Expired : validity period elapses (OQ-008)
-  Approved --> Revoked : Administrator revokes or school/major changes
-  Approved --> Superseded : replacement approved atomically
+  Approved --> Revoked : Administrator revokes (with a reason)
   Rejected --> [*]
-  Expired --> [*]
   Revoked --> [*]
-  Superseded --> [*]
   note right of Approved
     One effective approval per Profile
-    Check expiry at authorization time
+    No time-based expiry in the MVP (ADR-023, OQ-008)
+    Revocation is the only demotion path (ADR-025)
     Resubmission creates a new row
     Every transition retains audited history
   end note
 ```
+
+**Corrected 2026-10-30.** This diagram previously showed `Approved --> Expired` and a `Superseded` state, plus the note "Check expiry at authorization time". OQ-008's resolution (2026-10-10, ADR-023) removed expiry from the MVP entirely, and no `expired` status exists in the code (`VERIFICATION_STATUSES` is `pending | approved | rejected | revoked`) or in the contract — a `meResponseSchema` test explicitly rejects `expired`. A requirement model that shows a state the system cannot enter invites a client to handle a case that will never arrive, so the diagram now matches the decided model rather than the earlier draft of it.
 
 **2. SkillEvidence (FR-003, FR-018, SR-BR-002)**
 
@@ -529,7 +529,7 @@ stateDiagram-v2
 
 ### 3.7 Open items blocking implementation
 
-Implementation of the clauses listed in Appendix A is blocked until the corresponding Open Question is approved (decision policy: **block until resolved**). Affected increments (increment definitions per PRD §14): Increment 2 (OQ-008), Increment 3 (OQ-001 resolved — ADR-026, ADR-027; OQ-007 resolved), Increment 4 (OQ-005, OQ-006, OQ-011, OQ-012; OQ-002 resolved — pure self-price; OQ-003 resolved), Increment 5 (**OQ-004 closed — ranking excluded; OQ-009 closed — chat ships with no contact rule, ADR-036 Amendment A**), Increment 6 (no additional OQ; inherits Increment 5 gates), storage/lifecycle design (OQ-008), pilot planning (OQ-010 — open, no code depends on it).
+Implementation of the clauses listed in Appendix A is blocked until the corresponding Open Question is approved (decision policy: **block until resolved**). **Corrected 2026-10-30:** this paragraph previously named OQ-008 as still blocking Increment 2 and "storage/lifecycle design", which contradicted OQ-008's own row below — that row records the storage, validity and cascade clauses as resolved on 2026-10-10 (ADR-023/ADR-025), and the code implements them. What remains genuinely blocked is: **OQ-011's payout half** (no payout rail, so FR-014 stays out of the MVP), **OQ-010** (pilot scope and success-metric targets — no code depends on it), and the resolution-independent parts of OQ-012. Increment mapping, with the corrections applied: Increment 2 (no remaining OQ-008 blocker), Increment 3 (OQ-001 resolved — ADR-026, ADR-027; OQ-007 resolved), Increment 4 (OQ-005 partially resolved — no withdrawal fee; OQ-006 resolved; OQ-011 resolved for top-up, open for payout; OQ-012 open; OQ-002 resolved — pure self-price; OQ-003 resolved), Increment 5 (**OQ-004 closed — ranking excluded; OQ-009 closed — chat ships with no contact rule, ADR-036 Amendment A**), Increment 6 (no additional OQ; inherits Increment 5 gates), pilot planning (OQ-010 — open, no code depends on it).
 
 **Note (BR-063 vs. UI):** BR-063 is satisfied — one account can both learn and teach, because teaching is gated on *verification + approved skill*, not on a separate role. The PRD §6.1 "switch between Learner and Teacher role views" is a UI convenience that is **not** implemented in the MVP; the underlying capability (study + teach from one account) **is** available. A future increment may add explicit role views.
 
@@ -663,7 +663,16 @@ FR-007 (booking eligibility) is implemented in the `live-class` module. Test loc
 | Last-seat race → exactly one booking (AC-010) | `sql-booking-repository.ts` `createWithSeatGuard` (row lock) | `book-class.concurrency.spec.ts` |
 | Idempotent replay | `book-class.use-case.ts` | `book-class.use-case.spec.ts`, `book-class.concurrency.spec.ts` |
 
-Lifecycle ACs resolved from OQ-003 (AC-022–AC-027) are documented but not implemented in this increment.
+Lifecycle ACs resolved from OQ-003 (AC-022–AC-027) split into three groups, corrected 2026-10-30 — the sentence that stood here said all of them were "documented but not implemented", which stopped being true when the booking-lifecycle work landed:
+
+| AC | Rule | State |
+|---|---|---|
+| AC-022 | Teacher cancels a class → affected Learners refunded in credits | **Implemented** — `CancelClassUseCase` (`POST /classes/:id/cancel`) cancels every active booking, each emitting `booking.cancelled`; the wallet consumer refunds confirmed ones |
+| AC-023 | No Learner-initiated booking cancellation in the MVP | **Absent by decision, not by omission** — OQ-003 records that the MVP has no booking-cancellation policy; there is deliberately no route for it |
+| AC-024 | Teacher no-show (not joined within 15 min) → Learner refunded, no penalty | **Implemented** — `POST /classes/bookings/:bookingId/no-show`; the join evidence comes from `class_presence`, not from the caller (AC-024 amendment) |
+| AC-025 | Learner no-show → no automatic penalty or refund | **Absent by decision** — OQ-003 records that no automatic rule applies; deliberately no logic exists |
+| AC-026 | Pending booking holds a seat and auto-cancels after ~15 min | **Implemented** — `ExpirePendingBookingsUseCase` behind the wired `PendingHoldSweeper` |
+| AC-027 | Confirmed → Cancelled refunds credits to the app wallet | **Implemented** — `RefundCancelledBookingUseCase` consumes `booking.cancelled`, and is a no-op when the booking was never settled or already refunded |
 
 #### Frontend (web + mobile), API-backed
 
