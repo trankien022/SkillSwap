@@ -1,6 +1,6 @@
 ---
 title: FR-017 on web — surface the verification status and rejection reason to the learner
-status: Phases 0–1 done (2026-10-30) — stale SRS statements corrected, web shows status + rejection reason, browser-verified in both locales
+status: Done (2026-10-30 plan, verified 2026-11-06) — stale SRS statements corrected, web shows status + rejection reason, browser-verified at 360 px in both locales
 date: 2026-10-30
 owner: Product Owner (requirement) · Engineering (implementation)
 related:
@@ -36,8 +36,10 @@ the SRS row records that placement.
 
 ## Phase 0 — say what is true (docs only)
 
-The same audit found four SRS statements older than the code. The rule "the SRS must
-never describe a state older than the code" makes fixing them part of this work:
+The same audit found SRS statements older than the code. The rule "the SRS must
+never describe a state older than the code" makes fixing them part of this work. There
+turned out to be five, not the four originally listed — the fifth (the state diagram) only
+became visible while checking the fourth:
 
 1. **§2.3 blockquote** claims *"In-class chat (FR-013, US-M4) remains unimplemented"* —
    wrong ID (chat is FR-012/US-L2) and out of date (shipped W5, 2026-10-26). Correct it
@@ -53,8 +55,13 @@ never describe a state older than the code" makes fixing them part of this work:
    approvals, `RevokeStudentVerificationUseCase` cascades).
 4. **Appendix A's blocking list** still names OQ-008 as blocking Increment 2 and
    storage/lifecycle design, contradicting the OQ-008 row above.
+5. **The StudentVerification state diagram** shows `Approved --> Expired`, a `Superseded`
+   state, and the note "check expiry at authorization time". None of those exist: the status
+   set is `pending | approved | rejected | revoked`, a contract test explicitly rejects
+   `expired`, and ADR-023 removed expiry from the MVP. A model that shows an unreachable
+   state teaches a client to handle a case that cannot occur.
 
-Commit: `docs(srs): correct four statements older than the code` (+ this plan file).
+Commit: `docs(srs): correct five statements older than the code` (+ this plan file).
 
 ## Phase 1 — render what the API already says (web)
 
@@ -79,6 +86,36 @@ directly, since the demo seed has no rejected verification), then at 360 px in b
 locales: the reason text is visible, the status pill reads "Update your evidence"
 (en) / its Vietnamese equivalent, and there is no horizontal scroll. Evidence recorded
 in the final status line of this plan.
+
+### Result — run 2026-11-06
+
+**Correcting the paragraph above:** it claimed the demo seed has no rejected verification.
+It does — `scripts/seed-demo.mjs` gives `USERS[7]` (`user8@demo.skillswap.local`) a
+`rejected` row with the reason `Document could not be verified`. No manual seeding was
+needed and none was done; the browser check ran against the ordinary `pnpm db:demo` data,
+which is the state a reviewer will actually see.
+
+API confirmed first, so a rendering failure could not be confused with a transport one:
+`GET /api/auth/me` → `{status: "rejected", reason: "Document could not be verified"}` and
+`GET /api/student-verifications/me` returns the same `reason`.
+
+Then, in headless Chromium at a 360 px viewport, with the session planted the way the app
+stores it (`skillswap-api-tokens`):
+
+| Locale | Reason box | Rendered text | Status pill | scrollWidth / clientWidth |
+|---|---|---|---|---|
+| en | present, `role="status"` | "Reason from the reviewer — Document could not be verified" | "Update your evidence" | 360 / 360 |
+| vi | present, `role="status"` | "Lý do từ người xét duyệt — Document could not be verified" | "Cần bổ sung hồ sơ" | 360 / 360 |
+
+The reason text is identical in both locales, which is the point: it is the
+administrator's own sentence and is never translated. Only the label changes.
+
+Negative case checked live as well, since a unit test can pass while a live panel renders
+an empty box: `user1` (seeded `approved`) shows the pill "Verified", **no** reason box,
+and 360 / 360 with no horizontal scroll.
+
+Screenshots: `fr017-en-360.png`, `fr017-vi-360.png` (temporary evidence, not committed).
+
 
 ## Out of scope
 

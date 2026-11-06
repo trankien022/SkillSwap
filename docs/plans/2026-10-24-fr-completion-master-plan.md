@@ -89,7 +89,14 @@ Non-negotiable properties of the gate:
 
 FR-001, FR-002, FR-003, FR-004, FR-005, FR-008 (top-up), FR-010, FR-013 (core), FR-017, FR-018, FR-019.
 
-These are not "finished forever"; they are simply not in this programme. Any defect found there becomes its own fix, not a phase here.
+These are not "finished forever"; they are simply not in this programme. Any defect found there becomes its own fix, not a phase here. That is what happened to FR-017 — see the correction below.
+
+**Correction (2026-10-30, verified 2026-11-06).** Listing FR-017 here was wrong: the web
+client rendered the verification status but never the rejection reason, so the requirement
+was half-implemented and this line is why nothing scheduled it. Fixed separately as
+`docs/plans/2026-10-30-fr017-web-verification-reason-plan.md`. FR-017 now belongs here for
+the reason this section intends — both clients show status and reason, and browser evidence
+exists for each.
 
 ## 3. Sequencing and dependency graph
 
