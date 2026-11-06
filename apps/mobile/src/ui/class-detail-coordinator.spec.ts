@@ -4,6 +4,17 @@ import { GatewayHttpError } from '@/infrastructure/http/gateway-client';
 import type { BookClassResponse, ClassDetailView } from '@skillswap/contracts';
 import { ClassDetailCoordinator } from './class-detail-coordinator';
 
+/**
+ * A pending hold is the one fixture value here that genuinely depends on the clock:
+ * `confirmBooking` refuses a hold whose `expiresAt` has already passed, which is correct
+ * behaviour and is tested separately below. Hardcoding the timestamp therefore rots — the
+ * literals originally here pointed at 2026-10-30T10:15Z and, once that moment passed, three
+ * unrelated tests began failing for a reason that had nothing to do with the code under test.
+ * Both directions are expressed relative to `Date.now()` so they stay true forever.
+ */
+const futureHoldExpiry = (): string => new Date(Date.now() + 10 * 60_000).toISOString();
+const pastHoldExpiry = (): string => new Date(Date.now() - 60_000).toISOString();
+
 describe('ClassDetailCoordinator', () => {
   const sampleClassDetail: ClassDetailView = {
     id: 'class-1',
@@ -183,7 +194,7 @@ describe('ClassDetailCoordinator', () => {
       ownBooking: {
         bookingId: 'booking-1',
         state: 'pending',
-        expiresAt: '2026-10-30T10:15:00.000Z',
+        expiresAt: futureHoldExpiry(),
       },
     };
 
@@ -222,7 +233,7 @@ describe('ClassDetailCoordinator', () => {
       ownBooking: {
         bookingId: 'booking-1',
         state: 'pending',
-        expiresAt: '2026-10-30T10:15:00.000Z',
+        expiresAt: futureHoldExpiry(),
       },
     };
 
@@ -266,7 +277,7 @@ describe('ClassDetailCoordinator', () => {
       ownBooking: {
         bookingId: 'booking-1',
         state: 'pending',
-        expiresAt: '2026-10-30T10:15:00.000Z',
+        expiresAt: futureHoldExpiry(),
       },
     };
     const confirmed: ClassDetailView = {
@@ -301,7 +312,7 @@ describe('ClassDetailCoordinator', () => {
       ownBooking: {
         bookingId: 'booking-recovered',
         state: 'pending',
-        expiresAt: '2026-10-30T10:15:00.000Z',
+        expiresAt: futureHoldExpiry(),
       },
     });
 
@@ -480,7 +491,7 @@ describe('ClassDetailCoordinator', () => {
       state: 'pending' as const,
       priceCredits: 50,
       createdAt: '2026-10-01T08:00:00.000Z',
-      expiresAt: '2026-10-01T08:15:00.000Z', // In the past
+      expiresAt: pastHoldExpiry(),
     };
 
     mockGateway.getClassDetail.mockResolvedValueOnce({
