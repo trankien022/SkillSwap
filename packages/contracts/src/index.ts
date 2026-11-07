@@ -395,9 +395,26 @@ export const documentUploadRequestSchema = z.object({
 });
 export type DocumentUploadRequestInput = z.infer<typeof documentUploadRequestSchema>;
 
+/**
+ * FR-002 / ADR-038: a signed Cloudinary upload.
+ *
+ * The provider authenticates an upload with credential fields in the request body, not with a
+ * signature in the URL, so a target is a form rather than a pre-signed link. Clients must POST
+ * `multipart/form-data` and send **every** pair in `fields` verbatim alongside the file —
+ * Cloudinary re-derives the signature from what it receives and rejects any divergence.
+ *
+ * `expiresAt` is advisory: it guards a client against using a stale target. Unlike an S3
+ * pre-signed URL there is no server-enforced deadline behind it (ADR-038 consequence 2).
+ */
 export const documentUploadTargetSchema = z.object({
   documentId: z.string().min(1),
+  /** Endpoint the multipart body is posted to. */
   uploadUrl: z.string().min(1),
+  /** Always `POST`; explicit so a client never assumes a raw body upload. */
+  method: z.literal('POST'),
+  /** Signed fields, sent unchanged and un-encoded next to the file part. */
+  fields: z.record(z.string(), z.string()),
+  /** Cloudinary `public_id` of the document being created. */
   objectKey: z.string().min(1),
   expiresAt: z.string().datetime({ offset: true }),
 });
