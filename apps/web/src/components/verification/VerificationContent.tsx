@@ -111,23 +111,24 @@ export function VerificationContent() {
       }
 
       const target = await unwrapEnvelope<DocumentUploadTargetView>(docRes);
-      const { documentId, uploadUrl } = target;
+      const { documentId, uploadUrl, fields } = target;
 
-      // 2. PUT raw file bytes to the pre-signed uploadUrl (no auth header)
+      // 2. POST multipart to Cloudinary (ADR-038). The provider authenticates from the signed
+      // fields in the body, so they must be sent verbatim and unmodified — it recomputes the
+      // signature over what it receives. No bearer token: the signature is the credential.
       setIsUploading(true);
       setUploadProgress(0);
 
+      const form = new FormData();
+      for (const [key, value] of Object.entries(fields)) {
+        form.append(key, value);
+      }
+      form.append('file', file);
+
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        xhr.open('PUT', uploadUrl);
-        // Do not set authorization header — pre-signed URL should be used without bearer token.
-        if (file.type) {
-          try {
-            xhr.setRequestHeader('content-type', file.type);
-          } catch {
-            // some environments disallow setting content-type on presigned PUT, ignore
-          }
-        }
+        xhr.open('POST', uploadUrl);
+        // Content-Type is deliberately not set: the browser must add the multipart boundary.
         xhr.upload.onprogress = (ev) => {
           if (ev.lengthComputable) {
             const p = Math.round((ev.loaded / ev.total) * 100);
@@ -142,12 +143,12 @@ export function VerificationContent() {
           }
         };
         xhr.onerror = () => reject(new Error(t('uploadError')));
-        xhr.send(file);
+        xhr.send(form);
       });
 
       setIsUploading(false);
 
-      // 3. Only after successful PUT, create the verification record
+      // 3. Only after a successful upload, create the verification record
       const submitRes = await callApi('/student-verifications', {
         method: 'POST',
         body: JSON.stringify({

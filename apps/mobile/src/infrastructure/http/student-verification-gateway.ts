@@ -43,10 +43,10 @@ export interface SubmitStudentVerificationWithDocumentInput {
  * Implements FR-002 / FR-017 / ADR-023:
  * - Uses @skillswap/contracts schemas for validation and serialization.
  * - Delegates all Gateway BFF calls strictly to GatewayClient.authenticatedRequest (sole auth/GET-retry owner).
- * - Direct pre-signed storage PUT upload of raw bytes (Uint8Array / ArrayBuffer) using injected fetch.
+ * - Direct signed multipart POST of raw bytes (Uint8Array / ArrayBuffer) using injected fetch.
  * - Enforces zero-byte rejection, expected size matching, expiration check, and http/https URL validation.
  * - Strips Gateway tokens and credentials from direct storage requests.
- * - Sanitizes storage error messages to prevent leaking pre-signed URLs, query signatures, or secrets.
+ * - Sanitizes storage error messages so signed fields and signature values never leak.
  * - Never includes administrative approval/rejection endpoints (mobile user client only).
  */
 export class StudentVerificationGateway {
@@ -62,7 +62,7 @@ export class StudentVerificationGateway {
   }
 
   /**
-   * Requests a pre-signed document upload target from the Gateway BFF (POST /student-verifications/documents).
+   * Requests a signed Cloudinary upload target from the Gateway BFF (POST /student-verifications/documents).
    */
   async requestDocumentUpload(
     input: DocumentUploadRequestInput,
@@ -81,15 +81,17 @@ export class StudentVerificationGateway {
   }
 
   /**
-   * Direct pre-signed PUT upload of raw binary bytes to the storage service (e.g. S3 / MinIO).
+   * Direct multipart POST of raw binary bytes to Cloudinary (ADR-038).
    *
    * Invariants:
    * - Caller passes Uint8Array or ArrayBuffer; never JSON serializes or base64 transforms binary.
-   * - Content-Type header set to exact input content type.
+   * - Every signed field from the target is posted verbatim; the provider re-derives the
+   *   signature from what arrives, so a renamed or re-encoded field fails the upload.
+   * - Content-Type is left to the runtime: setting it would omit the multipart boundary.
    * - No Gateway Bearer token, x-idempotency-key, or cookies sent to the storage provider.
-   * - Validates URL (http: and https: only; development HTTP pre-signing works).
-   * - Rejects expired targets and zero or mismatched byte sizes before issuing the network request.
-   * - Throws DocumentUploadError without exposing raw pre-signed URLs or signatures in error messages.
+   * - Validates URL (http: and https: only) and rejects expired, zero or mismatched byte sizes
+   *   before issuing the network request.
+   * - Throws DocumentUploadError without exposing signed fields or signature values.
    * - Resolves Promise<void> ONLY after storage returns HTTP OK (2xx).
    */
   async uploadDocument(
@@ -141,26 +143,52 @@ export class StudentVerificationGateway {
       if (Number.isFinite(expiryTime) && Date.now() >= expiryTime) {
         throw new DocumentUploadError(
           0,
-          'Upload rejected: pre-signed upload target has expired',
+          'Upload rejected: signed upload target has expired',
         );
       }
     }
 
-    const headers: Record<string, string> = {};
-    if (options?.contentType) {
-      headers['Content-Type'] = options.contentType;
-    }
+    const isTarget = typeof targetOrUrl !== 'string';
 
+    const headers: Record<string, string> = {};
+    // Content-Type is deliberately omitted: the runtime must add the multipart boundary itself.
+    // A caller-supplied content type would strip it and the provider would see a malformed body.
 
     let response: Response;
     try {
-      response = await this.fetchFn(uploadUrl, {
-        method: 'PUT',
-        credentials: 'omit',
-        headers,
-        body: bytes instanceof ArrayBuffer ? bytes : new Uint8Array(bytes).buffer,
-      });
-    } catch {
+      if (isTarget) {
+        // ADR-038: the provider authenticates from signed fields in the body, not from the URL.
+        // Every field must be posted verbatim — the signature is recomputed over what arrives.
+        const form = new FormData();
+        for (const [key, value] of Object.entries(targetOrUrl.fields)) {
+          form.append(key, value);
+        }
+        form.append(
+          'file',
+          new Blob([bytes instanceof ArrayBuffer ? bytes : (new Uint8Array(bytes).buffer as ArrayBuffer)], {
+            type: options?.contentType ?? 'application/octet-stream',
+          }),
+          'document',
+        );
+
+        response = await this.fetchFn(targetOrUrl.uploadUrl, {
+          method: 'POST',
+          credentials: 'omit',
+          headers,
+          body: form,
+        });
+      } else {
+        // A bare URL carries no credentials, so there is nothing to sign. Kept only so the
+        // string overload fails with a clear message rather than an opaque 401 at the provider.
+        throw new DocumentUploadError(
+          0,
+          'Upload rejected: a signed upload target is required (Cloudinary authenticates by body fields)',
+        );
+      }
+    } catch (err) {
+      if (err instanceof DocumentUploadError) {
+        throw err;
+      }
       throw new DocumentUploadError(
         0,
         'Document storage upload failed: storage service unreachable',
@@ -211,11 +239,11 @@ export class StudentVerificationGateway {
 
   /**
    * Complete multi-step student verification submission:
-   * 1. Request pre-signed upload target.
+   * 1. Request a signed upload target.
    * 2. Direct upload document bytes to storage.
    * 3. Submit verification metadata linking the uploaded documentId.
    *
-   * Invariant: If storage PUT fails, submitVerification is NEVER invoked.
+   * Invariant: If the storage upload fails, submitVerification is NEVER invoked.
    */
   async submitWithDocument(
     input: SubmitStudentVerificationWithDocumentInput,

@@ -19,7 +19,15 @@ describe('StudentVerificationGateway', () => {
 
   const sampleTarget = {
     documentId: 'doc-123',
-    uploadUrl: 'http://storage.local/upload/doc-123?X-Amz-Signature=secretSig123',
+    uploadUrl: 'https://api.cloudinary.com/v1_1/skillswap/raw/upload',
+    method: 'POST' as const,
+    fields: {
+      timestamp: '1700000000',
+      public_id: 'students/doc-123.pdf',
+      type: 'authenticated',
+      api_key: 'test-key',
+      signature: 'secretSig123',
+    },
     objectKey: 'students/doc-123.pdf',
     expiresAt: new Date(Date.now() + 3600000).toISOString(),
   };
@@ -135,7 +143,7 @@ describe('StudentVerificationGateway', () => {
   describe('uploadDocument', () => {
     const rawBytes = new Uint8Array([99, 1, 2, 3, 4, 5, 6, 7, 8, 99]).subarray(1, 9);
 
-    it('proves byte body, exact Content-Type, and NO Authorization / idempotency headers', async () => {
+    it('posts multipart form data with every signed field and no Authorization header', async () => {
       mockStorageFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -149,31 +157,56 @@ describe('StudentVerificationGateway', () => {
       expect(mockStorageFetch).toHaveBeenCalledTimes(1);
       const [url, init] = mockStorageFetch.mock.calls[0];
       expect(url).toBe(sampleTarget.uploadUrl);
-      expect(init.method).toBe('PUT');
+      // ADR-038: the provider authenticates from body fields, so a raw PUT cannot work.
+      expect(init.method).toBe('POST');
       expect(init.credentials).toBe('omit');
-      expect(new Uint8Array(init.body as ArrayBuffer)).toEqual(rawBytes); // Exact bytes, including subarray boundaries.
-      expect(init.headers['Content-Type']).toBe('application/pdf');
+
+      const form = init.body as FormData;
+      expect(form).toBeInstanceOf(FormData);
+      // Every signed field must arrive verbatim: the signature is recomputed over what it gets.
+      for (const [key, value] of Object.entries(sampleTarget.fields)) {
+        expect(form.get(key)).toBe(value);
+      }
+      const file = form.get('file') as File;
+      expect(file).toBeInstanceOf(Blob);
+      expect(file.type).toBe('application/pdf');
+      expect(new Uint8Array(await file.arrayBuffer())).toEqual(rawBytes);
+
+      // Content-Type must be unset so the runtime adds the multipart boundary.
+      expect(init.headers['Content-Type']).toBeUndefined();
       expect(init.headers['Authorization']).toBeUndefined();
       expect(init.headers['authorization']).toBeUndefined();
       expect(init.headers['x-idempotency-key']).toBeUndefined();
       expect(init.headers['cookie']).toBeUndefined();
     });
 
-    it('accepts ArrayBuffer and uploads original bytes directly', async () => {
+    it('accepts ArrayBuffer and uploads the original bytes', async () => {
       mockStorageFetch.mockResolvedValueOnce({
         ok: true,
         status: 204,
       });
 
-      const buffer = new ArrayBuffer(16);
-      await gateway.uploadDocument(sampleTarget.uploadUrl, buffer, {
+      const buffer = new Uint8Array(16).buffer;
+      await gateway.uploadDocument(sampleTarget, buffer, {
         contentType: 'image/png',
       });
 
       expect(mockStorageFetch).toHaveBeenCalledTimes(1);
       const [, init] = mockStorageFetch.mock.calls[0];
-      expect(init.body).toBe(buffer);
-      expect(init.headers['Content-Type']).toBe('image/png');
+      const file = (init.body as FormData).get('file') as File;
+      expect(file.type).toBe('image/png');
+      expect(new Uint8Array(await file.arrayBuffer())).toEqual(new Uint8Array(16));
+    });
+
+    it('rejects a bare URL target, which carries no signing credentials', async () => {
+      await expect(
+        gateway.uploadDocument(sampleTarget.uploadUrl, rawBytes),
+      ).rejects.toMatchObject({
+        name: 'DocumentUploadError',
+        message: expect.stringContaining('a signed upload target is required'),
+      });
+
+      expect(mockStorageFetch).not.toHaveBeenCalled();
     });
 
     it('rejects invalid storage URLs (non-http/https protocol)', async () => {
@@ -216,7 +249,7 @@ describe('StudentVerificationGateway', () => {
       expect(mockStorageFetch).not.toHaveBeenCalled();
     });
 
-    it('rejects expired pre-signed upload targets before sending', async () => {
+    it('rejects expired upload targets before sending', async () => {
       const expiredTarget = {
         ...sampleTarget,
         expiresAt: new Date(Date.now() - 60000).toISOString(),
@@ -226,13 +259,13 @@ describe('StudentVerificationGateway', () => {
         gateway.uploadDocument(expiredTarget, rawBytes),
       ).rejects.toMatchObject({
         name: 'DocumentUploadError',
-        message: expect.stringContaining('pre-signed upload target has expired'),
+        message: expect.stringContaining('signed upload target has expired'),
       });
 
       expect(mockStorageFetch).not.toHaveBeenCalled();
     });
 
-    it('sanitizes error message on failed storage PUT without leaking pre-signed signatures', async () => {
+    it('sanitizes the error on a failed upload without leaking signed fields', async () => {
       mockStorageFetch.mockResolvedValueOnce({
         ok: false,
         status: 403,
@@ -250,7 +283,7 @@ describe('StudentVerificationGateway', () => {
       const uploadError = caughtError as DocumentUploadError;
       expect(uploadError.statusCode).toBe(403);
       expect(uploadError.message).not.toContain('secretSig123');
-      expect(uploadError.message).not.toContain('X-Amz-Signature');
+      expect(uploadError.message).not.toContain('signature');
     });
 
     it('handles network failure during storage upload with sanitized error', async () => {
@@ -354,7 +387,7 @@ describe('StudentVerificationGateway', () => {
         json: async () => sampleTarget,
       });
 
-      // Step 2: Storage PUT upload
+      // Step 2: storage multipart upload
       mockStorageFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -389,7 +422,7 @@ describe('StudentVerificationGateway', () => {
       expect(result).toEqual(sampleVerification);
     });
 
-    it('failed PUT rejects and DOES NOT call submitVerification', async () => {
+    it('a failed upload rejects and DOES NOT call submitVerification', async () => {
       const rawBytes = new Uint8Array([10, 20, 30, 40]);
 
       // Step 1: Gateway target request succeeds
@@ -399,7 +432,7 @@ describe('StudentVerificationGateway', () => {
         json: async () => sampleTarget,
       });
 
-      // Step 2: Storage PUT upload FAILS
+      // Step 2: storage multipart upload FAILS
       mockStorageFetch.mockResolvedValueOnce({
         ok: false,
         status: 500,
