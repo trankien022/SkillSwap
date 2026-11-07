@@ -4,20 +4,31 @@ Date: 2026-11-07
 Source of truth for *what* and *why*: [`../../2026-11-07-backend-remaining-work.md`](../../2026-11-07-backend-remaining-work.md)
 Base: `origin/main` @ `b69c00f`
 
+> **Status: all seven phases are shipped.** B10 `1df2d77`, B1 `9efa031`, B2 `0c0fb11`,
+> B3 `6609259`, B4 `9813d3b`, and B5/B6/B7 landed after this plan was written. The phase text
+> below is kept as the record of what each phase had to do — do not re-run it. The client half of
+> B5/B6/B7 is **not** done; it lives in
+> [`../../2026-11-07-web-implementation-remaining.md`](../../2026-11-07-web-implementation-remaining.md)
+> (W5, W7) and
+> [`../../2026-11-07-mobile-implementation-remaining.md`](../../2026-11-07-mobile-implementation-remaining.md)
+> (MM3, MM4, MM11).
+>
+> A shipped backend task is not a fixed flow. Check the client before closing anything.
+
 ## Scope decision
 
 Implement the decision-free tasks only, in the doc's order:
 
-| Phase | Task | Commit |
-|---|---|---|
-| P0 | B10 — delete the fictitious teacher-initiated completion route from the docs | `docs: …` |
-| P1 | B1 — `classes.title` | `feat(live-class): …` |
-| P2 | B2 — `classes.level` | `feat(live-class): …` |
-| P3 | B3 — `format` from capacity | `feat(live-class): …` |
-| P4 | B4 — teacher school + verified on class reads | `feat(live-class): …` |
-| P5 | B5 — rating aggregates on class reads | `feat(live-class): …` |
-| P6 | B6 — notification read state | `feat(notifications): …` |
-| P7 | B7 — inbox copy per device locale | `feat(notifications): …` |
+| Phase | Task | Commit | State |
+|---|---|---|---|
+| P0 | B10 — delete the fictitious teacher-initiated completion route from the docs | `docs: …` | ✅ `1df2d77` |
+| P1 | B1 — `classes.title` | `feat(live-class): …` | ✅ `9efa031` |
+| P2 | B2 — `classes.level` | `feat(live-class): …` | ✅ `0c0fb11` |
+| P3 | B3 — `format` from capacity | `feat(live-class): …` | ✅ `6609259` |
+| P4 | B4 — teacher school + verified on class reads | `feat(live-class): …` | ✅ `9813d3b` |
+| P5 | B5 — rating aggregates on class reads | `feat(live-class): …` | ✅ shipped |
+| P6 | B6 — notification read state | `feat(notifications): …` | ✅ shipped |
+| P7 | B7 — inbox copy per device locale | `feat(notifications): …` | ✅ shipped |
 
 Out of scope, deliberately: **B8** (needs an ADR-023 amendment authored by the team),
 **B9** (depends on B8's download port), **B11/B12** (product/scope decisions pending).
