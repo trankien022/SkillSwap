@@ -120,7 +120,7 @@ import { PendingHoldSweeper } from './internal/adapter/in/scheduler/pending-hold
 import { ClassCompletionSweeper } from './internal/adapter/in/scheduler/class-completion.sweeper';
 import { ClassReminderSweeper } from './internal/adapter/in/scheduler/class-reminder.sweeper';
 import { SendClassRemindersUseCase } from './internal/application/send-class-reminders.use-case';
-import { JitsiRoomTokenIssuer } from './internal/adapter/out/jitsi/jitsi-room-token-issuer';
+import { JaasRoomTokenIssuer, readJitsiPrivateKey } from './internal/adapter/out/jitsi/jaas-room-token-issuer';
 import { SqlRoomIncidentRecorder } from './internal/adapter/out/persistence/sql-room-incident-recorder';
 import { CREATE_CLASS, type CreateClassPort } from './internal/application/port/in/create-class';
 import { UPDATE_CLASS, type UpdateClassPort } from './internal/application/port/in/update-class';
@@ -400,7 +400,12 @@ const systemClock: Clock = { now: () => new Date() };
     {
       provide: ROOM_TOKEN_ISSUER,
       useFactory: (config: ApiConfig): RoomTokenIssuer =>
-        new JitsiRoomTokenIssuer(config.jitsiAppId, config.jitsiAppSecret, config.jitsiTokenTtlSeconds),
+        new JaasRoomTokenIssuer({
+          appId: config.jitsiAppId,
+          keyId: config.jitsiKeyId,
+          privateKeyPem: readJitsiPrivateKey(config.jitsiPrivateKeyPath),
+          ttlSeconds: config.jitsiTokenTtlSeconds,
+        }),
       inject: [ApiConfig],
     },
     {

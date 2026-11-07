@@ -43,11 +43,18 @@ export class ApiConfig {
   readonly jwtPrivateKeyPath: string;
   readonly accessTokenTtlSeconds: number;
   readonly jitsiAppId: string;
-  readonly jitsiAppSecret: string;
+  /** ADR-039: key id from the 8x8 API-key page; JaaS wants `<appId>/<keyId>` as `kid`. */
+  readonly jitsiKeyId: string;
+  /** ADR-039: PEM path for the JaaS API private key. Replaces the old shared HS256 secret. */
+  readonly jitsiPrivateKeyPath: string;
+  /** Hosted-Jitsi origin including the tenant, e.g. `8x8.vc/<appId>`. */
   readonly jitsiDomain: string;
   readonly jitsiTokenTtlSeconds: number;
   readonly jitsiOpenMinutes: number;
-  /** FR-011 / AC-035: shared secret the Jitsi presence webhook must present. Empty = refuse all. */
+  /**
+   * FR-011 / AC-035: endpoint secret used to verify `X-Jaas-Signature` on presence webhooks.
+   * Empty = refuse all presence, so an unset secret is never mistaken for "trust everyone".
+   */
   readonly jitsiWebhookSecret: string;
   /**
    * FR-016 (W3 C1): how long before `starts_at` the "class starting soon" reminder fires.
@@ -153,9 +160,19 @@ export class ApiConfig {
     // of real money, so there is no safe fallback to degrade to.
     this.vndPerCredit = readInt('VND_PER_CREDIT', 1000);
 
-    this.jitsiAppId = readString('JITSI_APP_ID', 'skillswap');
-    this.jitsiAppSecret = readString('JITSI_APP_SECRET', 'skillswap_jitsi_dev_secret');
-    this.jitsiDomain = readString('JITSI_DOMAIN', 'localhost:8443');
+    this.jitsiAppId = readString('JITSI_APP_ID', 'vpaas-magic-cookie-dev');
+    this.jitsiKeyId = readString('JITSI_KEY_ID', 'dev');
+    // No default PEM: a private key must be supplied, never invented. An absent path makes the
+    // issuer fail at boot rather than mint tokens that are refused at the provider.
+    const jitsiKeyPath = readString('JITSI_PRIVATE_KEY_PATH', '');
+    this.jitsiPrivateKeyPath = jitsiKeyPath.length === 0
+      ? ''
+      : isAbsolute(jitsiKeyPath)
+        ? jitsiKeyPath
+        : resolve(process.cwd(), jitsiKeyPath);
+    // The tenant is part of the origin: `https://${jitsiDomain}/${room}` then yields
+    // `https://8x8.vc/<appId>/<room>`, which is the JaaS meeting URL (ADR-039 decision 3).
+    this.jitsiDomain = readString('JITSI_DOMAIN', '8x8.vc');
     this.jitsiTokenTtlSeconds = readInt('JITSI_TOKEN_TTL_SECONDS', 3600);
     this.jitsiOpenMinutes = readInt('JITSI_OPEN_MINUTES', 15);
     this.classReminderOffsetMinutes = readInt('CLASS_REMINDER_OFFSET_MINUTES', 15);
