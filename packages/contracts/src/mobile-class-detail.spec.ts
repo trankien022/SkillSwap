@@ -133,6 +133,7 @@ describe('mobile-class-detail contracts', () => {
         ratingsCount: 0,
       },
       skillIds: ['sk-cs-101', 'sk-algo'],
+      title: 'Computer Science: the first principles',
       description: 'Foundations of Computer Science',
       startsAt: '2026-10-15T09:00:00.000Z',
       durationMinutes: 90,

@@ -335,6 +335,7 @@ describe('identityHeadersSchema', () => {
 describe('createClassSchema', () => {
   const valid = {
     skillIds: ['skill-1'],
+    title: 'Guitar basics',
     description: 'Intro to guitar',
     startsAt: '2026-10-10T10:00:00.000Z',
     durationMinutes: 60,
@@ -344,6 +345,16 @@ describe('createClassSchema', () => {
 
   it('accepts a valid class payload', () => {
     expect(createClassSchema.parse(valid)).toEqual(valid);
+  });
+
+  it('requires a title of 1-120 characters, trimmed before measuring (B1)', () => {
+    expect(() => createClassSchema.parse({ ...valid, title: undefined })).toThrow();
+    expect(() => createClassSchema.parse({ ...valid, title: '' })).toThrow();
+    expect(() => createClassSchema.parse({ ...valid, title: '   ' })).toThrow();
+    expect(() => createClassSchema.parse({ ...valid, title: 'x'.repeat(121) })).toThrow();
+    expect(createClassSchema.parse({ ...valid, title: '  Guitar basics  ' }).title).toBe(
+      'Guitar basics',
+    );
   });
 
   it('enforces the 30 to 180 minute duration', () => {
@@ -371,6 +382,7 @@ describe('classSchema', () => {
       id: 'cls-1',
       teacherId: 'teacher-1',
       state: 'published',
+      title: 'Guitar basics',
       startsAt: '2026-10-10T10:00:00.000Z',
       durationMinutes: 60,
       priceCredits: 100,

@@ -122,6 +122,7 @@ export class GetClassDetailQueryHandler implements GetClassDetailPort {
       teacher,
       skillIds: record.skillIds,
       ...(skills === null ? {} : { skills }),
+      title: record.title,
       description: record.description,
       startsAt: record.startsAt.toISOString(),
       durationMinutes: record.durationMinutes,

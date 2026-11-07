@@ -21,6 +21,7 @@ function startsIn(hours: number): string {
 
 interface Seed {
   id: string;
+  title: string;
   teacherId: string;
   teacherName: string;
   schoolCode: UniversityCode;
@@ -53,6 +54,7 @@ const schoolLabel: Record<UniversityCode, string> = {
 const seeds: Seed[] = [
   {
     id: 'demo-ielts-speaking',
+    title: 'IELTS Speaking: Part 2 cue cards',
     teacherId: 'teacher-demo-1',
     teacherName: 'Demo teacher · IELTS',
     schoolCode: 'ftu',
@@ -71,6 +73,7 @@ const seeds: Seed[] = [
   },
   {
     id: 'demo-dsa-algorithms',
+    title: 'Data structures & algorithms in practice',
     teacherId: 'teacher-demo-2',
     teacherName: 'Demo teacher · Algorithms',
     schoolCode: 'bk',
@@ -89,6 +92,7 @@ const seeds: Seed[] = [
   },
   {
     id: 'demo-uiux-figma',
+    title: 'Figma auto-layout portfolio review',
     teacherId: 'teacher-demo-3',
     teacherName: 'Demo teacher · UI/UX',
     schoolCode: 'kien-truc',
@@ -107,6 +111,7 @@ const seeds: Seed[] = [
   },
   {
     id: 'demo-econometrics',
+    title: 'Stata & R: OLS regression end to end',
     teacherId: 'teacher-demo-4',
     teacherName: 'Demo teacher · Econometrics',
     schoolCode: 'ueh',
@@ -125,6 +130,7 @@ const seeds: Seed[] = [
   },
   {
     id: 'demo-public-speaking',
+    title: 'Pitching & persuasive speaking',
     teacherId: 'teacher-demo-5',
     teacherName: 'Demo teacher · Public speaking',
     schoolCode: 'ussh',
@@ -143,6 +149,7 @@ const seeds: Seed[] = [
   },
   {
     id: 'demo-backend-node',
+    title: 'Node.js, Express & Redis APIs',
     teacherId: 'teacher-demo-6',
     teacherName: 'Demo teacher · Backend',
     schoolCode: 'bk',
@@ -166,6 +173,7 @@ export function demoMarketplaceClasses(): MarketplaceClass[] {
     id: seed.id,
     teacherId: seed.teacherId,
     state: 'published',
+    title: seed.title,
     startsAt: startsIn(seed.hoursAhead),
     durationMinutes: seed.durationMinutes,
     priceCredits: seed.priceCredits,

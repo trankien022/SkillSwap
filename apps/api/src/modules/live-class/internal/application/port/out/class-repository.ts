@@ -18,6 +18,7 @@ export interface PersistedClass {
   id: string;
   teacherId: string;
   state: ClassState;
+  title: string;
   startsAt: Date;
   durationMinutes: number;
   priceCredits: number;
@@ -38,6 +39,7 @@ export interface CompletableClass {
 export interface CreateClassRecord {
   teacherId: string;
   state: ClassState;
+  title: string;
   startsAt: Date;
   durationMinutes: number;
   priceCredits: number;
@@ -48,6 +50,7 @@ export interface CreateClassRecord {
 
 export interface ClassEdit {
   skillIds: string[];
+  title: string;
   description: string;
   startsAt: Date;
   durationMinutes: number;

@@ -21,6 +21,7 @@ export interface ClassListRecord {
   readonly id: string;
   readonly teacherId: string;
   readonly skillIds: readonly string[];
+  readonly title: string;
   readonly description: string;
   readonly startsAt: Date;
   readonly durationMinutes: number;

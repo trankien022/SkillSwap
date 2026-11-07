@@ -181,6 +181,7 @@ export const classListItemSchema = z.object({
   teacherId: z.string().min(1),
   teacherDisplayName: z.string().min(1),
   skillIds: z.array(z.string().min(1)),
+  title: z.string().min(1),
   description: z.string().min(1),
   startsAt: z.string().datetime({ offset: true }),
   durationMinutes: z.number().int(),

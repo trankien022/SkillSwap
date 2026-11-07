@@ -87,6 +87,11 @@ export type ApiError = z.infer<typeof apiErrorSchema>;
 /** FR-005 / API-004: create and publish a class. */
 export const createClassSchema = z.object({
   skillIds: z.array(z.string().min(1)).min(1),
+  /**
+   * B1: the Teacher-written class name. Trimmed before length is checked, so padding is not
+   * content — the same rule the domain applies, stated where a client can see it.
+   */
+  title: z.string().trim().min(1).max(120),
   description: z.string().min(1),
   startsAt: z.string().datetime({ offset: true }),
   durationMinutes: z.number().int().min(30).max(180),
@@ -99,6 +104,7 @@ export const classSchema = z.object({
   id: z.string().min(1),
   teacherId: z.string().min(1),
   state: z.string().min(1),
+  title: z.string().min(1),
   startsAt: z.string().datetime({ offset: true }),
   durationMinutes: z.number().int(),
   priceCredits: z.number().int(),
@@ -110,6 +116,7 @@ export type ClassView = z.infer<typeof classSchema>;
 export const updateClassSchema = z
   .object({
     skillIds: z.array(z.string().min(1)).min(1).optional(),
+    title: z.string().trim().min(1).max(120).optional(),
     description: z.string().min(1).optional(),
     startsAt: z.string().datetime({ offset: true }).optional(),
     durationMinutes: z.number().int().min(30).max(180).optional(),

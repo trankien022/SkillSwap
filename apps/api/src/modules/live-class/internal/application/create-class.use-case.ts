@@ -30,6 +30,7 @@ export class CreateClassUseCase implements CreateClassPort {
     const published = publishClass(
       {
         teacherId: command.teacherId,
+        title: command.title,
         startsAt: new Date(command.startsAt),
         durationMinutes: command.durationMinutes,
         priceCredits: command.priceCredits,
@@ -45,6 +46,7 @@ export class CreateClassUseCase implements CreateClassPort {
     const stored = await this.classes.insert({
       teacherId: published.teacherId,
       state: published.state,
+      title: published.title,
       startsAt: published.startsAt,
       durationMinutes: published.durationMinutes,
       priceCredits: published.priceCredits,
@@ -61,6 +63,7 @@ function toResource(stored: {
   id: string;
   teacherId: string;
   state: string;
+  title: string;
   startsAt: Date;
   durationMinutes: number;
   priceCredits: number;
@@ -70,6 +73,7 @@ function toResource(stored: {
     id: stored.id,
     teacherId: stored.teacherId,
     state: stored.state,
+    title: stored.title,
     startsAt: stored.startsAt.toISOString(),
     durationMinutes: stored.durationMinutes,
     priceCredits: stored.priceCredits,

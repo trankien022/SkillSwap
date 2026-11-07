@@ -13,6 +13,7 @@ import { CreateClassPresence1791072000007 } from './migrations/1791072000007-Cre
 import { CreateClassReminders1791072000008 } from './migrations/1791072000008-CreateClassReminders';
 import { RemoveBookingDisputedState1791072000009 } from './migrations/1791072000009-RemoveBookingDisputedState';
 import { CreateClassChatMessages1791072000010 } from './migrations/1791072000010-CreateClassChatMessages';
+import { AddClassTitle1791072000011 } from './migrations/1791072000011-AddClassTitle';
 import { AddOutboxRetryBackoff1791072000500 } from './migrations/1791072000500-AddOutboxRetryBackoff';
 import { AddOutboxSequence1791072000600 } from './migrations/1791072000600-AddOutboxSequence';
 import { AddProcessedEventSequence1791072000601 } from './migrations/1791072000601-AddProcessedEventSequence';
@@ -46,6 +47,8 @@ export function createModuleDataSource(config: ApiConfig, schema: string = SCHEM
       RemoveBookingDisputedState1791072000009,
       // FR-012 (W5): the append-only chat log. No `flagged` column -- BR-056 withdrawn.
       CreateClassChatMessages1791072000010,
+      // B1: a teacher-authored class name. Backfilled from `description`; no cross-schema join.
+      AddClassTitle1791072000011,
       // ADR-013 Amendment A (W2 C2): shared outbox backoff, one migration per schema.
       AddOutboxRetryBackoff1791072000500,
       // ADR-013 Amendment A (W2 C1): per-aggregate sequence numbers, emitter half then

@@ -227,6 +227,31 @@ export class DomainErrorFilter implements ExceptionFilter {
       };
     }
 
+    // The global `ZodValidationPipe` (nestjs-zod) raises
+    // `{ statusCode: 400, message: 'Validation failed', errors: <zod issues> }`. The prose is
+    // useless on its own: `POST /classes` without a title said only "Validation failed", so the
+    // caller could not tell which field was wrong. The issues carry the answer, so spend them
+    // rather than dropping them. The local `shared/http/zod-validation.pipe.ts` already renders
+    // issues as `path: message`; this branch keeps both pipes reporting a field the same way.
+    const issues = body.errors;
+    if (statusCode === 400 && Array.isArray(issues) && issues.length > 0) {
+      const rendered = issues.map((issue) => {
+        const { path, message: issueMessage } = (issue ?? {}) as {
+          path?: unknown;
+          message?: unknown;
+        };
+        const field = Array.isArray(path) ? path.join('.') : '';
+        return field ? `${field}: ${String(issueMessage)}` : String(issueMessage);
+      });
+      return {
+        success: false,
+        code,
+        message: rendered.join('; '),
+        data: null,
+        errors: rendered.map((entry) => ({ code, message: entry })),
+      };
+    }
+
     return this.failure(code, message);
   }
 

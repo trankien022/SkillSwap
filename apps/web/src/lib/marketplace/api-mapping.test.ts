@@ -30,6 +30,7 @@ function classRow(overrides: Record<string, unknown> = {}) {
     teacherId: 'teacher-1',
     teacherDisplayName: 'Lê Minh',
     skillIds: ['skill-1'],
+    title: 'IELTS speaking: band 7 practice',
     description: 'IELTS speaking practice',
     startsAt: '2026-10-25T14:00:00.000Z',
     durationMinutes: 60,

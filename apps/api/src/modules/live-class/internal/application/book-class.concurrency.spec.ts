@@ -177,6 +177,7 @@ describe('BookClassUseCase concurrency (AC-010)', () => {
     durationMinutes: 60,
     priceCredits: 100,
     capacity: 1,
+    title: 'Guitar basics',
     description: 'Guitar',
     skillIds: ['skill-1'],
   };

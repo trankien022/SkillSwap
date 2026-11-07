@@ -25,6 +25,7 @@ describe('ClassDetailCoordinator', () => {
       ratingsCount: 5,
     },
     skillIds: ['skill-1'],
+    title: 'Advanced React Native',
     description: 'Advanced React Native',
     startsAt: '2026-10-30T10:00:00.000Z',
     durationMinutes: 60,

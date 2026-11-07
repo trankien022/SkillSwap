@@ -68,6 +68,7 @@ describe('ClassDetailController', () => {
         ratingsCount: 0,
       },
       skillIds: ['sk-math-1'],
+      title: 'Linear Algebra: vectors and spaces',
       description: 'Linear Algebra',
       startsAt: '2026-10-15T10:00:00.000Z',
       durationMinutes: 60,

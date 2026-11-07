@@ -234,6 +234,43 @@ describe('DomainErrorFilter', () => {
     });
   });
 
+  it('names the offending field for a nestjs-zod ZodValidationException', () => {
+    // The global pipe raises this shape; the prose alone ("Validation failed") tells the caller
+    // nothing about which field to fix, so the filter must render the zod issues.
+    const captured = run(
+      new BadRequestException({
+        statusCode: 400,
+        message: 'Validation failed',
+        errors: [{ code: 'too_small', path: ['title'], message: 'String must contain at least 1 character(s)' }],
+      }),
+    );
+    expect(captured.statusCode).toBe(400);
+    expect(captured.body).toMatchObject({
+      success: false,
+      code: 'VALIDATION_FAILED',
+      message: 'title: String must contain at least 1 character(s)',
+      errors: [
+        { code: 'VALIDATION_FAILED', message: 'title: String must contain at least 1 character(s)' },
+      ],
+    });
+  });
+
+  it('joins several zod issues and keeps root-level ones unaddressed', () => {
+    const captured = run(
+      new BadRequestException({
+        statusCode: 400,
+        message: 'Validation failed',
+        errors: [
+          { path: ['title'], message: 'Required' },
+          { path: [], message: 'Unrecognized key' },
+        ],
+      }),
+    );
+    expect(captured.body).toMatchObject({
+      message: 'title: Required; Unrecognized key',
+    });
+  });
+
   it('falls back to a 500 INTERNAL_ERROR envelope for unknown errors', () => {
     const captured = run(new Error('kaboom'));
     expect(captured.statusCode).toBe(500);

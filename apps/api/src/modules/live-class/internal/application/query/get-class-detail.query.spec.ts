@@ -23,6 +23,7 @@ describe('GetClassDetailQueryHandler', () => {
     id: 'cls-11111111-1111-4111-8111-111111111111',
     teacherId: 'teacher-uuid-1',
     skillIds: ['sk-math', 'sk-physics'],
+    title: 'Quantum Mechanics: the essentials',
     description: 'Advanced Quantum Mechanics',
     startsAt: startsAt25h,
     durationMinutes: 90,

@@ -18,6 +18,7 @@ interface RawClassDetailRow {
   id: string;
   teacher_id: string;
   state: string;
+  title: string;
   starts_at: Date | string;
   duration_minutes: number;
   price_credits: number;
@@ -69,6 +70,7 @@ export class SqlClassDetailReader implements ClassDetailReader {
         c."id",
         c."teacher_id",
         c."state",
+        c."title",
         c."starts_at",
         c."duration_minutes",
         c."price_credits",
@@ -136,6 +138,7 @@ export class SqlClassDetailReader implements ClassDetailReader {
       id: String(r.id),
       teacherId: r.teacher_id,
       skillIds: r.skill_ids ?? [],
+      title: r.title,
       description: r.description,
       startsAt: toDate(r.starts_at),
       durationMinutes: r.duration_minutes,

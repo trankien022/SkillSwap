@@ -80,6 +80,7 @@ const detail: ClassDetailView = {
     ratingsCount: 0,
   },
   skillIds: ['skill-1'],
+  title: 'Lớp nằm ngoài 50 kết quả đầu tiên',
   description: 'Lớp nằm ngoài 50 kết quả đầu tiên',
   startsAt: '2026-12-25T08:00:00.000Z',
   durationMinutes: 60,

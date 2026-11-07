@@ -12,6 +12,7 @@ describe('ClassDetailApiGateway', () => {
       ratingsCount: 15,
     },
     skillIds: ['skill-ds-1'],
+    title: 'Cấu trúc dữ liệu: cây và đồ thị',
     description: 'Cấu trúc dữ liệu và giải thuật nâng cao',
     startsAt: '2026-10-25T14:00:00.000Z',
     durationMinutes: 120,

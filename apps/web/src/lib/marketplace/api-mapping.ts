@@ -119,6 +119,7 @@ export function toMarketplaceClass(
     id: item.id,
     teacherId: item.teacherId,
     state: item.state,
+    title: item.title,
     startsAt: item.startsAt,
     durationMinutes: item.durationMinutes,
     priceCredits: item.priceCredits,

@@ -12,6 +12,7 @@ export function demoClass(): ClassView {
     id: DEMO_CLASS_ID,
     teacherId: 'teacher-demo',
     state: 'published',
+    title: 'TypeScript fundamentals',
     startsAt,
     durationMinutes: 60,
     priceCredits: 100,

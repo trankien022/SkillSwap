@@ -55,11 +55,11 @@ export function ClassCard({ item }: { item: MarketplaceClass }) {
           <span className="font-normal text-ink-soft">{t('deadline', { hours: hoursLeft })}</span>
         </div>
 
-        {/* Title. Absent when the API is the class-detail route, which does not
-            return a skill name; the description below stands on its own. */}
-        {item.skillName !== null && (
+        {/* Title: the class's own name (B1). It used to be the skill name, so two
+            classes of one skill rendered identically on the grid. */}
+        {item.title !== null && (
           <h3 className="text-xl font-semibold leading-snug tracking-tight text-ink">
-            {item.skillName}
+            {item.title}
           </h3>
         )}
 

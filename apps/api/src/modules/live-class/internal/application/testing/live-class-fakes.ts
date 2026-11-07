@@ -130,6 +130,7 @@ export function classView(partial: Partial<PersistedClass> = {}): PersistedClass
     durationMinutes: 60,
     priceCredits: 100,
     capacity: 3,
+    title: 'Guitar basics',
     description: 'Guitar',
     skillIds: ['skill-1'],
     ...partial,

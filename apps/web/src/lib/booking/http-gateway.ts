@@ -47,6 +47,7 @@ export class HttpBookingGateway implements BookingGateway {
       id: detail.id,
       teacherId: detail.teacher.id,
       state: detail.state,
+      title: detail.title,
       startsAt: detail.startsAt,
       durationMinutes: detail.durationMinutes,
       priceCredits: detail.priceCredits,

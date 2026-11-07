@@ -29,6 +29,7 @@ export interface ClassListItemDto {
   readonly teacherId: string;
   readonly teacherDisplayName: string;
   readonly skillIds: readonly string[];
+  readonly title: string;
   readonly description: string;
   readonly startsAt: string;
   readonly durationMinutes: number;

@@ -10,11 +10,13 @@ import {
   InvalidDurationError,
   InvalidPriceError,
   InvalidStartTimeError,
+  InvalidTitleError,
   UnknownClassStateError,
   assertClassEditable,
   assertClassState,
   assertCompletable,
   assertCompletionBasis,
+  assertTitle,
   assertTransition,
   canComplete,
   canTransition,
@@ -36,6 +38,7 @@ const NOW = new Date('2026-10-08T00:00:00.000Z');
 function draft(overrides: Partial<ClassDraft> = {}): ClassDraft {
   return {
     teacherId: 'teacher-1',
+    title: 'Guitar basics',
     startsAt: new Date(NOW.getTime() + 48 * 60 * 60 * 1000),
     durationMinutes: 60,
     priceCredits: 100,
@@ -70,6 +73,7 @@ describe('class aggregate', () => {
     expect(view).toEqual({
       teacherId: 'teacher-1',
       state: 'published',
+      title: 'Guitar basics',
       startsAt: draft().startsAt,
       durationMinutes: 60,
       priceCredits: 100,
@@ -109,6 +113,18 @@ describe('class aggregate', () => {
     expect(() => publishClass(draft({ startsAt: new Date('nope') }), NOW)).toThrow(
       InvalidStartTimeError,
     );
+  });
+
+  it('requires a title of 1-120 characters after trimming (B1)', () => {
+    expect(() => publishClass(draft({ title: 'Zebra Protocol' }), NOW)).not.toThrow();
+    // Trimming is the rule: padding is not content, it is removed, not counted.
+    expect(publishClass(draft({ title: '  Zebra Protocol  ' }), NOW).title).toBe('Zebra Protocol');
+    expect(publishClass(draft({ title: 'x'.repeat(120) }), NOW).title).toHaveLength(120);
+    expect(() => publishClass(draft({ title: '' }), NOW)).toThrow(InvalidTitleError);
+    expect(() => publishClass(draft({ title: '   ' }), NOW)).toThrow(InvalidTitleError);
+    expect(() => publishClass(draft({ title: 'x'.repeat(121) }), NOW)).toThrow(InvalidTitleError);
+    expect(() => assertTitle('   ')).toThrow(InvalidTitleError);
+    expect(() => assertTitle('ok')).not.toThrow();
   });
 
   it('reports whether the class has started', () => {

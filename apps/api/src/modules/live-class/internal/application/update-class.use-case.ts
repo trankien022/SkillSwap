@@ -1,4 +1,4 @@
-import { InvalidStartTimeError, assertClassEditable } from '../domain/class';
+import { InvalidStartTimeError, assertClassEditable, assertTitle } from '../domain/class';
 import { assertPublishable, type RequiredClassSkill } from '../domain/publish-policy';
 import type { ClassResource } from './port/in/create-class';
 import type { UpdateClassCommand, UpdateClassPort } from './port/in/update-class';
@@ -59,8 +59,16 @@ export class UpdateClassUseCase implements UpdateClassPort {
       assertPublishable({ teacherId: command.teacherId, teacherTrust: trust, classSkills });
     }
 
+    // B1: the title is editable like the description, so it sits behind the same AC-017 lock
+    // asserted above. Validated here rather than in the controller because a second caller must
+    // not be able to write a title the aggregate would have refused.
+    if (command.title !== undefined) {
+      assertTitle(command.title);
+    }
+
     const updated = await this.classes.update(command.classId, {
       skillIds,
+      title: command.title === undefined ? current.title : command.title.trim(),
       description: command.description ?? current.description,
       startsAt,
       durationMinutes: command.durationMinutes ?? current.durationMinutes,
@@ -76,6 +84,7 @@ function toResource(stored: PersistedClass): ClassResource {
     id: stored.id,
     teacherId: stored.teacherId,
     state: stored.state,
+    title: stored.title,
     startsAt: stored.startsAt.toISOString(),
     durationMinutes: stored.durationMinutes,
     priceCredits: stored.priceCredits,

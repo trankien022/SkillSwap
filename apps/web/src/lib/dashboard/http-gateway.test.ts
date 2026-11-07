@@ -20,6 +20,7 @@ function bookingItem(overrides: Record<string, unknown> = {}) {
     createdAt: PAST,
     expiresAt: null,
     classSummary: {
+      title: 'IELTS speaking',
       description: 'IELTS speaking',
       skillIds: ['skill-1'],
       startsAt: FUTURE,

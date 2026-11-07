@@ -17,6 +17,7 @@ interface RawClassListRow {
   id: string;
   teacher_id: string;
   state: string;
+  title: string;
   starts_at: Date | string;
   duration_minutes: number;
   price_credits: number;
@@ -99,7 +100,11 @@ export class SqlClassListReader implements ClassListReader {
 
     if (criteria.keyword !== undefined && criteria.keyword.trim() !== '') {
       queryParams.push(`%${criteria.keyword.trim()}%`);
-      conditions.push(`c."description" ILIKE $${queryParams.length}`);
+      // B1: search the name too. Two IELTS classes were indistinguishable to `q` before this,
+      // because only the description was searched.
+      conditions.push(
+        `(c."title" ILIKE $${queryParams.length} OR c."description" ILIKE $${queryParams.length})`,
+      );
     }
 
     if (criteria.skillId !== undefined && criteria.skillId.trim() !== '') {
@@ -128,6 +133,7 @@ export class SqlClassListReader implements ClassListReader {
         c."id",
         c."teacher_id",
         c."state",
+        c."title",
         c."starts_at",
         c."duration_minutes",
         c."price_credits",
@@ -173,6 +179,7 @@ export class SqlClassListReader implements ClassListReader {
         id: String(r.id),
         teacherId: r.teacher_id,
         skillIds: r.skill_ids ?? [],
+        title: r.title,
         description: r.description,
         startsAt: toDate(r.starts_at),
         durationMinutes: r.duration_minutes,

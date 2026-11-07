@@ -11,6 +11,10 @@ export const MIN_DURATION_MINUTES = 30;
 export const MAX_DURATION_MINUTES = 180;
 export const BOOKING_LEAD_TIME_MS = 24 * 60 * 60 * 1000;
 
+/** A class name is 1-120 characters after trimming (B1). */
+export const MIN_TITLE_LENGTH = 1;
+export const MAX_TITLE_LENGTH = 120;
+
 /** Class lifecycle states (SkillSwap-SRS.md §3.2.6 state diagram). */
 export const CLASS_STATES = [
   'draft',
@@ -78,6 +82,15 @@ export class InvalidStartTimeError extends RangeError {
   }
 }
 
+export class InvalidTitleError extends RangeError {
+  constructor(title: string) {
+    super(
+      `Class title must be ${MIN_TITLE_LENGTH}-${MAX_TITLE_LENGTH} characters after trimming, got ${JSON.stringify(title).slice(0, 80)}`,
+    );
+    this.name = 'InvalidTitleError';
+  }
+}
+
 export function isClassState(value: string): value is ClassState {
   return (CLASS_STATES as readonly string[]).includes(value);
 }
@@ -101,6 +114,8 @@ export function assertTransition(from: ClassState, to: ClassState): void {
 /** Facts a published class must satisfy (FR-005, BR-016/017, SR-BR-003). */
 export interface ClassDraft {
   teacherId: string;
+  /** The Teacher-written class name (B1). */
+  title: string;
   startsAt: Date;
   durationMinutes: number;
   priceCredits: number;
@@ -111,6 +126,7 @@ export interface ClassView {
   id: string;
   teacherId: string;
   state: ClassState;
+  title: string;
   startsAt: Date;
   durationMinutes: number;
   priceCredits: number;
@@ -121,10 +137,23 @@ export interface ClassView {
 export interface PublishedClass {
   teacherId: string;
   state: ClassState;
+  title: string;
   startsAt: Date;
   durationMinutes: number;
   priceCredits: number;
   capacity: number;
+}
+
+/**
+ * B1: the title is a name, not a label, so the rule is about the *trimmed* value: padding is not
+ * content, and a title of three spaces must fail here rather than reach storage and violate the
+ * `ck_classes_title` check. Returns nothing; callers pass the trimmed value on.
+ */
+export function assertTitle(title: string): void {
+  const trimmed = title.trim();
+  if (trimmed.length < MIN_TITLE_LENGTH || trimmed.length > MAX_TITLE_LENGTH) {
+    throw new InvalidTitleError(title);
+  }
 }
 
 function assertDuration(durationMinutes: number): void {
@@ -158,6 +187,7 @@ export function publishClass(draft: ClassDraft, now: Date): PublishedClass {
   if (draft.teacherId.trim() === '') {
     throw new InvalidStartTimeError('Class must have a teacher');
   }
+  assertTitle(draft.title);
   assertDuration(draft.durationMinutes);
   assertCapacity(draft.capacity);
   assertPrice(draft.priceCredits);
@@ -170,6 +200,7 @@ export function publishClass(draft: ClassDraft, now: Date): PublishedClass {
   return {
     teacherId: draft.teacherId,
     state: 'published',
+    title: draft.title.trim(),
     startsAt: draft.startsAt,
     durationMinutes: draft.durationMinutes,
     priceCredits: draft.priceCredits,
@@ -190,6 +221,7 @@ export const EDITABLE_CLASS_FIELDS = [
   'durationMinutes',
   'priceCredits',
   'capacity',
+  'title',
   'description',
   'skillIds',
 ] as const;

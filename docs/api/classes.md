@@ -45,6 +45,7 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 | `teacherId` | string | yes | min 1 chars |
 | `teacherDisplayName` | string | yes | min 1 chars |
 | `skillIds` | string[] | yes |  |
+| `title` | string | yes | min 1 chars |
 | `description` | string | yes | min 1 chars |
 | `startsAt` | string | yes | date-time |
 | `durationMinutes` | integer | yes |  |
@@ -71,6 +72,7 @@ Publish a new class (FR-005). Requires the teacher to be a verified student appr
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `skillIds` | string[] | yes | at least 1 item(s) |
+| `title` | string | yes | min 1 chars; max 120 chars |
 | `description` | string | yes | min 1 chars |
 | `startsAt` | string | yes | date-time |
 | `durationMinutes` | integer | yes | ≥ 30; ≤ 180 |
@@ -84,6 +86,7 @@ Publish a new class (FR-005). Requires the teacher to be a verified student appr
 | `id` | string | yes | min 1 chars |
 | `teacherId` | string | yes | min 1 chars |
 | `state` | string | yes | min 1 chars |
+| `title` | string | yes | min 1 chars |
 | `startsAt` | string | yes | date-time |
 | `durationMinutes` | integer | yes |  |
 | `priceCredits` | integer | yes |  |
@@ -108,6 +111,7 @@ Publish a new class (FR-005). Requires the teacher to be a verified student appr
 | `teacher` | object | yes |  |
 | `skillIds` | string[] | yes |  |
 | `skills` | object[] | no |  |
+| `title` | string | yes | min 1 chars |
 | `description` | string | yes | min 1 chars |
 | `startsAt` | string | yes | date-time |
 | `durationMinutes` | integer | yes |  |
@@ -174,6 +178,7 @@ Edit a class before its first confirmed booking locks it (AC-017).
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `skillIds` | string[] | no | at least 1 item(s) |
+| `title` | string | no | min 1 chars; max 120 chars |
 | `description` | string | no | min 1 chars |
 | `startsAt` | string | no | date-time |
 | `durationMinutes` | integer | no | ≥ 30; ≤ 180 |
@@ -187,6 +192,7 @@ Edit a class before its first confirmed booking locks it (AC-017).
 | `id` | string | yes | min 1 chars |
 | `teacherId` | string | yes | min 1 chars |
 | `state` | string | yes | min 1 chars |
+| `title` | string | yes | min 1 chars |
 | `startsAt` | string | yes | date-time |
 | `durationMinutes` | integer | yes |  |
 | `priceCredits` | integer | yes |  |
@@ -474,6 +480,7 @@ Issue a short-lived Jitsi room token for a party to the booking (FR-011). Use wh
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
+| `title` | string | yes | min 1 chars |
 | `description` | string | yes | min 1 chars |
 | `skillIds` | string[] | yes |  |
 | `startsAt` | string | yes | date-time |

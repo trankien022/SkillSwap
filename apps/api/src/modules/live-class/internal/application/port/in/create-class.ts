@@ -4,6 +4,7 @@ export const CREATE_CLASS = Symbol('CREATE_CLASS');
 export interface CreateClassCommand {
   teacherId: string;
   skillIds: string[];
+  title: string;
   description: string;
   startsAt: string;
   durationMinutes: number;
@@ -15,6 +16,7 @@ export interface ClassResource {
   id: string;
   teacherId: string;
   state: string;
+  title: string;
   startsAt: string;
   durationMinutes: number;
   priceCredits: number;

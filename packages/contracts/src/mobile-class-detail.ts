@@ -67,6 +67,7 @@ export const classDetailViewSchema = z.object({
    * catalogue could not be read, so a client can keep its "not provided" state.
    */
   skills: z.array(classDetailSkillSchema).optional(),
+  title: z.string().min(1),
   description: z.string().min(1),
   startsAt: z.string().datetime({ offset: true }),
   durationMinutes: z.number().int(),

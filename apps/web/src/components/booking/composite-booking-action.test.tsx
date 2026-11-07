@@ -29,6 +29,7 @@ function makeItem(overrides: Partial<ClassDetailView> = {}): ClassDetailView {
     id: 'class-1',
     teacherId: 'teacher-1',
     state: 'published',
+    title: 'English conversation practice',
     startsAt: new Date(Date.now() + 3 * DAY_MS).toISOString(),
     durationMinutes: 60,
     priceCredits: 40,

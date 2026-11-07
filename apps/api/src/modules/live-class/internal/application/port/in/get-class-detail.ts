@@ -61,6 +61,7 @@ export interface ClassDetailDto {
    * read, so a client can tell "no catalogue data" from "the skill was deleted".
    */
   readonly skills?: readonly ClassDetailSkillDto[];
+  readonly title: string;
   readonly description: string;
   readonly startsAt: string;
   readonly durationMinutes: number;
