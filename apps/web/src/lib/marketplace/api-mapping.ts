@@ -116,9 +116,12 @@ export function toMarketplaceClass(
     capacity: item.capacity,
 
     teacherName: item.teacherDisplayName,
-    // No school column exists in the schema, so no school or code is claimed.
+    // B4: the API reports the school as free text, and no `UniversityCode` vocabulary exists on
+    // the wire — mapping a name onto one of the app's six codes would be a guess. `schoolCode`
+    // therefore stays null (the code-based dropdown still cannot filter API data); the name and
+    // the verified flag below are real and drive "verified only" and the card's school line.
     schoolCode: null,
-    schoolName: null,
+    schoolName: item.schoolName,
     skillName,
     skillCategory: toSkillCategory(skill?.category),
     // B2: the class reports the level it is taught at. The catalogue fallback only applies to
@@ -131,9 +134,8 @@ export function toMarketplaceClass(
     // reads as "rated and bad" rather than "unrated".
     ratingAvg: item.averageRating,
     ratingCount: item.ratingsCount,
-    // The list endpoint carries no verification flag; asserting one here would
-    // be a claim the API never made.
-    verified: null,
+    // B4: the flag is now on the payload, so the "verified only" toggle can filter for real.
+    verified: item.verified,
     coverGradient: coverGradientFor(item.id),
     // Free seats as reported by the catalogue — used for the "full" reason on
     // the detail action, never defaulted (absent stays absent).

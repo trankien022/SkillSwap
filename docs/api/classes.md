@@ -44,6 +44,8 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 | `id` | string | yes | min 1 chars |
 | `teacherId` | string | yes | min 1 chars |
 | `teacherDisplayName` | string | yes | min 1 chars |
+| `verified` | boolean | yes |  |
+| `schoolName` | string | yes | min 1 chars; nullable |
 | `skillIds` | string[] | yes |  |
 | `title` | string | yes | min 1 chars |
 | `level` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert`; nullable |
@@ -137,6 +139,8 @@ Publish a new class (FR-005). Requires the teacher to be a verified student appr
 | `displayName` | string | yes | min 1 chars |
 | `averageRating` | number | yes | ≥ 0; ≤ 5; nullable |
 | `ratingsCount` | integer | yes | ≥ 0 |
+| `verified` | boolean | yes |  |
+| `schoolName` | string | yes | min 1 chars; nullable |
 
 **`skills`[]** — ClassDetailViewDto.skills fields:
 

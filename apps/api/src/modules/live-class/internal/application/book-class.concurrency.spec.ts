@@ -163,7 +163,7 @@ function fixedClock(now: Date): Clock {
 /** AC-034: a trust projection where every account is a verified student. */
 function verifiedTrust(): AccountTrustReader {
   return {
-    read: jest.fn(async () => ({ verified: true, approvedLevel: () => null })),
+    read: jest.fn(async () => ({ verified: true, schoolName: null, approvedLevel: () => null })),
   };
 }
 

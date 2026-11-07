@@ -188,6 +188,10 @@ export const classListItemSchema = z.object({
   id: z.string().min(1),
   teacherId: z.string().min(1),
   teacherDisplayName: z.string().min(1),
+  /** B4: whether the teacher is a currently verified student. */
+  verified: z.boolean(),
+  /** B4: the school behind that verification; `null` when unverified or not yet projected. */
+  schoolName: z.string().min(1).nullable(),
   skillIds: z.array(z.string().min(1)),
   title: z.string().min(1),
   /** B2: the level the class is taught at; `null` when it was never recorded. */

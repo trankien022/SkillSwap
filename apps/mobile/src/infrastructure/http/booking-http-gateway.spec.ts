@@ -16,6 +16,8 @@ describe('BookingHttpGateway', () => {
       displayName: 'Trần Văn Giáo Viên',
       averageRating: 4.9,
       ratingsCount: 12,
+      verified: true,
+      schoolName: 'Đại học Bách khoa',
     },
     skillIds: ['e7b0a708-3011-4f16-9d32-2339c1b74737'],
     title: 'React Native & TypeORM chuyên sâu',

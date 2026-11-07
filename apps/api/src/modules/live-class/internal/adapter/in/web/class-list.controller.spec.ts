@@ -39,6 +39,8 @@ describe('ClassListController', () => {
           id: 'cls-1',
           teacherId: 'teacher-1',
           teacherDisplayName: 'Prof. Alice',
+          verified: true,
+          schoolName: 'HCMUS',
           skillIds: ['sk-1'],
           title: 'Algorithms: Big-O in practice',
           level: 'advanced' as const,

@@ -7,6 +7,13 @@ import type {
 import type { Clock } from '../port/out/clock';
 import type { ClassSkillReader } from '../port/out/class-skill-reader';
 import type { PublicTeacherReader } from '../port/out/public-teacher-reader';
+import type { AccountTrustReader } from '../port/out/account-trust';
+
+const VERIFIED_TEACHER = {
+  verified: true,
+  schoolName: 'FPT University' as string | null,
+  approvedLevel: () => null,
+};
 
 describe('GetClassDetailQueryHandler', () => {
   const fixedNow = new Date('2026-10-12T12:00:00.000Z');
@@ -16,6 +23,7 @@ describe('GetClassDetailQueryHandler', () => {
   let mockClassDetailReader: jest.Mocked<ClassDetailReader>;
   let mockPublicTeacherReader: jest.Mocked<PublicTeacherReader>;
   let mockClassSkillReader: jest.Mocked<ClassSkillReader>;
+  let mockAccountTrustReader: jest.Mocked<AccountTrustReader>;
   let mockClock: Clock;
   let handler: GetClassDetailQueryHandler;
 
@@ -50,6 +58,10 @@ describe('GetClassDetailQueryHandler', () => {
     mockClock = {
       now: () => fixedNow,
     };
+    const fakeTrust: AccountTrustReader = {
+      read: jest.fn(async () => ({ ...VERIFIED_TEACHER })),
+    };
+    mockAccountTrustReader = fakeTrust as unknown as jest.Mocked<AccountTrustReader>;
     mockClassSkillReader = {
       readMany: jest.fn().mockResolvedValue([
         { id: 'sk-math', name: 'Mathematics', category: 'Math', levels: ['beginner', 'intermediate'] },
@@ -60,8 +72,38 @@ describe('GetClassDetailQueryHandler', () => {
       mockClassDetailReader,
       mockPublicTeacherReader,
       mockClassSkillReader,
+      mockAccountTrustReader,
       mockClock,
     );
+  });
+
+  describe('Teacher verification (B4)', () => {
+    it('puts the projected verified flag and school on the teacher summary', async () => {
+      const result = await handler.execute({
+        classId: baseRecord.id,
+        callerId: 'stranger-caller',
+      });
+
+      expect(mockAccountTrustReader.read).toHaveBeenCalledWith('teacher-uuid-1');
+      expect(result.teacher.verified).toBe(true);
+      expect(result.teacher.schoolName).toBe('FPT University');
+    });
+
+    it('reports an unverified teacher with no school rather than a default one', async () => {
+      mockAccountTrustReader.read.mockResolvedValueOnce({
+        verified: false,
+        schoolName: null,
+        approvedLevel: () => null,
+      });
+
+      const result = await handler.execute({
+        classId: baseRecord.id,
+        callerId: 'stranger-caller',
+      });
+
+      expect(result.teacher.verified).toBe(false);
+      expect(result.teacher.schoolName).toBeNull();
+    });
   });
 
   describe('Skill catalogue enrichment (FR-006)', () => {
@@ -456,6 +498,8 @@ describe('GetClassDetailQueryHandler', () => {
         displayName: 'Prof. Heisenberg',
         averageRating: null,
         ratingsCount: 0,
+        verified: true,
+        schoolName: 'FPT University',
       });
       expect(result.recentRatings).toEqual([]);
     });

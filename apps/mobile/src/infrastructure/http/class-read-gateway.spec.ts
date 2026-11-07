@@ -12,6 +12,8 @@ describe('ClassReadGateway', () => {
     id: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
     teacherId: '123e4567-e89b-12d3-a456-426614174000',
     teacherDisplayName: 'Nguyễn Văn A',
+    verified: true,
+    schoolName: 'Đại học Bách khoa' as string | null,
     skillIds: [
       'e7b0a708-3011-4f16-9d32-2339c1b74737',
       '550e8400-e29b-41d4-a716-446655440000',

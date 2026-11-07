@@ -521,10 +521,16 @@ const systemClock: Clock = { now: () => new Date() };
       useFactory: (
         classListReader: ClassListReader,
         publicTeacherReader: PublicTeacherReader,
+        accountTrustReader: AccountTrustReader,
         clock: Clock,
       ): ListClassesPort =>
-        new ListClassesQueryHandler(classListReader, publicTeacherReader, clock),
-      inject: [CLASS_LIST_READER, PUBLIC_TEACHER_READER, CLOCK],
+        new ListClassesQueryHandler(
+          classListReader,
+          publicTeacherReader,
+          accountTrustReader,
+          clock,
+        ),
+      inject: [CLASS_LIST_READER, PUBLIC_TEACHER_READER, ACCOUNT_TRUST_READER, CLOCK],
     },
     {
       provide: CLASS_DETAIL_READER,
@@ -544,15 +550,23 @@ const systemClock: Clock = { now: () => new Date() };
         classDetailReader: ClassDetailReader,
         publicTeacherReader: PublicTeacherReader,
         classSkillReader: ClassSkillReader,
+        accountTrustReader: AccountTrustReader,
         clock: Clock,
       ): GetClassDetailPort =>
         new GetClassDetailQueryHandler(
           classDetailReader,
           publicTeacherReader,
           classSkillReader,
+          accountTrustReader,
           clock,
         ),
-      inject: [CLASS_DETAIL_READER, PUBLIC_TEACHER_READER, CLASS_SKILL_READER, CLOCK],
+      inject: [
+        CLASS_DETAIL_READER,
+        PUBLIC_TEACHER_READER,
+        CLASS_SKILL_READER,
+        ACCOUNT_TRUST_READER,
+        CLOCK,
+      ],
     },
     {
       provide: MY_BOOKINGS_READER,

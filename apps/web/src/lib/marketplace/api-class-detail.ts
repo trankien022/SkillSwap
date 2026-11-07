@@ -8,7 +8,7 @@ import type { ClassDetailView } from './types';
  * Transforms a backend ClassDetailView (Route 14) into the web ClassDetailView
  * presentation shape.
  *
- * The API answers with `teacher { displayName, averageRating, ratingsCount }`,
+ * The API answers with `teacher { displayName, averageRating, ratingsCount, verified, schoolName }`,
  * `title`, `level`, `format`, `description`, `startsAt`, `durationMinutes`, `priceCredits`,
  * `capacity`, `availableSeats`, `state`, `skillIds`, `skills` and `recentRatings` — nothing else.
  *
@@ -44,10 +44,10 @@ export function mapContractDetailToWeb(detail: ContractClassDetailView): ClassDe
     priceCredits: detail.priceCredits,
     capacity: detail.capacity,
     teacherName: detail.teacher.displayName,
-    // Not supplied by `GET /classes/:id`; the UI must render an explicit
-    // "not provided" state rather than a placeholder that reads as fact.
+    // B4: the detail route now reports the projected school and verification, so the page stops
+    // claiming "unknown". `schoolCode` still has no source: the wire carries a free-text name.
     schoolCode: null,
-    schoolName: null,
+    schoolName: detail.teacher.schoolName,
     skillName: skill?.name ?? null,
     skillCategory: skill === undefined ? null : toSkillCategory(skill.category),
     // B2: the level the class is taught at, reported by the API. The catalogue's lowest level is
@@ -60,9 +60,9 @@ export function mapContractDetailToWeb(detail: ContractClassDetailView): ClassDe
     // coercing null to 5.0 was a fabricated perfect score.
     ratingAvg: detail.teacher.averageRating,
     ratingCount: detail.teacher.ratingsCount,
-    // "Verified" is a claim about the teacher. The API sends no such flag here,
-    // so it is reported as unknown instead of asserted true.
-    verified: null,
+    // B4: `verified` is a claim about the teacher, and the API now makes it, so the page repeats
+    // it instead of reporting "unknown" forever.
+    verified: detail.teacher.verified,
     coverGradient: { from: '#0f766e', to: '#14b8a6' },
     description: detail.description,
     // None of these are returned by the API.

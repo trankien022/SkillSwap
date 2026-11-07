@@ -23,6 +23,8 @@ describe('ClassDetailCoordinator', () => {
       displayName: 'Teacher One',
       averageRating: 4.8,
       ratingsCount: 5,
+      verified: true,
+      schoolName: 'FPT University',
     },
     skillIds: ['skill-1'],
     title: 'Advanced React Native',

@@ -236,11 +236,12 @@ async function upsertStudentVerification(ctx, { accountId, schoolName, major, st
     [accountId, status, occurredAt],
   );
   await ctx.classDs.query(
-    `INSERT INTO "live_class"."teacher_verified" ("account_id", "verified", "occurred_at", "updated_at")
-     VALUES ($1, $2, $3, now())
+    `INSERT INTO "live_class"."teacher_verified" ("account_id", "verified", "school_name", "occurred_at", "updated_at")
+     VALUES ($1, $2, $3, $4, now())
      ON CONFLICT ("account_id") DO UPDATE
-       SET "verified" = EXCLUDED."verified", "occurred_at" = EXCLUDED."occurred_at", "updated_at" = now()`,
-    [accountId, status === 'approved', occurredAt],
+       SET "verified" = EXCLUDED."verified", "school_name" = EXCLUDED."school_name",
+           "occurred_at" = EXCLUDED."occurred_at", "updated_at" = now()`,
+    [accountId, status === 'approved', status === 'approved' ? schoolName : null, occurredAt],
   );
   return verificationId;
 }

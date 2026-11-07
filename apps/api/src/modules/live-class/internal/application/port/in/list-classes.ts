@@ -33,6 +33,10 @@ export interface ClassListItemDto {
   readonly id: string;
   readonly teacherId: string;
   readonly teacherDisplayName: string;
+  /** B4: whether the teacher is a currently verified student. */
+  readonly verified: boolean;
+  /** B4: the school behind that verification; null when unverified or not yet projected. */
+  readonly schoolName: string | null;
   readonly skillIds: readonly string[];
   readonly title: string;
   /** B2: the level the class is taught at; null when it was never recorded. */

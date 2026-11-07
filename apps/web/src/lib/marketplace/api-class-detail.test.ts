@@ -10,6 +10,8 @@ describe('ClassDetailApiGateway', () => {
       displayName: 'Lê Minh',
       averageRating: 4.9,
       ratingsCount: 15,
+      verified: true,
+      schoolName: 'Đại học Bách khoa',
     },
     skillIds: ['skill-ds-1'],
     title: 'Cấu trúc dữ liệu: cây và đồ thị',
@@ -36,7 +38,6 @@ describe('ClassDetailApiGateway', () => {
 
   it('maps only the fields the API actually returns, inventing nothing', () => {
     const webView = mapContractDetailToWeb(sampleContractDetail);
-
     // Real fields pass through unchanged.
     expect(webView.id).toBe(sampleContractDetail.id);
     expect(webView.teacherName).toBe('Lê Minh');
@@ -55,9 +56,11 @@ describe('ClassDetailApiGateway', () => {
     expect(webView.teacherCredentials).toEqual([]);
     expect(webView.teacherBio).toBeNull();
     expect(webView.teacherStats).toBeNull();
+    // B4: the school and the verification are now on the payload, so they are real facts rather
+    // than "unknown". `schoolCode` still has no wire source — the API sends free text.
     expect(webView.schoolCode).toBeNull();
-    expect(webView.schoolName).toBeNull();
-    expect(webView.verified).toBeNull();
+    expect(webView.schoolName).toBe('Đại học Bách khoa');
+    expect(webView.verified).toBe(true);
     // The reviewer's school is not returned, so none is claimed.
     expect(webView.reviews[0]?.schoolName).toBeNull();
   });

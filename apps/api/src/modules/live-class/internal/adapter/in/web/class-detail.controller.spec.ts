@@ -66,6 +66,8 @@ describe('ClassDetailController', () => {
         displayName: 'Dr. Jane Doe',
         averageRating: null,
         ratingsCount: 0,
+        verified: true,
+        schoolName: 'FPT University',
       },
       skillIds: ['sk-math-1'],
       title: 'Linear Algebra: vectors and spaces',

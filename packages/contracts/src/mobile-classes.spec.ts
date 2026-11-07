@@ -187,6 +187,8 @@ describe('mobile-classes contracts (portable cursor codec & schemas)', () => {
         id: 'cls-1',
         teacherId: 'teacher-1',
         teacherDisplayName: 'Prof. John',
+        verified: true,
+        schoolName: 'FPT University' as string | null,
         skillIds: ['sk-1'],
         title: 'Physics 101: mechanics',
         level: 'beginner' as const,
@@ -205,11 +207,45 @@ describe('mobile-classes contracts (portable cursor codec & schemas)', () => {
       expect(classListItemSchema.parse(item)).toEqual(item);
     });
 
+    it('reports the teacher verification and school, and rejects a missing flag (B4)', () => {
+      const item = {
+        id: 'cls-1',
+        teacherId: 'teacher-1',
+        teacherDisplayName: 'Prof. John',
+        verified: true,
+        schoolName: 'FPT University' as string | null,
+        skillIds: ['sk-1'],
+        title: 'Physics 101: mechanics',
+        level: 'beginner' as const,
+        format: 'group' as const,
+        description: 'Physics 101',
+        startsAt: '2026-10-15T10:00:00.000Z',
+        durationMinutes: 60,
+        priceCredits: 100,
+        capacity: 10,
+        confirmedBookingsCount: 3,
+        availableSeats: 7,
+        state: 'published' as const,
+        averageRating: null,
+        ratingsCount: 0,
+      };
+      // The university filter needs the name; "verified only" needs the boolean.
+      expect(classListItemSchema.parse(item).schoolName).toBe('FPT University');
+      expect(classListItemSchema.parse({ ...item, verified: false, schoolName: null }).schoolName).toBeNull();
+      // Both are required, so a client never filters on an absent fact.
+      expect(classListItemSchema.safeParse({ ...item, verified: undefined }).success).toBe(false);
+      expect(classListItemSchema.safeParse({ ...item, schoolName: undefined }).success).toBe(false);
+      // An empty string is not a school name.
+      expect(classListItemSchema.safeParse({ ...item, schoolName: '' }).success).toBe(false);
+    });
+
     it('reports the class format and rejects an invented one (B3)', () => {
       const item = {
         id: 'cls-1',
         teacherId: 'teacher-1',
         teacherDisplayName: 'Prof. John',
+        verified: false,
+        schoolName: null as string | null,
         skillIds: ['sk-1'],
         title: 'Physics 101: mechanics',
         level: null,

@@ -78,6 +78,8 @@ const detail: ClassDetailView = {
     displayName: 'Người dạy thử nghiệm',
     averageRating: null,
     ratingsCount: 0,
+    verified: true,
+    schoolName: 'Đại học FPT',
   },
   skillIds: ['skill-1'],
   title: 'Lớp nằm ngoài 50 kết quả đầu tiên',

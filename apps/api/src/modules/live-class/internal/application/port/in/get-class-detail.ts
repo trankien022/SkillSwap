@@ -33,6 +33,10 @@ export interface ClassDetailTeacherDto {
   readonly displayName: string;
   readonly averageRating: number | null;
   readonly ratingsCount: number;
+  /** B4: whether the teacher is a currently verified student. */
+  readonly verified: boolean;
+  /** B4: the school behind that verification; null when unverified or not yet projected. */
+  readonly schoolName: string | null;
 }
 
 export interface ClassDetailRatingDto {

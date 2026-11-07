@@ -14,7 +14,14 @@ const IDEMPOTENCY_KEY = 'key-1';
 
 const classDetail = {
   id: CLASS_ID,
-  teacher: { id: 'teacher-1', displayName: 'Demo Teacher', averageRating: 4.5, ratingsCount: 2 },
+  teacher: {
+    id: 'teacher-1',
+    displayName: 'Demo Teacher',
+    averageRating: 4.5,
+    ratingsCount: 2,
+    verified: true,
+    schoolName: 'FPT University',
+  },
   skillIds: ['skill-1'],
   title: 'Demo class',
   level: 'intermediate',

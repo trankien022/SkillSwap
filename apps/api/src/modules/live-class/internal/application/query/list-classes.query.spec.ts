@@ -6,11 +6,13 @@ import type {
 } from '../port/out/class-list-reader';
 import type { Clock } from '../port/out/clock';
 import type { PublicTeacherReader } from '../port/out/public-teacher-reader';
+import type { AccountTrustReader } from '../port/out/account-trust';
 
 describe('ListClassesQueryHandler', () => {
   const fixedNow = new Date('2026-10-12T12:00:00.000Z');
   let mockClassListReader: jest.Mocked<ClassListReader>;
   let mockPublicTeacherReader: jest.Mocked<PublicTeacherReader>;
+  let mockAccountTrustReader: jest.Mocked<AccountTrustReader>;
   let mockClock: Clock;
   let handler: ListClassesQueryHandler;
 
@@ -22,12 +24,20 @@ describe('ListClassesQueryHandler', () => {
     mockPublicTeacherReader = {
       readMany: jest.fn().mockResolvedValue([]),
     };
+    mockAccountTrustReader = {
+      read: jest.fn(async (accountId: string) => ({
+        verified: true,
+        schoolName: accountId === 'teacher-known' ? 'FPT University' : null,
+        approvedLevel: () => null,
+      })),
+    };
     mockClock = {
       now: () => fixedNow,
     };
     handler = new ListClassesQueryHandler(
       mockClassListReader,
       mockPublicTeacherReader,
+      mockAccountTrustReader,
       mockClock,
     );
   });
@@ -160,6 +170,120 @@ describe('ListClassesQueryHandler', () => {
       expect(result.items[1].averageRating).toBeNull();
       expect(result.items[1].ratingsCount).toBe(0);
       expect(result.nextCursor).toEqual(['2026-10-16T10:00:00.000Z', 'cls-2']);
+    });
+
+    it('reads the trust projection once per teacher and puts it on every item (B4)', async () => {
+      const records: ClassListRecord[] = [
+        {
+          id: 'cls-1',
+          teacherId: 'teacher-known',
+          skillIds: ['sk-1'],
+          title: 'Math 101',
+          level: 'beginner',
+          format: 'group',
+          description: 'Math 101',
+          startsAt: new Date('2026-10-15T10:00:00.000Z'),
+          durationMinutes: 60,
+          priceCredits: 100,
+          capacity: 10,
+          confirmedBookingsCount: 2,
+          availableSeats: 8,
+          state: 'published',
+        },
+        {
+          id: 'cls-2',
+          teacherId: 'teacher-known',
+          skillIds: ['sk-1'],
+          title: 'Math 102',
+          level: 'advanced',
+          format: 'group',
+          description: 'Math 102',
+          startsAt: new Date('2026-10-16T10:00:00.000Z'),
+          durationMinutes: 60,
+          priceCredits: 100,
+          capacity: 10,
+          confirmedBookingsCount: 0,
+          availableSeats: 10,
+          state: 'published',
+        },
+        {
+          id: 'cls-3',
+          teacherId: 'teacher-unverified',
+          skillIds: ['sk-2'],
+          title: 'Physics 101',
+          level: null,
+          format: 'one-on-one',
+          description: 'Physics 101',
+          startsAt: new Date('2026-10-17T10:00:00.000Z'),
+          durationMinutes: 60,
+          priceCredits: 80,
+          capacity: 1,
+          confirmedBookingsCount: 0,
+          availableSeats: 1,
+          state: 'published',
+        },
+      ];
+      mockClassListReader.findClasses.mockResolvedValueOnce({ items: records, nextCursor: null });
+      mockPublicTeacherReader.readMany.mockResolvedValueOnce([
+        { id: 'teacher-known', displayName: 'Dr. Jane Doe' },
+      ]);
+      mockAccountTrustReader.read.mockImplementation(async (accountId: string) =>
+        accountId === 'teacher-known'
+          ? { verified: true, schoolName: 'FPT University', approvedLevel: () => 'expert' }
+          : { verified: false, schoolName: null, approvedLevel: () => null },
+      );
+
+      const result = await handler.execute({ callerId: 'learner-1' });
+
+      // Two rows from one teacher must not become two projection reads: it is one fact.
+      expect(mockAccountTrustReader.read).toHaveBeenCalledTimes(2);
+      expect(mockAccountTrustReader.read.mock.calls.map((c) => c[0])).toEqual([
+        'teacher-known',
+        'teacher-unverified',
+      ]);
+      expect(result.items[0].verified).toBe(true);
+      expect(result.items[0].schoolName).toBe('FPT University');
+      expect(result.items[1].verified).toBe(true);
+      expect(result.items[1].schoolName).toBe('FPT University');
+      // An account with no projection row is honestly unverified rather than assumed.
+      expect(result.items[2].verified).toBe(false);
+      expect(result.items[2].schoolName).toBeNull();
+    });
+
+    it('reports no school for a revoked verification (B4)', async () => {
+      mockClassListReader.findClasses.mockResolvedValueOnce({
+        items: [
+          {
+            id: 'cls-1',
+            teacherId: 'teacher-revoked',
+            skillIds: ['sk-1'],
+            title: 'Math 101',
+            level: 'beginner',
+            format: 'group',
+            description: 'Math 101',
+            startsAt: new Date('2026-10-15T10:00:00.000Z'),
+            durationMinutes: 60,
+            priceCredits: 100,
+            capacity: 10,
+            confirmedBookingsCount: 0,
+            availableSeats: 10,
+            state: 'published',
+          },
+        ],
+        nextCursor: null,
+      });
+      mockAccountTrustReader.read.mockResolvedValueOnce({
+        verified: false,
+        schoolName: null,
+        approvedLevel: () => null,
+      });
+
+      const result = await handler.execute({ callerId: 'learner-1' });
+
+      // The projection clears the school when the status leaves `approved`; the reader must not
+      // resurrect it from anywhere else.
+      expect(result.items[0].verified).toBe(false);
+      expect(result.items[0].schoolName).toBeNull();
     });
   });
 

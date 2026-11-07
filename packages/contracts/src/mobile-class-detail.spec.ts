@@ -49,8 +49,26 @@ describe('mobile-class-detail contracts', () => {
         displayName: 'Dr. Jane Smith',
         averageRating: null,
         ratingsCount: 0,
+        verified: true,
+        schoolName: 'FPT University' as string | null,
       };
       expect(classDetailTeacherSchema.parse(teacher)).toEqual(teacher);
+    });
+
+    it('keeps the school nullable so an unverified teacher is not given one (B4)', () => {
+      const teacher = {
+        id: 'teacher-uuid-1',
+        displayName: 'Dr. Jane Smith',
+        averageRating: null,
+        ratingsCount: 0,
+        verified: false,
+        schoolName: null as string | null,
+      };
+      expect(classDetailTeacherSchema.parse(teacher).schoolName).toBeNull();
+      expect(classDetailTeacherSchema.safeParse({ ...teacher, schoolName: '' }).success).toBe(false);
+      expect(classDetailTeacherSchema.safeParse({ ...teacher, verified: undefined }).success).toBe(
+        false,
+      );
     });
 
     it('accepts numerical average rating when present', () => {
@@ -59,6 +77,8 @@ describe('mobile-class-detail contracts', () => {
         displayName: 'Dr. Jane Smith',
         averageRating: 4.8,
         ratingsCount: 15,
+        verified: true,
+        schoolName: 'HCMUS',
       };
       expect(classDetailTeacherSchema.parse(teacher)).toEqual(teacher);
     });
@@ -70,6 +90,8 @@ describe('mobile-class-detail contracts', () => {
           displayName: 'Jane',
           averageRating: 5.5,
           ratingsCount: 1,
+          verified: true,
+          schoolName: null,
         }),
       ).toThrow();
     });
@@ -131,6 +153,8 @@ describe('mobile-class-detail contracts', () => {
         displayName: 'Prof. Turing',
         averageRating: null,
         ratingsCount: 0,
+        verified: true,
+        schoolName: 'FPT University' as string | null,
       },
       skillIds: ['sk-cs-101', 'sk-algo'],
       title: 'Computer Science: the first principles',

@@ -93,6 +93,7 @@ function setup(options: {
   const teacherTrust: AccountTrustReader = {
     read: jest.fn(async (accountId: string) => ({
       verified: verifications[accountId] ?? false,
+      schoolName: null,
       approvedLevel: () => null,
     })),
   };

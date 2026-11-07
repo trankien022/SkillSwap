@@ -29,6 +29,8 @@ function classRow(overrides: Record<string, unknown> = {}) {
     id: 'class-1',
     teacherId: 'teacher-1',
     teacherDisplayName: 'Lê Minh',
+    verified: true,
+    schoolName: 'FPT University',
     skillIds: ['skill-1'],
     title: 'IELTS speaking: band 7 practice',
     level: 'advanced',
@@ -47,7 +49,7 @@ function classRow(overrides: Record<string, unknown> = {}) {
 }
 
 describe('toMarketplaceClass', () => {
-  it('does not invent a school, code or verification claim', () => {
+  it('surfaces the school and verification the API reports (B4)', () => {
     const mapped = toMarketplaceClass(classRow(), catalogue);
 
     // Real fields survive.
@@ -56,11 +58,25 @@ describe('toMarketplaceClass', () => {
     expect(mapped.ratingAvg).toBe(4.5);
     expect(mapped.ratingCount).toBe(8);
 
-    // Unsupported fields are absent, not defaulted. The old mapper asserted a
-    // real university code and `verified: true` for every class.
+    // B4: both facts are on the wire now, so the card can show the school and the
+    // "verified only" filter can work. `schoolCode` stays null because the API sends a
+    // free-text name and mapping it onto the app's six codes would be a guess.
     expect(mapped.schoolCode).toBeNull();
+    expect(mapped.schoolName).toBe('FPT University');
+    expect(mapped.verified).toBe(true);
+  });
+
+  it('does not invent a school or a verification when the API sends none', () => {
+    const mapped = toMarketplaceClass(
+      classRow({ verified: false, schoolName: null }),
+      catalogue,
+    );
+
+    // An unverified teacher is `false`, not `null`: the API answered. And no school is
+    // claimed just because the field exists on the contract.
+    expect(mapped.verified).toBe(false);
     expect(mapped.schoolName).toBeNull();
-    expect(mapped.verified).toBeNull();
+    expect(mapped.schoolCode).toBeNull();
   });
 
   it('does not claim a rating the API did not send', () => {

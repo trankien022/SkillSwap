@@ -103,6 +103,11 @@ function applyClientFilters(
     if (query.priceMax !== undefined && item.priceCredits > query.priceMax) {
       return false;
     }
+    // B4: the teacher's verification is on the payload now, so the toggle filters instead of
+    // being ignored. `!== true` keeps an unverified (`false`) or unknown (`null`) class out.
+    if (query.verifiedOnly === true && item.verified !== true) {
+      return false;
+    }
     if (query.keyword && query.keyword.trim().length > 0) {
       const needle = query.keyword.trim().toLowerCase();
       const haystack = `${item.skillName ?? ''} ${item.teacherName}`.toLowerCase();

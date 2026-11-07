@@ -104,9 +104,9 @@ try {
         [row.id, status],
       );
       await live.query(
-        `INSERT INTO live_class.teacher_verified (account_id,verified,occurred_at,updated_at)
-        VALUES ($1,$2,now(),now()) ON CONFLICT DO NOTHING`,
-        [row.id, status === 'approved'],
+        `INSERT INTO live_class.teacher_verified (account_id,verified,school_name,occurred_at,updated_at)
+        VALUES ($1,$2,$3,now(),now()) ON CONFLICT DO NOTHING`,
+        [row.id, status === 'approved', status === 'approved' ? 'Đại học FPT' : null],
       );
     }
   }

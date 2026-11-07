@@ -13,6 +13,7 @@ import type {
 import type { Clock } from '../port/out/clock';
 import type { ClassSkillReader } from '../port/out/class-skill-reader';
 import type { PublicTeacherReader } from '../port/out/public-teacher-reader';
+import type { AccountTrustReader } from '../port/out/account-trust';
 
 const BOOKING_LEAD_TIME_MS = 24 * 60 * 60 * 1000;
 const NEUTRAL_TEACHER_NAME = 'SkillSwap';
@@ -28,6 +29,7 @@ export class GetClassDetailQueryHandler implements GetClassDetailPort {
     private readonly classDetailReader: ClassDetailReader,
     private readonly publicTeacherReader: PublicTeacherReader,
     private readonly classSkillReader: ClassSkillReader,
+    private readonly accountTrustReader: AccountTrustReader,
     private readonly clock: Clock,
   ) {}
 
@@ -103,13 +105,20 @@ export class GetClassDetailQueryHandler implements GetClassDetailPort {
       isNotTeacher &&
       !hasBlockingBooking;
 
-    // 4. Enrich teacher public profile display name via pure batch facade
-    const teacherDisplayName = await this.resolveTeacherDisplayName(record.teacherId);
+    // 4. Enrich teacher public profile display name and verification via pure batch facades.
+    //    B4: the school and the verified flag live in the local trust projection, not in
+    //    `student_verification` (no cross-schema read, ADR-014).
+    const [teacherDisplayName, teacherTrust] = await Promise.all([
+      this.resolveTeacherDisplayName(record.teacherId),
+      this.accountTrustReader.read(record.teacherId),
+    ]);
     const teacher: ClassDetailTeacherDto = {
       id: record.teacherId,
       displayName: teacherDisplayName,
       averageRating: null, // provisional until T16
       ratingsCount: 0,     // provisional until T16
+      verified: teacherTrust.verified,
+      schoolName: teacherTrust.schoolName,
     };
 
     // 5. Resolve the skills the class teaches. This is the join every client used to do
@@ -158,7 +167,8 @@ export class GetClassDetailQueryHandler implements GetClassDetailPort {
     }
   }
 
-  private async resolveTeacherDisplayName(teacherId: string): Promise<string> {    const profiles = await this.publicTeacherReader.readMany([teacherId]);
+  private async resolveTeacherDisplayName(teacherId: string): Promise<string> {
+    const profiles = await this.publicTeacherReader.readMany([teacherId]);
     const profile = profiles.find((p) => p.id === teacherId);
     if (profile?.displayName && profile.displayName.trim() !== '') {
       return profile.displayName.trim();

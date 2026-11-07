@@ -27,6 +27,10 @@ export const classDetailTeacherSchema = z.object({
   displayName: z.string().min(1),
   averageRating: z.number().min(0).max(5).nullable(),
   ratingsCount: z.number().int().nonnegative(),
+  /** B4: whether the teacher is a currently verified student. */
+  verified: z.boolean(),
+  /** B4: the school behind that verification; `null` when unverified or not yet projected. */
+  schoolName: z.string().min(1).nullable(),
 });
 export type ClassDetailTeacherView = z.infer<typeof classDetailTeacherSchema>;
 
