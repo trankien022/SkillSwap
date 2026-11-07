@@ -8,6 +8,7 @@ import {
   toMarketplaceClass,
   type SkillCatalogue,
 } from './api-mapping';
+import { matchesTimeFilter } from './time-filter';
 import { DEFAULT_QUERY } from './types';
 import type { MarketplaceClass, MarketplacePage, MarketplaceQuery } from './types';
 
@@ -115,11 +116,10 @@ function applyClientFilters(
         return false;
       }
     }
-    if (query.timeFilter === 'next-24-48h') {
-      const hours = (new Date(item.startsAt).getTime() - Date.now()) / 3_600_000;
-      if (hours < 24 || hours > 48) {
-        return false;
-      }
+    // Shared with the mock gateway. Before this, `this-weekend` was not handled here at all, so
+    // the radio was checked and the results never changed.
+    if (!matchesTimeFilter(item.startsAt, query.timeFilter)) {
+      return false;
     }
     return true;
   });
