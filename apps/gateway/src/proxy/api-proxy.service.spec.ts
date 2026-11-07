@@ -281,12 +281,14 @@ describe('ApiProxyService', () => {
         '/api/auth/refresh',
         '/api/auth/logout',
         '/api/wallet/top-ups/callback',
+        // ADR-039: JaaS signs the webhook itself; it never holds a bearer token.
+        '/api/internal/jitsi/presence',
         '/api/health',
       ]) {
         svc.middleware(requestTo(path), response().res, jest.fn());
       }
 
-      expect(proxy.forwarded).toHaveLength(6);
+      expect(proxy.forwarded).toHaveLength(7);
       // Public routes carry no injected identity.
       expect(proxy.forwarded[0].headers['x-user-id']).toBeUndefined();
     });

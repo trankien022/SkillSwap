@@ -18,6 +18,8 @@ import {
   jitsiDomainFromUrl,
   jitsiHostFromUrl,
   jitsiProtocolFromUrl,
+  jitsiRoomNameFromUrl,
+  jitsiScriptBaseFromUrl,
   buildJitsiOptions,
   type JitsiApi,
 } from './jitsi-external-api';
@@ -182,16 +184,18 @@ export function LiveClassroomContent({ bookingId = '', roomCode = '' }: LiveClas
 
     const mount = async () => {
       try {
-        // Script loads from the full origin; the constructor wants a bare HOST
-        // (it prepends the protocol itself, see jitsiHostFromUrl).
-        const base = jitsiDomainFromUrl(accessUrl);
+        // The script is served per tenant (JaaS: `https://8x8.vc/<appId>/external_api.js`),
+        // while the constructor wants a bare HOST (it prepends the protocol itself).
+        const base = jitsiScriptBaseFromUrl(accessUrl);
         const JitsiMeetExternalAPI = await loadJitsiExternalApi(base);
         if (cancelled) return;
 
         const api = new JitsiMeetExternalAPI(
           jitsiHostFromUrl(accessUrl),
           buildJitsiOptions({
-            roomName: accessRoom,
+            // JaaS needs the tenant-prefixed name (`<appId>/<room>`), so it is taken from the
+            // access URL rather than from the provider-agnostic `room` field.
+            roomName: jitsiRoomNameFromUrl(accessUrl),
             parentNode: container,
             protocol: jitsiProtocolFromUrl(accessUrl),
             jwt: accessToken,

@@ -33,12 +33,26 @@ export type PresenceEventType = (typeof PRESENCE_EVENT_TYPES)[number];
 /** The prefix every room this application issues begins with (ADR-020). */
 const ROOM_PREFIX = roomName('');
 
-/** The class a room belongs to, or null when the name is not one this app issued. */
+/**
+ * The class a room belongs to, or null when the name is not one this app issued.
+ *
+ * JaaS reports the fully-qualified room (`<appId>/skillswap-<classId>`), so a leading tenant
+ * segment is tolerated and stripped. The prefix check still runs on what remains, which keeps
+ * "not a room we issued" a no-op rather than an error (ADR-039 decision 5).
+ */
 export function classIdFromRoom(room: string | null | undefined): string | null {
-  if (typeof room !== 'string' || !room.startsWith(ROOM_PREFIX)) {
+  if (typeof room !== 'string') {
     return null;
   }
-  const classId = room.slice(ROOM_PREFIX.length);
+  // JaaS reports `<tenant>/<room>`; the class id is always the last segment. Taking the last
+  // segment (rather than trimming a known prefix) keeps this independent of the tenant name,
+  // which is configuration.
+  const segments = room.split('/').filter((segment) => segment.length > 0);
+  const local = segments[segments.length - 1] ?? '';
+  if (!local.startsWith(ROOM_PREFIX)) {
+    return null;
+  }
+  const classId = local.slice(ROOM_PREFIX.length);
   return classId === '' ? null : classId;
 }
 
