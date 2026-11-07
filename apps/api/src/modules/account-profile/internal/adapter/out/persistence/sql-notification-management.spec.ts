@@ -115,6 +115,51 @@ describe('SqlNotificationManagement', () => {
     });
   });
 
+  describe('unreadOnly filter', () => {
+    const row = (id: string, read: boolean) => ({
+      id, type: 'booking_confirmed', title: 'Booking confirmed', body: 'Ready',
+      target_type: 'booking', target_id: 'b1', read,
+      created_at: new Date('2026-10-20T10:00:00.000Z'),
+    });
+
+    it('adds the read filter only when unreadOnly is true', async () => {
+      (source.query as jest.Mock)
+        .mockResolvedValueOnce([row('n1', false)])
+        .mockResolvedValueOnce([{ count: '1' }])
+        .mockResolvedValueOnce([]);
+
+      await repository.list('account-1', { limit: 20, unreadOnly: true });
+
+      expect((source.query as jest.Mock).mock.calls[0][0]).toContain('"read" = false');
+    });
+
+    it('returns read and unread rows when unreadOnly is false', async () => {
+      const rows = [row('n1', false), row('n2', true)];
+      (source.query as jest.Mock)
+        .mockResolvedValueOnce(rows)
+        .mockResolvedValueOnce([{ count: '1' }])
+        .mockResolvedValueOnce([]);
+
+      // Before the contract fix this reached the adapter as `true`, so a caller asking for the
+      // whole inbox got only its unread half.
+      const page = await repository.list('account-1', { limit: 20, unreadOnly: false });
+
+      expect(page.items).toHaveLength(2);
+      expect((source.query as jest.Mock).mock.calls[0][0]).not.toContain('"read" = false');
+    });
+
+    it('returns read and unread rows when unreadOnly is omitted', async () => {
+      (source.query as jest.Mock)
+        .mockResolvedValueOnce([row('n1', false), row('n2', true)])
+        .mockResolvedValueOnce([{ count: '1' }])
+        .mockResolvedValueOnce([]);
+
+      await repository.list('account-1', { limit: 20 });
+
+      expect((source.query as jest.Mock).mock.calls[0][0]).not.toContain('"read" = false');
+    });
+  });
+
   it('stores the shared English copy for the NOT NULL compatibility columns', async () => {
     (manager.query as jest.Mock)
       .mockResolvedValueOnce([{ id: 'claim' }])

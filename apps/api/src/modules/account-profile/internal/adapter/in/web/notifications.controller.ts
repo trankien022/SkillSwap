@@ -4,6 +4,7 @@ import {
   listNotificationsQuerySchema,
   markNotificationsReadResponseSchema,
   notificationsPageSchema,
+  type ListNotificationsQuery,
   type MarkNotificationsReadResponse,
   type NotificationsPage,
 } from '@skillswap/contracts';
@@ -52,7 +53,7 @@ export class NotificationsController {
   @ApiQuery({ name: 'limit', required: false, description: 'Page size, 1–100 (default 20)' })
   @ApiQuery({ name: 'cursor', required: false, description: 'Opaque cursor from the previous `nextCursor`' })
   @ApiOkResponse({ type: NotificationsPageDto, description: 'Owner-scoped notifications, cursor and exact unread count' })
-  async list(@Query(new ZodValidationPipe(listNotificationsQuerySchema)) query: ReturnType<typeof listNotificationsQuerySchema.parse>, @Req() request: RequestWithIdentity): Promise<NotificationsPage> {
+  async list(@Query(new ZodValidationPipe<unknown>(listNotificationsQuerySchema)) query: ListNotificationsQuery, @Req() request: RequestWithIdentity): Promise<NotificationsPage> {
     return notificationsPageSchema.parse(await this.notifications.list(owner(request), query, decodeCursor(query.cursor)));
   }
 
