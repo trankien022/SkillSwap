@@ -9,9 +9,10 @@ import type {
 } from './port/in/request-document-upload';
 
 /**
- * FR-002 / ADR-023 (developer decision 4): validates the declared file against
+ * FR-002 / ADR-038 (developer decision 4): validates the declared file against
  * the policy (type/size — NFR-008), records the metadata row in Postgres and
- * returns a pre-signed S3 URL. Bytes never touch the API (nothing to log).
+ * returns a signed Cloudinary upload target. Bytes never touch the API (nothing
+ * to log).
  */
 export class RequestDocumentUploadUseCase implements RequestDocumentUploadPort {
   constructor(
@@ -52,6 +53,8 @@ export class RequestDocumentUploadUseCase implements RequestDocumentUploadPort {
     return {
       documentId,
       uploadUrl: target.uploadUrl,
+      method: target.method,
+      fields: target.fields,
       objectKey: target.objectKey,
       expiresAt: target.expiresAt.toISOString(),
     };

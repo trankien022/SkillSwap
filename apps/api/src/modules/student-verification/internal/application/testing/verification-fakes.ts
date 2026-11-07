@@ -181,13 +181,15 @@ export class InMemoryVerificationDocumentRepository implements VerificationDocum
   }
 }
 
-/** Fake DocumentStore that returns a deterministic pre-signed URL. */
+/** Fake DocumentStore that returns a deterministic signed upload form. */
 export class FakeDocumentStore implements DocumentStore {
   constructor(private readonly now: () => Date = () => new Date()) {}
 
   async createUploadTarget(input: CreateUploadTargetInput): Promise<UploadTarget> {
     return {
-      uploadUrl: `https://s3.local/${input.objectKey}?sig=fake`,
+      uploadUrl: 'https://api.cloudinary.local/v1_1/test/raw/upload',
+      method: 'POST',
+      fields: { public_id: input.objectKey, signature: 'fake-signature', api_key: 'fake-key' },
       objectKey: input.objectKey,
       expiresAt: new Date(this.now().getTime() + input.expiresInSeconds * 1000),
     };

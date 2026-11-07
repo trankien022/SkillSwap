@@ -35,7 +35,7 @@ describe('E2E: student verification (FR-002)', () => {
     return accountIdFromToken(res.json.accessToken);
   }
 
-  /** Requests a pre-signed upload target and returns the document metadata id. */
+  /** Requests a signed upload target and returns the document metadata id. */
   async function requestDocumentUpload(): Promise<string> {
     const target = await api.post('/api/student-verifications/documents', {
       fileName: 'transcript.pdf',
@@ -43,7 +43,10 @@ describe('E2E: student verification (FR-002)', () => {
       sizeBytes: 1024,
     });
     expect(target.status).toBe(201);
-    expect(target.json.uploadUrl).toContain('X-Amz-Signature');
+    // ADR-038: the provider authenticates by signed body fields, so the target is a POST form
+    // target rather than a pre-signed URL. E2E runs offline and never calls Cloudinary.
+    expect(target.json.method).toBe('POST');
+    expect(target.json.fields.signature).toMatch(/^[0-9a-f]+$/);
     return target.json.documentId as string;
   }
 
