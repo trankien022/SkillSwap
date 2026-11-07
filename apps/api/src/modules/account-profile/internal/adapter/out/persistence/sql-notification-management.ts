@@ -2,29 +2,40 @@ import { deviceSubscriptionSchema, notificationsPageSchema, type DeviceSubscript
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { qualified } from '../../../../../../shared/sql/ident';
 import { returnedRows } from '../../../../../../shared/sql/result';
+import { notificationCopy } from '../../../application/notification-copy';
 import type { NotificationManagementPort, RecordInboxNotification } from '../../../application/port/notification-management';
 
 interface RawDevice { id: string; installation_id: string; platform: string; is_active: boolean; created_at: Date | string }
 interface RawNotification { id: string; type: string; title: string; body: string; target_type: string; target_id: string; read: boolean; created_at: Date | string }
 interface CountRow { count: string | number }
+interface LocaleRow { locale: string }
 function iso(value: Date | string): string { return value instanceof Date ? value.toISOString() : new Date(value).toISOString(); }
 function encodeCursor(createdAt: string, id: string): string { return Buffer.from(`${createdAt}|${id}`).toString('base64url'); }
-function notificationCopy(type: RecordInboxNotification['type']): { title: string; body: string } {
-  switch (type) {
-    case 'booking_cancelled': return { title: 'Class booking updated', body: 'A teacher canceled a class you booked. Open your schedule to review the booking and wallet.' };
-    case 'booking_confirmed': return { title: 'Booking confirmed', body: 'Your class booking is confirmed. Open your schedule to view the details.' };
-    case 'verification_outcome': return { title: 'Verification updated', body: 'Your verification status changed. Open SkillSwap to review the result.' };
-    case 'wallet_transaction': return { title: 'Wallet updated', body: 'A wallet transaction completed. Open your wallet to review the balance and history.' };
-    case 'class_starting_soon': return { title: 'Class starting soon', body: 'Your class is starting soon. Open your schedule to review the class.' };
-    case 'withdrawal_outcome': return { title: 'Withdrawal updated', body: 'Your withdrawal status changed. Open your wallet to review the result.' };
-  }
-}
+
+/**
+ * B7: the language an inbox row is rendered in.
+ *
+ * A push is already built per installation, because each delivery knows its own device. An inbox
+ * row is read by a person, not a device, so the account's most recently updated **active** device
+ * speaks for them. An account with no device reads `vi` — the same default the device insert (and
+ * therefore `notification_devices.locale`) uses, so a user who never registered one still gets a
+ * language rather than a fallback that disagrees with their own device.
+ */
+type Locale = 'vi' | 'en';
+const DEFAULT_LOCALE: Locale = 'vi';
 
 /** Account-owned notification storage adapter; all reads are owner-filtered. */
 export class SqlNotificationManagement implements NotificationManagementPort {
   constructor(private readonly registry: ModuleDataSourceRegistry, private readonly moduleName: string) {}
   private get schema(): string { return this.registry.getSchema(this.moduleName); }
 
+  /**
+   * FR-016: the caller's inbox, with `title`/`body` resolved in **their** language at read time.
+   *
+   * B7: the copy used to be frozen at write time with an English-only switch, so the same event
+   * arrived as a Vietnamese push and an English inbox row. Nothing about the row depends on who
+   * read it when it was written, so the language belongs to the read.
+   */
   async list(accountId: string, query: ListNotificationsQuery, cursor?: readonly [Date, string]): Promise<NotificationsPage> {
     const source = this.registry.get(this.moduleName);
     const inbox = qualified(this.schema, 'inbox_notifications');
@@ -35,13 +46,39 @@ export class SqlNotificationManagement implements NotificationManagementPort {
     params.push(query.limit + 1);
     const rows = await source.query(`SELECT "id", "type", "title", "body", "target_type", "target_id", "read", "created_at" FROM ${inbox} WHERE ${where.join(' AND ')} ORDER BY "created_at" DESC, "id" DESC LIMIT $${params.length}`, params) as RawNotification[];
     const unreadRows = await source.query(`SELECT COUNT(*)::int AS "count" FROM ${inbox} WHERE "account_id" = $1 AND "read" = false`, [accountId]) as CountRow[];
+    const locale = await this.readLocale(accountId);
     const pageRows = rows.slice(0, query.limit);
     const last = pageRows[pageRows.length - 1];
     const nextCursor = rows.length > query.limit && last ? encodeCursor(iso(last.created_at), last.id) : null;
     return notificationsPageSchema.parse({
-      items: pageRows.map((r) => ({ id: r.id, type: r.type, title: r.title, body: r.body, targetType: r.target_type, targetId: r.target_id, read: r.read, createdAt: iso(r.created_at) })),
+      items: pageRows.map((r) => {
+        // B7: reader's language first, then `en`, then whatever was stored at write time. The last
+        // step is unreachable for the six contract types — it exists so a future type cannot render
+        // `undefined` into a NOT NULL field.
+        const copy = notificationCopy(r.type, locale) ?? notificationCopy(r.type, 'en');
+        return {
+          id: r.id, type: r.type,
+          title: copy?.title ?? r.title,
+          body: copy?.body ?? r.body,
+          targetType: r.target_type, targetId: r.target_id, read: r.read, createdAt: iso(r.created_at),
+        };
+      }),
       nextCursor, unreadCount: Number(unreadRows[0]?.count ?? 0),
     });
+  }
+
+  /** The account's speaking language: their most recently updated active device. */
+  private async readLocale(accountId: string): Promise<Locale> {
+    const devices = qualified(this.schema, 'notification_devices');
+    const rows = (await this.registry.get(this.moduleName).query(
+      `SELECT "locale" FROM ${devices}
+        WHERE "account_id" = $1 AND "is_active" = true
+        ORDER BY "updated_at" DESC, "id" DESC
+        LIMIT 1`,
+      [accountId],
+    )) as LocaleRow[];
+    const locale = rows[0]?.locale;
+    return locale === 'en' ? 'en' : DEFAULT_LOCALE;
   }
 
   async upsertDevice(accountId: string, input: UpsertDeviceInput): Promise<DeviceSubscription> {
@@ -115,10 +152,13 @@ export class SqlNotificationManagement implements NotificationManagementPort {
         [`notification:${dedupeKey}`],
       ));
       if (claim.length === 0) return;
-      const copy = notificationCopy(notification.type);
+      // B7: the columns are NOT NULL and stay for compatibility, so they still need a value. Store
+      // the `en` copy through the **same** function the read path uses — never a second switch, and
+      // never the text a client is expected to render (that is resolved per reader at read time).
+      const copy = notificationCopy(notification.type, 'en');
       const created = returnedRows<{ id: string }>(await manager.query(
         `INSERT INTO ${inbox} ("account_id", "deduplication_key", "type", "title", "body", "target_type", "target_id") VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT ("deduplication_key") DO NOTHING RETURNING "id"`,
-        [notification.accountId, dedupeKey, notification.type, copy.title, copy.body, notification.targetType, notification.targetId],
+        [notification.accountId, dedupeKey, notification.type, copy?.title ?? notification.type, copy?.body ?? notification.type, notification.targetType, notification.targetId],
       ));
       let notificationId = created[0]?.id;
       if (!notificationId) {
