@@ -40,4 +40,54 @@ describe('SqlNotificationManagement', () => {
     expect(manager.query).toHaveBeenCalledTimes(1);
     expect(manager.query).toHaveBeenCalledWith(expect.stringContaining('RETURNING "id"'), ['device-owned-by-someone-else', 'account-attacker']);
   });
+
+  describe('read state (B6)', () => {
+    it('marks one owned row read in a single ownership-scoped UPDATE, then reports the count', async () => {
+      (source.query as jest.Mock)
+        .mockResolvedValueOnce([{ id: 'n1' }])
+        .mockResolvedValueOnce([{ count: '2' }]);
+
+      await expect(repository.markRead('account-a', 'n1')).resolves.toBe(2);
+
+      const [updateSql, updateParams] = (source.query as jest.Mock).mock.calls[0] as [string, unknown[]];
+      // Ownership lives in the WHERE clause. A read-then-write would let "not yours" and "not
+      // there" produce different answers, which is the existence leak the 404 avoids.
+      expect(updateSql).toContain('SET "read" = true');
+      expect(updateSql).toContain('"id" = $1 AND "account_id" = $2');
+      expect(updateParams).toEqual(['n1', 'account-a']);
+      expect((source.query as jest.Mock).mock.calls[1][1]).toEqual(['account-a']);
+    });
+
+    it('reports null when the row belongs to somebody else, and counts nothing', async () => {
+      (source.query as jest.Mock).mockResolvedValueOnce([]);
+
+      await expect(repository.markRead('account-b', 'n1')).resolves.toBeNull();
+      // No follow-up count for a write that touched nothing.
+      expect(source.query).toHaveBeenCalledTimes(1);
+      expect(source.query).toHaveBeenCalledWith(expect.stringContaining('AND "account_id" = $2'), ['n1', 'account-b']);
+    });
+
+    it('treats a second mark of the same row as still successful', async () => {
+      (source.query as jest.Mock)
+        .mockResolvedValueOnce([{ id: 'n1' }])
+        .mockResolvedValueOnce([{ count: '2' }])
+        .mockResolvedValueOnce([{ id: 'n1' }])
+        .mockResolvedValueOnce([{ count: '2' }]);
+
+      await expect(repository.markRead('account-a', 'n1')).resolves.toBe(2);
+      await expect(repository.markRead('account-a', 'n1')).resolves.toBe(2);
+    });
+
+    it('clears the whole inbox with one statement and no second query', async () => {
+      (source.query as jest.Mock).mockResolvedValueOnce([]);
+
+      await expect(repository.markAllRead('account-a')).resolves.toBe(0);
+
+      expect(source.query).toHaveBeenCalledTimes(1);
+      const [sql, params] = (source.query as jest.Mock).mock.calls[0] as [string, unknown[]];
+      expect(sql).toContain('SET "read" = true');
+      expect(sql).toContain('"read" = false');
+      expect(params).toEqual(['account-a']);
+    });
+  });
 });

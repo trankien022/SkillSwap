@@ -77,6 +77,33 @@ export class SqlNotificationManagement implements NotificationManagementPort {
     return { success: true };
   }
 
+  /**
+   * B6: one `UPDATE … WHERE account_id = $1 AND id = $2`. Ownership is part of the WHERE clause,
+   * never a prior SELECT — a two-step read-then-write would leak the existence of another
+   * account's notification through a different answer for "not yours" and "not there".
+   */
+  async markRead(accountId: string, id: string): Promise<number | null> {
+    const source = this.registry.get(this.moduleName);
+    const inbox = qualified(this.schema, 'inbox_notifications');
+    const updated = returnedRows<{ id: string }>(await source.query(
+      `UPDATE ${inbox} SET "read" = true WHERE "id" = $1 AND "account_id" = $2 RETURNING "id"`,
+      [id, accountId],
+    ));
+    if (updated.length === 0) return null;
+    const counts = await source.query(`SELECT COUNT(*)::int AS "count" FROM ${inbox} WHERE "account_id" = $1 AND "read" = false`, [accountId]) as CountRow[];
+    return Number(counts[0]?.count ?? 0);
+  }
+
+  /** B6: one statement for the whole inbox; the remaining unread count is 0 by construction. */
+  async markAllRead(accountId: string): Promise<number> {
+    const inbox = qualified(this.schema, 'inbox_notifications');
+    await this.registry.get(this.moduleName).query(
+      `UPDATE ${inbox} SET "read" = true WHERE "account_id" = $1 AND "read" = false`,
+      [accountId],
+    );
+    return 0;
+  }
+
   async recordInboxNotification(notification: RecordInboxNotification): Promise<void> {
     const source = this.registry.get(this.moduleName);
     const processed = qualified(this.schema, 'processed_events');

@@ -17,3 +17,13 @@ export type NotificationsPage = z.infer<typeof notificationsPageSchema>;
 export type ListNotificationsQuery = z.infer<typeof listNotificationsQuerySchema>;
 export type UpsertDeviceInput = z.infer<typeof upsertDeviceSchema>;
 export type DeviceSubscription = z.infer<typeof deviceSubscriptionSchema>;
+
+/**
+ * B6: `POST /notifications/:id/read` and `POST /notifications/read-all` both answer with the
+ * inbox's remaining unread count, so a client can clear its badge without a second round trip.
+ */
+export const markNotificationsReadResponseSchema = z.object({
+  success: z.literal(true),
+  unreadCount: z.number().int().nonnegative(),
+});
+export type MarkNotificationsReadResponse = z.infer<typeof markNotificationsReadResponseSchema>;
