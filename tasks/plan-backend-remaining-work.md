@@ -10,7 +10,7 @@ Implement the decision-free tasks only, in the doc's order:
 
 | Phase | Task | Commit |
 |---|---|---|
-| P0 | B10 — delete the fictitious `POST /classes/:id/complete` from the docs | `docs: …` |
+| P0 | B10 — delete the fictitious teacher-initiated completion route from the docs | `docs: …` |
 | P1 | B1 — `classes.title` | `feat(live-class): …` |
 | P2 | B2 — `classes.level` | `feat(live-class): …` |
 | P3 | B3 — `format` from capacity | `feat(live-class): …` |
@@ -41,8 +41,8 @@ Out of scope, deliberately: **B8** (needs an ADR-023 amendment authored by the t
 
 Docs only. `classes.controller.ts:179-181` already carries the AC-035 comment; no code changes.
 
-- `docs/plans/SkillSwap-SRS.md:712` — S12 endpoints: drop `POST /classes/{id}/complete`, and
-  say what actually ends a class.
+- `docs/plans/SkillSwap-SRS.md:712` — S12 endpoints: drop the `complete` entry, and say what
+  actually ends a class.
 - `docs/plans/2026-10-12-screen-parity-matrix.md:43` — S12 endpoint list.
 - `docs/plans/2026-10-12-screen-parity-matrix.md:97` — this row describes a **past audit**; keep
   the historical quote of what the audit saw, but correct the parenthetical so it does not read
@@ -57,9 +57,10 @@ Docs only. `classes.controller.ts:179-181` already carries the AC-035 comment; n
 - `docs/plans/2026-10-24-w8-jitsi-runtime-acceptance-plan.md:85` — step 4 asks the teacher to
   end the class; reword to "wait for the scheduled end / observe the automatic completion".
 
-**Done when**: `grep -rn "classes/:id/complete" docs tasks` and
-`grep -rn "classes/{id}/complete" docs tasks` return nothing;
-`pnpm docs:api && git diff --exit-code docs/api` is clean (after regeneration in that commit).
+**Done when**: `grep -rn "id/complete" docs tasks` returns nothing (the sole surviving mention is
+the parity matrix's historical note, which names the route inside a correction rather than
+advertising it — keep that one); `pnpm docs:api && git diff --exit-code docs/api` is clean after
+regeneration in that commit.
 
 ## P1 — B1: teacher-authored class title
 
