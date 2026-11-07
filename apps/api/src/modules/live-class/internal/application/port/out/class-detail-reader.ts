@@ -1,3 +1,4 @@
+import type { ClassLevel } from '../../../domain/class';
 import type { BookingStateDto, ClassLifecycleStateDto } from '../in/get-class-detail';
 
 export const CLASS_DETAIL_READER = Symbol('CLASS_DETAIL_READER');
@@ -14,6 +15,8 @@ export interface ClassDetailRecord {
   readonly teacherId: string;
   readonly skillIds: readonly string[];
   readonly title: string;
+  /** B2: the level the class is taught at, or null when never recorded. */
+  readonly level: ClassLevel | null;
   readonly description: string;
   readonly startsAt: Date;
   readonly durationMinutes: number;

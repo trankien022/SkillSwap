@@ -13,6 +13,7 @@ describe('ClassDetailApiGateway', () => {
     },
     skillIds: ['skill-ds-1'],
     title: 'Cấu trúc dữ liệu: cây và đồ thị',
+    level: 'advanced',
     description: 'Cấu trúc dữ liệu và giải thuật nâng cao',
     startsAt: '2026-10-25T14:00:00.000Z',
     durationMinutes: 120,
@@ -74,8 +75,9 @@ describe('ClassDetailApiGateway', () => {
     });
     expect(withSkills.skillName).toBe('Data structures');
     expect(withSkills.skillCategory).toBe('programming');
-    // The lowest advertised level is shown, exactly as the list page does.
-    expect(withSkills.level).toBe('beginner');
+    // B2: the class reports the level it is taught at, so the badge is the class's fact and
+    // not the catalogue's lowest level.
+    expect(withSkills.level).toBe('advanced');
 
     // `skills` is optional: a failed catalogue read leaves the field off the
     // response, and the page says so instead of guessing a skill.
@@ -83,7 +85,26 @@ describe('ClassDetailApiGateway', () => {
     const withoutSkills = mapContractDetailToWeb(sampleContractDetail);
     expect(withoutSkills.skillName).toBeNull();
     expect(withoutSkills.skillCategory).toBeNull();
-    expect(withoutSkills.level).toBeNull();
+    // The level survives a catalogue failure: it lives on the class, not on the skill.
+    expect(withoutSkills.level).toBe('advanced');
+  });
+
+  it('falls back to the catalogue only for a class recorded before levels existed (B2)', () => {
+    const legacy = mapContractDetailToWeb({
+      ...sampleContractDetail,
+      level: null,
+      skills: [
+        {
+          id: 'skill-ds-1',
+          name: 'Data structures',
+          category: 'Programming',
+          levels: ['beginner', 'intermediate', 'advanced'],
+        },
+      ],
+    });
+    expect(legacy.level).toBe('beginner');
+
+    expect(mapContractDetailToWeb({ ...sampleContractDetail, level: null }).level).toBeNull();
   });
 
   it('keeps a real rating and does not coerce an absent one to 5.0', () => {

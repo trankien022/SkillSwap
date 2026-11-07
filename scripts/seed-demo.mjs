@@ -324,13 +324,13 @@ async function upsertEvidence(ctx, { profileSkillId, accountId, skillId, version
 }
 
 /** Upserts a class + its skill links and returns its id. */
-async function insertClass(ctx, { teacherId, state, title, startsAt, durationMinutes, priceCredits, capacity, description, skillIds }) {
+async function insertClass(ctx, { teacherId, state, title, level, startsAt, durationMinutes, priceCredits, capacity, description, skillIds }) {
   const rows = await ctx.classDs.query(
     `INSERT INTO "live_class"."classes"
-       ("teacher_id", "state", "title", "starts_at", "duration_minutes", "price_credits", "capacity", "description")
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ("teacher_id", "state", "title", "level", "starts_at", "duration_minutes", "price_credits", "capacity", "description")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING "id"`,
-    [teacherId, state, title, startsAt, durationMinutes, priceCredits, capacity, description],
+    [teacherId, state, title, level, startsAt, durationMinutes, priceCredits, capacity, description],
   );
   const classId = rows[0].id;
   for (const skillId of skillIds) {
@@ -500,15 +500,18 @@ try {
     teacher: t.user,
   }));
 
+  // B2: each class states the level its teacher is approved at for that skill (the same rule the
+  // publish gate applies), so the badge is a fact rather than a catalogue lookup. Spread across
+  // the scale so the demo shows more than one badge.
   const CLASS_SPECS = [
-    { teacher: 0, skill: 'IELTS', state: 'published', startInH: 48, duration: 60, price: 120, capacity: 8, title: 'IELTS Speaking Part 2: cue cards that sound natural' },
-    { teacher: 0, skill: 'English Conversation', state: 'published', startInH: 72, duration: 45, price: 90, capacity: 6, title: 'Everyday English Conversation Practice' },
-    { teacher: 1, skill: 'Python', state: 'published', startInH: 24, duration: 90, price: 200, capacity: 10, title: 'Python for Beginners: Functions and Loops' },
-    { teacher: 2, skill: 'React', state: 'published', startInH: 36, duration: 120, price: 260, capacity: 12, title: 'React Hooks Deep Dive' },
-    { teacher: 2, skill: 'TypeScript', state: 'full', startInH: 12, duration: 90, price: 220, capacity: 2, title: 'TypeScript Types That Scale' },
-    { teacher: 3, skill: 'Japanese', state: 'in_progress', startInH: -1, duration: 120, price: 150, capacity: 8, title: 'Japanese Conversation: Ordering Food' },
-    { teacher: 4, skill: 'Guitar', state: 'published', startInH: 96, duration: 60, price: 130, capacity: 6, title: 'Guitar Chords for Absolute Beginners' },
-    { teacher: 5, skill: 'Calculus', state: 'completed', startInH: -72, duration: 90, price: 180, capacity: 10, title: 'Calculus: Limits and Derivatives Explained' },
+    { teacher: 0, skill: 'IELTS', state: 'published', startInH: 48, duration: 60, price: 120, capacity: 8, level: 'intermediate', title: 'IELTS Speaking Part 2: cue cards that sound natural' },
+    { teacher: 0, skill: 'English Conversation', state: 'published', startInH: 72, duration: 45, price: 90, capacity: 6, level: 'advanced', title: 'Everyday English Conversation Practice' },
+    { teacher: 1, skill: 'Python', state: 'published', startInH: 24, duration: 90, price: 200, capacity: 10, level: 'advanced', title: 'Python for Beginners: Functions and Loops' },
+    { teacher: 2, skill: 'React', state: 'published', startInH: 36, duration: 120, price: 260, capacity: 12, level: 'expert', title: 'React Hooks Deep Dive' },
+    { teacher: 2, skill: 'TypeScript', state: 'full', startInH: 12, duration: 90, price: 220, capacity: 2, level: 'intermediate', title: 'TypeScript Types That Scale' },
+    { teacher: 3, skill: 'Japanese', state: 'in_progress', startInH: -1, duration: 120, price: 150, capacity: 8, level: 'intermediate', title: 'Japanese Conversation: Ordering Food' },
+    { teacher: 4, skill: 'Guitar', state: 'published', startInH: 96, duration: 60, price: 130, capacity: 6, level: 'advanced', title: 'Guitar Chords for Absolute Beginners' },
+    { teacher: 5, skill: 'Calculus', state: 'completed', startInH: -72, duration: 90, price: 180, capacity: 10, level: 'expert', title: 'Calculus: Limits and Derivatives Explained' },
   ];
 
   const classIds = [];
@@ -523,6 +526,7 @@ try {
       priceCredits: spec.price,
       capacity: spec.capacity,
       title: spec.title,
+      level: spec.level,
       description: `Demo ${spec.skill} class #${i + 1} by Demo User ${spec.teacher + 1}`,
       skillIds: [skillIdByName[spec.skill]],
     });

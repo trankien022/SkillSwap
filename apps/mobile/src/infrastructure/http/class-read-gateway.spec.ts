@@ -17,6 +17,7 @@ describe('ClassReadGateway', () => {
       '550e8400-e29b-41d4-a716-446655440000',
     ],
     title: 'Nhập môn TypeScript nâng cao',
+    level: 'advanced' as const,
     description: 'Nhập môn lập trình TypeScript nâng cao',
     startsAt: '2026-10-20T10:00:00.000Z',
     durationMinutes: 60,

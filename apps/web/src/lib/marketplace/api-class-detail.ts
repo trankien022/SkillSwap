@@ -50,7 +50,10 @@ export function mapContractDetailToWeb(detail: ContractClassDetailView): ClassDe
     schoolName: null,
     skillName: skill?.name ?? null,
     skillCategory: skill === undefined ? null : toSkillCategory(skill.category),
-    level: skill === undefined ? null : toSkillLevel({ levels: skill.levels }),
+    // B2: the level the class is taught at, reported by the API. The catalogue's lowest level is
+    // only used when the class predates the column (`null`) and no per-class level exists.
+    level:
+      detail.level ?? (skill === undefined ? null : toSkillLevel({ levels: skill.levels })),
     // Derived only from data the API actually returns.
     format: detail.capacity <= 1 ? 'one-on-one' : 'group-2-4',
     // `averageRating` is nullable: a teacher with no ratings has no average, and

@@ -13,6 +13,7 @@ export function demoClass(): ClassView {
     teacherId: 'teacher-demo',
     state: 'published',
     title: 'Demo guitar class',
+    level: 'beginner',
     startsAt,
     durationMinutes: 60,
     priceCredits: 100,

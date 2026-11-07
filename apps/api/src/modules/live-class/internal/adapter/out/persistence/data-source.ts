@@ -14,6 +14,7 @@ import { CreateClassReminders1791072000008 } from './migrations/1791072000008-Cr
 import { RemoveBookingDisputedState1791072000009 } from './migrations/1791072000009-RemoveBookingDisputedState';
 import { CreateClassChatMessages1791072000010 } from './migrations/1791072000010-CreateClassChatMessages';
 import { AddClassTitle1791072000011 } from './migrations/1791072000011-AddClassTitle';
+import { AddClassLevel1791072000012 } from './migrations/1791072000012-AddClassLevel';
 import { AddOutboxRetryBackoff1791072000500 } from './migrations/1791072000500-AddOutboxRetryBackoff';
 import { AddOutboxSequence1791072000600 } from './migrations/1791072000600-AddOutboxSequence';
 import { AddProcessedEventSequence1791072000601 } from './migrations/1791072000601-AddProcessedEventSequence';
@@ -49,6 +50,8 @@ export function createModuleDataSource(config: ApiConfig, schema: string = SCHEM
       CreateClassChatMessages1791072000010,
       // B1: a teacher-authored class name. Backfilled from `description`; no cross-schema join.
       AddClassTitle1791072000011,
+      // B2: the level the class is taught at, taken from the approval the publish gate used.
+      AddClassLevel1791072000012,
       // ADR-013 Amendment A (W2 C2): shared outbox backoff, one migration per schema.
       AddOutboxRetryBackoff1791072000500,
       // ADR-013 Amendment A (W2 C1): per-aggregate sequence numbers, emitter half then

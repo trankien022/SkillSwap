@@ -16,6 +16,7 @@ import type {
   ClassView,
   CompletionBasis,
 } from '../../../domain/class';
+import { isClassLevel } from '../../../domain/class';
 
 const CLASSES_TABLE = 'classes';
 const CLASS_SKILLS_TABLE = 'class_skills';
@@ -31,6 +32,7 @@ interface ClassRow {
   teacher_id: string;
   state: string;
   title: string;
+  level: string | null;
   starts_at: Date | string;
   duration_minutes: number;
   price_credits: number;
@@ -49,6 +51,7 @@ function toPersisted(row: ClassRow): PersistedClass {
     teacherId: row.teacher_id,
     state: row.state as ClassState,
     title: row.title,
+    level: row.level !== null && isClassLevel(row.level) ? row.level : null,
     startsAt: toDate(row.starts_at),
     durationMinutes: row.duration_minutes,
     priceCredits: row.price_credits,
@@ -74,13 +77,14 @@ export class SqlClassRepository implements ClassRepository {
     const skills = qualified(this.schema, CLASS_SKILLS_TABLE);
     return source.transaction(async (manager) => {
       const rows = (await manager.query(
-        `INSERT INTO ${classes} ("teacher_id", "state", "title", "starts_at", "duration_minutes", "price_credits", "capacity", "description")
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         RETURNING "id", "teacher_id", "state", "title", "starts_at", "duration_minutes", "price_credits", "capacity", "description"`,
+        `INSERT INTO ${classes} ("teacher_id", "state", "title", "level", "starts_at", "duration_minutes", "price_credits", "capacity", "description")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING "id", "teacher_id", "state", "title", "level", "starts_at", "duration_minutes", "price_credits", "capacity", "description"`,
         [
           record.teacherId,
           record.state,
           record.title,
+          record.level,
           record.startsAt.toISOString(),
           record.durationMinutes,
           record.priceCredits,
@@ -107,7 +111,7 @@ export class SqlClassRepository implements ClassRepository {
     const classes = qualified(this.schema, CLASSES_TABLE);
     const skills = qualified(this.schema, CLASS_SKILLS_TABLE);
     const rows = (await source.query(
-      `SELECT c."id", c."teacher_id", c."state", c."title", c."starts_at", c."duration_minutes",
+      `SELECT c."id", c."teacher_id", c."state", c."title", c."level", c."starts_at", c."duration_minutes",
               c."price_credits", c."capacity", c."description",
               COALESCE(array_agg(s."skill_id") FILTER (WHERE s."skill_id" IS NOT NULL), '{}') AS "skill_ids"
          FROM ${classes} c
@@ -141,7 +145,7 @@ export class SqlClassRepository implements ClassRepository {
              SET "starts_at" = $2, "duration_minutes" = $3, "price_credits" = $4,
                  "capacity" = $5, "title" = $6, "description" = $7, "updated_at" = now()
            WHERE "id" = $1
-           RETURNING "id", "teacher_id", "state", "title", "starts_at", "duration_minutes", "price_credits", "capacity", "description"`,
+           RETURNING "id", "teacher_id", "state", "title", "level", "starts_at", "duration_minutes", "price_credits", "capacity", "description"`,
           [
             id,
             edit.startsAt.toISOString(),

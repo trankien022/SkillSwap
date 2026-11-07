@@ -139,6 +139,7 @@ export class ListClassesQueryHandler implements ListClassesPort {
         teacherDisplayName,
         skillIds: record.skillIds,
         title: record.title,
+        level: record.level,
         description: record.description,
         startsAt: record.startsAt.toISOString(),
         durationMinutes: record.durationMinutes,

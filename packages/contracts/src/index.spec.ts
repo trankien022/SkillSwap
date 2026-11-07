@@ -383,12 +383,30 @@ describe('classSchema', () => {
       teacherId: 'teacher-1',
       state: 'published',
       title: 'Guitar basics',
+      level: 'beginner' as const,
       startsAt: '2026-10-10T10:00:00.000Z',
       durationMinutes: 60,
       priceCredits: 100,
       capacity: 2,
     };
     expect(classSchema.parse(view)).toEqual(view);
+  });
+
+  it('reports an unrecorded level as null and rejects invented ones (B2)', () => {
+    const view = {
+      id: 'cls-1',
+      teacherId: 'teacher-1',
+      state: 'published',
+      title: 'Guitar basics',
+      level: null,
+      startsAt: '2026-10-10T10:00:00.000Z',
+      durationMinutes: 60,
+      priceCredits: 100,
+      capacity: 2,
+    };
+    expect(classSchema.parse(view).level).toBeNull();
+    expect(() => classSchema.parse({ ...view, level: 'master' })).toThrow();
+    expect(() => classSchema.parse({ ...view, level: undefined })).toThrow();
   });
 });
 
@@ -401,6 +419,15 @@ describe('updateClassSchema (FR-007 / AC-017)', () => {
     expect(() => updateClassSchema.parse({})).toThrow();
     expect(() => updateClassSchema.parse({ durationMinutes: 10 })).toThrow();
     expect(() => updateClassSchema.parse({ priceCredits: 0 })).toThrow();
+  });
+
+  it('strips a level: the taught level is a publish-time fact, not an edit (B2)', () => {
+    // Changing the level would invalidate the approval the class was published on, so the
+    // schema must not carry it. Zod strips unknown keys, so a client that sends one gets a
+    // no-op rather than a silent rewrite; a body containing only `level` is an empty edit and
+    // is refused.
+    expect(() => updateClassSchema.parse({ level: 'expert' })).toThrow();
+    expect(updateClassSchema.parse({ capacity: 4, level: 'expert' })).toEqual({ capacity: 4 });
   });
 });
 

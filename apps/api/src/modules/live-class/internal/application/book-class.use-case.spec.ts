@@ -23,6 +23,7 @@ function persistedClass(overrides: Partial<PersistedClass> = {}): PersistedClass
     priceCredits: 100,
     capacity: 1,
     title: 'Guitar basics',
+    level: 'intermediate',
     description: 'Guitar',
     skillIds: ['skill-1'],
     ...overrides,

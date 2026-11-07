@@ -7,6 +7,8 @@
  * persistence (ADR-009).
  */
 
+import { SKILL_LEVELS, type SkillLevel } from './skill-level';
+
 export const MIN_DURATION_MINUTES = 30;
 export const MAX_DURATION_MINUTES = 180;
 export const BOOKING_LEAD_TIME_MS = 24 * 60 * 60 * 1000;
@@ -14,6 +16,24 @@ export const BOOKING_LEAD_TIME_MS = 24 * 60 * 60 * 1000;
 /** A class name is 1-120 characters after trimming (B1). */
 export const MIN_TITLE_LENGTH = 1;
 export const MAX_TITLE_LENGTH = 120;
+
+/**
+ * B2: the level a class is taught at.
+ *
+ * Deliberately the same vocabulary as the skill approval scale (`skill-level.ts`), because the value
+ * is read from `TeacherTrust.approvedLevel` — the very approval the publish gate just checked. A
+ * separate scale here would let the two drift and the gate would then be checking one thing while
+ * the class advertised another.
+ *
+ * `null` means "not recorded": classes created before B2 whose skill list had more than one entry.
+ * They render no badge rather than a guessed one.
+ */
+export type ClassLevel = SkillLevel;
+
+export function isClassLevel(value: string): value is ClassLevel {
+  return SKILL_LEVELS.includes(value as ClassLevel);
+}
+
 
 /** Class lifecycle states (SkillSwap-SRS.md §3.2.6 state diagram). */
 export const CLASS_STATES = [
@@ -88,6 +108,13 @@ export class InvalidTitleError extends RangeError {
       `Class title must be ${MIN_TITLE_LENGTH}-${MAX_TITLE_LENGTH} characters after trimming, got ${JSON.stringify(title).slice(0, 80)}`,
     );
     this.name = 'InvalidTitleError';
+  }
+}
+
+export class InvalidClassLevelError extends Error {
+  constructor(level: string) {
+    super(`Unknown class level: ${level}`);
+    this.name = 'InvalidClassLevelError';
   }
 }
 

@@ -56,11 +56,33 @@ describe('CreateClassUseCase', () => {
       teacherId: 'teacher-1',
       state: 'published',
       title: 'Guitar basics',
+      level: 'expert',
       startsAt: new Date(NOW.getTime() + 48 * HOUR).toISOString(),
       durationMinutes: 60,
       priceCredits: 100,
       capacity: 1,
     });
+  });
+
+  it('records the level the publish approval implies (B2)', async () => {
+    const { useCase, calls } = setup(
+      new FakeAccountTrustReader({ approvedLevels: { 'skill-1': 'advanced' } }),
+    );
+    await useCase.execute(command());
+    expect(calls[0].level).toBe('advanced');
+  });
+
+  it('takes the level from the class first skill, not from the catalogue', async () => {
+    // The gate required both skills approved; the class reports the first one rather than
+    // inventing an aggregate. This pins which skill wins so a later refactor cannot silently
+    // change the badge.
+    const { useCase, calls } = setup(
+      new FakeAccountTrustReader({
+        approvedLevels: { 'skill-1': 'beginner', 'skill-2': 'expert' },
+      }),
+    );
+    await useCase.execute(command({ skillIds: ['skill-1', 'skill-2'] }));
+    expect(calls[0].level).toBe('beginner');
   });
 
   it('rejects an invalid title before persisting (B1)', async () => {

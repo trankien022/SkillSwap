@@ -31,6 +31,7 @@ function classRow(overrides: Record<string, unknown> = {}) {
     teacherDisplayName: 'Lê Minh',
     skillIds: ['skill-1'],
     title: 'IELTS speaking: band 7 practice',
+    level: 'advanced',
     description: 'IELTS speaking practice',
     startsAt: '2026-10-25T14:00:00.000Z',
     durationMinutes: 60,
@@ -70,6 +71,15 @@ describe('toMarketplaceClass', () => {
     // The contract flags the pair as provisional, so an absent rating is null.
     expect(unrated.ratingAvg).toBeNull();
     expect(unrated.ratingCount).toBe(0);
+  });
+
+  it('shows the level the class reports, not the catalogue lowest (B2)', () => {
+    expect(toMarketplaceClass(classRow(), catalogue).level).toBe('advanced');
+
+    // Only a class recorded before the column existed falls back to the catalogue, and the
+    // fallback is the old one rather than a new claim.
+    const legacy = toMarketplaceClass(classRow({ level: null }), catalogue);
+    expect(legacy.level).toBe('beginner');
   });
 });
 

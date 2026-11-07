@@ -146,8 +146,8 @@ try {
     const id = uuid(200 + index);
     await live.transaction(async (tx) => {
       await tx.query(
-        `INSERT INTO live_class.classes (id,teacher_id,state,title,starts_at,duration_minutes,price_credits,capacity,description)
-        VALUES ($1,$2,'published',$3,$4,60,$5,8,$6) ON CONFLICT DO NOTHING`,
+        `INSERT INTO live_class.classes (id,teacher_id,state,title,level,starts_at,duration_minutes,price_credits,capacity,description)
+        VALUES ($1,$2,'published',$3,'advanced',$4,60,$5,8,$6) ON CONFLICT DO NOTHING`,
         [id, accounts.teacher.id, description, new Date(Date.now() + hours * 3600000), price, description],
       );
       await tx.query(

@@ -131,7 +131,10 @@ export function toMarketplaceClass(
     schoolName: null,
     skillName,
     skillCategory: toSkillCategory(skill?.category),
-    level: toSkillLevel(skill),
+    // B2: the class reports the level it is taught at. The catalogue fallback only applies to
+    // rows recorded before the column existed (`null`), where no per-class level is known —
+    // it is the old, lowest-in-catalogue guess, not a new claim.
+    level: item.level ?? toSkillLevel(skill),
     format: toClassFormat(item.capacity),
     // `averageRating` is nullable on the contract: a teacher with no ratings
     // has none. Coercing it to 0 rendered as a genuine zero-star score, which

@@ -105,6 +105,11 @@ export const classSchema = z.object({
   teacherId: z.string().min(1),
   state: z.string().min(1),
   title: z.string().min(1),
+  /**
+   * B2: the level this class is taught at. `null` only for rows recorded before the column
+   * existed — it is never a guess, so a client shows no badge rather than a wrong one.
+   */
+  level: skillLevelSchema.nullable(),
   startsAt: z.string().datetime({ offset: true }),
   durationMinutes: z.number().int(),
   priceCredits: z.number().int(),

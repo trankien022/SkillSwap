@@ -10,6 +10,10 @@ export const CLASS_LIFECYCLE_STATES = [
 ] as const;
 export type ClassLifecycleStateDto = (typeof CLASS_LIFECYCLE_STATES)[number];
 
+/** B2: the level vocabulary a class may report. */
+export const CLASS_LEVELS = ['beginner', 'intermediate', 'advanced', 'expert'] as const;
+export type ClassLevelDto = (typeof CLASS_LEVELS)[number];
+
 export const BOOKING_STATES = [
   'pending',
   'confirmed',
@@ -62,6 +66,8 @@ export interface ClassDetailDto {
    */
   readonly skills?: readonly ClassDetailSkillDto[];
   readonly title: string;
+  /** B2: the level the class is taught at; null when it was never recorded. */
+  readonly level: ClassLevelDto | null;
   readonly description: string;
   readonly startsAt: string;
   readonly durationMinutes: number;

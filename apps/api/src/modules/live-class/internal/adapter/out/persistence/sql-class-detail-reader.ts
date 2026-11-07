@@ -1,5 +1,6 @@
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { qualified } from '../../../../../../shared/sql/ident';
+import { isClassLevel } from '../../../domain/class';
 import type {
   BookingStateDto,
   ClassLifecycleStateDto,
@@ -19,6 +20,7 @@ interface RawClassDetailRow {
   teacher_id: string;
   state: string;
   title: string;
+  level: string | null;
   starts_at: Date | string;
   duration_minutes: number;
   price_credits: number;
@@ -71,6 +73,7 @@ export class SqlClassDetailReader implements ClassDetailReader {
         c."teacher_id",
         c."state",
         c."title",
+        c."level",
         c."starts_at",
         c."duration_minutes",
         c."price_credits",
@@ -139,6 +142,7 @@ export class SqlClassDetailReader implements ClassDetailReader {
       teacherId: r.teacher_id,
       skillIds: r.skill_ids ?? [],
       title: r.title,
+      level: r.level !== null && isClassLevel(r.level) ? r.level : null,
       description: r.description,
       startsAt: toDate(r.starts_at),
       durationMinutes: r.duration_minutes,

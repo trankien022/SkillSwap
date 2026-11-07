@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { MAX_PAGE_LIMIT, searchQuerySchema } from './pagination';
+import { skillLevelSchema } from './skill-evidence';
 
 export type ClassCursorTuple = readonly [startsAtISO: string, id: string];
 
@@ -182,6 +183,8 @@ export const classListItemSchema = z.object({
   teacherDisplayName: z.string().min(1),
   skillIds: z.array(z.string().min(1)),
   title: z.string().min(1),
+  /** B2: the level the class is taught at; `null` when it was never recorded. */
+  level: skillLevelSchema.nullable(),
   description: z.string().min(1),
   startsAt: z.string().datetime({ offset: true }),
   durationMinutes: z.number().int(),

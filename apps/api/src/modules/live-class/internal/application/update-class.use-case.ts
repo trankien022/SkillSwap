@@ -85,6 +85,7 @@ function toResource(stored: PersistedClass): ClassResource {
     teacherId: stored.teacherId,
     state: stored.state,
     title: stored.title,
+    level: stored.level,
     startsAt: stored.startsAt.toISOString(),
     durationMinutes: stored.durationMinutes,
     priceCredits: stored.priceCredits,

@@ -189,6 +189,7 @@ describe('mobile-classes contracts (portable cursor codec & schemas)', () => {
         teacherDisplayName: 'Prof. John',
         skillIds: ['sk-1'],
         title: 'Physics 101: mechanics',
+        level: 'beginner' as const,
         description: 'Physics 101',
         startsAt: '2026-10-15T10:00:00.000Z',
         durationMinutes: 60,

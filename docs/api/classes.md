@@ -46,6 +46,7 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 | `teacherDisplayName` | string | yes | min 1 chars |
 | `skillIds` | string[] | yes |  |
 | `title` | string | yes | min 1 chars |
+| `level` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert`; nullable |
 | `description` | string | yes | min 1 chars |
 | `startsAt` | string | yes | date-time |
 | `durationMinutes` | integer | yes |  |
@@ -87,6 +88,7 @@ Publish a new class (FR-005). Requires the teacher to be a verified student appr
 | `teacherId` | string | yes | min 1 chars |
 | `state` | string | yes | min 1 chars |
 | `title` | string | yes | min 1 chars |
+| `level` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert`; nullable |
 | `startsAt` | string | yes | date-time |
 | `durationMinutes` | integer | yes |  |
 | `priceCredits` | integer | yes |  |
@@ -112,6 +114,7 @@ Publish a new class (FR-005). Requires the teacher to be a verified student appr
 | `skillIds` | string[] | yes |  |
 | `skills` | object[] | no |  |
 | `title` | string | yes | min 1 chars |
+| `level` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert`; nullable |
 | `description` | string | yes | min 1 chars |
 | `startsAt` | string | yes | date-time |
 | `durationMinutes` | integer | yes |  |
@@ -193,6 +196,7 @@ Edit a class before its first confirmed booking locks it (AC-017).
 | `teacherId` | string | yes | min 1 chars |
 | `state` | string | yes | min 1 chars |
 | `title` | string | yes | min 1 chars |
+| `level` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert`; nullable |
 | `startsAt` | string | yes | date-time |
 | `durationMinutes` | integer | yes |  |
 | `priceCredits` | integer | yes |  |

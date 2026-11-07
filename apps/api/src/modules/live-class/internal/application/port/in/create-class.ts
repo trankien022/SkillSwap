@@ -17,6 +17,8 @@ export interface ClassResource {
   teacherId: string;
   state: string;
   title: string;
+  /** B2: the level the class is taught at; null only for rows recorded before the column. */
+  level: 'beginner' | 'intermediate' | 'advanced' | 'expert' | null;
   startsAt: string;
   durationMinutes: number;
   priceCredits: number;

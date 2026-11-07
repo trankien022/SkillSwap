@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { classLifecycleStateSchema, type ClassLifecycleState } from './mobile-classes';
+import { skillLevelSchema } from './skill-evidence';
 
 /**
  * 4 domain lifecycle states of a Booking (FR-007, FR-009, FR-011).
@@ -68,6 +69,8 @@ export const classDetailViewSchema = z.object({
    */
   skills: z.array(classDetailSkillSchema).optional(),
   title: z.string().min(1),
+  /** B2: the level the class is taught at; `null` when it was never recorded. */
+  level: skillLevelSchema.nullable(),
   description: z.string().min(1),
   startsAt: z.string().datetime({ offset: true }),
   durationMinutes: z.number().int(),

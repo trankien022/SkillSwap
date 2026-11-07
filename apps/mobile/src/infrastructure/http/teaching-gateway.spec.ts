@@ -16,7 +16,7 @@ describe('TeachingGateway', () => {
 
   it('validates and creates a published class', async () => {
     const input = { skillIds: ['skill-1'], title: 'TypeScript basics', description: 'TypeScript basics', startsAt: '2026-10-20T10:00:00.000Z', durationMinutes: 60, priceCredits: 10, capacity: 1 };
-    const view = { id: 'class-1', teacherId: 'teacher-1', state: 'published', title: 'TypeScript basics', startsAt: input.startsAt, durationMinutes: 60, priceCredits: 10, capacity: 1 };
+    const view = { id: 'class-1', teacherId: 'teacher-1', state: 'published', title: 'TypeScript basics', level: 'beginner', startsAt: input.startsAt, durationMinutes: 60, priceCredits: 10, capacity: 1 };
     fetchMock.mockResolvedValueOnce(response(view));
     await expect(gateway.create(input)).resolves.toEqual(view);
     expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:4000/api/classes');
@@ -25,7 +25,7 @@ describe('TeachingGateway', () => {
   });
 
   it('uses the documented lifecycle routes and PATCH contract', async () => {
-    const updated = { id: 'class/1', teacherId: 'teacher-1', state: 'published', title: 'Updated class', startsAt: '2026-10-21T10:00:00.000Z', durationMinutes: 60, priceCredits: 25, capacity: 3 };
+    const updated = { id: 'class/1', teacherId: 'teacher-1', state: 'published', title: 'Updated class', level: 'intermediate', startsAt: '2026-10-21T10:00:00.000Z', durationMinutes: 60, priceCredits: 25, capacity: 3 };
     fetchMock.mockResolvedValueOnce(response(updated));
     fetchMock.mockResolvedValueOnce(response({ cancelled: true }));
     fetchMock.mockResolvedValueOnce(response({ started: true }));

@@ -1,5 +1,6 @@
 import type {
   ClassCancellationReason,
+  ClassLevel,
   ClassState,
   ClassView,
   CompletionBasis,
@@ -19,6 +20,8 @@ export interface PersistedClass {
   teacherId: string;
   state: ClassState;
   title: string;
+  /** B2: null when the class predates the column and had more than one skill. */
+  level: ClassLevel | null;
   startsAt: Date;
   durationMinutes: number;
   priceCredits: number;
@@ -40,6 +43,8 @@ export interface CreateClassRecord {
   teacherId: string;
   state: ClassState;
   title: string;
+  /** B2: the level the publish gate's approval implies. */
+  level: ClassLevel | null;
   startsAt: Date;
   durationMinutes: number;
   priceCredits: number;
@@ -48,6 +53,7 @@ export interface CreateClassRecord {
   skillIds: string[];
 }
 
+/** Fields of a class the Teacher may change (AC-017). `level` is deliberately absent (B2). */
 export interface ClassEdit {
   skillIds: string[];
   title: string;

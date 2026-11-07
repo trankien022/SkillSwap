@@ -19,6 +19,7 @@ describe('BookingHttpGateway', () => {
     },
     skillIds: ['e7b0a708-3011-4f16-9d32-2339c1b74737'],
     title: 'React Native & TypeORM chuyên sâu',
+    level: 'advanced' as const,
     description: 'Lớp học lập trình chuyên sâu React Native & TypeORM',
     startsAt: '2026-10-25T14:00:00.000Z',
     durationMinutes: 90,
