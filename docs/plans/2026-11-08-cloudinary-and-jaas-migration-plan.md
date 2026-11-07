@@ -190,3 +190,33 @@ Each phase is an independent commit and independently verifiable.
 3. No `api_secret` and no private key in any response body, log, or test fixture.
 4. Money invariants untouched (no float VND anywhere in this change).
 5. ADR-038 / ADR-039 land before the code that depends on them.
+
+---
+
+## 6. Execution record
+
+Landed on `feat/cloudinary-and-jaas`, branched from `origin/main` at `b69c00f`:
+
+| Phase | Commit | Contents |
+|---|---|---|
+| 0 | `ee10823` | ADR-038, ADR-039, this plan |
+| 1 | `a5d150f` | `documentUploadTargetSchema` gains `method` + `fields` |
+| 2 | `fb04d0d` | `CloudinaryDocumentStore` replaces the S3 adapter; config renamed |
+| 3 | `c44bb78` | web + mobile upload as signed multipart POST |
+| 4 | `57725c6` | `JaasRoomTokenIssuer` (RS256 + `kid`) replaces the HS256 issuer |
+| 5 | `d22523f` | tenant-qualified `roomName` / script base; `X-Jaas-Signature`; gateway public path |
+| 6 | `40a79a6` | compose, `.env.example`, e2e suites, C4 sources |
+
+**Verified without vendor credentials.** `pnpm verify` (lint, build, typecheck, 1,956 unit tests, arch rules) is
+green. The three rewritten e2e suites — `jaas-room-access`, `room-idle`, `room-idle-payment` — pass against a
+scratch database migrated from this branch, 18 tests. The Cloudinary suite self-skips.
+
+**Not verified.** No Cloudinary or JaaS account was available, so nothing here proves the vendors accept what we
+send. The pinned contracts come from their live documentation, and each was chosen because getting it wrong fails
+silently: `moderator` as a string, the tenant-prefixed `room`, the raw-body signature, `type=authenticated`,
+`raw` public ids keeping their extension. A first real call is the remaining acceptance step.
+
+**A note on the dev database.** Suites for other modules failed locally with `null value in column "title"` — a
+schema added by PR #97, which this branch deliberately excludes because it starts from `main`. Those failures are
+branch skew, not this change, which is why verification used a fresh database.
+

@@ -59,6 +59,11 @@ explicitly out of scope here.
    (AWS SigV4, `node:crypto`)**, so bytes go client→S3 directly — no new dependency and nothing
    sensitive passes through the API.
 
+   > **Superseded by [ADR-038](ADR-038-cloudinary-document-storage.md):** the provider is now
+   > Cloudinary and the target is a **signed multipart POST**, not a pre-signed PUT. The port, the
+   > validation rules, the `authenticated` access mode, and the "bytes never traverse the API" property
+   > are unchanged; only the adapter and the upload protocol differ.
+
 6. **Retention — keep (decision 3).** A verification row is retained as an audit record (who, when,
    why) — the decision trail AC-001/AC-012 require. A later increment may add pruning; the MVP does
    not delete.
