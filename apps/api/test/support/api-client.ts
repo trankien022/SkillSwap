@@ -35,7 +35,18 @@ export class ApiClient {
     method: string,
     path: string,
     body?: unknown,
-    options: { signature?: string; headers?: Record<string, string> } = {},
+    options: {
+      signature?: string;
+      headers?: Record<string, string>;
+      /**
+       * Sends these exact bytes instead of re-serialising `body`.
+       *
+       * A webhook whose authenticity is an HMAC over the received bytes (JaaS, ADR-039) cannot
+       * be exercised through a client that formats the JSON itself: signing one string and
+       * sending another would only ever prove that two serialisations happen to match.
+       */
+      rawBody?: string;
+    } = {},
     // Response bodies are untyped test fixtures; `any` keeps the specs readable.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<{ status: number; json: any; envelope: any; text: string }> {
@@ -43,10 +54,11 @@ export class ApiClient {
     if (options.signature !== undefined) {
       headers['x-signature'] = options.signature;
     }
+    const payload = options.rawBody ?? (body === undefined ? undefined : JSON.stringify(body));
     const response = await fetch(`${this.baseUrl}${path}`, {
       method,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: payload,
     });
     const text = await response.text();
     let parsed: unknown = null;

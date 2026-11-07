@@ -154,9 +154,9 @@ Admin revokes an approved verification (FR-019); the publish gate demotes the ac
 
 ### `POST /api/student-verifications/documents`
 
-**Request a pre-signed document upload target (FR-002)**
+**Request a signed document upload target (FR-002)**
 
-Request a pre-signed S3 upload target (FR-002). Upload the file to uploadUrl, then submit its documentId.
+Request a signed Cloudinary upload target (FR-002, ADR-038). POST the file as multipart form data to uploadUrl together with the returned fields, then submit its documentId.
 
 - Auth: 🔒 Bearer token required
 - Request body: `DocumentUploadRequestDto`
@@ -176,6 +176,8 @@ Request a pre-signed S3 upload target (FR-002). Upload the file to uploadUrl, th
 |---|---|---|---|
 | `documentId` | string | yes | min 1 chars |
 | `uploadUrl` | string | yes | min 1 chars |
+| `method` | enum | yes | one of `POST` |
+| `fields` | object | yes |  |
 | `objectKey` | string | yes | min 1 chars |
 | `expiresAt` | string | yes | date-time |
 

@@ -32,10 +32,18 @@ export interface JaasRoomTokenIssuerOptions {
 export function readJitsiPrivateKey(path: string): string {
   if (path.length === 0) {
     throw new Error(
-      'JITSI_PRIVATE_KEY_PATH is not set: hosted Jitsi (JaaS) cannot issue room tokens without the API private key (ADR-039)',
+      'JITSI_PRIVATE_KEY_PATH is not set: hosted Jitsi (JaaS) cannot issue room tokens without ' +
+        'the API private key (ADR-039). Run `pnpm keys:gen` for a local placeholder.',
     );
   }
-  return readFileSync(path, 'utf8');
+  try {
+    return readFileSync(path, 'utf8');
+  } catch {
+    throw new Error(
+      `JaaS private key not readable at ${path} — run "pnpm keys:gen" for a local placeholder, or ` +
+        'point JITSI_PRIVATE_KEY_PATH at the PEM from the 8x8 console (ADR-039)',
+    );
+  }
 }
 
 /**

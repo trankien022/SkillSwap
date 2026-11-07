@@ -162,14 +162,13 @@ export class ApiConfig {
 
     this.jitsiAppId = readString('JITSI_APP_ID', 'vpaas-magic-cookie-dev');
     this.jitsiKeyId = readString('JITSI_KEY_ID', 'dev');
-    // No default PEM: a private key must be supplied, never invented. An absent path makes the
-    // issuer fail at boot rather than mint tokens that are refused at the provider.
-    const jitsiKeyPath = readString('JITSI_PRIVATE_KEY_PATH', '');
-    this.jitsiPrivateKeyPath = jitsiKeyPath.length === 0
-      ? ''
-      : isAbsolute(jitsiKeyPath)
-        ? jitsiKeyPath
-        : resolve(process.cwd(), jitsiKeyPath);
+    // Mirrors JWT_PRIVATE_KEY_PATH's shape: a default location, not a default key. `pnpm keys:gen`
+    // writes a placeholder there for offline development; a real deployment replaces it with the
+    // PEM from the 8x8 console (ADR-039).
+    const jitsiKeyPath = readString('JITSI_PRIVATE_KEY_PATH', '../../.secrets/jaas-private.pem');
+    this.jitsiPrivateKeyPath = isAbsolute(jitsiKeyPath)
+      ? jitsiKeyPath
+      : resolve(process.cwd(), jitsiKeyPath);
     // The tenant is part of the origin: `https://${jitsiDomain}/${room}` then yields
     // `https://8x8.vc/<appId>/<room>`, which is the JaaS meeting URL (ADR-039 decision 3).
     this.jitsiDomain = readString('JITSI_DOMAIN', '8x8.vc');

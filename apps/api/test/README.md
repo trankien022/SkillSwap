@@ -48,17 +48,26 @@ this suite.
 - AC-024: a teacher no-show refunds the learner.
 - Idempotency: replaying a top-up callback credits exactly once.
 
-`jitsi.e2e-spec.ts`:
+`jaas-room-access.e2e-spec.ts`:
 
-- Jitsi advertises JWT auth (anonymous + auth domains).
-- The API issues a valid HS256 room token (correct `aud`/`iss`/`room`/
-  `context.user.moderator`, signature verifiable with the shared secret).
+- The API issues a tenant-scoped RS256 room token and returns a `url` naming the same
+  `<appId>/<room>` the token is scoped to (ADR-039). A mismatch opens a room in no tenant.
+- The token's signature verifies against the configured key; `moderator` is the string
+  `"true"`/`"false"` and a Learner is never a moderator.
+- Self-skips when `JITSI_APP_ID` / `JITSI_PRIVATE_KEY_PATH` are unset (`pnpm keys:gen` writes
+  a placeholder key).
 
-`s3-document.e2e-spec.ts`:
+`cloudinary-document.e2e-spec.ts`:
 
-- The API's pre-signed PUT (SigV4) is accepted by the real S3 service; the
-  object lands in the bucket and the document row is `attached` after submission.
-- Self-skips when no S3 endpoint is reachable (e.g. MinIO not started).
+- The API's signed multipart target is accepted by the real Cloudinary account, and the
+  document row is `attached` after submission.
+- Skips unless `CLOUDINARY_E2E=true` and real `CLOUDINARY_*` credentials are present, so an
+  ordinary `pnpm test:e2e` stays offline.
+
+`room-idle.e2e-spec.ts` / `room-idle-payment.e2e-spec.ts`:
+
+- Presence deliveries are signed the way JaaS does (`X-Jaas-Signature` over the raw body), so
+  the specs exercise the real verification path rather than a re-serialised approximation.
 
 ## Notes
 

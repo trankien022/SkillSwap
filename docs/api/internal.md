@@ -8,7 +8,7 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 
 ### `POST /api/internal/jitsi/presence`
 
-**Jitsi participant presence webhook (AC-035)**
+**JaaS participant presence webhook (AC-035)**
 
 - Auth: Public
 
@@ -16,4 +16,4 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 
 | Header | Required | Description |
 |---|---|---|
-| `x-jitsi-webhook-secret` | yes |  |
+| `x-jaas-signature` | yes |  |

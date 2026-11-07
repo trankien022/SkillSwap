@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import {
   CloudinaryDocumentStore,
   resourceTypeFor,
@@ -27,8 +28,7 @@ describe('uploadSignature (FR-002 / ADR-038)', () => {
     );
     // sha1('public_id=a1/d1&timestamp=1315060510&type=authenticatedsecret')
     expect(signature).toBe(
-      require('node:crypto')
-        .createHash('sha1')
+      createHash('sha1')
         .update('public_id=a1/d1&timestamp=1315060510&type=authenticatedsecret', 'utf8')
         .digest('hex'),
     );

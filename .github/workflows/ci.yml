@@ -61,15 +61,21 @@ jobs:
           --health-cmd "rabbitmq-diagnostics -q ping"
           --health-interval 5s --health-timeout 5s --health-retries 10
     env:
-      JITSI_APP_ID: skillswap
-      JITSI_APP_SECRET: skillswap_jitsi_dev_secret
-      # The Jitsi spec self-skips because no Jitsi container is published here.
-      JITSI_WEB_URL: http://localhost:8000
-      # The presence webhook refuses every request when its secret is empty (ADR-020
-      # Amendment A -- a misconfiguration must not let a stranger close classes). The
-      # workflow copies `.env.example`, where the secret is deliberately blank, so without
-      # this the room-idle suites get 401s and fail. Exported here so the API process AND
-      # the E2E specs (which read process.env to sign their requests) agree on one value.
+      # Hosted Jitsi (ADR-039). CI has no JaaS account, so the token issuer only needs
+      # *a* key to construct; the Jitsi spec self-skips because there is no reachable
+      # deployment and the presence suites sign their own webhook bodies.
+      JITSI_APP_ID: vpaas-magic-cookie-ci
+      JITSI_KEY_ID: ci
+      JITSI_DOMAIN: 8x8.vc/vpaas-magic-cookie-ci
+      # `pnpm keys:gen` writes a placeholder PEM here, enough for the issuer to sign. Real
+      # tokens are only accepted when signed by a key from the JaaS console, so CI never
+      # pretends to have one -- it just avoids booting without a key at all.
+      JITSI_PRIVATE_KEY_PATH: ../../.secrets/jaas-private.pem
+      # The presence webhook refuses every request when its secret is empty (ADR-039 --
+      # a misconfiguration must not let a stranger close classes). The workflow copies
+      # `.env.example`, where the secret is deliberately blank, so without this the
+      # room-idle suites get 401s and fail. Exported here so the API process AND the E2E
+      # specs (which read process.env to sign their requests) agree on one value.
       JITSI_WEBHOOK_SECRET: skillswap_jitsi_webhook_dev_secret
       # Cross-module projections are event-fed; drain the outbox promptly so a
       # loaded runner does not sit on the default 2s relay tick between a write

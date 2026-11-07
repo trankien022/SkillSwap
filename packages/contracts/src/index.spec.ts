@@ -762,11 +762,30 @@ describe('student verification contracts', () => {
     ).toThrow();
     const target = {
       documentId: 'd1',
-      uploadUrl: 'https://s3.local/bucket/k?sig=x',
+      // ADR-038: Cloudinary has no pre-signed URL, so the target is an endpoint plus the signed
+      // form fields the client must re-post verbatim.
+      uploadUrl: 'https://api.cloudinary.com/v1_1/skillswap/raw/upload',
+      method: 'POST',
+      fields: {
+        timestamp: '1760000000',
+        public_id: 'a1/d1.pdf',
+        type: 'authenticated',
+        api_key: 'key',
+        signature: 'abc123',
+      },
       objectKey: 'a1/d1.pdf',
       expiresAt: '2026-10-10T00:15:00.000Z',
     };
     expect(documentUploadTargetSchema.parse(target)).toEqual(target);
+
+    // The signature is the credential, so a target without the fields to send is useless.
+    expect(() =>
+      documentUploadTargetSchema.parse({ ...target, fields: undefined }),
+    ).toThrow();
+    // A raw PUT target belongs to the retired S3 adapter and must not parse as current.
+    expect(() =>
+      documentUploadTargetSchema.parse({ ...target, method: 'PUT', fields: undefined }),
+    ).toThrow();
   });
 
   it('requires a reason to reject', () => {

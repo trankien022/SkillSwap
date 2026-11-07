@@ -12,8 +12,8 @@ workspace "SkillSwap" "Current architecture of the student learning marketplace"
             backendApi = container "Backend API" "Runs account, verification, class and wallet rules in one application." "NestJS / TypeScript"
             database = container "Business database" "Stores records in seven separately owned business schemas." "PostgreSQL / TypeORM" "Database"
             messageBroker = container "Business message broker" "Delivers saved business changes for background processing." "RabbitMQ" "Queue"
-            storage = container "Private document store" "Stores student proof uploaded through temporary private links." "MinIO / S3-compatible API" "Database"
         }
+        cloudinary = softwareSystem "Cloudinary" "Managed media service that stores student proof; the backend signs each upload so bytes never pass through it." "External"
         jitsi = softwareSystem "Online classroom" "Hosts live lessons for users who are learning or teaching." "External"
         paymentGateway = softwareSystem "SePay Payment Gateway" "Processes cash top-ups through a hosted checkout page and reports the outcome by IPN. Payout is not implemented." "External"
         user -> skillSwap "Learns, books classes and may publish or teach when eligible"
@@ -25,7 +25,7 @@ workspace "SkillSwap" "Current architecture of the student learning marketplace"
         accountHolder -> webApp "Learns, teaches and manages the wallet" "Browser"
         accountHolder -> mobileApp "Uses the same learner and teacher screens" "Native UI"
         accountHolder -> gateway "Requests services allowed for their account" "HTTP / JSON (local development)"
-        accountHolder -> storage "Uploads owned student proof using a temporary link" "HTTP PUT (local development)"
+        accountHolder -> cloudinary "Uploads owned student proof with a signed upload" "HTTPS multipart (ADR-038)"
         accountHolder -> jitsi "Joins a booked lesson with a private invitation" "HTTPS / WebRTC"
         webApp -> gateway "Sends every feature request" "HTTP / JSON (local development)"
         gateway -> backendApi "Forwards authenticated requests" "HTTP / JSON"
@@ -34,8 +34,8 @@ workspace "SkillSwap" "Current architecture of the student learning marketplace"
         backendApi -> database "Reads and saves owned business records" "PostgreSQL protocol / TypeORM"
         backendApi -> messageBroker "Publishes saved business changes" "AMQP"
         messageBroker -> backendApi "Delivers changes to background handlers" "AMQP"
-        // Classroom invitations and upload links are signed locally.
-        // There is no backend network call to Jitsi or MinIO in these flows.
+        // Classroom invitations and upload signatures are produced locally.
+        // There is no backend network call to JaaS or Cloudinary in these flows.
         deploymentEnvironment "Development" {
             deploymentNode "Developer machine" "Local development environment" "macOS / Docker" {
                 deploymentNode "Application processes" "Started on the host" "Node.js / pnpm" {
@@ -46,10 +46,6 @@ workspace "SkillSwap" "Current architecture of the student learning marketplace"
                 deploymentNode "Docker services" "Local supporting services" "Docker Compose" {
                     containerInstance database
                     containerInstance messageBroker
-                    containerInstance storage
-                    deploymentNode "Jitsi services" "Web, signaling and video services" "Jitsi / Docker" {
-                        softwareSystemInstance jitsi
-                    }
                 }
             }
         }
@@ -60,7 +56,7 @@ workspace "SkillSwap" "Current architecture of the student learning marketplace"
             autoLayout lr
         }
         container skillSwap "Containers" "C4-L1 | Containers | SkillSwap | Current implementation" {
-            include accountHolder webApp mobileApp gateway backendApi database messageBroker storage jitsi paymentGateway
+            include accountHolder webApp mobileApp gateway backendApi database messageBroker cloudinary jitsi paymentGateway
             autoLayout lr
         }
         deployment skillSwap "Development" "Deployment" "Deployment | SkillSwap | Local development only" {

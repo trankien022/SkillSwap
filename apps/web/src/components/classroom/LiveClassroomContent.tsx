@@ -15,7 +15,6 @@ import {
 } from '../../lib/classroom/room-access-client';
 import {
   loadJitsiExternalApi,
-  jitsiDomainFromUrl,
   jitsiHostFromUrl,
   jitsiProtocolFromUrl,
   jitsiRoomNameFromUrl,

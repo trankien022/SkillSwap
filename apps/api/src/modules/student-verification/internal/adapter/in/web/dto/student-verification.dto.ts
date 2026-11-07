@@ -10,10 +10,10 @@ import {
   verificationRevocationSchema,
 } from '@skillswap/contracts';
 
-/** FR-002: request a pre-signed upload target. Body for POST /student-verifications/documents. */
+/** FR-002: request a signed upload target. Body for POST /student-verifications/documents. */
 export class DocumentUploadRequestDto extends createZodDto(documentUploadRequestSchema) {}
 
-/** FR-002: the pre-signed upload target returned to the client. */
+/** FR-002: the signed upload target returned to the client (ADR-038: endpoint + signed fields). */
 export class DocumentUploadTargetDto extends createZodDto(documentUploadTargetSchema) {}
 
 /** FR-002: submit a student verification. Body for POST /student-verifications. */

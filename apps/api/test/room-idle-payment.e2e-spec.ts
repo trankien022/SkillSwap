@@ -1,9 +1,19 @@
+import { ApiConfig } from '../src/shared/config/api-config';
 import { startHarness, type Harness } from './harness';
 import { ApiClient, accountIdFromToken, waitFor } from './support/api-client';
 import { resetDatabase, seedTeacherTrust, walletRow } from './support/db';
+import { signJaasWebhook } from './support/jaas-webhook';
 import { ClassCompletionSweeper } from '../src/modules/live-class/internal/adapter/in/scheduler/class-completion.sweeper';
 
 jest.setTimeout(180_000);
+
+/**
+ * Read from the **running process's resolved config**, not `process.env`.
+ *
+ * `ApiConfig` supplies defaults, so a spec that reads `process.env` can see `''` while the API
+ * boots perfectly well with a default — and then sign deliveries the server refuses (ADR-039).
+ */
+let JITSI_APP_ID = '';
 
 /** SePay IPN body (ADR-033), as the live gateway delivers it. */
 function sepayIpn(invoiceNumber: string, amountVnd: number): Record<string, unknown> {
@@ -53,14 +63,22 @@ describe('E2E: an idle room completes the class and pays the Teacher (AC-035)', 
   beforeAll(async () => {
     harness = await startHarness();
     api = new ApiClient(harness.baseUrl);
-    secret = process.env.JITSI_WEBHOOK_SECRET ?? '';
+    const config = harness.resolve<ApiConfig>(ApiConfig);
+    secret = config.jitsiWebhookSecret;
+    JITSI_APP_ID = config.jitsiAppId;
     // Same rule as room-idle.e2e-spec.ts: no guessed secret. An empty one is a configuration
     // error, and saying so beats nine confusing 401s.
     if (secret === '') {
       throw new Error(
         'JITSI_WEBHOOK_SECRET is not set. The presence webhook refuses every request when its ' +
-          'secret is empty (ADR-020 Amendment A). Set it in the environment (CI does this in ' +
+          'secret is empty (ADR-039). Set it in the environment (CI does this in ' +
           '.github/workflows/ci.yml) or in the repo-root .env.',
+      );
+    }
+    if (JITSI_APP_ID === '') {
+      throw new Error(
+        'JITSI_APP_ID is not set. JaaS reports presence as `<appId>/<room>`, so these specs must ' +
+          'sign for the same tenant the API signs tokens for (ADR-039).',
       );
     }
     await resetDatabase(harness);
@@ -90,17 +108,26 @@ describe('E2E: an idle room completes the class and pays the Teacher (AC-035)', 
     return accountIdFromToken(res.json.accessToken);
   }
 
+  /**
+   * Posts a presence delivery, signing it the way JaaS does.
+   *
+   * `secretOverride` is how the negative cases are expressed: `undefined` signs with the real
+   * secret, `null` omits the header entirely, and any other string signs with a wrong secret —
+   * which is a different failure (a present-but-invalid signature) from a missing one.
+   */
   async function postPresence(
-    body: unknown,
-    headerSecret: string | null = secret,
+    body: Record<string, unknown>,
+    secretOverride?: string | null,
   ): Promise<{ status: number; body: Record<string, unknown> }> {
+    const signed =
+      secretOverride === null
+        ? { body: JSON.stringify(body), headers: { 'content-type': 'application/json' } }
+        : signJaasWebhook(body, secretOverride ?? secret);
+
     const response = await fetch(`${harness.baseUrl}/api/internal/jitsi/presence`, {
       method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        ...(headerSecret === null ? {} : { 'x-jitsi-webhook-secret': headerSecret }),
-      },
-      body: typeof body === 'string' ? body : JSON.stringify(body),
+      headers: signed.headers,
+      body: signed.body,
     });
     const text = await response.text();
     let parsed: Record<string, unknown> = {};
@@ -119,12 +146,14 @@ describe('E2E: an idle room completes the class and pays the Teacher (AC-035)', 
     accountId: string,
     event: 'joined' | 'left' = 'joined',
   ): Record<string, unknown> {
-    // The shape Jitsi's `event_sync` module posts (see presenceWebhookSchema).
+    // The payload JaaS posts (see jaasWebhookSchema): a tenant-qualified `fqn` and the issued
+    // JWT's `context.user.id` as `data.id`.
     return {
-      event_name: event === 'joined' ? 'participant-joined' : 'participant-left',
-      room,
-      participant: { id: accountId },
+      eventType: event === 'joined' ? 'PARTICIPANT_JOINED' : 'PARTICIPANT_LEFT',
+      appId: JITSI_APP_ID,
+      fqn: `${JITSI_APP_ID}/${room}`,
       timestamp: Date.now(),
+      data: { id: accountId, participantId: `p-${accountId}` },
     };
   }
 

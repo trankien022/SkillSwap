@@ -91,10 +91,10 @@ describeCloudinary('E2E: student verification document upload (real Cloudinary)'
     expect(uploadBody.public_id).toBe(objectKey);
     expect(uploadBody.type).toBe('authenticated');
 
-    // The config the harness booted with is the one that signed the request.
-    expect(harness.resolve<ApiConfig>(ApiConfig).cloudinaryCloudName).toBe(
-      process.env.CLOUDINARY_CLOUD_NAME,
-    );
+    // The config the harness booted with must be the one that signed the request — otherwise the
+    // spec would be validating a signature against a different account than the one uploaded to.
+    const config = harness.resolve<ApiConfig>(ApiConfig);
+    expect(config.cloudinaryCloudName).toBe(process.env.CLOUDINARY_CLOUD_NAME);
 
     const submitted = await api.post('/api/student-verifications', {
       schoolName: 'FPT University',

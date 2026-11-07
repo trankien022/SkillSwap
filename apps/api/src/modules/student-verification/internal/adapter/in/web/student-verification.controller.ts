@@ -66,7 +66,7 @@ export class StudentVerificationController {
   ) {}
 
   @Post('documents')
-  @ApiOperation({ summary: 'Request a pre-signed document upload target (FR-002)' })
+  @ApiOperation({ summary: 'Request a signed document upload target (FR-002)' })
   @ApiOkResponse({ type: DocumentUploadTargetDto, description: 'Pre-signed PUT URL plus the document id to submit' })
   requestDocumentUpload(
     @Body() body: DocumentUploadRequestDto,
