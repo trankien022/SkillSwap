@@ -144,6 +144,17 @@ async function resetDemo(ctx) {
   // sessions; evidence/audit cascade from profile_skills; the rest are keyed by
   // the demo account ids. Classes/bookings/verifications have no natural key, so
   // the seed always clears its own rows before re-inserting.
+  //
+  // Order matters where a child FK is NO ACTION: ratings reference both bookings
+  // and classes, so they must go first or the booking delete fails outright.
+  await ctx.classDs.query(`DELETE FROM "live_class"."ratings"`);
+  // No FK from these four to bookings/classes (they carry denormalised ids), so
+  // they need an explicit clear or the demo accumulates orphans. class_skills and
+  // class_reminders cascade from classes, listed here for symmetry.
+  await ctx.classDs.query(`DELETE FROM "live_class"."chat_messages"`);
+  await ctx.classDs.query(`DELETE FROM "live_class"."class_presence"`);
+  await ctx.classDs.query(`DELETE FROM "live_class"."room_access_incidents"`);
+  await ctx.classDs.query(`DELETE FROM "live_class"."class_reminders"`);
   await ctx.classDs.query(`DELETE FROM "live_class"."bookings"`);
   await ctx.classDs.query(`DELETE FROM "live_class"."classes"`);
   await ctx.classDs.query(`DELETE FROM "live_class"."teacher_skill_approval"`);
@@ -162,6 +173,23 @@ async function resetDemo(ctx) {
   await ctx.skillDs.query(`DELETE FROM "skill_verification"."skills"`);
   await ctx.accountDs.query(`DELETE FROM "account_profile"."account_verification_status"`);
   await ctx.accountDs.query(`DELETE FROM "account_profile"."sessions"`);
+  // Notification rows carry account ids but no FK to accounts (ADR-014: no
+  // cross-schema and no intra-run coupling to account deletion), so nothing
+  // cascades them. Clear the demo accounts' inbox and devices explicitly, and
+  // sweep rows whose account is already gone — no one can read those, and
+  // without this every previous run leaves a pile of unreachable notifications.
+  await ctx.accountDs.query(
+    `DELETE FROM "account_profile"."inbox_notifications" n
+      WHERE n."account_id" IN (SELECT "id" FROM "account_profile"."accounts" WHERE lower("email") LIKE $1)
+         OR NOT EXISTS (SELECT 1 FROM "account_profile"."accounts" a WHERE a."id" = n."account_id")`,
+    [`%@${DEMO_DOMAIN}`],
+  );
+  await ctx.accountDs.query(
+    `DELETE FROM "account_profile"."notification_devices" d
+      WHERE d."account_id" IN (SELECT "id" FROM "account_profile"."accounts" WHERE lower("email") LIKE $1)
+         OR NOT EXISTS (SELECT 1 FROM "account_profile"."accounts" a WHERE a."id" = d."account_id")`,
+    [`%@${DEMO_DOMAIN}`],
+  );
   await ctx.accountDs.query(
     `DELETE FROM "account_profile"."accounts" WHERE lower("email") LIKE $1`,
     [`%@${DEMO_DOMAIN}`],
