@@ -272,8 +272,12 @@ const systemClock: Clock = { now: () => new Date() };
     },
     {
       provide: RATING_REPOSITORY,
-      useFactory: (registry: ModuleDataSourceRegistry): RatingRepository => new SqlRatingRepository(registry, MODULE_NAME),
-      inject: [ModuleDataSourceRegistry],
+      useFactory: (
+        registry: ModuleDataSourceRegistry,
+        profiles: PublicProfileReader,
+      ): RatingRepository =>
+        new SqlRatingRepository(registry, MODULE_NAME, profiles),
+      inject: [ModuleDataSourceRegistry, PUBLIC_PROFILE_READER],
     },
     {
       provide: SUBMIT_RATING,
@@ -522,15 +526,23 @@ const systemClock: Clock = { now: () => new Date() };
         classListReader: ClassListReader,
         publicTeacherReader: PublicTeacherReader,
         accountTrustReader: AccountTrustReader,
+        ratingRepository: RatingRepository,
         clock: Clock,
       ): ListClassesPort =>
         new ListClassesQueryHandler(
           classListReader,
           publicTeacherReader,
           accountTrustReader,
+          ratingRepository,
           clock,
         ),
-      inject: [CLASS_LIST_READER, PUBLIC_TEACHER_READER, ACCOUNT_TRUST_READER, CLOCK],
+      inject: [
+        CLASS_LIST_READER,
+        PUBLIC_TEACHER_READER,
+        ACCOUNT_TRUST_READER,
+        RATING_REPOSITORY,
+        CLOCK,
+      ],
     },
     {
       provide: CLASS_DETAIL_READER,
@@ -551,6 +563,7 @@ const systemClock: Clock = { now: () => new Date() };
         publicTeacherReader: PublicTeacherReader,
         classSkillReader: ClassSkillReader,
         accountTrustReader: AccountTrustReader,
+        ratingRepository: RatingRepository,
         clock: Clock,
       ): GetClassDetailPort =>
         new GetClassDetailQueryHandler(
@@ -558,6 +571,7 @@ const systemClock: Clock = { now: () => new Date() };
           publicTeacherReader,
           classSkillReader,
           accountTrustReader,
+          ratingRepository,
           clock,
         ),
       inject: [
@@ -565,6 +579,7 @@ const systemClock: Clock = { now: () => new Date() };
         PUBLIC_TEACHER_READER,
         CLASS_SKILL_READER,
         ACCOUNT_TRUST_READER,
+        RATING_REPOSITORY,
         CLOCK,
       ],
     },

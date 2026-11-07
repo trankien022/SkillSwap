@@ -61,7 +61,8 @@ export type ClassDetailSkillView = z.infer<typeof classDetailSkillSchema>;
 /**
  * Route 14 / FR-005, FR-006, FR-007: detailed class view.
  * Includes public teacher summary, seat availability, canBook calculation,
- * provisional rating fields, and optional own-booking status for the authenticated caller.
+ * the rating aggregate and the newest reviews, plus optional own-booking status for the
+ * authenticated caller.
  */
 export const classDetailViewSchema = z.object({
   id: z.string().min(1),

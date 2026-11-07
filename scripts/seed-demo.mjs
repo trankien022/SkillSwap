@@ -543,7 +543,10 @@ try {
     const open = spec.startInH > 0 && spec.state !== 'completed';
     for (let s = 0; s < seats; s += 1) {
       const learnerId = learnerIds[(ci + s) % learnerIds.length];
-      const state = spec.state === 'completed' ? 'completed' : !open ? 'cancelled' : s % 3 === 0 ? 'pending' : 'confirmed';
+      // A booking stays `confirmed` when its class completes — nothing transitions a booking to
+      // `completed`, and both the rating gate and `ratingEligible` read `confirmed` + a completed
+      // class. Seeding `completed` here made the class impossible to rate in the demo.
+      const state = spec.state === 'completed' ? 'confirmed' : !open ? 'cancelled' : s % 3 === 0 ? 'pending' : 'confirmed';
       await insertBooking(ctx, {
         classId,
         learnerId,

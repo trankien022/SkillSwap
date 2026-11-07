@@ -13,6 +13,7 @@ import type {
 import type { Clock } from '../port/out/clock';
 import type { PublicTeacherReader } from '../port/out/public-teacher-reader';
 import type { AccountTrustReader } from '../port/out/account-trust';
+import type { RatingAggregate, RatingRepository } from '../port/out/rating-repository';
 
 const MARKETPLACE_LEAD_TIME_MS = 24 * 60 * 60 * 1000;
 const NEUTRAL_TEACHER_NAME = 'SkillSwap';
@@ -35,6 +36,7 @@ export class ListClassesQueryHandler implements ListClassesPort {
     private readonly classListReader: ClassListReader,
     private readonly publicTeacherReader: PublicTeacherReader,
     private readonly accountTrustReader: AccountTrustReader,
+    private readonly ratingRepository: RatingRepository,
     private readonly clock: Clock,
   ) {}
 
@@ -134,9 +136,12 @@ export class ListClassesQueryHandler implements ListClassesPort {
     }
 
     const uniqueTeacherIds = Array.from(new Set(records.map((r) => r.teacherId)));
-    const [profiles, trustByTeacher] = await Promise.all([
+    // B5: one aggregate query for the whole page, keyed by class id. Reading per row would be an
+    // N+1 that grows with the page size.
+    const [profiles, trustByTeacher, ratingByClass] = await Promise.all([
       this.publicTeacherReader.readMany(uniqueTeacherIds),
       this.readTrustOncePerTeacher(uniqueTeacherIds),
+      this.ratingRepository.readAggregate(records.map((r) => r.id)),
     ]);
     const nameMap = new Map<string, string>();
     for (const profile of profiles) {
@@ -148,6 +153,7 @@ export class ListClassesQueryHandler implements ListClassesPort {
     return records.map((record) => {
       const teacherDisplayName = nameMap.get(record.teacherId) || NEUTRAL_TEACHER_NAME;
       const trust = trustByTeacher.get(record.teacherId);
+      const rating: RatingAggregate | undefined = ratingByClass.get(record.id);
       return {
         id: record.id,
         teacherId: record.teacherId,
@@ -167,8 +173,8 @@ export class ListClassesQueryHandler implements ListClassesPort {
         confirmedBookingsCount: record.confirmedBookingsCount,
         availableSeats: record.availableSeats,
         state: record.state,
-        averageRating: null,
-        ratingsCount: 0,
+        averageRating: rating?.average ?? null,
+        ratingsCount: rating?.count ?? 0,
       };
     });
   }

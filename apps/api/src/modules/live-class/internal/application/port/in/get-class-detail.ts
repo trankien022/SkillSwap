@@ -31,6 +31,11 @@ export interface GetClassDetailQuery {
 export interface ClassDetailTeacherDto {
   readonly id: string;
   readonly displayName: string;
+  /**
+   * B5: the rating aggregate for **this class**, rounded to 2 decimals; `null` when nobody has
+   * rated it. The contract nests the pair under `teacher`, so the class list and the detail page
+   * must report the same numbers for the same class.
+   */
   readonly averageRating: number | null;
   readonly ratingsCount: number;
   /** B4: whether the teacher is a currently verified student. */
@@ -83,6 +88,9 @@ export interface ClassDetailDto {
   readonly availableSeats: number;
   readonly state: ClassLifecycleStateDto;
   readonly canBook: boolean;
+  /**
+   * B5: the newest ratings learners wrote for this class, most recent first.
+   */
   readonly recentRatings: readonly ClassDetailRatingDto[];
   readonly ownBooking: OwnBookingSummaryDto | null;
 }

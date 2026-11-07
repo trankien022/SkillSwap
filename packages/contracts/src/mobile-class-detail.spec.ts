@@ -43,7 +43,7 @@ describe('mobile-class-detail contracts', () => {
   });
 
   describe('classDetailTeacherSchema', () => {
-    it('validates teacher summary with provisional null rating', () => {
+    it('validates a teacher summary with no ratings yet', () => {
       const teacher = {
         id: 'teacher-uuid-1',
         displayName: 'Dr. Jane Smith',

@@ -182,7 +182,7 @@ export type ListClassesQueryInput = z.infer<typeof listClassesQuerySchema>;
 
 /**
  * Route 13: class item in marketplace or own teaching list.
- * Includes seats count, confirmed count, provisional rating fields (rating table not yet implemented).
+ * Includes seats count, confirmed count, and the real rating aggregate read back from `ratings`.
  */
 export const classListItemSchema = z.object({
   id: z.string().min(1),

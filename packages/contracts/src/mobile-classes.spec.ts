@@ -182,7 +182,7 @@ describe('mobile-classes contracts (portable cursor codec & schemas)', () => {
   });
 
   describe('classListItemSchema & listClassesPageSchema', () => {
-    it('validates class item view with provisional ratings', () => {
+    it('validates class item view with a real rating aggregate', () => {
       const item = {
         id: 'cls-1',
         teacherId: 'teacher-1',

@@ -7,12 +7,14 @@ import type {
 import type { Clock } from '../port/out/clock';
 import type { PublicTeacherReader } from '../port/out/public-teacher-reader';
 import type { AccountTrustReader } from '../port/out/account-trust';
+import type { RatingRepository } from '../port/out/rating-repository';
 
 describe('ListClassesQueryHandler', () => {
   const fixedNow = new Date('2026-10-12T12:00:00.000Z');
   let mockClassListReader: jest.Mocked<ClassListReader>;
   let mockPublicTeacherReader: jest.Mocked<PublicTeacherReader>;
   let mockAccountTrustReader: jest.Mocked<AccountTrustReader>;
+  let mockRatingRepository: jest.Mocked<RatingRepository>;
   let mockClock: Clock;
   let handler: ListClassesQueryHandler;
 
@@ -31,6 +33,12 @@ describe('ListClassesQueryHandler', () => {
         approvedLevel: () => null,
       })),
     };
+    // B5: a page of unrated classes — the default every pre-existing test expects.
+    mockRatingRepository = {
+      createForEligibleBooking: jest.fn(),
+      readAggregate: jest.fn().mockResolvedValue(new Map()),
+      readRecent: jest.fn().mockResolvedValue([]),
+    };
     mockClock = {
       now: () => fixedNow,
     };
@@ -38,6 +46,7 @@ describe('ListClassesQueryHandler', () => {
       mockClassListReader,
       mockPublicTeacherReader,
       mockAccountTrustReader,
+      mockRatingRepository,
       mockClock,
     );
   });
@@ -170,6 +179,81 @@ describe('ListClassesQueryHandler', () => {
       expect(result.items[1].averageRating).toBeNull();
       expect(result.items[1].ratingsCount).toBe(0);
       expect(result.nextCursor).toEqual(['2026-10-16T10:00:00.000Z', 'cls-2']);
+    });
+
+    it('reads the aggregate once for the whole page and puts each class its own value (B5)', async () => {
+      mockClassListReader.findClasses.mockResolvedValueOnce({
+        items: [
+          {
+            id: 'cls-1',
+            teacherId: 'teacher-a',
+            skillIds: ['sk-1'],
+            title: 'Math 101',
+            level: 'beginner',
+            format: 'group',
+            description: 'Math 101',
+            startsAt: new Date('2026-10-15T10:00:00.000Z'),
+            durationMinutes: 60,
+            priceCredits: 100,
+            capacity: 10,
+            confirmedBookingsCount: 2,
+            availableSeats: 8,
+            state: 'published',
+          },
+          {
+            id: 'cls-2',
+            teacherId: 'teacher-b',
+            skillIds: ['sk-2'],
+            title: 'Physics 101',
+            level: 'advanced',
+            format: 'group',
+            description: 'Physics 101',
+            startsAt: new Date('2026-10-16T10:00:00.000Z'),
+            durationMinutes: 90,
+            priceCredits: 150,
+            capacity: 5,
+            confirmedBookingsCount: 5,
+            availableSeats: 0,
+            state: 'full',
+          },
+          {
+            id: 'cls-3',
+            teacherId: 'teacher-c',
+            skillIds: ['sk-3'],
+            title: 'Chemistry 101',
+            level: 'intermediate',
+            format: 'one-on-one',
+            description: 'Chemistry 101',
+            startsAt: new Date('2026-10-17T10:00:00.000Z'),
+            durationMinutes: 60,
+            priceCredits: 90,
+            capacity: 1,
+            confirmedBookingsCount: 0,
+            availableSeats: 1,
+            state: 'published',
+          },
+        ],
+        nextCursor: null,
+      });
+      mockRatingRepository.readAggregate.mockResolvedValueOnce(
+        new Map([
+          ['cls-1', { average: 4, count: 3 }],
+          ['cls-2', { average: 4.5, count: 2 }],
+        ]),
+      );
+
+      const result = await handler.execute({ callerId: 'learner-1' });
+
+      // N+1 guard: a page of three classes is one aggregate query, not three.
+      expect(mockRatingRepository.readAggregate).toHaveBeenCalledTimes(1);
+      expect(mockRatingRepository.readAggregate).toHaveBeenCalledWith(['cls-1', 'cls-2', 'cls-3']);
+      expect(result.items[0].averageRating).toBe(4);
+      expect(result.items[0].ratingsCount).toBe(3);
+      expect(result.items[1].averageRating).toBe(4.5);
+      expect(result.items[1].ratingsCount).toBe(2);
+      // A class nobody rated is absent from the map: null mean, zero count, not 0 stars.
+      expect(result.items[2].averageRating).toBeNull();
+      expect(result.items[2].ratingsCount).toBe(0);
     });
 
     it('reads the trust projection once per teacher and puts it on every item (B4)', async () => {

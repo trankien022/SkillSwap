@@ -51,8 +51,9 @@ export interface ClassListItemDto {
   readonly confirmedBookingsCount: number;
   readonly availableSeats: number;
   readonly state: ClassLifecycleStateDto;
-  readonly averageRating: null;
-  readonly ratingsCount: 0;
+  /** B5: the teacher's mean rating, rounded to 2 decimals; null when the class has none. */
+  readonly averageRating: number | null;
+  readonly ratingsCount: number;
 }
 
 export interface ListClassesPageDto {
