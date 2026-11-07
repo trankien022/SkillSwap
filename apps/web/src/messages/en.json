@@ -233,7 +233,7 @@
       "format": {
         "title": "Class format",
         "oneOnOne": "1-1 mentoring",
-        "group": "Small group (2 - 4 learners)"
+        "group": "Group class"
       },
       "time": {
         "title": "Start time",
@@ -312,7 +312,7 @@
     "hero": {
       "format": {
         "oneOnOne": "1-1 mentoring",
-        "group": "Group class 2-4"
+        "group": "Group class"
       },
       "levelBadge": "Advanced level",
       "security": "End-to-end encryption",

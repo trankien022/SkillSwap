@@ -19,6 +19,8 @@ export interface ClassResource {
   title: string;
   /** B2: the level the class is taught at; null only for rows recorded before the column. */
   level: 'beginner' | 'intermediate' | 'advanced' | 'expert' | null;
+  /** B3: `one-on-one` for capacity 1, otherwise `group`. */
+  format: 'one-on-one' | 'group';
   startsAt: string;
   durationMinutes: number;
   priceCredits: number;

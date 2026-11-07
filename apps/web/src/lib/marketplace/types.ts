@@ -14,7 +14,7 @@ import type { ClassView, OwnBookingSummaryView } from '@skillswap/contracts';
  * swapped for a real HTTP gateway later without changing UI components.
  */
 
-export type ClassFormat = 'one-on-one' | 'group-2-4';
+export type ClassFormat = 'one-on-one' | 'group';
 
 export type SkillCategory =
   | 'language'
@@ -91,7 +91,7 @@ export interface MarketplaceQuery {
 export const DEFAULT_QUERY: MarketplaceQuery = {
   university: 'all',
   category: 'all',
-  formats: ['one-on-one', 'group-2-4'],
+  formats: ['one-on-one', 'group'],
   timeFilter: 'all-valid',
   sort: 'nearest',
   page: 1,

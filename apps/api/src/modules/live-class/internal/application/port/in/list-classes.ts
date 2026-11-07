@@ -11,8 +11,9 @@ export const CLASS_LIFECYCLE_STATES = [
 export type ClassLifecycleStateDto = (typeof CLASS_LIFECYCLE_STATES)[number];
 
 /** B2: the level vocabulary, mirrored from the shared contract so a client can switch on it. */
-export const CLASS_LEVELS = ['beginner', 'intermediate', 'advanced', 'expert'] as const;
-export type ClassLevelDto = (typeof CLASS_LEVELS)[number];
+import type { ClassFormatDto, ClassLevelDto } from './class-facts';
+export { CLASS_LEVELS, CLASS_FORMATS } from './class-facts';
+export type { ClassLevelDto, ClassFormatDto } from './class-facts';
 
 export type ClassCursorTuple = readonly [startsAtISO: string, id: string];
 
@@ -36,6 +37,8 @@ export interface ClassListItemDto {
   readonly title: string;
   /** B2: the level the class is taught at; null when it was never recorded. */
   readonly level: ClassLevelDto | null;
+  /** B3: `one-on-one` for capacity 1, otherwise `group`. */
+  readonly format: ClassFormatDto;
   readonly description: string;
   readonly startsAt: string;
   readonly durationMinutes: number;

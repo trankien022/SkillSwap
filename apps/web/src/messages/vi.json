@@ -233,7 +233,7 @@
       "format": {
         "title": "Hình thức lớp học",
         "oneOnOne": "1-1 Mentoring chuyên sâu",
-        "group": "Lớp nhóm nhỏ (2 - 4 sinh viên)"
+        "group": "Lớp nhóm"
       },
       "time": {
         "title": "Thời gian bắt đầu",
@@ -312,7 +312,7 @@
     "hero": {
       "format": {
         "oneOnOne": "1-1 Mentoring",
-        "group": "Lớp nhóm 2-4"
+        "group": "Lớp nhóm"
       },
       "levelBadge": "Trình độ nâng cao",
       "security": "Bảo mật E2EE",

@@ -34,6 +34,21 @@ export function isClassLevel(value: string): value is ClassLevel {
   return SKILL_LEVELS.includes(value as ClassLevel);
 }
 
+/**
+ * B3: how many learners the class serves — one, or a group.
+ *
+ * Capacity 1 means one-on-one; anything larger is a group (OQ-007, resolved). The API used to
+ * omit this entirely, so the web derived it locally and labelled every group class "group 2–4" —
+ * a range the SRS never promised, printed on 10-seat classes. One rule here keeps the list and the
+ * detail page from drifting apart, which is exactly how the wrong label survived.
+ */
+export const CLASS_FORMATS = ['one-on-one', 'group'] as const;
+export type ClassFormat = (typeof CLASS_FORMATS)[number];
+
+export function classFormatOf(capacity: number): ClassFormat {
+  return capacity <= 1 ? 'one-on-one' : 'group';
+}
+
 
 /** Class lifecycle states (SkillSwap-SRS.md §3.2.6 state diagram). */
 export const CLASS_STATES = [

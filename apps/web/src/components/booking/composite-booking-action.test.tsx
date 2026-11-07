@@ -40,7 +40,7 @@ function makeItem(overrides: Partial<ClassDetailView> = {}): ClassDetailView {
     skillName: 'English',
     skillCategory: 'language',
     level: 'intermediate',
-    format: 'group-2-4',
+    format: 'group',
     ratingAvg: null,
     ratingCount: 0,
     verified: null,

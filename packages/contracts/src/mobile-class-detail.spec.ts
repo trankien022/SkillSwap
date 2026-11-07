@@ -135,6 +135,7 @@ describe('mobile-class-detail contracts', () => {
       skillIds: ['sk-cs-101', 'sk-algo'],
       title: 'Computer Science: the first principles',
       level: 'intermediate' as const,
+      format: 'group' as const,
       description: 'Foundations of Computer Science',
       startsAt: '2026-10-15T09:00:00.000Z',
       durationMinutes: 90,

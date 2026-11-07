@@ -1,7 +1,7 @@
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { qualified } from '../../../../../../shared/sql/ident';
 import { MAX_PAGE_LIMIT } from '@skillswap/contracts';
-import { isClassLevel } from '../../../domain/class';
+import { isClassLevel, classFormatOf } from '../../../domain/class';
 import type { ClassCursorTuple, ClassLifecycleStateDto } from '../../../application/port/in/list-classes';
 import type {
   ClassListReader,
@@ -184,6 +184,7 @@ export class SqlClassListReader implements ClassListReader {
         skillIds: r.skill_ids ?? [],
         title: r.title,
         level: r.level !== null && isClassLevel(r.level) ? r.level : null,
+        format: classFormatOf(r.capacity),
         description: r.description,
         startsAt: toDate(r.starts_at),
         durationMinutes: r.duration_minutes,

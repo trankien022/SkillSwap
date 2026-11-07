@@ -8,6 +8,7 @@ export * from './skill-evidence';
 export * from './verification';
 
 import { pagedSchema, paginationQuerySchema } from './pagination';
+import { classFormatSchema } from './mobile-classes';
 import {
   evidenceStatusSchema,
   evidenceTypeSchema,
@@ -110,6 +111,8 @@ export const classSchema = z.object({
    * existed — it is never a guess, so a client shows no badge rather than a wrong one.
    */
   level: skillLevelSchema.nullable(),
+  /** B3: `one-on-one` for capacity 1, otherwise `group`. */
+  format: classFormatSchema,
   startsAt: z.string().datetime({ offset: true }),
   durationMinutes: z.number().int(),
   priceCredits: z.number().int(),

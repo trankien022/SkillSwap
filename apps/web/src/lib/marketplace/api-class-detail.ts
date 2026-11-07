@@ -9,8 +9,8 @@ import type { ClassDetailView } from './types';
  * presentation shape.
  *
  * The API answers with `teacher { displayName, averageRating, ratingsCount }`,
- * `description`, `startsAt`, `durationMinutes`, `priceCredits`, `capacity`,
- * `availableSeats`, `state`, `skillIds`, `skills` and `recentRatings` — nothing else.
+ * `title`, `level`, `format`, `description`, `startsAt`, `durationMinutes`, `priceCredits`,
+ * `capacity`, `availableSeats`, `state`, `skillIds`, `skills` and `recentRatings` — nothing else.
  *
  * `skills` is the catalogue join the API performs, so the page no longer has to fetch
  * the whole catalogue (or scan the class list) to learn what the class teaches. It is
@@ -54,8 +54,8 @@ export function mapContractDetailToWeb(detail: ContractClassDetailView): ClassDe
     // only used when the class predates the column (`null`) and no per-class level exists.
     level:
       detail.level ?? (skill === undefined ? null : toSkillLevel({ levels: skill.levels })),
-    // Derived only from data the API actually returns.
-    format: detail.capacity <= 1 ? 'one-on-one' : 'group-2-4',
+    // B3: the API reports the format, so the page stops inferring it from capacity.
+    format: detail.format,
     // `averageRating` is nullable: a teacher with no ratings has no average, and
     // coercing null to 5.0 was a fabricated perfect score.
     ratingAvg: detail.teacher.averageRating,

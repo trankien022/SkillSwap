@@ -125,7 +125,7 @@ export function ClassCard({ item }: { item: MarketplaceClass }) {
                 {t('price.credits', { credits: item.priceCredits })}
               </span>
               <span className="text-sm text-ink-soft">
-                {item.format === 'group-2-4'
+                {item.format === 'group'
                   ? t('pricePerLearner', {
                       vnd,
                     })

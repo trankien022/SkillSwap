@@ -11,7 +11,7 @@ describe('class price and seat presentation', () => {
       ...demoMarketplaceClasses()[0]!,
       priceCredits: 50,
       capacity: 2,
-      format: 'group-2-4' as const,
+      format: 'group' as const,
       availableSeats: 1,
     };
     render(

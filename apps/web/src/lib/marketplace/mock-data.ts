@@ -29,7 +29,7 @@ interface Seed {
   skillName: string;
   skillCategory: 'language' | 'programming' | 'design' | 'soft-skills' | 'math';
   level: 'beginner' | 'intermediate' | 'advanced' | 'expert';
-  format: 'one-on-one' | 'group-2-4';
+  format: 'one-on-one' | 'group';
   ratingAvg: number;
   ratingCount: number;
   hoursAhead: number;
@@ -81,7 +81,7 @@ const seeds: Seed[] = [
     skillName: 'Data structures & algorithms',
     skillCategory: 'programming',
     level: 'intermediate',
-    format: 'group-2-4',
+    format: 'group',
     ratingAvg: 4.98,
     ratingCount: 68,
     hoursAhead: 48,
@@ -119,7 +119,7 @@ const seeds: Seed[] = [
     skillName: 'Stata & R for OLS regression',
     skillCategory: 'math',
     level: 'advanced',
-    format: 'group-2-4',
+    format: 'group',
     ratingAvg: 4.88,
     ratingCount: 31,
     hoursAhead: 76,
@@ -157,7 +157,7 @@ const seeds: Seed[] = [
     skillName: 'Node.js, Express & Redis APIs',
     skillCategory: 'programming',
     level: 'intermediate',
-    format: 'group-2-4',
+    format: 'group',
     ratingAvg: 4.96,
     ratingCount: 47,
     hoursAhead: 112,
@@ -222,7 +222,7 @@ export function formatStartsAt(startsAt: string, locale: 'vi' | 'en'): string {
  * this with the live value from the gateway.
  */
 export function formatSeats(
-  format: 'one-on-one' | 'group-2-4',
+  format: 'one-on-one' | 'group',
   capacity: number,
 ): string {
   if (format === 'one-on-one') {
@@ -430,7 +430,7 @@ function detailByIndex(idx: number): {
     },
     {
       description:
-        'A 90-minute small-group session (2-4 learners). The teacher circulates while each learner works the same problem set, then debriefs at the end.',
+        'A 90-minute small-group session. The teacher circulates while each learner works the same problem set, then debriefs at the end.',
       teacherBio:
         'Demo teacher · Algorithms. Background in competitive programming. Runs a calm, structured session — every step is explained twice before any code is written.',
     },

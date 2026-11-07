@@ -1,4 +1,4 @@
-import { publishClass } from '../domain/class';
+import { classFormatOf, publishClass } from '../domain/class';
 import { assertPublishable, type RequiredClassSkill } from '../domain/publish-policy';
 import type {
   ClassResource,
@@ -74,6 +74,7 @@ function toResource(stored: PersistedClass): ClassResource {
     state: stored.state,
     title: stored.title,
     level: stored.level,
+    format: classFormatOf(stored.capacity),
     startsAt: stored.startsAt.toISOString(),
     durationMinutes: stored.durationMinutes,
     priceCredits: stored.priceCredits,

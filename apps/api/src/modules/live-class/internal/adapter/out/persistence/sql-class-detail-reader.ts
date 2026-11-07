@@ -1,6 +1,6 @@
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { qualified } from '../../../../../../shared/sql/ident';
-import { isClassLevel } from '../../../domain/class';
+import { isClassLevel, classFormatOf } from '../../../domain/class';
 import type {
   BookingStateDto,
   ClassLifecycleStateDto,
@@ -143,6 +143,7 @@ export class SqlClassDetailReader implements ClassDetailReader {
       skillIds: r.skill_ids ?? [],
       title: r.title,
       level: r.level !== null && isClassLevel(r.level) ? r.level : null,
+      format: classFormatOf(r.capacity),
       description: r.description,
       startsAt: toDate(r.starts_at),
       durationMinutes: r.duration_minutes,

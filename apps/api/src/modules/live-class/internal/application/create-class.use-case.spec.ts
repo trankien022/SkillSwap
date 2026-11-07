@@ -57,6 +57,7 @@ describe('CreateClassUseCase', () => {
       state: 'published',
       title: 'Guitar basics',
       level: 'expert',
+      format: 'one-on-one',
       startsAt: new Date(NOW.getTime() + 48 * HOUR).toISOString(),
       durationMinutes: 60,
       priceCredits: 100,
@@ -70,6 +71,14 @@ describe('CreateClassUseCase', () => {
     );
     await useCase.execute(command());
     expect(calls[0].level).toBe('advanced');
+  });
+
+  it('reports the format implied by capacity (B3)', async () => {
+    const { useCase } = setup();
+    const solo = await useCase.execute(command({ capacity: 1 }));
+    expect(solo.format).toBe('one-on-one');
+    const group = await useCase.execute(command({ capacity: 6 }));
+    expect(group.format).toBe('group');
   });
 
   it('takes the level from the class first skill, not from the catalogue', async () => {

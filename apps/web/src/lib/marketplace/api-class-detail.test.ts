@@ -14,6 +14,7 @@ describe('ClassDetailApiGateway', () => {
     skillIds: ['skill-ds-1'],
     title: 'Cấu trúc dữ liệu: cây và đồ thị',
     level: 'advanced',
+    format: 'group',
     description: 'Cấu trúc dữ liệu và giải thuật nâng cao',
     startsAt: '2026-10-25T14:00:00.000Z',
     durationMinutes: 120,
@@ -40,7 +41,7 @@ describe('ClassDetailApiGateway', () => {
     expect(webView.id).toBe(sampleContractDetail.id);
     expect(webView.teacherName).toBe('Lê Minh');
     expect(webView.priceCredits).toBe(80);
-    expect(webView.format).toBe('group-2-4');
+    expect(webView.format).toBe('group');
     expect(webView.description).toBe('Cấu trúc dữ liệu và giải thuật nâng cao');
     expect(webView.reviews).toHaveLength(1);
     expect(webView.reviews[0]?.authorName).toBe('Học viên A');
@@ -59,6 +60,25 @@ describe('ClassDetailApiGateway', () => {
     expect(webView.verified).toBeNull();
     // The reviewer's school is not returned, so none is claimed.
     expect(webView.reviews[0]?.schoolName).toBeNull();
+  });
+
+  it('trusts the API format even when capacity alone would suggest otherwise (B3)', () => {
+    // Proves the page no longer derives the format from capacity: capacity 4 would be a group
+    // under the old rule, but the API says this class is one-on-one.
+    const oneOnOne = mapContractDetailToWeb({
+      ...sampleContractDetail,
+      capacity: 4,
+      format: 'one-on-one',
+    });
+    expect(oneOnOne.format).toBe('one-on-one');
+
+    // And a 12-seat class is a group, not the "2-4" the old label claimed.
+    const twelve = mapContractDetailToWeb({
+      ...sampleContractDetail,
+      capacity: 12,
+      format: 'group',
+    });
+    expect(twelve.format).toBe('group');
   });
 
   it('renders the skill the API resolved in `skills`, and its absence as "not provided"', () => {

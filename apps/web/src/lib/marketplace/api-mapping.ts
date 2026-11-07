@@ -4,7 +4,6 @@ import type {
 } from '@skillswap/contracts';
 import type {
   ClassDetailView,
-  ClassFormat,
   MarketplaceClass,
   MarketplacePage,
   PrerequisiteItem,
@@ -55,15 +54,6 @@ export function toSkillCategory(raw: string | undefined): SkillCategory {
     default:
       return 'soft-skills';
   }
-}
-
-/**
- * The API exposes no class format, so it is inferred from capacity: a 1:1
- * class has one seat, anything larger is a small group. This is a presentation
- * decision — capacity itself is real.
- */
-export function toClassFormat(capacity: number): ClassFormat {
-  return capacity <= 1 ? 'one-on-one' : 'group-2-4';
 }
 
 const LEVELS: readonly SkillLevel[] = ['beginner', 'intermediate', 'advanced', 'expert'];
@@ -135,7 +125,7 @@ export function toMarketplaceClass(
     // rows recorded before the column existed (`null`), where no per-class level is known —
     // it is the old, lowest-in-catalogue guess, not a new claim.
     level: item.level ?? toSkillLevel(skill),
-    format: toClassFormat(item.capacity),
+    format: item.format,
     // `averageRating` is nullable on the contract: a teacher with no ratings
     // has none. Coercing it to 0 rendered as a genuine zero-star score, which
     // reads as "rated and bad" rather than "unrated".

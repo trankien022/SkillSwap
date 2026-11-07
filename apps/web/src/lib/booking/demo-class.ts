@@ -14,6 +14,7 @@ export function demoClass(): ClassView {
     state: 'published',
     title: 'Demo guitar class',
     level: 'beginner',
+    format: 'one-on-one',
     startsAt,
     durationMinutes: 60,
     priceCredits: 100,

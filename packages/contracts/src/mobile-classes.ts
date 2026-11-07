@@ -137,6 +137,13 @@ export const classLifecycleStateSchema = z.enum([
 export type ClassLifecycleState = z.infer<typeof classLifecycleStateSchema>;
 
 /**
+ * B3: how many learners a class serves. Capacity 1 is one-on-one, anything larger is a group
+ * (OQ-007, resolved). The API reports it so no client has to derive — and mis-derive — it.
+ */
+export const classFormatSchema = z.enum(['one-on-one', 'group']);
+export type ClassFormat = z.infer<typeof classFormatSchema>;
+
+/**
  * Route 13 / FR-005, FR-006: query parameters for listing classes.
  * Keyset cursor pagination bounded to the shared max page size (100), default 20.
  * Supports `q` search (legacy `keyword` alias), skillId filter, date range, teacherId ('me' or UUID), state filter, and portable cursor.
@@ -185,6 +192,8 @@ export const classListItemSchema = z.object({
   title: z.string().min(1),
   /** B2: the level the class is taught at; `null` when it was never recorded. */
   level: skillLevelSchema.nullable(),
+  /** B3: `one-on-one` for capacity 1, otherwise `group`. */
+  format: classFormatSchema,
   description: z.string().min(1),
   startsAt: z.string().datetime({ offset: true }),
   durationMinutes: z.number().int(),

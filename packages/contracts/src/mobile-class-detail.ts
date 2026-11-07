@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { classLifecycleStateSchema, type ClassLifecycleState } from './mobile-classes';
+import { classLifecycleStateSchema, classFormatSchema, type ClassLifecycleState } from './mobile-classes';
 import { skillLevelSchema } from './skill-evidence';
 
 /**
@@ -71,6 +71,8 @@ export const classDetailViewSchema = z.object({
   title: z.string().min(1),
   /** B2: the level the class is taught at; `null` when it was never recorded. */
   level: skillLevelSchema.nullable(),
+  /** B3: `one-on-one` for capacity 1, otherwise `group`. */
+  format: classFormatSchema,
   description: z.string().min(1),
   startsAt: z.string().datetime({ offset: true }),
   durationMinutes: z.number().int(),

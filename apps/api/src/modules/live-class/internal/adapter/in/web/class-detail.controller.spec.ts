@@ -70,6 +70,7 @@ describe('ClassDetailController', () => {
       skillIds: ['sk-math-1'],
       title: 'Linear Algebra: vectors and spaces',
       level: 'advanced',
+      format: 'group',
       description: 'Linear Algebra',
       startsAt: '2026-10-15T10:00:00.000Z',
       durationMinutes: 60,

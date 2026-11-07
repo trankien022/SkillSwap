@@ -20,6 +20,7 @@ import {
   assertTransition,
   canComplete,
   canTransition,
+  classFormatOf,
   completionOutcome,
   hasEnded,
   hasStarted,
@@ -48,6 +49,16 @@ function draft(overrides: Partial<ClassDraft> = {}): ClassDraft {
 }
 
 describe('class aggregate', () => {
+  it('derives one format from capacity, so list and detail cannot disagree (B3)', () => {
+    // OQ-007: capacity 1 is one-on-one, anything larger is a group. The web used to derive this
+    // itself and labelled every group class "group 2–4", including 10- and 12-seat classes.
+    expect(classFormatOf(1)).toBe('one-on-one');
+    expect(classFormatOf(4)).toBe('group');
+    expect(classFormatOf(12)).toBe('group');
+    // Degenerate input still has to answer something; 0 seats is not a group of 2–4 either.
+    expect(classFormatOf(0)).toBe('one-on-one');
+  });
+
   it('declares a stable state machine', () => {
     expect(INITIAL_CLASS_STATE).toBe('draft');
     expect(CLASS_STATES).toContain('published');

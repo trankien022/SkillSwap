@@ -1,4 +1,9 @@
-import { InvalidStartTimeError, assertClassEditable, assertTitle } from '../domain/class';
+import {
+  InvalidStartTimeError,
+  assertClassEditable,
+  assertTitle,
+  classFormatOf,
+} from '../domain/class';
 import { assertPublishable, type RequiredClassSkill } from '../domain/publish-policy';
 import type { ClassResource } from './port/in/create-class';
 import type { UpdateClassCommand, UpdateClassPort } from './port/in/update-class';
@@ -86,6 +91,7 @@ function toResource(stored: PersistedClass): ClassResource {
     state: stored.state,
     title: stored.title,
     level: stored.level,
+    format: classFormatOf(stored.capacity),
     startsAt: stored.startsAt.toISOString(),
     durationMinutes: stored.durationMinutes,
     priceCredits: stored.priceCredits,

@@ -47,6 +47,7 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 | `skillIds` | string[] | yes |  |
 | `title` | string | yes | min 1 chars |
 | `level` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert`; nullable |
+| `format` | enum | yes | one of `one-on-one`, `group` |
 | `description` | string | yes | min 1 chars |
 | `startsAt` | string | yes | date-time |
 | `durationMinutes` | integer | yes |  |
@@ -89,6 +90,7 @@ Publish a new class (FR-005). Requires the teacher to be a verified student appr
 | `state` | string | yes | min 1 chars |
 | `title` | string | yes | min 1 chars |
 | `level` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert`; nullable |
+| `format` | enum | yes | one of `one-on-one`, `group` |
 | `startsAt` | string | yes | date-time |
 | `durationMinutes` | integer | yes |  |
 | `priceCredits` | integer | yes |  |
@@ -115,6 +117,7 @@ Publish a new class (FR-005). Requires the teacher to be a verified student appr
 | `skills` | object[] | no |  |
 | `title` | string | yes | min 1 chars |
 | `level` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert`; nullable |
+| `format` | enum | yes | one of `one-on-one`, `group` |
 | `description` | string | yes | min 1 chars |
 | `startsAt` | string | yes | date-time |
 | `durationMinutes` | integer | yes |  |
@@ -197,6 +200,7 @@ Edit a class before its first confirmed booking locks it (AC-017).
 | `state` | string | yes | min 1 chars |
 | `title` | string | yes | min 1 chars |
 | `level` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert`; nullable |
+| `format` | enum | yes | one of `one-on-one`, `group` |
 | `startsAt` | string | yes | date-time |
 | `durationMinutes` | integer | yes |  |
 | `priceCredits` | integer | yes |  |

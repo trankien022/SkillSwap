@@ -42,6 +42,7 @@ describe('ClassListController', () => {
           skillIds: ['sk-1'],
           title: 'Algorithms: Big-O in practice',
           level: 'advanced' as const,
+          format: 'group' as const,
           description: 'Introduction to Algorithms',
           startsAt: '2026-10-15T10:00:00.000Z',
           durationMinutes: 60,

@@ -1,4 +1,4 @@
-import type { ClassLevel } from '../../../domain/class';
+import type { ClassFormat, ClassLevel } from '../../../domain/class';
 import type { ClassCursorTuple, ClassLifecycleStateDto } from '../in/list-classes';
 
 export const CLASS_LIST_READER = Symbol('CLASS_LIST_READER');
@@ -25,6 +25,8 @@ export interface ClassListRecord {
   readonly title: string;
   /** B2: the level the class is taught at, or null when never recorded. */
   readonly level: ClassLevel | null;
+  /** B3: derived from capacity by `classFormatOf`, so list and detail cannot disagree. */
+  readonly format: ClassFormat;
   readonly description: string;
   readonly startsAt: Date;
   readonly durationMinutes: number;

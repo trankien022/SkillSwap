@@ -190,6 +190,7 @@ describe('mobile-classes contracts (portable cursor codec & schemas)', () => {
         skillIds: ['sk-1'],
         title: 'Physics 101: mechanics',
         level: 'beginner' as const,
+        format: 'group' as const,
         description: 'Physics 101',
         startsAt: '2026-10-15T10:00:00.000Z',
         durationMinutes: 60,
@@ -202,6 +203,35 @@ describe('mobile-classes contracts (portable cursor codec & schemas)', () => {
         ratingsCount: 0,
       };
       expect(classListItemSchema.parse(item)).toEqual(item);
+    });
+
+    it('reports the class format and rejects an invented one (B3)', () => {
+      const item = {
+        id: 'cls-1',
+        teacherId: 'teacher-1',
+        teacherDisplayName: 'Prof. John',
+        skillIds: ['sk-1'],
+        title: 'Physics 101: mechanics',
+        level: null,
+        format: 'one-on-one' as const,
+        description: 'Physics 101',
+        startsAt: '2026-10-15T10:00:00.000Z',
+        durationMinutes: 60,
+        priceCredits: 100,
+        capacity: 1,
+        confirmedBookingsCount: 0,
+        availableSeats: 1,
+        state: 'published' as const,
+        averageRating: null,
+        ratingsCount: 0,
+      };
+      expect(classListItemSchema.parse(item).format).toBe('one-on-one');
+      // The API never says "group of 2–4": that range was a client-era invention.
+      for (const format of ['group-2-4', 'small-group', 'GROUP']) {
+        expect(() => classListItemSchema.parse({ ...item, format })).toThrow();
+      }
+      // The field is not optional: a client must never have to infer it from capacity.
+      expect(classListItemSchema.safeParse({ ...item, format: undefined }).success).toBe(false);
     });
 
     it('validates page schema with nextCursor and totalActiveTeachingCount', () => {

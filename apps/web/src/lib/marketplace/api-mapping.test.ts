@@ -32,6 +32,7 @@ function classRow(overrides: Record<string, unknown> = {}) {
     skillIds: ['skill-1'],
     title: 'IELTS speaking: band 7 practice',
     level: 'advanced',
+    format: 'group',
     description: 'IELTS speaking practice',
     startsAt: '2026-10-25T14:00:00.000Z',
     durationMinutes: 60,
@@ -80,6 +81,17 @@ describe('toMarketplaceClass', () => {
     // fallback is the old one rather than a new claim.
     const legacy = toMarketplaceClass(classRow({ level: null }), catalogue);
     expect(legacy.level).toBe('beginner');
+  });
+
+  it('takes the format from the API instead of guessing it from capacity (B3)', () => {
+    // A 12-seat class and a 2-seat class are both groups. The old mapper printed "group 2-4" on
+    // every one of them, which was a range the API never promised.
+    expect(toMarketplaceClass(classRow({ capacity: 12 }), catalogue).format).toBe('group');
+    expect(toMarketplaceClass(classRow({ capacity: 2 }), catalogue).format).toBe('group');
+    // A one-seat class is 1:1 no matter what the client would infer.
+    expect(
+      toMarketplaceClass(classRow({ capacity: 1, format: 'one-on-one' }), catalogue).format,
+    ).toBe('one-on-one');
   });
 });
 
