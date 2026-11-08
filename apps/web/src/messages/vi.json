@@ -1565,8 +1565,8 @@
     "notifications": {
       "title": "Thông báo của bạn",
       "description": "Cập nhật về lịch học, giao dịch và kết quả xét duyệt hồ sơ.",
-      "markViewed": "Đánh dấu tất cả đã xem trong phiên này",
-      "markSingle": "Đã xem trong phiên này",
+      "markViewed": "Đánh dấu tất cả đã đọc",
+      "markSingle": "Đánh dấu đã đọc",
       "filter": {
         "all": "Tất cả",
         "unread": "Chưa xem",

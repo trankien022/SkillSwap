@@ -1565,8 +1565,8 @@
     "notifications": {
       "title": "Your notifications",
       "description": "Updates on your schedule, transactions and verification reviews.",
-      "markViewed": "Mark all viewed for this visit",
-      "markSingle": "Mark viewed for this visit",
+      "markViewed": "Mark all as read",
+      "markSingle": "Mark as read",
       "filter": {
         "all": "All",
         "unread": "Unviewed",
