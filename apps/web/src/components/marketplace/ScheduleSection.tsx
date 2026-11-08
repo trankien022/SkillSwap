@@ -1,7 +1,7 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import { formatSeats, hoursUntilBookingDeadline } from '../../lib/marketplace/mock-data';
+import { hoursUntilBookingDeadline } from '../../lib/marketplace/mock-data';
 import type { ClassDetailView } from '../../lib/marketplace/types';
 
 /**
@@ -17,10 +17,9 @@ export function ScheduleSection({ item }: { item: ClassDetailView }) {
   const tCard = useTranslations('Marketplace.card');
   const locale = useLocale() as 'vi' | 'en';
   const hoursLeft = hoursUntilBookingDeadline(item.startsAt);
-  const [taken, capacity] = formatSeats(item.format, item.capacity)
-    .split('/')
-    .map((n) => Number(n));
-  const isFull = taken >= capacity;
+  const availableSeats = item.availableSeats ?? null;
+  const capacity = item.capacity;
+  const isFull = availableSeats === 0;
   const dateText = new Date(item.startsAt).toLocaleDateString(locale, {
     weekday: 'long',
     day: '2-digit',
@@ -90,7 +89,9 @@ export function ScheduleSection({ item }: { item: ClassDetailView }) {
                     : 'rounded-full border border-success-tint bg-success-tint px-2 py-0.5 text-sm font-bold text-success-ink'
                 }
               >
-                {t('seatsLeft', { taken, capacity })}
+                {availableSeats !== null
+                  ? t('seatsLeft', { taken: availableSeats, capacity })
+                  : tCard('availabilityUnknown')}
               </span>
             </div>
             <span className="text-sm text-ink-soft">

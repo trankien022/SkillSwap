@@ -11,6 +11,7 @@ import type { ClassDetailView } from '../../lib/marketplace/types';
  */
 export function PrerequisitesSection({ item }: { item: ClassDetailView }) {
   const t = useTranslations('ClassDetail.prerequisites');
+  if (item.prerequisites.length === 0) return null;
 
   return (
     <section className="workspace-panel">

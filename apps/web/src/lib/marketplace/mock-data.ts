@@ -214,24 +214,6 @@ export function formatStartsAt(startsAt: string, locale: 'vi' | 'en'): string {
   return `${weekdays[weekday]}, ${day}/${month}`;
 }
 
-/** "Còn X/Y chỗ" for groups, "Còn X/X chỗ" for 1-1. Mirrors AC-029.
- *
- * For 1-1: one seat is open, capacity is 1.
- * For groups: the mock seeds 2 of 4 taken so users see realistic scarcity.
- * When a real seat counter exists (API-004 booking count) replace
- * this with the live value from the gateway.
- */
-export function formatSeats(
-  format: 'one-on-one' | 'group',
-  capacity: number,
-): string {
-  if (format === 'one-on-one') {
-    return `1/${capacity}`;
-  }
-  const taken = Math.max(0, capacity - 2);
-  return `${taken}/${capacity}`;
-}
-
 /* --- Class detail extension (FR-006 detail mock) --------------------- */
 
 import type {
@@ -297,19 +279,19 @@ function defaultSyllabus(durationMinutes: number): SyllabusStep[] {
     },
     {
       order: 2,
-        title: 'Core technique block',
+      title: 'Core technique block',
       minutes: 35,
       body: 'Demonstration of the main technique with a worked example, then a guided practice run.',
     },
     {
       order: 3,
-        title: 'Independent practice',
+      title: 'Independent practice',
       minutes: 30,
       body: 'You try the technique on your own while the teacher observes and pauses you at decision points.',
     },
     {
       order: 4,
-        title: 'Review & next action',
+      title: 'Review & next action',
       minutes: 15,
       body: 'Recap, one concrete next action, and a question round before the timer ends.',
     },
