@@ -101,12 +101,12 @@ function Row({
   value: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="flex items-center gap-1.5 text-ink-soft">
+    <div className="flex items-center justify-between gap-2 text-sm">
+      <span className="flex shrink-0 items-center gap-1.5 text-ink-soft whitespace-nowrap">
         {icon}
         <span>{label}</span>
       </span>
-      <span className="font-semibold text-ink">{value}</span>
+      <span className="font-semibold text-ink text-right">{value}</span>
     </div>
   );
 }

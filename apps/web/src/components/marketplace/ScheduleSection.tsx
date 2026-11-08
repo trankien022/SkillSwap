@@ -60,12 +60,12 @@ export function ScheduleSection({ item }: { item: ClassDetailView }) {
           <div
             className={
               hoursLeft <= 0
-                ? 'inline-flex w-fit items-center gap-1.5 rounded-lg bg-danger-tint px-2 py-1 text-sm font-semibold text-danger-ink '
-                : 'inline-flex w-fit items-center gap-1.5 rounded-lg bg-surface px-2 py-1 text-sm font-semibold text-success-ink '
+                ? 'inline-flex w-fit max-w-full items-center gap-1.5 rounded-lg bg-danger-tint px-2 py-1 text-xs font-semibold text-danger-ink whitespace-nowrap'
+                : 'inline-flex w-fit max-w-full items-center gap-1.5 rounded-lg bg-surface px-2 py-1 text-xs font-semibold text-success-ink whitespace-nowrap'
             }
           >
-            <TimerIcon className="h-3.5 w-3.5" />
-            <span>
+            <TimerIcon className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">
               {t('deadlinePrefix', { hours: hoursLeft })} — {t('deadlinePolicy')}
             </span>
           </div>
