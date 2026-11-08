@@ -4,7 +4,6 @@ import type {
 } from '@skillswap/contracts';
 import type {
   MarketplaceClass,
-  MarketplacePage,
   SkillCategory,
   SkillLevel,
 } from './types';
@@ -136,19 +135,4 @@ export function toMarketplaceClass(
     // the detail action, never defaulted (absent stays absent).
     availableSeats: item.availableSeats,
   };
-}
-
-/**
- * The list endpoint is keyset-paginated (`nextCursor`), but `PaginationBar`
- * renders numbered pages. Until S3 is reworked to cursor navigation, every
- * returned item is shown on page 1 with the true total, so no row is dropped
- * and no page is fabricated.
- */
-export function toMarketplacePage(
-  items: readonly ClassListItemView[],
-  catalogue: SkillCatalogue,
-  perPage: number,
-): MarketplacePage {
-  const mapped = items.map((item) => toMarketplaceClass(item, catalogue));
-  return { items: mapped, total: mapped.length, page: 1, perPage };
 }

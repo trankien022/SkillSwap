@@ -292,7 +292,9 @@
       "showing": "Hiển thị {from} - {to} trong tổng số {total} lớp học đang tuyển sinh",
       "prev": "Trang trước",
       "next": "Trang sau",
-      "label": "Phân trang lớp học"
+      "label": "Phân trang lớp học",
+      "loadMore": "Tải thêm lớp học",
+      "loadingMore": "Đang tải thêm…"
     },
     "banner": {
       "title": "Bảo vệ quỹ thanh toán",

@@ -12,10 +12,7 @@ import {
  * In-memory marketplace gateway (FR-006 mock).
  *
  * Mirrors the `MockBookingGateway` pattern: deterministic, no network,
- * runs the same filter/sort pipeline the real HTTP adapter will run so
- * the UI can be built and tested today. The `classSchema` from
- * `@skillswap/contracts` is the wire contract, so a future
- * `HttpMarketplaceGateway` can be dropped in without UI changes.
+ * runs the same filter/sort pipeline the real HTTP adapter runs.
  */
 export class MockMarketplaceGateway {
   private readonly classes: ReadonlyArray<MarketplaceClass>;
@@ -28,9 +25,18 @@ export class MockMarketplaceGateway {
     const filtered = this.classes.filter((item) => matches(item, query));
     const sorted = [...filtered].sort((a, b) => compare(a, b, query.sort));
     const total = sorted.length;
-    const start = (query.page - 1) * query.perPage;
+
+    let start = (query.page - 1) * query.perPage;
+    if (query.cursor) {
+      const idx = sorted.findIndex((item) => item.id === query.cursor);
+      start = idx >= 0 ? idx + 1 : total;
+    }
+
     const items = sorted.slice(start, start + query.perPage);
-    return { items, total, page: query.page, perPage: query.perPage };
+    const hasMore = start + query.perPage < total;
+    const nextCursor = hasMore ? (items[items.length - 1]?.id ?? null) : null;
+
+    return { items, total, page: query.page, perPage: query.perPage, nextCursor };
   }
 }
 
@@ -85,9 +91,6 @@ function compare(
   // 'nearest' (default)
   return new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime();
 }
-
-/** Default query moved to `./types` — it is not mock behaviour. `mock-gateway`
- * imports it from there for its own tests. */
 
 // Re-export the seeded classes for tests that want to assert on the input.
 export { demoMarketplaceClasses } from './mock-data';

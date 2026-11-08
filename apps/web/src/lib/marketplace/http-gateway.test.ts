@@ -70,14 +70,14 @@ const SAT = new Date('2026-11-14T04:00:00.000Z').toISOString(); // Saturday
 const SUN = new Date('2026-11-15T04:00:00.000Z').toISOString(); // Sunday
 const MON = new Date('2026-11-16T04:00:00.000Z').toISOString(); // Monday
 
-function stub(items: ReturnType<typeof at>[]) {
+function stub(items: ReturnType<typeof at>[], nextCursor: string | null = null) {
   const fetchMock = vi.fn(async (url: string) => {
     if (String(url).includes('/skills')) return jsonResponse({ success: true, code: 'OK', message: 'OK', data: CATALOGUE, errors: [] });
     return jsonResponse({
       success: true,
       code: 'OK',
       message: 'OK',
-      data: { items, nextCursor: null },
+      data: { items, nextCursor },
       errors: [],
     });
   });
@@ -222,5 +222,21 @@ describe('HttpMarketplaceGateway format, keyword, and verified filters (W1)', ()
       sort: 'rating',
     });
     expect(sorted.items.map((i) => i.id)).toEqual(['cls-49', 'cls-44', 'cls-unrated']);
+  });
+
+  it('forwards cursor and server-side 24-48h window params, returning nextCursor from the server (W8)', async () => {
+    const fetchMock = stub([at(WED_ISH, { id: 'cls-1' })], 'cursor-page-2');
+
+    const page = await new HttpMarketplaceGateway().search({
+      ...DEFAULT_QUERY,
+      cursor: 'cursor-page-1',
+      timeFilter: 'next-24-48h',
+    });
+
+    expect(page.nextCursor).toBe('cursor-page-2');
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(/startDate=.*&endDate=.*&cursor=cursor-page-1/),
+      expect.anything(),
+    );
   });
 });

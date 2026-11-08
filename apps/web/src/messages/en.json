@@ -292,7 +292,9 @@
       "showing": "Showing {from} - {to} of {total} open classes",
       "prev": "Previous",
       "next": "Next",
-      "label": "Class pagination"
+      "label": "Class pagination",
+      "loadMore": "Load more classes",
+      "loadingMore": "Loading more…"
     },
     "banner": {
       "title": "Payment protection",

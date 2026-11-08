@@ -20,16 +20,16 @@ import type { MarketplaceClass, MarketplacePage, MarketplaceQuery } from './type
  * which attaches the bearer token and refreshes it once on 401.
  *
  * Endpoints:
- * - GET /classes  — keyset-paginated class list (q, skillId, date range, state)
+ * - GET /classes  — keyset-paginated class list (q, skillId, date range, state, cursor)
  * - GET /skills   — standardized catalogue, needed to resolve skill names
  *
  * The detail page does not use this gateway: `GET /classes/:id` returns the class
  * and its resolved skills on its own (see `api-class-detail.ts`).
  *
- * The API only understands `q`/`skillId`/dates/state, so the remaining
+ * The API understands `q`/`skillId`/dates/state/limit/cursor, so the remaining
  * sidebar filters (format, rating, price, verified, time window) are applied
- * over the fetched page here. Keyword matching (`q`) is evaluated on the server
- * across class title and description and is never re-filtered on the client.
+ * over the fetched cursor page here, while `nextCursor` is preserved for cursor
+ * navigation ("Load more").
  */
 export class HttpMarketplaceGateway {
   constructor(private readonly limit = 20) {}
@@ -43,7 +43,7 @@ export class HttpMarketplaceGateway {
 
   async search(query: MarketplaceQuery): Promise<MarketplacePage> {
     const catalogue = await this.getCatalogue();
-    const classes = await this.fetchClasses(query);
+    const { items: classes, nextCursor } = await this.fetchClasses(query);
     const mapped = classes.map((item) => toMarketplaceClass(item, catalogue));
     const filtered = applyClientFilters(mapped, query);
     const sorted = applySort(filtered, query);
@@ -52,25 +52,34 @@ export class HttpMarketplaceGateway {
       total: sorted.length,
       page: query.page,
       perPage: query.perPage,
+      nextCursor,
     };
   }
 
-  private async fetchClasses(query: MarketplaceQuery): Promise<readonly ClassListItemView[]> {
+  private async fetchClasses(
+    query: MarketplaceQuery,
+  ): Promise<{ items: readonly ClassListItemView[]; nextCursor: string | null }> {
     const params = new URLSearchParams();
     if (query.keyword && query.keyword.trim().length > 0) {
       params.set('q', query.keyword.trim());
     }
-    // The seed only publishes bookable classes; asking for `published` keeps the
-    // grid to what a learner can actually book.
     params.set('state', 'published');
     params.set('limit', String(this.limit));
-    params.set('startDate', new Date().toISOString());
+    const nowMs = Date.now();
+    if (query.timeFilter === 'next-24-48h') {
+      params.set('startDate', new Date(nowMs + 24 * 3_600_000).toISOString());
+      params.set('endDate', new Date(nowMs + 48 * 3_600_000).toISOString());
+    } else {
+      params.set('startDate', new Date(nowMs).toISOString());
+    }
+    if (query.cursor && query.cursor.trim().length > 0) {
+      params.set('cursor', query.cursor.trim());
+    }
 
     const qs = params.toString();
-    // `limit` is always set, so the query string is never empty.
     const res = await callApi(`/classes?${qs}`);
     const page = listClassesPageSchema.parse(await unwrapEnvelope<unknown>(res));
-    return page.items;
+    return { items: page.items, nextCursor: page.nextCursor };
   }
 }
 

@@ -1,7 +1,7 @@
 import type { ClassView, OwnBookingSummaryView } from '@skillswap/contracts';
 
 /**
- * Marketplace domain types (FR-006 mock layer).
+ * Marketplace domain types (FR-006).
  *
  * Extends the contract `ClassView` with the presentation fields the
  * marketplace UI needs to render a card: teacher name, school, skill label,
@@ -78,6 +78,7 @@ export interface MarketplaceQuery {
   sort: SortOrder;
   page: number;
   perPage: number;
+  cursor?: string;
 }
 
 /**
@@ -103,6 +104,7 @@ export interface MarketplacePage {
   total: number;
   page: number;
   perPage: number;
+  nextCursor: string | null;
 }
 
 /** One step in a class's syllabus timeline. */
@@ -157,7 +159,7 @@ export interface ReviewView {
 }
 
 /**
- * Extended class view for the detail page (FR-006 detail mock).
+ * Extended class view for the detail page (FR-006 detail).
  *
  * Keeps the marketplace search fields on the same shape so a
  * `MarketplaceClass` can be promoted to a `ClassDetailView` with the
