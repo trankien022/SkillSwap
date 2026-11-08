@@ -35,6 +35,7 @@ describe('mapContractBookingToView', () => {
     expect(view.classTitle).toBe('AWS Cloud Practitioner: luyện thi và mẹo phòng thi');
     expect(view.teacherName).toBe('Nguyễn Thành Nam');
     expect(view.teacherInitial).toBe('N');
+    expect(view.teacherSchoolLabel).toBeNull();
     expect(view.priceCredits).toBe(60);
     // No fabricated room code — the room is minted on demand by
     // `POST /classes/bookings/{bookingId}/room-access` (TASK-03 Phase 2).

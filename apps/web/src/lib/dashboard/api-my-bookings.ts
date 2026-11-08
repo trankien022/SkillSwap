@@ -25,7 +25,7 @@ export function mapContractBookingToView(item: LearnerBookingItemView): LearnerB
     skillIcon: 'code',
     teacherName,
     teacherInitial: teacherName.charAt(0).toUpperCase() || 'T',
-    teacherSchoolLabel: 'Peer student',
+    teacherSchoolLabel: null,
     startsAt: item.classSummary.startsAt,
     durationMinutes: item.classSummary.durationMinutes,
     priceCredits: item.priceCredits,

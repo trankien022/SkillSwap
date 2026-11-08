@@ -1,80 +1,36 @@
 import { callApi, unwrapEnvelope } from '../api-client';
-import type { NotificationsPage, NotificationItem as BackendNotificationItem } from '@skillswap/contracts';
+import type {
+  MarkNotificationsReadResponse,
+  NotificationsPage,
+  NotificationItem as BackendNotificationItem,
+} from '@skillswap/contracts';
 
 export interface UINotificationItem {
   id: string;
   createdAt: string;
   category: 'booking' | 'finance' | 'verify';
   unread: boolean;
-  dateGroup: 'today' | 'yesterday' | 'earlier';
   title: string;
-  badge: string;
-  badgeColor: string;
-  timeText: string;
-  tag?: string;
   content: string;
-  highlightText?: string;
-  icon: string;
-  iconBg: string;
-  iconColor: string;
-  barColor: string;
-  metaLeft?: string;
-  metaIcon?: string;
 }
 
 /**
- * Maps a backend NotificationItem (Route 28) into the rich UI NotificationItem format.
+ * Maps a backend NotificationItem (Route 28) into the UI NotificationItem format.
+ * Category labels and timestamps are localized at render time by the page component.
  */
 export function mapBackendNotificationToUI(item: BackendNotificationItem): UINotificationItem {
   let category: 'booking' | 'finance' | 'verify' = 'booking';
-  let badge = 'Hệ thống';
-  let badgeColor = 'bg-slate-100 text-slate-700 border-slate-200';
-  let icon = 'notifications';
-  let iconBg = 'bg-slate-100';
-  let iconColor = 'text-slate-700';
-  let barColor = 'bg-slate-400';
 
-  if (item.targetType === 'wallet' || item.type === 'wallet_transaction' || item.type === 'withdrawal_outcome') {
+  if (
+    item.targetType === 'wallet' ||
+    item.type === 'wallet_transaction' ||
+    item.type === 'withdrawal_outcome'
+  ) {
     category = 'finance';
-    badge = 'Ví & Tín chỉ';
-    badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    icon = 'account_balance_wallet';
-    iconBg = 'bg-emerald-50';
-    iconColor = 'text-emerald-600';
-    barColor = 'bg-emerald-600';
   } else if (item.targetType === 'verification' || item.type === 'verification_outcome') {
     category = 'verify';
-    badge = 'Xác minh hồ sơ';
-    badgeColor = 'bg-blue-50 text-blue-700 border-blue-200';
-    icon = 'verified_user';
-    iconBg = 'bg-blue-50';
-    iconColor = 'text-blue-600';
-    barColor = 'bg-blue-600';
   } else {
     category = 'booking';
-    badge = 'Lớp học';
-    badgeColor = 'bg-indigo-50 text-indigo-700 border-indigo-200';
-    icon = 'event_available';
-    iconBg = 'bg-indigo-50';
-    iconColor = 'text-indigo-600';
-    barColor = 'bg-indigo-600';
-  }
-
-  const createdDate = new Date(item.createdAt);
-  const diffHours = (Date.now() - createdDate.getTime()) / (1000 * 60 * 60);
-  let timeText = 'Gần đây';
-  let dateGroup: 'today' | 'yesterday' | 'earlier' = 'today';
-  if (diffHours < 1) {
-    timeText = `${Math.max(1, Math.round(diffHours * 60))} phút trước`;
-  } else if (diffHours < 24) {
-    timeText = `${Math.round(diffHours)} giờ trước`;
-    dateGroup = 'today';
-  } else if (diffHours < 48) {
-    timeText = 'Hôm qua';
-    dateGroup = 'yesterday';
-  } else {
-    timeText = createdDate.toLocaleDateString('vi-VN');
-    dateGroup = 'earlier';
   }
 
   return {
@@ -82,29 +38,21 @@ export function mapBackendNotificationToUI(item: BackendNotificationItem): UINot
     createdAt: item.createdAt,
     category,
     unread: !item.read,
-    dateGroup,
     title: item.title,
-    badge,
-    badgeColor,
-    timeText,
     content: item.body,
-    icon,
-    iconBg,
-    iconColor,
-    barColor,
-    metaLeft: `Mã sự kiện: #${item.targetId.slice(0, 8)}`,
   };
 }
 
 /**
  * Fetches notification inbox for authenticated user via GET /api/notifications.
  *
- * Returns `null` for "could not read" so the caller can render an empty state,
- * but the reason (401 vs. 500) is logged rather than discarded: an earlier
- * revision ignored every failure identically, which is how a session expiry and
- * a server error both came to look like "you have no notifications".
+ * Returns `null` for "could not read" so the caller can render an error state,
+ * while logging the HTTP status or network error.
  */
-export async function fetchNotifications(): Promise<{ items: UINotificationItem[]; unreadCount: number } | null> {
+export async function fetchNotifications(): Promise<{
+  items: UINotificationItem[];
+  unreadCount: number;
+} | null> {
   try {
     const res = await callApi('/notifications');
     if (!res.ok) {
@@ -122,4 +70,46 @@ export async function fetchNotifications(): Promise<{ items: UINotificationItem[
     console.warn('Failed to fetch /api/notifications:', err);
   }
   return null;
+}
+
+/**
+ * Marks a single notification read on the server (`POST /notifications/:id/read`)
+ * and returns the server's updated `unreadCount`, or `null` on failure.
+ */
+export async function markNotificationRead(id: string): Promise<number | null> {
+  try {
+    const res = await callApi(`/notifications/${encodeURIComponent(id)}/read`, {
+      method: 'POST',
+    });
+    if (!res.ok) {
+      console.warn(`POST /api/notifications/${id}/read failed: HTTP ${res.status}`);
+      return null;
+    }
+    const data = await unwrapEnvelope<MarkNotificationsReadResponse>(res);
+    return typeof data?.unreadCount === 'number' ? data.unreadCount : null;
+  } catch (err) {
+    console.warn(`Failed to mark notification ${id} read:`, err);
+    return null;
+  }
+}
+
+/**
+ * Marks all unread notifications read on the server (`POST /notifications/read-all`)
+ * and returns the server's updated `unreadCount`, or `null` on failure.
+ */
+export async function markAllNotificationsRead(): Promise<number | null> {
+  try {
+    const res = await callApi('/notifications/read-all', {
+      method: 'POST',
+    });
+    if (!res.ok) {
+      console.warn(`POST /api/notifications/read-all failed: HTTP ${res.status}`);
+      return null;
+    }
+    const data = await unwrapEnvelope<MarkNotificationsReadResponse>(res);
+    return typeof data?.unreadCount === 'number' ? data.unreadCount : null;
+  } catch (err) {
+    console.warn('Failed to mark all notifications read:', err);
+    return null;
+  }
 }

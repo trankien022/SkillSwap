@@ -14,7 +14,6 @@ import { HttpMarketplaceGateway } from '../../lib/marketplace/http-gateway';
 import {
   DEFAULT_QUERY,
   type MarketplaceClass,
-  type MarketplacePage,
   type MarketplaceQuery,
   type SkillCategory,
   type SortOrder,
@@ -27,16 +26,19 @@ type LoadState =
   | { phase: 'loading' }
   | { phase: 'unauth' }
   | { phase: 'error' }
-  | { phase: 'ready'; page: MarketplacePage };
+  | {
+      phase: 'ready';
+      items: MarketplaceClass[];
+      nextCursor: string | null;
+      loadingMore: boolean;
+    };
 
 /**
- * Marketplace client shell (FR-006).
+ * Marketplace client shell (FR-006 / W8).
  *
- * Owns the live `query` state and the fetch lifecycle. `GET /classes` is an
- * authenticated endpoint, so the first page is fetched after mount (the bearer
- * token lives in localStorage) rather than on the server. Each child component
- * is given a thin callback and stays presentational; search submit, category
- * pill click and filter change all flow back here.
+ * Owns the live `query` state and cursor-based pagination lifecycle. Any filter,
+ * category, keyword, or sort change resets the cursor and starts a fresh first
+ * page; clicking "Load more" requests the next cursor page and appends its items.
  */
 export function MarketplaceClient({ initialCategory }: { initialCategory?: SkillCategory }) {
   const t = useTranslations('Marketplace.resultsBar');
@@ -51,21 +53,54 @@ export function MarketplaceClient({ initialCategory }: { initialCategory?: Skill
   const [filterOpen, setFilterOpen] = useState<boolean>(false);
 
   const runQuery = useCallback(async (next: MarketplaceQuery) => {
-    setQuery(next);
+    const cleanQuery: MarketplaceQuery = { ...next, page: 1, cursor: undefined };
+    setQuery(cleanQuery);
     setState({ phase: 'loading' });
     try {
-      const page = await gateway.search(next);
-      setState({ phase: 'ready', page });
+      const page = await gateway.search(cleanQuery);
+      setState({
+        phase: 'ready',
+        items: page.items,
+        nextCursor: page.nextCursor,
+        loadingMore: false,
+      });
     } catch (error) {
-      // A thrown `ApiResponseError` with 401 means no/expired session; anything
-      // else is a genuine failure. Both are surfaced honestly, never mocked.
       const status = (error as { status?: number }).status;
       setState({ phase: status === 401 ? 'unauth' : 'error' });
     }
   }, []);
 
-  // First load: fetch the default query once the client has mounted and the
-  // stored access token is readable. `runQuery` is stable, so this runs once.
+  const handleLoadMore = useCallback(async () => {
+    if (state.phase !== 'ready' || state.nextCursor === null || state.loadingMore) {
+      return;
+    }
+    const cursor = state.nextCursor;
+    setState({ ...state, loadingMore: true });
+    try {
+      const nextPage = await gateway.search({ ...query, cursor });
+      setState((prev) => {
+        if (prev.phase !== 'ready') return prev;
+        const seen = new Set(prev.items.map((item) => item.id));
+        const merged = [...prev.items];
+        for (const item of nextPage.items) {
+          if (!seen.has(item.id)) {
+            seen.add(item.id);
+            merged.push(item);
+          }
+        }
+        return {
+          phase: 'ready',
+          items: merged,
+          nextCursor: nextPage.nextCursor,
+          loadingMore: false,
+        };
+      });
+    } catch (error) {
+      const status = (error as { status?: number }).status;
+      setState({ phase: status === 401 ? 'unauth' : 'error' });
+    }
+  }, [query, state]);
+
   useEffect(() => {
     void runQuery({ ...DEFAULT_QUERY, category: initialCategory, page: 1 });
   }, [runQuery, initialCategory]);
@@ -118,7 +153,7 @@ export function MarketplaceClient({ initialCategory }: { initialCategory?: Skill
                 <span className="text-base font-bold text-ink">{t('title')}</span>
                 {state.phase === 'ready' && (
                   <span className="text-sm font-medium text-ink-muted">
-                    {t('count', { count: state.page.total })}
+                    {t('count', { count: state.items.length })}
                   </span>
                 )}
               </div>
@@ -166,17 +201,22 @@ export function MarketplaceClient({ initialCategory }: { initialCategory?: Skill
               />
             )}
 
-            {state.phase === 'ready' && (
-              <>
-                <ClassGrid items={state.page.items as MarketplaceClass[]} />
-                <PaginationBar
-                  page={state.page.page}
-                  total={state.page.total}
-                  perPage={state.page.perPage}
-                  onPageChange={(next) => void runQuery({ ...query, page: next })}
-                />
-              </>
-            )}
+            {state.phase === 'ready' &&
+              (state.items.length === 0 ? (
+                <WorkspaceState title={tStates('emptyTitle')} tone="neutral">
+                  {t('description')}
+                </WorkspaceState>
+              ) : (
+                <>
+                  <ClassGrid items={state.items} />
+                  <PaginationBar
+                    count={state.items.length}
+                    nextCursor={state.nextCursor}
+                    loadingMore={state.loadingMore}
+                    onLoadMore={() => void handleLoadMore()}
+                  />
+                </>
+              ))}
           </div>
         </div>
       </section>

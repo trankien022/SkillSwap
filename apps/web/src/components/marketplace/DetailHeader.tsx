@@ -16,6 +16,7 @@ export function DetailHeader({ item }: { item: ClassDetailView }) {
   const t = useTranslations('ClassDetail.hero');
   const tBread = useTranslations('ClassDetail.breadcrumb');
   const tBack = useTranslations('ClassDetail');
+  const tLevels = useTranslations('Marketplace.card.levels');
   const locale = useLocale() as 'vi' | 'en';
 
   // Map the kebab enum back to the camelCase i18n key (same lookup as
@@ -92,6 +93,11 @@ export function DetailHeader({ item }: { item: ClassDetailView }) {
                 )}
               </span>
             </Chip>
+            {item.level !== null && (
+              <Chip variant="ink">
+                <span>{tLevels(item.level)}</span>
+              </Chip>
+            )}
 
           </div>
 

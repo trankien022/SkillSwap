@@ -77,7 +77,7 @@ export function DashboardShell({ initial }: Props) {
       return (
         b.classTitle.toLowerCase().includes(needle) ||
         b.teacherName.toLowerCase().includes(needle) ||
-        b.teacherSchoolLabel.toLowerCase().includes(needle)
+        (b.teacherSchoolLabel?.toLowerCase().includes(needle) ?? false)
       );
     });
   }, [bookings, filter, search]);

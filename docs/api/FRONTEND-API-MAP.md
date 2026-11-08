@@ -99,6 +99,8 @@ paths follow and `FRONTEND-API-GUIDE.md` for how to call them.
 | Route | Method | Web | Mobile | Notes |
 |---|---|---|---|---|
 | `/notifications` | GET | `lib/notifications/api-notifications.ts` | `infrastructure/http/notification-gateway.ts` | Cursor-paged. |
+| `/notifications/:id/read` | POST | `lib/notifications/api-notifications.ts` | `infrastructure/http/notification-gateway.ts` | Marks a single notification read. |
+| `/notifications/read-all` | POST | `lib/notifications/api-notifications.ts` | `infrastructure/http/notification-gateway.ts` | Marks all notifications read. |
 | `/notification-devices` | POST | — (mobile only) | `infrastructure/push/notification-device-lifecycle.ts` | Registers an Expo push token. |
 | `/notification-devices/:id` | DELETE | — (mobile only) | `infrastructure/push/notification-device-lifecycle.ts` | Answers `204 No Content`. |
 

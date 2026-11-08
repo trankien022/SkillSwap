@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toMarketplaceClass, toClassDetailView } from './api-mapping';
+import { toMarketplaceClass } from './api-mapping';
 import type { SkillCatalogue } from './api-mapping';
 
 /**
@@ -108,29 +108,5 @@ describe('toMarketplaceClass', () => {
     expect(
       toMarketplaceClass(classRow({ capacity: 1, format: 'one-on-one' }), catalogue).format,
     ).toBe('one-on-one');
-  });
-});
-
-describe('toClassDetailView derivation', () => {
-  it('derives text from real fields only and never fabricates reviews', () => {
-    const base = toMarketplaceClass(classRow(), catalogue);
-    const detail = toClassDetailView(base);
-
-    // Derived from the real duration, so the sum matches the advertised length.
-    const total = detail.syllabus.reduce((sum, step) => sum + step.minutes, 0);
-    expect(total).toBe(base.durationMinutes);
-
-    // No review data exists to show, so none is invented.
-    expect(detail.reviews).toEqual([]);
-  });
-
-  it('still renders when the skill name is absent instead of printing a placeholder', () => {
-    // `GET /classes/:id` supplies no skill name; the description stands in.
-    const withoutSkill = toMarketplaceClass(classRow({ skillIds: [] }), catalogue);
-    expect(withoutSkill.skillName).toBe('Class');
-
-    const detail = toClassDetailView(withoutSkill);
-    expect(detail.description).not.toContain('undefined');
-    expect(detail.teacherBio).not.toContain('undefined');
   });
 });

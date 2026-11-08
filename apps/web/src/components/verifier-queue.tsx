@@ -2,7 +2,7 @@
 
 import { SkillCategoryLabel } from './ui/SkillCategoryLabel';
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { PageIntro } from './ui/PageIntro';
 import { StatePanel } from './ui/StatePanel';
 import type {
@@ -209,6 +209,7 @@ function VerifierRow({
   disabled?: boolean;
 }) {
   const t = useTranslations('Verifier');
+  const locale = useLocale();
   const [showDecision, setShowDecision] = useState(false);
   const [approvedLevel, setApprovedLevel] = useState<string>('');
   const [reason, setReason] = useState('');
@@ -229,11 +230,19 @@ function VerifierRow({
             {t('row.requestedLevel')}: {t(`levels.${item.requestedLevel}`)} •{' '}
             {t('row.evidenceType')}: {t(`evidence.${item.evidenceType}`)}
           </div>
-          <div className="mt-1 text-sm text-slate-600">
-            {t('row.owner')}: {item.ownerId || '—'}
-          </div>
+          {item.description && (
+            <p className="mt-2 break-words text-sm leading-relaxed text-slate-700">
+              {item.description}
+            </p>
+          )}
+          {item.documentRef && (
+            <div className="mt-1 break-all text-sm text-slate-600">
+              {t('row.documentRef')}: <span className="font-mono">{item.documentRef}</span>{' '}
+              <span className="text-slate-500">({t('row.documentUnavailable')})</span>
+            </div>
+          )}
           <div className="mt-1 text-sm text-slate-400">
-            {t('row.submittedAt')}: {item.submittedAt}
+            {t('row.submittedAt')}: {new Date(item.submittedAt).toLocaleString(locale)}
           </div>
         </div>
 
