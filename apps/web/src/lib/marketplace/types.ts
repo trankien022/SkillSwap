@@ -91,7 +91,7 @@ export interface MarketplaceQuery {
 export const DEFAULT_QUERY: MarketplaceQuery = {
   university: 'all',
   category: 'all',
-  formats: ['one-on-one', 'group'],
+  formats: [],
   timeFilter: 'all-valid',
   sort: 'nearest',
   page: 1,

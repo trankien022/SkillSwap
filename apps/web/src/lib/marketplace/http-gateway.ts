@@ -27,9 +27,9 @@ import type { MarketplaceClass, MarketplacePage, MarketplaceQuery } from './type
  * and its resolved skills on its own (see `api-class-detail.ts`).
  *
  * The API only understands `q`/`skillId`/dates/state, so the remaining
- * sidebar filters (university, format, rating, price, time window) are applied
- * over the fetched page here. They are client-side refinements of real data,
- * never substitutes for it.
+ * sidebar filters (format, rating, price, verified, time window) are applied
+ * over the fetched page here. Keyword matching (`q`) is evaluated on the server
+ * across class title and description and is never re-filtered on the client.
  */
 export class HttpMarketplaceGateway {
   constructor(private readonly limit = 20) {}
@@ -108,13 +108,6 @@ function applyClientFilters(
     // being ignored. `!== true` keeps an unverified (`false`) or unknown (`null`) class out.
     if (query.verifiedOnly === true && item.verified !== true) {
       return false;
-    }
-    if (query.keyword && query.keyword.trim().length > 0) {
-      const needle = query.keyword.trim().toLowerCase();
-      const haystack = `${item.skillName ?? ''} ${item.teacherName}`.toLowerCase();
-      if (!haystack.includes(needle)) {
-        return false;
-      }
     }
     // Shared with the mock gateway. Before this, `this-weekend` was not handled here at all, so
     // the radio was checked and the results never changed.

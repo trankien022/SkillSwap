@@ -183,6 +183,7 @@
       "keywordPlaceholder": "IELTS, Cấu trúc dữ liệu, Figma...",
       "universityLabel": "Trường giảng viên",
       "universityAll": "Tất cả các trường",
+      "universityDisabledHint": "Lọc theo trường chưa khả dụng",
       "universities": {
         "bk": "ĐH Bách Khoa (HCMUT/HUST)",
         "ftu": "ĐH Ngoại Thương (FTU)",

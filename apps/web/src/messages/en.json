@@ -183,6 +183,7 @@
       "keywordPlaceholder": "IELTS, data structures, Figma...",
       "universityLabel": "Teacher's school",
       "universityAll": "All universities",
+      "universityDisabledHint": "School filtering is not available yet",
       "universities": {
         "bk": "Tech university (HCMUT/HUST)",
         "ftu": "Foreign trade university (FTU)",

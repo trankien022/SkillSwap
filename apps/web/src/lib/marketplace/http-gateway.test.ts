@@ -153,3 +153,55 @@ describe('HttpMarketplaceGateway time filters', () => {
     expect(page.items).toEqual([]);
   });
 });
+
+describe('HttpMarketplaceGateway format, keyword, and verified filters (W1)', () => {
+  it('starts with an empty formats array (all formats) and narrows when a single format is ticked', async () => {
+    expect(DEFAULT_QUERY.formats).toEqual([]);
+
+    const oneOnOne = at(WED_ISH, { id: 'cls-1on1', format: 'one-on-one', capacity: 1 });
+    const group = at(SAT, { id: 'cls-group', format: 'group', capacity: 5 });
+    stub([oneOnOne, group]);
+
+    const allPage = await new HttpMarketplaceGateway().search(DEFAULT_QUERY);
+    expect(allPage.items.map((i) => i.id)).toEqual(['cls-1on1', 'cls-group']);
+
+    const groupOnly = await new HttpMarketplaceGateway().search({
+      ...DEFAULT_QUERY,
+      formats: ['group'],
+    });
+    expect(groupOnly.items.map((i) => i.id)).toEqual(['cls-group']);
+  });
+
+  it('does not discard server keyword matches that matched by class description or title rather than skill or teacher name', async () => {
+    const matchedByDescription = at(WED_ISH, {
+      id: 'cls-desc-match',
+      title: 'Fingerstyle Workshop',
+      description: 'Learn Travis picking patterns step by step',
+    });
+    const fetchMock = stub([matchedByDescription]);
+
+    const page = await new HttpMarketplaceGateway().search({
+      ...DEFAULT_QUERY,
+      keyword: 'Travis',
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('q=Travis'),
+      expect.anything(),
+    );
+    expect(page.items.map((i) => i.id)).toEqual(['cls-desc-match']);
+  });
+
+  it('filters by verifiedOnly when enabled', async () => {
+    const verifiedClass = at(WED_ISH, { id: 'cls-v', verified: true });
+    const unverifiedClass = at(SAT, { id: 'cls-u', verified: false });
+    stub([verifiedClass, unverifiedClass]);
+
+    const page = await new HttpMarketplaceGateway().search({
+      ...DEFAULT_QUERY,
+      verifiedOnly: true,
+    });
+
+    expect(page.items.map((i) => i.id)).toEqual(['cls-v']);
+  });
+});
