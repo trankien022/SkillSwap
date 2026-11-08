@@ -1424,7 +1424,9 @@
       "requestedLevel": "Cấp yêu cầu",
       "evidenceType": "Loại chứng cứ",
       "owner": "Người gửi",
-      "submittedAt": "Ngày nộp"
+      "submittedAt": "Ngày nộp",
+      "documentRef": "Mã tài liệu",
+      "documentUnavailable": "Chưa mở được tệp"
     },
     "actions": {
       "claim": "Nhận",

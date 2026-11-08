@@ -1424,7 +1424,9 @@
       "requestedLevel": "Requested level",
       "evidenceType": "Evidence",
       "owner": "Submitter",
-      "submittedAt": "Submitted"
+      "submittedAt": "Submitted",
+      "documentRef": "Document reference",
+      "documentUnavailable": "Cannot be opened yet"
     },
     "actions": {
       "claim": "Claim",
