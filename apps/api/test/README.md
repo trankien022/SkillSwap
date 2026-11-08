@@ -7,12 +7,13 @@ end to end against real infrastructure:
 - **RabbitMQ** (`docker compose up -d rabbitmq`) — real outbox relay + consumer,
   so cross-module events (settlement, refund, income release) flow as in
   production.
-- **Jitsi** (optional; `docker compose up -d jitsi-web jitsi-prosody jitsi-jicofo jitsi-jvb`)
-  — the Jitsi spec verifies the API issues Prosody-compatible JWTs. It
-  **self-skips** when Jitsi is not reachable, so CI can run without it.
-- **S3/MinIO** (optional; `docker compose up -d minio minio-init`) — the S3 spec
-  uploads to the real bucket via the API's pre-signed URL and **self-skips**
-  when no S3 endpoint is reachable. Objects persist in the `minio-data` volume.
+- **JaaS / 8x8** (external; ADR-039) — the room-access spec verifies the API issues
+  RS256 tokens in the shape JaaS accepts. It **self-skips** when `JITSI_APP_ID` /
+  `JITSI_PRIVATE_KEY_PATH` are unset (`pnpm keys:gen` writes a placeholder).
+- **Cloudinary** (external; ADR-038) — the document spec uploads via the API's signed
+  multipart form. It **self-skips** unless `CLOUDINARY_E2E=true` and real
+  `CLOUDINARY_*` credentials are present, so an ordinary run stays offline. There is no
+  local container that can stand in for it.
 - **Payment** needs no external service: the specs post a **SePay IPN body** directly
   to `POST /api/wallet/top-ups/callback` and let the wallet settle it (ADR-033). The
   harness also replaces the outbound checkout redirect with a stub, so no live call
@@ -22,7 +23,7 @@ end to end against real infrastructure:
 ## Running
 
 ```bash
-docker compose up -d postgres rabbitmq minio minio-init   # + jitsi-* for the Jitsi spec
+docker compose up -d postgres rabbitmq   # the only services this stack runs
 cp .env.example .env
 pnpm keys:gen
 pnpm --filter @skillswap/contracts build

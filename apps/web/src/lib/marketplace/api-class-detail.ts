@@ -8,9 +8,9 @@ import type { ClassDetailView } from './types';
  * Transforms a backend ClassDetailView (Route 14) into the web ClassDetailView
  * presentation shape.
  *
- * The API answers with `teacher { displayName, averageRating, ratingsCount }`,
- * `description`, `startsAt`, `durationMinutes`, `priceCredits`, `capacity`,
- * `availableSeats`, `state`, `skillIds`, `skills` and `recentRatings` — nothing else.
+ * The API answers with `teacher { displayName, averageRating, ratingsCount, verified, schoolName }`,
+ * `title`, `level`, `format`, `description`, `startsAt`, `durationMinutes`, `priceCredits`,
+ * `capacity`, `availableSeats`, `state`, `skillIds`, `skills` and `recentRatings` — nothing else.
  *
  * `skills` is the catalogue join the API performs, so the page no longer has to fetch
  * the whole catalogue (or scan the class list) to learn what the class teaches. It is
@@ -38,27 +38,31 @@ export function mapContractDetailToWeb(detail: ContractClassDetailView): ClassDe
     id: detail.id,
     teacherId: detail.teacher.id,
     state: detail.state,
+    title: detail.title,
     startsAt: detail.startsAt,
     durationMinutes: detail.durationMinutes,
     priceCredits: detail.priceCredits,
     capacity: detail.capacity,
     teacherName: detail.teacher.displayName,
-    // Not supplied by `GET /classes/:id`; the UI must render an explicit
-    // "not provided" state rather than a placeholder that reads as fact.
+    // B4: the detail route now reports the projected school and verification, so the page stops
+    // claiming "unknown". `schoolCode` still has no source: the wire carries a free-text name.
     schoolCode: null,
-    schoolName: null,
+    schoolName: detail.teacher.schoolName,
     skillName: skill?.name ?? null,
     skillCategory: skill === undefined ? null : toSkillCategory(skill.category),
-    level: skill === undefined ? null : toSkillLevel({ levels: skill.levels }),
-    // Derived only from data the API actually returns.
-    format: detail.capacity <= 1 ? 'one-on-one' : 'group-2-4',
+    // B2: the level the class is taught at, reported by the API. The catalogue's lowest level is
+    // only used when the class predates the column (`null`) and no per-class level exists.
+    level:
+      detail.level ?? (skill === undefined ? null : toSkillLevel({ levels: skill.levels })),
+    // B3: the API reports the format, so the page stops inferring it from capacity.
+    format: detail.format,
     // `averageRating` is nullable: a teacher with no ratings has no average, and
     // coercing null to 5.0 was a fabricated perfect score.
     ratingAvg: detail.teacher.averageRating,
     ratingCount: detail.teacher.ratingsCount,
-    // "Verified" is a claim about the teacher. The API sends no such flag here,
-    // so it is reported as unknown instead of asserted true.
-    verified: null,
+    // B4: `verified` is a claim about the teacher, and the API now makes it, so the page repeats
+    // it instead of reporting "unknown" forever.
+    verified: detail.teacher.verified,
     coverGradient: { from: '#0f766e', to: '#14b8a6' },
     description: detail.description,
     // None of these are returned by the API.

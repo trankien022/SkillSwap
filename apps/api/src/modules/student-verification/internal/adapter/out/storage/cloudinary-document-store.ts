@@ -1,8 +1,19 @@
-import { createHash } from 'node:crypto';
-import type {
-  CreateUploadTargetInput,
-  DocumentStore,
-  UploadTarget,
+import {
+  privateDownloadUrl,
+  publicIdFor,
+  resourceTypeFor,
+  resourceTypeForObjectKey,
+  signFields,
+  uploadUrlFor,
+} from '../../../../../../shared/storage/cloudinary-sign';
+import {
+  DOWNLOAD_URL_TTL_SECONDS,
+  DownloadTtlTooLongError,
+  type CreateDownloadTargetInput,
+  type CreateUploadTargetInput,
+  type DocumentStore,
+  type DownloadTarget,
+  type UploadTarget,
 } from '../../../application/port/out/document-store';
 
 export interface CloudinaryDocumentStoreOptions {
@@ -15,40 +26,16 @@ export interface CloudinaryDocumentStoreOptions {
 }
 
 /**
- * Cloudinary derives `resource_type` from the file itself at `/auto/upload`. Deriving it here
- * instead makes the routing a testable function, and it matters: a `raw` public id must keep
- * the file extension or the asset is unreachable (ADR-038 decision 5).
- */
-export function resourceTypeFor(contentType: string): 'image' | 'raw' {
-  return contentType.startsWith('image/') ? 'image' : 'raw';
-}
-
-/**
- * The Cloudinary upload signature: the signed fields as `k=v` pairs sorted by key and joined
- * with `&`, plus the API secret appended with no delimiter, hashed SHA-1 and hex encoded.
- *
- * `file`, `cloud_name`, `resource_type` and `api_key` are excluded — Cloudinary never signs
- * them. Field order is part of the contract, so it is pinned by a test rather than left to
- * the call site.
- */
-export function uploadSignature(
-  fields: Readonly<Record<string, string>>,
-  apiSecret: string,
-): string {
-  const serialized = Object.keys(fields)
-    .sort()
-    .map((key) => `${key}=${fields[key]}`)
-    .join('&');
-  return createHash('sha1').update(`${serialized}${apiSecret}`, 'utf8').digest('hex');
-}
-
-/**
  * FR-002 / ADR-038: Cloudinary document storage.
  *
  * Cloudinary has no pre-signed-URL upload, so a target is the endpoint plus the exact signed
  * field map a client must re-post. Documents go up as `type: authenticated`, which makes both
- * the original and any derived asset reachable only through a signed delivery URL — identity
+ * the original and any derived asset reachable only through a credential minted here — identity
  * papers must not be readable at a guessable CDN path (NFR-004).
+ *
+ * The signing arithmetic is `shared/storage/cloudinary-sign`, so this adapter and
+ * `skill-verification`'s evidence store cannot disagree about what Cloudinary is told. What stays
+ * here is this module's policy: its port shape and its TTL cap.
  */
 export class CloudinaryDocumentStore implements DocumentStore {
   private readonly now: () => Date;
@@ -60,25 +47,51 @@ export class CloudinaryDocumentStore implements DocumentStore {
   async createUploadTarget(input: CreateUploadTargetInput): Promise<UploadTarget> {
     const now = this.now();
     const resourceType = resourceTypeFor(input.contentType);
-    const timestamp = Math.floor(now.getTime() / 1000);
-    const publicId = publicIdFor(input.objectKey, resourceType);
 
     // Everything except file/cloud_name/resource_type/api_key, plus a mandatory timestamp.
     const signedFields: Record<string, string> = {
-      timestamp: String(timestamp),
-      public_id: publicId,
+      timestamp: String(Math.floor(now.getTime() / 1000)),
+      public_id: publicIdFor(input.objectKey, resourceType),
       type: 'authenticated',
     };
 
     return {
-      uploadUrl: `https://api.cloudinary.com/v1_1/${this.options.cloudName}/${resourceType}/upload`,
+      uploadUrl: uploadUrlFor(this.options, resourceType),
       method: 'POST',
       fields: {
         ...signedFields,
         api_key: this.options.apiKey,
-        signature: uploadSignature(signedFields, this.options.apiSecret),
+        signature: signFields(signedFields, this.options.apiSecret),
       },
-      objectKey: publicId,
+      // The **domain** object key, not Cloudinary's stripped public id: this is what the caller
+      // persists, and the read path must be able to rebuild the delivery URL from it alone.
+      objectKey: input.objectKey,
+      expiresAt: new Date(now.getTime() + input.expiresInSeconds * 1000),
+    };
+  }
+
+  async createDownloadTarget(input: CreateDownloadTargetInput): Promise<DownloadTarget> {
+    if (
+      !Number.isInteger(input.expiresInSeconds) ||
+      input.expiresInSeconds <= 0 ||
+      input.expiresInSeconds > DOWNLOAD_URL_TTL_SECONDS
+    ) {
+      // Refuse rather than clamp: the cap is the safeguard, and a caller that can widen it has
+      // removed it. Same rule and same reason as ADR-023 Amendment A.
+      throw new DownloadTtlTooLongError(input.expiresInSeconds, DOWNLOAD_URL_TTL_SECONDS);
+    }
+
+    const now = this.now();
+    const timestamp = Math.floor(now.getTime() / 1000);
+    const downloadUrl = privateDownloadUrl(this.options, {
+      objectKey: input.objectKey,
+      resourceType: resourceTypeForObjectKey(input.objectKey),
+      timestamp,
+      expiresAtSeconds: timestamp + input.expiresInSeconds,
+    });
+
+    return {
+      downloadUrl,
       expiresAt: new Date(now.getTime() + input.expiresInSeconds * 1000),
     };
   }
@@ -89,19 +102,4 @@ export class CloudinaryDocumentStore implements DocumentStore {
     // can implement it without changing callers.
     void objectKey;
   }
-}
-
-/**
- * Cloudinary public ids must not carry a leading slash and, for `raw` assets, must keep the
- * file extension — otherwise the delivered URL 404s. Object keys already look like
- * `<accountId>/<documentId>.<ext>`, so this only normalises the edges.
- */
-function publicIdFor(objectKey: string, resourceType: 'image' | 'raw'): string {
-  const trimmed = objectKey.replace(/^\/+/, '');
-  if (resourceType === 'image') {
-    // Cloudinary appends the format itself for image assets; an extension in the id would
-    // become `name.pdf.jpg`.
-    return trimmed.replace(/\.(png|jpe?g|pdf)$/i, '');
-  }
-  return trimmed;
 }

@@ -187,6 +187,7 @@ describe('E2E: an idle room completes the class and pays the Teacher (AC-035)', 
     api.actAs(teacherId);
     const created = await api.post('/api/classes', {
       skillIds: ['skill-guitar'],
+      title: `Idle room ${label}`,
       description: `Idle room ${label}`,
       startsAt: startsAt.toISOString(),
       durationMinutes: 120,
@@ -326,6 +327,30 @@ describe('E2E: an idle room completes the class and pays the Teacher (AC-035)', 
     // 50 credits at a 10% platform fee: the Teacher keeps 45.
     expect(teacher?.availableCredits).toBe(45);
     expect(teacher?.pendingCredits).toBe(0);
+
+    // B11 / FR-016: the released income must also be announced. `pendingCredits` reaching 0 proves
+    // the money moved; only the event proves the Teacher was told it did.
+    const releaseEvents = await waitFor(async () => {
+      const rows = await harness.query<{ payload: Record<string, unknown> }>(
+        'wallet-ledger',
+        `SELECT "payload" FROM outbox_messages
+          WHERE "event_type" = 'wallet.transaction.completed'
+            AND "payload"->>'type' = 'income_release'
+            AND "payload"->>'accountId' = $1`,
+        [scenario.teacherId],
+      );
+      return rows.length === 1 ? rows : null;
+    });
+    expect(releaseEvents).toHaveLength(1);
+    expect(releaseEvents[0]?.payload).toMatchObject({
+      type: 'income_release',
+      direction: 'credit',
+      amountCredits: 45,
+      bookingId: scenario.bookingId,
+      // The Teacher was paid; the system released. Two different facts (ADR-035).
+      accountId: scenario.teacherId,
+      actorId: '00000000-0000-4000-8000-000000000000',
+    });
   });
 
   it('does not complete while somebody is still in the room', async () => {

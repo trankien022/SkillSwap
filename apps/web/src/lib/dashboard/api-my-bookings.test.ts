@@ -11,6 +11,7 @@ function item(overrides: Partial<LearnerBookingItemView> = {}): LearnerBookingIt
     createdAt: '2026-10-10T08:00:00.000Z',
     expiresAt: null,
     classSummary: {
+      title: 'AWS Cloud Practitioner: luyện thi và mẹo phòng thi',
       description: 'Luyện thi chứng chỉ AWS Cloud Practitioner',
       skillIds: ['skill-cloud-1'],
       startsAt: '2026-10-22T19:00:00.000Z',
@@ -31,9 +32,10 @@ describe('mapContractBookingToView', () => {
     const view = mapContractBookingToView(item());
     expect(view.id).toBe('bkg-1234-5678');
     expect(view.classId).toBe('cls-9876-5432');
-    expect(view.classTitle).toBe('Luyện thi chứng chỉ AWS Cloud Practitioner');
+    expect(view.classTitle).toBe('AWS Cloud Practitioner: luyện thi và mẹo phòng thi');
     expect(view.teacherName).toBe('Nguyễn Thành Nam');
     expect(view.teacherInitial).toBe('N');
+    expect(view.teacherSchoolLabel).toBeNull();
     expect(view.priceCredits).toBe(60);
     // No fabricated room code — the room is minted on demand by
     // `POST /classes/bookings/{bookingId}/room-access` (TASK-03 Phase 2).

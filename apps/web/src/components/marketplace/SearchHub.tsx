@@ -64,7 +64,7 @@ export function SearchHub({
           </div>
         </div>
 
-        {/* University select (col-span-3) */}
+        {/* University select (col-span-3) — disabled until backend exposes schoolCode filtering */}
         <div className="workspace-search-field">
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <label
@@ -77,7 +77,10 @@ export function SearchHub({
               id="university-select"
               value={university}
               onChange={(e) => setUniversity(e.target.value as UniversityCode | 'all')}
-              className="workspace-search-input"
+              disabled
+              aria-disabled="true"
+              aria-describedby="university-disabled-hint"
+              className="workspace-search-input cursor-not-allowed opacity-60"
             >
               <option value="all">{t('universityAll')}</option>
               {UNIVERSITY_CODES.map((code) => (
@@ -86,6 +89,9 @@ export function SearchHub({
                 </option>
               ))}
             </select>
+            <p id="university-disabled-hint" className="text-xs leading-4 text-ink-muted">
+              {t('universityDisabledHint')}
+            </p>
           </div>
         </div>
 

@@ -1,4 +1,4 @@
-# ADR-038 — Student-verification documents are stored in Cloudinary
+# ADR-038 — Documents are stored in Cloudinary
 
 **Status:** Accepted. Supersedes [ADR-023](ADR-023-student-verification-model.md) decision 4 (S3 object storage) and
 the `Storage` half of its storage/validity decision set. ADR-023's *model* — one effective verification, no expiry,
@@ -73,3 +73,49 @@ SigV4-specific, and Cloudinary has no equivalent, so the port's *return type* �
   choice is the client rewrite, and a future reader should see the trade rather than assume it was forced.
 - **Unsigned upload with a preset.** Rejected: an exposed unsigned preset lets anyone write into the account, and
   signature generation on the server is exactly what the port already exists to do.
+
+---
+
+## Amendment A (2026-11-08) — certificate evidence, and the read path
+
+**Why this amendment exists.** This ADR was accepted while `chore` work on `main` was still adding two S3-backed
+features: **B8** (a reviewer opening a student's identity document) and **B9** (certificate evidence for
+`skill-verification`, with its own `EvidenceDocumentStore` and `shared/storage/s3-presign.ts`). Merging `main` into the
+branch that introduced this ADR therefore produced a tree that could not compile: the Cloudinary adapter lacked the
+`createDownloadTarget` that B8's use case calls, and `skill-verification` was wired to `config.s3*` properties that
+decision 1 had deleted.
+
+Keeping S3 for evidence was rejected for exactly the reason decision 1 gives — it resurrects the self-hosted service the
+change exists to remove, and `s3-presign.ts` would exist only to serve a container the project cannot deploy. Decision 1
+is therefore extended, not amended:
+
+7. **Cloudinary stores certificate evidence too.** `skill-verification` keeps its own `EvidenceDocumentStore` port (module
+   boundaries are unchanged: no module imports another's ports) and gains `CloudinaryEvidenceDocumentStore`. Both
+   adapters delegate to `shared/storage/cloudinary-sign.ts`, which replaces `shared/storage/s3-presign.ts` — the same
+   split upstream had established, with the vendor arithmetic shared and the per-module TTL policy kept local.
+   `s3-presign.ts` and `S3EvidenceDocumentStore` are deleted; S3 is no longer part of this system.
+
+8. **The read path is `private_download_url` with a signed `expires_at`, not a signed delivery URL.** Decision 4 deferred
+   this, requiring only that a URL "must be signed server-side". Two documented options exist, and they are not
+   equivalent:
+
+   | Option | Expires? |
+   |---|---|
+   | `…/authenticated/s--SIG--/<public_id>` | **No.** The signature is a permanent bearer credential. |
+   | `…/v1_1/<cloud>/<resource_type>/download?…&expires_at=…` | **Yes**, enforced by Cloudinary. |
+
+   ADR-023 Amendment A makes the 300 s window a control, not a description. Issuing a URL that never expires while
+   reporting a 300 s `expiresAt` would make that cap a comment, and these are identity documents. The second option is
+   therefore the only one that honours the amendment. The trade — delivery is not CDN-cached and bills double bandwidth
+   — is accepted: reviewer-opened documents are rare and small.
+
+9. **A stored object key must remain sufficient to rebuild its delivery URL.** `UploadTarget.objectKey` therefore carries
+   the *domain* key (`<accountId>/<uuid>.<ext>`), not Cloudinary's stripped `public_id`; the stripped id travels in
+   `fields.public_id` instead. If the stripped id were the stored reference, an image asset's format would be lost and
+   its download URL could never be constructed. `resourceTypeForObjectKey` is the documented inverse of decision 5's
+   `resourceTypeFor(contentType)`, and it is why the extension is load-bearing on every key.
+
+**Consequence added by this amendment:** certificate evidence is stored as documents too, so the free-plan
+**PDF-delivery** restriction recorded under Consequences now blocks both features rather than one. It remains a Console
+setting, not a code concern.
+

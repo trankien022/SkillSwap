@@ -183,6 +183,7 @@
       "keywordPlaceholder": "IELTS, Cấu trúc dữ liệu, Figma...",
       "universityLabel": "Trường giảng viên",
       "universityAll": "Tất cả các trường",
+      "universityDisabledHint": "Lọc theo trường chưa khả dụng",
       "universities": {
         "bk": "ĐH Bách Khoa (HCMUT/HUST)",
         "ftu": "ĐH Ngoại Thương (FTU)",
@@ -233,7 +234,7 @@
       "format": {
         "title": "Hình thức lớp học",
         "oneOnOne": "1-1 Mentoring chuyên sâu",
-        "group": "Lớp nhóm nhỏ (2 - 4 sinh viên)"
+        "group": "Lớp nhóm"
       },
       "time": {
         "title": "Thời gian bắt đầu",
@@ -291,7 +292,9 @@
       "showing": "Hiển thị {from} - {to} trong tổng số {total} lớp học đang tuyển sinh",
       "prev": "Trang trước",
       "next": "Trang sau",
-      "label": "Phân trang lớp học"
+      "label": "Phân trang lớp học",
+      "loadMore": "Tải thêm lớp học",
+      "loadingMore": "Đang tải thêm…"
     },
     "banner": {
       "title": "Bảo vệ quỹ thanh toán",
@@ -312,7 +315,7 @@
     "hero": {
       "format": {
         "oneOnOne": "1-1 Mentoring",
-        "group": "Lớp nhóm 2-4"
+        "group": "Lớp nhóm"
       },
       "levelBadge": "Trình độ nâng cao",
       "security": "Bảo mật E2EE",
@@ -327,8 +330,8 @@
       "title": "Lịch học & Quy chuẩn thời gian",
       "policyBadge": "Quy tắc đặt trước tối thiểu 24 giờ",
       "kickoff": "KHUNG GIỜ KHỞI CHẠY",
-      "deadlinePrefix": "Còn {hours} giờ tới buổi học",
-      "deadlinePolicy": "Thoả mãn quy tắc đặt trước tối thiểu 24 giờ",
+      "deadlinePrefix": "Còn {hours} giờ",
+      "deadlinePolicy": "Thoả quy tắc đặt trước 24h",
       "capacity": "QUY MÔ & HẠ TẦNG PHÒNG HỌC",
       "oneOnOne": "Lớp 1-1 chuyên sâu",
       "oneOnOneLimit": "Giới hạn 1 sinh viên",
@@ -375,7 +378,7 @@
         "durationValue": "{n} phút thực chiến",
         "startTime": "Thời gian bắt đầu",
         "refund": "Chính sách hoàn",
-        "refundValue": "Hoàn credits khi giảng viên vắng mặt",
+        "refundValue": "Hoàn nếu vắng mặt",
         "format": "Hình thức học",
         "formatValue": "Phòng học mã hoá đầu cuối"
       },
@@ -1423,7 +1426,9 @@
       "requestedLevel": "Cấp yêu cầu",
       "evidenceType": "Loại chứng cứ",
       "owner": "Người gửi",
-      "submittedAt": "Ngày nộp"
+      "submittedAt": "Ngày nộp",
+      "documentRef": "Mã tài liệu",
+      "documentUnavailable": "Chưa mở được tệp"
     },
     "actions": {
       "claim": "Nhận",
@@ -1562,8 +1567,8 @@
     "notifications": {
       "title": "Thông báo của bạn",
       "description": "Cập nhật về lịch học, giao dịch và kết quả xét duyệt hồ sơ.",
-      "markViewed": "Đánh dấu tất cả đã xem trong phiên này",
-      "markSingle": "Đã xem trong phiên này",
+      "markViewed": "Đánh dấu tất cả đã đọc",
+      "markSingle": "Đánh dấu đã đọc",
       "filter": {
         "all": "Tất cả",
         "unread": "Chưa xem",
@@ -1717,7 +1722,9 @@
       "publishAClassundefined": "Mở lớp →",
       "availableSeats": "chỗ trống",
       "edit": "Sửa",
-      "minimumConfirmedSeats": "Không thể nhỏ hơn {count} chỗ đã xác nhận."
+      "minimumConfirmedSeats": "Không thể nhỏ hơn {count} chỗ đã xác nhận.",
+      "classTitle": "Tiêu đề lớp học",
+      "enterAValidClassTitle": "Vui lòng nhập tiêu đề lớp học (tối đa 72 ký tự)."
     },
     "rules": "Quy tắc học và thanh toán",
     "fallback": {

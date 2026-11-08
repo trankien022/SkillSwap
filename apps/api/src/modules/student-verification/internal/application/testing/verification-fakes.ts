@@ -1,6 +1,12 @@
 import { DuplicateActiveVerificationError, Verification } from '../../domain/verification';
 import type { Clock } from '../port/out/clock';
-import type { CreateUploadTargetInput, DocumentStore, UploadTarget } from '../port/out/document-store';
+import type {
+  CreateDownloadTargetInput,
+  CreateUploadTargetInput,
+  DocumentStore,
+  DownloadTarget,
+  UploadTarget,
+} from '../port/out/document-store';
 import type {
   CreateDocumentRequest,
   VerificationDocument,
@@ -12,6 +18,7 @@ import type {
   ApplyDecisionResult,
   CreateVerificationRequest,
   ListVerificationsForAdminRequest,
+  RecordDocumentReadRequest,
   RevokeVerificationRequest,
   VerificationRepository,
 } from '../port/out/verification-repository';
@@ -48,6 +55,13 @@ export class InMemoryVerificationRepository implements VerificationRepository {
 
   async findById(verificationId: string): Promise<Verification | null> {
     return this.rows.find((row) => row.id === verificationId) ?? null;
+  }
+
+  /** ADR-023 Amendment A: the fake records reads so a spec can assert the audit happened. */
+  readonly documentReads: RecordDocumentReadRequest[] = [];
+
+  async recordDocumentRead(request: RecordDocumentReadRequest): Promise<void> {
+    this.documentReads.push(request);
   }
 
   async decide(request: ApplyDecisionRequest): Promise<ApplyDecisionResult> {
@@ -181,7 +195,11 @@ export class InMemoryVerificationDocumentRepository implements VerificationDocum
   }
 }
 
-/** Fake DocumentStore that returns a deterministic signed upload form. */
+/**
+ * Fake DocumentStore: a deterministic signed upload form (ADR-038) and a deterministic
+ * download URL. Neither is a real credential — each exists so a use-case spec can assert the
+ * shape a caller receives without touching a vendor.
+ */
 export class FakeDocumentStore implements DocumentStore {
   constructor(private readonly now: () => Date = () => new Date()) {}
 
@@ -191,6 +209,13 @@ export class FakeDocumentStore implements DocumentStore {
       method: 'POST',
       fields: { public_id: input.objectKey, signature: 'fake-signature', api_key: 'fake-key' },
       objectKey: input.objectKey,
+      expiresAt: new Date(this.now().getTime() + input.expiresInSeconds * 1000),
+    };
+  }
+
+  async createDownloadTarget(input: CreateDownloadTargetInput): Promise<DownloadTarget> {
+    return {
+      downloadUrl: `https://api.cloudinary.com/v1_1/fake/raw/download?public_id=${input.objectKey}`,
       expiresAt: new Date(this.now().getTime() + input.expiresInSeconds * 1000),
     };
   }

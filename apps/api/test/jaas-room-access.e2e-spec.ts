@@ -99,6 +99,7 @@ describeJaas('E2E: JaaS room access (FR-011 / ADR-039)', () => {
     api.actAs(teacherId);
     const created = await api.post('/api/classes', {
       skillIds: ['skill-guitar'],
+      title: 'JaaS room class',
       description: 'JaaS class',
       startsAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
       durationMinutes: 60,

@@ -6,12 +6,15 @@ import type { ClassDetailView, SyllabusStep } from '../../lib/marketplace/types'
 /**
  * Syllabus / goals section (FR-006 detail).
  *
- * Renders the class description, then an ordered timeline of session
- * steps. Each step shows a numbered circle, a title, a minutes badge,
- * and a body paragraph. The target-band caption is generic.
+ * Renders the class description, and — only when steps are present — an ordered
+ * timeline of session steps.
  */
 export function SyllabusSection({ item }: { item: ClassDetailView }) {
   const t = useTranslations('ClassDetail.syllabus');
+  const hasDescription = item.description.trim().length > 0;
+  const hasSteps = item.syllabus.length > 0;
+
+  if (!hasDescription && !hasSteps) return null;
 
   return (
     <section className="workspace-panel">
@@ -22,18 +25,24 @@ export function SyllabusSection({ item }: { item: ClassDetailView }) {
           </span>
           <h2 className="text-base font-semibold text-ink">{t('title')}</h2>
         </div>
-        <span className="text-sm text-ink-soft">{t('target')}</span>
+        {hasSteps && <span className="text-sm text-ink-soft">{t('target')}</span>}
       </div>
 
-      <p className="mb-6 text-sm leading-relaxed text-ink-soft">{item.description}</p>
+      {hasDescription && (
+        <p className={hasSteps ? 'mb-6 text-sm leading-relaxed text-ink-soft' : 'text-sm leading-relaxed text-ink-soft'}>
+          {item.description}
+        </p>
+      )}
 
-      <ol className="flex flex-col gap-4">
-        {item.syllabus.map((step) => (
-          <li key={step.order}>
-            <SyllabusStepRow step={step} />
-          </li>
-        ))}
-      </ol>
+      {hasSteps && (
+        <ol className="flex flex-col gap-4">
+          {item.syllabus.map((step) => (
+            <li key={step.order}>
+              <SyllabusStepRow step={step} />
+            </li>
+          ))}
+        </ol>
+      )}
     </section>
   );
 }

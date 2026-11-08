@@ -25,6 +25,7 @@ interface RawMyBookingRow {
   price_credits: number | string;
   booking_created_at: Date | string;
   booking_expires_at: Date | string | null;
+  class_title: string;
   class_description: string;
   class_starts_at: Date | string;
   class_duration_minutes: number;
@@ -110,6 +111,7 @@ export class SqlMyBookingsReader implements MyBookingsReader {
         b."price_credits" AS "price_credits",
         b."created_at" AS "booking_created_at",
         b."expires_at" AS "booking_expires_at",
+        c."title" AS "class_title",
         c."description" AS "class_description",
         c."starts_at" AS "class_starts_at",
         c."duration_minutes" AS "class_duration_minutes",
@@ -142,6 +144,7 @@ export class SqlMyBookingsReader implements MyBookingsReader {
       expiresAt: r.booking_expires_at ? toDate(r.booking_expires_at) : null,
       hasRated: r.has_rated,
       class: {
+        title: r.class_title,
         description: r.class_description,
         skillIds: r.skill_ids ?? [],
         startsAt: toDate(r.class_starts_at),

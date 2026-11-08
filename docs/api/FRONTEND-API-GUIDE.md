@@ -182,7 +182,6 @@ const bal = await (await fetch(`${API}/api/wallet/balance`, { headers: auth })).
 | PATCH | `/api/classes/:id` | **Teacher** (owner) | `updateClassSchema` | `200` class |
 | POST | `/api/classes/:id/cancel` | **Teacher** (owner) | — | `200` `{ classCancelled, bookingsCancelled }` |
 | POST | `/api/classes/:id/start` | **Teacher** (owner) | — | `200` `{ started }` |
-| POST | `/api/classes/:id/complete` | **Teacher** (owner) | — | `200` `{ completed, basis }` |
 | POST | `/api/classes/:id/bookings` | **Learner** | `{ idempotencyKey }` | `201` `{ booking, created }` |
 | POST | `/api/classes/bookings/:bookingId/confirm` | **Learner** (owner) | — | `200` confirm result |
 | POST | `/api/classes/bookings/:bookingId/rating` | **Learner** (owner) | `{ stars, comment }` | `201` rating |
@@ -241,9 +240,12 @@ before `startsAt`**, closes at `startsAt + durationMinutes`. Outside → `403`.
 `token` must be passed as `jwt` — a bare `room` opens a room in no tenant. The teacher's token
 is a moderator token.
 
-**Class lifecycle**: `start` runs the session (`published|full → in_progress`); `complete`
-ends it (`→ completed`) and **releases the Teacher's pending income** to available. A class
-whose Teacher no-showed is **cancelled** by the system instead (see below).
+**Class lifecycle**: `start` runs the session (`published|full → in_progress`). **There is no
+`complete` route**: a class completes **automatically** when its scheduled end passes
+(`starts_at + durationMinutes`), or when the room stays empty past the grace period (AC-035 /
+ADR-021 Amendment A), and that automatic completion is what **releases the Teacher's pending
+income** to available. A class whose Teacher no-showed is **cancelled** by the system instead
+(see below). A client must never wait on a Teacher action to finish a class.
 
 ---
 
@@ -260,7 +262,8 @@ Teacher                         Backend                              Learner
   │                                        POST /classes/bookings/:id/room-access ─▶ { room, token, url }
   │                                        (only within 15m-before … end)
   │                                                                  │ ▶ join Jitsi
-  │ POST /classes/:id/complete ────────▶ completed                      │
+  │  (no complete call: the class ends itself)                          │
+  │  scheduled end passes ───────────────▶ completed                    │
   │                                        (Teacher pending 90% → available)
 ```
 
@@ -270,7 +273,8 @@ Teacher                         Backend                              Learner
 4. **Learner** books: `POST /api/classes/:id/bookings` with an idempotency key → `pending`.
 5. **Learner** confirms: `POST /api/classes/bookings/:bookingId/confirm` → settles.
 6. Near start time, **Learner** (and **Teacher**) fetch room access and join Jitsi.
-7. **Teacher** completes: `POST /api/classes/:id/complete` → income released.
+7. **Nobody** completes the class: once `startsAt + durationMinutes` passes the system moves it
+   to `completed` and releases the Teacher's income. Do not poll for a Teacher action.
 8. Anyone reads their ledger: `GET /api/wallet/history`.
 
 API calls in order (Learner side):

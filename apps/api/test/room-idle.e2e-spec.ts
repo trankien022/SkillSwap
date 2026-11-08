@@ -116,6 +116,7 @@ describe('E2E: room-idle completion (FR-020 / AC-035)', () => {
     api.actAs(teacherId);
     const created = await api.post('/api/classes', {
       skillIds: ['skill-guitar'],
+      title: 'Idle room class',
       description: 'Idle room class',
       startsAt: new Date(Date.now() + 48 * hour).toISOString(),
       durationMinutes: 60,

@@ -95,3 +95,68 @@ and emits the matching event. Storage: the S3 adapter validates type/size and ne
 Architecture tests stay green.
 
 **Related:** ADR-013 (outbox), ADR-014 (TypeORM, per-module schema), ADR-016 (identity/roles).
+
+## Amendment A (2026-11-08) — how a reviewer reads a stored document
+
+Decision 5 covers **writing** a document: pre-signed PUT, bytes client→S3, `document_ref` in
+Postgres. It says nothing about **reading** one, and that omission had a consequence nobody
+intended: an uploaded document could be written and then never opened. An Administrator approved
+the gate that unlocks the teacher badge, the marketplace filter and payouts on the Learner's typed
+`school_name`/`major` alone, while the evidence for it sat in a bucket unreadable through the
+product. This amendment closes that without touching decision 5's write path.
+
+The four questions the original ADR left open are answered below. They were put to the developer as
+explicit choices on 2026-11-08 and answered; they are **not** the agent's to infer (see the
+2026-10-10 paragraph above).
+
+1. **Read path — pre-signed GET, symmetric with PUT.** `DocumentStore` gains
+   `createDownloadTarget(objectKey, expiresInSeconds)`; the S3 adapter signs with the **same** SigV4
+   canonicalisation it already uses for PUT, differing only in the method. The URL is minted per
+   request from `document_ref`; it is **never persisted, never logged, never listed**, and never
+   returned in a collection response. Nothing new is stored, so decision 5 and decision 6
+   (retention) are unchanged.
+
+2. **Who may read — `admin` and `verifier`.** Both roles already act on this evidence: the
+   Administrator decides the verification, and FR-003's Verifier reviews credentials. Restricting
+   the read to `admin` alone would have left a Verifier deciding blind or asking an Administrator to
+   relay a file out of band, which is worse in every respect including auditability. The **owner**
+   may also read their own submission — they uploaded it — and receives the reference via
+   `GET /student-verifications/me`, never a URL from that response. Any other caller gets `403`,
+   and a document is resolved only from the verification's own `document_ref`, never from an id
+   supplied in the query.
+
+3. **TTL — 300 seconds.** A presigned URL is bearer credential by definition: whoever holds it can
+   read the document. Five minutes is long enough to open a multi-page PDF and short enough that a
+   URL pasted into a chat is dead before it is useful. 300 s is a **cap**, not a preference — the
+   adapter rejects a longer request rather than clamping silently, so no caller can quietly widen
+   it. A caller that needs longer mints another URL; minting is cheap and stateless.
+
+4. **Audit — every read, attributed.** Each successful mint emits
+   `student_verification.document.read` through the transactional outbox (ADR-013), carrying the
+   `verificationId`, the acting `actorId` (ADR-035: actor ≠ subject), and which role read it.
+   `admin-operation` consumes it into the append-only `admin_audit_event` store — the same route
+   `verification.decision.*` already takes, because ADR-014 forbids `student-verification` writing
+   into `admin_operation`'s schema directly. **A refused read is not audited as a read**: an
+   unauthorised attempt never mints a URL, so there is nothing to record beyond the auth rejection.
+
+**What this does not decide.** Download expiry does not interact with decision 1 (no verification
+expiry) or decision 3 (no deletion workflow): this amendment grants read access to a row that is
+retained forever, and says nothing about when either should end. Object-level deletion remains
+absent from the MVP; the S3 adapter's `delete` is still a documented no-op seam.
+
+**Consequences.**
+
+- (+) An Administrator or Verifier can open the document they are deciding on, so approval is no
+  longer an act of faith in two typed strings.
+- (+) Reading is cheaper to audit than writing was: one event, one role, one actor, per mint.
+- (−) The URL is a bearer credential for 300 s. A leaked URL is a leaked document for that window;
+  the mitigation is the window, not the URL.
+- (−) `document_ref` is now load-bearing in both directions, so a bucket/key mismatch surfaces as a
+  broken read for a reviewer rather than as an unread file nobody noticed.
+
+**Verification.** Storage: the adapter signs a `GET` and refuses a TTL above 300 s. Application: a
+learner reading another learner's document is refused; a refused read mints no URL. Integration: an
+uploaded PDF is fetched through a minted URL and the bytes match; an audit row names the reader.
+Nothing in the suite writes a URL to a column, a log line or a list response.
+
+**Evidence:** `tasks/evidence/b8-verification-document-download.md`.

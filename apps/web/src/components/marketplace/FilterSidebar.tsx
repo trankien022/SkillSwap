@@ -70,8 +70,8 @@ export function FilterSidebar({
           label={t('format.oneOnOne')}
         />
         <Checkbox
-          checked={value.formats.includes('group-2-4')}
-          onChange={() => toggleFormat('group-2-4')}
+          checked={value.formats.includes('group')}
+          onChange={() => toggleFormat('group')}
           label={t('format.group')}
         />
       </FilterGroup>

@@ -1,13 +1,32 @@
-import { describe, expect, it } from 'vitest';
-import { mapBackendNotificationToUI, fetchNotifications } from './api-notifications';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { envelopeOk } from '@skillswap/contracts';
+import {
+  mapBackendNotificationToUI,
+  fetchNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+} from './api-notifications';
 import type { NotificationItem as BackendNotificationItem } from '@skillswap/contracts';
 
-describe('api-notifications', () => {
+function jsonResponse(body: unknown, status = 200): Response {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => body,
+    text: async () => JSON.stringify(body),
+  } as unknown as Response;
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+describe('api-notifications (W7)', () => {
   const sampleWalletNotif: BackendNotificationItem = {
     id: 'notif-w-1',
     type: 'wallet_transaction',
-    title: 'Nạp tín chỉ thành công',
-    body: 'Bạn vừa nạp 200 tín chỉ qua cổng nạp.',
+    title: 'Credit top-up settled',
+    body: '200 credits were added to your wallet.',
     targetType: 'wallet',
     targetId: 'topup-ref-1234',
     read: false,
@@ -17,30 +36,59 @@ describe('api-notifications', () => {
   const sampleVerifyNotif: BackendNotificationItem = {
     id: 'notif-v-1',
     type: 'verification_outcome',
-    title: 'Hồ sơ sinh viên đã được phê duyệt',
-    body: 'Thẻ sinh viên của bạn đã được kiểm duyệt hợp lệ.',
+    title: 'Student verification approved',
+    body: 'Your student card has been verified.',
     targetType: 'verification',
     targetId: 'verif-doc-5678',
     read: true,
     createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
   };
 
-  it('maps wallet notifications into finance category with correct badge and icon', () => {
+  it('maps wallet notifications into finance category without hardcoded Vietnamese strings', () => {
     const uiItem = mapBackendNotificationToUI(sampleWalletNotif);
-    expect(uiItem.id).toBe('notif-w-1');
-    expect(uiItem.category).toBe('finance');
-    expect(uiItem.unread).toBe(true);
-    expect(uiItem.badge).toBe('Ví & Tín chỉ');
-    expect(uiItem.icon).toBe('account_balance_wallet');
+    expect(uiItem).toEqual({
+      id: 'notif-w-1',
+      createdAt: sampleWalletNotif.createdAt,
+      category: 'finance',
+      unread: true,
+      title: 'Credit top-up settled',
+      content: '200 credits were added to your wallet.',
+    });
   });
 
-  it('maps verification notifications into verify category with correct badge and icon', () => {
+  it('maps verification notifications into verify category', () => {
     const uiItem = mapBackendNotificationToUI(sampleVerifyNotif);
     expect(uiItem.id).toBe('notif-v-1');
     expect(uiItem.category).toBe('verify');
     expect(uiItem.unread).toBe(false);
-    expect(uiItem.badge).toBe('Xác minh hồ sơ');
-    expect(uiItem.icon).toBe('verified_user');
+  });
+
+  it('persists single-item read state via POST /notifications/:id/read and returns unreadCount', async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse(envelopeOk({ success: true, unreadCount: 3 })),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const remaining = await markNotificationRead('notif-w-1');
+    expect(remaining).toBe(3);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/notifications/notif-w-1/read'),
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
+  it('persists mark-all-read via POST /notifications/read-all and returns unreadCount', async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse(envelopeOk({ success: true, unreadCount: 0 })),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const remaining = await markAllNotificationsRead();
+    expect(remaining).toBe(0);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/notifications/read-all'),
+      expect.objectContaining({ method: 'POST' }),
+    );
   });
 
   it('handles network failure gracefully without throwing', async () => {

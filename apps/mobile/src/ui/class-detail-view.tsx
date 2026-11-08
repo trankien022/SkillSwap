@@ -329,9 +329,10 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
         </View>
       </SurfaceCard>
 
-      {/* 2. Description Card */}
+      {/* 2. Title & Description Card */}
       <SurfaceCard style={styles.card}>
         <Text style={styles.sectionTitle}>{t('ClassDetail.description')}</Text>
+        <Text style={styles.classTitle}>{detail.title}</Text>
         <Text style={styles.descriptionText}>{detail.description}</Text>
 
         {/* Skills: the API resolves the names in `GET /classes/:id`; an id the

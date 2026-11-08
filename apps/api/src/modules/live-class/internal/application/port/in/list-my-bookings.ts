@@ -29,6 +29,7 @@ export interface ListMyBookingsQuery {
 }
 
 export interface LearnerBookingClassSummaryDto {
+  readonly title: string;
   readonly description: string;
   readonly skillIds: readonly string[];
   readonly startsAt: string;

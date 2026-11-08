@@ -23,8 +23,8 @@ export interface CreateDocumentRequest {
 }
 
 /**
- * FR-002 / ADR-023: the Postgres metadata side of document storage. The bytes
- * live in S3; this row records owner, object key, type/size and attachment.
+ * FR-002 / ADR-038: the Postgres metadata side of document storage. The bytes
+ * live in Cloudinary; this row records owner, object key, type/size and attachment.
  */
 export interface VerificationDocumentRepository {
   create(request: CreateDocumentRequest): Promise<VerificationDocument>;

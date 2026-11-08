@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { SYSTEM_ACTOR_ID } from '@skillswap/contracts';
 import type {
   BookingCancelledInput,
   RefundCancelledBookingPort,
@@ -19,6 +20,9 @@ export class RefundCancelledBookingUseCase implements RefundCancelledBookingPort
       teacherId: event.teacherId,
       priceCredits: event.priceCredits,
       traceId: randomUUID(),
+      // B11 / ADR-035: a cancellation refund is driven by the event consumer, not by a person, so
+      // the actor is the system. `learnerId` above is the beneficiary and stays distinct from it.
+      actorId: SYSTEM_ACTOR_ID,
     });
   }
 }

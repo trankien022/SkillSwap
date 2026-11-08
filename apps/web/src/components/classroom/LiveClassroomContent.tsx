@@ -622,7 +622,7 @@ export function LiveClassroomContent({ bookingId = '', roomCode = '' }: LiveClas
                 {booking !== null && (
                   // `teacherSchoolLabel` is a fixed value from the view mapper, so it is
                   // translated here rather than rendered raw: it used to print the English
-                  // "Peer student" on the Vietnamese screen.
+                  // Translated here rather than rendered raw from a view mapper.
                   <span className="text-sm text-slate-300">({t('participants.peerStudent')})</span>
                 )}
               </div>

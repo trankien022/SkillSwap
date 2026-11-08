@@ -320,6 +320,91 @@ describe('booking-payment-events contracts (ADR-031 / ADR-032 / Phase C1)', () =
       expect(fee.type).toBe('platform_fee');
     });
 
+    /**
+     * B11 / FR-016: the `reversal` member and its direction rule.
+     *
+     * A reversal takes money back after a settled top-up. It is the one type whose direction is
+     * inseparable from what it means, because the type is what picks the notification copy — a
+     * reversal announced as a credit would tell the learner money arrived when it left.
+     */
+    it('accepts a reversal only with direction debit (B11)', () => {
+      const reversal = walletTransactionCompletedEventSchema.parse({
+        transactionId: 'tx-200',
+        accountId: 'acc-user',
+        type: 'reversal',
+        amountCredits: 50,
+        direction: 'debit',
+        occurredAt: validOccurredAt,
+        actorId: SYSTEM_ACTOR_ID,
+      });
+      expect(reversal.type).toBe('reversal');
+      expect(reversal.direction).toBe('debit');
+      // A top-up is not attached to a booking, so neither is its reversal.
+      expect(reversal.bookingId).toBeUndefined();
+
+      expect(() =>
+        walletTransactionCompletedEventSchema.parse({
+          transactionId: 'tx-201',
+          accountId: 'acc-user',
+          type: 'reversal',
+          amountCredits: 50,
+          direction: 'credit',
+          occurredAt: validOccurredAt,
+          actorId: SYSTEM_ACTOR_ID,
+        }),
+      ).toThrow(/reversal must have direction debit/);
+    });
+
+    it('keeps every pre-existing type valid after reversal was added (additive)', () => {
+      // Adding an enum member must not narrow anything. Each of the five earlier types is parsed
+      // with the direction the ledger actually writes, so a typo in the enum would fail here.
+      const cases = [
+        { type: 'top_up', direction: 'credit' },
+        { type: 'income_release', direction: 'credit' },
+        { type: 'platform_fee', direction: 'credit' },
+      ] as const;
+
+      for (const { type, direction } of cases) {
+        expect(
+          walletTransactionCompletedEventSchema.parse({
+            transactionId: `tx-${type}`,
+            accountId: 'acc-user',
+            type,
+            amountCredits: 10,
+            direction,
+            occurredAt: validOccurredAt,
+            actorId: SYSTEM_ACTOR_ID,
+          }).type,
+        ).toBe(type);
+      }
+
+      expect(
+        walletTransactionCompletedEventSchema.parse({
+          transactionId: 'tx-bp',
+          accountId: 'acc-learner',
+          type: 'booking_payment',
+          amountCredits: 10,
+          direction: 'debit',
+          occurredAt: validOccurredAt,
+          bookingId: 'bk-1',
+          actorId: SYSTEM_ACTOR_ID,
+        }).type,
+      ).toBe('booking_payment');
+
+      expect(
+        walletTransactionCompletedEventSchema.parse({
+          transactionId: 'tx-br',
+          accountId: 'acc-learner',
+          type: 'booking_refund',
+          amountCredits: 10,
+          direction: 'credit',
+          occurredAt: validOccurredAt,
+          bookingId: 'bk-1',
+          actorId: SYSTEM_ACTOR_ID,
+        }).type,
+      ).toBe('booking_refund');
+    });
+
     it('positiveinteger/nozero/no floats: enforces positive integer credits on wallet transactions', () => {
       const base = {
         transactionId: 'tx-001',

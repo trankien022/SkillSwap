@@ -6,7 +6,7 @@
 
 Proving a learner is a real student (FR-002/FR-019, ADR-023/ADR-025). A submission is reviewed by an admin; an approved verification is what unlocks teaching (via the publish gate).
 
-6 endpoints.
+7 endpoints.
 
 Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
 
@@ -44,6 +44,7 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 | `reason` | string | yes | min 1 chars; nullable |
 | `decidedAt` | string | yes | date-time; nullable |
 | `submittedAt` | string | yes | date-time |
+| `documentId` | string | no | min 1 chars; nullable |
 
 **`page`** — AdminVerificationPageDto.page fields:
 
@@ -83,6 +84,7 @@ Submit a verification with the uploaded document (API-001). Only one effective (
 | `reason` | string | yes | min 1 chars; nullable |
 | `decidedAt` | string | yes | date-time; nullable |
 | `submittedAt` | string | yes | date-time |
+| `documentId` | string | no | min 1 chars; nullable |
 
 ### `POST /api/student-verifications/{id}/decision`
 
@@ -118,6 +120,25 @@ Admin approves or rejects a pending verification (FR-002).
 | `reason` | string | yes | min 1 chars; nullable |
 | `decidedAt` | string | yes | date-time; nullable |
 | `submittedAt` | string | yes | date-time |
+| `documentId` | string | no | min 1 chars; nullable |
+
+### `GET /api/student-verifications/{id}/document`
+
+**Mint a pre-signed download URL for the uploaded document (FR-002)**
+
+- Auth: 🔒 Bearer token required
+- Response: `DocumentDownloadTargetDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `id` | path | string | yes | The verification id |
+
+**Response — `DocumentDownloadTargetDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `downloadUrl` | string | yes | min 1 chars |
+| `expiresAt` | string | yes | date-time |
 
 ### `POST /api/student-verifications/{id}/revocation`
 
@@ -151,6 +172,7 @@ Admin revokes an approved verification (FR-019); the publish gate demotes the ac
 | `reason` | string | yes | min 1 chars; nullable |
 | `decidedAt` | string | yes | date-time; nullable |
 | `submittedAt` | string | yes | date-time |
+| `documentId` | string | no | min 1 chars; nullable |
 
 ### `POST /api/student-verifications/documents`
 
@@ -202,3 +224,4 @@ Read the caller's own verification and its status (FR-017).
 | `reason` | string | yes | min 1 chars; nullable |
 | `decidedAt` | string | yes | date-time; nullable |
 | `submittedAt` | string | yes | date-time |
+| `documentId` | string | no | min 1 chars; nullable |

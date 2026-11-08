@@ -80,8 +80,10 @@ function ClassDetailBody({ item }: { item: ClassDetailView }) {
         {/* Left column (8/12) — content sections */}
         <div className="flex flex-col gap-6 lg:col-span-8">
           <ScheduleSection item={item} />
-          <SyllabusSection item={item} />
-          <PrerequisitesSection item={item} />
+          {(item.description.trim().length > 0 || item.syllabus.length > 0) && (
+            <SyllabusSection item={item} />
+          )}
+          {item.prerequisites.length > 0 && <PrerequisitesSection item={item} />}
           <TeacherDossierSection item={item} />
           <ReviewsSection item={item} />
         </div>

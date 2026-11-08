@@ -104,9 +104,9 @@ try {
         [row.id, status],
       );
       await live.query(
-        `INSERT INTO live_class.teacher_verified (account_id,verified,occurred_at,updated_at)
-        VALUES ($1,$2,now(),now()) ON CONFLICT DO NOTHING`,
-        [row.id, status === 'approved'],
+        `INSERT INTO live_class.teacher_verified (account_id,verified,school_name,occurred_at,updated_at)
+        VALUES ($1,$2,$3,now(),now()) ON CONFLICT DO NOTHING`,
+        [row.id, status === 'approved', status === 'approved' ? 'Đại học FPT' : null],
       );
     }
   }
@@ -146,9 +146,9 @@ try {
     const id = uuid(200 + index);
     await live.transaction(async (tx) => {
       await tx.query(
-        `INSERT INTO live_class.classes (id,teacher_id,state,starts_at,duration_minutes,price_credits,capacity,description)
-        VALUES ($1,$2,'published',$3,60,$4,8,$5) ON CONFLICT DO NOTHING`,
-        [id, accounts.teacher.id, new Date(Date.now() + hours * 3600000), price, description],
+        `INSERT INTO live_class.classes (id,teacher_id,state,title,level,starts_at,duration_minutes,price_credits,capacity,description)
+        VALUES ($1,$2,'published',$3,'advanced',$4,60,$5,8,$6) ON CONFLICT DO NOTHING`,
+        [id, accounts.teacher.id, description, new Date(Date.now() + hours * 3600000), price, description],
       );
       await tx.query(
         'INSERT INTO live_class.class_skills (class_id,skill_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',

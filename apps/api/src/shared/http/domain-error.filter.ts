@@ -117,8 +117,18 @@ const NAME_TO_STATUS: Record<string, number> = {
   EvidenceNotClaimedError: 409,
   NotClaimOwnerError: 403,
   EvidenceNotDecidableError: 409,
+  // FR-003: certificate evidence referencing a key minted for another account.
+  ForeignEvidenceDocumentError: 403,
+  // FR-003: the evidence version has no attached file (description-only assessment).
+  EvidenceDocumentMissingError: 404,
+  // FR-003: a certificate upload with a type or size outside the policy.
+  UnsupportedEvidenceTypeError: 415,
+  EvidenceTooLargeError: 413,
+  InvalidEvidenceFileError: 400,
   // FR-018 evidence history (ADR-028).
   AccessDeniedError: 403,
+  // ADR-023 Amendment A: a non-reviewer asked for a verification document.
+  DocumentReadDeniedError: 403,
   // FR-005 publish gate (ADR-024 extension).
   UnverifiedTeacherError: 403,
   SkillNotApprovedError: 403,
@@ -224,6 +234,31 @@ export class DomainErrorFilter implements ExceptionFilter {
         message,
         data: null,
         errors: rawMessage.map((entry) => ({ code, message: String(entry) })),
+      };
+    }
+
+    // The global `ZodValidationPipe` (nestjs-zod) raises
+    // `{ statusCode: 400, message: 'Validation failed', errors: <zod issues> }`. The prose is
+    // useless on its own: `POST /classes` without a title said only "Validation failed", so the
+    // caller could not tell which field was wrong. The issues carry the answer, so spend them
+    // rather than dropping them. The local `shared/http/zod-validation.pipe.ts` already renders
+    // issues as `path: message`; this branch keeps both pipes reporting a field the same way.
+    const issues = body.errors;
+    if (statusCode === 400 && Array.isArray(issues) && issues.length > 0) {
+      const rendered = issues.map((issue) => {
+        const { path, message: issueMessage } = (issue ?? {}) as {
+          path?: unknown;
+          message?: unknown;
+        };
+        const field = Array.isArray(path) ? path.join('.') : '';
+        return field ? `${field}: ${String(issueMessage)}` : String(issueMessage);
+      });
+      return {
+        success: false,
+        code,
+        message: rendered.join('; '),
+        data: null,
+        errors: rendered.map((entry) => ({ code, message: entry })),
       };
     }
 

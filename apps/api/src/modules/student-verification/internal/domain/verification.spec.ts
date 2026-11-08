@@ -33,6 +33,9 @@ describe('student verification domain', () => {
       approved: 'student.verification.approved',
       rejected: 'student.verification.rejected',
       revoked: 'student.verification.revoked',
+      // ADR-023 Amendment A: a read, not a state change. Pinned here so a rename cannot silently
+      // orphan the audit consumer in `admin-operation`, which matches on this literal.
+      documentRead: 'student.verification.document.read',
     });
   });
 

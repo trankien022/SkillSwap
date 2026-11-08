@@ -108,6 +108,7 @@ describe('E2E: in-class chat (W5 / FR-012 / ADR-036)', () => {
     api.actAs(teacherId);
     const created = await api.post('/api/classes', {
       skillIds: ['skill-guitar'],
+      title: `Chat ${label}`,
       description: `Chat ${label}`,
       startsAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
       durationMinutes: 60,

@@ -10,8 +10,13 @@ describe('ClassDetailApiGateway', () => {
       displayName: 'Lê Minh',
       averageRating: 4.9,
       ratingsCount: 15,
+      verified: true,
+      schoolName: 'Đại học Bách khoa',
     },
     skillIds: ['skill-ds-1'],
+    title: 'Cấu trúc dữ liệu: cây và đồ thị',
+    level: 'advanced',
+    format: 'group',
     description: 'Cấu trúc dữ liệu và giải thuật nâng cao',
     startsAt: '2026-10-25T14:00:00.000Z',
     durationMinutes: 120,
@@ -33,12 +38,11 @@ describe('ClassDetailApiGateway', () => {
 
   it('maps only the fields the API actually returns, inventing nothing', () => {
     const webView = mapContractDetailToWeb(sampleContractDetail);
-
     // Real fields pass through unchanged.
     expect(webView.id).toBe(sampleContractDetail.id);
     expect(webView.teacherName).toBe('Lê Minh');
     expect(webView.priceCredits).toBe(80);
-    expect(webView.format).toBe('group-2-4');
+    expect(webView.format).toBe('group');
     expect(webView.description).toBe('Cấu trúc dữ liệu và giải thuật nâng cao');
     expect(webView.reviews).toHaveLength(1);
     expect(webView.reviews[0]?.authorName).toBe('Học viên A');
@@ -52,11 +56,32 @@ describe('ClassDetailApiGateway', () => {
     expect(webView.teacherCredentials).toEqual([]);
     expect(webView.teacherBio).toBeNull();
     expect(webView.teacherStats).toBeNull();
+    // B4: the school and the verification are now on the payload, so they are real facts rather
+    // than "unknown". `schoolCode` still has no wire source — the API sends free text.
     expect(webView.schoolCode).toBeNull();
-    expect(webView.schoolName).toBeNull();
-    expect(webView.verified).toBeNull();
+    expect(webView.schoolName).toBe('Đại học Bách khoa');
+    expect(webView.verified).toBe(true);
     // The reviewer's school is not returned, so none is claimed.
     expect(webView.reviews[0]?.schoolName).toBeNull();
+  });
+
+  it('trusts the API format even when capacity alone would suggest otherwise (B3)', () => {
+    // Proves the page no longer derives the format from capacity: capacity 4 would be a group
+    // under the old rule, but the API says this class is one-on-one.
+    const oneOnOne = mapContractDetailToWeb({
+      ...sampleContractDetail,
+      capacity: 4,
+      format: 'one-on-one',
+    });
+    expect(oneOnOne.format).toBe('one-on-one');
+
+    // And a 12-seat class is a group, not the "2-4" the old label claimed.
+    const twelve = mapContractDetailToWeb({
+      ...sampleContractDetail,
+      capacity: 12,
+      format: 'group',
+    });
+    expect(twelve.format).toBe('group');
   });
 
   it('renders the skill the API resolved in `skills`, and its absence as "not provided"', () => {
@@ -73,8 +98,9 @@ describe('ClassDetailApiGateway', () => {
     });
     expect(withSkills.skillName).toBe('Data structures');
     expect(withSkills.skillCategory).toBe('programming');
-    // The lowest advertised level is shown, exactly as the list page does.
-    expect(withSkills.level).toBe('beginner');
+    // B2: the class reports the level it is taught at, so the badge is the class's fact and
+    // not the catalogue's lowest level.
+    expect(withSkills.level).toBe('advanced');
 
     // `skills` is optional: a failed catalogue read leaves the field off the
     // response, and the page says so instead of guessing a skill.
@@ -82,7 +108,26 @@ describe('ClassDetailApiGateway', () => {
     const withoutSkills = mapContractDetailToWeb(sampleContractDetail);
     expect(withoutSkills.skillName).toBeNull();
     expect(withoutSkills.skillCategory).toBeNull();
-    expect(withoutSkills.level).toBeNull();
+    // The level survives a catalogue failure: it lives on the class, not on the skill.
+    expect(withoutSkills.level).toBe('advanced');
+  });
+
+  it('falls back to the catalogue only for a class recorded before levels existed (B2)', () => {
+    const legacy = mapContractDetailToWeb({
+      ...sampleContractDetail,
+      level: null,
+      skills: [
+        {
+          id: 'skill-ds-1',
+          name: 'Data structures',
+          category: 'Programming',
+          levels: ['beginner', 'intermediate', 'advanced'],
+        },
+      ],
+    });
+    expect(legacy.level).toBe('beginner');
+
+    expect(mapContractDetailToWeb({ ...sampleContractDetail, level: null }).level).toBeNull();
   });
 
   it('keeps a real rating and does not coerce an absent one to 5.0', () => {

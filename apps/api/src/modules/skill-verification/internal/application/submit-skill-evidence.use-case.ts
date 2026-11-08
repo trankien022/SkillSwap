@@ -5,6 +5,10 @@ import {
   SkillEvidence,
   UnknownSkillError,
 } from '../domain/evidence';
+import {
+  ForeignEvidenceDocumentError,
+  isClaimableEvidenceKey,
+} from '../domain/evidence-document';
 import type { Clock } from './port/out/clock';
 import type { SkillRepository } from './port/out/skill-repository';
 import type {
@@ -38,6 +42,19 @@ export class SubmitSkillEvidenceUseCase implements SubmitSkillEvidencePort {
   async execute(command: SubmitSkillEvidenceCommand): Promise<SkillEvidenceView> {
     if (!(await this.verifiedStudents.isVerifiedStudent(command.accountId))) {
       throw new NotVerifiedStudentError(command.accountId);
+    }
+
+    // FR-003: a certificate may only reference a key this account was issued. A reference in our
+    // minted shape (`<uuid>/<uuid>.<ext>`) that names a *different* account would otherwise let a
+    // learner submit somebody else's real object and have a reviewer open it. The unguessable uuid
+    // is not the protection — the id of another account is not secret, and nothing else in this
+    // path validates the reference. Free-form references are left alone (see `isClaimableEvidenceKey`).
+    if (
+      command.documentRef !== undefined &&
+      command.documentRef !== null &&
+      !isClaimableEvidenceKey(command.documentRef, command.accountId)
+    ) {
+      throw new ForeignEvidenceDocumentError(command.documentRef);
     }
 
     const skill = await this.skills.findActiveById(command.skillId);

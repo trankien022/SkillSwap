@@ -51,6 +51,16 @@ export const studentVerificationSchema = z.object({
   reason: z.string().min(1).nullable(),
   decidedAt: z.string().datetime({ offset: true }).nullable(),
   submittedAt: z.string().datetime({ offset: true }),
+  /**
+   * ADR-023 Amendment A: the document's reference (the object key), so a reviewer knows *which*
+   * file a decision was about and a learner can see what they submitted.
+   *
+   * **A reference, never a URL.** It is useless without a signature, which is why it may ride in a
+   * list payload while a minted download URL may not. Added as `.optional()` rather than required
+   * so the existing web and mobile clients keep parsing: a schema change that rejects a payload
+   * those clients already handle is a breaking change disguised as an additive one.
+   */
+  documentId: z.string().min(1).nullable().optional(),
 });
 export type StudentVerificationView = z.infer<typeof studentVerificationSchema>;
 
@@ -65,3 +75,27 @@ export const studentVerificationEventSchema = z.object({
   actorId: actorIdSchema,
 });
 export type StudentVerificationEvent = z.infer<typeof studentVerificationEventSchema>;
+
+/**
+ * ADR-023 Amendment A: a reviewer opened the uploaded document.
+ *
+ * Deliberately carries **no URL**. A minted download URL is a bearer credential valid for 300
+ * seconds; one written into an event payload would then live in the outbox, in the broker and in
+ * the audit row for as long as the record is retained. `documentRef` is the object key, which is
+ * only an identifier — it is useless without a signature.
+ */
+export const studentVerificationDocumentReadEventSchema = z.object({
+  verificationId: z.string().min(1),
+  /** The owner of the verification. **Not** the actor — see `actorId` (ADR-035). */
+  accountId: z.string().min(1),
+  /** The object key the reviewer opened. A reference, never a URL. */
+  documentRef: z.string().min(1),
+  /** `admin` or `verifier`; recorded because the two mean different things in an audit trail. */
+  actorRole: z.string().min(1),
+  occurredAt: z.string().datetime({ offset: true }),
+  /** ADR-035: the person who read the document. */
+  actorId: actorIdSchema,
+});
+export type StudentVerificationDocumentReadEvent = z.infer<
+  typeof studentVerificationDocumentReadEventSchema
+>;

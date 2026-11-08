@@ -459,13 +459,13 @@ export function MyBookingsView() {
               <Pressable
                 onPress={() => handleCardPress(item.classId)}
                 accessibilityRole="button"
-                accessibilityLabel={`${item.classSummary.description}, ${getBookingStatusLabel(item.state)}`}
+                accessibilityLabel={`${item.classSummary.title}, ${getBookingStatusLabel(item.state)}`}
                 style={({ pressed }) => [styles.cardBody, pressed && styles.cardPressed]}
               >
-                {/* Card Header: Description & Booking Status */}
+                {/* Card Header: Title & Booking Status */}
                 <View style={styles.cardHeader}>
                   <Text style={styles.cardTitle} numberOfLines={2}>
-                    {item.classSummary.description}
+                    {item.classSummary.title}
                   </Text>
                   <View style={styles.statusRow}>
                     <StatusPill
@@ -480,6 +480,11 @@ export function MyBookingsView() {
                     ) : null}
                   </View>
                 </View>
+
+                {/* Class Description */}
+                <Text style={styles.cardDescription} numberOfLines={2}>
+                  {item.classSummary.description}
+                </Text>
 
                 {/* Teacher Display Name */}
                 <View style={styles.metaRow}>
@@ -527,7 +532,7 @@ export function MyBookingsView() {
                 <Pressable
                   onPress={() => handleCardPress(item.classId)}
                   accessibilityRole="button"
-                  accessibilityLabel={`${t('MyBookings.viewClass')}: ${item.classSummary.description}`}
+                  accessibilityLabel={`${t('MyBookings.viewClass')}: ${item.classSummary.title}`}
                 >
                   <Text style={styles.viewDetailText}>
                     {t('MyBookings.viewClass')} →

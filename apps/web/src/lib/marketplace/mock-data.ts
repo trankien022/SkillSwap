@@ -21,6 +21,7 @@ function startsIn(hours: number): string {
 
 interface Seed {
   id: string;
+  title: string;
   teacherId: string;
   teacherName: string;
   schoolCode: UniversityCode;
@@ -28,7 +29,7 @@ interface Seed {
   skillName: string;
   skillCategory: 'language' | 'programming' | 'design' | 'soft-skills' | 'math';
   level: 'beginner' | 'intermediate' | 'advanced' | 'expert';
-  format: 'one-on-one' | 'group-2-4';
+  format: 'one-on-one' | 'group';
   ratingAvg: number;
   ratingCount: number;
   hoursAhead: number;
@@ -53,6 +54,7 @@ const schoolLabel: Record<UniversityCode, string> = {
 const seeds: Seed[] = [
   {
     id: 'demo-ielts-speaking',
+    title: 'IELTS Speaking: Part 2 cue cards',
     teacherId: 'teacher-demo-1',
     teacherName: 'Demo teacher · IELTS',
     schoolCode: 'ftu',
@@ -71,6 +73,7 @@ const seeds: Seed[] = [
   },
   {
     id: 'demo-dsa-algorithms',
+    title: 'Data structures & algorithms in practice',
     teacherId: 'teacher-demo-2',
     teacherName: 'Demo teacher · Algorithms',
     schoolCode: 'bk',
@@ -78,7 +81,7 @@ const seeds: Seed[] = [
     skillName: 'Data structures & algorithms',
     skillCategory: 'programming',
     level: 'intermediate',
-    format: 'group-2-4',
+    format: 'group',
     ratingAvg: 4.98,
     ratingCount: 68,
     hoursAhead: 48,
@@ -89,6 +92,7 @@ const seeds: Seed[] = [
   },
   {
     id: 'demo-uiux-figma',
+    title: 'Figma auto-layout portfolio review',
     teacherId: 'teacher-demo-3',
     teacherName: 'Demo teacher · UI/UX',
     schoolCode: 'kien-truc',
@@ -107,6 +111,7 @@ const seeds: Seed[] = [
   },
   {
     id: 'demo-econometrics',
+    title: 'Stata & R: OLS regression end to end',
     teacherId: 'teacher-demo-4',
     teacherName: 'Demo teacher · Econometrics',
     schoolCode: 'ueh',
@@ -114,7 +119,7 @@ const seeds: Seed[] = [
     skillName: 'Stata & R for OLS regression',
     skillCategory: 'math',
     level: 'advanced',
-    format: 'group-2-4',
+    format: 'group',
     ratingAvg: 4.88,
     ratingCount: 31,
     hoursAhead: 76,
@@ -125,6 +130,7 @@ const seeds: Seed[] = [
   },
   {
     id: 'demo-public-speaking',
+    title: 'Pitching & persuasive speaking',
     teacherId: 'teacher-demo-5',
     teacherName: 'Demo teacher · Public speaking',
     schoolCode: 'ussh',
@@ -143,6 +149,7 @@ const seeds: Seed[] = [
   },
   {
     id: 'demo-backend-node',
+    title: 'Node.js, Express & Redis APIs',
     teacherId: 'teacher-demo-6',
     teacherName: 'Demo teacher · Backend',
     schoolCode: 'bk',
@@ -150,7 +157,7 @@ const seeds: Seed[] = [
     skillName: 'Node.js, Express & Redis APIs',
     skillCategory: 'programming',
     level: 'intermediate',
-    format: 'group-2-4',
+    format: 'group',
     ratingAvg: 4.96,
     ratingCount: 47,
     hoursAhead: 112,
@@ -166,6 +173,7 @@ export function demoMarketplaceClasses(): MarketplaceClass[] {
     id: seed.id,
     teacherId: seed.teacherId,
     state: 'published',
+    title: seed.title,
     startsAt: startsIn(seed.hoursAhead),
     durationMinutes: seed.durationMinutes,
     priceCredits: seed.priceCredits,
@@ -204,24 +212,6 @@ export function formatStartsAt(startsAt: string, locale: 'vi' | 'en'): string {
     ? ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
     : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   return `${weekdays[weekday]}, ${day}/${month}`;
-}
-
-/** "Còn X/Y chỗ" for groups, "Còn X/X chỗ" for 1-1. Mirrors AC-029.
- *
- * For 1-1: one seat is open, capacity is 1.
- * For groups: the mock seeds 2 of 4 taken so users see realistic scarcity.
- * When a real seat counter exists (API-004 booking count) replace
- * this with the live value from the gateway.
- */
-export function formatSeats(
-  format: 'one-on-one' | 'group-2-4',
-  capacity: number,
-): string {
-  if (format === 'one-on-one') {
-    return `1/${capacity}`;
-  }
-  const taken = Math.max(0, capacity - 2);
-  return `${taken}/${capacity}`;
 }
 
 /* --- Class detail extension (FR-006 detail mock) --------------------- */
@@ -289,19 +279,19 @@ function defaultSyllabus(durationMinutes: number): SyllabusStep[] {
     },
     {
       order: 2,
-        title: 'Core technique block',
+      title: 'Core technique block',
       minutes: 35,
       body: 'Demonstration of the main technique with a worked example, then a guided practice run.',
     },
     {
       order: 3,
-        title: 'Independent practice',
+      title: 'Independent practice',
       minutes: 30,
       body: 'You try the technique on your own while the teacher observes and pauses you at decision points.',
     },
     {
       order: 4,
-        title: 'Review & next action',
+      title: 'Review & next action',
       minutes: 15,
       body: 'Recap, one concrete next action, and a question round before the timer ends.',
     },
@@ -422,7 +412,7 @@ function detailByIndex(idx: number): {
     },
     {
       description:
-        'A 90-minute small-group session (2-4 learners). The teacher circulates while each learner works the same problem set, then debriefs at the end.',
+        'A 90-minute small-group session. The teacher circulates while each learner works the same problem set, then debriefs at the end.',
       teacherBio:
         'Demo teacher · Algorithms. Background in competitive programming. Runs a calm, structured session — every step is explained twice before any code is written.',
     },

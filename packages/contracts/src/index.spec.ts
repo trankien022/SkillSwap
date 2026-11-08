@@ -335,6 +335,7 @@ describe('identityHeadersSchema', () => {
 describe('createClassSchema', () => {
   const valid = {
     skillIds: ['skill-1'],
+    title: 'Guitar basics',
     description: 'Intro to guitar',
     startsAt: '2026-10-10T10:00:00.000Z',
     durationMinutes: 60,
@@ -344,6 +345,16 @@ describe('createClassSchema', () => {
 
   it('accepts a valid class payload', () => {
     expect(createClassSchema.parse(valid)).toEqual(valid);
+  });
+
+  it('requires a title of 1-120 characters, trimmed before measuring (B1)', () => {
+    expect(() => createClassSchema.parse({ ...valid, title: undefined })).toThrow();
+    expect(() => createClassSchema.parse({ ...valid, title: '' })).toThrow();
+    expect(() => createClassSchema.parse({ ...valid, title: '   ' })).toThrow();
+    expect(() => createClassSchema.parse({ ...valid, title: 'x'.repeat(121) })).toThrow();
+    expect(createClassSchema.parse({ ...valid, title: '  Guitar basics  ' }).title).toBe(
+      'Guitar basics',
+    );
   });
 
   it('enforces the 30 to 180 minute duration', () => {
@@ -371,12 +382,33 @@ describe('classSchema', () => {
       id: 'cls-1',
       teacherId: 'teacher-1',
       state: 'published',
+      title: 'Guitar basics',
+      level: 'beginner' as const,
+      format: 'one-on-one' as const,
       startsAt: '2026-10-10T10:00:00.000Z',
       durationMinutes: 60,
       priceCredits: 100,
       capacity: 2,
     };
     expect(classSchema.parse(view)).toEqual(view);
+  });
+
+  it('reports an unrecorded level as null and rejects invented ones (B2)', () => {
+    const view = {
+      id: 'cls-1',
+      teacherId: 'teacher-1',
+      state: 'published',
+      title: 'Guitar basics',
+      level: null,
+      format: 'group' as const,
+      startsAt: '2026-10-10T10:00:00.000Z',
+      durationMinutes: 60,
+      priceCredits: 100,
+      capacity: 2,
+    };
+    expect(classSchema.parse(view).level).toBeNull();
+    expect(() => classSchema.parse({ ...view, level: 'master' })).toThrow();
+    expect(() => classSchema.parse({ ...view, level: undefined })).toThrow();
   });
 });
 
@@ -389,6 +421,15 @@ describe('updateClassSchema (FR-007 / AC-017)', () => {
     expect(() => updateClassSchema.parse({})).toThrow();
     expect(() => updateClassSchema.parse({ durationMinutes: 10 })).toThrow();
     expect(() => updateClassSchema.parse({ priceCredits: 0 })).toThrow();
+  });
+
+  it('strips a level: the taught level is a publish-time fact, not an edit (B2)', () => {
+    // Changing the level would invalidate the approval the class was published on, so the
+    // schema must not carry it. Zod strips unknown keys, so a client that sends one gets a
+    // no-op rather than a silent rewrite; a body containing only `level` is an empty edit and
+    // is refused.
+    expect(() => updateClassSchema.parse({ level: 'expert' })).toThrow();
+    expect(updateClassSchema.parse({ capacity: 4, level: 'expert' })).toEqual({ capacity: 4 });
   });
 });
 
@@ -997,11 +1038,30 @@ describe('student verification contracts', () => {
             requestedLevel: 'intermediate',
             approvedLevel: 'intermediate',
             submittedAt: '2026-10-11T00:00:00.000Z',
+            // FR-003/B9: what the evidence was and which file it referenced. `documentRef` is
+            // nullable because a version predating certificate uploads has no document.
+            evidenceType: 'certificate',
+            documentRef: 'acc-1/doc-1.pdf',
             entries: [audit],
           },
         ],
       };
       expect(skillEvidenceHistorySchema.parse(history)).toEqual(history);
+
+      // A version with no document is still valid: `verifier_assessment` evidence legitimately has
+      // none, and so does every row written before certificate uploads existed. Making this field
+      // required would have been a breaking change to a contract clients already parse.
+      const withoutDocument = {
+        ...history,
+        versions: [
+          {
+            ...history.versions[0],
+            evidenceType: 'verifier_assessment',
+            documentRef: null,
+          },
+        ],
+      };
+      expect(skillEvidenceHistorySchema.parse(withoutDocument).versions[0].documentRef).toBeNull();
     });
   });
 

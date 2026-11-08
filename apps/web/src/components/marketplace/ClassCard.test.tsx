@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  formatSeats,
   formatStartsAt,
   hoursUntilBookingDeadline,
   demoMarketplaceClasses,
@@ -19,11 +18,6 @@ describe('ClassCard helpers (content-guard at the data layer)', () => {
       expect(Number.isInteger(item.priceCredits)).toBe(true);
       expect(item.state).toBe('published');
     }
-  });
-
-  it('formatSeats reports the seat string for 1-1 and group formats', () => {
-    expect(formatSeats('one-on-one', 1)).toBe('1/1');
-    expect(formatSeats('group-2-4', 4)).toBe('2/4');
   });
 
   it('formatStartsAt produces a weekday + day/month string', () => {

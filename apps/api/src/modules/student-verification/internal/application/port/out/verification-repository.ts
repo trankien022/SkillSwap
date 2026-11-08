@@ -35,6 +35,24 @@ export interface RevokeVerificationRequest {
   readonly revokedAt: Date;
 }
 
+/**
+ * ADR-023 Amendment A: one reviewer opening one stored document.
+ *
+ * `actorId` is the person who read (ADR-035: actor ≠ subject), and `actorRole` is recorded because
+ * "an admin read this" and "a verifier read this" are different answers to the question the audit
+ * log exists to answer. `documentRef` is the object key, which is a reference and not a credential;
+ * the minted URL never appears here.
+ */
+export interface RecordDocumentReadRequest {
+  readonly verificationId: string;
+  /** The owner of the verification. Distinct from `actorId`, which is the reader (ADR-035). */
+  readonly accountId: string;
+  readonly documentRef: string;
+  readonly actorId: string;
+  readonly actorRole: string;
+  readonly readAt: Date;
+}
+
 /** Sort orders the admin queue supports (whitelisted, index-served). */
 export type AdminVerificationSort =
   | 'submittedAt'
@@ -71,6 +89,17 @@ export interface VerificationRepository {
   /** The account's most recent verification (any status) for the owner view. */
   findLatestByAccount(accountId: string): Promise<Verification | null>;
   findById(verificationId: string): Promise<Verification | null>;
+  /**
+   * ADR-023 Amendment A: records that a reviewer opened a stored document.
+   *
+   * The audit trail is written **here**, in the module that owns the document, rather than by the
+   * caller, so a new caller cannot forget it. It goes out as an outbox event because
+   * `admin_operation` owns the audit table and ADR-014 forbids reaching into another module's
+   * schema (the same route `student.verification.*` already takes). The URL is deliberately not
+   * part of the payload: an audit row that quoted it would turn a 300-second credential into a
+   * permanent one.
+   */
+  recordDocumentRead(request: RecordDocumentReadRequest): Promise<void>;
   /**
    * Applies an Administrator decision to a pending verification and writes the
    * matching outbox event in the same transaction (ADR-013). A decision on a

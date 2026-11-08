@@ -7,6 +7,14 @@ import type {
 import type { Clock } from '../port/out/clock';
 import type { ClassSkillReader } from '../port/out/class-skill-reader';
 import type { PublicTeacherReader } from '../port/out/public-teacher-reader';
+import type { AccountTrustReader } from '../port/out/account-trust';
+import type { RatingRepository } from '../port/out/rating-repository';
+
+const VERIFIED_TEACHER = {
+  verified: true,
+  schoolName: 'FPT University' as string | null,
+  approvedLevel: () => null,
+};
 
 describe('GetClassDetailQueryHandler', () => {
   const fixedNow = new Date('2026-10-12T12:00:00.000Z');
@@ -16,6 +24,8 @@ describe('GetClassDetailQueryHandler', () => {
   let mockClassDetailReader: jest.Mocked<ClassDetailReader>;
   let mockPublicTeacherReader: jest.Mocked<PublicTeacherReader>;
   let mockClassSkillReader: jest.Mocked<ClassSkillReader>;
+  let mockAccountTrustReader: jest.Mocked<AccountTrustReader>;
+  let mockRatingRepository: jest.Mocked<RatingRepository>;
   let mockClock: Clock;
   let handler: GetClassDetailQueryHandler;
 
@@ -23,6 +33,9 @@ describe('GetClassDetailQueryHandler', () => {
     id: 'cls-11111111-1111-4111-8111-111111111111',
     teacherId: 'teacher-uuid-1',
     skillIds: ['sk-math', 'sk-physics'],
+    title: 'Quantum Mechanics: the essentials',
+    level: 'advanced',
+    format: 'group',
     description: 'Advanced Quantum Mechanics',
     startsAt: startsAt25h,
     durationMinutes: 90,
@@ -47,6 +60,16 @@ describe('GetClassDetailQueryHandler', () => {
     mockClock = {
       now: () => fixedNow,
     };
+    const fakeTrust: AccountTrustReader = {
+      read: jest.fn(async () => ({ ...VERIFIED_TEACHER })),
+    };
+    mockAccountTrustReader = fakeTrust as unknown as jest.Mocked<AccountTrustReader>;
+    // B5: a class with no ratings yet — the default every pre-existing test expects.
+    mockRatingRepository = {
+      createForEligibleBooking: jest.fn(),
+      readAggregate: jest.fn().mockResolvedValue(new Map()),
+      readRecent: jest.fn().mockResolvedValue([]),
+    };
     mockClassSkillReader = {
       readMany: jest.fn().mockResolvedValue([
         { id: 'sk-math', name: 'Mathematics', category: 'Math', levels: ['beginner', 'intermediate'] },
@@ -57,8 +80,39 @@ describe('GetClassDetailQueryHandler', () => {
       mockClassDetailReader,
       mockPublicTeacherReader,
       mockClassSkillReader,
+      mockAccountTrustReader,
+      mockRatingRepository,
       mockClock,
     );
+  });
+
+  describe('Teacher verification (B4)', () => {
+    it('puts the projected verified flag and school on the teacher summary', async () => {
+      const result = await handler.execute({
+        classId: baseRecord.id,
+        callerId: 'stranger-caller',
+      });
+
+      expect(mockAccountTrustReader.read).toHaveBeenCalledWith('teacher-uuid-1');
+      expect(result.teacher.verified).toBe(true);
+      expect(result.teacher.schoolName).toBe('FPT University');
+    });
+
+    it('reports an unverified teacher with no school rather than a default one', async () => {
+      mockAccountTrustReader.read.mockResolvedValueOnce({
+        verified: false,
+        schoolName: null,
+        approvedLevel: () => null,
+      });
+
+      const result = await handler.execute({
+        classId: baseRecord.id,
+        callerId: 'stranger-caller',
+      });
+
+      expect(result.teacher.verified).toBe(false);
+      expect(result.teacher.schoolName).toBeNull();
+    });
   });
 
   describe('Skill catalogue enrichment (FR-006)', () => {
@@ -440,8 +494,8 @@ describe('GetClassDetailQueryHandler', () => {
     });
   });
 
-  describe('Teacher display name enrichment and provisional ratings', () => {
-    it('enriches teacher name and supplies provisional rating defaults', async () => {
+  describe('Teacher display name enrichment and rating read-back (B5)', () => {
+    it('reports a class with no ratings as null/0 and no reviews — never 0 stars', async () => {
       const result = await handler.execute({
         classId: baseRecord.id,
         callerId: 'learner-1',
@@ -453,8 +507,44 @@ describe('GetClassDetailQueryHandler', () => {
         displayName: 'Prof. Heisenberg',
         averageRating: null,
         ratingsCount: 0,
+        verified: true,
+        schoolName: 'FPT University',
       });
       expect(result.recentRatings).toEqual([]);
+    });
+
+    it('reports the aggregate and the newest reviews that learners actually wrote', async () => {
+      mockRatingRepository.readAggregate.mockResolvedValueOnce(
+        new Map([[baseRecord.id, { average: 4.33, count: 3 }]]),
+      );
+      mockRatingRepository.readRecent.mockResolvedValueOnce([
+        {
+          id: 'rating-3',
+          learnerDisplayName: 'Lê Học Viên',
+          stars: 5,
+          comment: 'Giảng rất rõ ràng',
+          createdAt: '2026-10-11T09:00:00.000Z',
+        },
+      ]);
+
+      const result = await handler.execute({
+        classId: baseRecord.id,
+        callerId: 'learner-1',
+      });
+
+      expect(mockRatingRepository.readAggregate).toHaveBeenCalledWith([baseRecord.id]);
+      expect(mockRatingRepository.readRecent).toHaveBeenCalledWith(baseRecord.id, 5);
+      expect(result.teacher.averageRating).toBe(4.33);
+      expect(result.teacher.ratingsCount).toBe(3);
+      expect(result.recentRatings).toEqual([
+        {
+          id: 'rating-3',
+          learnerDisplayName: 'Lê Học Viên',
+          stars: 5,
+          comment: 'Giảng rất rõ ràng',
+          createdAt: '2026-10-11T09:00:00.000Z',
+        },
+      ]);
     });
 
     it('falls back to SkillSwap when teacher profile is absent or empty', async () => {

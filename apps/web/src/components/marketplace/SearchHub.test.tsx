@@ -40,4 +40,11 @@ describe('marketplace search controls', () => {
       (screen.getByLabelText(en.Marketplace.search.universityLabel) as HTMLSelectElement).value,
     ).toBe('all');
   });
+  it('renders the university dropdown disabled with a visible translated explanation (W1)', () => {
+    render(view(DEFAULT_QUERY));
+    const select = screen.getByLabelText(en.Marketplace.search.universityLabel) as HTMLSelectElement;
+    expect(select.disabled).toBe(true);
+    expect(select.getAttribute('aria-disabled')).toBe('true');
+    expect(screen.getByText(en.Marketplace.search.universityDisabledHint)).toBeDefined();
+  });
 });

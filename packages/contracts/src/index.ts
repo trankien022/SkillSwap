@@ -8,6 +8,7 @@ export * from './skill-evidence';
 export * from './verification';
 
 import { pagedSchema, paginationQuerySchema } from './pagination';
+import { classFormatSchema } from './mobile-classes';
 import {
   evidenceStatusSchema,
   evidenceTypeSchema,
@@ -87,6 +88,11 @@ export type ApiError = z.infer<typeof apiErrorSchema>;
 /** FR-005 / API-004: create and publish a class. */
 export const createClassSchema = z.object({
   skillIds: z.array(z.string().min(1)).min(1),
+  /**
+   * B1: the Teacher-written class name. Trimmed before length is checked, so padding is not
+   * content — the same rule the domain applies, stated where a client can see it.
+   */
+  title: z.string().trim().min(1).max(120),
   description: z.string().min(1),
   startsAt: z.string().datetime({ offset: true }),
   durationMinutes: z.number().int().min(30).max(180),
@@ -99,6 +105,14 @@ export const classSchema = z.object({
   id: z.string().min(1),
   teacherId: z.string().min(1),
   state: z.string().min(1),
+  title: z.string().min(1),
+  /**
+   * B2: the level this class is taught at. `null` only for rows recorded before the column
+   * existed — it is never a guess, so a client shows no badge rather than a wrong one.
+   */
+  level: skillLevelSchema.nullable(),
+  /** B3: `one-on-one` for capacity 1, otherwise `group`. */
+  format: classFormatSchema,
   startsAt: z.string().datetime({ offset: true }),
   durationMinutes: z.number().int(),
   priceCredits: z.number().int(),
@@ -110,6 +124,7 @@ export type ClassView = z.infer<typeof classSchema>;
 export const updateClassSchema = z
   .object({
     skillIds: z.array(z.string().min(1)).min(1).optional(),
+    title: z.string().trim().min(1).max(120).optional(),
     description: z.string().min(1).optional(),
     startsAt: z.string().datetime({ offset: true }).optional(),
     durationMinutes: z.number().int().min(30).max(180).optional(),
@@ -387,7 +402,7 @@ export type RoomAccessResponse = z.infer<typeof roomAccessResponseSchema>;
 
 /** FR-002: student verification (ADR-023). At most one effective per account; no expiry. */
 
-/** FR-002 / ADR-023: request a pre-signed upload target for a document. */
+/** FR-002 / ADR-038: request a signed upload form for a document. */
 export const documentUploadRequestSchema = z.object({
   fileName: z.string().min(1).max(255),
   contentType: z.string().min(1).max(120),
@@ -419,6 +434,19 @@ export const documentUploadTargetSchema = z.object({
   expiresAt: z.string().datetime({ offset: true }),
 });
 export type DocumentUploadTargetView = z.infer<typeof documentUploadTargetSchema>;
+
+/**
+ * ADR-023 Amendment A: the response of a document read.
+ *
+ * `expiresAt` is returned so a client can tell a stale link from a broken one, and so the 300 s
+ * window is visible rather than implied. This object is the **only** place a URL is carried: it
+ * must never be stored, logged or included in a list.
+ */
+export const documentDownloadTargetSchema = z.object({
+  downloadUrl: z.string().min(1),
+  expiresAt: z.string().datetime({ offset: true }),
+});
+export type DocumentDownloadTargetView = z.infer<typeof documentDownloadTargetSchema>;
 
 /** FR-003 / ADR-026: skill taxonomy, evidence types and the fixed ordered level scale. */
 
@@ -523,7 +551,14 @@ export const evidenceAuditEventSchema = z.object({
 });
 export type EvidenceAuditEventView = z.infer<typeof evidenceAuditEventSchema>;
 
-/** FR-018: one evidence version and its ordered audit entries. */
+/**
+ * FR-018: one evidence version and its ordered audit entries.
+ *
+ * `evidenceType` and `documentRef` are the two fields B9's done-when asks a client to be able to
+ * read back after submitting a certificate. Both are nullable because a version written before
+ * certificate uploads existed has no document, and `documentRef` stays a plain reference — never a
+ * URL — so this view remains safe to cache and to show to the owner.
+ */
 export const evidenceVersionHistorySchema = z.object({
   version: z.number().int().positive(),
   evidenceId: z.string().min(1),
@@ -531,6 +566,8 @@ export const evidenceVersionHistorySchema = z.object({
   requestedLevel: skillLevelSchema,
   approvedLevel: skillLevelSchema.nullable(),
   submittedAt: z.string().datetime({ offset: true }),
+  evidenceType: evidenceTypeSchema,
+  documentRef: z.string().min(1).nullable(),
   entries: z.array(evidenceAuditEventSchema),
 });
 export type EvidenceVersionHistoryView = z.infer<typeof evidenceVersionHistorySchema>;

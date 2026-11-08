@@ -2,6 +2,9 @@ import { createZodDto } from 'nestjs-zod';
 import {
   adminVerifierQueuePageSchema,
   adminVerifierQueueQuerySchema,
+  documentDownloadTargetSchema,
+  evidenceDocumentUploadRequestSchema,
+  evidenceDocumentUploadTargetSchema,
   profileSkillListSchema,
   profileSkillQuerySchema,
   profileSkillSchema,
@@ -17,6 +20,21 @@ import {
 
 /** FR-003 / API-002: submit skill evidence. Body for POST /skill-evidence. */
 export class SubmitSkillEvidenceDto extends createZodDto(submitSkillEvidenceSchema) {}
+
+/** FR-003: request a signed upload form for a certificate. */
+export class EvidenceDocumentUploadRequestDto extends createZodDto(
+  evidenceDocumentUploadRequestSchema,
+) {}
+
+/** FR-003 / ADR-038: the signed upload form for a certificate. */
+export class EvidenceDocumentUploadTargetDto extends createZodDto(
+  evidenceDocumentUploadTargetSchema,
+) {}
+
+/** FR-003: the short-lived download URL returned when a reviewer opens a certificate. */
+export class EvidenceDocumentDownloadTargetDto extends createZodDto(
+  documentDownloadTargetSchema,
+) {}
 
 /** FR-003: the owner-facing view of one evidence version. */
 export class SkillEvidenceDto extends createZodDto(skillEvidenceViewSchema) {}

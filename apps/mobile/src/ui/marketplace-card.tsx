@@ -83,7 +83,7 @@ export function MarketplaceCard({ item, skillMap, onPress }: MarketplaceCardProp
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       onPress={() => onPress(item.id)}
       accessibilityRole="button"
-      accessibilityLabel={`${item.description}. ${t('Marketplace.viewDetails')}`}
+      accessibilityLabel={`${item.title}. ${t('Marketplace.viewDetails')}`}
     >
       {/* Header: Teacher and Status Badge */}
       <View style={styles.headerRow}>
@@ -97,8 +97,11 @@ export function MarketplaceCard({ item, skillMap, onPress }: MarketplaceCardProp
         </View>
       </View>
 
-      {/* Description */}
-      <Text style={styles.description} numberOfLines={3}>
+      {/* Title and Description */}
+      <Text style={styles.description} numberOfLines={2}>
+        {item.title}
+      </Text>
+      <Text style={styles.descriptionDetail} numberOfLines={3}>
         {item.description}
       </Text>
 
@@ -198,6 +201,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.ink,
     lineHeight: 22,
+  },
+  descriptionDetail: {
+    fontSize: typography.caption.fontSize,
+    color: colors.inkSoft,
+    lineHeight: 20,
   },
   skillsContainer: {
     flexDirection: 'row',

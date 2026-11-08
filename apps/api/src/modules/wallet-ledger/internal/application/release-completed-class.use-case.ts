@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { SYSTEM_ACTOR_ID } from '@skillswap/contracts';
 import { splitSettlement } from '../domain/wallet';
 import type { WalletRepository } from './port/out/wallet-repository';
 import type {
@@ -25,6 +26,9 @@ export class ReleaseCompletedClassUseCase implements ReleaseCompletedClassPort {
         amountCredits: teacherCredits,
         releaseKey: `class-completed:${event.classId}`,
         traceId: randomUUID(),
+        // B11 / ADR-035: a completion is a system effect, never a human act; `teacherId` above is
+        // the beneficiary whose balance moved.
+        actorId: SYSTEM_ACTOR_ID,
       });
       if (outcome.applied) {
         released += 1;

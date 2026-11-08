@@ -12,9 +12,20 @@ import type {
 } from '../port/out/class-list-reader';
 import type { Clock } from '../port/out/clock';
 import type { PublicTeacherReader } from '../port/out/public-teacher-reader';
+import type { AccountTrustReader } from '../port/out/account-trust';
+import type { RatingAggregate, RatingRepository } from '../port/out/rating-repository';
 
 const MARKETPLACE_LEAD_TIME_MS = 24 * 60 * 60 * 1000;
 const NEUTRAL_TEACHER_NAME = 'SkillSwap';
+
+/**
+ * B4: only two facts off the trust projection are public class data. Declared structurally so this
+ * read path never imports the domain aggregate (ADR-012, `live-class-queries-no-domain`).
+ */
+type TeacherVerification = Pick<
+  Awaited<ReturnType<AccountTrustReader['read']>>,
+  'verified' | 'schoolName'
+>;
 
 /**
  * Route 13 / FR-005, FR-006: query handler for listing classes in marketplace or own teaching mode.
@@ -24,6 +35,8 @@ export class ListClassesQueryHandler implements ListClassesPort {
   constructor(
     private readonly classListReader: ClassListReader,
     private readonly publicTeacherReader: PublicTeacherReader,
+    private readonly accountTrustReader: AccountTrustReader,
+    private readonly ratingRepository: RatingRepository,
     private readonly clock: Clock,
   ) {}
 
@@ -71,7 +84,7 @@ export class ListClassesQueryHandler implements ListClassesPort {
       };
 
       const result = await this.classListReader.findClasses(criteria);
-      const items = await this.enrichTeacherDisplayNames(result.items);
+      const items = await this.enrichTeachers(result.items);
 
       return {
         items,
@@ -107,7 +120,7 @@ export class ListClassesQueryHandler implements ListClassesPort {
     };
 
     const result = await this.classListReader.findClasses(criteria);
-    const items = await this.enrichTeacherDisplayNames(result.items);
+    const items = await this.enrichTeachers(result.items);
 
     return {
       items,
@@ -115,7 +128,7 @@ export class ListClassesQueryHandler implements ListClassesPort {
     };
   }
 
-  private async enrichTeacherDisplayNames(
+  private async enrichTeachers(
     records: readonly ClassListRecord[],
   ): Promise<readonly ClassListItemDto[]> {
     if (records.length === 0) {
@@ -123,7 +136,13 @@ export class ListClassesQueryHandler implements ListClassesPort {
     }
 
     const uniqueTeacherIds = Array.from(new Set(records.map((r) => r.teacherId)));
-    const profiles = await this.publicTeacherReader.readMany(uniqueTeacherIds);
+    // B5: one aggregate query for the whole page, keyed by class id. Reading per row would be an
+    // N+1 that grows with the page size.
+    const [profiles, trustByTeacher, ratingByClass] = await Promise.all([
+      this.publicTeacherReader.readMany(uniqueTeacherIds),
+      this.readTrustOncePerTeacher(uniqueTeacherIds),
+      this.ratingRepository.readAggregate(records.map((r) => r.id)),
+    ]);
     const nameMap = new Map<string, string>();
     for (const profile of profiles) {
       if (profile.displayName && profile.displayName.trim() !== '') {
@@ -133,11 +152,19 @@ export class ListClassesQueryHandler implements ListClassesPort {
 
     return records.map((record) => {
       const teacherDisplayName = nameMap.get(record.teacherId) || NEUTRAL_TEACHER_NAME;
+      const trust = trustByTeacher.get(record.teacherId);
+      const rating: RatingAggregate | undefined = ratingByClass.get(record.id);
       return {
         id: record.id,
         teacherId: record.teacherId,
         teacherDisplayName,
+        // B4: the university filter and the "verified only" toggle read these two fields.
+        verified: trust?.verified ?? false,
+        schoolName: trust?.schoolName ?? null,
         skillIds: record.skillIds,
+        title: record.title,
+        level: record.level,
+        format: record.format,
         description: record.description,
         startsAt: record.startsAt.toISOString(),
         durationMinutes: record.durationMinutes,
@@ -146,9 +173,22 @@ export class ListClassesQueryHandler implements ListClassesPort {
         confirmedBookingsCount: record.confirmedBookingsCount,
         availableSeats: record.availableSeats,
         state: record.state,
-        averageRating: null,
-        ratingsCount: 0,
+        averageRating: rating?.average ?? null,
+        ratingsCount: rating?.count ?? 0,
       };
     });
+  }
+
+  /**
+   * B4: one projection read per distinct teacher. The page is at most 100 rows and is usually
+   * published by a handful of teachers, so a per-row read would be up to 100 identical queries.
+   */
+  private async readTrustOncePerTeacher(
+    teacherIds: readonly string[],
+  ): Promise<ReadonlyMap<string, TeacherVerification>> {
+    const entries = await Promise.all(
+      teacherIds.map(async (teacherId) => [teacherId, await this.accountTrustReader.read(teacherId)] as const),
+    );
+    return new Map(entries);
   }
 }
