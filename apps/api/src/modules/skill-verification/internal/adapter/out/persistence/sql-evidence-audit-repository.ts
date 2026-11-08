@@ -1,13 +1,18 @@
 import type { EntityManager } from 'typeorm';
+import { skillEvidenceDocumentReadEventSchema } from '@skillswap/contracts';
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
+import { insertOutboxStatement } from '../../../../../../shared/messaging/outbox-statements';
 import { qualified } from '../../../../../../shared/sql/ident';
-import type { EvidenceStatus, EvidenceType, SkillLevel } from '../../../domain/evidence';
+import { SKILL_EVIDENCE_EVENTS, type EvidenceStatus, type EvidenceType, type SkillLevel } from '../../../domain/evidence';
 import type {
   EvidenceAuditAction,
   EvidenceAuditEntry,
   NewEvidenceAuditEntry,
 } from '../../../domain/history';
-import type { EvidenceAuditRepository } from '../../../application/port/out/skill-evidence-repository';
+import type {
+  EvidenceAuditRepository,
+  RecordEvidenceDocumentReadRequest,
+} from '../../../application/port/out/skill-evidence-repository';
 
 interface AuditRow {
   id: string;
@@ -108,5 +113,28 @@ export class SqlEvidenceAuditRepository implements EvidenceAuditRepository {
       [profileSkillId],
     )) as AuditRow[];
     return rows.map(toDomain);
+  }
+
+  /**
+   * FR-003: one event per certificate read, written through this module's outbox.
+   *
+   * `admin_operation` owns the audit table and consumes the event into it — ADR-014 forbids this
+   * module from writing that schema directly. The payload names the actor, their role and the
+   * object key, and carries no URL.
+   */
+  async recordDocumentRead(request: RecordEvidenceDocumentReadRequest): Promise<void> {
+    const source = this.registry.get(this.moduleName);
+    const schema = this.registry.getSchema(this.moduleName);
+    await source.query(insertOutboxStatement(schema), [
+      SKILL_EVIDENCE_EVENTS.documentRead,
+      skillEvidenceDocumentReadEventSchema.parse({
+        evidenceId: request.evidenceId,
+        accountId: request.accountId,
+        documentRef: request.documentRef,
+        actorRole: request.actorRole,
+        occurredAt: request.readAt.toISOString(),
+        actorId: request.actorId,
+      }),
+    ]);
   }
 }

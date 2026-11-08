@@ -534,7 +534,14 @@ export const evidenceAuditEventSchema = z.object({
 });
 export type EvidenceAuditEventView = z.infer<typeof evidenceAuditEventSchema>;
 
-/** FR-018: one evidence version and its ordered audit entries. */
+/**
+ * FR-018: one evidence version and its ordered audit entries.
+ *
+ * `evidenceType` and `documentRef` are the two fields B9's done-when asks a client to be able to
+ * read back after submitting a certificate. Both are nullable because a version written before
+ * certificate uploads existed has no document, and `documentRef` stays a plain reference — never a
+ * URL — so this view remains safe to cache and to show to the owner.
+ */
 export const evidenceVersionHistorySchema = z.object({
   version: z.number().int().positive(),
   evidenceId: z.string().min(1),
@@ -542,6 +549,8 @@ export const evidenceVersionHistorySchema = z.object({
   requestedLevel: skillLevelSchema,
   approvedLevel: skillLevelSchema.nullable(),
   submittedAt: z.string().datetime({ offset: true }),
+  evidenceType: evidenceTypeSchema,
+  documentRef: z.string().min(1).nullable(),
   entries: z.array(evidenceAuditEventSchema),
 });
 export type EvidenceVersionHistoryView = z.infer<typeof evidenceVersionHistorySchema>;

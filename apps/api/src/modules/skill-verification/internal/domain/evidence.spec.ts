@@ -40,6 +40,8 @@ describe('skill evidence domain', () => {
       claimed: 'skill.evidence.claimed',
       approved: 'skill.evidence.approved',
       rejected: 'skill.evidence.rejected',
+      // FR-003: a read, not a state change — audited, never a transition.
+      documentRead: 'skill.evidence.document.read',
     });
   });
 

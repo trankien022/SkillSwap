@@ -1,5 +1,6 @@
 import {
   accountStatusChangedSchema,
+  skillEvidenceDocumentReadEventSchema,
   skillEvidenceEventSchema,
   studentVerificationDocumentReadEventSchema,
   studentVerificationEventSchema,
@@ -39,6 +40,8 @@ export const AUDITED_EVENT_TYPES = {
   // identity evidence, so it is audited like a decision. It changes no state, which is why it has
   // its own case below rather than sharing the decision branch.
   verificationDocumentRead: 'student.verification.document.read',
+  // FR-003: the same act on certificate evidence — a reviewer opening somebody's file.
+  evidenceDocumentRead: 'skill.evidence.document.read',
   evidenceClaimed: 'skill.evidence.claimed',
   evidenceApproved: 'skill.evidence.approved',
   evidenceRejected: 'skill.evidence.rejected',
@@ -94,6 +97,26 @@ export function describeAuditedAction(message: AuditableMessage): AdminAuditEven
         targetId: event.verificationId,
         // A read changes nothing, so there is no old→new pair to record. The interesting facts are
         // who read, in what capacity, and which file.
+        oldState: null,
+        newState: null,
+        occurredAt: new Date(event.occurredAt),
+        traceId: null,
+        metadata: { actorRole: event.actorRole, documentRef: event.documentRef },
+        sourceEventId,
+      };
+    }
+
+    // --- FR-003: a reviewer opened certificate evidence's file ---------------------
+    case AUDITED_EVENT_TYPES.evidenceDocumentRead: {
+      const event = skillEvidenceDocumentReadEventSchema.parse(payload);
+      return {
+        // ADR-035: the reader, not the learner whose evidence it is.
+        actorId: event.actorId,
+        action: eventType,
+        targetType: 'skill_evidence_document',
+        targetId: event.evidenceId,
+        // A read changes no state, so there is no old→new pair. Who read, in what capacity, and
+        // which file are the facts worth keeping.
         oldState: null,
         newState: null,
         occurredAt: new Date(event.occurredAt),

@@ -1,4 +1,5 @@
 import { NotVerifiedStudentError, UnknownSkillError } from '../domain/evidence';
+import { ForeignEvidenceDocumentError } from '../domain/evidence-document';
 import { SubmitSkillEvidenceUseCase } from './submit-skill-evidence.use-case';
 import {
   InMemoryProfileSkillRepository,
@@ -128,5 +129,40 @@ describe('SubmitSkillEvidenceUseCase', () => {
     });
 
     expect(profileSkills.rows).toHaveLength(1);
+  });
+
+  it("refuses a document reference minted for another account (FR-003)", async () => {
+    const { useCase, evidence } = build();
+    const foreign = '99999999-9999-4999-8999-999999999999/cert.pdf';
+
+    await expect(
+      useCase.execute({
+        accountId: 'acc-1',
+        skillId: 'sk-1',
+        requestedLevel: 'intermediate',
+        evidenceType: 'certificate',
+        documentRef: foreign,
+      }),
+    ).rejects.toBeInstanceOf(ForeignEvidenceDocumentError);
+
+    // Refused before anything is written, so no pending version is left claiming a file the account
+    // does not own.
+    expect(evidence.rows).toEqual([]);
+  });
+
+  it('accepts a free-form reference, which the contract has always allowed', async () => {
+    const { useCase } = build();
+
+    // `docs/cert.pdf` is not a key this bucket can resolve, so it grants nothing and is left alone —
+    // tightening the field now would break every client already sending one.
+    await expect(
+      useCase.execute({
+        accountId: 'acc-1',
+        skillId: 'sk-1',
+        requestedLevel: 'intermediate',
+        evidenceType: 'certificate',
+        documentRef: 'docs/cert.pdf',
+      }),
+    ).resolves.toBeDefined();
   });
 });

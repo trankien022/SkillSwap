@@ -146,6 +146,33 @@ Submitting a certificate with a `documentRef` and reading `GET /skill-evidence/:
 both. A verifier opens the file and the bytes match. Existing decision tests (rejection reason
 required) still pass.
 
+**Deviation, recorded (2026-11-08).** Item 1 says "reuse the validation, do not copy the rules". That
+is not achievable and the plan was wrong to ask for it:
+
+- `domain-application-stay-inside-module` (`.dependency-cruiser.cjs`) makes `internal/domain/` and
+  `internal/application/` importing `apps/api/src/shared/` a **hard error**. Verified by probe, not
+  assumed: an application-layer spec importing `shared/storage/s3-presign` fails `test:arch`.
+- So the *policy* (`assertUploadable` + `buildObjectKey`) cannot be imported by either module's
+  domain or application. A spec under `internal/application/` cannot even reach it.
+- What **is** shared is the expensive half: `shared/storage/s3-presign.ts` holds the one SigV4
+  implementation, because it is reached from `adapter/`, which the same rule permits. Both modules'
+  adapters delegate to it, and `s3-evidence-document-store.spec.ts` pins that they sign identically.
+- The duplicated part is four `if` statements whose *values* (`s3AllowedContentTypes`,
+  `s3MaxUploadBytes`) come from the one `ApiConfig`, so the two cannot accept different file types.
+
+The realistic alternative was a `DocumentPolicy` port declared in `application/` and implemented in
+`adapter/` over the shared module. It was rejected because it would move file validation out of the
+domain and behind an injected interface for no behavioural gain, against this codebase's existing
+pattern (per-module `Clock`, per-module `AccessDeniedError`). Recorded here so the next reader knows
+the duplication is forced and bounded, not an oversight.
+
+**Also changed from the plan.** Item 3 said the download route should reuse B8's port. It reuses
+B8's *policy* (ADR-023 Amendment A: `admin` + `verifier`, 300 s, audited, key from the row) but not
+its TypeScript interface, because a port belongs to a module. The first implementation additionally
+required the Verifier to have claimed the row; the live probe showed that is wrong — claims are
+permanent (no release), so a Verifier could not open a file to decide whether to take it. Access is
+now role-based, exactly as B8's is.
+
 ## P5 — B11: money that moves without telling anyone
 
 Runbook `transaction-trace.md` records four gaps. Three are announcements, one is audit:

@@ -21,6 +21,7 @@ import type {
   PendingQueueQuery,
   ProfileSkillRepository,
   ProfileSkillWithSkill,
+  RecordEvidenceDocumentReadRequest,
   SkillEvidenceRepository,
   VerifierRecord,
   VerifierRepository,
@@ -371,10 +372,17 @@ export class InMemoryVerifiedStudentReader implements VerifiedStudentReader {
 export class InMemoryEvidenceAuditRepository implements EvidenceAuditRepository {
   readonly rows: EvidenceAuditEntry[] = [];
 
+  /** FR-003: the document reads recorded by the read use case, so a spec can assert them. */
+  readonly documentReads: RecordEvidenceDocumentReadRequest[] = [];
+
   async listByProfileSkill(profileSkillId: string): Promise<EvidenceAuditEntry[]> {
     return this.rows
       .filter((row) => row.profileSkillId === profileSkillId)
       .sort((a, b) => b.version - a.version || b.occurredAt.getTime() - a.occurredAt.getTime());
+  }
+
+  async recordDocumentRead(request: RecordEvidenceDocumentReadRequest): Promise<void> {
+    this.documentReads.push(request);
   }
 }
 
