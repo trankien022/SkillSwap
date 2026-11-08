@@ -145,7 +145,7 @@ export default function BookingCheckoutPage({ params }: PageProps) {
   // the class, which is what a wallet failure used to be reported as.
   const display =
     classDetail !== null && balance !== null
-      ? { classTitle: classDetail.description || classDetail.skillName || '', teacherName: classDetail.teacherName, priceCredits: classDetail.priceCredits, currentCredits: balance.availableCredits }
+      ? { classTitle: classDetail.title, teacherName: classDetail.teacherName, priceCredits: classDetail.priceCredits, currentCredits: balance.availableCredits }
       : null;
 
 
