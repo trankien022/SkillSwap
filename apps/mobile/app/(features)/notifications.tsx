@@ -1,5 +1,5 @@
-import React, { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import React, { useCallback, useRef, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { defaultKeyValueStore } from '@/infrastructure/storage/key-value-store';
 import type { NotificationItem } from '@skillswap/contracts';
@@ -13,6 +13,8 @@ import { AppButton, FeedbackBanner, ScreenScroll, SurfaceCard } from '@/ui/primi
 export default function NotificationsScreen() {
   const router = useRouter();
   const { t, locale, gatewayClient } = useSession();
+  const generation = useRef(0);
+  const mutationBusy = useRef(false);
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [unread, setUnread] = useState(0);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -30,6 +32,8 @@ export default function NotificationsScreen() {
   }, [gatewayClient, busy, cursor, t]);
   useFocusEffect(useCallback(() => {
     let active = true;
+    generation.current++;
+    setItems([]); setUnread(0); setCursor(null);
     void defaultKeyValueStore().getItemAsync(PUSH_DEVICE_ID_KEY).then((id) => { if (active) setDeviceId(id); });
     if (gatewayClient) {
       setBusy(true);
@@ -38,9 +42,23 @@ export default function NotificationsScreen() {
       }).catch(() => { if (active) setError(t('Notifications.loadError')); })
         .finally(() => { if (active) setBusy(false); });
     }
-    return () => { active = false; };
+    return () => { active = false; generation.current++; };
   }, [gatewayClient, t]));
 
+  const markRead = async (id?: string) => {
+    if (!gatewayClient || busy || mutationBusy.current) return;
+    const gen = generation.current;
+    mutationBusy.current = true;
+    setBusy(true); setError(null);
+    try {
+      const api = new NotificationGateway(gatewayClient);
+      const result = id ? await api.markRead(id) : await api.markAllRead();
+      if (gen !== generation.current) return;
+      setUnread(result.unreadCount);
+      setItems((old) => old.map((item) => !id || item.id === id ? { ...item, read: true } : item));
+    } catch { if (gen === generation.current) setError(t('Notifications.readError')); }
+    finally { mutationBusy.current = false; if (gen === generation.current) setBusy(false); }
+  };
   const enablePush = async () => {
     if (!gatewayClient || busy) return;
     setBusy(true); setError(null);
@@ -67,14 +85,15 @@ export default function NotificationsScreen() {
   return <ScreenScroll contentContainerStyle={styles.container}>
     <SurfaceCard style={styles.card}>
       <Text style={styles.title}>{t('Notifications.title')}</Text>
-      <Text style={styles.body}>{t('Notifications.unread', { count: unread })}</Text>
+      <Text accessibilityLiveRegion="polite" style={styles.body}>{t('Notifications.unread', { count: unread })}</Text>
+      <AppButton disabled={busy || unread === 0} onPress={() => void markRead()} label={t('Notifications.markAllRead')} />
       <AppButton tone="secondary" onPress={() => void (deviceId ? disablePush() : enablePush())} busy={busy} label={deviceId ? t('Notifications.disablePush') : t('Notifications.enablePush')} />
       {error && <FeedbackBanner tone="danger">{error}</FeedbackBanner>}
-      {items.length === 0 && !busy ? <Text style={styles.body}>{t('Notifications.empty')}</Text> : items.map((item) => <Pressable key={item.id} style={styles.item} onPress={() => router.push(notificationRoute(item.targetType, item.targetId))} accessibilityRole="button">
-        <Text style={styles.itemTitle}>{t(`Notifications.type_${item.type}`)}</Text>
-        <Text style={styles.body}>{t(`Notifications.body_${item.type}`)}</Text>
+      {items.length === 0 && !busy ? <Text style={styles.body}>{t('Notifications.empty')}</Text> : items.map((item) => <View key={item.id} style={styles.item}><Pressable onPress={() => router.push(notificationRoute(item.targetType, item.targetId))} accessibilityRole="button">
+        <Text style={styles.itemTitle}>{item.title}</Text>
+        <Text style={styles.body}>{item.body}</Text>
         <Text style={styles.meta}>{new Date(item.createdAt).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}</Text>
-      </Pressable>)}
+      </Pressable><Text style={styles.meta}>{t(item.read ? 'Notifications.read' : 'Notifications.unreadItem')}</Text>{!item.read && <AppButton disabled={busy} tone="quiet" onPress={() => void markRead(item.id)} label={t('Notifications.markRead')} />}</View>)}
       {cursor && <AppButton tone="quiet" onPress={() => void load(true)} busy={busy} label={t('Notifications.loadMore')} />}
     </SurfaceCard>
   </ScreenScroll>;

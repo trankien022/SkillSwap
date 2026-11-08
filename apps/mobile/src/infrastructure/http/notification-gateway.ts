@@ -1,4 +1,4 @@
-import { deviceSubscriptionSchema, notificationsPageSchema, upsertDeviceSchema, type ListNotificationsQuery, type UpsertDeviceInput } from '@skillswap/contracts';
+import { markNotificationsReadResponseSchema, deviceSubscriptionSchema, notificationsPageSchema, upsertDeviceSchema, type ListNotificationsQuery, type UpsertDeviceInput } from '@skillswap/contracts';
 import type { GatewayClient } from './gateway-client';
 
 export class NotificationGateway {
@@ -10,6 +10,12 @@ export class NotificationGateway {
     if (query.cursor) params.set('cursor', query.cursor);
     const qs = params.toString();
     return notificationsPageSchema.parse(await this.gateway.authenticatedRequest<unknown>(`/notifications${qs ? `?${qs}` : ''}`, { method: 'GET' }));
+  }
+  async markRead(id: string) {
+    return markNotificationsReadResponseSchema.parse(await this.gateway.authenticatedRequest<unknown>(`/notifications/${encodeURIComponent(id)}/read`, { method: 'POST' }));
+  }
+  async markAllRead() {
+    return markNotificationsReadResponseSchema.parse(await this.gateway.authenticatedRequest<unknown>('/notifications/read-all', { method: 'POST' }));
   }
   async registerDevice(input: UpsertDeviceInput) {
     const body = upsertDeviceSchema.parse(input);
