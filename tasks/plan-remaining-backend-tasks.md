@@ -175,34 +175,48 @@ now role-based, exactly as B8's is.
 
 ## P5 — B11: money that moves without telling anyone
 
-Runbook `transaction-trace.md` records four gaps. Three are announcements, one is audit:
+Runbook `transaction-trace.md` recorded four gaps. On investigation **one of them was stale**, so the
+phase is smaller than planned — and that is the useful finding:
 
 | Movement | Today | After |
 |---|---|---|
 | Booking refund | ledger row, no event | `wallet.transaction.completed` `booking_refund`, direction `credit` |
 | Income release | ledger row, no event | `wallet.transaction.completed` `income_release`, direction `credit` |
 | Top-up reversal | ledger row, no event; schema has no member | new `reversal` member, direction `debit` |
-| Top-up | notification yes, audit no | audit row via the outbox |
+| Top-up | ~~notification yes, audit no~~ | **already works** — see below |
+
+**Amended 2026-11-08: the top-up audit gap is stale.** The runbook claimed nothing reaches
+`admin_operation.admin_audit_event` for a top-up. A live SePay IPN disproved it: the settlement already
+produces `wallet.transaction.completed`, and `admin-operation` has mapped that event to an audit row
+since PR #93 (`audit-actions.ts` carries `walletTransactionCompleted`, `actor_id` is
+`SYSTEM_ACTOR_ID`, `target_type` is `wallet_transaction`, `target_id` is the ledger id). Nothing was
+built for it; the runbook was corrected and the gap re-pointed at what is genuinely unaudited —
+initiation, not settlement.
 
 **Work.**
 1. `refundBooking` / `releaseIncome` emit the event **inside the same transaction** as the ledger
-   write, with `transactionId` = the inserted ledger id and `RETURNING "id"` added to both inserts —
-   the durable identity `settleBooking`/`applyTopUp` already use.
+   write, with `transactionId` = the inserted ledger id and `RETURNING "id", "created_at"` added to
+   both inserts — the durable identity `settleBooking`/`applyTopUp` already use.
 2. Contracts: add `'reversal'` to the `type` enum with a refinement `reversal → direction debit`,
    mirroring `booking_payment`. Keep every existing member and rule untouched.
-3. `admin-operation`: register the top-up audit consumer. A SePay IPN's `actorId` is
-   `SYSTEM_ACTOR_ID` and `accountId` is the beneficiary — they stay distinct (ADR-035), as the
-   contract already documents.
+3. Thread `actorId` through `RefundBookingRequest` / `ReleaseIncomeRequest` from their use cases, the
+   way `SettleBookingRequest` already does: passed in as `SYSTEM_ACTOR_ID`, never imported by the
+   repository, so the wallet module does not decide who the actor was. The beneficiary
+   (`learnerId` / `teacherId`) is a different field and stays distinct (ADR-035).
 4. `notification-copy.ts` unchanged: `wallet_transaction` copy already covers all three, and
    `wallet.transaction.completed` is already consumed into an inbox row. So the three movements
    become visible **without** a new notification type — the enum is not widened for display reasons.
-5. Tests: each movement emits exactly once; replaying the IPN/refund does not duplicate; the
-   notification appears exactly once after broker replay.
+5. Tests: each movement emits exactly once; replay does not duplicate; the rollback case proves money
+   cannot move without the announcement.
+6. Correct `docs/runbooks/transaction-trace.md`: the stale audit gap, the `reversal` row, and the fact
+   that `sepay-ipn.ts` treats only `TRANSACTION_VOID` as a reversal (an `ORDER_REFUNDED` delivery is
+   acknowledged and ignored).
 
 **Done when.** Every ledger row produced by the trace runbook maps to a notification or a documented
-silent case. A refund and an income release each produce an inbox row. A reversal produces one. A
-top-up produces an audit row. `git grep -nE "parseFloat|toFixed.*[Pp]rice" -- apps/api/src` shows no
-float arithmetic on money. Broker-killed replay yields exactly one notification.
+silent case. A refund and an income release each produce an inbox row. A reversal produces one.
+`git grep -nE "parseFloat|toFixed.*[Pp]rice" -- apps/api/src` shows no float arithmetic on money.
+Broker-killed replay yields exactly one notification. Live evidence in `tasks/evidence/b11-*.md`.
+
 
 ## Out of scope, stated
 

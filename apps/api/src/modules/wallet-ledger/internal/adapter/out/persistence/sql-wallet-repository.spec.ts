@@ -105,6 +105,8 @@ const sampleRefundRequest: RefundBookingRequest = {
   teacherId: 'teacher-1',
   priceCredits: 100,
   traceId: 'trace-refund-1',
+  // B11 / ADR-035: a cancellation refund is a system effect, not a human act.
+  actorId: SYSTEM_ACTOR_ID,
 };
 
 describe('SqlWalletRepository (ADR-032 / Phase C2)', () => {
@@ -153,10 +155,14 @@ describe('SqlWalletRepository (ADR-032 / Phase C2)', () => {
       expect(payload.occurredAt).toBe(NOW.toISOString());
     });
 
-    it('emits nothing for a reversal, because the contract has no reversal type', async () => {
+    it('emits a reversal for a debit, which B11 added to the contract', async () => {
+      // Until B11 the enum had no member for "money taken back", so this path wrote the ledger
+      // and the balance and stayed silent. The SePay TRANSACTION_VOID producer made the member
+      // real; the announcement names the reversal's own ledger id, not the credit it offsets.
       const harness = createQueueRegistry([
         [{ id: '3046', created_at: NOW }],
         [{ available_credits: 500, pending_credits: 0 }],
+        [{ id: 'outbox-uuid-rev' }],
       ]);
 
       const repo = new SqlWalletRepository(harness.registry, 'wallet-ledger');
@@ -169,7 +175,24 @@ describe('SqlWalletRepository (ADR-032 / Phase C2)', () => {
         actorId: SYSTEM_ACTOR_ID,
       });
 
-      expect(harness.recordedQueries.some((q) => q.sql.includes('outbox_messages'))).toBe(false);
+      expect(harness.transactionCommitted).toBe(true);
+
+      const outbox = harness.recordedQueries.find((q) => q.sql.includes('outbox_messages'));
+      expect(outbox).toBeDefined();
+      expect(outbox?.params?.[0]).toBe('wallet.transaction.completed');
+
+      const payload = outbox?.params?.[1] as WalletTransactionCompletedEvent;
+      expect(payload).toMatchObject({
+        transactionId: '3046',
+        accountId: 'owner-1',
+        type: 'reversal',
+        direction: 'debit',
+        amountCredits: 50,
+        actorId: SYSTEM_ACTOR_ID,
+      });
+      // A reversal carries no bookingId: a top-up is not attached to a booking, and inventing a
+      // correlation the ledger does not have would make the event unjoinable.
+      expect(payload.bookingId).toBeUndefined();
     });
 
     it('rolls the credit back when the event cannot be written', async () => {
@@ -548,15 +571,98 @@ describe('SqlWalletRepository (ADR-032 / Phase C2)', () => {
     });
   });
 
+  describe('releaseIncome', () => {
+    /**
+     * B11 / FR-016: pending income becoming spendable used to be silent.
+     *
+     * The Teacher's balance moved and nothing told them, which is the same defect the top-up path
+     * had — found by the same trace walkthrough, missed by the same style of test. The assertion
+     * that matters is the outbox row; a test that only checked the balances would have passed
+     * against the broken code.
+     */
+    const sampleRelease = {
+      bookingId: 'bk-200',
+      teacherId: 'teacher-1',
+      amountCredits: 90,
+      releaseKey: 'class-completed:class-1',
+      traceId: 'trace-release-1',
+      actorId: SYSTEM_ACTOR_ID,
+    };
+
+    it('writes the ledger, the balances and the income_release event in one transaction', async () => {
+      const harness = createQueueRegistry([
+        [{ id: '3200', created_at: NOW }], // 1. Insert release ledger entry RETURNING id, created_at
+        [], // 2. Move pending -> available
+        [{ id: 'outbox-release-1' }], // 3. Insert outbox message
+      ]);
+
+      const repo = new SqlWalletRepository(harness.registry, 'wallet-ledger');
+      const result = await repo.releaseIncome(sampleRelease);
+
+      expect(result).toEqual({ applied: true });
+      expect(harness.transactionCommitted).toBe(true);
+
+      expect(harness.recordedQueries).toHaveLength(3);
+      expect(harness.recordedQueries[0].sql).toContain('RETURNING "id", "created_at"');
+      expect(harness.recordedQueries[2].params?.[0]).toBe('wallet.transaction.completed');
+
+      const payload = harness.recordedQueries[2].params?.[1] as WalletTransactionCompletedEvent;
+      expect(payload).toMatchObject({
+        transactionId: '3200',
+        // The beneficiary, not the actor: the Teacher was paid, the system released.
+        accountId: 'teacher-1',
+        type: 'income_release',
+        direction: 'credit',
+        amountCredits: 90,
+        bookingId: 'bk-200',
+        actorId: SYSTEM_ACTOR_ID,
+        occurredAt: NOW.toISOString(),
+      });
+    });
+
+    it('announces nothing on an idempotent replay', async () => {
+      // ON CONFLICT DO NOTHING makes the second call insert no row. `class.completed` is retried
+      // by the broker, so emitting here would tell the Teacher about the same payout on every
+      // replay.
+      const harness = createQueueRegistry([
+        [], // 1. Insert conflicts: nothing returned
+      ]);
+
+      const repo = new SqlWalletRepository(harness.registry, 'wallet-ledger');
+      const result = await repo.releaseIncome(sampleRelease);
+
+      expect(result).toEqual({ applied: false });
+      expect(harness.transactionCommitted).toBe(true);
+      // Only the insert: no balance update, no outbox row.
+      expect(harness.recordedQueries).toHaveLength(1);
+    });
+
+    it('rolls the whole release back when the event cannot be written', async () => {
+      // Money must not move without its announcement: if the outbox insert throws, the ledger and
+      // balance writes in the same transaction are undone and the retry can be applied cleanly.
+      const outboxError = new Error('outbox unavailable');
+      const harness = createQueueRegistry([
+        [{ id: '3201', created_at: NOW }],
+        [],
+        outboxError,
+      ]);
+
+      const repo = new SqlWalletRepository(harness.registry, 'wallet-ledger');
+      await expect(repo.releaseIncome(sampleRelease)).rejects.toBe(outboxError);
+      expect(harness.transactionRolledBack).toBe(true);
+    });
+  });
+
   describe('refundBooking', () => {
     it('serializes with same advisory lock, verifies settlement, and inserts refund with credit direction', async () => {
       const harness = createQueueRegistry([
         [], // 1. Advisory lock
         [{ 1: 1 }], // 2. Check settled (found learner_debit)
         [], // 3. Check already refunded (none)
-        [], // 4. Insert refund ledger entry
+        [{ id: '3100', created_at: NOW }], // 4. Insert refund ledger entry RETURNING id, created_at
         [], // 5. Credit learner balance
         [], // 6. Reverse teacher pending balance
+        [{ id: 'outbox-refund-1' }], // 7. Insert outbox message
       ]);
 
       const repo = new SqlWalletRepository(harness.registry, 'wallet-ledger');
@@ -565,15 +671,16 @@ describe('SqlWalletRepository (ADR-032 / Phase C2)', () => {
       expect(result).toEqual({ applied: true });
       expect(harness.txState.committed).toBe(true);
 
-      expect(harness.recordedQueries).toHaveLength(6);
+      expect(harness.recordedQueries).toHaveLength(7);
 
       // 1. Advisory lock uses exact same namespace string as settleBooking
       expect(harness.recordedQueries[0].sql).toContain('pg_advisory_xact_lock(hashtext($1))');
       expect(harness.recordedQueries[0].params).toEqual(['wallet_booking:bk-100']);
 
-      // 4. Direction is 'credit', not 'debit'
+      // 4. Direction is 'credit', not 'debit', and the row returns its durable identity
       expect(harness.recordedQueries[3].sql).toContain('INSERT INTO "wallet_ledger"."ledger_entries"');
       expect(harness.recordedQueries[3].sql).toContain('\'credit\', \'refund\'');
+      expect(harness.recordedQueries[3].sql).toContain('RETURNING "id", "created_at"');
       expect(harness.recordedQueries[3].params).toEqual([
         'learner-1',
         100,
@@ -590,6 +697,40 @@ describe('SqlWalletRepository (ADR-032 / Phase C2)', () => {
       // 6. Teacher pending balance decremented (never below zero)
       expect(harness.recordedQueries[5].sql).toContain('GREATEST(0, "pending_credits" - $2)');
       expect(harness.recordedQueries[5].params).toEqual(['teacher-1', 90]);
+
+      // 7. B11: the refund announces itself, keyed on the ledger row it just wrote.
+      expect(harness.recordedQueries[6].params?.[0]).toBe('wallet.transaction.completed');
+      const payload = harness.recordedQueries[6].params?.[1] as WalletTransactionCompletedEvent;
+      expect(payload).toMatchObject({
+        transactionId: '3100',
+        accountId: 'learner-1',
+        type: 'booking_refund',
+        direction: 'credit',
+        amountCredits: 100,
+        bookingId: 'bk-100',
+        actorId: SYSTEM_ACTOR_ID,
+        occurredAt: NOW.toISOString(),
+      });
+    });
+
+    it('rolls the whole refund back when the event cannot be written', async () => {
+      // B11: the Learner's credit and the Teacher's pending reversal must not land without the
+      // announcement that explains them.
+      const outboxError = new Error('outbox unavailable');
+      const harness = createQueueRegistry([
+        [], // 1. Advisory lock
+        [{ 1: 1 }], // 2. Check settled
+        [], // 3. Check already refunded
+        [{ id: '3101', created_at: NOW }], // 4. Insert refund ledger entry
+        [], // 5. Credit learner balance
+        [], // 6. Reverse teacher pending
+        outboxError, // 7. Outbox insert fails
+      ]);
+
+      const repo = new SqlWalletRepository(harness.registry, 'wallet-ledger');
+      await expect(repo.refundBooking(sampleRefundRequest)).rejects.toBe(outboxError);
+      expect(harness.transactionRolledBack).toBe(true);
+      expect(harness.transactionCommitted).toBe(false);
     });
 
     it('returns applied=false without writes when booking was never settled', async () => {
@@ -635,7 +776,6 @@ describe('SqlWalletRepository (ADR-032 / Phase C2)', () => {
         [], // Advisory lock
         [], // Check settled -> false
       ]);
-
       const settleRepo = new SqlWalletRepository(settleHarness.registry, 'wallet-ledger');
       const refundRepo = new SqlWalletRepository(refundHarness.registry, 'wallet-ledger');
 

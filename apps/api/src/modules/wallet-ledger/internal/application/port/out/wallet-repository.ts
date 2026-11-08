@@ -45,6 +45,12 @@ export interface ReleaseIncomeRequest {
   readonly amountCredits: number;
   readonly releaseKey: string;
   readonly traceId: string;
+  /**
+   * B11 / ADR-035: who caused the release. A `class.completed` is a system effect, so it is
+   * `SYSTEM_ACTOR_ID`; `teacherId` is the **beneficiary** and is a different fact. Passed in
+   * rather than imported so the wallet module does not make the audit decision itself.
+   */
+  readonly actorId: string;
 }
 
 export interface ReleaseIncomeResult {
@@ -57,6 +63,11 @@ export interface RefundBookingRequest {
   readonly teacherId: string;
   readonly priceCredits: number;
   readonly traceId: string;
+  /**
+   * B11 / ADR-035: who caused the refund. A `booking.cancelled` consumer drives it, so it is
+   * `SYSTEM_ACTOR_ID`; `learnerId` is the beneficiary.
+   */
+  readonly actorId: string;
 }
 
 export interface RefundBookingResult {
@@ -72,6 +83,9 @@ export interface WalletRepository {
   /**
    * FR-008: applies a top-up/reversal to the balance AND appends its ledger
    * entry in one transaction, so the two can never diverge (ADR-017).
+   *
+   * B11: a credit emits `top_up` and a debit emits `reversal`, both inside that
+   * transaction, so neither movement is silent.
    */
   applyTopUp(request: ApplyTopUpRequest): Promise<WalletBalance>;
   /**
@@ -80,12 +94,16 @@ export interface WalletRepository {
    * same booking is a no-op. Throws if the Learner's balance is insufficient.
    */
   settleBooking(request: SettleBookingRequest): Promise<SettleBookingResult>;
-  /** FR-009: moves pending income to available, once per (booking, releaseKey). */
+  /**
+   * FR-009: moves pending income to available, once per (booking, releaseKey).
+   * B11: an applied release emits `income_release`; the idempotent no-op does not.
+   */
   releaseIncome(request: ReleaseIncomeRequest): Promise<ReleaseIncomeResult>;
   /**
    * FR-007 / AC-022/AC-027 (ADR-019): refunds a settled booking — credits the
    * Learner, reduces the Teacher's pending income and reverses the fee, once
    * per booking. A no-op for a booking that was never settled.
+   * B11: an applied refund emits `booking_refund`; the no-ops do not.
    */
   refundBooking(request: RefundBookingRequest): Promise<RefundBookingResult>;
 }

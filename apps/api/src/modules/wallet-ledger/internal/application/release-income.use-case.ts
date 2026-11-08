@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { SYSTEM_ACTOR_ID } from '@skillswap/contracts';
 import type { ReleaseIncomeInput, ReleaseIncomePort, ReleaseIncomeResult } from './port/in/release-income';
 import type { WalletRepository } from './port/out/wallet-repository';
 
@@ -16,6 +17,8 @@ export class ReleaseIncomeUseCase implements ReleaseIncomePort {
       amountCredits: input.amountCredits,
       releaseKey: input.releaseKey,
       traceId: randomUUID(),
+      // B11 / ADR-035: a release is a system effect; the Teacher is the beneficiary, not the actor.
+      actorId: SYSTEM_ACTOR_ID,
     });
   }
 }
