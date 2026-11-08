@@ -7,7 +7,7 @@ function table(name: string): string {
 
 /**
  * FR-002 / ADR-023 (developer decision 4): document metadata in Postgres. The
- * bytes live in S3 (pre-signed upload); this row records owner, object key,
+ * bytes live in the document store (a signed upload); this row records owner, object key,
  * declared type/size and whether the document is attached to a submission.
  */
 export class CreateVerificationDocuments1791072000102 implements MigrationInterface {

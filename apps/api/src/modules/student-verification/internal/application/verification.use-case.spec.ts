@@ -89,8 +89,8 @@ describe('SubmitStudentVerificationUseCase (FR-002 / AC-001)', () => {
   });
 });
 
-describe('RequestDocumentUploadUseCase (FR-002 / ADR-023)', () => {
-  it('returns a pre-signed target and records pending metadata', async () => {
+describe('RequestDocumentUploadUseCase (FR-002 / ADR-038)', () => {
+  it('returns a signed upload form and records pending metadata', async () => {
     const { requestUpload, documents } = build();
     const target = await requestUpload.execute({
       accountId: 'a1',
@@ -98,7 +98,10 @@ describe('RequestDocumentUploadUseCase (FR-002 / ADR-023)', () => {
       contentType: 'application/pdf',
       sizeBytes: 500,
     });
-    expect(target.uploadUrl).toContain('https://s3.local/');
+    expect(target.uploadUrl).toContain('https://api.cloudinary.local/');
+    // The protocol is part of the contract: a raw-body PUT would be rejected by the provider.
+    expect(target.method).toBe('POST');
+    expect(target.fields.signature).toBe('fake-signature');
     expect(target.objectKey).toContain('a1/');
     expect(target.expiresAt).toBe(new Date(now.getTime() + 900 * 1000).toISOString());
     const stored = await documents.findById(target.documentId);

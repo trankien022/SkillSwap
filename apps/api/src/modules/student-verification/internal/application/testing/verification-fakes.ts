@@ -195,13 +195,19 @@ export class InMemoryVerificationDocumentRepository implements VerificationDocum
   }
 }
 
-/** Fake DocumentStore that returns deterministic pre-signed URLs. */
+/**
+ * Fake DocumentStore: a deterministic signed upload form (ADR-038) and a deterministic
+ * download URL. Neither is a real credential — each exists so a use-case spec can assert the
+ * shape a caller receives without touching a vendor.
+ */
 export class FakeDocumentStore implements DocumentStore {
   constructor(private readonly now: () => Date = () => new Date()) {}
 
   async createUploadTarget(input: CreateUploadTargetInput): Promise<UploadTarget> {
     return {
-      uploadUrl: `https://s3.local/${input.objectKey}?sig=fake`,
+      uploadUrl: 'https://api.cloudinary.local/v1_1/test/raw/upload',
+      method: 'POST',
+      fields: { public_id: input.objectKey, signature: 'fake-signature', api_key: 'fake-key' },
       objectKey: input.objectKey,
       expiresAt: new Date(this.now().getTime() + input.expiresInSeconds * 1000),
     };
@@ -209,7 +215,7 @@ export class FakeDocumentStore implements DocumentStore {
 
   async createDownloadTarget(input: CreateDownloadTargetInput): Promise<DownloadTarget> {
     return {
-      downloadUrl: `https://s3.local/${input.objectKey}?sig=fake&verb=get`,
+      downloadUrl: `https://api.cloudinary.com/v1_1/fake/raw/download?public_id=${input.objectKey}`,
       expiresAt: new Date(this.now().getTime() + input.expiresInSeconds * 1000),
     };
   }

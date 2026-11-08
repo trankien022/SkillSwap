@@ -52,6 +52,42 @@ declare global {
 
 const SCRIPT_ID = 'skillswap-jitsi-external-api';
 
+/**
+ * The script base: origin plus every path segment except the room.
+ *
+ * JaaS serves `external_api.js` per tenant at `https://8x8.vc/<appId>/external_api.js`, so the
+ * base cannot be the bare origin — loading `/external_api.js` at the root gives a global script
+ * that is not bound to the AppID. For a single-segment room (`https://host/room`) this reduces
+ * to the origin, which is what a self-hosted deployment served.
+ */
+export function jitsiScriptBaseFromUrl(roomUrl: string): string {
+  try {
+    const parsed = new URL(roomUrl);
+    const segments = parsed.pathname.split('/').filter((segment) => segment.length > 0);
+    // Drop the last segment: that is the room, the rest is the tenant path.
+    const prefix = segments.slice(0, -1).map(encodeURIComponent).join('/');
+    return `${parsed.protocol}//${parsed.host}${prefix ? `/${prefix}` : ''}`;
+  } catch {
+    return roomUrl.replace(/\/+$/, '').replace(/\/[^/]+$/, '');
+  }
+}
+
+/**
+ * The room name the External API expects: the URL's path with the tenant preserved.
+ *
+ * JaaS requires `roomName: "<appId>/<room>"` and scopes the meeting to that AppID. The API's
+ * `room` field is the provider-agnostic `skillswap-<classId>`, so passing it through directly
+ * would open a room in no tenant. Deriving from the URL keeps the tenant in one place (the
+ * returned `url`) instead of duplicating the app id into the domain model.
+ */
+export function jitsiRoomNameFromUrl(roomUrl: string): string {
+  try {
+    return new URL(roomUrl).pathname.replace(/^\/+/, '').replace(/\/+$/, '').split('/').map(decodeURIComponent).join('/');
+  } catch {
+    return roomUrl.replace(/^[a-z]+:\/\//i, '').replace(/^[^/]+\/?/, '').replace(/\/+$/, '');
+  }
+}
+
 /** Strips a trailing path so `https://host:8443/room` becomes `https://host:8443`. */
 export function jitsiDomainFromUrl(roomUrl: string): string {
   try {

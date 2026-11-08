@@ -10,8 +10,8 @@ import type { EvidenceDocumentStore } from './port/out/evidence-document-store';
  * FR-003: where a certificate goes.
  *
  * The upload target is a write credential, so the assertions that matter are about the key it is
- * for and what the caller was allowed to declare — not about the URL's shape, which belongs to the
- * S3 adapter's own tests.
+ * for and what the caller was allowed to declare — not about the signature itself, which belongs to
+ * the Cloudinary adapter's own tests.
  */
 
 const NOW = new Date('2026-11-08T09:00:00.000Z');
@@ -23,7 +23,9 @@ function store() {
     async createUploadTarget(input) {
       calls.push(input);
       return {
-        uploadUrl: `https://s3.local/${input.objectKey}?sig=fake`,
+        uploadUrl: 'https://api.cloudinary.com/v1_1/fake/raw/upload',
+        method: 'POST',
+        fields: { timestamp: '1', public_id: input.objectKey, signature: 'fake' },
         objectKey: input.objectKey,
         expiresAt: new Date(NOW.getTime() + input.expiresInSeconds * 1000),
       };
@@ -44,7 +46,7 @@ function useCase(overrides: { store: EvidenceDocumentStore; uploadTtlSeconds?: n
 }
 
 describe('RequestEvidenceDocumentUploadUseCase (FR-003)', () => {
-  it('returns the URL, key and expiry the task asks for', async () => {
+  it('returns the form, key and expiry the task asks for', async () => {
     const { fake } = store();
     const target = await useCase({ store: fake }).execute({
       accountId: ACCOUNT,
@@ -53,10 +55,12 @@ describe('RequestEvidenceDocumentUploadUseCase (FR-003)', () => {
       sizeBytes: 2048,
     });
 
-    // The URL is whatever the store minted — the signature itself is the S3 adapter's contract, not
-    // this use case's. What matters here is that the key is the one asked for and the expiry is the
-    // configured window.
-    expect(target.uploadUrl).toContain(`${ACCOUNT}/`);
+    // The signature itself is the Cloudinary adapter's contract, not this use case's. What matters
+    // here is that the signed form is passed through intact — dropping `fields` would leave a
+    // client with a URL it cannot authenticate against.
+    expect(target.uploadUrl).toContain('cloudinary.com');
+    expect(target.method).toBe('POST');
+    expect(target.fields.signature).toBe('fake');
     expect(target.objectKey).toMatch(new RegExp(`^${ACCOUNT}/[0-9a-f-]{36}\\.pdf$`));
     expect(target.expiresAt).toBe(new Date(NOW.getTime() + 900 * 1000).toISOString());
   });
@@ -103,6 +107,12 @@ describe('RequestEvidenceDocumentUploadUseCase (FR-003)', () => {
 
     // Inventing an id would be a handle to nothing; the object key is the reference that gets
     // validated at submit time.
-    expect(Object.keys(target).sort()).toEqual(['expiresAt', 'objectKey', 'uploadUrl']);
+    expect(Object.keys(target).sort()).toEqual([
+      'expiresAt',
+      'fields',
+      'method',
+      'objectKey',
+      'uploadUrl',
+    ]);
   });
 });

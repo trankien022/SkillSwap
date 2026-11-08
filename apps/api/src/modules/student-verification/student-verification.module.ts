@@ -5,7 +5,7 @@ import { createModuleDataSource } from './internal/adapter/out/persistence/data-
 import { SCHEMA } from './internal/adapter/out/persistence/schema';
 import { SqlVerificationRepository } from './internal/adapter/out/persistence/sql-verification-repository';
 import { SqlVerificationDocumentRepository } from './internal/adapter/out/persistence/sql-verification-document-repository';
-import { S3DocumentStore } from './internal/adapter/out/storage/s3-document-store';
+import { CloudinaryDocumentStore } from './internal/adapter/out/storage/cloudinary-document-store';
 import { StudentVerificationController } from './internal/adapter/in/web/student-verification.controller';
 import { SubmitStudentVerificationUseCase } from './internal/application/submit-student-verification.use-case';
 import { RequestDocumentUploadUseCase } from './internal/application/request-document-upload.use-case';
@@ -75,13 +75,10 @@ export class StudentVerificationRegistrar implements OnModuleInit {
     {
       provide: DOCUMENT_STORE,
       useFactory: (config: ApiConfig): DocumentStore =>
-        new S3DocumentStore({
-          endpoint: config.s3Endpoint,
-          region: config.s3Region,
-          bucket: config.s3Bucket,
-          accessKeyId: config.s3AccessKeyId,
-          secretAccessKey: config.s3SecretAccessKey,
-          forcePathStyle: config.s3ForcePathStyle,
+        new CloudinaryDocumentStore({
+          cloudName: config.cloudinaryCloudName,
+          apiKey: config.cloudinaryApiKey,
+          apiSecret: config.cloudinaryApiSecret,
         }),
       inject: [ApiConfig],
     },
@@ -91,8 +88,11 @@ export class StudentVerificationRegistrar implements OnModuleInit {
         new RequestDocumentUploadUseCase(
           documents,
           store,
-          { allowedContentTypes: config.s3AllowedContentTypes, maxBytes: config.s3MaxUploadBytes },
-          config.s3UploadTtlSeconds,
+          {
+            allowedContentTypes: config.cloudinaryAllowedContentTypes,
+            maxBytes: config.cloudinaryMaxUploadBytes,
+          },
+          config.cloudinaryUploadTtlSeconds,
         ),
       inject: [VERIFICATION_DOCUMENT_REPOSITORY, DOCUMENT_STORE, ApiConfig],
     },

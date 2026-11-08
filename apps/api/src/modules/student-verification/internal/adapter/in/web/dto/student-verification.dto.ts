@@ -11,14 +11,14 @@ import {
   verificationRevocationSchema,
 } from '@skillswap/contracts';
 
-/** FR-002: request a pre-signed upload target. Body for POST /student-verifications/documents. */
+/** FR-002: request a signed upload target. Body for POST /student-verifications/documents. */
 export class DocumentUploadRequestDto extends createZodDto(documentUploadRequestSchema) {}
 
-/** FR-002: the pre-signed upload target returned to the client. */
+/** FR-002: the signed upload target returned to the client (ADR-038: endpoint + signed fields). */
 export class DocumentUploadTargetDto extends createZodDto(documentUploadTargetSchema) {}
 
 /**
- * ADR-023 Amendment A: the pre-signed GET returned to a reviewer.
+ * ADR-023 Amendment A: the short-lived download URL returned to a reviewer.
  *
  * The only DTO that carries a URL. It is minted per call and never stored, so this class is the
  * whole lifetime of a document credential.

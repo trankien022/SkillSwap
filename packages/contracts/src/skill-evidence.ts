@@ -66,7 +66,7 @@ export const submitSkillEvidenceSchema = z.object({
 export type SubmitSkillEvidenceInput = z.infer<typeof submitSkillEvidenceSchema>;
 
 /**
- * FR-003: request a pre-signed upload target for certificate evidence.
+ * FR-003 / ADR-038: request a signed upload form for certificate evidence.
  *
  * Mirrors `documentUploadRequestSchema`: same allow-list and size cap, opposite side of the same
  * bucket. Extracted into its own schema rather than reusing the verification one because the two
@@ -89,9 +89,19 @@ export type EvidenceDocumentUploadRequestInput = z.infer<
  * so the submission can prove it references a document the same account created; certificate
  * evidence has no such row, so inventing an id here would be a handle to nothing. The object key
  * *is* the reference, and it is checked for ownership when the evidence is submitted.
+ *
+ * FR-003 / ADR-038: like `documentUploadTargetSchema`, this is a **signed form**, not a pre-signed
+ * link. The provider authenticates the upload with credential fields in the body, so a client must
+ * POST `multipart/form-data` and send every pair in `fields` verbatim alongside the file.
+ * `expiresAt` is advisory: there is no server-enforced deadline behind it (ADR-038 consequence 2).
  */
 export const evidenceDocumentUploadTargetSchema = z.object({
+  /** Endpoint the multipart body is posted to. */
   uploadUrl: z.string().min(1),
+  /** Always `POST`; explicit so a client never assumes a raw body upload. */
+  method: z.literal('POST'),
+  /** Signed fields, sent unchanged and un-encoded next to the file part. */
+  fields: z.record(z.string(), z.string()),
   objectKey: z.string().min(1),
   expiresAt: z.string().datetime({ offset: true }),
 });

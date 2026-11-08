@@ -1,15 +1,21 @@
+import { ApiConfig } from '../src/shared/config/api-config';
 import { startHarness, type Harness } from './harness';
 import { accountIdFromToken, ApiClient, waitFor } from './support/api-client';
 import { resetDatabase, seedTeacherTrust, walletRow } from './support/db';
+import { participantEvent, signJaasWebhook } from './support/jaas-webhook';
 import { ClassCompletionSweeper } from '../src/modules/live-class/internal/adapter/in/scheduler/class-completion.sweeper';
 
 jest.setTimeout(60_000);
 
-// No default. The webhook refuses every request when its secret is empty, so a spec that
-// quietly assumed one would be signing requests with a value the server never loaded -- which
-// is exactly how these suites broke in CI while passing locally. A guess cannot fail in a way
-// that says "the secret is missing", so there is no guess.
-const WEBHOOK_SECRET = process.env.JITSI_WEBHOOK_SECRET ?? '';
+/**
+ * Read from the **running process's resolved config**, not `process.env`.
+ *
+ * `ApiConfig` supplies defaults, so a spec that reads `process.env` can see `''` while the API
+ * boots perfectly well with a default — and then sign deliveries the server refuses. One source
+ * of truth keeps the signature and the verifier in agreement (ADR-039).
+ */
+let WEBHOOK_SECRET = '';
+let JITSI_APP_ID = '';
 
 /**
  * FR-020 / AC-035 (W1 C3a/C3b, decided 2026-10-25): a class completes early when the
@@ -33,18 +39,30 @@ describe('E2E: room-idle completion (FR-020 / AC-035)', () => {
   const minute = 60 * 1000;
 
   beforeAll(async () => {
-    // Fail before the stack starts, with the actual reason. Without this the first webhook
-    // returns 401 and the failure reads as "presence was rejected" rather than "no secret was
-    // configured", which is the wrong problem to go debug.
+    harness = await startHarness();
+    api = new ApiClient(harness.baseUrl);
+
+    // Resolve from the running app so the signer and the verifier cannot disagree.
+    const config = harness.resolve<ApiConfig>(ApiConfig);
+    WEBHOOK_SECRET = config.jitsiWebhookSecret;
+    JITSI_APP_ID = config.jitsiAppId;
+
+    // Fail with the actual reason. Without this the first webhook returns 401 and the failure
+    // reads as "presence was rejected" rather than "no secret was configured", which is the
+    // wrong problem to go debug.
     if (WEBHOOK_SECRET === '') {
       throw new Error(
         'JITSI_WEBHOOK_SECRET is not set. The presence webhook refuses every request when its ' +
-          'secret is empty (ADR-020 Amendment A), so these specs cannot run without one. Set it ' +
+          'secret is empty (ADR-039), so these specs cannot run without one. Set it ' +
           'in the environment (CI does this in .github/workflows/ci.yml) or in the repo-root .env.',
       );
     }
-    harness = await startHarness();
-    api = new ApiClient(harness.baseUrl);
+    if (JITSI_APP_ID === '') {
+      throw new Error(
+        'JITSI_APP_ID is not set. JaaS reports presence as `<appId>/<room>` and these specs ' +
+          'must sign for the same tenant the API signs tokens for (ADR-039).',
+      );
+    }
   });
 
   afterAll(async () => {
@@ -165,17 +183,22 @@ describe('E2E: room-idle completion (FR-020 / AC-035)', () => {
 
   function presence(classId: string, eventName: string, occupantId: string, at: Date) {
     api.actAs(null);
-    return api.request(
-      'POST',
-      '/api/internal/jitsi/presence',
-      {
-        event_name: eventName,
-        room: `skillswap-${classId}`,
-        participant: { id: occupantId },
-        timestamp: at.getTime(),
-      },
-      { headers: { 'x-jitsi-webhook-secret': WEBHOOK_SECRET } },
+    // ADR-039: the delivery is signed over its exact bytes, so the helper returns the body
+    // string and sends the same one it signed.
+    const signed = signJaasWebhook(
+      participantEvent(
+        JITSI_APP_ID,
+        classId,
+        eventName === 'participant-joined' ? 'PARTICIPANT_JOINED' : 'PARTICIPANT_LEFT',
+        occupantId,
+        at,
+      ),
+      WEBHOOK_SECRET,
     );
+    return api.request('POST', '/api/internal/jitsi/presence', undefined, {
+      headers: { ...signed.headers, 'content-type': 'application/json' },
+      rawBody: signed.body,
+    });
   }
 
   it('completes a started class once everyone has been gone past the grace period, and pays out', async () => {
@@ -274,25 +297,22 @@ describe('E2E: room-idle completion (FR-020 / AC-035)', () => {
     expect((await classState(classId)).state).toBe('in_progress');
   });
 
-  it('rejects a webhook without the shared secret', async () => {
+  it('rejects a webhook that is unsigned or signed with the wrong secret', async () => {
     const { classId } = await paidBooking();
     await startTwentyMinutesAgo(classId);
 
+    const payload = participantEvent(JITSI_APP_ID, classId, 'PARTICIPANT_JOINED', teacherId, new Date());
+
     api.actAs(null);
-    const missing = await api.request('POST', '/api/internal/jitsi/presence', {
-      event_name: 'participant-joined',
-      room: `skillswap-${classId}`,
-      participant: { id: teacherId },
-    });
+    const missing = await api.request('POST', '/api/internal/jitsi/presence', payload);
     expect(missing.status).toBe(401);
 
-    const wrong = await api.request(
-      'POST',
-      '/api/internal/jitsi/presence',
-      { event_name: 'participant-joined', room: `skillswap-${classId}`, participant: { id: teacherId } },
-      { headers: { 'x-jitsi-webhook-secret': 'not-the-secret' } },
-    );
-    expect(wrong.status).toBe(401);
+    const wrong = signJaasWebhook(payload, 'not-the-secret');
+    const rejected = await api.request('POST', '/api/internal/jitsi/presence', undefined, {
+      headers: wrong.headers,
+      rawBody: wrong.body,
+    });
+    expect(rejected.status).toBe(401);
 
     const rows = await harness.query<{ id: string }>(
       'live-class',

@@ -84,14 +84,16 @@ export class SkillEvidenceController {
    */
   @Post('documents')
   @ApiOperation({
-    summary: 'Request a pre-signed upload target for certificate evidence (FR-003)',
+    summary: 'Request a signed upload form for certificate evidence (FR-003)',
     description:
       'Same allow-list and size cap as a student-verification document upload. The returned ' +
-      '`objectKey` is the reference to send as `documentRef` when submitting the evidence.',
+      '`objectKey` is the reference to send as `documentRef` when submitting the evidence. ' +
+      'POST `multipart/form-data` to `uploadUrl` with the file part plus every pair in `fields`, ' +
+      'verbatim and un-encoded — the provider re-derives the signature from what it receives.',
   })
   @ApiOkResponse({
     type: EvidenceDocumentUploadTargetDto,
-    description: 'A pre-signed PUT URL, its object key and expiry',
+    description: 'A signed POST form, its object key and advisory expiry',
   })
   requestDocumentUpload(
     @Body() body: EvidenceDocumentUploadRequestDto,
@@ -127,7 +129,7 @@ export class SkillEvidenceController {
   }
 
   /**
-   * FR-003: mint a short-lived pre-signed GET for the certificate behind one evidence version.
+   * FR-003: mint a short-lived download URL for the certificate behind one evidence version.
    *
    * A separate route from `:id/history` on purpose — the history is the record of the decision, a
    * URL is a credential. Mixing them would put a 300-second credential into a payload that clients
@@ -140,15 +142,16 @@ export class SkillEvidenceController {
   @Roles('admin', 'verifier', 'user')
   @ApiParam({ name: 'id', description: 'The evidence id' })
   @ApiOperation({
-    summary: 'Mint a pre-signed download URL for certificate evidence (FR-003)',
+    summary: 'Mint a short-lived download URL for certificate evidence (FR-003)',
     description:
       'Readable by the owner, an Administrator, or any Verifier (ADR-023 Amendment A: the role is ' +
       'the permission, the claim is the work assignment). The URL lives 300 seconds and is a ' +
-      'credential: it is returned here and never stored or listed.',
+      'credential: it is returned here and never stored or listed. The expiry is part of the ' +
+      'signed request, so it cannot be widened by editing the URL.',
   })
   @ApiOkResponse({
     type: EvidenceDocumentDownloadTargetDto,
-    description: 'A pre-signed GET URL and its expiry',
+    description: 'A signed, expiring download URL',
   })
   document(
     @Param('id') id: string,

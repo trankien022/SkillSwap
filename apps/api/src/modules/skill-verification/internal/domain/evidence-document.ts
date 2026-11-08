@@ -5,8 +5,8 @@
  * same three checks and the same allow-list, and duplicating them is exactly the kind of thing that
  * drifts. It is duplicated anyway because the module boundary says it must be: `domain/` may not
  * import `shared/` (`.dependency-cruiser.cjs`, `domain-application-stay-inside-module`) and may not
- * reach into another module (ADR-005/ADR-011). The expensive, error-prone half — the SigV4
- * canonicalisation — *is* shared (`shared/storage/s3-presign.ts`), because that one lives in an
+ * reach into another module (ADR-005/ADR-011). The expensive, error-prone half — the Cloudinary
+ * signature — *is* shared (`shared/storage/cloudinary-sign.ts`), because that one lives in an
  * adapter and adapters may use `shared/`. What is copied here is four `if` statements with no
  * arithmetic in them, and the list they read is injected from the same config keys, so the two
  * cannot accept different file types.
@@ -88,8 +88,8 @@ export function buildEvidenceObjectKey(input: {
  * could resolve. Those are allowed through unchanged, which keeps this an additive rule: the
  * contract has always described `documentRef` as a free string, and rejecting the free-string form
  * now would break every client already sending one. Such a reference grants nothing — the download
- * route signs it, S3 answers `NoSuchKey`, and the reviewer sees a broken link rather than another
- * account's file.
+ * route signs it, the store answers that the asset does not exist, and the reviewer sees a broken
+ * link rather than another account's file.
  *
  * The rule that matters is therefore narrow and exact: **a reference in our minted shape must
  * belong to the submitter.** That is what stops a learner from naming somebody else's real object.

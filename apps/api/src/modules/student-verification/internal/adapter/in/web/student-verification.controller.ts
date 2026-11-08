@@ -74,7 +74,7 @@ export class StudentVerificationController {
   ) {}
 
   @Post('documents')
-  @ApiOperation({ summary: 'Request a pre-signed document upload target (FR-002)' })
+  @ApiOperation({ summary: 'Request a signed document upload target (FR-002)' })
   @ApiOkResponse({ type: DocumentUploadTargetDto, description: 'Pre-signed PUT URL plus the document id to submit' })
   requestDocumentUpload(
     @Body() body: DocumentUploadRequestDto,
@@ -153,7 +153,7 @@ export class StudentVerificationController {
   }
 
   /**
-   * ADR-023 Amendment A: mint a short-lived pre-signed GET for the document behind a verification.
+   * ADR-023 Amendment A: mint a short-lived download URL for the document behind a verification.
    *
    * Declared **after** `@Get('me')` for the same reason the bare collector is (see below): Nest
    * matches routes in declaration order, and a parameterised `:id` route placed earlier would
@@ -164,8 +164,11 @@ export class StudentVerificationController {
   @Get(':id/document')
   @Roles('admin', 'verifier')
   @ApiParam({ name: 'id', description: 'The verification id' })
-  @ApiOperation({ summary: 'Mint a pre-signed download URL for the uploaded document (FR-002)' })
-  @ApiOkResponse({ type: DocumentDownloadTargetDto, description: 'A pre-signed GET URL and its expiry' })
+  @ApiOperation({ summary: 'Mint a short-lived download URL for the uploaded document (FR-002)' })
+  @ApiOkResponse({
+    type: DocumentDownloadTargetDto,
+    description: 'A signed, expiring download URL',
+  })
   readDocument(
     @Param('id') id: string,
     @Req() request: RequestWithIdentity,

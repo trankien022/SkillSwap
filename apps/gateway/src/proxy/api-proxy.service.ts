@@ -23,7 +23,12 @@ const PUBLIC_PATHS = [
   '/api/auth/login',
   '/api/auth/refresh',
   '/api/auth/logout',
+  // SePay IPN: the provider holds no bearer token; authenticity is the edge IP allow-list.
   '/api/wallet/top-ups/callback',
+  // JaaS presence webhook: it authenticates with X-Jaas-Signature over the raw body, so it
+  // arrives with no bearer token. Without this the API would 401 at the gateway in production,
+  // silently costing early class completion (AC-035).
+  '/api/internal/jitsi',
 ];
 
 function isPublicPath(path: string): boolean {

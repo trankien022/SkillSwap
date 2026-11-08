@@ -121,7 +121,7 @@ describe('object keys (FR-003)', () => {
   it('lets a free-form reference through, because it cannot open anything', () => {
     // `docs/cert.pdf` has been a legal `documentRef` since the contract was written. Refusing it now
     // would break every client already sending one; it grants nothing, since the download route
-    // signs it and S3 answers NoSuchKey.
+    // signs it and the store answers that the asset does not exist.
     expect(isClaimableEvidenceKey('docs/cert.pdf', ACCOUNT)).toBe(true);
     expect(isClaimableEvidenceKey('https://example.com/c.pdf', ACCOUNT)).toBe(true);
   });

@@ -12,8 +12,9 @@ import type {
 } from './port/in/request-evidence-document-upload';
 
 /**
- * FR-003 / ADR-023 (storage half): validates the declared file against the policy and returns a
- * pre-signed PUT. Bytes go client → store and never touch the API, so there is nothing to log.
+ * FR-003 / ADR-038 (storage half): validates the declared file against the policy and returns a
+ * signed multipart form. Bytes go client → store and never touch the API, so there is nothing to
+ * log.
  *
  * The upload TTL is deliberately the *same* config value `student-verification` uses. A certificate
  * is not a bigger file than an enrolment letter, so a longer window would only widen the period an
@@ -46,6 +47,8 @@ export class RequestEvidenceDocumentUploadUseCase implements RequestEvidenceDocu
 
     return {
       uploadUrl: target.uploadUrl,
+      method: target.method,
+      fields: target.fields,
       objectKey: target.objectKey,
       expiresAt: target.expiresAt.toISOString(),
     };

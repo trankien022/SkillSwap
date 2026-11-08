@@ -23,7 +23,8 @@ comes back".
 | **Gateway** (public entry) | `http://localhost:4000` | what the frontend calls |
 | API (internal) | `http://localhost:4001` | not called directly by the FE |
 | Web app | `http://localhost:3000` | |
-| Jitsi (room host) | `https://localhost:8443` | dev self-signed TLS |
+| Jitsi (room host) | `https://8x8.vc/<appId>` | hosted JaaS, ADR-039 |
+| Document storage | `https://api.cloudinary.com` | Cloudinary, ADR-038 |
 
 All routes are prefixed with **`/api`**. The gateway forwards `/api/*` to the API and, when
 auth is on, verifies the bearer token and injects trusted `x-user-*` headers.
@@ -230,11 +231,14 @@ The FE should re-read `/api/wallet/balance` after a moment to reflect the debit.
 **Room access** (`roomAccessResponseSchema`):
 ```json
 { "room": "skillswap-<classId>", "token": "eyJ…", "expiresAt": "…",
-  "url": "https://localhost:8443/skillswap-<classId>" }
+  "url": "https://8x8.vc/<appId>/skillswap-<classId>" }
 ```
 Only for a **party to a confirmed booking**, and only inside the window: **opens 15 min
-before `startsAt`**, closes at `startsAt + durationMinutes`. Outside → `403`. Load Jitsi with
-the returned `url`, room `room`, and JWT `token` (the teacher's token is a moderator token).
+before `startsAt`**, closes at `startsAt + durationMinutes`. Outside → `403`.
+`room` is the provider-agnostic name; the meeting is the `url`. With hosted JaaS the
+`JitsiMeetExternalAPI` room name is the URL's path (`<appId>/skillswap-<classId>`) and the
+`token` must be passed as `jwt` — a bare `room` opens a room in no tenant. The teacher's token
+is a moderator token.
 
 **Class lifecycle**: `start` runs the session (`published|full → in_progress`). **There is no
 `complete` route**: a class completes **automatically** when its scheduled end passes

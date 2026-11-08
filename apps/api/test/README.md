@@ -7,12 +7,13 @@ end to end against real infrastructure:
 - **RabbitMQ** (`docker compose up -d rabbitmq`) — real outbox relay + consumer,
   so cross-module events (settlement, refund, income release) flow as in
   production.
-- **Jitsi** (optional; `docker compose up -d jitsi-web jitsi-prosody jitsi-jicofo jitsi-jvb`)
-  — the Jitsi spec verifies the API issues Prosody-compatible JWTs. It
-  **self-skips** when Jitsi is not reachable, so CI can run without it.
-- **S3/MinIO** (optional; `docker compose up -d minio minio-init`) — the S3 spec
-  uploads to the real bucket via the API's pre-signed URL and **self-skips**
-  when no S3 endpoint is reachable. Objects persist in the `minio-data` volume.
+- **JaaS / 8x8** (external; ADR-039) — the room-access spec verifies the API issues
+  RS256 tokens in the shape JaaS accepts. It **self-skips** when `JITSI_APP_ID` /
+  `JITSI_PRIVATE_KEY_PATH` are unset (`pnpm keys:gen` writes a placeholder).
+- **Cloudinary** (external; ADR-038) — the document spec uploads via the API's signed
+  multipart form. It **self-skips** unless `CLOUDINARY_E2E=true` and real
+  `CLOUDINARY_*` credentials are present, so an ordinary run stays offline. There is no
+  local container that can stand in for it.
 - **Payment** needs no external service: the specs post a **SePay IPN body** directly
   to `POST /api/wallet/top-ups/callback` and let the wallet settle it (ADR-033). The
   harness also replaces the outbound checkout redirect with a stub, so no live call
@@ -22,7 +23,7 @@ end to end against real infrastructure:
 ## Running
 
 ```bash
-docker compose up -d postgres rabbitmq minio minio-init   # + jitsi-* for the Jitsi spec
+docker compose up -d postgres rabbitmq   # the only services this stack runs
 cp .env.example .env
 pnpm keys:gen
 pnpm --filter @skillswap/contracts build
@@ -48,17 +49,26 @@ this suite.
 - AC-024: a teacher no-show refunds the learner.
 - Idempotency: replaying a top-up callback credits exactly once.
 
-`jitsi.e2e-spec.ts`:
+`jaas-room-access.e2e-spec.ts`:
 
-- Jitsi advertises JWT auth (anonymous + auth domains).
-- The API issues a valid HS256 room token (correct `aud`/`iss`/`room`/
-  `context.user.moderator`, signature verifiable with the shared secret).
+- The API issues a tenant-scoped RS256 room token and returns a `url` naming the same
+  `<appId>/<room>` the token is scoped to (ADR-039). A mismatch opens a room in no tenant.
+- The token's signature verifies against the configured key; `moderator` is the string
+  `"true"`/`"false"` and a Learner is never a moderator.
+- Self-skips when `JITSI_APP_ID` / `JITSI_PRIVATE_KEY_PATH` are unset (`pnpm keys:gen` writes
+  a placeholder key).
 
-`s3-document.e2e-spec.ts`:
+`cloudinary-document.e2e-spec.ts`:
 
-- The API's pre-signed PUT (SigV4) is accepted by the real S3 service; the
-  object lands in the bucket and the document row is `attached` after submission.
-- Self-skips when no S3 endpoint is reachable (e.g. MinIO not started).
+- The API's signed multipart target is accepted by the real Cloudinary account, and the
+  document row is `attached` after submission.
+- Skips unless `CLOUDINARY_E2E=true` and real `CLOUDINARY_*` credentials are present, so an
+  ordinary `pnpm test:e2e` stays offline.
+
+`room-idle.e2e-spec.ts` / `room-idle-payment.e2e-spec.ts`:
+
+- Presence deliveries are signed the way JaaS does (`X-Jaas-Signature` over the raw body), so
+  the specs exercise the real verification path rather than a re-serialised approximation.
 
 ## Notes
 

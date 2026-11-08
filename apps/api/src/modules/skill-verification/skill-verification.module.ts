@@ -78,7 +78,7 @@ import {
   EVIDENCE_DOCUMENT_STORE,
   type EvidenceDocumentStore,
 } from './internal/application/port/out/evidence-document-store';
-import { S3EvidenceDocumentStore } from './internal/adapter/out/storage/s3-evidence-document-store';
+import { CloudinaryEvidenceDocumentStore } from './internal/adapter/out/storage/cloudinary-evidence-document-store';
 import { RequestEvidenceDocumentUploadUseCase } from './internal/application/request-evidence-document-upload.use-case';
 import { ReadSkillEvidenceDocumentUseCase } from './internal/application/read-skill-evidence-document.use-case';
 import { CLOCK, type Clock } from './internal/application/port/out/clock';
@@ -154,17 +154,14 @@ export class SkillVerificationRegistrar implements OnModuleInit {
   providers: [
     { provide: CLOCK, useFactory: (): Clock => new SystemClock() },
     {
-      // FR-003 / ADR-023 (storage half): the same S3 bucket as identity documents, signed by the
-      // same shared SigV4 code, wrapped in this module's own port shape.
+      // FR-003 / ADR-038 (storage half): the same Cloudinary account that holds identity
+      // documents, signed by the same shared code, wrapped in this module's own port shape.
       provide: EVIDENCE_DOCUMENT_STORE,
       useFactory: (config: ApiConfig): EvidenceDocumentStore =>
-        new S3EvidenceDocumentStore({
-          endpoint: config.s3Endpoint,
-          region: config.s3Region,
-          bucket: config.s3Bucket,
-          accessKeyId: config.s3AccessKeyId,
-          secretAccessKey: config.s3SecretAccessKey,
-          forcePathStyle: config.s3ForcePathStyle,
+        new CloudinaryEvidenceDocumentStore({
+          cloudName: config.cloudinaryCloudName,
+          apiKey: config.cloudinaryApiKey,
+          apiSecret: config.cloudinaryApiSecret,
         }),
       inject: [ApiConfig],
     },
@@ -284,10 +281,10 @@ export class SkillVerificationRegistrar implements OnModuleInit {
         new RequestEvidenceDocumentUploadUseCase(
           store,
           {
-            allowedContentTypes: config.s3AllowedContentTypes,
-            maxBytes: config.s3MaxUploadBytes,
+            allowedContentTypes: config.cloudinaryAllowedContentTypes,
+            maxBytes: config.cloudinaryMaxUploadBytes,
           },
-          config.s3UploadTtlSeconds,
+          config.cloudinaryUploadTtlSeconds,
         ),
       inject: [EVIDENCE_DOCUMENT_STORE, ApiConfig],
     },

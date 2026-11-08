@@ -14,7 +14,7 @@ export interface ReadVerificationDocumentCommand {
 }
 
 /**
- * FR-002 / ADR-023 Amendment A: mints a short-lived pre-signed GET for the document attached to a
+ * FR-002 / ADR-023 Amendment A: mints a short-lived download URL for the document attached to a
  * verification. Admin and verifier only; the owner is served by `GET /me` with the reference but
  * never a URL, because a URL is a credential and the owner already holds the bytes they uploaded.
  */

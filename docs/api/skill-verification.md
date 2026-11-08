@@ -6,7 +6,7 @@
 
 Proving a specific skill at a level (FR-003/FR-004/FR-018, ADR-026/ADR-027/ADR-028). Evidence is submitted, claimed by a Verifier with matching expertise, then approved or rejected; the decision history is append-only.
 
-9 endpoints.
+11 endpoints.
 
 Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
 
@@ -165,6 +165,24 @@ Verifier approves or rejects a claimed request (API-003).
 | `decidedAt` | string | yes | date-time; nullable |
 | `submittedAt` | string | yes | date-time |
 
+### `GET /api/skill-evidence/{id}/document`
+
+**Mint a pre-signed download URL for certificate evidence (FR-003)**
+
+- Auth: 🔒 Bearer token required
+- Response: `EvidenceDocumentDownloadTargetDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `id` | path | string | yes | The evidence id |
+
+**Response — `EvidenceDocumentDownloadTargetDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `downloadUrl` | string | yes | min 1 chars |
+| `expiresAt` | string | yes | date-time |
+
 ### `GET /api/skill-evidence/{id}/history`
 
 **Decision history for each evidence version (FR-018)**
@@ -196,6 +214,8 @@ Read every version and its audit trail (FR-018).
 | `requestedLevel` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert` |
 | `approvedLevel` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert`; nullable |
 | `submittedAt` | string | yes | date-time |
+| `evidenceType` | enum | yes | one of `certificate`, `verifier_assessment` |
+| `documentRef` | string | yes | min 1 chars; nullable |
 | `entries` | object[] | yes |  |
 
 **`entries`[]** — SkillEvidenceHistoryDto.versions.entries fields:
@@ -224,6 +244,32 @@ Read every version and its audit trail (FR-018).
 | `requestedLevel` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert` |
 | `approvedLevel` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert`; nullable |
 | `reason` | string | yes | min 1 chars; nullable |
+
+### `POST /api/skill-evidence/documents`
+
+**Request a signed upload form for certificate evidence (FR-003)**
+
+- Auth: 🔒 Bearer token required
+- Request body: `EvidenceDocumentUploadRequestDto`
+- Response: `EvidenceDocumentUploadTargetDto`
+
+**Request body — `EvidenceDocumentUploadRequestDto`**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `fileName` | string | yes | min 1 chars; max 255 chars |
+| `contentType` | string | yes | min 1 chars; max 120 chars |
+| `sizeBytes` | integer | yes | > 0 |
+
+**Response — `EvidenceDocumentUploadTargetDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `uploadUrl` | string | yes | min 1 chars |
+| `method` | enum | yes | one of `POST` |
+| `fields` | object | yes |  |
+| `objectKey` | string | yes | min 1 chars |
+| `expiresAt` | string | yes | date-time |
 
 ### `GET /api/skills`
 

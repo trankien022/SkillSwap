@@ -30,7 +30,8 @@ UpdateElementStyle("container", $bgColor="#047857", $fontColor="#FFFFFF", $borde
 UpdateRelStyle($lineColor="#475569", $textColor="#334155")
 
 Person(AccountHolder, "Account holder", $descr="[Person]\nUses the web or mobile client, or role-authorized API services.", $tags="", $link="")
-System_Ext(Onlineclassroom, "Online classroom", $descr="[Supporting software system]\nHosts live lessons for users who are learning or teaching.", $tags="", $link="")
+System_Ext(Onlineclassroom, "Online classroom (JaaS)", $descr="[Supporting software system]\nHosts live lessons for users who are learning or teaching.", $tags="", $link="")
+System_Ext(Cloudinary, "Cloudinary", $descr="[Supporting software system]\nManaged media service that stores student proof; the backend signs each upload so bytes never pass through it.", $tags="", $link="")
 System_Ext(Paymentgateway, "SePay Payment Gateway", $descr="[Supporting software system]\nProcesses cash top-ups through a hosted checkout page and reports the outcome by IPN. Payout is not implemented.", $tags="", $link="")
 
 System_Boundary("SkillSwap_boundary", "SkillSwap", $tags="") {
@@ -38,7 +39,6 @@ System_Boundary("SkillSwap_boundary", "SkillSwap", $tags="") {
   Container(SkillSwap.BackendAPI, "Backend API", $techn="Container: NestJS / TypeScript", $descr="Runs account, verification, class and wallet rules in one application.", $tags="", $link="")
   ContainerDb(SkillSwap.Businessdatabase, "Business database", $techn="Container: PostgreSQL / TypeORM", $descr="Stores records in seven separately owned business schemas.", $tags="", $link="")
   ContainerQueue(SkillSwap.Businessmessagebroker, "Business message broker", $techn="Container: RabbitMQ", $descr="Delivers saved business changes for background processing.", $tags="", $link="")
-  ContainerDb(SkillSwap.Privatedocumentstore, "Private document store", $techn="Container: MinIO / S3-compatible API", $descr="Stores student proof uploaded through temporary private links.", $tags="", $link="")
   Container(SkillSwap.Webapplication, "Web application", $techn="Container: Next.js / TypeScript", $descr="Learns, publishes classes, manages the wallet and submits verification evidence.", $tags="", $link="")
   Container(SkillSwap.Mobileapplication, "Mobile application", $techn="Container: Expo / React Native", $descr="The same learner and teacher screens as the web client.", $tags="", $link="")
 }
@@ -46,7 +46,7 @@ System_Boundary("SkillSwap_boundary", "SkillSwap", $tags="") {
 Rel(AccountHolder, SkillSwap.Webapplication, "Learns, teaches and manages the wallet", $techn="Browser", $tags="", $link="")
 Rel(AccountHolder, SkillSwap.Mobileapplication, "Uses the same learner and teacher screens", $techn="Native UI", $tags="", $link="")
 Rel(AccountHolder, SkillSwap.APIgateway, "Requests services allowed for their account", $techn="HTTP / JSON", $tags="", $link="")
-Rel(AccountHolder, SkillSwap.Privatedocumentstore, "Uploads owned student proof using a temporary link", $techn="HTTP PUT", $tags="", $link="")
+Rel(AccountHolder, Cloudinary, "Uploads owned student proof with a signed upload", $techn="HTTPS multipart", $tags="", $link="")
 Rel(AccountHolder, Onlineclassroom, "Joins a booked lesson with a private invitation", $techn="HTTPS / WebRTC", $tags="", $link="")
 Rel(SkillSwap.Webapplication, SkillSwap.APIgateway, "Sends every feature request", $techn="HTTP / JSON", $tags="", $link="")
 Rel(SkillSwap.APIgateway, SkillSwap.BackendAPI, "Forwards authenticated requests", $techn="HTTP / JSON", $tags="", $link="")
@@ -60,7 +60,7 @@ Lay_R(AccountHolder, Onlineclassroom)
 Lay_R(SkillSwap.Webapplication, SkillSwap.Mobileapplication)
 Lay_D(SkillSwap.APIgateway, SkillSwap.BackendAPI)
 Lay_R(SkillSwap.Businessdatabase, SkillSwap.Businessmessagebroker)
-Lay_R(SkillSwap.Privatedocumentstore, Onlineclassroom)
+Lay_R(Cloudinary, Onlineclassroom)
 SHOW_LEGEND()
-footer Current implementation: web and mobile booking screens call the real hold and confirm endpoints and PaymentGateway is backed by the SePay Payment Gateway adapter (hosted checkout + IPN, ADR-033); payout is not implemented.\nBackend signs classroom invitations and document upload links locally. No network call to Jitsi/MinIO is implied.\nHTTP labels describe local development; production ingress is HTTPS. The web app connects to the API for every feature screen, not only status calls.
+footer Current implementation: web and mobile booking screens call the real hold and confirm endpoints and PaymentGateway is backed by the SePay Payment Gateway adapter (hosted checkout + IPN, ADR-033); payout is not implemented.\nBackend signs classroom invitations and Cloudinary upload credentials locally. No network call to JaaS/Cloudinary is implied.\nDocument storage and video are third-party managed services (ADR-038, ADR-039); the local Compose stack is PostgreSQL and RabbitMQ only.\nHTTP labels describe local development; production ingress is HTTPS. The web app connects to the API for every feature screen, not only status calls.
 @enduml

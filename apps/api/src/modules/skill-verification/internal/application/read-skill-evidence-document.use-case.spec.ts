@@ -34,7 +34,7 @@ function store() {
     async createDownloadTarget(input) {
       calls.push(input);
       return {
-        downloadUrl: `https://s3.local/${input.objectKey}?sig=fake`,
+        downloadUrl: `https://api.cloudinary.com/v1_1/fake/raw/download?public_id=${input.objectKey}`,
         expiresAt: new Date(NOW.getTime() + input.expiresInSeconds * 1000),
       };
     },

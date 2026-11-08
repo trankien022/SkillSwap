@@ -90,7 +90,7 @@ const MODULE_NOTES = {
       'Proving a learner is a real student (FR-002/FR-019, ADR-023/ADR-025). A submission is reviewed by an admin; an approved verification is what unlocks teaching (via the publish gate).',
     endpoints: {
       'POST /api/student-verifications/documents':
-        'Request a pre-signed S3 upload target (FR-002). Upload the file to uploadUrl, then submit its documentId.',
+        'Request a signed Cloudinary upload target (FR-002, ADR-038). POST the file as multipart form data to uploadUrl together with the returned fields, then submit its documentId.',
       'POST /api/student-verifications':
         'Submit a verification with the uploaded document (API-001). Only one effective (pending/approved) per account.',
       'GET /api/student-verifications/me':
