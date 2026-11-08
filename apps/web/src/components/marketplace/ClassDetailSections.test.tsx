@@ -8,6 +8,7 @@ import { SyllabusSection } from './SyllabusSection';
 import { TeacherDossierSection } from './TeacherDossierSection';
 import { ScheduleSection } from './ScheduleSection';
 import { StickyBookingCard } from './StickyBookingCard';
+import { DetailHeader } from './DetailHeader';
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/en/classes/cls-1',
@@ -103,5 +104,21 @@ describe('Class detail sections content gating & real seat counts (W2)', () => {
       </NextIntlClientProvider>,
     );
     expect(screen.getAllByText(en.Marketplace.card.availabilityUnknown)).toHaveLength(2);
+  });
+
+  it('renders the level chip beside the format chip in DetailHeader when level is set and omits it when null (W4)', () => {
+    const { rerender } = render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <DetailHeader item={makeItem({ level: 'advanced', format: 'group' })} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByText(en.Marketplace.card.levels.advanced)).toBeDefined();
+
+    rerender(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <DetailHeader item={makeItem({ level: null, format: 'group' })} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.queryByText(en.Marketplace.card.levels.advanced)).toBeNull();
   });
 });
