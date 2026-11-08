@@ -63,7 +63,8 @@ export class HttpMarketplaceGateway {
     if (query.keyword && query.keyword.trim().length > 0) {
       params.set('q', query.keyword.trim());
     }
-    params.set('state', 'published');
+    // Omit `state` so the backend's marketplace mode returns both `published`
+    // and `full` classes (availableSeats: 0) starting >= now + 24h (W10.4).
     params.set('limit', String(this.limit));
     const nowMs = Date.now();
     if (query.timeFilter === 'next-24-48h') {

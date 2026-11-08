@@ -1196,7 +1196,7 @@
     "sessionInfo": {
       "title": "Session Overview",
       "tag": "1-on-1 Mentoring Session",
-      "peerStudent": "Peer student",
+      "peerStudent": "Peer mentor",
       "startsAtLabel": "Scheduled start",
       "durationLabel": "Duration",
       "durationValue": "{minutes} minutes"
@@ -1306,7 +1306,7 @@
       "notInCall": "Not in the room",
       "youLabel": "You",
       "teacherFallback": "Instructor",
-      "peerStudent": "Peer student"
+      "peerStudent": "Peer mentor"
     },
     "states": {
       "loadingBooking": "Loading session details…",

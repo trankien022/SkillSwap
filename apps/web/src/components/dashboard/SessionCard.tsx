@@ -342,7 +342,7 @@ function CardBody({
           <span className="inline-flex items-center gap-1 font-medium text-ink">
             <VerifiedIcon className="h-4 w-4 text-success-ink" />
             <span>
-              {booking.teacherName} ({booking.teacherSchoolLabel})
+              {booking.teacherName}{booking.teacherSchoolLabel ? ` (${booking.teacherSchoolLabel})` : ''}
             </span>
           </span>
           <span className="inline-flex items-center gap-1">

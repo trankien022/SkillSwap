@@ -239,4 +239,24 @@ describe('HttpMarketplaceGateway format, keyword, and verified filters (W1)', ()
       expect.anything(),
     );
   });
+
+  it('includes full classes with zero available seats in the marketplace feed by omitting state=published (W10.4)', async () => {
+    const fullClass = at(WED_ISH, {
+      id: 'cls-full',
+      state: 'full',
+      capacity: 3,
+      confirmedBookingsCount: 3,
+      availableSeats: 0,
+    });
+    const fetchMock = stub([fullClass]);
+
+    const page = await new HttpMarketplaceGateway().search(DEFAULT_QUERY);
+
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      expect.stringContaining('state=published'),
+      expect.anything(),
+    );
+    expect(page.items).toHaveLength(1);
+    expect(page.items[0]?.availableSeats).toBe(0);
+  });
 });
