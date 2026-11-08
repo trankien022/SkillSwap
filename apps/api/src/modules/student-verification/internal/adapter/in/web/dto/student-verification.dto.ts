@@ -2,6 +2,7 @@ import { createZodDto } from 'nestjs-zod';
 import {
   adminVerificationPageSchema,
   adminVerificationQuerySchema,
+  documentDownloadTargetSchema,
   documentUploadRequestSchema,
   documentUploadTargetSchema,
   studentVerificationSchema,
@@ -15,6 +16,14 @@ export class DocumentUploadRequestDto extends createZodDto(documentUploadRequest
 
 /** FR-002: the pre-signed upload target returned to the client. */
 export class DocumentUploadTargetDto extends createZodDto(documentUploadTargetSchema) {}
+
+/**
+ * ADR-023 Amendment A: the pre-signed GET returned to a reviewer.
+ *
+ * The only DTO that carries a URL. It is minted per call and never stored, so this class is the
+ * whole lifetime of a document credential.
+ */
+export class DocumentDownloadTargetDto extends createZodDto(documentDownloadTargetSchema) {}
 
 /** FR-002: submit a student verification. Body for POST /student-verifications. */
 export class SubmitStudentVerificationDto extends createZodDto(submitStudentVerificationSchema) {}

@@ -1,6 +1,7 @@
 import {
   accountStatusChangedSchema,
   skillEvidenceEventSchema,
+  studentVerificationDocumentReadEventSchema,
   studentVerificationEventSchema,
   verifierStatusChangedSchema,
   walletTransactionCompletedEventSchema,
@@ -34,6 +35,10 @@ export const AUDITED_EVENT_TYPES = {
   verificationApproved: 'student.verification.approved',
   verificationRejected: 'student.verification.rejected',
   verificationRevoked: 'student.verification.revoked',
+  // ADR-023 Amendment A: opening a stored document is a privileged read of somebody else's
+  // identity evidence, so it is audited like a decision. It changes no state, which is why it has
+  // its own case below rather than sharing the decision branch.
+  verificationDocumentRead: 'student.verification.document.read',
   evidenceClaimed: 'skill.evidence.claimed',
   evidenceApproved: 'skill.evidence.approved',
   evidenceRejected: 'skill.evidence.rejected',
@@ -73,6 +78,27 @@ export function describeAuditedAction(message: AuditableMessage): AdminAuditEven
         occurredAt: new Date(event.occurredAt),
         traceId: null,
         metadata: null,
+        sourceEventId,
+      };
+    }
+
+    // --- FR-002 / ADR-023 Amendment A: a reviewer opened a document -----------------
+    case AUDITED_EVENT_TYPES.verificationDocumentRead: {
+      const event = studentVerificationDocumentReadEventSchema.parse(payload);
+      return {
+        // ADR-035: the person who read. `targetId` is the verification they read, which belongs
+        // to a different account — attributing this to its subject would hide who looked.
+        actorId: event.actorId,
+        action: eventType,
+        targetType: 'verification_document',
+        targetId: event.verificationId,
+        // A read changes nothing, so there is no old→new pair to record. The interesting facts are
+        // who read, in what capacity, and which file.
+        oldState: null,
+        newState: null,
+        occurredAt: new Date(event.occurredAt),
+        traceId: null,
+        metadata: { actorRole: event.actorRole, documentRef: event.documentRef },
         sourceEventId,
       };
     }

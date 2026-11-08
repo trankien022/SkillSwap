@@ -119,6 +119,8 @@ const NAME_TO_STATUS: Record<string, number> = {
   EvidenceNotDecidableError: 409,
   // FR-018 evidence history (ADR-028).
   AccessDeniedError: 403,
+  // ADR-023 Amendment A: a non-reviewer asked for a verification document.
+  DocumentReadDeniedError: 403,
   // FR-005 publish gate (ADR-024 extension).
   UnverifiedTeacherError: 403,
   SkillNotApprovedError: 403,

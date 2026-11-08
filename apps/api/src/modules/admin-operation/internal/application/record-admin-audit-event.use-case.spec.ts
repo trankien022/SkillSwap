@@ -245,6 +245,11 @@ describe('describeAuditedAction', () => {
         reason: 'r', occurredAt: '2026-10-15T00:00:00.000Z',
         actorId: ACTOR,
       },
+      [AUDITED_EVENT_TYPES.verificationDocumentRead]: {
+        verificationId: 'v', accountId: 'a', documentRef: 'a/doc.pdf', actorRole: 'admin',
+        occurredAt: '2026-10-15T00:00:00.000Z',
+        actorId: ACTOR,
+      },
       [AUDITED_EVENT_TYPES.evidenceClaimed]: {
         evidenceId: 'e', profileSkillId: 'ps', accountId: 'a', skillId: 'sk', version: 1,
         requestedLevel: 'beginner', status: 'claimed', occurredAt: '2026-10-15T00:00:00.000Z',

@@ -1,6 +1,12 @@
 import { DuplicateActiveVerificationError, Verification } from '../../domain/verification';
 import type { Clock } from '../port/out/clock';
-import type { CreateUploadTargetInput, DocumentStore, UploadTarget } from '../port/out/document-store';
+import type {
+  CreateDownloadTargetInput,
+  CreateUploadTargetInput,
+  DocumentStore,
+  DownloadTarget,
+  UploadTarget,
+} from '../port/out/document-store';
 import type {
   CreateDocumentRequest,
   VerificationDocument,
@@ -12,6 +18,7 @@ import type {
   ApplyDecisionResult,
   CreateVerificationRequest,
   ListVerificationsForAdminRequest,
+  RecordDocumentReadRequest,
   RevokeVerificationRequest,
   VerificationRepository,
 } from '../port/out/verification-repository';
@@ -48,6 +55,13 @@ export class InMemoryVerificationRepository implements VerificationRepository {
 
   async findById(verificationId: string): Promise<Verification | null> {
     return this.rows.find((row) => row.id === verificationId) ?? null;
+  }
+
+  /** ADR-023 Amendment A: the fake records reads so a spec can assert the audit happened. */
+  readonly documentReads: RecordDocumentReadRequest[] = [];
+
+  async recordDocumentRead(request: RecordDocumentReadRequest): Promise<void> {
+    this.documentReads.push(request);
   }
 
   async decide(request: ApplyDecisionRequest): Promise<ApplyDecisionResult> {
@@ -181,7 +195,7 @@ export class InMemoryVerificationDocumentRepository implements VerificationDocum
   }
 }
 
-/** Fake DocumentStore that returns a deterministic pre-signed URL. */
+/** Fake DocumentStore that returns deterministic pre-signed URLs. */
 export class FakeDocumentStore implements DocumentStore {
   constructor(private readonly now: () => Date = () => new Date()) {}
 
@@ -189,6 +203,13 @@ export class FakeDocumentStore implements DocumentStore {
     return {
       uploadUrl: `https://s3.local/${input.objectKey}?sig=fake`,
       objectKey: input.objectKey,
+      expiresAt: new Date(this.now().getTime() + input.expiresInSeconds * 1000),
+    };
+  }
+
+  async createDownloadTarget(input: CreateDownloadTargetInput): Promise<DownloadTarget> {
+    return {
+      downloadUrl: `https://s3.local/${input.objectKey}?sig=fake&verb=get`,
       expiresAt: new Date(this.now().getTime() + input.expiresInSeconds * 1000),
     };
   }

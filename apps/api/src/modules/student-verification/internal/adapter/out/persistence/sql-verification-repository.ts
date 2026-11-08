@@ -1,4 +1,7 @@
-import { studentVerificationEventSchema } from '@skillswap/contracts';
+import {
+  studentVerificationDocumentReadEventSchema,
+  studentVerificationEventSchema,
+} from '@skillswap/contracts';
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { insertOutboxStatement } from '../../../../../../shared/messaging/outbox-statements';
 import { InvalidCursorError } from '../../../../../../shared/errors';
@@ -18,6 +21,7 @@ import type {
   ApplyDecisionResult,
   CreateVerificationRequest,
   ListVerificationsForAdminRequest,
+  RecordDocumentReadRequest,
   RevokeVerificationRequest,
   VerificationRepository,
 } from '../../../application/port/out/verification-repository';
@@ -243,6 +247,29 @@ export class SqlVerificationRepository implements VerificationRepository {
       ]);
       return { applied: true };
     });
+  }
+
+  /**
+   * ADR-023 Amendment A: one audit event per document read, written in the owning module.
+   *
+   * The payload carries the object key and the actor but **not** the minted URL: a 300-second
+   * credential must not be copied into a row that is retained forever. `admin-operation` consumes
+   * this into its append-only audit table — the same outbox route `student.verification.*` takes,
+   * because ADR-014 forbids writing another module's schema from here.
+   */
+  async recordDocumentRead(request: RecordDocumentReadRequest): Promise<void> {
+    const source = this.registry.get(this.moduleName);
+    await source.query(insertOutboxStatement(this.schema), [
+      VERIFICATION_EVENTS.documentRead,
+      studentVerificationDocumentReadEventSchema.parse({
+        verificationId: request.verificationId,
+        accountId: request.accountId,
+        documentRef: request.documentRef,
+        actorRole: request.actorRole,
+        occurredAt: request.readAt.toISOString(),
+        actorId: request.actorId,
+      }),
+    ]);
   }
 
   /**

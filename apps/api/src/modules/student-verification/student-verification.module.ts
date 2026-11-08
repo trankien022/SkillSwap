@@ -13,6 +13,7 @@ import { DecideStudentVerificationUseCase } from './internal/application/decide-
 import { RevokeStudentVerificationUseCase } from './internal/application/revoke-student-verification.use-case';
 import { GetMyVerificationQueryHandler } from './internal/application/get-my-verification.query';
 import { ListAdminVerificationsQueryHandler } from './internal/application/list-admin-verifications.query';
+import { ReadVerificationDocumentUseCase } from './internal/application/read-verification-document.use-case';
 import {
   VERIFICATION_SUMMARY_READER,
   type VerificationSummaryReader,
@@ -24,6 +25,10 @@ import { DECIDE_STUDENT_VERIFICATION } from './internal/application/port/in/deci
 import { REVOKE_STUDENT_VERIFICATION } from './internal/application/port/in/revoke-student-verification';
 import { GET_MY_VERIFICATION } from './internal/application/port/in/get-my-verification';
 import { LIST_ADMIN_VERIFICATIONS } from './internal/application/port/in/list-admin-verifications';
+import {
+  READ_VERIFICATION_DOCUMENT,
+  type ReadVerificationDocumentPort,
+} from './internal/application/port/in/read-verification-document';
 import {
   VERIFICATION_REPOSITORY,
   type VerificationRepository,
@@ -123,6 +128,17 @@ export class StudentVerificationRegistrar implements OnModuleInit {
       useFactory: (verifications: VerificationRepository) =>
         new ListAdminVerificationsQueryHandler(verifications),
       inject: [VERIFICATION_REPOSITORY],
+    },
+    {
+      // ADR-023 Amendment A: a reviewer opening the stored document.
+      provide: READ_VERIFICATION_DOCUMENT,
+      useFactory: (
+        verifications: VerificationRepository,
+        store: DocumentStore,
+        clock: Clock,
+      ): ReadVerificationDocumentPort =>
+        new ReadVerificationDocumentUseCase(verifications, store, clock),
+      inject: [VERIFICATION_REPOSITORY, DOCUMENT_STORE, CLOCK],
     },
     {
       // FR-015 / ADR-034 §7: the counts the operations dashboard composes. Exported so

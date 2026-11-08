@@ -418,6 +418,19 @@ export const documentUploadTargetSchema = z.object({
 });
 export type DocumentUploadTargetView = z.infer<typeof documentUploadTargetSchema>;
 
+/**
+ * ADR-023 Amendment A: the response of a document read.
+ *
+ * `expiresAt` is returned so a client can tell a stale link from a broken one, and so the 300 s
+ * window is visible rather than implied. This object is the **only** place a URL is carried: it
+ * must never be stored, logged or included in a list.
+ */
+export const documentDownloadTargetSchema = z.object({
+  downloadUrl: z.string().min(1),
+  expiresAt: z.string().datetime({ offset: true }),
+});
+export type DocumentDownloadTargetView = z.infer<typeof documentDownloadTargetSchema>;
+
 /** FR-003 / ADR-026: skill taxonomy, evidence types and the fixed ordered level scale. */
 
 /** FR-004 / ADR-027: a Verifier account with a seeded expertise set. */
