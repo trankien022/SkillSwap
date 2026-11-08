@@ -40,7 +40,7 @@ Neither `SkillSwap-SRS.md` nor `SkillSwap-PRD.md` contains an explicit screen in
 | S9 | Student verification | `/{locale}/verification` | `(features)/verification.tsx` | `GET/POST /student-verifications` | ✅ Real | ✅ Real |
 | S10 | Skills / evidence | `/{locale}/skills` | `(features)/skills.tsx` | `GET /skills`, `GET /profile-skills/me`, `POST /skill-evidence` | ✅ Real | ✅ Real |
 | S11 | Withdrawal | `/{locale}/wallet/withdrawal` | `wallet-view.tsx` | `GET /wallet/balance` (submit has **no** endpoint) | ⚠️ Partial | ➖ not built |
-| S12 | My classes / teaching | `/{locale}/instructor`, `/{locale}/teach/classes/new` | `(features)/teaching.tsx` | `POST /classes`, `PATCH /classes/{id}`, `POST /classes/{id}/complete` | ✅ Real | ✅ Real |
+| S12 | My classes / teaching | `/{locale}/instructor`, `/{locale}/teach/classes/new` | `(features)/teaching.tsx` | `POST /classes`, `PATCH /classes/{id}`, `POST /classes/{id}/start` (classes complete automatically — no `complete` route, ADR-021 Amendment A) | ✅ Real | ✅ Real |
 | S13 | Post-class rating | `/{locale}/bookings/[id]/review` | `my-bookings-view.tsx` | `POST /classes/bookings/{id}/rating` | ✅ Real | ✅ Real |
 | S14 | Jitsi classroom | `/{locale}/bookings/[id]/live` | `my-bookings-view.tsx` | `POST /classes/bookings/{id}/room-access` | ✅ Real | ✅ Real |
 | S15 | Profile | Navbar only | `(tabs)/profile.tsx` | session | ⚠️ Partial | ✅ session |
@@ -94,7 +94,7 @@ These are **not** in the original plan and were found by reading the code.
 |---|---|
 | Claim | `POST /classes/{id}/book` |
 | Evidence | `apps/mobile/src/infrastructure/http/http-booking-gateway.ts:39` |
-| Reality | No such route. `classes.controller.ts:79-185` declares `Post()`, `Post(':id/bookings')`, `Post('bookings/:bookingId/confirm')`, `Patch(':id')`, `Post(':id/cancel')`, `Post('bookings/:bookingId/no-show')`, `Post('bookings/:bookingId/room-access')`, `Post(':id/start')`, `Post(':id/complete')` — no `:id/book` |
+| Reality | No such route. This audit's first pass read `classes.controller.ts` as also declaring `Post(':id/complete')`; that line was **wrong** — ADR-021 Amendment A removed the capability, so the route never existed and never will (completion is automatic, AC-035). The real declaration list is `Post()`, `Post(':id/bookings')`, `Post('bookings/:bookingId/confirm')`, `Patch(':id')`, `Post(':id/cancel')`, `Post('bookings/:bookingId/no-show')`, `Post('bookings/:bookingId/room-access')`, `Post(':id/start')` — no `:id/book` |
 | Severity | **Low today, high if revived.** `container.ts:14` wires it when `httpApiEnabled()`, but `BookingScreen` (`ui/booking-screen.tsx:40`) is imported by **nothing** — `grep` for `BookingScreen`/`booking-screen` across `apps/mobile` returns only its own declaration. So the wrong URL is currently unreachable. Its unit test stubs `fetch` (`http-booking-gateway.spec.ts:49-53`) and never validates the path, which is why it passes. (Note: the existing `no-orphans` dependency-cruiser warning points at `infrastructure/mock/hung-classes.ts`, **not** at `booking-screen.tsx` — the latter is orphaned but not flagged, so the lint warning is not evidence for this defect.) |
 | Decision | Phase 1F: delete `HttpBookingGateway` + `BookingScreen` + `container.ts` wiring, **or** repoint to `POST /classes/{id}/bookings`. Needs an explicit choice |
 
@@ -126,7 +126,7 @@ Present and used by both clients:
 | POST | `/classes/:id/bookings` | `classes.controller.ts:97` |
 | POST | `/classes/bookings/:bookingId/confirm` | `classes.controller.ts:113` |
 | PATCH | `/classes/:id` | `classes.controller.ts:125` |
-| POST | `/classes/:id/cancel` \| `/start` \| `/complete` | `classes.controller.ts:137,176,185` |
+| POST | `/classes/:id/cancel` \| `/start` | `classes.controller.ts:137,176` |
 | POST | `/classes/bookings/:bookingId/room-access` | `classes.controller.ts:159` |
 | GET | `/classes/bookings/me` | `my-bookings.controller.ts:38` |
 | GET | `/classes/:id` | `class-detail.controller.ts` |

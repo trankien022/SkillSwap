@@ -35,7 +35,7 @@ export interface LearnerBookingView {
   skillIcon: SkillIcon;
   teacherName: string;
   teacherInitial: string;
-  teacherSchoolLabel: string;
+  teacherSchoolLabel: string | null;
   startsAt: string; // ISO
   durationMinutes: number;
   priceCredits: number;

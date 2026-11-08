@@ -103,7 +103,7 @@ describe('toCreateClassInput', () => {
   it('maps a draft onto createClassSchema fields only', () => {
     const input = toCreateClassInput(draft(), 'Graph Theory');
     expect(Object.keys(input).sort()).toEqual(
-      ['capacity', 'description', 'durationMinutes', 'priceCredits', 'skillIds', 'startsAt'].sort(),
+      ['capacity', 'description', 'durationMinutes', 'priceCredits', 'skillIds', 'startsAt', 'title'].sort(),
     );
     expect(input.skillIds).toEqual(['skill-1']);
     expect(input.priceCredits).toBe(100);
@@ -111,10 +111,11 @@ describe('toCreateClassInput', () => {
     expect(input.durationMinutes).toBe(60);
   });
 
-  it('carries the title into the description, since the API has no title field', () => {
+  it('sends the title as the class title, not folded into the description (B1)', () => {
     const input = toCreateClassInput(draft(), 'Graph Theory');
-    expect(input.description).toContain('Graph algorithms');
-    expect(input.description).toContain('Bring a laptop');
+    expect(input.title).toBe('Graph algorithms');
+    expect(input.description).toBe('Bring a laptop and a problem you are stuck on.');
+    expect(input.description).not.toContain('Graph algorithms');
   });
 
   it('emits an ISO instant with an offset for startsAt', () => {
@@ -125,6 +126,8 @@ describe('toCreateClassInput', () => {
   it('falls back to the skill name when the description is blank', () => {
     const input = toCreateClassInput(draft({ title: '', description: '' }), 'Graph Theory');
     expect(input.description).toBe('Graph Theory');
+    // A blank title would fail the API's 1-120 rule, so the skill name stands in.
+    expect(input.title).toBe('Graph Theory');
   });
 
   it('throws rather than publishing an unparseable start time', () => {

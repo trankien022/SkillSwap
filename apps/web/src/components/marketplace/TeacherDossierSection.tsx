@@ -55,7 +55,9 @@ export function TeacherDossierSection({ item }: { item: ClassDetailView }) {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h3 className="text-base font-semibold text-ink">{item.teacherName}</h3>
-              <p className="text-sm text-ink-soft">{item.schoolName ?? ''}</p>
+              {item.schoolName !== null && (
+                <p className="text-sm text-ink-soft">{item.schoolName}</p>
+              )}
             </div>
             {/* The API returns no teaching stats on this route, so the block is
                 omitted rather than showing invented numbers. */}
@@ -79,21 +81,23 @@ export function TeacherDossierSection({ item }: { item: ClassDetailView }) {
       </div>
 
       {/* Credentials */}
-      <div className="flex flex-col gap-3">
-        <span className="text-sm font-semibold r text-ink-soft">{t('credentialsHeading')}</span>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          {item.teacherCredentials.map((cred, idx) => (
-            <CredentialRow
-              key={idx}
-              credential={cred}
-              fallbackTitle={
-                cred.icon === 'description' ? t('credentialEvidence') : t('credentialBar')
-              }
-              verifiedLabel={t('verifiedBy')}
-            />
-          ))}
+      {item.teacherCredentials.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <span className="text-sm font-semibold r text-ink-soft">{t('credentialsHeading')}</span>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {item.teacherCredentials.map((cred, idx) => (
+              <CredentialRow
+                key={idx}
+                credential={cred}
+                fallbackTitle={
+                  cred.icon === 'description' ? t('credentialEvidence') : t('credentialBar')
+                }
+                verifiedLabel={t('verifiedBy')}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }

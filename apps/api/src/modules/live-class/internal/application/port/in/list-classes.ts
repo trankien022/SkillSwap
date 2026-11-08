@@ -10,6 +10,11 @@ export const CLASS_LIFECYCLE_STATES = [
 ] as const;
 export type ClassLifecycleStateDto = (typeof CLASS_LIFECYCLE_STATES)[number];
 
+/** B2: the level vocabulary, mirrored from the shared contract so a client can switch on it. */
+import type { ClassFormatDto, ClassLevelDto } from './class-facts';
+export { CLASS_LEVELS, CLASS_FORMATS } from './class-facts';
+export type { ClassLevelDto, ClassFormatDto } from './class-facts';
+
 export type ClassCursorTuple = readonly [startsAtISO: string, id: string];
 
 export interface ListClassesQuery {
@@ -28,7 +33,16 @@ export interface ClassListItemDto {
   readonly id: string;
   readonly teacherId: string;
   readonly teacherDisplayName: string;
+  /** B4: whether the teacher is a currently verified student. */
+  readonly verified: boolean;
+  /** B4: the school behind that verification; null when unverified or not yet projected. */
+  readonly schoolName: string | null;
   readonly skillIds: readonly string[];
+  readonly title: string;
+  /** B2: the level the class is taught at; null when it was never recorded. */
+  readonly level: ClassLevelDto | null;
+  /** B3: `one-on-one` for capacity 1, otherwise `group`. */
+  readonly format: ClassFormatDto;
   readonly description: string;
   readonly startsAt: string;
   readonly durationMinutes: number;
@@ -37,8 +51,9 @@ export interface ClassListItemDto {
   readonly confirmedBookingsCount: number;
   readonly availableSeats: number;
   readonly state: ClassLifecycleStateDto;
-  readonly averageRating: null;
-  readonly ratingsCount: 0;
+  /** B5: the teacher's mean rating, rounded to 2 decimals; null when the class has none. */
+  readonly averageRating: number | null;
+  readonly ratingsCount: number;
 }
 
 export interface ListClassesPageDto {

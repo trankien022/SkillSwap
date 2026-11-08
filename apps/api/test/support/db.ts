@@ -132,16 +132,22 @@ export async function seedTeacherTrust(
   input: {
     teacherId: string;
     verified?: boolean;
+    /** B4: the school behind the verification; only kept while `verified` is true. */
+    schoolName?: string | null;
     approvedLevels?: Record<string, 'beginner' | 'intermediate' | 'advanced' | 'expert'>;
   },
 ): Promise<void> {
   const now = new Date().toISOString();
+  const verified = input.verified ?? true;
   await harness.query(
     'live-class',
-    `INSERT INTO teacher_verified ("account_id", "verified", "occurred_at")
-       VALUES ($1, $2, $3)
-       ON CONFLICT ("account_id") DO UPDATE SET "verified" = EXCLUDED."verified", "occurred_at" = EXCLUDED."occurred_at"`,
-    [input.teacherId, input.verified ?? true, now],
+    `INSERT INTO teacher_verified ("account_id", "verified", "school_name", "occurred_at")
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT ("account_id") DO UPDATE
+         SET "verified" = EXCLUDED."verified",
+             "school_name" = EXCLUDED."school_name",
+             "occurred_at" = EXCLUDED."occurred_at"`,
+    [input.teacherId, verified, verified ? (input.schoolName ?? null) : null, now],
   );
   for (const [skillId, level] of Object.entries(input.approvedLevels ?? {})) {
     await harness.query(

@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { CompositeBookingAction } from '../booking/composite-booking-action';
-import { formatSeats, formatStartsAt } from '../../lib/marketplace/mock-data';
+import { formatStartsAt } from '../../lib/marketplace/mock-data';
 import type { ClassDetailView } from '../../lib/marketplace/types';
 
 /**
@@ -20,6 +20,7 @@ import type { ClassDetailView } from '../../lib/marketplace/types';
  */
 export function StickyBookingCard({ item }: { item: ClassDetailView }) {
   const t = useTranslations('ClassDetail.booking');
+  const tCard = useTranslations('Marketplace.card');
   const locale = useLocale() as 'vi' | 'en';
   const dateText = formatStartsAt(item.startsAt, locale);
   const timeText = new Date(item.startsAt).toLocaleTimeString(locale, {
@@ -27,9 +28,8 @@ export function StickyBookingCard({ item }: { item: ClassDetailView }) {
     minute: '2-digit',
   });
   const vnd = (item.priceCredits * 1000).toLocaleString(locale);
-  const [taken, capacity] = formatSeats(item.format, item.capacity)
-    .split('/')
-    .map((n) => Number(n));
+  const availableSeats = item.availableSeats ?? null;
+  const capacity = item.capacity;
 
   return (
     <div className="sticky top-24 flex flex-col gap-4">
@@ -46,7 +46,9 @@ export function StickyBookingCard({ item }: { item: ClassDetailView }) {
             <span className="text-sm text-ink-soft">{t('vndRate', { vnd })}</span>
           </div>
           <div className="flex flex-col items-end gap-1">
-            <span className="text-right text-sm text-ink-soft">{`${taken}/${capacity}`}</span>
+            <span className="text-right text-sm text-ink-soft">
+              {availableSeats !== null ? `${availableSeats}/${capacity}` : tCard('availabilityUnknown')}
+            </span>
           </div>
         </div>
 

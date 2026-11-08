@@ -144,6 +144,17 @@ async function resetDemo(ctx) {
   // sessions; evidence/audit cascade from profile_skills; the rest are keyed by
   // the demo account ids. Classes/bookings/verifications have no natural key, so
   // the seed always clears its own rows before re-inserting.
+  //
+  // Order matters where a child FK is NO ACTION: ratings reference both bookings
+  // and classes, so they must go first or the booking delete fails outright.
+  await ctx.classDs.query(`DELETE FROM "live_class"."ratings"`);
+  // No FK from these four to bookings/classes (they carry denormalised ids), so
+  // they need an explicit clear or the demo accumulates orphans. class_skills and
+  // class_reminders cascade from classes, listed here for symmetry.
+  await ctx.classDs.query(`DELETE FROM "live_class"."chat_messages"`);
+  await ctx.classDs.query(`DELETE FROM "live_class"."class_presence"`);
+  await ctx.classDs.query(`DELETE FROM "live_class"."room_access_incidents"`);
+  await ctx.classDs.query(`DELETE FROM "live_class"."class_reminders"`);
   await ctx.classDs.query(`DELETE FROM "live_class"."bookings"`);
   await ctx.classDs.query(`DELETE FROM "live_class"."classes"`);
   await ctx.classDs.query(`DELETE FROM "live_class"."teacher_skill_approval"`);
@@ -162,6 +173,23 @@ async function resetDemo(ctx) {
   await ctx.skillDs.query(`DELETE FROM "skill_verification"."skills"`);
   await ctx.accountDs.query(`DELETE FROM "account_profile"."account_verification_status"`);
   await ctx.accountDs.query(`DELETE FROM "account_profile"."sessions"`);
+  // Notification rows carry account ids but no FK to accounts (ADR-014: no
+  // cross-schema and no intra-run coupling to account deletion), so nothing
+  // cascades them. Clear the demo accounts' inbox and devices explicitly, and
+  // sweep rows whose account is already gone — no one can read those, and
+  // without this every previous run leaves a pile of unreachable notifications.
+  await ctx.accountDs.query(
+    `DELETE FROM "account_profile"."inbox_notifications" n
+      WHERE n."account_id" IN (SELECT "id" FROM "account_profile"."accounts" WHERE lower("email") LIKE $1)
+         OR NOT EXISTS (SELECT 1 FROM "account_profile"."accounts" a WHERE a."id" = n."account_id")`,
+    [`%@${DEMO_DOMAIN}`],
+  );
+  await ctx.accountDs.query(
+    `DELETE FROM "account_profile"."notification_devices" d
+      WHERE d."account_id" IN (SELECT "id" FROM "account_profile"."accounts" WHERE lower("email") LIKE $1)
+         OR NOT EXISTS (SELECT 1 FROM "account_profile"."accounts" a WHERE a."id" = d."account_id")`,
+    [`%@${DEMO_DOMAIN}`],
+  );
   await ctx.accountDs.query(
     `DELETE FROM "account_profile"."accounts" WHERE lower("email") LIKE $1`,
     [`%@${DEMO_DOMAIN}`],
@@ -236,11 +264,12 @@ async function upsertStudentVerification(ctx, { accountId, schoolName, major, st
     [accountId, status, occurredAt],
   );
   await ctx.classDs.query(
-    `INSERT INTO "live_class"."teacher_verified" ("account_id", "verified", "occurred_at", "updated_at")
-     VALUES ($1, $2, $3, now())
+    `INSERT INTO "live_class"."teacher_verified" ("account_id", "verified", "school_name", "occurred_at", "updated_at")
+     VALUES ($1, $2, $3, $4, now())
      ON CONFLICT ("account_id") DO UPDATE
-       SET "verified" = EXCLUDED."verified", "occurred_at" = EXCLUDED."occurred_at", "updated_at" = now()`,
-    [accountId, status === 'approved', occurredAt],
+       SET "verified" = EXCLUDED."verified", "school_name" = EXCLUDED."school_name",
+           "occurred_at" = EXCLUDED."occurred_at", "updated_at" = now()`,
+    [accountId, status === 'approved', status === 'approved' ? schoolName : null, occurredAt],
   );
   return verificationId;
 }
@@ -324,13 +353,13 @@ async function upsertEvidence(ctx, { profileSkillId, accountId, skillId, version
 }
 
 /** Upserts a class + its skill links and returns its id. */
-async function insertClass(ctx, { teacherId, state, startsAt, durationMinutes, priceCredits, capacity, description, skillIds }) {
+async function insertClass(ctx, { teacherId, state, title, level, startsAt, durationMinutes, priceCredits, capacity, description, skillIds }) {
   const rows = await ctx.classDs.query(
     `INSERT INTO "live_class"."classes"
-       ("teacher_id", "state", "starts_at", "duration_minutes", "price_credits", "capacity", "description")
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ("teacher_id", "state", "title", "level", "starts_at", "duration_minutes", "price_credits", "capacity", "description")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING "id"`,
-    [teacherId, state, startsAt, durationMinutes, priceCredits, capacity, description],
+    [teacherId, state, title, level, startsAt, durationMinutes, priceCredits, capacity, description],
   );
   const classId = rows[0].id;
   for (const skillId of skillIds) {
@@ -500,15 +529,18 @@ try {
     teacher: t.user,
   }));
 
+  // B2: each class states the level its teacher is approved at for that skill (the same rule the
+  // publish gate applies), so the badge is a fact rather than a catalogue lookup. Spread across
+  // the scale so the demo shows more than one badge.
   const CLASS_SPECS = [
-    { teacher: 0, skill: 'IELTS', state: 'published', startInH: 48, duration: 60, price: 120, capacity: 8 },
-    { teacher: 0, skill: 'English Conversation', state: 'published', startInH: 72, duration: 45, price: 90, capacity: 6 },
-    { teacher: 1, skill: 'Python', state: 'published', startInH: 24, duration: 90, price: 200, capacity: 10 },
-    { teacher: 2, skill: 'React', state: 'published', startInH: 36, duration: 120, price: 260, capacity: 12 },
-    { teacher: 2, skill: 'TypeScript', state: 'full', startInH: 12, duration: 90, price: 220, capacity: 2 },
-    { teacher: 3, skill: 'Japanese', state: 'in_progress', startInH: -1, duration: 120, price: 150, capacity: 8 },
-    { teacher: 4, skill: 'Guitar', state: 'published', startInH: 96, duration: 60, price: 130, capacity: 6 },
-    { teacher: 5, skill: 'Calculus', state: 'completed', startInH: -72, duration: 90, price: 180, capacity: 10 },
+    { teacher: 0, skill: 'IELTS', state: 'published', startInH: 48, duration: 60, price: 120, capacity: 8, level: 'intermediate', title: 'IELTS Speaking Part 2: cue cards that sound natural' },
+    { teacher: 0, skill: 'English Conversation', state: 'published', startInH: 72, duration: 45, price: 90, capacity: 6, level: 'advanced', title: 'Everyday English Conversation Practice' },
+    { teacher: 1, skill: 'Python', state: 'published', startInH: 24, duration: 90, price: 200, capacity: 10, level: 'advanced', title: 'Python for Beginners: Functions and Loops' },
+    { teacher: 2, skill: 'React', state: 'published', startInH: 36, duration: 120, price: 260, capacity: 12, level: 'expert', title: 'React Hooks Deep Dive' },
+    { teacher: 2, skill: 'TypeScript', state: 'full', startInH: 12, duration: 90, price: 220, capacity: 2, level: 'intermediate', title: 'TypeScript Types That Scale' },
+    { teacher: 3, skill: 'Japanese', state: 'in_progress', startInH: -1, duration: 120, price: 150, capacity: 8, level: 'intermediate', title: 'Japanese Conversation: Ordering Food' },
+    { teacher: 4, skill: 'Guitar', state: 'published', startInH: 96, duration: 60, price: 130, capacity: 6, level: 'advanced', title: 'Guitar Chords for Absolute Beginners' },
+    { teacher: 5, skill: 'Calculus', state: 'completed', startInH: -72, duration: 90, price: 180, capacity: 10, level: 'expert', title: 'Calculus: Limits and Derivatives Explained' },
   ];
 
   const classIds = [];
@@ -522,6 +554,8 @@ try {
       durationMinutes: spec.duration,
       priceCredits: spec.price,
       capacity: spec.capacity,
+      title: spec.title,
+      level: spec.level,
       description: `Demo ${spec.skill} class #${i + 1} by Demo User ${spec.teacher + 1}`,
       skillIds: [skillIdByName[spec.skill]],
     });
@@ -537,7 +571,10 @@ try {
     const open = spec.startInH > 0 && spec.state !== 'completed';
     for (let s = 0; s < seats; s += 1) {
       const learnerId = learnerIds[(ci + s) % learnerIds.length];
-      const state = spec.state === 'completed' ? 'completed' : !open ? 'cancelled' : s % 3 === 0 ? 'pending' : 'confirmed';
+      // A booking stays `confirmed` when its class completes — nothing transitions a booking to
+      // `completed`, and both the rating gate and `ratingEligible` read `confirmed` + a completed
+      // class. Seeding `completed` here made the class impossible to rate in the demo.
+      const state = spec.state === 'completed' ? 'confirmed' : !open ? 'cancelled' : s % 3 === 0 ? 'pending' : 'confirmed';
       await insertBooking(ctx, {
         classId,
         learnerId,

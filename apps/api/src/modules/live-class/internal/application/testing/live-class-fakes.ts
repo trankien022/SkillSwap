@@ -130,6 +130,8 @@ export function classView(partial: Partial<PersistedClass> = {}): PersistedClass
     durationMinutes: 60,
     priceCredits: 100,
     capacity: 3,
+    title: 'Guitar basics',
+    level: 'intermediate',
     description: 'Guitar',
     skillIds: ['skill-1'],
     ...partial,
@@ -331,6 +333,7 @@ export class FakeAccountTrustReader {
   constructor(
     private readonly trust: {
       verified?: boolean;
+      schoolName?: string | null;
       defaultLevel?: SkillLevel | null;
       approvedLevels?: Record<string, SkillLevel | null>;
     } = {},
@@ -341,6 +344,7 @@ export class FakeAccountTrustReader {
     const fallback = this.trust.defaultLevel ?? 'expert';
     return {
       verified: this.trust.verified ?? true,
+      schoolName: this.trust.schoolName ?? null,
       approvedLevel: (skillId: string): SkillLevel | null =>
         skillId in overrides ? (overrides[skillId] ?? null) : fallback,
     };

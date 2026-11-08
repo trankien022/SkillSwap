@@ -84,5 +84,13 @@ describe('MockMarketplaceGateway', () => {
     const firstIds = firstPage.items.map((item) => item.id);
     const secondIds = secondPage.items.map((item) => item.id);
     expect(firstIds).not.toEqual(secondIds);
+    expect(firstPage.nextCursor).toBe(firstIds[2]);
+    expect(secondPage.nextCursor).toBeNull();
+    const viaCursor = await gateway.search({
+      ...DEFAULT_QUERY,
+      perPage: 3,
+      cursor: firstPage.nextCursor ?? undefined,
+    });
+    expect(viaCursor.items.map((item) => item.id)).toEqual(secondIds);
   });
 });

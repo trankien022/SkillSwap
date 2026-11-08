@@ -14,7 +14,7 @@ All routes are prefixed with `/api`. Authenticated routes need `Authorization: B
 | [classes](./classes.md) | 14 | The marketplace core (FR-005/FR-007/FR-009/FR-011/FR-020) |
 | [health](./health.md) | 1 | Liveness/readiness for the load balancer and CI. |
 | [internal](./internal.md) | 1 |  |
-| [notifications](./notifications.md) | 3 | Per-account notifications (FR-012) and the push device subscriptions that receive them |
+| [notifications](./notifications.md) | 5 | Per-account notifications (FR-012) and the push device subscriptions that receive them |
 | [skill-verification](./skill-verification.md) | 9 | Proving a specific skill at a level (FR-003/FR-004/FR-018, ADR-026/ADR-027/ADR-028) |
 | [student-verification](./student-verification.md) | 6 | Proving a learner is a real student (FR-002/FR-019, ADR-023/ADR-025) |
 | [wallet](./wallet.md) | 7 | Money in and out (FR-008/FR-010, ADR-033/ADR-022) |

@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { classLifecycleStateSchema, type ClassLifecycleState } from './mobile-classes';
+import { classLifecycleStateSchema, classFormatSchema, type ClassLifecycleState } from './mobile-classes';
+import { skillLevelSchema } from './skill-evidence';
 
 /**
  * 4 domain lifecycle states of a Booking (FR-007, FR-009, FR-011).
@@ -26,6 +27,10 @@ export const classDetailTeacherSchema = z.object({
   displayName: z.string().min(1),
   averageRating: z.number().min(0).max(5).nullable(),
   ratingsCount: z.number().int().nonnegative(),
+  /** B4: whether the teacher is a currently verified student. */
+  verified: z.boolean(),
+  /** B4: the school behind that verification; `null` when unverified or not yet projected. */
+  schoolName: z.string().min(1).nullable(),
 });
 export type ClassDetailTeacherView = z.infer<typeof classDetailTeacherSchema>;
 
@@ -56,7 +61,8 @@ export type ClassDetailSkillView = z.infer<typeof classDetailSkillSchema>;
 /**
  * Route 14 / FR-005, FR-006, FR-007: detailed class view.
  * Includes public teacher summary, seat availability, canBook calculation,
- * provisional rating fields, and optional own-booking status for the authenticated caller.
+ * the rating aggregate and the newest reviews, plus optional own-booking status for the
+ * authenticated caller.
  */
 export const classDetailViewSchema = z.object({
   id: z.string().min(1),
@@ -67,6 +73,11 @@ export const classDetailViewSchema = z.object({
    * catalogue could not be read, so a client can keep its "not provided" state.
    */
   skills: z.array(classDetailSkillSchema).optional(),
+  title: z.string().min(1),
+  /** B2: the level the class is taught at; `null` when it was never recorded. */
+  level: skillLevelSchema.nullable(),
+  /** B3: `one-on-one` for capacity 1, otherwise `group`. */
+  format: classFormatSchema,
   description: z.string().min(1),
   startsAt: z.string().datetime({ offset: true }),
   durationMinutes: z.number().int(),

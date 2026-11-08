@@ -183,6 +183,7 @@
       "keywordPlaceholder": "IELTS, data structures, Figma...",
       "universityLabel": "Teacher's school",
       "universityAll": "All universities",
+      "universityDisabledHint": "School filtering is not available yet",
       "universities": {
         "bk": "Tech university (HCMUT/HUST)",
         "ftu": "Foreign trade university (FTU)",
@@ -233,7 +234,7 @@
       "format": {
         "title": "Class format",
         "oneOnOne": "1-1 mentoring",
-        "group": "Small group (2 - 4 learners)"
+        "group": "Group class"
       },
       "time": {
         "title": "Start time",
@@ -291,7 +292,9 @@
       "showing": "Showing {from} - {to} of {total} open classes",
       "prev": "Previous",
       "next": "Next",
-      "label": "Class pagination"
+      "label": "Class pagination",
+      "loadMore": "Load more classes",
+      "loadingMore": "Loading more…"
     },
     "banner": {
       "title": "Payment protection",
@@ -312,7 +315,7 @@
     "hero": {
       "format": {
         "oneOnOne": "1-1 mentoring",
-        "group": "Group class 2-4"
+        "group": "Group class"
       },
       "levelBadge": "Advanced level",
       "security": "End-to-end encryption",
@@ -1193,7 +1196,7 @@
     "sessionInfo": {
       "title": "Session Overview",
       "tag": "1-on-1 Mentoring Session",
-      "peerStudent": "Peer student",
+      "peerStudent": "Peer mentor",
       "startsAtLabel": "Scheduled start",
       "durationLabel": "Duration",
       "durationValue": "{minutes} minutes"
@@ -1303,7 +1306,7 @@
       "notInCall": "Not in the room",
       "youLabel": "You",
       "teacherFallback": "Instructor",
-      "peerStudent": "Peer student"
+      "peerStudent": "Peer mentor"
     },
     "states": {
       "loadingBooking": "Loading session details…",
@@ -1423,7 +1426,9 @@
       "requestedLevel": "Requested level",
       "evidenceType": "Evidence",
       "owner": "Submitter",
-      "submittedAt": "Submitted"
+      "submittedAt": "Submitted",
+      "documentRef": "Document reference",
+      "documentUnavailable": "Cannot be opened yet"
     },
     "actions": {
       "claim": "Claim",
@@ -1562,8 +1567,8 @@
     "notifications": {
       "title": "Your notifications",
       "description": "Updates on your schedule, transactions and verification reviews.",
-      "markViewed": "Mark all viewed for this visit",
-      "markSingle": "Mark viewed for this visit",
+      "markViewed": "Mark all as read",
+      "markSingle": "Mark as read",
       "filter": {
         "all": "All",
         "unread": "Unviewed",
@@ -1717,7 +1722,9 @@
       "publishAClassundefined": "Publish a class →",
       "availableSeats": "available seats",
       "edit": "Edit",
-      "minimumConfirmedSeats": "Capacity cannot be below {count} confirmed seats."
+      "minimumConfirmedSeats": "Capacity cannot be below {count} confirmed seats.",
+      "classTitle": "Class title",
+      "enterAValidClassTitle": "Enter a class title (up to 72 characters)."
     },
     "rules": "Learning and payment rules",
     "fallback": {

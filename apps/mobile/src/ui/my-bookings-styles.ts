@@ -94,6 +94,11 @@ export const myBookingsStyles = StyleSheet.create({
     fontWeight: typography.heading.fontWeight,
     color: colors.ink,
   },
+  cardDescription: {
+    fontSize: typography.body.fontSize,
+    color: colors.inkSoft,
+    lineHeight: 20,
+  },
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',

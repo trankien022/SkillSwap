@@ -74,6 +74,12 @@ export const classDetailStyles = StyleSheet.create({
     color: colors.inkSoft,
     lineHeight: 22,
   },
+  classTitle: {
+    fontSize: typography.body.fontSize,
+    fontWeight: '700',
+    color: colors.ink,
+    lineHeight: 22,
+  },
   skillsSection: {
     gap: spacing.xs,
     paddingTop: spacing.sm,

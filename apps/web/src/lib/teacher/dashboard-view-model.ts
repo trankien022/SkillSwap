@@ -11,14 +11,10 @@
 
 /**
  * A class in the teacher's own list, mapped from `GET /classes?teacherId=me`.
- *
- * The API describes a class with `description` (there is no separate title
- * column), so `description` is shown as-is rather than being truncated into a
- * synthetic "title" — a truncated string presented as a title is a different
- * claim from the full description.
  */
 export interface TeacherClassItem {
   id: string;
+  title: string;
   description: string;
   startsAt: string;
   durationMinutes: number;
@@ -32,6 +28,7 @@ export interface TeacherClassItem {
 /** One row of `GET /classes?teacherId=me`, mapped to the screen's view model. */
 export function toTeacherClassItem(item: {
   id: string;
+  title: string;
   description: string;
   startsAt: string;
   durationMinutes: number;
@@ -43,6 +40,7 @@ export function toTeacherClassItem(item: {
 }): TeacherClassItem {
   return {
     id: item.id,
+    title: item.title,
     description: item.description,
     startsAt: item.startsAt,
     durationMinutes: item.durationMinutes,
@@ -55,26 +53,27 @@ export function toTeacherClassItem(item: {
 }
 
 /**
- * The editable subset of a class. Only price and capacity are exposed: they are
- * the fields a teacher changes in practice and the only two with local
- * validators already (`priceIsValid`, `capacityIsValid`). Schedule changes
- * interact with the 24 h booking lead time and are deferred.
+ * The editable subset of a class exposed on the teacher dashboard: title,
+ * price, and capacity. Schedule changes interact with the 24 h booking lead
+ * time and are deferred.
  */
 export interface ClassEditDraft {
+  title: string;
   priceCredits: number;
   capacity: number;
 }
 
 /**
  * Builds the `PATCH /classes/:id` body for an edit that has already been
- * validated locally. Only the two editable fields are ever sent, so an edit of
- * price cannot silently rewrite the capacity.
+ * validated locally.
  */
 export function toUpdateClassInput(draft: ClassEditDraft): {
+  title?: string;
   priceCredits?: number;
   capacity?: number;
 } {
   return {
+    title: draft.title.trim(),
     priceCredits: draft.priceCredits,
     capacity: draft.capacity,
   };

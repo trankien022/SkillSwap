@@ -22,6 +22,8 @@ function persistedClass(overrides: Partial<PersistedClass> = {}): PersistedClass
     durationMinutes: 60,
     priceCredits: 100,
     capacity: 1,
+    title: 'Guitar basics',
+    level: 'intermediate',
     description: 'Guitar',
     skillIds: ['skill-1'],
     ...overrides,
@@ -91,6 +93,7 @@ function setup(options: {
   const teacherTrust: AccountTrustReader = {
     read: jest.fn(async (accountId: string) => ({
       verified: verifications[accountId] ?? false,
+      schoolName: null,
       approvedLevel: () => null,
     })),
   };

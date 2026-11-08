@@ -19,6 +19,7 @@ describe('MyBookingsCoordinator', () => {
     createdAt: '2026-10-12T00:00:00.000Z',
     expiresAt: null,
     classSummary: {
+      title: `Class title for ${bookingId}`,
       description: `Class for ${bookingId}`,
       skillIds: ['skill-1'],
       startsAt: '2026-10-20T10:00:00.000Z',

@@ -82,7 +82,10 @@ On real hardware, with the runbook:
 1. Teacher joins from the web client; Learner joins from mobile — same room, mic and camera both directions.
 2. Learner tries the room **outside** the window → denied with an actionable message (NFR-006), not a blank screen.
 3. A third account tries the room → denied.
-4. Teacher ends the class (`POST /classes/:id/complete`) → the room remains usable for the current session or closes per ADR-020; record which.
+4. Nobody calls a "complete" endpoint — there is none (ADR-021 Amendment A). Instead, let the
+   scheduled end pass (or wait out the empty-room grace period) and observe the class move to
+   Completed on its own; then record whether the room stayed usable for the current session or
+   closed per ADR-020.
 5. Screenshot/recording per step; store under `tasks/evidence/`.
 
 **Note:** this phase cannot be done by an agent alone — it needs two people and two devices. It must be scheduled, not assumed.

@@ -16,6 +16,7 @@ export function DetailHeader({ item }: { item: ClassDetailView }) {
   const t = useTranslations('ClassDetail.hero');
   const tBread = useTranslations('ClassDetail.breadcrumb');
   const tBack = useTranslations('ClassDetail');
+  const tLevels = useTranslations('Marketplace.card.levels');
   const locale = useLocale() as 'vi' | 'en';
 
   // Map the kebab enum back to the camelCase i18n key (same lookup as
@@ -63,9 +64,9 @@ export function DetailHeader({ item }: { item: ClassDetailView }) {
             )}
             <span aria-hidden="true" className="text-ink-muted">/</span>
             <span className="max-w-xs truncate font-semibold text-ink md:max-w-sm">
-              {/* The detail route returns no skill name; the description the API
-                  does return is the honest label for the crumb. */}
-              {item.skillName ?? item.description}
+              {/* `title` is the class's own name (B1); the crumb used to fall
+                  back to the skill name, which named the subject, not this class. */}
+              {item.title}
             </span>
           </nav>
           <a
@@ -92,14 +93,19 @@ export function DetailHeader({ item }: { item: ClassDetailView }) {
                 )}
               </span>
             </Chip>
+            {item.level !== null && (
+              <Chip variant="ink">
+                <span>{tLevels(item.level)}</span>
+              </Chip>
+            )}
 
           </div>
 
-          {/* Title. The class-detail route returns no skill name, so the
-              description — which it does return — is used instead of printing
-              a placeholder that would read as the real subject. */}
+          {/* Title. This is the class's own name (B1). Before it existed, the
+              description was printed inside this `<h1>`, so a paragraph became
+              the page heading. */}
           <h1 className="workspace-title">
-            {item.skillName ?? item.description}
+            {item.title}
           </h1>
 
           {/* Rating + completion row */}

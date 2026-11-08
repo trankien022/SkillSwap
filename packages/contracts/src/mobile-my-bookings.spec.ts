@@ -100,6 +100,7 @@ describe('mobile-my-bookings contracts', () => {
 
   describe('learnerBookingItemSchema', () => {
     const validSummary = {
+      title: 'System Architecture Fundamentals',
       description: 'System Architecture Fundamentals',
       skillIds: ['sk-arch-1', 'sk-node-1'],
       startsAt: '2026-10-20T14:00:00.000Z',

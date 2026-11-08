@@ -272,8 +272,12 @@ const systemClock: Clock = { now: () => new Date() };
     },
     {
       provide: RATING_REPOSITORY,
-      useFactory: (registry: ModuleDataSourceRegistry): RatingRepository => new SqlRatingRepository(registry, MODULE_NAME),
-      inject: [ModuleDataSourceRegistry],
+      useFactory: (
+        registry: ModuleDataSourceRegistry,
+        profiles: PublicProfileReader,
+      ): RatingRepository =>
+        new SqlRatingRepository(registry, MODULE_NAME, profiles),
+      inject: [ModuleDataSourceRegistry, PUBLIC_PROFILE_READER],
     },
     {
       provide: SUBMIT_RATING,
@@ -521,10 +525,24 @@ const systemClock: Clock = { now: () => new Date() };
       useFactory: (
         classListReader: ClassListReader,
         publicTeacherReader: PublicTeacherReader,
+        accountTrustReader: AccountTrustReader,
+        ratingRepository: RatingRepository,
         clock: Clock,
       ): ListClassesPort =>
-        new ListClassesQueryHandler(classListReader, publicTeacherReader, clock),
-      inject: [CLASS_LIST_READER, PUBLIC_TEACHER_READER, CLOCK],
+        new ListClassesQueryHandler(
+          classListReader,
+          publicTeacherReader,
+          accountTrustReader,
+          ratingRepository,
+          clock,
+        ),
+      inject: [
+        CLASS_LIST_READER,
+        PUBLIC_TEACHER_READER,
+        ACCOUNT_TRUST_READER,
+        RATING_REPOSITORY,
+        CLOCK,
+      ],
     },
     {
       provide: CLASS_DETAIL_READER,
@@ -544,15 +562,26 @@ const systemClock: Clock = { now: () => new Date() };
         classDetailReader: ClassDetailReader,
         publicTeacherReader: PublicTeacherReader,
         classSkillReader: ClassSkillReader,
+        accountTrustReader: AccountTrustReader,
+        ratingRepository: RatingRepository,
         clock: Clock,
       ): GetClassDetailPort =>
         new GetClassDetailQueryHandler(
           classDetailReader,
           publicTeacherReader,
           classSkillReader,
+          accountTrustReader,
+          ratingRepository,
           clock,
         ),
-      inject: [CLASS_DETAIL_READER, PUBLIC_TEACHER_READER, CLASS_SKILL_READER, CLOCK],
+      inject: [
+        CLASS_DETAIL_READER,
+        PUBLIC_TEACHER_READER,
+        CLASS_SKILL_READER,
+        ACCOUNT_TRUST_READER,
+        RATING_REPOSITORY,
+        CLOCK,
+      ],
     },
     {
       provide: MY_BOOKINGS_READER,

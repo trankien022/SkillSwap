@@ -10,14 +10,17 @@ import {
   InvalidDurationError,
   InvalidPriceError,
   InvalidStartTimeError,
+  InvalidTitleError,
   UnknownClassStateError,
   assertClassEditable,
   assertClassState,
   assertCompletable,
   assertCompletionBasis,
+  assertTitle,
   assertTransition,
   canComplete,
   canTransition,
+  classFormatOf,
   completionOutcome,
   hasEnded,
   hasStarted,
@@ -36,6 +39,7 @@ const NOW = new Date('2026-10-08T00:00:00.000Z');
 function draft(overrides: Partial<ClassDraft> = {}): ClassDraft {
   return {
     teacherId: 'teacher-1',
+    title: 'Guitar basics',
     startsAt: new Date(NOW.getTime() + 48 * 60 * 60 * 1000),
     durationMinutes: 60,
     priceCredits: 100,
@@ -45,6 +49,16 @@ function draft(overrides: Partial<ClassDraft> = {}): ClassDraft {
 }
 
 describe('class aggregate', () => {
+  it('derives one format from capacity, so list and detail cannot disagree (B3)', () => {
+    // OQ-007: capacity 1 is one-on-one, anything larger is a group. The web used to derive this
+    // itself and labelled every group class "group 2–4", including 10- and 12-seat classes.
+    expect(classFormatOf(1)).toBe('one-on-one');
+    expect(classFormatOf(4)).toBe('group');
+    expect(classFormatOf(12)).toBe('group');
+    // Degenerate input still has to answer something; 0 seats is not a group of 2–4 either.
+    expect(classFormatOf(0)).toBe('one-on-one');
+  });
+
   it('declares a stable state machine', () => {
     expect(INITIAL_CLASS_STATE).toBe('draft');
     expect(CLASS_STATES).toContain('published');
@@ -70,6 +84,7 @@ describe('class aggregate', () => {
     expect(view).toEqual({
       teacherId: 'teacher-1',
       state: 'published',
+      title: 'Guitar basics',
       startsAt: draft().startsAt,
       durationMinutes: 60,
       priceCredits: 100,
@@ -109,6 +124,18 @@ describe('class aggregate', () => {
     expect(() => publishClass(draft({ startsAt: new Date('nope') }), NOW)).toThrow(
       InvalidStartTimeError,
     );
+  });
+
+  it('requires a title of 1-120 characters after trimming (B1)', () => {
+    expect(() => publishClass(draft({ title: 'Zebra Protocol' }), NOW)).not.toThrow();
+    // Trimming is the rule: padding is not content, it is removed, not counted.
+    expect(publishClass(draft({ title: '  Zebra Protocol  ' }), NOW).title).toBe('Zebra Protocol');
+    expect(publishClass(draft({ title: 'x'.repeat(120) }), NOW).title).toHaveLength(120);
+    expect(() => publishClass(draft({ title: '' }), NOW)).toThrow(InvalidTitleError);
+    expect(() => publishClass(draft({ title: '   ' }), NOW)).toThrow(InvalidTitleError);
+    expect(() => publishClass(draft({ title: 'x'.repeat(121) }), NOW)).toThrow(InvalidTitleError);
+    expect(() => assertTitle('   ')).toThrow(InvalidTitleError);
+    expect(() => assertTitle('ok')).not.toThrow();
   });
 
   it('reports whether the class has started', () => {

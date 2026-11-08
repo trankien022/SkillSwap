@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { callApiOk, callApi, unwrapEnvelope } from '../../../lib/api-client';
-import { capacityIsValid, priceIsValid } from '../../../lib/teacher/money';
+import { capacityIsValid, priceIsValid, titleOver } from '../../../lib/teacher/money';
 import {
   readApiMessage,
   toTeacherClassItem,
@@ -160,9 +160,8 @@ export default function InstructorDashboard() {
   };
 
   /**
-   * Saves an edit to price and capacity. Only changed fields are sent, so an
-   * unrelated field is never overwritten with the same value. A `409` means the
-   * class is locked by a confirmed booking; the panel closes without changing
+   * Saves an edit to title, price and capacity. A `409` means the class is
+   * locked by a confirmed booking; the panel stays open without changing
    * anything and the server's own message is shown.
    */
   const handleSaveEdit = async (classId: string, draft: ClassEditDraft) => {
@@ -406,7 +405,10 @@ export default function InstructorDashboard() {
                               {item.availableSeats} {ui('availableSeats')}
                             </span>
                           </div>
-                          <h3 className="font-bold text-slate-900 text-base">{item.description}</h3>
+                          <h3 className="font-bold text-slate-900 text-base">{item.title}</h3>
+                          {item.description && item.description !== item.title && (
+                            <p className="text-sm text-slate-600">{item.description}</p>
+                          )}
                           <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-sm text-slate-600">
                             <span className="flex items-center gap-1 text-slate-900 font-medium">
                               <span
@@ -486,7 +488,7 @@ export default function InstructorDashboard() {
                         </div>
                       </div>
 
-                      {/* Inline edit — price and capacity only. A 409 means the
+                      {/* Inline edit — title, price and capacity. A 409 means the
                           class is locked by a confirmed booking; the panel stays
                           open and the server's own message is shown. */}
                       {editingClassId === item.id && (
@@ -528,7 +530,7 @@ export default function InstructorDashboard() {
 /* --- Small presentational helpers --- */
 
 /**
- * The inline price/capacity editor for one class card.
+ * The inline title/price/capacity editor for one class card.
  *
  * It edits a local copy and refuses to submit values the API would reject, using
  * the same validators the publish form uses so the two cannot disagree. Capacity
@@ -549,9 +551,12 @@ function ClassEditPanel({
 }) {
   const ui = useTranslations('Workspace.copy');
 
+  const [title, setTitle] = useState(item.title);
   const [price, setPrice] = useState(String(item.priceCredits));
   const [capacity, setCapacity] = useState(String(item.capacity));
 
+  const trimmedTitle = title.trim();
+  const titleOk = trimmedTitle.length > 0 && !titleOver(trimmedTitle);
   const priceNumber = Number(price);
   const capacityNumber = Number(capacity);
 
@@ -559,11 +564,25 @@ function ClassEditPanel({
   const capacityOk =
     capacityIsValid(capacityNumber) && capacityNumber >= item.confirmedBookingsCount;
 
-  const canSave = priceOk && capacityOk && !disabled;
+  const canSave = titleOk && priceOk && capacityOk && !disabled;
 
   return (
     <div className="mt-4 pt-4 border-t border-slate-100">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <label className="flex flex-col gap-1">
+          <span className="text-sm font-semibold text-slate-700">{ui('classTitle')}</span>
+          <input
+            type="text"
+            value={title}
+            disabled={disabled}
+            onChange={(e) => setTitle(e.target.value)}
+            className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none disabled:bg-slate-50"
+          />
+          {!titleOk && (
+            <span className="text-sm text-rose-600">{ui('enterAValidClassTitle')}</span>
+          )}
+        </label>
+
         <label className="flex flex-col gap-1">
           <span className="text-sm font-semibold text-slate-700">
             {ui('pricePerLearnerInCredits')}
@@ -608,7 +627,9 @@ function ClassEditPanel({
       <div className="mt-4 flex items-center gap-2.5">
         <button
           type="button"
-          onClick={() => onSave({ priceCredits: priceNumber, capacity: capacityNumber })}
+          onClick={() =>
+            onSave({ title: trimmedTitle, priceCredits: priceNumber, capacity: capacityNumber })
+          }
           disabled={!canSave}
           className="px-4 py-2 rounded-full text-sm font-semibold bg-campus-emerald-deep hover:bg-ink text-white transition-colors disabled:opacity-50"
         >
@@ -627,17 +648,6 @@ function ClassEditPanel({
   );
 }
 
-/**
- * The editable subset of a class. Only price and capacity are exposed: they are
- * the fields a teacher changes in practice and the only two with local
- * validators already (`priceIsValid`, `capacityIsValid`). Schedule changes
- * interact with the 24 h booking lead time and are deferred.
- */
-/**
- * Reads the API's own failure message from a non-2xx response, falling back to
- * a caller-supplied string when the body carries none. The uniform envelope
- * puts the human message on `message`.
- */
 function FilterButton({
   active,
   onClick,

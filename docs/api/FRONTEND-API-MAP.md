@@ -37,8 +37,7 @@ paths follow and `FRONTEND-API-GUIDE.md` for how to call them.
 | `/classes/:id` | GET | `lib/marketplace/api-class-detail.ts`, `lib/booking/http-gateway.ts`, `app/[locale]/instructor/page.tsx` | `infrastructure/http/class-read-gateway.ts` | Detail carries `skills` (server-joined); no follow-up catalog read. |
 | `/classes/:id/bookings` | POST | `lib/booking/http-gateway.ts` | `infrastructure/http/booking-http-gateway.ts` | |
 | `/classes/:id/cancel` | POST | `lib/dashboard/http-gateway.ts` | `infrastructure/http/teaching-gateway.ts` | |
-| `/classes/:id/start` | POST | `app/[locale]/instructor/page.tsx` | `infrastructure/http/teaching-gateway.ts` | |
-| `/classes/:id/complete` | POST | `app/[locale]/instructor/page.tsx` | `infrastructure/http/teaching-gateway.ts` | |
+| `/classes/:id/start` | POST | `app/[locale]/instructor/page.tsx` | `infrastructure/http/teaching-gateway.ts` | A class completes automatically (ADR-021 Amendment A / AC-035); there is no `/complete` route. |
 | `/classes/bookings/me` | GET | `lib/dashboard/http-gateway.ts`, `components/dashboard/PostSessionReviewContent.tsx` | `infrastructure/http/my-bookings-gateway.ts` | `limit=50`; the learner dashboard filters client-side (see below). |
 | `/classes/bookings/:bookingId/confirm` | POST | `lib/booking/http-gateway.ts`, `lib/dashboard/http-gateway.ts` | `infrastructure/http/booking-http-gateway.ts` | |
 | `/classes/bookings/:bookingId/rating` | POST | `lib/dashboard/http-gateway.ts`, `components/dashboard/PostSessionReviewContent.tsx` | `infrastructure/http/rating-gateway.ts` | |
@@ -100,6 +99,8 @@ paths follow and `FRONTEND-API-GUIDE.md` for how to call them.
 | Route | Method | Web | Mobile | Notes |
 |---|---|---|---|---|
 | `/notifications` | GET | `lib/notifications/api-notifications.ts` | `infrastructure/http/notification-gateway.ts` | Cursor-paged. |
+| `/notifications/:id/read` | POST | `lib/notifications/api-notifications.ts` | `infrastructure/http/notification-gateway.ts` | Marks a single notification read. |
+| `/notifications/read-all` | POST | `lib/notifications/api-notifications.ts` | `infrastructure/http/notification-gateway.ts` | Marks all notifications read. |
 | `/notification-devices` | POST | — (mobile only) | `infrastructure/push/notification-device-lifecycle.ts` | Registers an Expo push token. |
 | `/notification-devices/:id` | DELETE | — (mobile only) | `infrastructure/push/notification-device-lifecycle.ts` | Answers `204 No Content`. |
 

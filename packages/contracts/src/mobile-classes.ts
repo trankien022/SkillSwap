@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { MAX_PAGE_LIMIT, searchQuerySchema } from './pagination';
+import { skillLevelSchema } from './skill-evidence';
 
 export type ClassCursorTuple = readonly [startsAtISO: string, id: string];
 
@@ -136,6 +137,13 @@ export const classLifecycleStateSchema = z.enum([
 export type ClassLifecycleState = z.infer<typeof classLifecycleStateSchema>;
 
 /**
+ * B3: how many learners a class serves. Capacity 1 is one-on-one, anything larger is a group
+ * (OQ-007, resolved). The API reports it so no client has to derive — and mis-derive — it.
+ */
+export const classFormatSchema = z.enum(['one-on-one', 'group']);
+export type ClassFormat = z.infer<typeof classFormatSchema>;
+
+/**
  * Route 13 / FR-005, FR-006: query parameters for listing classes.
  * Keyset cursor pagination bounded to the shared max page size (100), default 20.
  * Supports `q` search (legacy `keyword` alias), skillId filter, date range, teacherId ('me' or UUID), state filter, and portable cursor.
@@ -174,13 +182,22 @@ export type ListClassesQueryInput = z.infer<typeof listClassesQuerySchema>;
 
 /**
  * Route 13: class item in marketplace or own teaching list.
- * Includes seats count, confirmed count, provisional rating fields (rating table not yet implemented).
+ * Includes seats count, confirmed count, and the real rating aggregate read back from `ratings`.
  */
 export const classListItemSchema = z.object({
   id: z.string().min(1),
   teacherId: z.string().min(1),
   teacherDisplayName: z.string().min(1),
+  /** B4: whether the teacher is a currently verified student. */
+  verified: z.boolean(),
+  /** B4: the school behind that verification; `null` when unverified or not yet projected. */
+  schoolName: z.string().min(1).nullable(),
   skillIds: z.array(z.string().min(1)),
+  title: z.string().min(1),
+  /** B2: the level the class is taught at; `null` when it was never recorded. */
+  level: skillLevelSchema.nullable(),
+  /** B3: `one-on-one` for capacity 1, otherwise `group`. */
+  format: classFormatSchema,
   description: z.string().min(1),
   startsAt: z.string().datetime({ offset: true }),
   durationMinutes: z.number().int(),

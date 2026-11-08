@@ -41,6 +41,7 @@ export const myBookingsQuerySchema = z.object({
 export type MyBookingsQueryInput = z.infer<typeof myBookingsQuerySchema>;
 
 export const learnerBookingClassSummarySchema = z.object({
+  title: z.string().min(1),
   description: z.string().min(1),
   skillIds: z.array(z.string().min(1)),
   startsAt: z.string().datetime({ offset: true }),

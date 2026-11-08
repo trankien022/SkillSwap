@@ -7,6 +7,7 @@ export interface UpdateClassCommand {
   classId: string;
   teacherId: string;
   skillIds?: string[];
+  title?: string;
   description?: string;
   startsAt?: string;
   durationMinutes?: number;

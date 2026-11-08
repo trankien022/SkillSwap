@@ -7,13 +7,7 @@ import InstructorDashboard from './page';
 
 /**
  * Behavioural tests for the teacher lifecycle controls on the instructor
- * dashboard (FR-007 / FR-020).
- *
- * Before this change the screen could only *complete* a class. The two verbs the
- * API already exposed — `POST /classes/:id/start` and `PATCH /classes/:id` — had
- * no UI, so a teacher on web could not start or edit one. These tests assert the
- * screen now calls the documented routes and, on refusal, shows the server's own
- * message rather than a generic string.
+ * dashboard (FR-007 / FR-020 / W3).
  */
 
 const FUTURE = new Date(Date.now() + 72 * 3_600_000).toISOString();
@@ -21,7 +15,8 @@ const FUTURE = new Date(Date.now() + 72 * 3_600_000).toISOString();
 function classItem(overrides: Record<string, unknown> = {}) {
   return {
     id: 'cls-1',
-    description: 'Guitar co-ban',
+    title: 'Guitar co-ban',
+    description: 'Learn basic chords and strumming patterns',
     startsAt: FUTURE,
     durationMinutes: 60,
     priceCredits: 100,
@@ -92,6 +87,15 @@ afterEach(() => {
 });
 
 describe('InstructorDashboard lifecycle controls', () => {
+  it('renders item.title as the class card h3 heading (W3)', async () => {
+    stubApi();
+    renderPage();
+
+    const heading = await screen.findByRole('heading', { level: 3, name: 'Guitar co-ban' });
+    expect(heading).toBeTruthy();
+    expect(screen.getByText('Learn basic chords and strumming patterns')).toBeTruthy();
+  });
+
   it('starts a published class through the documented route', async () => {
     const calls = stubApi();
     renderPage();
@@ -114,14 +118,16 @@ describe('InstructorDashboard lifecycle controls', () => {
     expect(screen.queryByRole('button', { name: /Start/ })).toBeNull();
   });
 
-  it('saves an edit with PATCH and only the editable fields', async () => {
+  it('saves an edit with PATCH including title, priceCredits, and capacity (W3)', async () => {
     const calls = stubApi();
     renderPage();
 
     fireEvent.click(await screen.findByRole('button', { name: /Edit/ }));
 
-    const priceInput = await screen.findByLabelText(/Price per learner/);
+    const titleInput = await screen.findByLabelText(/Class title/);
+    const priceInput = screen.getByLabelText(/Price per learner/);
     const capacityInput = screen.getByLabelText(/Maximum capacity/);
+    fireEvent.change(titleInput, { target: { value: 'Guitar nang-cao' } });
     fireEvent.change(priceInput, { target: { value: '150' } });
     fireEvent.change(capacityInput, { target: { value: '3' } });
     fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
@@ -130,8 +136,11 @@ describe('InstructorDashboard lifecycle controls', () => {
       const patch = calls.find((c) => (c.init.method ?? '').toUpperCase() === 'PATCH');
       expect(patch).toBeTruthy();
       expect(patch!.url).toContain('/classes/cls-1');
-      // Only price and capacity travel; an unrelated field must not be overwritten.
-      expect(JSON.parse(String(patch!.init.body))).toEqual({ priceCredits: 150, capacity: 3 });
+      expect(JSON.parse(String(patch!.init.body))).toEqual({
+        title: 'Guitar nang-cao',
+        priceCredits: 150,
+        capacity: 3,
+      });
     });
   });
 

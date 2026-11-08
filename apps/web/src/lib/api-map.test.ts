@@ -43,6 +43,8 @@ const WEB_ROUTES = [
   '/classes/bookings/:bookingId/room-access',
   '/classes/bookings/me',
   '/notifications',
+  '/notifications/:id/read',
+  '/notifications/read-all',
   // FR-015 / ADR-037: the account-lock list and its two actions.
   '/operations/accounts',
   '/operations/accounts/:accountId/reinstatement',
