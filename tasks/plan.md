@@ -103,7 +103,7 @@ Tất cả đường dẫn dưới đây có prefix `/api`; “Có” nghĩa là
 | 16 | PATCH /classes/:id | Sửa trước khóa cam kết | Có | 005,007 |
 | 17 | POST /classes/:id/cancel | Teacher hủy lớp | Có | 007 |
 | 18 | POST /classes/:id/start | Bắt đầu dạy | Có | 020 |
-| 19 | POST /classes/:id/complete | Kết thúc dạy | Có | 020 |
+| 19 | — | **Không có route "complete".** Lớp tự completed khi hết `starts_at + durationMinutes`, hoặc khi phòng trống quá grace period (ADR-021 Amendment A / AC-035). | — | 020 |
 | 20 | POST /classes/:id/bookings | Giữ chỗ Pending | Có | 007 |
 | 21 | POST /classes/bookings/:bookingId/confirm | Confirm/settlement | Có | 009 |
 | 22 | GET /classes/bookings/me | Lịch học, trạng thái/reconciliation | Mới | 007,011,020 |

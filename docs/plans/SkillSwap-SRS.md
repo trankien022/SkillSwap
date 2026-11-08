@@ -709,7 +709,7 @@ The product is delivered on two clients (web, mobile) that must show the same fe
 | S9 | Student verification | US-T3 | `/{locale}/verification` | `(features)/verification.tsx` | `GET/POST /student-verifications` |
 | S10 | Skills / evidence | US-S1–US-S3 | `/{locale}/skills` | `(features)/skills.tsx` | `GET /skills`, `GET /profile-skills/me`, `POST /skill-evidence`, `GET /skill-evidence/:id/history` |
 | S11 | Withdrawal | US-W4 | `/{locale}/wallet/withdrawal` | — | **none — not offered in this release** (FR-014 deferred, 2026-10-25) |
-| S12 | Teaching / my classes | US-M1 | `/{locale}/instructor`, `/{locale}/teach/classes/new` | `(features)/teaching.tsx` | `POST /classes`, `POST /classes/{id}/complete` |
+| S12 | Teaching / my classes | US-M1 | `/{locale}/instructor`, `/{locale}/teach/classes/new` | `(features)/teaching.tsx` | `GET /classes?teacherId=me`, `POST /classes`, `PATCH /classes/{id}`, `POST /classes/{id}/start`, `POST /classes/{id}/cancel` (no `complete` route: completion is automatic, ADR-021 Amendment A / AC-035) |
 | S13 | Post-class rating | US-L3 | `/{locale}/bookings/[id]/review` | `my-bookings-view.tsx` | `POST /classes/bookings/{bookingId}/rating` |
 | S14 | Live room | US-L1, US-L2 | `/{locale}/bookings/[id]/live` | `bookings/[id]/live` | `POST /classes/bookings/{bookingId}/room-access` |
 | S15 | Verifier queue | US-S4, US-S5 | none | none | `GET /verifier/me/queue` (API-only; no client screen) |

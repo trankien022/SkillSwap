@@ -6,7 +6,7 @@
 
 Per-account notifications (FR-012) and the push device subscriptions that receive them. Reads are owner-scoped; a foreign id is 404, never a leak.
 
-3 endpoints.
+5 endpoints.
 
 Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
 
@@ -77,3 +77,35 @@ Paginated notifications for the caller, optionally only unread ones. Use on the 
 | `targetId` | string | yes | min 1 chars |
 | `read` | boolean | yes |  |
 | `createdAt` | string | yes | date-time |
+
+### `POST /api/notifications/{id}/read`
+
+**Mark one owned notification as read (FR-016)**
+
+- Auth: 🔒 Bearer token required
+- Response: `MarkNotificationsReadDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `id` | path | string | yes | The inbox notification id |
+
+**Response — `MarkNotificationsReadDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `success` | boolean | yes |  |
+| `unreadCount` | integer | yes | ≥ 0 |
+
+### `POST /api/notifications/read-all`
+
+**Mark the caller's whole inbox as read (FR-016)**
+
+- Auth: 🔒 Bearer token required
+- Response: `MarkNotificationsReadDto`
+
+**Response — `MarkNotificationsReadDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `success` | boolean | yes |  |
+| `unreadCount` | integer | yes | ≥ 0 |

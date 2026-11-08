@@ -126,6 +126,7 @@ describe('E2E: class starting soon (FR-016 / W3)', () => {
     api.actAs(teacherId);
     const created = await api.post('/api/classes', {
       skillIds: ['skill-guitar'],
+      title: `Reminder ${label}`,
       description: `Reminder ${label}`,
       startsAt: bookedFor.toISOString(),
       durationMinutes: 60,

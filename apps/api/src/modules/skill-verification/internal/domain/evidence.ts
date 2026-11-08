@@ -45,6 +45,8 @@ export const SKILL_EVIDENCE_EVENTS = {
   claimed: 'skill.evidence.claimed',
   approved: 'skill.evidence.approved',
   rejected: 'skill.evidence.rejected',
+  /** FR-003: a reviewer opened the attached certificate. Audited, never a state change. */
+  documentRead: 'skill.evidence.document.read',
 } as const;
 
 // --- Errors ----------------------------------------------------------------

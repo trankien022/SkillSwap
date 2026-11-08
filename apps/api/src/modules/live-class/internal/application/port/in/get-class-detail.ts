@@ -10,6 +10,11 @@ export const CLASS_LIFECYCLE_STATES = [
 ] as const;
 export type ClassLifecycleStateDto = (typeof CLASS_LIFECYCLE_STATES)[number];
 
+/** B2: the level vocabulary a class may report. */
+import type { ClassFormatDto, ClassLevelDto } from './class-facts';
+export { CLASS_LEVELS, CLASS_FORMATS } from './class-facts';
+export type { ClassLevelDto, ClassFormatDto } from './class-facts';
+
 export const BOOKING_STATES = [
   'pending',
   'confirmed',
@@ -26,8 +31,17 @@ export interface GetClassDetailQuery {
 export interface ClassDetailTeacherDto {
   readonly id: string;
   readonly displayName: string;
+  /**
+   * B5: the rating aggregate for **this class**, rounded to 2 decimals; `null` when nobody has
+   * rated it. The contract nests the pair under `teacher`, so the class list and the detail page
+   * must report the same numbers for the same class.
+   */
   readonly averageRating: number | null;
   readonly ratingsCount: number;
+  /** B4: whether the teacher is a currently verified student. */
+  readonly verified: boolean;
+  /** B4: the school behind that verification; null when unverified or not yet projected. */
+  readonly schoolName: string | null;
 }
 
 export interface ClassDetailRatingDto {
@@ -61,6 +75,11 @@ export interface ClassDetailDto {
    * read, so a client can tell "no catalogue data" from "the skill was deleted".
    */
   readonly skills?: readonly ClassDetailSkillDto[];
+  readonly title: string;
+  /** B2: the level the class is taught at; null when it was never recorded. */
+  readonly level: ClassLevelDto | null;
+  /** B3: `one-on-one` for capacity 1, otherwise `group`. */
+  readonly format: ClassFormatDto;
   readonly description: string;
   readonly startsAt: string;
   readonly durationMinutes: number;
@@ -69,6 +88,9 @@ export interface ClassDetailDto {
   readonly availableSeats: number;
   readonly state: ClassLifecycleStateDto;
   readonly canBook: boolean;
+  /**
+   * B5: the newest ratings learners wrote for this class, most recent first.
+   */
   readonly recentRatings: readonly ClassDetailRatingDto[];
   readonly ownBooking: OwnBookingSummaryDto | null;
 }

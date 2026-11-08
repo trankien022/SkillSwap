@@ -46,6 +46,25 @@ describe('ReleaseIncomeUseCase (FR-009 / OQ-006)', () => {
     expect(await wallets.getBalance('tc-1')).toEqual({ availableCredits: 90, pendingCredits: 0 });
   });
 
+  it('names the system as the actor of the release it announces (B11 / ADR-035)', async () => {
+    // A completion is a system effect: the Teacher is the beneficiary, never the actor.
+    const { wallets, useCase } = await setup();
+    await useCase.execute({ bookingId: 'bk-1', teacherId: 'tc-1', amountCredits: 90, releaseKey: 'k' });
+
+    expect(wallets.releases).toHaveLength(1);
+    expect(wallets.releases[0].actorId).toBe(SYSTEM_ACTOR_ID);
+    expect(wallets.releases[0].teacherId).toBe('tc-1');
+  });
+
+  it('records no release request for a duplicate (B11: no second announcement)', async () => {
+    const { wallets, useCase } = await setup();
+    await useCase.execute({ bookingId: 'bk-1', teacherId: 'tc-1', amountCredits: 90, releaseKey: 'k' });
+    await useCase.execute({ bookingId: 'bk-1', teacherId: 'tc-1', amountCredits: 90, releaseKey: 'k' });
+
+    // The fake records applied releases only, mirroring the repository's ON CONFLICT DO NOTHING.
+    expect(wallets.releases).toHaveLength(1);
+  });
+
   it('releases a second, distinct booking normally (AC-015)', async () => {
     const { wallets, useCase } = await setup();
     await wallets.settleBooking({

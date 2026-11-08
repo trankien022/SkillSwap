@@ -21,6 +21,7 @@ describe('MyBookingsGateway', () => {
     createdAt: '2026-10-12T00:00:00.000Z',
     expiresAt: null,
     classSummary: {
+      title: 'React Native nâng cao',
       description: 'Khóa học lập trình di động React Native chuyên sâu',
       skillIds: ['550e8400-e29b-41d4-a716-446655440000'],
       startsAt: '2026-10-20T10:00:00.000Z',

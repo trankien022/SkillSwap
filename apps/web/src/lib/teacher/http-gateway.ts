@@ -19,10 +19,11 @@ import type { ClassDraft, PublishResult, VerifiedSkill } from './types';
  * with a fabricated room code.
  *
  * What the backend actually returns for a created class is `classSchema`
- * (`id`, `teacherId`, `state`, `startsAt`, `durationMinutes`, `priceCredits`,
- * `capacity`). It has **no room code**: the Jitsi room is minted later, at
- * `POST /classes/bookings/:bookingId/room-access`. The publish screen therefore
- * shows the class id only, rather than inventing a code the system never issued.
+ * (`id`, `teacherId`, `state`, `title`, `startsAt`, `durationMinutes`,
+ * `priceCredits`, `capacity`). It has **no room code**: the Jitsi room is minted
+ * later, at `POST /classes/bookings/:bookingId/room-access`. The publish screen
+ * therefore shows the class id only, rather than inventing a code the system
+ * never issued.
  *
  * Verified skills come from `GET /profile-skills/me`. That view carries
  * `skillId`, `skillName`, `category` and `approvedLevel`; it does not carry a
@@ -137,22 +138,26 @@ function toSkillCategory(category: string): VerifiedSkill['category'] {
 }
 
 /**
- * Combines the title and the description into the single `description` field the
- * API accepts, and concatenates the schedule into an ISO instant. The API has no
- * separate title field, so the title leads the description rather than being
- * dropped.
+ * Maps the publish form's draft onto the API payload.
+ *
+ * The API has its own `title` column (B1), so the teacher's title is sent as a
+ * title rather than being folded into the description. It used to be
+ * concatenated onto `description` because no title field existed; that made
+ * every card show a paragraph, and left the description carrying text a
+ * learner had not written as description. The description still falls back to
+ * the skill name when the teacher left it blank, so a published class is never
+ * description-less.
  */
 export function toCreateClassInput(draft: ClassDraft, skillName: string): CreateClassInput {
   const startsAt = toStartsAtIso(draft);
-  const description = draft.title.trim()
-    ? `${draft.title.trim()}\n\n${draft.description.trim()}`
-    : draft.description.trim();
+  // A blank title would fail the 1-120 rule; the skill name is the honest
+  // stand-in, and the form already refuses to publish without one.
+  const title = draft.title.trim() || skillName;
 
   return {
     skillIds: [draft.skillId],
-    // `skillName` is not sent; it is only used to keep the description
-    // self-describing if the teacher left it thin.
-    description: description || skillName,
+    title,
+    description: draft.description.trim() || skillName,
     startsAt,
     durationMinutes: draft.durationMinutes,
     priceCredits: draft.priceCredits,

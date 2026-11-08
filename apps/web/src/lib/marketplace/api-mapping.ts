@@ -4,7 +4,6 @@ import type {
 } from '@skillswap/contracts';
 import type {
   ClassDetailView,
-  ClassFormat,
   MarketplaceClass,
   MarketplacePage,
   PrerequisiteItem,
@@ -55,15 +54,6 @@ export function toSkillCategory(raw: string | undefined): SkillCategory {
     default:
       return 'soft-skills';
   }
-}
-
-/**
- * The API exposes no class format, so it is inferred from capacity: a 1:1
- * class has one seat, anything larger is a small group. This is a presentation
- * decision — capacity itself is real.
- */
-export function toClassFormat(capacity: number): ClassFormat {
-  return capacity <= 1 ? 'one-on-one' : 'group-2-4';
 }
 
 const LEVELS: readonly SkillLevel[] = ['beginner', 'intermediate', 'advanced', 'expert'];
@@ -119,27 +109,33 @@ export function toMarketplaceClass(
     id: item.id,
     teacherId: item.teacherId,
     state: item.state,
+    title: item.title,
     startsAt: item.startsAt,
     durationMinutes: item.durationMinutes,
     priceCredits: item.priceCredits,
     capacity: item.capacity,
 
     teacherName: item.teacherDisplayName,
-    // No school column exists in the schema, so no school or code is claimed.
+    // B4: the API reports the school as free text, and no `UniversityCode` vocabulary exists on
+    // the wire — mapping a name onto one of the app's six codes would be a guess. `schoolCode`
+    // therefore stays null (the code-based dropdown still cannot filter API data); the name and
+    // the verified flag below are real and drive "verified only" and the card's school line.
     schoolCode: null,
-    schoolName: null,
+    schoolName: item.schoolName,
     skillName,
     skillCategory: toSkillCategory(skill?.category),
-    level: toSkillLevel(skill),
-    format: toClassFormat(item.capacity),
+    // B2: the class reports the level it is taught at. The catalogue fallback only applies to
+    // rows recorded before the column existed (`null`), where no per-class level is known —
+    // it is the old, lowest-in-catalogue guess, not a new claim.
+    level: item.level ?? toSkillLevel(skill),
+    format: item.format,
     // `averageRating` is nullable on the contract: a teacher with no ratings
     // has none. Coercing it to 0 rendered as a genuine zero-star score, which
     // reads as "rated and bad" rather than "unrated".
     ratingAvg: item.averageRating,
     ratingCount: item.ratingsCount,
-    // The list endpoint carries no verification flag; asserting one here would
-    // be a claim the API never made.
-    verified: null,
+    // B4: the flag is now on the payload, so the "verified only" toggle can filter for real.
+    verified: item.verified,
     coverGradient: coverGradientFor(item.id),
     // Free seats as reported by the catalogue — used for the "full" reason on
     // the detail action, never defaulted (absent stays absent).

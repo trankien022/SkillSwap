@@ -19,7 +19,9 @@ export function mapContractBookingToView(item: LearnerBookingItemView): LearnerB
   return {
     id: item.bookingId,
     classId: item.classId,
-    classTitle: item.classSummary.description,
+    // The class's own name (B1). It was the description, relabelled as a title,
+    // so a whole paragraph appeared wherever a booking's class name belongs.
+    classTitle: item.classSummary.title,
     skillIcon: 'code',
     teacherName,
     teacherInitial: teacherName.charAt(0).toUpperCase() || 'T',

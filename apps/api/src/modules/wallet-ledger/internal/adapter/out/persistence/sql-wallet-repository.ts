@@ -93,10 +93,12 @@ export class SqlWalletRepository implements WalletRepository {
    * and the top-up path did not, which is precisely the kind of asymmetry a trace walkthrough
    * catches and a unit test does not.
    *
-   * A **reversal** (`direction: 'debit'`) deliberately emits nothing. The schema has no
-   * reversal type, and an invoice number produces at most one settlement — so there is no
-   * credit to pair it with, and inventing a type here would be inventing a contract. Recorded in
-   * the W9 R4 runbook rather than left as a silent gap.
+   * A **reversal** (`direction: 'debit'`) announces a `reversal` event, which B11 added to the
+   * contract together with the SePay `TRANSACTION_VOID` producer that first needed it. Until then
+   * this path was silent and unreachable: the enum had no member for "money taken back", and
+   * inventing one with no producer would have invented a contract. The event is keyed on the
+   * reversal's own ledger id, not the original credit's, because the two are separate movements of
+   * money and a consumer joining on the id must land on the row that actually happened.
    */
   async applyTopUp(request: ApplyTopUpRequest): Promise<WalletBalance> {
     const source = this.registry.get(this.moduleName);
@@ -126,34 +128,37 @@ export class SqlWalletRepository implements WalletRepository {
       )) as BalanceRow[];
       const row = rows[0];
 
-      if (request.direction === 'credit') {
-        // The ledger row is the durable identity, exactly as in settleBooking: the transaction id
-        // in the event IS the ledger id, so a consumer can always find the money it was told about.
-        const ledgerRows = returnedRows<{ id: string | number; created_at: Date | string }>(inserted);
-        const ledgerRow = ledgerRows[0];
-        if (ledgerRow === undefined) {
-          throw new Error('Failed to insert top-up ledger entry');
-        }
-        const occurredAt = (
-          ledgerRow.created_at instanceof Date ? ledgerRow.created_at : new Date(ledgerRow.created_at)
-        ).toISOString();
-
-        // ADR-035 Amendment A: parse before writing, so a payload that cannot satisfy the contract
-        // fails inside this transaction rather than becoming a dead letter after the credit lands.
-        const payload = walletTransactionCompletedEventSchema.parse({
-          transactionId: String(ledgerRow.id),
-          accountId: request.ownerId,
-          type: 'top_up',
-          amountCredits: request.amountCredits,
-          direction: 'credit',
-          occurredAt,
-          actorId: request.actorId,
-        });
-        await manager.query(insertOutboxStatement(this.schema), [
-          WALLET_TRANSACTION_COMPLETED_EVENT,
-          payload,
-        ]);
+      // Both directions announce themselves. The event's `transactionId` is the ledger row that
+      // this call inserted, which for a reversal is the debit — so the announcement names the
+      // movement that just happened, not the settlement it offsets.
+      const ledgerRows = returnedRows<{ id: string | number; created_at: Date | string }>(inserted);
+      const ledgerRow = ledgerRows[0];
+      if (ledgerRow === undefined) {
+        throw new Error(
+          request.direction === 'credit'
+            ? 'Failed to insert top-up ledger entry'
+            : 'Failed to insert reversal ledger entry',
+        );
       }
+      const occurredAt = (
+        ledgerRow.created_at instanceof Date ? ledgerRow.created_at : new Date(ledgerRow.created_at)
+      ).toISOString();
+
+      // ADR-035 Amendment A: parse before writing, so a payload that cannot satisfy the contract
+      // fails inside this transaction rather than becoming a dead letter after the money landed.
+      const payload = walletTransactionCompletedEventSchema.parse({
+        transactionId: String(ledgerRow.id),
+        accountId: request.ownerId,
+        type: request.direction === 'credit' ? 'top_up' : 'reversal',
+        amountCredits: request.amountCredits,
+        direction: request.direction,
+        occurredAt,
+        actorId: request.actorId,
+      });
+      await manager.query(insertOutboxStatement(this.schema), [
+        WALLET_TRANSACTION_COMPLETED_EVENT,
+        payload,
+      ]);
 
       return { availableCredits: row.available_credits, pendingCredits: row.pending_credits };
     });
@@ -318,15 +323,26 @@ export class SqlWalletRepository implements WalletRepository {
   async releaseIncome(request: ReleaseIncomeRequest): Promise<ReleaseIncomeResult> {
     const source = this.registry.get(this.moduleName);
     return source.transaction(async (manager) => {
-      const inserted = (await manager.query(
-        `INSERT INTO ${this.ledgerTable}
-           ("booking_id", "teacher_id", "amount_credits", "direction", "entry_type", "owner_id", "reference_id", "release_key", "trace_id")
-         VALUES (NULL, $1, $2, 'credit', 'release', $1, $3, $4, $5)
-         ON CONFLICT DO NOTHING
-         RETURNING "id"`,
-        [request.teacherId, request.amountCredits, request.bookingId, request.releaseKey, request.traceId],
-      )) as Array<{ id: string | number }>;
-      if (inserted.length === 0) {
+      const inserted = returnedRows<{ id: string | number; created_at: Date | string }>(
+        await manager.query(
+          `INSERT INTO ${this.ledgerTable}
+             ("booking_id", "teacher_id", "amount_credits", "direction", "entry_type", "owner_id", "reference_id", "release_key", "trace_id")
+           VALUES (NULL, $1, $2, 'credit', 'release', $1, $3, $4, $5)
+           ON CONFLICT DO NOTHING
+           RETURNING "id", "created_at"`,
+          [
+            request.teacherId,
+            request.amountCredits,
+            request.bookingId,
+            request.releaseKey,
+            request.traceId,
+          ],
+        ),
+      );
+      const releaseRow = inserted[0];
+      if (releaseRow === undefined) {
+        // The (booking, releaseKey) pair already released: a replayed `class.completed` lands
+        // here and must stay silent, or every retry would tell the Teacher they were paid again.
         return { applied: false };
       }
       await manager.query(
@@ -337,6 +353,30 @@ export class SqlWalletRepository implements WalletRepository {
          WHERE "owner_id" = $1`,
         [request.teacherId, request.amountCredits],
       );
+
+      // B11 / FR-016: pending income became spendable and the Teacher was not told. Written in
+      // this transaction, keyed on the inserted ledger id, and only when the release was actually
+      // applied — an idempotent no-op above must not produce a second announcement.
+      const occurredAt = (
+        releaseRow.created_at instanceof Date
+          ? releaseRow.created_at
+          : new Date(releaseRow.created_at)
+      ).toISOString();
+      const payload = walletTransactionCompletedEventSchema.parse({
+        transactionId: String(releaseRow.id),
+        accountId: request.teacherId,
+        type: 'income_release',
+        amountCredits: request.amountCredits,
+        direction: 'credit',
+        occurredAt,
+        bookingId: request.bookingId,
+        actorId: request.actorId,
+      });
+      await manager.query(insertOutboxStatement(this.schema), [
+        WALLET_TRANSACTION_COMPLETED_EVENT,
+        payload,
+      ]);
+
       return { applied: true };
     });
   }
@@ -364,12 +404,17 @@ export class SqlWalletRepository implements WalletRepository {
         return { applied: false };
       }
 
-      await manager.query(
+      const inserted = await manager.query(
         `INSERT INTO ${this.ledgerTable}
            ("booking_id", "teacher_id", "amount_credits", "direction", "entry_type", "owner_id", "reference_id", "trace_id")
-         VALUES (NULL, $1, $2, 'credit', 'refund', $1, $3, $4)`,
+         VALUES (NULL, $1, $2, 'credit', 'refund', $1, $3, $4)
+         RETURNING "id", "created_at"`,
         [request.learnerId, request.priceCredits, request.bookingId, request.traceId],
       );
+      const refundRow = returnedRows<{ id: string | number; created_at: Date | string }>(inserted)[0];
+      if (refundRow === undefined) {
+        throw new Error('Failed to insert booking refund ledger entry');
+      }
       await manager.query(
         `INSERT INTO ${this.table} ("owner_id", "available_credits", "updated_at")
          VALUES ($1, $2, now())
@@ -384,6 +429,32 @@ export class SqlWalletRepository implements WalletRepository {
          WHERE "owner_id" = $1`,
         [request.teacherId, teacherCredits],
       );
+
+      // B11 / FR-016: a refund moved the Learner's money and said nothing. The event is written
+      // inside this transaction, with the inserted ledger row's id as `transactionId` — the same
+      // durable identity `settleBooking` uses, so a consumer can follow the event back to the money
+      // rather than to a guess. Parsed before the insert, so a payload that cannot satisfy the
+      // contract fails here instead of becoming a dead letter after the credit has landed.
+      const refundOccurredAt = (
+        refundRow.created_at instanceof Date
+          ? refundRow.created_at
+          : new Date(refundRow.created_at)
+      ).toISOString();
+      const payload = walletTransactionCompletedEventSchema.parse({
+        transactionId: String(refundRow.id),
+        accountId: request.learnerId,
+        type: 'booking_refund',
+        amountCredits: request.priceCredits,
+        direction: 'credit',
+        occurredAt: refundOccurredAt,
+        bookingId: request.bookingId,
+        actorId: request.actorId,
+      });
+      await manager.query(insertOutboxStatement(this.schema), [
+        WALLET_TRANSACTION_COMPLETED_EVENT,
+        payload,
+      ]);
+
       return { applied: true };
     });
   }

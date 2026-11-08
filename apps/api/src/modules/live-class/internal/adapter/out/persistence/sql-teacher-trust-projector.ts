@@ -31,9 +31,9 @@ export class SqlTeacherTrustProjector implements AccountTrustReader, TeacherTrus
   async read(teacherId: string): Promise<TeacherTrust> {
     const source = this.registry.get(this.moduleName);
     const verifiedRows = (await source.query(
-      `SELECT "verified" FROM ${this.verifiedTable} WHERE "account_id" = $1`,
+      `SELECT "verified", "school_name" FROM ${this.verifiedTable} WHERE "account_id" = $1`,
       [teacherId],
-    )) as { verified: boolean }[];
+    )) as { verified: boolean; school_name: string | null }[];
     const approvalRows = (await source.query(
       `SELECT "skill_id", "approved_level" FROM ${this.approvalTable} WHERE "account_id" = $1`,
       [teacherId],
@@ -45,8 +45,12 @@ export class SqlTeacherTrustProjector implements AccountTrustReader, TeacherTrus
         row.approved_level !== null && isSkillLevel(row.approved_level) ? row.approved_level : null,
       );
     }
+    const verified = verifiedRows[0];
     return {
-      verified: verifiedRows[0]?.verified ?? false,
+      verified: verified?.verified ?? false,
+      // A row written before B4 has no school (the column is nullable and was not backfilled),
+      // so an old projection reports "no school" rather than inventing one.
+      schoolName: verified?.school_name ?? null,
       approvedLevel: (skillId: string): SkillLevel | null => approvedLevels.get(skillId) ?? null,
     };
   }
@@ -54,12 +58,15 @@ export class SqlTeacherTrustProjector implements AccountTrustReader, TeacherTrus
   async upsertVerified(request: UpsertVerifiedTeacherRequest): Promise<void> {
     const source = this.registry.get(this.moduleName);
     await source.query(
-      `INSERT INTO ${this.verifiedTable} ("account_id", "verified", "occurred_at", "updated_at")
-       VALUES ($1, $2, $3, now())
+      `INSERT INTO ${this.verifiedTable} ("account_id", "verified", "school_name", "occurred_at", "updated_at")
+       VALUES ($1, $2, $3, $4, now())
        ON CONFLICT ("account_id") DO UPDATE
-         SET "verified" = EXCLUDED."verified", "occurred_at" = EXCLUDED."occurred_at", "updated_at" = now()
+         SET "verified" = EXCLUDED."verified",
+             "school_name" = EXCLUDED."school_name",
+             "occurred_at" = EXCLUDED."occurred_at",
+             "updated_at" = now()
        WHERE ${this.verifiedTable}."occurred_at" < EXCLUDED."occurred_at"`,
-      [request.accountId, request.verified, request.occurredAt],
+      [request.accountId, request.verified, request.schoolName, request.occurredAt],
     );
   }
 

@@ -15,6 +15,7 @@ export default function TeachingClassDetailScreen() {
   const router = useRouter();
   const { t, locale, gatewayClient } = useSession();
   const [item, setItem] = useState<ClassDetailView | null>(null);
+  const [classTitle, setClassTitle] = useState('');
   const [description, setDescription] = useState('');
   const [startsAt, setStartsAt] = useState('');
   const [price, setPrice] = useState('');
@@ -33,6 +34,7 @@ export default function TeachingClassDetailScreen() {
     try {
       const found = await new BookingHttpGateway(gatewayClient).getClassDetail(classId);
       setItem(found);
+      setClassTitle(found.title);
       setDescription(found.description);
       setStartsAt(found.startsAt);
       setPrice(String(found.priceCredits));
@@ -60,10 +62,10 @@ export default function TeachingClassDetailScreen() {
   const canCancel = item?.state === 'published' || item?.state === 'full';
   const save = () => {
     const priceCredits = Number(price); const seats = Number(capacity);
-    if (!gatewayClient || !item || !description.trim() || !Number.isInteger(priceCredits) || priceCredits <= 0 || !Number.isInteger(seats) || seats <= 0 || !Number.isFinite(Date.parse(startsAt))) {
+    if (!gatewayClient || !item || !classTitle.trim() || !description.trim() || !Number.isInteger(priceCredits) || priceCredits <= 0 || !Number.isInteger(seats) || seats <= 0 || !Number.isFinite(Date.parse(startsAt))) {
       setError(t('Teaching.invalidForm')); return;
     }
-    return run(() => new TeachingGateway(gatewayClient).update(item.id, { description: description.trim(), startsAt: new Date(startsAt).toISOString(), priceCredits, capacity: seats }));
+    return run(() => new TeachingGateway(gatewayClient).update(item.id, { title: classTitle.trim(), description: description.trim(), startsAt: new Date(startsAt).toISOString(), priceCredits, capacity: seats }));
   };
   const cancel = () => Alert.alert(t('Teaching.cancelTitle'), t('Teaching.cancelConfirm'), [
     { text: t('Common.cancel'), style: 'cancel' },
@@ -76,6 +78,7 @@ export default function TeachingClassDetailScreen() {
     {item ? <>
     <Text style={styles.meta}>{t(`Teaching.state.${item.state}`)} · {new Date(item.startsAt).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}</Text>
       <Text style={styles.meta}>{item.priceCredits} {t('Teaching.price')} · {item.capacity} {t('Teaching.capacity')}</Text>
+      <TextInput value={classTitle} onChangeText={setClassTitle} editable={Boolean(canEdit) && !busy} placeholder={t('Teaching.classTitle')} style={styles.input} accessibilityLabel={t('Teaching.classTitle')} />
       <TextInput value={description} onChangeText={setDescription} editable={Boolean(canEdit) && !busy} placeholder={t('Teaching.description')} style={styles.input} accessibilityLabel={t('Teaching.description')} />
       <TextInput value={startsAt} onChangeText={setStartsAt} editable={Boolean(canEdit) && !busy} placeholder={t('Teaching.startsAt')} style={styles.input} accessibilityLabel={t('Teaching.startsAt')} />
       <View style={styles.row}>

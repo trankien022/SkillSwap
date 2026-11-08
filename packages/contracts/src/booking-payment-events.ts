@@ -34,7 +34,20 @@ export type BookingConfirmed = z.infer<typeof bookingConfirmedSchema>;
  * Emitted atomically within the wallet's local transaction when a wallet transaction completes.
  * - booking_payment: requires non-empty bookingId correlation and must have direction 'debit'.
  * - booking_refund: requires non-empty bookingId correlation and must have direction 'credit'.
+ * - reversal: must have direction 'debit' — it takes money back after a settled top-up.
  * - other transaction types (top_up, income_release, platform_fee): bookingId is optional.
+ *
+ * **B11: why `reversal` was added.** The runbook recorded this as a deliberate gap rather than a
+ * defect: `applyTopUp` with `direction: 'debit'` wrote a ledger row and the balance and announced
+ * nothing, because the enum had no member that described what had happened. The gap was
+ * unreachable then — an invoice number produced at most one settlement and nothing emitted a
+ * reversal — so adding a member would have been inventing a contract with no producer. Now the
+ * SePay `TRANSACTION_VOID` path does emit one, which is the moment the member earns its place.
+ *
+ * The direction refinement is not decoration: a reversal with `direction: 'credit'` would tell a
+ * consumer that money arrived when it left, and the notification copy reads the type, not the
+ * ledger. `top_up` deliberately has no direction rule — the settlement is a credit, but pinning
+ * that here would reject a payload shape the existing producer legitimately sends.
  */
 export const walletTransactionCompletedEventSchema = z
   .object({
@@ -46,6 +59,7 @@ export const walletTransactionCompletedEventSchema = z
       'booking_refund',
       'income_release',
       'platform_fee',
+      'reversal',
     ]),
     amountCredits: z.number().int().positive(),
     direction: z.enum(['credit', 'debit']),
@@ -87,6 +101,17 @@ export const walletTransactionCompletedEventSchema = z
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'booking_refund must have direction credit',
+          path: ['direction'],
+        });
+      }
+    } else if (data.type === 'reversal') {
+      // B11: a reversal takes money back, so the direction is part of what the type means. A
+      // reversal announced as a credit would read as money arriving; the inbox copy is chosen by
+      // type, so the lie would survive all the way to the learner's screen.
+      if (data.direction !== 'debit') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'reversal must have direction debit',
           path: ['direction'],
         });
       }

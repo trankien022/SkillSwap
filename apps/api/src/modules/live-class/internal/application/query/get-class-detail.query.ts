@@ -13,9 +13,13 @@ import type {
 import type { Clock } from '../port/out/clock';
 import type { ClassSkillReader } from '../port/out/class-skill-reader';
 import type { PublicTeacherReader } from '../port/out/public-teacher-reader';
+import type { AccountTrustReader } from '../port/out/account-trust';
+import type { RatingRepository } from '../port/out/rating-repository';
 
 const BOOKING_LEAD_TIME_MS = 24 * 60 * 60 * 1000;
 const NEUTRAL_TEACHER_NAME = 'SkillSwap';
+/** FR-013: how many of the newest ratings the detail page shows. */
+const RECENT_RATINGS_LIMIT = 5;
 
 /**
  * Route 14 / FR-005, FR-006, FR-007: pure query handler for class detail.
@@ -28,6 +32,8 @@ export class GetClassDetailQueryHandler implements GetClassDetailPort {
     private readonly classDetailReader: ClassDetailReader,
     private readonly publicTeacherReader: PublicTeacherReader,
     private readonly classSkillReader: ClassSkillReader,
+    private readonly accountTrustReader: AccountTrustReader,
+    private readonly ratingRepository: RatingRepository,
     private readonly clock: Clock,
   ) {}
 
@@ -103,13 +109,25 @@ export class GetClassDetailQueryHandler implements GetClassDetailPort {
       isNotTeacher &&
       !hasBlockingBooking;
 
-    // 4. Enrich teacher public profile display name via pure batch facade
-    const teacherDisplayName = await this.resolveTeacherDisplayName(record.teacherId);
+    // 4. Enrich teacher public profile display name and verification via pure batch facades.
+    //    B4: the school and the verified flag live in the local trust projection, not in
+    //    `student_verification` (no cross-schema read, ADR-014).
+    //    B5: the rating pair and the recent reviews come from the `ratings` table that the write
+    //    side has been filling since FR-013 — they were hardcoded `null`/`0`/`[]`.
+    const [teacherDisplayName, teacherTrust, aggregates, recentRatings] = await Promise.all([
+      this.resolveTeacherDisplayName(record.teacherId),
+      this.accountTrustReader.read(record.teacherId),
+      this.ratingRepository.readAggregate([record.id]),
+      this.ratingRepository.readRecent(record.id, RECENT_RATINGS_LIMIT),
+    ]);
+    const aggregate = aggregates.get(record.id);
     const teacher: ClassDetailTeacherDto = {
       id: record.teacherId,
       displayName: teacherDisplayName,
-      averageRating: null, // provisional until T16
-      ratingsCount: 0,     // provisional until T16
+      averageRating: aggregate?.average ?? null,
+      ratingsCount: aggregate?.count ?? 0,
+      verified: teacherTrust.verified,
+      schoolName: teacherTrust.schoolName,
     };
 
     // 5. Resolve the skills the class teaches. This is the join every client used to do
@@ -122,6 +140,9 @@ export class GetClassDetailQueryHandler implements GetClassDetailPort {
       teacher,
       skillIds: record.skillIds,
       ...(skills === null ? {} : { skills }),
+      title: record.title,
+      level: record.level,
+      format: record.format,
       description: record.description,
       startsAt: record.startsAt.toISOString(),
       durationMinutes: record.durationMinutes,
@@ -130,7 +151,7 @@ export class GetClassDetailQueryHandler implements GetClassDetailPort {
       availableSeats: record.availableSeats,
       state: record.state,
       canBook,
-      recentRatings: [], // provisional until T16
+      recentRatings,
       ownBooking,
     };
   }
@@ -155,7 +176,8 @@ export class GetClassDetailQueryHandler implements GetClassDetailPort {
     }
   }
 
-  private async resolveTeacherDisplayName(teacherId: string): Promise<string> {    const profiles = await this.publicTeacherReader.readMany([teacherId]);
+  private async resolveTeacherDisplayName(teacherId: string): Promise<string> {
+    const profiles = await this.publicTeacherReader.readMany([teacherId]);
     const profile = profiles.find((p) => p.id === teacherId);
     if (profile?.displayName && profile.displayName.trim() !== '') {
       return profile.displayName.trim();

@@ -85,6 +85,7 @@ describe('MyBookingsController', () => {
           createdAt: '2026-10-12T08:00:00.000Z',
           expiresAt: null,
           classSummary: {
+            title: 'Cloud Architecture: designing for failure',
             description: 'Advanced Cloud Architecture',
             skillIds: ['sk-cloud-1'],
             startsAt: '2026-10-20T14:00:00.000Z',

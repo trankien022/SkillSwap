@@ -1,4 +1,4 @@
-import { publishClass } from '../domain/class';
+import { classFormatOf, publishClass } from '../domain/class';
 import { assertPublishable, type RequiredClassSkill } from '../domain/publish-policy';
 import type {
   ClassResource,
@@ -6,7 +6,7 @@ import type {
   CreateClassPort,
   CreateClassResult,
 } from './port/in/create-class';
-import type { ClassRepository } from './port/out/class-repository';
+import type { ClassRepository, PersistedClass } from './port/out/class-repository';
 import type { Clock } from './port/out/clock';
 import type { AccountTrustReader } from './port/out/account-trust';
 
@@ -30,6 +30,7 @@ export class CreateClassUseCase implements CreateClassPort {
     const published = publishClass(
       {
         teacherId: command.teacherId,
+        title: command.title,
         startsAt: new Date(command.startsAt),
         durationMinutes: command.durationMinutes,
         priceCredits: command.priceCredits,
@@ -42,9 +43,18 @@ export class CreateClassUseCase implements CreateClassPort {
     const classSkills: RequiredClassSkill[] = command.skillIds.map((skillId) => ({ skillId }));
     assertPublishable({ teacherId: command.teacherId, teacherTrust: trust, classSkills });
 
+    // B2: the level is a by-product of the gate above, not a new check. `approvedLevel` is the same
+    // projection `assertPublishable` just consulted, so this cannot report a level the gate did not
+    // accept. Read from the class's first skill because that is the skill the gate orders first and
+    // the only one the approval projection can answer for without guessing (multi-skill classes keep
+    // the first skill's level — the gate required *every* skill approved, so it is the floor).
+    const level = trust.approvedLevel(command.skillIds[0]);
+
     const stored = await this.classes.insert({
       teacherId: published.teacherId,
       state: published.state,
+      title: published.title,
+      level,
       startsAt: published.startsAt,
       durationMinutes: published.durationMinutes,
       priceCredits: published.priceCredits,
@@ -57,19 +67,14 @@ export class CreateClassUseCase implements CreateClassPort {
   }
 }
 
-function toResource(stored: {
-  id: string;
-  teacherId: string;
-  state: string;
-  startsAt: Date;
-  durationMinutes: number;
-  priceCredits: number;
-  capacity: number;
-}): ClassResource {
+function toResource(stored: PersistedClass): ClassResource {
   return {
     id: stored.id,
     teacherId: stored.teacherId,
     state: stored.state,
+    title: stored.title,
+    level: stored.level,
+    format: classFormatOf(stored.capacity),
     startsAt: stored.startsAt.toISOString(),
     durationMinutes: stored.durationMinutes,
     priceCredits: stored.priceCredits,

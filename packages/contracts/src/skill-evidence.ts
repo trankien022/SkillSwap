@@ -65,6 +65,40 @@ export const submitSkillEvidenceSchema = z.object({
 });
 export type SubmitSkillEvidenceInput = z.infer<typeof submitSkillEvidenceSchema>;
 
+/**
+ * FR-003: request a pre-signed upload target for certificate evidence.
+ *
+ * Mirrors `documentUploadRequestSchema`: same allow-list and size cap, opposite side of the same
+ * bucket. Extracted into its own schema rather than reusing the verification one because the two
+ * routes must be able to diverge (a certificate may later allow a different type) without one
+ * change silently widening the other.
+ */
+export const evidenceDocumentUploadRequestSchema = z.object({
+  fileName: z.string().min(1).max(255),
+  contentType: z.string().min(1).max(120),
+  sizeBytes: z.number().int().positive(),
+});
+export type EvidenceDocumentUploadRequestInput = z.infer<
+  typeof evidenceDocumentUploadRequestSchema
+>;
+
+/**
+ * FR-003: the upload target for certificate evidence.
+ *
+ * Carries **no** `documentId` on purpose. A student verification records a metadata row per upload
+ * so the submission can prove it references a document the same account created; certificate
+ * evidence has no such row, so inventing an id here would be a handle to nothing. The object key
+ * *is* the reference, and it is checked for ownership when the evidence is submitted.
+ */
+export const evidenceDocumentUploadTargetSchema = z.object({
+  uploadUrl: z.string().min(1),
+  objectKey: z.string().min(1),
+  expiresAt: z.string().datetime({ offset: true }),
+});
+export type EvidenceDocumentUploadTargetView = z.infer<
+  typeof evidenceDocumentUploadTargetSchema
+>;
+
 /** FR-003: the owner-facing view of one evidence version. */
 export const skillEvidenceViewSchema = z.object({
   id: z.string().min(1),
@@ -109,3 +143,22 @@ export const skillEvidenceEventSchema = z.object({
   actorId: actorIdSchema,
 });
 export type SkillEvidenceEvent = z.infer<typeof skillEvidenceEventSchema>;
+
+/**
+ * FR-003: a reviewer opened the certificate attached to an evidence version.
+ *
+ * Same shape and same reasoning as `studentVerificationDocumentReadEventSchema`: the payload names
+ * who read and what they read, and carries **no URL**, because a 300-second bearer credential must
+ * not be copied into an outbox row that is retained indefinitely.
+ */
+export const skillEvidenceDocumentReadEventSchema = z.object({
+  evidenceId: z.string().min(1),
+  /** The owner of the evidence. **Not** the actor — see `actorId`. */
+  accountId: z.string().min(1),
+  /** The object key that was opened. A reference, never a URL. */
+  documentRef: z.string().min(1),
+  actorRole: z.string().min(1),
+  occurredAt: z.string().datetime({ offset: true }),
+  actorId: actorIdSchema,
+});
+export type SkillEvidenceDocumentReadEvent = z.infer<typeof skillEvidenceDocumentReadEventSchema>;

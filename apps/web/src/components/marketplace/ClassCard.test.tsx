@@ -23,7 +23,7 @@ describe('ClassCard helpers (content-guard at the data layer)', () => {
 
   it('formatSeats reports the seat string for 1-1 and group formats', () => {
     expect(formatSeats('one-on-one', 1)).toBe('1/1');
-    expect(formatSeats('group-2-4', 4)).toBe('2/4');
+    expect(formatSeats('group', 4)).toBe('2/4');
   });
 
   it('formatStartsAt produces a weekday + day/month string', () => {

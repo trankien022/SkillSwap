@@ -23,6 +23,8 @@ export const VERIFICATION_EVENTS = {
   approved: 'student.verification.approved',
   rejected: 'student.verification.rejected',
   revoked: 'student.verification.revoked',
+  /** ADR-023 Amendment A: a reviewer opened the uploaded document. Audited, never a state change. */
+  documentRead: 'student.verification.document.read',
 } as const;
 
 export function isVerificationStatus(value: string): value is VerificationStatus {

@@ -45,9 +45,14 @@ export class NoClassSkillsError extends Error {
   }
 }
 
-/** The Teacher's projected trust: verified-student flag and per-skill approved level. */
+/** The Teacher's projected trust: verified-student flag, school and per-skill approved level. */
 export interface TeacherTrust {
   readonly verified: boolean;
+  /**
+   * B4: the school the Teacher was verified at, or null when unverified / not yet projected.
+   * A revoked verification clears it — the badge and the school stand or fall together.
+   */
+  readonly schoolName: string | null;
   /** Effective approved level for a skill, or null when not approved. */
   approvedLevel(skillId: string): SkillLevel | null;
 }

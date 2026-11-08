@@ -71,6 +71,7 @@ describe('E2E: publish gate (FR-005 / AC-002)', () => {
   function publishBody(skillIds: string[]) {
     return {
       skillIds,
+      title: 'Gate test class',
       description: 'Gate test class',
       startsAt: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
       durationMinutes: 60,

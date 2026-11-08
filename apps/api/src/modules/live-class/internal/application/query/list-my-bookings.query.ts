@@ -93,6 +93,7 @@ export class ListMyBookingsQueryHandler implements ListMyBookingsPort {
         createdAt: record.createdAt.toISOString(),
         expiresAt: record.expiresAt ? record.expiresAt.toISOString() : null,
         classSummary: {
+          title: record.class.title,
           description: record.class.description,
           skillIds: record.class.skillIds,
           startsAt: record.class.startsAt.toISOString(),

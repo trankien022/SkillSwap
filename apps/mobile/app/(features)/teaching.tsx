@@ -14,6 +14,7 @@ export default function TeachingScreen() {
   const [items, setItems] = useState<ClassListItemView[]>([]);
   const [skills, setSkills] = useState<SkillCatalogueItemView[]>([]);
   const [skillId, setSkillId] = useState('');
+  const [classTitle, setClassTitle] = useState('');
   const [description, setDescription] = useState('');
   const [startsAt, setStartsAt] = useState(() => new Date(Date.now() + 48 * 3600000).toISOString());
   const [price, setPrice] = useState('10');
@@ -56,10 +57,11 @@ export default function TeachingScreen() {
     }
   };
   const create = async () => {
-    if (!gatewayClient || !skillId || !description.trim()) return;
+    if (!gatewayClient || !skillId || !classTitle.trim() || !description.trim()) return;
     const saved = await run(() =>
       new TeachingGateway(gatewayClient).create({
         skillIds: [skillId],
+        title: classTitle.trim(),
         description: description.trim(),
         startsAt,
         durationMinutes: Number(duration),
@@ -69,6 +71,7 @@ export default function TeachingScreen() {
     );
     if (saved) {
       setCreating(false);
+      setClassTitle('');
       setDescription('');
     }
   };
@@ -95,6 +98,13 @@ export default function TeachingScreen() {
                 </Text>
               </Pressable>
             ))}
+            <TextInput
+              value={classTitle}
+              onChangeText={setClassTitle}
+              placeholder={t('Teaching.classTitle')}
+              style={styles.input}
+              accessibilityLabel={t('Teaching.classTitle')}
+            />
             <TextInput
               value={description}
               onChangeText={setDescription}
@@ -127,7 +137,7 @@ export default function TeachingScreen() {
               ))}
             </View>
             <AppButton
-              disabled={!skillId || !description.trim()}
+              disabled={!skillId || !classTitle.trim() || !description.trim()}
               busy={busy}
               onPress={() => void create()}
               label={t('Teaching.publish')}
@@ -149,6 +159,7 @@ export default function TeachingScreen() {
         ) : (
           items.map((item) => (
             <View key={item.id} style={styles.classItem}>
+              <Text style={styles.subtitle}>{item.title}</Text>
               <Text style={styles.body}>{item.description}</Text>
               <Text style={styles.meta}>
                 {t(`Teaching.state.${item.state}`)} · {new Date(item.startsAt).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}
@@ -160,7 +171,7 @@ export default function TeachingScreen() {
                 style={styles.action}
                 onPress={() => router.push(`/(features)/teaching/${item.id}` as never)}
                 accessibilityRole="button"
-                accessibilityLabel={`${t('Teaching.openDetail')}: ${item.description}`}
+                accessibilityLabel={`${t('Teaching.openDetail')}: ${item.title}`}
               >
                 <Text style={styles.actionText}>{t('Teaching.openDetail')}</Text>
               </Pressable>

@@ -8,6 +8,7 @@ import {
 } from '@nestjs/swagger';
 import type {
   AdminVerificationPage,
+  DocumentDownloadTargetView,
   DocumentUploadTargetView,
   StudentVerificationView,
 } from '@skillswap/contracts';
@@ -35,6 +36,10 @@ import {
   LIST_ADMIN_VERIFICATIONS,
   type ListAdminVerificationsPort,
 } from '../../../application/port/in/list-admin-verifications';
+import {
+  READ_VERIFICATION_DOCUMENT,
+  type ReadVerificationDocumentPort,
+} from '../../../application/port/in/read-verification-document';
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
 import { Roles } from '../../../../../../shared/http/roles.decorator';
 import {
@@ -44,6 +49,7 @@ import {
 import {
   AdminVerificationPageDto,
   AdminVerificationQueryDto,
+  DocumentDownloadTargetDto,
   DocumentUploadRequestDto,
   DocumentUploadTargetDto,
   StudentVerificationDto,
@@ -63,6 +69,8 @@ export class StudentVerificationController {
     @Inject(REVOKE_STUDENT_VERIFICATION) private readonly revoke: RevokeStudentVerificationPort,
     @Inject(GET_MY_VERIFICATION) private readonly getMine: GetMyVerificationPort,
     @Inject(LIST_ADMIN_VERIFICATIONS) private readonly listAdmin: ListAdminVerificationsPort,
+    @Inject(READ_VERIFICATION_DOCUMENT)
+    private readonly readDocumentUseCase: ReadVerificationDocumentPort,
   ) {}
 
   @Post('documents')
@@ -142,6 +150,31 @@ export class StudentVerificationController {
   @ApiOkResponse({ type: StudentVerificationDto, description: 'The latest verification for the caller, or null' })
   mine(@Req() request: RequestWithIdentity): Promise<StudentVerificationView | null> {
     return this.getMine.execute(currentUserId(request));
+  }
+
+  /**
+   * ADR-023 Amendment A: mint a short-lived pre-signed GET for the document behind a verification.
+   *
+   * Declared **after** `@Get('me')` for the same reason the bare collector is (see below): Nest
+   * matches routes in declaration order, and a parameterised `:id` route placed earlier would
+   * swallow `GET /student-verifications/me` as `id = 'me'`. A separate route from the record itself
+   * is deliberate — a URL must not ride along in a list payload where it would be cached, logged or
+   * forwarded by accident.
+   */
+  @Get(':id/document')
+  @Roles('admin', 'verifier')
+  @ApiParam({ name: 'id', description: 'The verification id' })
+  @ApiOperation({ summary: 'Mint a pre-signed download URL for the uploaded document (FR-002)' })
+  @ApiOkResponse({ type: DocumentDownloadTargetDto, description: 'A pre-signed GET URL and its expiry' })
+  readDocument(
+    @Param('id') id: string,
+    @Req() request: RequestWithIdentity,
+  ): Promise<DocumentDownloadTargetView> {
+    return this.readDocumentUseCase.execute({
+      verificationId: id,
+      actorId: currentUserId(request),
+      actorRole: request.user?.role,
+    });
   }
 
   /**

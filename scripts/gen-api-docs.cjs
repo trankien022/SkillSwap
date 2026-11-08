@@ -63,7 +63,7 @@ const MODULE_NOTES = {
   },
   classes: {
     purpose:
-      'The marketplace core (FR-005/FR-007/FR-009/FR-011/FR-020). A student teacher publishes a class; learners book and pay; the teacher starts, completes, or cancels; room access issues a Jitsi token.',
+      'The marketplace core (FR-005/FR-007/FR-009/FR-011/FR-020). A student teacher publishes a class; learners book and pay; the teacher starts it or cancels it, and a class completes automatically at its scheduled end (ADR-021 Amendment A); room access issues a Jitsi token.',
     endpoints: {
       'POST /api/classes':
         'Publish a new class (FR-005). Requires the teacher to be a verified student approved for every skill (publish gate); otherwise 403.',

@@ -23,6 +23,7 @@ describe('ListMyBookingsQueryHandler', () => {
     createdAt: new Date('2026-10-10T10:00:00.000Z'),
     expiresAt: null,
     class: {
+      title: 'Distributed Systems',
       description: 'Distributed Systems',
       skillIds: ['sk-sys-1'],
       startsAt: new Date('2026-10-15T10:15:00.000Z'), // starts 15m after fixedNow
@@ -151,6 +152,7 @@ describe('ListMyBookingsQueryHandler', () => {
       const record = createBookingRecord({
         state: 'confirmed',
         class: {
+          title: 'Class',
           description: 'Class',
           skillIds: [],
           startsAt: new Date('2026-10-15T10:15:00.000Z'),
@@ -172,6 +174,7 @@ describe('ListMyBookingsQueryHandler', () => {
       const record = createBookingRecord({
         state: 'confirmed',
         class: {
+          title: 'Class',
           description: 'Class',
           skillIds: [],
           startsAt: new Date('2026-10-15T09:00:00.000Z'),
@@ -193,6 +196,7 @@ describe('ListMyBookingsQueryHandler', () => {
       const tooEarly = createBookingRecord({
         bookingId: 'bk-early',
         class: {
+          title: 'Early',
           description: 'Early',
           skillIds: [],
           startsAt: new Date('2026-10-15T10:15:01.000Z'),
@@ -206,6 +210,7 @@ describe('ListMyBookingsQueryHandler', () => {
       const tooLate = createBookingRecord({
         bookingId: 'bk-late',
         class: {
+          title: 'Late',
           description: 'Late',
           skillIds: [],
           startsAt: new Date('2026-10-15T08:59:59.000Z'),
@@ -230,6 +235,7 @@ describe('ListMyBookingsQueryHandler', () => {
       const completedClass = createBookingRecord({
         bookingId: 'bk-completed',
         class: {
+          title: 'Completed',
           description: 'Completed',
           skillIds: [],
           startsAt: new Date('2026-10-15T09:30:00.000Z'),
@@ -242,6 +248,7 @@ describe('ListMyBookingsQueryHandler', () => {
       const cancelledClass = createBookingRecord({
         bookingId: 'bk-cancelled',
         class: {
+          title: 'Cancelled',
           description: 'Cancelled',
           skillIds: [],
           startsAt: new Date('2026-10-15T09:30:00.000Z'),
@@ -289,6 +296,7 @@ describe('ListMyBookingsQueryHandler', () => {
       const completed = createBookingRecord({
         state: 'confirmed',
         class: {
+          title: 'Finished Class',
           description: 'Finished Class',
           skillIds: [],
           startsAt: new Date('2026-10-14T10:00:00.000Z'),
@@ -311,6 +319,7 @@ describe('ListMyBookingsQueryHandler', () => {
       const notFormallyCompleted = createBookingRecord({
         state: 'confirmed',
         class: {
+          title: 'Not Formally Ended Class',
           description: 'Not Formally Ended Class',
           skillIds: [],
           startsAt: new Date('2026-10-14T10:00:00.000Z'),
@@ -334,6 +343,7 @@ describe('ListMyBookingsQueryHandler', () => {
       const pendingRecord = createBookingRecord({
         state: 'pending',
         class: {
+          title: 'Class',
           description: 'Class',
           skillIds: [],
           startsAt: new Date('2026-10-14T10:00:00.000Z'),
@@ -356,6 +366,7 @@ describe('ListMyBookingsQueryHandler', () => {
       const b1 = createBookingRecord({
         bookingId: 'bk-1',
         class: {
+          title: 'Class 1',
           description: 'Class 1',
           skillIds: [],
           startsAt: new Date('2026-10-16T10:00:00.000Z'),
@@ -368,6 +379,7 @@ describe('ListMyBookingsQueryHandler', () => {
       const b2 = createBookingRecord({
         bookingId: 'bk-2',
         class: {
+          title: 'Class 2',
           description: 'Class 2',
           skillIds: [],
           startsAt: new Date('2026-10-17T10:00:00.000Z'),

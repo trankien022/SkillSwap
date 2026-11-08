@@ -63,6 +63,9 @@ describe('SkillEvidenceGateway', () => {
         requestedLevel: 'advanced' as const,
         approvedLevel: null,
         submittedAt: '2026-10-10T12:00:00.000Z',
+        // FR-003/B9: the history view names the evidence type and the file it references.
+        evidenceType: 'certificate' as const,
+        documentRef: 'user-789/evi-100.pdf',
         entries: [
           {
             id: 'audit-1',
@@ -113,6 +116,8 @@ describe('SkillEvidenceGateway', () => {
         requestedLevel: 'advanced' as const,
         approvedLevel: 'advanced' as const,
         submittedAt: '2026-10-12T02:00:00.000Z',
+        evidenceType: 'certificate' as const,
+        documentRef: 'user-789/evi-101.pdf',
         entries: [
           {
             id: 'audit-3',

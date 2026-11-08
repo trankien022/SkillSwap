@@ -39,6 +39,18 @@ describe('RefundCancelledBookingUseCase (FR-007 / AC-022/AC-027)', () => {
     expect(await wallets.getBalance('tc-1')).toEqual({ availableCredits: 0, pendingCredits: 0 });
   });
 
+  it('names the system as the actor of the refund it announces (B11 / ADR-035)', async () => {
+    // The beneficiary and the actor are different facts. A cancellation refund is driven by the
+    // event consumer, so the act belongs to the system while `learnerId` belongs to the person
+    // whose balance moved. Conflating them would record the Learner as having authorised it.
+    const { wallets, useCase } = await setup(true);
+    await useCase.execute(event);
+
+    expect(wallets.refunds).toHaveLength(1);
+    expect(wallets.refunds[0].actorId).toBe(SYSTEM_ACTOR_ID);
+    expect(wallets.refunds[0].learnerId).toBe('st-1');
+  });
+
   it('is a no-op for an unsettled (expired pending) booking', async () => {
     const { wallets, useCase } = await setup(false);
     const result = await useCase.execute(event);

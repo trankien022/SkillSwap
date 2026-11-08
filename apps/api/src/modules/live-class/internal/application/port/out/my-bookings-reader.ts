@@ -7,6 +7,7 @@ import type {
 export const MY_BOOKINGS_READER = Symbol('MY_BOOKINGS_READER');
 
 export interface LearnerBookingClassRecord {
+  readonly title: string;
   readonly description: string;
   readonly skillIds: readonly string[];
   readonly startsAt: Date;

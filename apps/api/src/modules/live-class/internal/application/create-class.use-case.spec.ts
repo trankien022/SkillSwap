@@ -1,7 +1,7 @@
 import { CreateClassUseCase } from './create-class.use-case';
 import type { ClassRepository, CreateClassRecord, PersistedClass } from './port/out/class-repository';
 import type { Clock } from './port/out/clock';
-import { InvalidCapacityError } from '../domain/class';
+import { InvalidCapacityError, InvalidTitleError } from '../domain/class';
 import { SkillNotApprovedError, UnverifiedTeacherError } from '../domain/publish-policy';
 import { FakeAccountTrustReader } from './testing/live-class-fakes';
 
@@ -35,6 +35,7 @@ function command(overrides: Partial<Parameters<CreateClassUseCase['execute']>[0]
   return {
     teacherId: 'teacher-1',
     skillIds: ['skill-1'],
+    title: 'Guitar basics',
     description: 'Guitar',
     startsAt: new Date(NOW.getTime() + 48 * HOUR).toISOString(),
     durationMinutes: 60,
@@ -54,11 +55,49 @@ describe('CreateClassUseCase', () => {
       id: 'cls-new',
       teacherId: 'teacher-1',
       state: 'published',
+      title: 'Guitar basics',
+      level: 'expert',
+      format: 'one-on-one',
       startsAt: new Date(NOW.getTime() + 48 * HOUR).toISOString(),
       durationMinutes: 60,
       priceCredits: 100,
       capacity: 1,
     });
+  });
+
+  it('records the level the publish approval implies (B2)', async () => {
+    const { useCase, calls } = setup(
+      new FakeAccountTrustReader({ approvedLevels: { 'skill-1': 'advanced' } }),
+    );
+    await useCase.execute(command());
+    expect(calls[0].level).toBe('advanced');
+  });
+
+  it('reports the format implied by capacity (B3)', async () => {
+    const { useCase } = setup();
+    const solo = await useCase.execute(command({ capacity: 1 }));
+    expect(solo.format).toBe('one-on-one');
+    const group = await useCase.execute(command({ capacity: 6 }));
+    expect(group.format).toBe('group');
+  });
+
+  it('takes the level from the class first skill, not from the catalogue', async () => {
+    // The gate required both skills approved; the class reports the first one rather than
+    // inventing an aggregate. This pins which skill wins so a later refactor cannot silently
+    // change the badge.
+    const { useCase, calls } = setup(
+      new FakeAccountTrustReader({
+        approvedLevels: { 'skill-1': 'beginner', 'skill-2': 'expert' },
+      }),
+    );
+    await useCase.execute(command({ skillIds: ['skill-1', 'skill-2'] }));
+    expect(calls[0].level).toBe('beginner');
+  });
+
+  it('rejects an invalid title before persisting (B1)', async () => {
+    const { useCase, classes } = setup();
+    await expect(useCase.execute(command({ title: '   ' }))).rejects.toThrow(InvalidTitleError);
+    expect(classes.insert).not.toHaveBeenCalled();
   });
 
   it('rejects an invalid capacity before persisting (OQ-007)', async () => {

@@ -79,3 +79,43 @@ Translation of these quirks lives in the **inbound web adapter**, because the pr
 
 **Related:** [ADR-017](ADR-017-wallet-topup-mock-gateway.md) (superseded in part), [ADR-013](ADR-013-message-broker-rabbitmq.md) (outbox), [ADR-014](ADR-014-persistence-typeorm.md) (persistence), [ADR-022](ADR-022-wallet-read-model.md) (wallet read side).
 **Plan:** `docs/plans/2026-10-13-fr008-sepay-payment-gateway-plan.md` (phased plan and Phase 0 findings).
+
+## Amendment A (2026-11-08) — the order lookup was calling a path that does not exist
+
+§10 and the corresponding consequence above say the order lookup "parses the documented field
+names, not observed ones". That remains true of the **fields**. It was also true of the **path**,
+and that part was wrong: probed against the same Sandbox credentials this repository configures,
+the path the adapter shipped with does not exist.
+
+| Request | Observed |
+|---|---|
+| `GET {sepayRestBaseUrl}/v1/orders?order_invoice_number=…` | `404`, `text/html` — the host's HTML error page, not an API response |
+| `GET {sepayRestBaseUrl}/v1/order?order_invoice_number=…` | `401`, `application/json` — a real route that refuses the caller |
+
+Because the client treats a non-`2xx` as an error, the practical consequence is that **every
+reconciliation sweep would have thrown on its first lookup**: `SEPAY_RECON_ENABLED=false` was not
+merely "reconciliation is a stub", it was concealing a hard defect. Two things follow.
+
+1. **The path is corrected to the singular `/v1/order`**, and the URL is now pinned by a unit test.
+   The adapter previously had no test at all, which is how a wrong constant survived.
+2. **The field names stay documented-not-observed, and for a stated reason.** The Order API rejects
+   every credential form this repository can produce: `Authorization: Bearer`, a raw
+   `Authorization`, `X-Secret-Key`, `X-Api-Key`, and merchant-id combinations all answer `401`.
+   `SEPAY_SECRET_KEY` (`spsk_test_…`) is the **Payment Gateway** HMAC secret that signs the
+   checkout form in §5; the Order API needs a **separate API key** that is not in `.env`, not in
+   `.env.example`, and not in `ApiConfig`. So no call in this repo has ever read a real order body,
+   and the parser keeps its tolerant behaviour: an unrecognised status degrades to `pending`
+   rather than guessing a settlement.
+
+A `401`/`403` now raises an error that names this cause, instead of a generic failure that reads
+like a provider outage, and a `200` with a non-JSON body raises rather than being silently read as
+"no rows" — the failure mode that would have let a stuck intent look reconciled forever.
+
+**Consequence delta:** the (−) bullet "the reconciliation order lookup has never been run against
+SePay" stands unchanged for the response body, and is now accompanied by the narrower fact that its
+**request** is verified. `SEPAY_RECON_ENABLED=true` still must not be read as "reconciliation works":
+a deployment that sets it without supplying a real Order API key will now fail loudly at the first
+lookup, which is the intended behaviour.
+
+**Evidence:** `tasks/evidence/b12-sepay-recon-probe.md` (live transcript, both paths and the full
+auth sweep).

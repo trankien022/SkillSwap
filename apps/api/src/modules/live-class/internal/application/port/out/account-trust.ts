@@ -23,6 +23,11 @@ export const TEACHER_TRUST_WRITER = Symbol('TeacherTrustWriter');
 export interface UpsertVerifiedTeacherRequest {
   readonly accountId: string;
   readonly verified: boolean;
+  /**
+   * B4: the school the verification was approved at. Null when the status is not `approved`,
+   * so a revoked verification stops advertising a school.
+   */
+  readonly schoolName: string | null;
   readonly occurredAt: string;
 }
 

@@ -25,6 +25,7 @@ function bookingItem(overrides: Record<string, unknown> = {}) {
     createdAt: new Date().toISOString(),
     expiresAt: null,
     classSummary: {
+      title: 'IELTS speaking deep-dive',
       description: 'IELTS speaking deep-dive',
       skillIds: ['skill-1'],
       startsAt: FUTURE,

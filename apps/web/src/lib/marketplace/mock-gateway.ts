@@ -1,6 +1,7 @@
 import {
   demoMarketplaceClasses,
 } from './mock-data';
+import { matchesTimeFilter } from './time-filter';
 import {
   type MarketplaceClass,
   type MarketplacePage,
@@ -60,32 +61,9 @@ function matches(item: MarketplaceClass, query: MarketplaceQuery): boolean {
   if (query.verifiedOnly === true && item.verified !== true) {
     return false;
   }
-  if (!matchesTimeFilter(item, query.timeFilter)) {
+  // Shared with the HTTP gateway — see `time-filter.ts` for why this is one function, not two.
+  if (!matchesTimeFilter(item.startsAt, query.timeFilter)) {
     return false;
-  }
-  return true;
-}
-
-const HOUR = 60 * 60 * 1000;
-
-function matchesTimeFilter(
-  item: MarketplaceClass,
-  filter: MarketplaceQuery['timeFilter'],
-): boolean {
-  const hoursAhead =
-    (new Date(item.startsAt).getTime() - Date.now()) / HOUR;
-  if (filter === 'all-valid') {
-    // BR-021: bookings close 24h before class; only show classes still bookable.
-    return hoursAhead > 24;
-  }
-  if (filter === 'next-24-48h') {
-    return hoursAhead > 24 && hoursAhead <= 48;
-  }
-  // 'this-weekend' (Sat/Sun within current week, > 24h)
-  if (filter === 'this-weekend') {
-    if (hoursAhead <= 24) return false;
-    const day = new Date(item.startsAt).getDay();
-    return day === 0 || day === 6;
   }
   return true;
 }

@@ -55,12 +55,17 @@ export class GetSkillEvidenceHistoryUseCase implements GetSkillEvidenceHistoryPo
       byVersion.set(entry.version, list);
     }
 
-    const history: EvidenceVersionHistoryView[] = versions.map((version) => ({      version: version.version,
+    const history: EvidenceVersionHistoryView[] = versions.map((version) => ({
+      version: version.version,
       evidenceId: version.id,
       currentStatus: version.status,
       requestedLevel: version.requestedLevel,
       approvedLevel: version.approvedLevel,
       submittedAt: version.submittedAt.toISOString(),
+      // FR-003: the two fields B9 asks to survive the round trip. Reading them back is how a client
+      // confirms the certificate it uploaded is the one the reviewer will see.
+      evidenceType: version.evidenceType,
+      documentRef: version.documentRef,
       entries: (byVersion.get(version.version) ?? []).map((entry) => ({
         id: entry.id,
         evidenceId: entry.evidenceId,

@@ -79,6 +79,7 @@ export class ClassesController {
     return this.createClass.execute({
       teacherId: currentUserId(request),
       skillIds: body.skillIds,
+      title: body.title,
       description: body.description,
       startsAt: body.startsAt,
       durationMinutes: body.durationMinutes,

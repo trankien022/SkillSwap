@@ -22,10 +22,10 @@ The MVP's financial events are:
 | Event | Producer | Ledger `entry_type` | Emits `wallet.transaction.completed`? |
 |---|---|---|---|
 | Wallet top-up settled | `HandleTopUpCallbackUseCase` → `SqlWalletRepository.applyTopUp` | `top_up` | **yes** (fixed 2026-10-26, see below) |
-| Top-up reversed | same, `direction: 'debit'` | `reversal` | **no** — see *Open gaps* |
+| Top-up reversed | same, `direction: 'debit'` | `reversal` | **yes** (B11, 2026-11-08 — `type: 'reversal'`) |
 | Booking payment (hold → debit) | `SettleBookingRequest` → `settleBooking` | `learner_debit`, `teacher_pending`, `platform_fee` | yes |
-| Booking refund | `refundBooking` | `refund` | not emitted |
-| Income release | `releaseIncome` | `release` | not emitted |
+| Booking refund | `refundBooking` | `refund` | **yes** (B11 — `type: 'booking_refund'`) |
+| Income release | `releaseIncome` | `release` | **yes** (B11 — `type: 'income_release'`) |
 
 A top-up is the best sample: it crosses the gateway, the payment provider's IPN, two tables and an outbox event, and it is reproducible locally without a real bank.
 
@@ -97,7 +97,7 @@ The ledger row carried a trace id, the balance moved, the intent reached `settle
 
 The consequence was not cosmetic. `account-profile` registers a consumer for that event (`notification-wallet-completed`, FR-016 lists "completed wallet transactions" among the notifications owed), so **a learner's money arrived without the notification that says it arrived**. Nothing was broken in a way any test noticed: every settlement test looked at the booking path, and every top-up test looked at the ledger.
 
-Fixed 2026-10-26. `applyTopUp` now writes ledger → balance → outbox event in the one transaction, with the event's `transactionId` set to the inserted ledger id — the same durable identity `settleBooking` uses, so a consumer can always follow the event back to the money. Guarded by three unit tests (emitted, silent on reversal, rolled back when the event cannot be written) and two E2E tests against the real database (one event for a settled top-up; still exactly one after a replayed IPN).
+Fixed 2026-10-26. `applyTopUp` now writes ledger → balance → outbox event in the one transaction, with the event's `transactionId` set to the inserted ledger id — the same durable identity `settleBooking` uses, so a consumer can always follow the event back to the money. Guarded by unit tests (emitted, rolled back when the event cannot be written) and two E2E tests against the real database (one event for a settled top-up; still exactly one after a replayed IPN). B11 extended the same shape to the debit path, refunds and income releases; the "silent on reversal" assertion became "emits a reversal", which is the change B11 exists to make.
 
 ### The same trace after the fix
 
@@ -132,9 +132,19 @@ Default-rate runs only prove the column is written. Restarting the API with `VND
 
 These are honest incompletenesses rather than defects found today. Each is a small, named scope.
 
-1. **A reversal announces nothing.** `walletTransactionCompletedEventSchema.type` has no reversal member (`top_up`, `booking_payment`, `booking_refund`, `income_release`, `platform_fee`), so `applyTopUp` with `direction: 'debit'` writes the ledger row and stays quiet. In this release an invoice number produces at most one settlement and nothing emits a reversal, so the path is unreachable; adding an event type is a contract change that belongs to whoever first needs it. **Not invented here.**
-2. **Refunds and income releases emit no `wallet.transaction.completed`.** Both move money and both are silent. Same judgement as above: they need a decision about what a user is told, not a default.
-3. **Top-up trace ids are per-settlement, not per-request.** `HandleTopUpCallbackUseCase` mints a fresh `randomUUID()` for `traceId` on each `applyTopUp` call, so the trace identifies the money movement, not the HTTP request that caused it — and the id is not present in any response the caller sees. Joining "the IPN request" to "the ledger row" therefore still relies on `provider_ref`.
-4. **Nothing is written to `admin_operation.admin_audit_event` for a top-up.** A SePay IPN is not a human act (`SYSTEM_ACTOR_ID`), and ADR-034 §5 scopes auditing to claims and decisions, so this is consistent with the decision — but it means the audit log is not the place to look for a payment.
+1. **Nothing is written to `admin_operation.admin_audit_event` for a top-up.** A SePay IPN is not a human act (`SYSTEM_ACTOR_ID`), and ADR-034 §5 scopes auditing to claims and decisions, so this is consistent with the decision — but it means the audit log is not the place to look for a payment. **Corrected 2026-11-08:** the original version of this gap claimed the audit log had no top-up rows at all. A live probe disproved it — a settled SePay IPN already produced a `wallet.transaction.completed` event, and `admin-operation` has mapped that event to an `admin_audit_event` row (`action = wallet.transaction.completed`, `target_type = wallet_transaction`, `target_id = <ledger id>`) since PR #93. What the log genuinely lacks is any row for the *intent*, which is the honest reading of the gap: settlement is audited, initiation is not.
 
-Gaps 1–2 are the same shape: the event schema was built for the booking flow and the top-up flow was added beside it. Whoever extends the contract should extend all three producers in one change.
+2. **Top-up trace ids are per-settlement, not per-request.** `HandleTopUpCallbackUseCase` mints a fresh `randomUUID()` for `traceId` on each `applyTopUp` call, so the trace identifies the money movement, not the HTTP request that caused it — and the id is not present in any response the caller sees. Joining "the IPN request" to "the ledger row" therefore still relies on `provider_ref`.
+
+### Closed gaps (B11, 2026-11-08)
+
+The two monetary movements that used to be silent now announce themselves, in the same transaction that writes their ledger row:
+
+3. ~~**A reversal announces nothing.**~~ **Closed.** `walletTransactionCompletedEventSchema` gained a `reversal` member with a `reversal → direction: 'debit'` refinement, and `applyTopUp` emits it on the debit path. The member was deliberately not invented earlier — with no producer, a type would have been a contract with nothing behind it. SePay's `TRANSACTION_VOID` notification is that producer. Because `sepay-ipn.ts` recognises only `TRANSACTION_VOID` as a reversal, an `ORDER_REFUNDED` delivery is acknowledged with HTTP 200 and no state change; a reversal therefore has to arrive as `TRANSACTION_VOID`.
+
+4. ~~**Refunds and income releases emit no `wallet.transaction.completed`.**~~ **Closed.** `refundBooking` emits `booking_refund` (credit) and `releaseIncome` emits `income_release` (credit), both inside the transaction, both keyed on the ledger row they just inserted. The idempotent no-ops stay silent: a replayed `class.completed` finds `ON CONFLICT DO NOTHING` and emits nothing, and a second `booking.cancelled` for an already-refunded booking returns `applied: false` before any write.
+
+Rows written before B11 stay silent. They are not backfilled: the money already moved and reconciling the ledger is a different job from announcing it. A trace that finds no event for a historical refund is reading an old row, not a broken producer.
+
+All three producers share the same guarantee, which is the part worth testing: the ledger row, the balance and the outbox row are one transaction. If the event cannot be written, the money does not move — verified by a rollback test on each path.
+

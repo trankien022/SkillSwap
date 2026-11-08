@@ -7,11 +7,14 @@ describe('StudentVerificationController nullable status transport', () => {
   const resource: StudentVerificationView = {
     id: 'verification-1', status: 'pending', schoolName: 'Test school', major: null,
     reviewerId: null, reason: null, decidedAt: null, submittedAt: '2026-10-12T00:00:00.000Z',
+    documentId: 'acct-1/doc-1.pdf',
   };
   it.each([null, resource])('returns the nullable resource and binds caller ownership', async (verification) => {
     const getMine: GetMyVerificationPort = { execute: jest.fn().mockResolvedValue(verification) };
     const unused = { execute: jest.fn() };
-    const controller = new StudentVerificationController(unused, unused, unused, unused, getMine, unused);
+    const controller = new StudentVerificationController(
+      unused, unused, unused, unused, getMine, unused, unused,
+    );
     await expect(controller.mine({ headers: {}, user: { id: 'caller-1', role: 'user' } })).resolves.toEqual(verification);
     expect(getMine.execute).toHaveBeenCalledWith('caller-1');
   });
@@ -23,6 +26,7 @@ describe('StudentVerificationController admin queue', () => {
       {
         id: 'verification-1', status: 'pending', schoolName: 'Test school', major: null,
         reviewerId: null, reason: null, decidedAt: null, submittedAt: '2026-10-12T00:00:00.000Z',
+        documentId: 'acct-1/doc-1.pdf',
       },
     ],
     page: { limit: 20, nextCursor: null, total: 1 },
@@ -34,7 +38,7 @@ describe('StudentVerificationController admin queue', () => {
     };
     const unused = { execute: jest.fn() };
     const controller = new StudentVerificationController(
-      unused, unused, unused, unused, unused, listAdmin,
+      unused, unused, unused, unused, unused, listAdmin, unused,
     );
 
     const query = { limit: 20, status: 'pending' as const };
@@ -65,6 +69,26 @@ describe('StudentVerificationController admin queue', () => {
     expect(declarationOrder.indexOf('mine')).toBeGreaterThan(-1);
     expect(declarationOrder.indexOf('mine')).toBeLessThan(
       declarationOrder.indexOf('listVerifications'),
+    );
+  });
+
+  /**
+   * ADR-023 Amendment A adds `@Get(':id/document')`. A parameterised route is the same hazard as a
+   * bare collector and a worse one: if it were declared before `@Get('me')`, a request for
+   * `GET /student-verifications/me` would not shadow — it would *match* `:id = 'me'` and ask the
+   * document reader for the verification "me". So the literal must still come first.
+   */
+  it('declares the caller-scoped read before the parameterised document route', () => {
+    const PATH_METADATA = 'path';
+    const getPath = (handler: unknown): string | undefined =>
+      Reflect.getMetadata(PATH_METADATA, handler as object) as string | undefined;
+
+    expect(getPath(StudentVerificationController.prototype.readDocument)).toBe(':id/document');
+
+    const declarationOrder = Object.getOwnPropertyNames(StudentVerificationController.prototype);
+    expect(declarationOrder.indexOf('readDocument')).toBeGreaterThan(-1);
+    expect(declarationOrder.indexOf('mine')).toBeLessThan(
+      declarationOrder.indexOf('readDocument'),
     );
   });
 });
