@@ -1720,7 +1720,9 @@
       "publishAClassundefined": "Mở lớp →",
       "availableSeats": "chỗ trống",
       "edit": "Sửa",
-      "minimumConfirmedSeats": "Không thể nhỏ hơn {count} chỗ đã xác nhận."
+      "minimumConfirmedSeats": "Không thể nhỏ hơn {count} chỗ đã xác nhận.",
+      "classTitle": "Tiêu đề lớp học",
+      "enterAValidClassTitle": "Vui lòng nhập tiêu đề lớp học (tối đa 72 ký tự)."
     },
     "rules": "Quy tắc học và thanh toán",
     "fallback": {
