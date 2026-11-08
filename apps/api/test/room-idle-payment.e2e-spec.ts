@@ -158,6 +158,7 @@ describe('E2E: an idle room completes the class and pays the Teacher (AC-035)', 
     api.actAs(teacherId);
     const created = await api.post('/api/classes', {
       skillIds: ['skill-guitar'],
+      title: `Idle room ${label}`,
       description: `Idle room ${label}`,
       startsAt: startsAt.toISOString(),
       durationMinutes: 120,

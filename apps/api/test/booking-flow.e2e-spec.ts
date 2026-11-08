@@ -95,6 +95,7 @@ describe('E2E: book → settle → room → complete → release', () => {
     api.actAs(teacherId);
     const created = await api.post('/api/classes', {
       skillIds: ['skill-guitar'],
+      title: 'Intro to guitar',
       description: 'Intro to guitar',
       startsAt: new Date(Date.now() + 48 * hour).toISOString(),
       durationMinutes: 60,
@@ -224,6 +225,7 @@ describe('E2E: book → settle → room → complete → release', () => {
     api.actAs(teacherId);
     const created = await api.post('/api/classes', {
       skillIds: ['skill-guitar'],
+      title: 'No funds class',
       description: 'No funds class',
       startsAt: new Date(Date.now() + 48 * hour).toISOString(),
       durationMinutes: 60,
@@ -313,6 +315,7 @@ describe('E2E: book → settle → room → complete → release', () => {
     api.actAs(teacherId);
     const created = await api.post('/api/classes', {
       skillIds: ['skill-guitar'],
+      title: 'Expiry class',
       description: 'Expiry class',
       startsAt: new Date(Date.now() + 48 * hour).toISOString(),
       durationMinutes: 60,
@@ -354,6 +357,7 @@ describe('E2E: book → settle → room → complete → release', () => {
     api.actAs(teacherId);
     const created = await api.post('/api/classes', {
       skillIds: ['skill-guitar'],
+      title: 'Self-booking class',
       description: 'Self-booking class',
       startsAt: new Date(Date.now() + 48 * hour).toISOString(),
       durationMinutes: 60,
@@ -390,6 +394,7 @@ describe('E2E: book → settle → room → complete → release', () => {
     api.actAs(teacherId);
     const created = await api.post('/api/classes', {
       skillIds: ['skill-guitar'],
+      title: 'No-show class',
       description: 'No-show class',
       startsAt: new Date(Date.now() + 48 * hour).toISOString(),
       durationMinutes: 60,

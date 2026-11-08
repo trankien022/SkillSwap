@@ -133,6 +133,7 @@ describeJitsi('E2E: Jitsi room access (real host)', () => {
     api.actAs(teacherId);
     const created = await api.post('/api/classes', {
       skillIds: ['skill-guitar'],
+      title: 'Jitsi class',
       description: 'Jitsi class',
       startsAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
       durationMinutes: 60,
