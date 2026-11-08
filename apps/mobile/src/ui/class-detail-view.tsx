@@ -1,3 +1,4 @@
+import { BOOKING_REJECTION_REASONS } from '@skillswap/contracts';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -144,6 +145,7 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
 
   const getLocalizedErrorMessage = (reason: string | null): string => {
     if (!reason) return t('Common.errorMessage');
+    if (BOOKING_REJECTION_REASONS.some((value) => value === reason)) return t(`ClassDetail.rejections.${reason}`);
     switch (reason) {
       case 'session_expired':
         return t('ClassDetail.errorSessionExpired');

@@ -268,6 +268,7 @@
     "back": "Back"
   },
   "ClassDetail": {
+    "rejections": {"class_not_bookable": "This class cannot be booked.", "class_started": "This class has already started.", "booking_window_closed": "Book at least 24 hours before the class.", "class_full": "This class is full.", "duplicate_booking": "You already booked this class.", "self_booking": "You cannot book your own class.", "invalid_duration": "The class duration is invalid.", "learner_not_verified": "Verify your student status before booking."},
     "title": "Class Details",
     "teacher": "Teacher",
     "skills": "Skills",

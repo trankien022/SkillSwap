@@ -11,17 +11,8 @@ export type { ClassView, BookingView, BookingRequestInput } from '@skillswap/con
 import type { BookingView } from '@skillswap/contracts';
 
 /** Mirrors apps/api live-class domain/booking.ts BOOKING_REJECTION_REASONS. */
-export const BOOKING_REJECTION_REASONS = [
-  'class_not_bookable',
-  'class_started',
-  'booking_window_closed',
-  'class_full',
-  'duplicate_booking',
-  'self_booking',
-  'invalid_duration',
-] as const;
-
-export type BookingRejectionReason = (typeof BOOKING_REJECTION_REASONS)[number];
+import type { BookingRejectionReason } from '@skillswap/contracts';
+export { BOOKING_REJECTION_REASONS, type BookingRejectionReason } from '@skillswap/contracts';
 
 /** The `{ booking, created }` envelope returned by API-005. */
 export interface BookClassResult {

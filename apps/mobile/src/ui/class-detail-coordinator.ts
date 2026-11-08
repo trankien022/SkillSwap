@@ -227,6 +227,8 @@ export class ClassDetailCoordinator {
         let reason = 'unknown';
         if (error instanceof GatewayHttpError && typeof error.errorDetails === 'string') {
           reason = error.errorDetails;
+        } else if (error instanceof GatewayHttpError && error.errorDetails && typeof error.errorDetails === 'object' && 'code' in error.errorDetails && typeof error.errorDetails.code === 'string') {
+          reason = error.errorDetails.code;
         }
         try {
           const detail = await this.options.gateway.getClassDetail(this.options.classId);

@@ -268,6 +268,7 @@
     "back": "Quay lại"
   },
   "ClassDetail": {
+    "rejections": {"class_not_bookable": "Lớp này hiện không thể đặt chỗ.", "class_started": "Lớp học đã bắt đầu.", "booking_window_closed": "Bạn cần đặt chỗ trước giờ học ít nhất 24 giờ.", "class_full": "Lớp học đã đủ chỗ.", "duplicate_booking": "Bạn đã đặt chỗ cho lớp này.", "self_booking": "Bạn không thể đặt lớp do mình dạy.", "invalid_duration": "Thời lượng lớp học không hợp lệ.", "learner_not_verified": "Bạn cần được xác minh sinh viên trước khi đặt lớp."},
     "title": "Chi tiết lớp học",
     "teacher": "Giảng viên",
     "skills": "Kỹ năng",
