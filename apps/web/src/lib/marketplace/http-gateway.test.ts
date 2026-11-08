@@ -204,4 +204,23 @@ describe('HttpMarketplaceGateway format, keyword, and verified filters (W1)', ()
 
     expect(page.items.map((i) => i.id)).toEqual(['cls-v']);
   });
+
+  it('excludes unrated and lower-rated classes when minRating is set, and sorts unrated classes last on sort: rating (W5)', async () => {
+    const high = at(WED_ISH, { id: 'cls-49', averageRating: 4.9, ratingsCount: 10 });
+    const mid = at(SAT, { id: 'cls-44', averageRating: 4.4, ratingsCount: 4 });
+    const unrated = at(SUN, { id: 'cls-unrated', averageRating: null, ratingsCount: 0 });
+    stub([mid, unrated, high]);
+
+    const filtered = await new HttpMarketplaceGateway().search({
+      ...DEFAULT_QUERY,
+      minRating: 4.8,
+    });
+    expect(filtered.items.map((i) => i.id)).toEqual(['cls-49']);
+
+    const sorted = await new HttpMarketplaceGateway().search({
+      ...DEFAULT_QUERY,
+      sort: 'rating',
+    });
+    expect(sorted.items.map((i) => i.id)).toEqual(['cls-49', 'cls-44', 'cls-unrated']);
+  });
 });

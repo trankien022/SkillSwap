@@ -9,6 +9,7 @@ import { TeacherDossierSection } from './TeacherDossierSection';
 import { ScheduleSection } from './ScheduleSection';
 import { StickyBookingCard } from './StickyBookingCard';
 import { DetailHeader } from './DetailHeader';
+import { ReviewsSection } from './ReviewsSection';
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/en/classes/cls-1',
@@ -120,5 +121,43 @@ describe('Class detail sections content gating & real seat counts (W2)', () => {
       </NextIntlClientProvider>,
     );
     expect(screen.queryByText(en.Marketplace.card.levels.advanced)).toBeNull();
+  });
+
+  it('renders real ratingAvg, ratingCount, and review cards when rated, and shows noRating / empty state when unrated (W5)', () => {
+    const { rerender } = render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <DetailHeader
+          item={makeItem({ ratingAvg: 4.75, ratingCount: 3 })}
+        />
+        <ReviewsSection
+          item={makeItem({
+            ratingAvg: 4.75,
+            ratingCount: 3,
+            reviews: [
+              {
+                id: 'rev-1',
+                authorName: 'Minh Le',
+                schoolName: null,
+                rating: 5,
+                body: 'Clear walkthrough of distributed caching.',
+                attendedOn: '2026-10-20',
+              },
+            ],
+          })}
+        />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByText('4.75')).toBeDefined();
+    expect(screen.getByText('Minh Le')).toBeDefined();
+    expect(screen.getByText('"Clear walkthrough of distributed caching."')).toBeDefined();
+
+    rerender(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <DetailHeader item={makeItem({ ratingAvg: null, ratingCount: 0 })} />
+        <ReviewsSection item={makeItem({ ratingAvg: null, ratingCount: 0, reviews: [] })} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByText(en.ClassDetail.hero.noRating)).toBeDefined();
+    expect(screen.getByText(en.ClassDetail.reviews.empty)).toBeDefined();
   });
 });
