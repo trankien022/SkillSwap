@@ -99,6 +99,9 @@ describe('ListAdminVerificationsQueryHandler', () => {
       Object.keys({
         id: '', status: '', schoolName: '', major: '', reviewerId: '', reason: '',
         decidedAt: '', submittedAt: '',
+        // ADR-023 Amendment A: an administrator reviewing a submission needs to know *which* file
+        // it is about, and gets a separate route to actually open it.
+        documentId: '',
       }).sort(),
     );
     expect(page.items[0]).toMatchObject({

@@ -1019,11 +1019,30 @@ describe('student verification contracts', () => {
             requestedLevel: 'intermediate',
             approvedLevel: 'intermediate',
             submittedAt: '2026-10-11T00:00:00.000Z',
+            // FR-003/B9: what the evidence was and which file it referenced. `documentRef` is
+            // nullable because a version predating certificate uploads has no document.
+            evidenceType: 'certificate',
+            documentRef: 'acc-1/doc-1.pdf',
             entries: [audit],
           },
         ],
       };
       expect(skillEvidenceHistorySchema.parse(history)).toEqual(history);
+
+      // A version with no document is still valid: `verifier_assessment` evidence legitimately has
+      // none, and so does every row written before certificate uploads existed. Making this field
+      // required would have been a breaking change to a contract clients already parse.
+      const withoutDocument = {
+        ...history,
+        versions: [
+          {
+            ...history.versions[0],
+            evidenceType: 'verifier_assessment',
+            documentRef: null,
+          },
+        ],
+      };
+      expect(skillEvidenceHistorySchema.parse(withoutDocument).versions[0].documentRef).toBeNull();
     });
   });
 

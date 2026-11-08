@@ -111,6 +111,10 @@ dashboard. There is no code branch on environment.
   (ADR-033 §6). An unauthenticated, un-proxied deployment would accept forged IPNs.
 - **Reconciliation is a disabled stub** (`SEPAY_RECON_ENABLED=false`). A payment that
   succeeds while the process is down will not self-heal; reconcile manually from the SePay
-  dashboard until the full version exists.
+  dashboard until the full version exists. Enabling the flag is **not** a free win: the
+  sweeper's order lookup needs a real **Order API key**, and `SEPAY_SECRET_KEY` is not one —
+  it is the Payment Gateway signing secret, so the Order API answers `401` to it (ADR-033
+  Amendment A). With the gateway secret configured, turning the flag on just produces a
+  loud, correct `401` on the first sweep.
 - **Nothing in CI calls SePay.** Suite coverage comes from posting IPN bodies locally.
   Sandbox reachability was verified by hand (Phase 0) and is not continuously checked.

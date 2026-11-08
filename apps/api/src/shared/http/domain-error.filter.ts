@@ -117,8 +117,18 @@ const NAME_TO_STATUS: Record<string, number> = {
   EvidenceNotClaimedError: 409,
   NotClaimOwnerError: 403,
   EvidenceNotDecidableError: 409,
+  // FR-003: certificate evidence referencing a key minted for another account.
+  ForeignEvidenceDocumentError: 403,
+  // FR-003: the evidence version has no attached file (description-only assessment).
+  EvidenceDocumentMissingError: 404,
+  // FR-003: a certificate upload with a type or size outside the policy.
+  UnsupportedEvidenceTypeError: 415,
+  EvidenceTooLargeError: 413,
+  InvalidEvidenceFileError: 400,
   // FR-018 evidence history (ADR-028).
   AccessDeniedError: 403,
+  // ADR-023 Amendment A: a non-reviewer asked for a verification document.
+  DocumentReadDeniedError: 403,
   // FR-005 publish gate (ADR-024 extension).
   UnverifiedTeacherError: 403,
   SkillNotApprovedError: 403,

@@ -26,6 +26,10 @@ export const RECON_BATCH_SIZE = 25;
  * What it does **not** do, and why the ADR keeps the risk note:
  *  - it is **disabled by default** (`SEPAY_RECON_ENABLED=false`), so no dev,
  *    test or CI run calls SePay;
+ *  - it needs an **Order API key** the repo does not hold — `SEPAY_SECRET_KEY`
+ *    is the Payment Gateway signing secret, and the Order API answers `401` to
+ *    it (ADR-033 Amendment A). So the flag is off for a second reason: turning
+ *    it on with the credential this repo has fails at the first lookup;
  *  - it cannot backfill an outage where the intent row itself was never written;
  *  - it performs no manual resolution and no alerting beyond a log line;
  *  - a `failed` or `reversed` answer it applies is not reviewed by a human.

@@ -418,6 +418,19 @@ export const documentUploadTargetSchema = z.object({
 });
 export type DocumentUploadTargetView = z.infer<typeof documentUploadTargetSchema>;
 
+/**
+ * ADR-023 Amendment A: the response of a document read.
+ *
+ * `expiresAt` is returned so a client can tell a stale link from a broken one, and so the 300 s
+ * window is visible rather than implied. This object is the **only** place a URL is carried: it
+ * must never be stored, logged or included in a list.
+ */
+export const documentDownloadTargetSchema = z.object({
+  downloadUrl: z.string().min(1),
+  expiresAt: z.string().datetime({ offset: true }),
+});
+export type DocumentDownloadTargetView = z.infer<typeof documentDownloadTargetSchema>;
+
 /** FR-003 / ADR-026: skill taxonomy, evidence types and the fixed ordered level scale. */
 
 /** FR-004 / ADR-027: a Verifier account with a seeded expertise set. */
@@ -521,7 +534,14 @@ export const evidenceAuditEventSchema = z.object({
 });
 export type EvidenceAuditEventView = z.infer<typeof evidenceAuditEventSchema>;
 
-/** FR-018: one evidence version and its ordered audit entries. */
+/**
+ * FR-018: one evidence version and its ordered audit entries.
+ *
+ * `evidenceType` and `documentRef` are the two fields B9's done-when asks a client to be able to
+ * read back after submitting a certificate. Both are nullable because a version written before
+ * certificate uploads existed has no document, and `documentRef` stays a plain reference — never a
+ * URL — so this view remains safe to cache and to show to the owner.
+ */
 export const evidenceVersionHistorySchema = z.object({
   version: z.number().int().positive(),
   evidenceId: z.string().min(1),
@@ -529,6 +549,8 @@ export const evidenceVersionHistorySchema = z.object({
   requestedLevel: skillLevelSchema,
   approvedLevel: skillLevelSchema.nullable(),
   submittedAt: z.string().datetime({ offset: true }),
+  evidenceType: evidenceTypeSchema,
+  documentRef: z.string().min(1).nullable(),
   entries: z.array(evidenceAuditEventSchema),
 });
 export type EvidenceVersionHistoryView = z.infer<typeof evidenceVersionHistorySchema>;

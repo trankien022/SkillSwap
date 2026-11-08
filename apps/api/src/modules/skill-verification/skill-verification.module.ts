@@ -66,6 +66,21 @@ import {
   GET_SKILL_EVIDENCE_HISTORY,
   type GetSkillEvidenceHistoryPort,
 } from './internal/application/port/in/get-skill-evidence-history';
+import {
+  REQUEST_EVIDENCE_DOCUMENT_UPLOAD,
+  type RequestEvidenceDocumentUploadPort,
+} from './internal/application/port/in/request-evidence-document-upload';
+import {
+  READ_SKILL_EVIDENCE_DOCUMENT,
+  type ReadSkillEvidenceDocumentPort,
+} from './internal/application/port/in/read-skill-evidence-document';
+import {
+  EVIDENCE_DOCUMENT_STORE,
+  type EvidenceDocumentStore,
+} from './internal/application/port/out/evidence-document-store';
+import { S3EvidenceDocumentStore } from './internal/adapter/out/storage/s3-evidence-document-store';
+import { RequestEvidenceDocumentUploadUseCase } from './internal/application/request-evidence-document-upload.use-case';
+import { ReadSkillEvidenceDocumentUseCase } from './internal/application/read-skill-evidence-document.use-case';
 import { CLOCK, type Clock } from './internal/application/port/out/clock';
 import { SKILL_REPOSITORY, type SkillRepository } from './internal/application/port/out/skill-repository';
 import {
@@ -138,6 +153,21 @@ export class SkillVerificationRegistrar implements OnModuleInit {
   ],
   providers: [
     { provide: CLOCK, useFactory: (): Clock => new SystemClock() },
+    {
+      // FR-003 / ADR-023 (storage half): the same S3 bucket as identity documents, signed by the
+      // same shared SigV4 code, wrapped in this module's own port shape.
+      provide: EVIDENCE_DOCUMENT_STORE,
+      useFactory: (config: ApiConfig): EvidenceDocumentStore =>
+        new S3EvidenceDocumentStore({
+          endpoint: config.s3Endpoint,
+          region: config.s3Region,
+          bucket: config.s3Bucket,
+          accessKeyId: config.s3AccessKeyId,
+          secretAccessKey: config.s3SecretAccessKey,
+          forcePathStyle: config.s3ForcePathStyle,
+        }),
+      inject: [ApiConfig],
+    },
     {
       provide: SKILL_REPOSITORY,
       useFactory: (registry: ModuleDataSourceRegistry): SkillRepository =>
@@ -242,6 +272,42 @@ export class SkillVerificationRegistrar implements OnModuleInit {
         SKILL_EVIDENCE_REPOSITORY,
         PROFILE_SKILL_REPOSITORY,
         EVIDENCE_AUDIT_REPOSITORY,
+      ],
+    },
+    {
+      // FR-003 / ADR-023 (storage half): where a certificate is uploaded.
+      provide: REQUEST_EVIDENCE_DOCUMENT_UPLOAD,
+      useFactory: (
+        store: EvidenceDocumentStore,
+        config: ApiConfig,
+      ): RequestEvidenceDocumentUploadPort =>
+        new RequestEvidenceDocumentUploadUseCase(
+          store,
+          {
+            allowedContentTypes: config.s3AllowedContentTypes,
+            maxBytes: config.s3MaxUploadBytes,
+          },
+          config.s3UploadTtlSeconds,
+        ),
+      inject: [EVIDENCE_DOCUMENT_STORE, ApiConfig],
+    },
+    {
+      // FR-003: a reviewer opening the certificate. Access mirrors the history use case.
+      provide: READ_SKILL_EVIDENCE_DOCUMENT,
+      useFactory: (
+        evidence: SkillEvidenceRepository,
+        profileSkills: ProfileSkillRepository,
+        audit: EvidenceAuditRepository,
+        store: EvidenceDocumentStore,
+        clock: Clock,
+      ): ReadSkillEvidenceDocumentPort =>
+        new ReadSkillEvidenceDocumentUseCase(evidence, profileSkills, audit, store, clock),
+      inject: [
+        SKILL_EVIDENCE_REPOSITORY,
+        PROFILE_SKILL_REPOSITORY,
+        EVIDENCE_AUDIT_REPOSITORY,
+        EVIDENCE_DOCUMENT_STORE,
+        CLOCK,
       ],
     },
     {

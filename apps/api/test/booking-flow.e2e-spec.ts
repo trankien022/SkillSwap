@@ -441,6 +441,36 @@ describe('E2E: book → settle → room → complete → release', () => {
     });
     expect(refunded.learner.availableCredits).toBe(100);
     expect(refunded.teacher.pendingCredits).toBe(0);
+
+    // B11 / FR-016: the refund must announce itself, and only once. Balance-only assertions
+    // passed against the silent version of this code, which is why they are not enough.
+    const refundEvents = await waitFor(async () => {
+      const rows = await harness.query<{ id: string; payload: Record<string, unknown> }>(
+        'wallet-ledger',
+        `SELECT "id", "payload" FROM outbox_messages
+          WHERE "event_type" = 'wallet.transaction.completed'
+            AND "payload"->>'bookingId' = $1
+            AND "payload"->>'type' = 'booking_refund'`,
+        [bookingId],
+      );
+      return rows.length === 1 ? rows : null;
+    });
+    expect(refundEvents).toHaveLength(1);
+    const refundPayload = refundEvents[0]?.payload;
+    expect(refundPayload?.direction).toBe('credit');
+    expect(refundPayload?.amountCredits).toBe(100);
+    // The beneficiary is the learner, the actor is the system that processed the no-show.
+    expect(refundPayload?.accountId).toBe(learnerId);
+    expect(refundPayload?.actorId).toBe('00000000-0000-4000-8000-000000000000');
+    // And the event names the ledger row that moved the money, not the payment it reverses.
+    const refundLedger = await harness.query<{ id: string }>(
+      'wallet-ledger',
+      `SELECT "id" FROM ledger_entries
+        WHERE "entry_type" = 'refund' AND "reference_id" = $1`,
+      [bookingId],
+    );
+    expect(refundLedger).toHaveLength(1);
+    expect(refundPayload?.transactionId).toBe(refundLedger[0]?.id);
   });
 
   it('is idempotent: replaying a settlement callback credits exactly once', async () => {

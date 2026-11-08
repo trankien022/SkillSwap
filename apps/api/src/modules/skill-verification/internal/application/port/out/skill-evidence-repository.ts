@@ -215,4 +215,25 @@ export const EVIDENCE_AUDIT_REPOSITORY = Symbol('EvidenceAuditRepository');
 export interface EvidenceAuditRepository {
   /** The audit entries for a profile-skill, newest version then newest time first. */
   listByProfileSkill(profileSkillId: string): Promise<EvidenceAuditEntry[]>;
+
+  /**
+   * FR-003: records that a reviewer opened a certificate.
+   *
+   * Written through the outbox into `admin_operation`'s append-only audit store, the same route
+   * `student.verification.document.read` takes, because ADR-014 forbids writing another module's
+   * schema from here. The minted URL is deliberately absent from the payload: a row retained
+   * forever must not contain a credential that lives 300 seconds.
+   */
+  recordDocumentRead(request: RecordEvidenceDocumentReadRequest): Promise<void>;
+}
+
+/** FR-003: one reviewer opening one certificate. */
+export interface RecordEvidenceDocumentReadRequest {
+  readonly evidenceId: string;
+  /** The owner of the evidence, distinct from `actorId`. */
+  readonly accountId: string;
+  readonly documentRef: string;
+  readonly actorId: string;
+  readonly actorRole: string;
+  readonly readAt: Date;
 }

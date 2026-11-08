@@ -13,5 +13,9 @@ export function toVerificationView(verification: Verification): StudentVerificat
     reason: verification.displayReason,
     decidedAt: verification.decidedAt?.toISOString() ?? null,
     submittedAt: verification.submittedAt.toISOString(),
+    // ADR-023 Amendment A: the reference, so the owner can see what they submitted and a reviewer
+    // knows which file a decision was about. This is the object key, not a URL, so it is safe to
+    // return in a list — it grants nothing without a signature.
+    documentId: verification.documentRef,
   };
 }
