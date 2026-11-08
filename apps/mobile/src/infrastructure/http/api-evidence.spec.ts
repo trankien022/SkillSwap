@@ -10,6 +10,7 @@ describe('mobile API evidence', () => {
       '/api/classes/:id',
     );
     expect(evidenceRoute('http://gateway/api/unknown/secret')).toBeNull();
+    expect(evidenceRoute('http://gateway/api/classes/c-1/complete')).toBeNull();
     expect(evidenceRoute('http://gateway/api/classes/bookings/me')).toBe(
       '/api/classes/bookings/me',
     );
@@ -47,7 +48,6 @@ describe('mobile API evidence', () => {
       ['http://gateway/api/classes/c-1/bookings', '/api/classes/:id/bookings'],
       ['http://gateway/api/classes/c-1/cancel', '/api/classes/c-1/cancel'],
       ['http://gateway/api/classes/c-1/start', '/api/classes/c-1/start'],
-      ['http://gateway/api/classes/c-1/complete', '/api/classes/c-1/complete'],
       ['http://gateway/api/classes/bookings/me', '/api/classes/bookings/me'],
       ['http://gateway/api/classes/bookings/b-1/confirm', '/api/classes/bookings/:bookingId/confirm'],
       ['http://gateway/api/classes/bookings/b-1/rating', '/api/classes/bookings/:bookingId/rating'],

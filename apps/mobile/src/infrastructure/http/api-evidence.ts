@@ -32,8 +32,8 @@ export function evidenceRoute(url: string): string | null {
     return '/api/classes/bookings/:bookingId/room-access';
   if (/^\/classes\/bookings\/[^/]+\/no-show$/.test(path))
     return '/api/classes/bookings/:bookingId/no-show';
-  // Class actions (`cancel`, `start`, `complete`) and the bare class resource.
-  if (/^\/classes\/[^/]+\/(cancel|start|complete)$/.test(path)) return `/api${path}`;
+  // Class actions (`cancel`, `start`) and the bare class resource.
+  if (/^\/classes\/[^/]+\/(cancel|start)$/.test(path)) return `/api${path}`;
   if (/^\/classes\/[^/]+\/bookings$/.test(path)) return '/api/classes/:id/bookings';
   if (/^\/classes\/[^/]+$/.test(path)) return '/api/classes/:id';
   if (/^\/skill-evidence\/[^/]+\/history$/.test(path)) return '/api/skill-evidence/:id/history';

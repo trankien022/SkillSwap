@@ -14,6 +14,8 @@ describe('TeachingGateway', () => {
   });
   const response = (data: unknown) => ({ ok: true, status: 200, json: async () => data });
 
+  it('does not expose manual completion', () => { expect('complete' in gateway).toBe(false); });
+
   it('validates and creates a published class', async () => {
     const input = { skillIds: ['skill-1'], title: 'TypeScript basics', description: 'TypeScript basics', startsAt: '2026-10-20T10:00:00.000Z', durationMinutes: 60, priceCredits: 10, capacity: 1 };
     const view = { id: 'class-1', teacherId: 'teacher-1', state: 'published', title: 'TypeScript basics', level: 'beginner', format: 'one-on-one', startsAt: input.startsAt, durationMinutes: 60, priceCredits: 10, capacity: 1 };
@@ -29,16 +31,13 @@ describe('TeachingGateway', () => {
     fetchMock.mockResolvedValueOnce(response(updated));
     fetchMock.mockResolvedValueOnce(response({ cancelled: true }));
     fetchMock.mockResolvedValueOnce(response({ started: true }));
-    fetchMock.mockResolvedValueOnce(response({ completed: true }));
     await gateway.update('class/1', { title: 'Updated class', description: 'Updated class', startsAt: updated.startsAt, priceCredits: 25, capacity: 3 });
     await gateway.cancel('class-1');
     await gateway.start('class-1');
-    await gateway.complete('class-1');
     expect(fetchMock.mock.calls.map(([url, init]) => [url, init.method])).toEqual([
       ['http://localhost:4000/api/classes/class%2F1', 'PATCH'],
       ['http://localhost:4000/api/classes/class-1/cancel', 'POST'],
       ['http://localhost:4000/api/classes/class-1/start', 'POST'],
-      ['http://localhost:4000/api/classes/class-1/complete', 'POST'],
     ]);
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ title: 'Updated class', description: 'Updated class', startsAt: updated.startsAt, priceCredits: 25, capacity: 3 });
   });
