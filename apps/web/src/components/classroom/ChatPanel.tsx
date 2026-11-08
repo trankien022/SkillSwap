@@ -181,6 +181,8 @@ export function ChatPanel({ bookingId, pageSize = 50 }: ChatPanelProps) {
       <ol
         ref={listRef}
         aria-label={t('title')}
+        aria-live="polite"
+        aria-relevant="additions"
         className="max-h-80 min-h-[6rem] space-y-3 overflow-y-auto px-4 py-3"
       >
         {state.messages.length === 0 && (

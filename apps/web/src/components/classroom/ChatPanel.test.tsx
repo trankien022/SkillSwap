@@ -206,4 +206,14 @@ describe('ChatPanel (FR-012)', () => {
     expect(screen.getByText('Gửi')).toBeDefined();
     expect(screen.queryByText('Send')).toBeNull();
   });
+
+  it('marks the message list as a polite live region for new additions (NFR-007 / W14)', async () => {
+    loadMessages.mockResolvedValue(page([]));
+
+    renderPanel();
+
+    const list = await screen.findByRole('list', { name: 'Class chat' });
+    expect(list.getAttribute('aria-live')).toBe('polite');
+    expect(list.getAttribute('aria-relevant')).toBe('additions');
+  });
 });
