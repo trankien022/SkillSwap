@@ -303,39 +303,55 @@ async function resetDemo(ctx) {
   // `source_event_id`, which is the same deduplication the production consumer uses.
 }
 
-/** Tables reported by `--check` and the closing summary. */
+/**
+ * Tables reported by `--check` and the closing summary, with the predicate that identifies a row
+ * this seed owns.
+ *
+ * The database is shared with end-to-end residue (accounts on `@skillswap.test`, their classes and
+ * ledger rows), so a bare `COUNT(*)` answers "what is in the table", not "what did the seed write".
+ * Reporting both is what makes a re-run verifiable: the demo column must not change between runs.
+ */
 const REPORT_TABLES = [
-  ['account-profile', 'accounts'],
-  ['account-profile', 'account_verification_status'],
-  ['account-profile', 'inbox_notifications'],
-  ['admin-operation', 'admin_audit_event'],
-  ['live-class', 'classes'],
-  ['live-class', 'bookings'],
-  ['live-class', 'ratings'],
-  ['live-class', 'chat_messages'],
-  ['live-class', 'class_presence'],
-  ['live-class', 'class_reminders'],
-  ['live-class', 'room_access_incidents'],
-  ['skill-verification', 'skills'],
-  ['skill-verification', 'profile_skills'],
-  ['skill-verification', 'skill_evidence'],
-  ['skill-verification', 'skill_evidence_audit'],
-  ['skill-verification', 'verifiers'],
-  ['student-verification', 'student_verifications'],
-  ['student-verification', 'verification_documents'],
-  ['wallet-ledger', 'wallets'],
-  ['wallet-ledger', 'ledger_entries'],
-  ['wallet-ledger', 'top_up_intents'],
+  ['account-profile', 'accounts', `"id"::text LIKE '${DEMO_ID_PREFIX}%'`],
+  ['account-profile', 'account_verification_status', `"account_id" LIKE '${DEMO_ID_PREFIX}%'`],
+  ['account-profile', 'inbox_notifications', `"deduplication_key" LIKE '${DEMO_REF_PREFIX}%'`],
+  ['account-profile', 'notification_devices', `"installation_id" LIKE '${DEMO_REF_PREFIX}%'`],
+  ['account-profile', 'push_deliveries', `"notification_id" IN (
+      SELECT "id" FROM "account_profile"."inbox_notifications"
+       WHERE "deduplication_key" LIKE '${DEMO_REF_PREFIX}%')`],
+  ['admin-operation', 'admin_audit_event', `"source_event_id" LIKE '${DEMO_REF_PREFIX}%'`],
+  ['live-class', 'classes', `"id"::text LIKE '${DEMO_ID_PREFIX}%'`],
+  ['live-class', 'bookings', `"id"::text LIKE '${DEMO_ID_PREFIX}%'`],
+  ['live-class', 'ratings', `"id"::text LIKE '${DEMO_ID_PREFIX}%'`],
+  ['live-class', 'chat_messages', `"id"::text LIKE '${DEMO_ID_PREFIX}%'`],
+  ['live-class', 'class_presence', `"id"::text LIKE '${DEMO_ID_PREFIX}%'`],
+  ['live-class', 'class_reminders', `"class_id"::text LIKE '${DEMO_ID_PREFIX}%'`],
+  ['live-class', 'room_access_incidents', `"id"::text LIKE '${DEMO_ID_PREFIX}%'`],
+  ['skill-verification', 'skills', null],
+  ['skill-verification', 'profile_skills', `"account_id" LIKE '${DEMO_ID_PREFIX}%'`],
+  ['skill-verification', 'skill_evidence', `"id"::text LIKE '${DEMO_ID_PREFIX}%'`],
+  ['skill-verification', 'skill_evidence_audit', `"id"::text LIKE '${DEMO_ID_PREFIX}%'`],
+  ['skill-verification', 'verifiers', `"account_id" LIKE '${DEMO_ID_PREFIX}%'`],
+  ['student-verification', 'student_verifications', `"account_id" LIKE '${DEMO_ID_PREFIX}%'`],
+  ['student-verification', 'verification_documents', `"account_id" LIKE '${DEMO_ID_PREFIX}%'`],
+  ['wallet-ledger', 'wallets', `"owner_id" LIKE '${DEMO_ID_PREFIX}%' OR "owner_id" LIKE '${DEMO_REF_PREFIX}%'`],
+  ['wallet-ledger', 'ledger_entries', `"reference_id" LIKE '${DEMO_REF_PREFIX}%'`],
+  ['wallet-ledger', 'top_up_intents', `"provider_ref" LIKE '${DEMO_REF_PREFIX}%'`],
 ];
 
 async function reportCounts(ctx) {
-  console.log('\nrow counts:');
-  for (const [module, table] of REPORT_TABLES) {
+  console.log('\nrow counts (demo-owned / total):');
+  for (const [module, table, scope] of REPORT_TABLES) {
     const schema = module.replace('-', '_');
     const rows = await ctx.byModule[module].query(
-      `SELECT COUNT(*)::int AS "n" FROM "${schema}"."${table}"`,
+      `SELECT COUNT(*)::int AS "total",
+              ${scope === null ? 'NULL::int' : `COUNT(*) FILTER (WHERE ${scope})::int`} AS "demo"
+         FROM "${schema}"."${table}"`,
     );
-    console.log(`  ${`${schema}.${table}`.padEnd(44)} ${rows[0].n}`);
+    const demo = rows[0].demo === null ? '(shared)' : String(rows[0].demo);
+    console.log(
+      `  ${`${schema}.${table}`.padEnd(44)} ${demo.padStart(4)} / ${rows[0].total}`,
+    );
   }
   const demo = await ctx.accountDs.query(
     `SELECT COUNT(*)::int AS "n" FROM "account_profile"."accounts" WHERE "id"::text LIKE $1`,
@@ -1312,7 +1328,7 @@ try {
       decidedAt: undefined,
     });
   }
-  console.log('skill evidence: 12 teachers approved, 4 in the verifier queue, 2 with version history');
+  console.log(`skill evidence: ${evidenceSeq} rows (${[...HISTORY_SKILLS].length} profile skills carry version history)`);
 
   // ── FR-005/FR-007: classes + bookings ────────────────────────────────────
   // Teachers are users 0–5. Class states cover the whole lifecycle — all six values the CHECK
@@ -1900,7 +1916,7 @@ try {
       key: 'audit-wallet-release',
     });
   }
-  console.log('audit: 12 rows covering every audited action');
+  console.log('audit: every audited action in audit-actions.ts is represented');
 
   await reportCounts(ctx);
 
@@ -1908,6 +1924,36 @@ try {
   console.log(`  admin     ${ADMIN.email}`);
   for (const v of VERIFIERS) console.log(`  verifier  ${v.email}`);
   console.log(`  user      ${USERS[0].email} … ${USERS[USERS.length - 1].email}`);
+
+  // What each account is for, so the demo does not depend on remembering this file. Only accounts
+  // whose screen differs from the others are listed; the rest are ordinary learners.
+  console.log('\nWhat each account demonstrates:');
+  const DEMO_ROLES = [
+    [ADMIN.email, 'admin', 'Operations: verification queue, verifier queue, account locks, and the audit log'],
+    [VERIFIERS[0].email, 'verifier', 'Two pending claims it owns (Japanese, IELTS) and no claimed work'],
+    [VERIFIERS[1].email, 'verifier', 'Two claims it took (React, Python) plus the approvals it decided'],
+    [VERIFIERS[2].email, 'verifier', 'The Guitar/Piano reviewer behind the rejected→approved history'],
+    [VERIFIERS[3].email, 'verifier', 'Suspended verifier — stood down with no decisions attributed to it'],
+    [VERIFIERS[4].email, 'verifier', 'Revoked verifier — the terminal state on /admin/verifiers'],
+    [USERS[0].email, 'user', 'Teacher: IELTS and English approved, Japanese still in the queue'],
+    [USERS[1].email, 'user', 'Teacher: React claim already taken by a verifier, Python and TypeScript approved'],
+    [USERS[4].email, 'user', 'Teacher: Piano refused, then approved on resubmission (two versions)'],
+    [USERS[5].email, 'user', 'Teacher: Calculus approved at beginner, later superseded by expert'],
+    [USERS[6].email, 'user', 'Student verification pending — the admin queue has something to decide'],
+    [USERS[7].email, 'user', 'Student verification rejected — the reason shows on /verification'],
+    [USERS[8].email, 'user', 'Student verification approved and then revoked'],
+    [USERS[9].email, 'user', 'Suspended account — on the operations lock list; login is refused'],
+  ];
+  for (const [email, role, what] of DEMO_ROLES) {
+    console.log(`  ${role.padEnd(8)} ${email.padEnd(38)} ${what}`);
+  }
+
+  console.log('\nKnown limits of this dataset:');
+  console.log('  - documents open only after `--upload-documents` with real CLOUDINARY_* credentials;');
+  console.log('    without them the signed URL is valid but the object does not exist (404).');
+  console.log('  - FR-014 (teacher withdrawal) is deferred, so `withdrawal_outcome` is not seeded:');
+  console.log('    the type has no producer in this release.');
+  console.log('  - push devices are seeded inactive; the delivery history is fixture data, not sends.');
 } finally {
   for (const module of MODULES) {
     if (sources[module].isInitialized) await sources[module].destroy();
