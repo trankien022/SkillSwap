@@ -19,6 +19,7 @@ export const BOOKING_REJECTION_REASONS = [
   'duplicate_booking',
   'self_booking',
   'invalid_duration',
+  'learner_not_verified',
 ] as const;
 
 export type BookingRejectionReason = (typeof BOOKING_REJECTION_REASONS)[number];

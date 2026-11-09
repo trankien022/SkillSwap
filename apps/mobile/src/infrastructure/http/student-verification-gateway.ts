@@ -29,6 +29,13 @@ export interface UploadDocumentOptions {
   readonly expiresAt?: string | Date;
 }
 
+/**
+ * The part of a signed upload form `uploadDocument` actually needs. A student-verification target
+ * carries a `documentId` on top of this; a certificate target (FR-003) does not, so the shared
+ * upload flow must not require it.
+ */
+export type SignedUploadTarget = Pick<DocumentUploadTargetView, 'uploadUrl' | 'fields' | 'expiresAt'>;
+
 export interface SubmitStudentVerificationWithDocumentInput {
   readonly schoolName: string;
   readonly major?: string;
@@ -95,7 +102,7 @@ export class StudentVerificationGateway {
    * - Resolves Promise<void> ONLY after storage returns HTTP OK (2xx).
    */
   async uploadDocument(
-    targetOrUrl: DocumentUploadTargetView | string,
+    targetOrUrl: SignedUploadTarget | string,
     bytes: Uint8Array | ArrayBuffer,
     options?: UploadDocumentOptions,
   ): Promise<void> {

@@ -29,18 +29,19 @@ describe('TeachingGateway', () => {
     fetchMock.mockResolvedValueOnce(response(updated));
     fetchMock.mockResolvedValueOnce(response({ cancelled: true }));
     fetchMock.mockResolvedValueOnce(response({ started: true }));
-    fetchMock.mockResolvedValueOnce(response({ completed: true }));
     await gateway.update('class/1', { title: 'Updated class', description: 'Updated class', startsAt: updated.startsAt, priceCredits: 25, capacity: 3 });
     await gateway.cancel('class-1');
     await gateway.start('class-1');
-    await gateway.complete('class-1');
     expect(fetchMock.mock.calls.map(([url, init]) => [url, init.method])).toEqual([
       ['http://localhost:4000/api/classes/class%2F1', 'PATCH'],
       ['http://localhost:4000/api/classes/class-1/cancel', 'POST'],
       ['http://localhost:4000/api/classes/class-1/start', 'POST'],
-      ['http://localhost:4000/api/classes/class-1/complete', 'POST'],
     ]);
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ title: 'Updated class', description: 'Updated class', startsAt: updated.startsAt, priceCredits: 25, capacity: 3 });
+  });
+
+  it('does not expose a manual complete action (AC-035: completion is automatic)', () => {
+    expect('complete' in gateway).toBe(false);
   });
 
   it('declares a teacher no-show against the booking resource, not the class', async () => {

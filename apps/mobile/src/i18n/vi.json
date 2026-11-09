@@ -20,6 +20,7 @@
     "error.duplicate_booking": "Bạn đã có booking cho lớp này.",
     "error.self_booking": "Bạn không thể đặt lớp của chính mình.",
     "error.invalid_duration": "Lớp này có thời lượng không hợp lệ.",
+    "error.learner_not_verified": "Bạn cần hoàn tất xác minh sinh viên trước khi đặt lớp học này.",
     "error.unknown": "Đã xảy ra lỗi. Vui lòng thử lại.",
     "productionUpcomingTitle": "Chi tiết lớp học",
     "productionUpcomingMessage": "Tính năng đặt lớp học trực tuyến đang được hoàn thiện và kết nối dữ liệu. Vui lòng quay lại sau khi lớp học chính thức được công bố."
@@ -142,6 +143,9 @@
     "school": "Tên trường",
     "major": "Ngành học (không bắt buộc)",
     "chooseFile": "Chọn ảnh hoặc PDF",
+    "currentSubmission": "Hồ sơ nộp hiện tại",
+    "documentSubmitted": "Tài liệu đã nộp: {ref}",
+    "submittedAt": "Nộp lúc: {when}",
     "submit": "Gửi xác minh",
     "loadError": "Không tải được trạng thái xác minh. Hãy thử lại.",
     "submitError": "Gửi xác minh thất bại. Kiểm tra kết nối và thử lại."
@@ -159,14 +163,22 @@
     "loadError": "Không tải được danh mục hoặc kỹ năng của bạn.",
     "submitError": "Gửi bằng chứng thất bại. Hãy thử lại.",
     "historyError": "Không tải được lịch sử bằng chứng.",
+    "evidenceType": "Loại bằng chứng",
+    "type_certificate": "Chứng chỉ",
+    "type_verifier_assessment": "Đánh giá kiểm duyệt",
+    "chooseCertificate": "Chọn chứng chỉ (ảnh hoặc PDF)",
     "level_beginner": "Cơ bản", "level_intermediate": "Trung cấp", "level_advanced": "Nâng cao", "level_expert": "Chuyên gia",
     "state_pending": "Chờ duyệt", "state_claimed": "Đang được xem xét", "state_approved": "Đã duyệt", "state_rejected": "Bị từ chối", "state_superseded": "Đã thay thế"
   },
   "Teaching": {
+    "startsAtEmpty": "Nhập thời gian bắt đầu của lớp.",
+    "startsAtInvalid": "Nhập thời gian bắt đầu theo chuẩn ISO 8601 kèm múi giờ, ví dụ 2026-12-01T19:00:00+07:00.",
+    "startsAtPast": "Thời gian bắt đầu phải ở tương lai.",
     "title": "Khu vực giảng dạy", "createTitle": "Tạo lớp học", "detailTitle": "Chi tiết lớp học", "classTitle": "Tiêu đề lớp học", "description": "Mô tả lớp học", "startsAt": "Thời gian bắt đầu (ISO 8601)", "duration": "Phút", "price": "Credit", "capacity": "Số chỗ", "publish": "Đăng lớp", "myClasses": "Lớp do tôi tạo", "empty": "Bạn chưa có lớp học.", "openDetail": "Xem chi tiết", "save": "Lưu thay đổi", "cancel": "Hủy lớp", "cancelTitle": "Xác nhận hủy lớp", "cancelConfirm": "Bạn có chắc chắn muốn hủy lớp này?", "invalidForm": "Kiểm tra mô tả, thời gian, giá và số chỗ.", "notFound": "Không tìm thấy lớp trong danh sách lớp của bạn.", "start": "Bắt đầu", "complete": "Hoàn thành", "loadError": "Không tải được dữ liệu lớp học.", "actionError": "Thao tác thất bại. Máy chủ có thể đã khóa chỉnh sửa; tải lại lớp để kiểm tra trạng thái.", "state": { "draft": "Bản nháp", "published": "Đang mở", "full": "Đã đủ chỗ", "in_progress": "Đang diễn ra", "completed": "Đã hoàn thành", "cancelled": "Đã hủy" }
   },
   "Notifications": {
     "title":"Thông báo", "unread":"{count} thông báo chưa đọc", "enablePush":"Bật thông báo đẩy trên thiết bị này", "disablePush":"Tắt thông báo đẩy trên thiết bị này", "empty":"Chưa có thông báo.", "loadMore":"Xem thêm", "loadError":"Không tải được hộp thư thông báo.", "pushError":"Không thể đăng ký thiết bị. Kiểm tra quyền thông báo và thử lại.",
+    "markAllRead":"Đánh dấu tất cả đã đọc", "markReadError":"Không thể đánh dấu thông báo đã đọc. Hãy thử lại sau.", "markAllReadError":"Không thể đánh dấu tất cả thông báo đã đọc. Hãy thử lại.",
     "type_verification_outcome":"Kết quả xác minh", "type_booking_confirmed":"Đặt chỗ đã xác nhận", "type_booking_cancelled":"Lớp học đã hủy", "type_class_starting_soon":"Lớp học sắp bắt đầu", "type_wallet_transaction":"Giao dịch ví hoàn tất", "type_withdrawal_outcome":"Kết quả rút tiền",
     "body_verification_outcome":"Trạng thái xác minh của bạn đã được cập nhật.", "body_booking_confirmed":"Đặt chỗ đã được thanh toán và xác nhận.", "body_booking_cancelled":"Đặt chỗ đã bị hủy; hãy kiểm tra số dư ví.", "body_class_starting_soon":"Lớp học sắp bắt đầu. Mở lịch để vào phòng.", "body_wallet_transaction":"Số dư ví của bạn đã thay đổi.", "body_withdrawal_outcome":"Trạng thái yêu cầu rút tiền đã thay đổi."
   },
@@ -306,6 +318,7 @@
     "errorSessionExpired": "Phiên đăng nhập đã hết hạn. Vui lòng thử lại sau khi gia hạn phiên.",
     "errorNetworkUncertain": "Kết nối mạng bị gián đoạn. Vui lòng kiểm tra đường truyền và thử lại.",
     "errorBookingNotAllowed": "Hiện tại không thể đặt chỗ cho lớp học này.",
+    "errorLearnerNotVerified": "Bạn cần hoàn tất xác minh sinh viên trước khi đặt lớp học này.",
     "notFound": "Không tìm thấy lớp học này.",
     "startsAt": "Bắt đầu {when}",
     "duration": "{minutes} phút",
