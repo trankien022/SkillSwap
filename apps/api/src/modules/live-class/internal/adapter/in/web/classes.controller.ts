@@ -1,5 +1,13 @@
-import { Body, Controller, HttpCode, HttpStatus, Inject, Param, Patch, Post, Req } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, HttpCode, HttpStatus, Inject, Param, ParseUUIDPipe, Patch, Post, Req } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import type { RoomAccessResponse } from '@skillswap/contracts';
 import {
   CREATE_CLASS,
@@ -35,6 +43,10 @@ import {
   type RequestRoomAccessPort,
 } from '../../../application/port/in/request-room-access';
 import {
+  REQUEST_TEACHER_ROOM_ACCESS,
+  type RequestTeacherRoomAccessPort,
+} from '../../../application/port/in/request-teacher-room-access';
+import {
   START_CLASS,
   type StartClassPort,
   type StartClassResult,
@@ -66,6 +78,8 @@ export class ClassesController {
     @Inject(CANCEL_CLASS) private readonly cancelClass: CancelClassPort,
     @Inject(MARK_TEACHER_NO_SHOW) private readonly markNoShow: MarkTeacherNoShowPort,
     @Inject(REQUEST_ROOM_ACCESS) private readonly roomAccess: RequestRoomAccessPort,
+    @Inject(REQUEST_TEACHER_ROOM_ACCESS)
+    private readonly teacherRoomAccess: RequestTeacherRoomAccessPort,
     @Inject(START_CLASS) private readonly startClass: StartClassPort,
   ) {}
 
@@ -163,6 +177,31 @@ export class ClassesController {
   ): Promise<RoomAccessResponse> {
     return this.roomAccess.execute({
       bookingId,
+      requesterId: currentUserId(request),
+      displayName: body.displayName,
+    });
+  }
+
+  @Post(':id/room-access')
+  @HttpCode(HttpStatus.OK)
+  @ApiParam({ name: 'id', description: 'The class id' })
+  @ApiOperation({
+    summary: 'Request room access as the class teacher (FR-011 / ADR-040)',
+    description:
+      'Authorises the teacher of the class, not a booking party: a teacher has no booking for the class they teach. The room is the one the learners join (`skillswap-<classId>`) and the window is the same, but the teacher receives the `moderator` role. Allowed for class states published, full and in_progress; denied for draft, completed and cancelled.',
+  })
+  @ApiOkResponse({ type: RoomAccessResponseDto, description: 'Room name, short-lived moderator token and join URL' })
+  @ApiNotFoundResponse({ description: 'No class with that id (TeacherClassNotFoundError)' })
+  @ApiForbiddenResponse({ description: 'Not the class teacher, non-joinable state, or outside the window (RoomAccessDeniedError)' })
+  roomAccessForTeacher(
+    @Param('id', new ParseUUIDPipe()) classId: string,
+    @Body() body: RoomAccessRequestDto,
+    @Req() request: RequestWithIdentity,
+  ): Promise<RoomAccessResponse> {
+    return this.teacherRoomAccess.execute({
+      classId,
+      // Identity comes from the verified JWT only. A moderator token can end a conference,
+      // so a teacher id accepted from the body would be a privilege-escalation hole.
       requesterId: currentUserId(request),
       displayName: body.displayName,
     });

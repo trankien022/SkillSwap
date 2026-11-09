@@ -1,6 +1,7 @@
 import { createZodDto } from 'nestjs-zod';
 import {
   classDetailViewSchema,
+  classRosterSchema,
   listClassesPageSchema,
   myBookingsPageSchema,
 } from '@skillswap/contracts';
@@ -17,3 +18,6 @@ export class ClassDetailViewDto extends createZodDto(classDetailViewSchema) {}
 
 /** FR-007, FR-009, FR-011, FR-020 / Route 22: the learner's bookings page. */
 export class MyBookingsPageDto extends createZodDto(myBookingsPageSchema) {}
+
+/** FR-011 / ADR-040: the teacher's roster for their own class. */
+export class ClassRosterDto extends createZodDto(classRosterSchema) {}

@@ -80,6 +80,8 @@ const NAME_TO_STATUS: Record<string, number> = {
   RoomAccessDeniedError: 403,
   BookingNotFoundError: 404,
   RoomUnavailableError: 503,
+  // FR-011 teacher room access (ADR-040): the teacher's class is the subject, not a booking.
+  TeacherClassNotFoundError: 404,
   // FR-020 class lifecycle (ADR-021).
   ClassNotCompletableError: 409,
   InvalidCompletionBasisError: 400,

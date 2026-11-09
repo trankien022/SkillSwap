@@ -26,6 +26,22 @@ describe('reasonForFailure', () => {
     ).toBe('not_confirmed');
   });
 
+  it('maps the ADR-040 teacher denials', () => {
+    expect(
+      reasonForFailure('RoomAccessDeniedError', 'Requester is not the teacher of this class'),
+    ).toBe('not_a_party');
+    expect(
+      reasonForFailure('RoomAccessDeniedError', 'Teacher cannot open a room for a draft class'),
+    ).toBe('class_not_joinable');
+    expect(
+      reasonForFailure('RoomAccessDeniedError', 'Teacher cannot open a room for a completed class'),
+    ).toBe('class_not_joinable');
+    expect(
+      reasonForFailure('RoomAccessDeniedError', 'Teacher cannot open a room for a cancelled class'),
+    ).toBe('class_not_joinable');
+    expect(reasonForFailure('TeacherClassNotFoundError', 'Class not found: x')).toBe('not_found');
+  });
+
   it('maps transport-level failures by code', () => {
     expect(reasonForFailure('BookingNotFoundError', 'Booking not found: x')).toBe('not_found');
     expect(reasonForFailure('HTTP_404', 'Not Found')).toBe('not_found');

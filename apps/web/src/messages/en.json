@@ -1662,9 +1662,6 @@
       "couldNotLoadYourTeachingClasses": "Could not load your teaching classes.",
       "couldNotLoadYourTeachingInformation": "Could not load your teaching information.",
       "theRequestWasSentButThe": "The request was sent, but the latest state could not be read. Please reload.",
-      "couldNotStartTheClass": "Could not start the class",
-      "classStarted": "Class started.",
-      "thisClassWasAlreadyStarted": "This class was already started.",
       "couldNotSaveChanges": "Could not save changes",
       "changesSaved": "Changes saved.",
       "errorundefined": "Error: ",
@@ -1724,7 +1721,9 @@
       "edit": "Edit",
       "minimumConfirmedSeats": "Capacity cannot be below {count} confirmed seats.",
       "classTitle": "Class title",
-      "enterAValidClassTitle": "Enter a class title (up to 72 characters)."
+      "enterAValidClassTitle": "Enter a class title (up to 72 characters).",
+      "joinRoom": "Join room",
+      "roomOpensSoon": "Room closed"
     },
     "rules": "Learning and payment rules",
     "fallback": {
@@ -1735,6 +1734,82 @@
       "retry": "Try again",
       "home": "Back to home",
       "explore": "Explore classes"
+    }
+  },
+  "TeacherLiveClassroom": {
+    "nav": {
+      "back": "Teaching studio",
+      "classCode": "CLASS CODE: #{code}"
+    },
+    "fallbackDisplayName": "Instructor",
+    "statusBar": {
+      "live": "IN ROOM",
+      "notLive": "NOT IN ROOM",
+      "connected": "Room connected",
+      "disconnected": "Not connected",
+      "timer": "{elapsed} / {total}"
+    },
+    "video": {
+      "screenSharing": "Sharing screen",
+      "btnMic": "Microphone",
+      "btnCamera": "Camera",
+      "btnScreen": "Share Screen",
+      "btnLeave": "Leave Room",
+      "endedNotice": "You have left the room."
+    },
+    "session": {
+      "title": "Session details",
+      "durationLabel": "Duration",
+      "durationValue": "{minutes} minutes",
+      "startLabel": "Starts",
+      "startUnknown": "No start time yet",
+      "learnersLabel": "Learners enrolled"
+    },
+    "participants": {
+      "title": "Participants",
+      "youLabel": "You — Instructor",
+      "learnerLabel": "Learner",
+      "pendingLabel": "Holding a seat",
+      "noneYet": "Nobody has booked this class yet.",
+      "rosterUnavailable": "The learner list could not be loaded."
+    },
+    "states": {
+      "requestingAccess": "Requesting room access…",
+      "connecting": "Connecting to the room…",
+      "embedErrorTitle": "Could not open the room",
+      "embedErrorBody": "The online room failed to load. Check your connection and try again.",
+      "retry": "Try again",
+      "notAParty": {
+        "title": "You are not the instructor of this class",
+        "body": "Only the instructor who holds this class can open its room."
+      },
+      "classNotJoinable": {
+        "title": "This class cannot be opened",
+        "body": "A draft, completed or cancelled class has no room to open."
+      },
+      "windowNotOpen": {
+        "title": "Room not open yet",
+        "body": "The room opens 15 minutes before the start time. Please come back when it opens."
+      },
+      "windowClosed": {
+        "title": "Room has closed",
+        "body": "The window to open this session's room has ended."
+      },
+      "notFound": {
+        "title": "Class not found",
+        "body": "This class does not exist, or you are not its instructor."
+      },
+      "providerUnavailable": {
+        "title": "Room temporarily unavailable",
+        "body": "The room service is having trouble. Please try again in a few minutes."
+      },
+      "unavailable": {
+        "title": "Could not open the room",
+        "body": "Something went wrong opening the room. Please try again."
+      }
+    },
+    "notice": {
+      "noMoneyActions": "Payments and reviews belong to the learner. This room is only for teaching."
     }
   }
 }

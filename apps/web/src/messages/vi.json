@@ -1662,9 +1662,6 @@
       "couldNotLoadYourTeachingClasses": "Không tải được danh sách lớp giảng dạy.",
       "couldNotLoadYourTeachingInformation": "Không tải được dữ liệu giảng dạy.",
       "theRequestWasSentButThe": "Lệnh đã được gửi, nhưng chưa đọc lại được trạng thái mới nhất. Vui lòng tải lại trang.",
-      "couldNotStartTheClass": "Không bắt đầu được lớp",
-      "classStarted": "Đã bắt đầu lớp học.",
-      "thisClassWasAlreadyStarted": "Lớp này đã bắt đầu trước đó.",
       "couldNotSaveChanges": "Không lưu được thay đổi",
       "changesSaved": "Đã lưu thay đổi.",
       "errorundefined": "Lỗi: ",
@@ -1724,7 +1721,9 @@
       "edit": "Sửa",
       "minimumConfirmedSeats": "Không thể nhỏ hơn {count} chỗ đã xác nhận.",
       "classTitle": "Tiêu đề lớp học",
-      "enterAValidClassTitle": "Vui lòng nhập tiêu đề lớp học (tối đa 72 ký tự)."
+      "enterAValidClassTitle": "Vui lòng nhập tiêu đề lớp học (tối đa 72 ký tự).",
+      "joinRoom": "Vào phòng học",
+      "roomOpensSoon": "Phòng đã đóng"
     },
     "rules": "Quy tắc học và thanh toán",
     "fallback": {
@@ -1735,6 +1734,82 @@
       "retry": "Thử lại",
       "home": "Về trang chủ",
       "explore": "Khám phá lớp học"
+    }
+  },
+  "TeacherLiveClassroom": {
+    "nav": {
+      "back": "Trang giảng dạy",
+      "classCode": "MÃ LỚP HỌC: #{code}"
+    },
+    "fallbackDisplayName": "Giảng viên",
+    "statusBar": {
+      "live": "ĐANG TRONG PHÒNG",
+      "notLive": "CHƯA VÀO PHÒNG",
+      "connected": "Đã kết nối phòng học",
+      "disconnected": "Chưa kết nối",
+      "timer": "{elapsed} / {total}"
+    },
+    "video": {
+      "screenSharing": "Đang chia sẻ màn hình",
+      "btnMic": "Micro",
+      "btnCamera": "Camera",
+      "btnScreen": "Chia sẻ màn hình",
+      "btnLeave": "Rời phòng",
+      "endedNotice": "Bạn đã rời phòng học."
+    },
+    "session": {
+      "title": "Thông tin buổi học",
+      "durationLabel": "Thời lượng",
+      "durationValue": "{minutes} phút",
+      "startLabel": "Bắt đầu",
+      "startUnknown": "Chưa có giờ bắt đầu",
+      "learnersLabel": "Học viên đã đặt"
+    },
+    "participants": {
+      "title": "Thành viên",
+      "youLabel": "Bạn — Giảng viên",
+      "learnerLabel": "Học viên",
+      "pendingLabel": "Đang giữ chỗ",
+      "noneYet": "Chưa có học viên nào đặt lớp này.",
+      "rosterUnavailable": "Không tải được danh sách học viên."
+    },
+    "states": {
+      "requestingAccess": "Đang xin quyền vào phòng học…",
+      "connecting": "Đang kết nối phòng học…",
+      "embedErrorTitle": "Không mở được phòng học",
+      "embedErrorBody": "Không tải được phòng học trực tuyến. Kiểm tra kết nối mạng rồi thử lại.",
+      "retry": "Thử lại",
+      "notAParty": {
+        "title": "Bạn không phải giảng viên của lớp này",
+        "body": "Chỉ giảng viên phụ trách lớp mới mở được phòng học."
+      },
+      "classNotJoinable": {
+        "title": "Không thể mở lớp này",
+        "body": "Lớp ở trạng thái nháp, đã kết thúc hoặc đã hủy thì không có phòng để mở."
+      },
+      "windowNotOpen": {
+        "title": "Phòng học chưa mở",
+        "body": "Phòng học mở trước giờ bắt đầu 15 phút. Vui lòng quay lại khi phòng mở."
+      },
+      "windowClosed": {
+        "title": "Phòng học đã đóng",
+        "body": "Thời gian mở phòng học của buổi này đã kết thúc."
+      },
+      "notFound": {
+        "title": "Không tìm thấy lớp học",
+        "body": "Lớp học này không tồn tại hoặc bạn không phải giảng viên phụ trách."
+      },
+      "providerUnavailable": {
+        "title": "Phòng học tạm thời không khả dụng",
+        "body": "Dịch vụ phòng học đang gặp sự cố. Vui lòng thử lại sau ít phút."
+      },
+      "unavailable": {
+        "title": "Không mở được phòng học",
+        "body": "Đã xảy ra lỗi khi mở phòng học. Vui lòng thử lại."
+      }
+    },
+    "notice": {
+      "noMoneyActions": "Thanh toán và đánh giá là phần của học viên. Phòng này chỉ dùng để dạy học."
     }
   }
 }
