@@ -1,6 +1,6 @@
 # ADR-021: Class completion and income release rule
 
-- **Status:** Accepted — **amended 2026-10-25 (see §Amendment A)**: `teacher_ended` is removed
+- **Status:** Accepted — **amended 2026-10-25 (§Amendment A)**: `teacher_ended` is removed; **amended 2026-11-10 (§Amendment B)**: the web `Start` control is removed
 - **Level:** Software (C4 Level 3 · Component)
 - **Date:** 2026-10-10
 
@@ -61,3 +61,36 @@ Two facts constrain the rule: FR-007 already cancels and refunds a booking when 
 - (+) Rating and income release can only follow a session that actually ran.
 
 **Verification (amended).** Unit: `assertCompletionBasis('teacher_ended')` now **throws**; the completion route 404/405s. Sweeper: completes exactly at the scheduled end, not one second before; emits once when paths race.
+
+---
+
+## Amendment B — the web "Start" control is removed (2026-11-10)
+
+**Supersedes:** Decision §4 on the **client**; the API route itself is unchanged.
+
+**Context.** Decision §4 says a class enters `InProgress` "when its start time arrives (sweep) or when the Teacher explicitly starts it". No start-time sweep was ever built — only the completion sweeper exists — so `Start` became the *only* producer of `in_progress`, and the web studio exposed it as a button on every `published`/`full` class.
+
+Auditing what that button actually did turned up three facts:
+
+1. **It changed nothing a teacher needs.** Room access is authorised on the **time window**, not on class state, and `published|full|in_progress` are all joinable (ADR-040). Completion is driven by the scheduled end; `findInProgressBeforeEnd` selects `published`, `full` **and** `in_progress`, so the state is not an input to completion either.
+2. **Its event has no consumer.** `class.started` is written to the outbox and published, but no module subscribes. `wallet-ledger` listens only to `class.completed`.
+3. **It was harmful and irreversible.** `in_progress` is a one-way door (`published|full → in_progress`, and from `in_progress` only `completed`/`cancelled`). While a class sits there: the marketplace hides it (`state IN ('published','full')`), reminders stop (`REMINDABLE_STATES` excludes it), new bookings are refused, and strangers get 404 on its detail. It could be pressed on a class that starts next week, and nothing could undo it.
+
+So the control was a state-machine transition exposed as a button: every click was a one-way commitment with no benefit and several real costs.
+
+**Decision.** The **web** studio no longer offers `Start`, and the web client no longer calls the route. The teacher enters the room through **Join room**; the class ends at its scheduled end.
+
+The API route is **kept**, because the mobile client still uses it (#106 tracks mobile's missing teacher room access). Removing the route while mobile depends on it would break the app for no gain; removing the button removes the hazard.
+
+**Consequences.**
+
+- (+) A teacher can no longer hide their own class from the marketplace or silence its reminder by pressing a button whose label promises something it does not do.
+- (+) One control, one meaning: joining is opening the room, and the class ends on its own.
+- (−) `in_progress` now has **no producer at all** from either client. It remains a legal state for existing rows and for anything that writes it directly. If a future feature needs "the session is running", it should be derived from the window and presence (ADR-021 Amendment A §2 C3a/C3b), not written by a client command.
+- (−) Decision §4's claim that the Teacher "explicitly starts" a class is now false for web. The sweep half of §4 was never implemented and is not implied by this amendment.
+
+**Verification (amended).**
+- Web: the studio renders no `Start` button and issues no `POST /classes/:id/start` for any class state (`instructor/page.test.tsx`).
+- Web API map: `/classes/:id/start` is no longer listed as a web-called route (`lib/api-map.test.ts`), so a reintroduced call site fails the "only calls documented routes" test rather than passing silently.
+- Mobile: unchanged — `teaching-gateway.spec.ts` still asserts the `POST …/start` call.
+

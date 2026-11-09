@@ -26,13 +26,6 @@ import type {
 /** The class lifecycle states that mean "this class is over". */
 const COMPLETED_CLASS_STATES = new Set(['completed', 'cancelled']);
 
-/**
- * The states from which `POST /classes/:id/start` is legal on the server
- * (`published|full -> in_progress`). The button is gated on this so the common
- * case does not rely on a 409 to be told the class cannot start yet.
- */
-const STARTABLE_CLASS_STATES = new Set(['published', 'full']);
-
 export default function InstructorDashboard() {
   const ui = useTranslations('Workspace.copy');
 
@@ -140,26 +133,6 @@ export default function InstructorDashboard() {
       console.warn('Failed to refresh teacher server state:', e);
     }
   };
-  /**
-   * Starts a class. The server answers `{ started }`: `false` means the class was
-   * already in progress, which is a truthful no-op rather than a new success, so
-   * the two are reported differently instead of both claiming "đã bắt đầu".
-   */
-  const handleStartClass = async (classId: string) => {
-    try {
-      setIsProcessing(true);
-      const res = await callApi(`/classes/${classId}/start`, { method: 'POST' });
-      if (!res.ok) throw new Error(await readApiMessage(res, ui('couldNotStartTheClass')));
-      const result = await unwrapEnvelope<{ started: boolean }>(res);
-      showToast(result?.started ? ui('classStarted') : ui('thisClassWasAlreadyStarted'));
-      await refreshServerState();
-    } catch (e) {
-      showToast(ui('errorundefined') + (e as Error).message);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   /**
    * Saves an edit to title, price and capacity. A `409` means the class is
    * locked by a confirmed booking; the panel stays open without changing
@@ -467,22 +440,14 @@ export default function InstructorDashboard() {
                               {ui('edit')}
                             </button>
                           )}
-                          {STARTABLE_CLASS_STATES.has(item.state) && (
-                            <button
-                              onClick={() => handleStartClass(item.id)}
-                              type="button"
-                              className="px-4 py-2 rounded-full text-sm font-semibold bg-campus-emerald-deep hover:bg-ink text-white transition-colors flex items-center gap-1.5 disabled:opacity-60"
-                              disabled={isProcessing}
-                            >
-                              <span
-                                aria-hidden="true"
-                                className="material-symbols-outlined text-[16px]"
-                              >
-                                play_arrow
-                              </span>{' '}
-                              {ui('start')}
-                            </button>
-                          )}
+                          {/* ADR-021 Amendment B: there is deliberately no "Start" control.
+                              It flipped `published|full -> in_progress`, a one-way door that
+                              hid the class from the marketplace (which lists published|full)
+                              and silenced the reminder (REMINDABLE_STATES excludes it), while
+                              the room had already been joinable on the time window alone and
+                              the completion sweep never consulted the state. Pressing it
+                              therefore achieved nothing and could not be undone. The teacher
+                              enters through "Join room"; the class ends on its scheduled end. */}
                           {/* FR-011 / ADR-040: the teacher needs a way into the room they
                               started. The window and the class-state rule mirror the server,
                               so the button is disabled — with the reason — rather than

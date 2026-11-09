@@ -37,7 +37,6 @@ const WEB_ROUTES = [
   // the roster for the in-room participant panel.
   '/classes/:id/room-access',
   '/classes/:id/roster',
-  '/classes/:id/start',
   '/classes/bookings/:bookingId/confirm',
   // FR-012 / ADR-036: in-class chat. The query string is not part of the route
   // identity, so the read registers once, exactly as the API-map scanner sees it.
