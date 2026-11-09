@@ -33,7 +33,11 @@ Decision drivers: Modifiability, Security & Privacy, Testability, Performance, S
 4. **Durable, Idempotent Notification Pipeline:**
    - Source events write to the source module's outbox in the same database transaction.
    - Outbox relay forwards events to the topic exchange `skillswap.events`.
-   - `account-profile` consumes events via queue `account-profile.notification-inbox`, deduplicating via `processed_events`.
+   - `account-profile` consumes events via queue `account-profile`, deduplicating via `processed_events`.
+     *(Corrected 2026-11-09, ADR-013 Amendment B: the queue is named for the module, not
+     `account-profile.notification-inbox`. One queue binds every routing key account-profile
+     consumes, since a queue is a consumer endpoint rather than a message type. The pipeline
+     described here is otherwise unchanged.)*
    - Creates durable inbox record in `inbox_notifications`.
    - Dispatches remote push to registered active devices via Expo Push Service (targeting APNs for iOS and FCM for Android) with exponential backoff and dead-letter queue.
    - On provider ticket/receipt indicating `DeviceNotRegistered` or invalid token, the token is deactivated immediately (receipt invalidation).

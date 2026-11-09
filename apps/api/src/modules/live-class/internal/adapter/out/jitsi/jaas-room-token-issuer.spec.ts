@@ -48,18 +48,27 @@ describe('JaasRoomTokenIssuer (FR-011 / ADR-039)', () => {
     expect(payload.sub).toBe(APP_ID);
   });
 
-  it('tenant-prefixes the room claim', () => {
-    expect(decode(issue().token.split('.')[1]).room).toBe(`${APP_ID}/skillswap-cls-1`);
+  it('puts the bare room node in the claim, never the tenant prefix', () => {
+    // JaaS refuses a prefixed claim with "Room and token mismatched": its validator joins the
+    // claim with "conference.<sub>", so a claim already containing the AppID can never match.
+    // The tenant belongs in `sub` (asserted above), not here.
+    expect(decode(issue().token.split('.')[1]).room).toBe('skillswap-cls-1');
   });
 
-  it('does not double-prefix an already-qualified room', () => {
+  it('strips an already-qualified room instead of passing it through', () => {
     const { token } = issuer.issue({
       room: `${APP_ID}/skillswap-cls-1`,
       userId: 'u1',
       displayName: 'An',
       role: 'participant',
     });
-    expect(decode(token.split('.')[1]).room).toBe(`${APP_ID}/skillswap-cls-1`);
+    expect(decode(token.split('.')[1]).room).toBe('skillswap-cls-1');
+  });
+
+  it('never lets a slash into the room claim', () => {
+    // The regression guard proper: a slash means the tenant leaked back in, which is the exact
+    // shape that broke every join in the field.
+    expect(String(decode(issue().token.split('.')[1]).room)).not.toContain('/');
   });
 
   it('emits moderator as the STRING "true"/"false", never a boolean', () => {

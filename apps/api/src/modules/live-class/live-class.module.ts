@@ -185,40 +185,34 @@ export class LiveClassRegistrar implements OnModuleInit {
     // FR-005 / ADR-024: keep a local projection of publish rights so the gate never
     // reads another module's schema.
     const project = new ProjectTeacherTrustUseCase(this.trust);
-    for (const eventType of [
-      'student.verification.submitted',
-      'student.verification.approved',
-      'student.verification.rejected',
-      'student.verification.revoked',
-    ]) {
-      this.handlers.register({
-        moduleName: MODULE_NAME,
-        eventType,
-        queue: `live-class.${eventType.replace(/\./g, '-')}`,
-        handler: async (message: BusMessage): Promise<void> => {
-          await project.onVerification(studentVerificationEventSchema.parse(message.payload));
-        },
-      });
-    }
-    for (const eventType of [
-      'skill.evidence.submitted',
-      'skill.evidence.claimed',
-      'skill.evidence.approved',
-      'skill.evidence.rejected',
-    ]) {
-      this.handlers.register({
-        moduleName: MODULE_NAME,
-        eventType,
-        queue: `live-class.${eventType.replace(/\./g, '-')}`,
-        handler: async (message: BusMessage): Promise<void> => {
-          await project.onSkillEvidence(skillEvidenceEventSchema.parse(message.payload));
-        },
-      });
-    }
+    // ADR-013 Amendment B: one queue per module; both projections below are subscriptions on it.
     this.handlers.register({
       moduleName: MODULE_NAME,
-      eventType: 'wallet.transaction.completed',
-      queue: 'live-class.wallet-transaction-completed',
+      eventTypes: [
+        'student.verification.submitted',
+        'student.verification.approved',
+        'student.verification.rejected',
+        'student.verification.revoked',
+      ],
+      handler: async (message: BusMessage): Promise<void> => {
+        await project.onVerification(studentVerificationEventSchema.parse(message.payload));
+      },
+    });
+    this.handlers.register({
+      moduleName: MODULE_NAME,
+      eventTypes: [
+        'skill.evidence.submitted',
+        'skill.evidence.claimed',
+        'skill.evidence.approved',
+        'skill.evidence.rejected',
+      ],
+      handler: async (message: BusMessage): Promise<void> => {
+        await project.onSkillEvidence(skillEvidenceEventSchema.parse(message.payload));
+      },
+    });
+    this.handlers.register({
+      moduleName: MODULE_NAME,
+      eventTypes: ['wallet.transaction.completed'],
       handler: async (message: BusMessage): Promise<void> => {
         const event = walletTransactionCompletedEventSchema.parse(message.payload);
         if (event.type !== 'booking_payment' || event.direction !== 'debit') {

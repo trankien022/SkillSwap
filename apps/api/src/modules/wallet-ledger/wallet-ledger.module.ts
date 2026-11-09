@@ -70,10 +70,10 @@ export class WalletLedgerRegistrar implements OnModuleInit {
     this.registry.register(MODULE_NAME, SCHEMA, (schema) =>
       createModuleDataSource(this.config, schema),
     );
+    // ADR-013 Amendment B: one queue per module; three routing keys on it.
     this.handlers.register({
       moduleName: MODULE_NAME,
-      eventType: 'booking.confirmed',
-      queue: 'wallet-ledger.booking-confirmed',
+      eventTypes: ['booking.confirmed'],
       handler: async (message: BusMessage): Promise<void> => {
         const event = bookingConfirmedSchema.parse(message.payload);
         if (event.settled) {
@@ -84,8 +84,7 @@ export class WalletLedgerRegistrar implements OnModuleInit {
     });
     this.handlers.register({
       moduleName: MODULE_NAME,
-      eventType: 'booking.cancelled',
-      queue: 'wallet-ledger.booking-cancelled',
+      eventTypes: ['booking.cancelled'],
       handler: async (message: BusMessage): Promise<void> => {
         const event = bookingCancelledSchema.parse(message.payload);
         await this.refundBooking.execute(event);
@@ -93,8 +92,7 @@ export class WalletLedgerRegistrar implements OnModuleInit {
     });
     this.handlers.register({
       moduleName: MODULE_NAME,
-      eventType: 'class.completed',
-      queue: 'wallet-ledger.class-completed',
+      eventTypes: ['class.completed'],
       handler: async (message: BusMessage): Promise<void> => {
         const event = classCompletedSchema.parse(message.payload);
         await this.releaseClass.execute(event);

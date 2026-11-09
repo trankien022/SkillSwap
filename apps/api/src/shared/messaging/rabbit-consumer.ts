@@ -11,11 +11,12 @@ import type { AppLogger } from '../logger/app-logger';
 import type { AmqpChannel, AmqpConnection, AmqpConsumeMessage } from './amqp-types';
 import {
   CONSUMER_PREFETCH,
+  DEFAULT_EXCHANGE,
   EVENT_EXCHANGE,
   RETRY_QUEUE_TTL_MS,
   TRANSIENT_RETRY_DELAY_MS,
 } from './constants';
-import type { EventHandlerRegistration, EventHandlerRegistry } from './event-handler-registry';
+import type { ConsumerQueue, EventHandlerRegistry } from './event-handler-registry';
 import { parseEnvelope } from './event-handler-registry';
 import { aggregateIdOf, sequenceOf } from './event-sequence';
 import type { ModuleDataSourceRegistry } from './module-registry';
@@ -138,11 +139,11 @@ export class RabbitConsumer implements OnApplicationBootstrap, OnApplicationShut
       const channel = await connection.createChannel();
       await channel.prefetch(CONSUMER_PREFETCH);
       await channel.assertExchange(EVENT_EXCHANGE, 'topic', { durable: true });
-      for (const registration of this.handlers.list()) {
-        await this.assertTopology(channel, registration);
-        await channel.consume(registration.queue, (message) => {
+      for (const consumer of this.handlers.queues()) {
+        await this.assertTopology(channel, consumer);
+        await channel.consume(consumer.queue, (message) => {
           if (message !== null) {
-            void this.onMessage(registration, message);
+            void this.onMessage(consumer, message);
           }
         });
       }
@@ -180,33 +181,43 @@ export class RabbitConsumer implements OnApplicationBootstrap, OnApplicationShut
     }
   }
 
-  private async assertTopology(
-    channel: AmqpChannel,
-    registration: EventHandlerRegistration,
-  ): Promise<void> {
-    const { queue, eventType } = registration;
+  /**
+   * One module queue, its retry queue and its DLQ, then one binding per routing key
+   * (ADR-013 Amendment B).
+   *
+   * The retry queue used to dead-letter to the topic exchange with the event type baked in as
+   * `x-dead-letter-routing-key`. That was exact while a queue served one event type. A module
+   * queue serves many, and the header cannot vary per message, so the retry queue now dead-letters
+   * to the **default exchange addressed to its own module queue**. The message returns to the
+   * consumer that failed it and is dispatched again by the `eventType` in its envelope, which is
+   * where the type actually lives.
+   */
+  private async assertTopology(channel: AmqpChannel, consumer: ConsumerQueue): Promise<void> {
+    const { queue } = consumer;
     await channel.assertQueue(queue, { durable: true });
     await channel.assertQueue(`${queue}.retry`, {
       durable: true,
       arguments: {
         'x-message-ttl': RETRY_QUEUE_TTL_MS,
-        'x-dead-letter-exchange': EVENT_EXCHANGE,
-        'x-dead-letter-routing-key': eventType,
+        'x-dead-letter-exchange': DEFAULT_EXCHANGE,
+        'x-dead-letter-routing-key': queue,
       },
     });
     await channel.assertQueue(`${queue}.dlq`, { durable: true });
-    await channel.bindQueue(queue, EVENT_EXCHANGE, eventType);
+    for (const eventType of consumer.eventTypes) {
+      await channel.bindQueue(queue, EVENT_EXCHANGE, eventType);
+    }
   }
 
   private async onMessage(
-    registration: EventHandlerRegistration,
+    consumer: ConsumerQueue,
     message: AmqpConsumeMessage,
   ): Promise<void> {
     try {
-      await this.handle(registration, message);
+      await this.handle(consumer, message);
     } catch (error) {
       this.logger.error(
-        { queue: registration.queue, err: describeError(error) },
+        { queue: consumer.queue, err: describeError(error) },
         'Message handling failed — requeue',
       );
       this.safeNack(message, true);
@@ -214,37 +225,52 @@ export class RabbitConsumer implements OnApplicationBootstrap, OnApplicationShut
   }
 
   private async handle(
-    registration: EventHandlerRegistration,
+    consumer: ConsumerQueue,
     message: AmqpConsumeMessage,
   ): Promise<void> {
     try {
       const parsed = parseEnvelope(JSON.parse(message.content.toString('utf8')));
+      const handlers = this.handlers.handlersFor(consumer.queue, parsed.eventType);
+      if (handlers.length === 0) {
+        // Bound but unknown: the routing key reached this queue, so something claims it. Acking
+        // would report success for work nobody did, so it is classified as a payload defect.
+        throw new PermanentHandlerError(
+          `No handler for ${parsed.eventType} on queue ${consumer.queue}`,
+        );
+      }
       await this.store.runOnce(
-        registration.moduleName,
-        registration.queue,
+        consumer.moduleName,
+        consumer.queue,
         parsed.id,
-        () => registration.handler(parsed),
+        // Every handler for the event runs before the message is acked. All-or-nothing is
+        // deliberate: a partial success would mark the event DONE for a consumer that never
+        // applied it, and the sibling that did run is already required to be idempotent.
+        async () => {
+          for (const handler of handlers) {
+            await handler(parsed);
+          }
+        },
         // ADR-013 Amendment A (W2 C1): every envelope is placed within its aggregate here,
         // so no handler has to remember to compare sequences itself.
         { aggregateId: aggregateIdOf(parsed.payload), sequence: sequenceOf(parsed) },
       );
       this.safeAck(message);
     } catch (error) {
-      await this.classify(registration, message, error);
+      await this.classify(consumer, message, error);
     }
   }
 
   private async classify(
-    registration: EventHandlerRegistration,
+    consumer: ConsumerQueue,
     message: AmqpConsumeMessage,
     error: unknown,
   ): Promise<void> {
     if (isPermanent(error)) {
       this.logger.error(
-        { queue: registration.queue, err: describeError(error) },
+        { queue: consumer.queue, err: describeError(error) },
         'Permanent failure — dead-lettering',
       );
-      if (this.sendToDlq(registration, message)) {
+      if (this.sendToDlq(consumer, message)) {
         this.safeAck(message);
       } else {
         this.safeNack(message, true);
@@ -261,10 +287,10 @@ export class RabbitConsumer implements OnApplicationBootstrap, OnApplicationShut
     const count = retryCount(message.properties.headers) + 1;
     if (count >= this.config.maxDeliveryAttempts) {
       this.logger.error(
-        { queue: registration.queue, attempts: count, err: describeError(error) },
+        { queue: consumer.queue, attempts: count, err: describeError(error) },
         'Max delivery attempts reached — dead-lettering',
       );
-      if (this.sendToDlq(registration, message)) {
+      if (this.sendToDlq(consumer, message)) {
         this.safeAck(message);
       } else {
         this.safeNack(message, true);
@@ -272,7 +298,7 @@ export class RabbitConsumer implements OnApplicationBootstrap, OnApplicationShut
       return;
     }
 
-    const delivered = this.sendToRetry(registration, message, count);
+    const delivered = this.sendToRetry(consumer, message, count);
     if (delivered) {
       this.safeAck(message);
     } else {
@@ -281,7 +307,7 @@ export class RabbitConsumer implements OnApplicationBootstrap, OnApplicationShut
   }
 
   private sendToRetry(
-    registration: EventHandlerRegistration,
+    consumer: ConsumerQueue,
     message: AmqpConsumeMessage,
     count: number,
   ): boolean {
@@ -289,7 +315,7 @@ export class RabbitConsumer implements OnApplicationBootstrap, OnApplicationShut
     if (channel === null) {
       return false;
     }
-    return channel.sendToQueue(`${registration.queue}.retry`, message.content, {
+    return channel.sendToQueue(`${consumer.queue}.retry`, message.content, {
       persistent: true,
       headers: { ...message.properties.headers, 'x-retry-count': count },
       contentType: message.properties.contentType,
@@ -297,14 +323,14 @@ export class RabbitConsumer implements OnApplicationBootstrap, OnApplicationShut
   }
 
   private sendToDlq(
-    registration: EventHandlerRegistration,
+    consumer: ConsumerQueue,
     message: AmqpConsumeMessage,
   ): boolean {
     const channel = this.channel;
     if (channel === null) {
       return false;
     }
-    return channel.sendToQueue(`${registration.queue}.dlq`, message.content, {
+    return channel.sendToQueue(`${consumer.queue}.dlq`, message.content, {
       persistent: true,
       headers: message.properties.headers,
       contentType: message.properties.contentType,

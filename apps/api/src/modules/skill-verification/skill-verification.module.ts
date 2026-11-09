@@ -124,22 +124,20 @@ export class SkillVerificationRegistrar implements OnModuleInit {
     );
     // FR-003 / ADR-024: keep a local projection of student verification status so
     // evidence submission can require a verified student without a cross-schema read.
-    for (const eventType of [
-      'student.verification.submitted',
-      'student.verification.approved',
-      'student.verification.rejected',
-      'student.verification.revoked',
-    ]) {
-      this.handlers.register({
-        moduleName: MODULE_NAME,
-        eventType,
-        queue: `skill-verification.${eventType.replace(/\./g, '-')}`,
-        handler: async (message: BusMessage): Promise<void> => {
-          const event = studentVerificationEventSchema.parse(message.payload);
-          await this.projector.upsert(event);
-        },
-      });
-    }
+    // ADR-013 Amendment B: one queue per module, four routing keys on it.
+    this.handlers.register({
+      moduleName: MODULE_NAME,
+      eventTypes: [
+        'student.verification.submitted',
+        'student.verification.approved',
+        'student.verification.rejected',
+        'student.verification.revoked',
+      ],
+      handler: async (message: BusMessage): Promise<void> => {
+        const event = studentVerificationEventSchema.parse(message.payload);
+        await this.projector.upsert(event);
+      },
+    });
   }
 }
 

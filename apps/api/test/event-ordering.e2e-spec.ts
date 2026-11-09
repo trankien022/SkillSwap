@@ -20,7 +20,10 @@ jest.setTimeout(180_000);
  * their *publish* order — so a pure timestamp check would let the stale one win.
  */
 
-const APPROVED_QUEUE = 'live-class.student-verification-approved';
+// ADR-013 Amendment B: one queue per module, so every live-class consumer below shares this
+// consumer id in `processed_events`. The watermarks stay independent because they are keyed by
+// aggregate as well as consumer.
+const LIVE_CLASS_QUEUE = 'live-class';
 
 let counter = 0;
 
@@ -146,7 +149,6 @@ describe('E2E: an out-of-order delivery converges on the newest sequence (W2 C1)
   it('applies the newest state even when the older event arrives last', async () => {
     const account = accountId();
     const base = Date.now();
-    const rejectedQueue = 'live-class.student-verification-rejected';
 
     const payload = (
       status: 'pending' | 'approved' | 'rejected' | 'revoked',
@@ -202,7 +204,7 @@ describe('E2E: an out-of-order delivery converges on the newest sequence (W2 C1)
       const store = harness.resolve<PostgresProcessedEventStore>(PostgresProcessedEventStore);
       await store.runOnce(
         'live-class',
-        rejectedQueue,
+        LIVE_CLASS_QUEUE,
         delivery.id,
         () =>
           project.onVerification({
@@ -221,7 +223,7 @@ describe('E2E: an out-of-order delivery converges on the newest sequence (W2 C1)
 
     // The stale approval was applied last and must not have won.
     expect(await verifiedOf(account)).toBe(false);
-    expect(await watermarkOf(rejectedQueue, account)).toBe(2);
+    expect(await watermarkOf(LIVE_CLASS_QUEUE, account)).toBe(2);
   });
 
   it('lets a genuinely newer change through, so the guard is not a wall', async () => {
@@ -235,7 +237,7 @@ describe('E2E: an out-of-order delivery converges on the newest sequence (W2 C1)
       new Date(now - 2_000),
     );
     await waitForPublished(first);
-    await waitForProcessed(APPROVED_QUEUE, first);
+    await waitForProcessed(LIVE_CLASS_QUEUE, first);
     expect(await verifiedOf(account)).toBe(true);
 
     const second = await seedOutboxRow(
@@ -245,10 +247,10 @@ describe('E2E: an out-of-order delivery converges on the newest sequence (W2 C1)
       new Date(now),
     );
     await waitForPublished(second);
-    await waitForProcessed('live-class.student-verification-revoked', second);
+    await waitForProcessed(LIVE_CLASS_QUEUE, second);
 
     expect(await verifiedOf(account)).toBe(false);
-    expect(await watermarkOf('live-class.student-verification-revoked', account)).toBe(1);
+    expect(await watermarkOf(LIVE_CLASS_QUEUE, account)).toBe(1);
   });
 
   it('still applies an unstamped event to an aggregate it has never seen', async () => {
@@ -265,11 +267,11 @@ describe('E2E: an out-of-order delivery converges on the newest sequence (W2 C1)
     );
 
     await waitForPublished(legacy);
-    await waitForProcessed(APPROVED_QUEUE, legacy);
+    await waitForProcessed(LIVE_CLASS_QUEUE, legacy);
 
     expect(await verifiedOf(account)).toBe(true);
     // No watermark, because an unstamped event states no position.
-    expect(await watermarkOf(APPROVED_QUEUE, account)).toBeUndefined();
+    expect(await watermarkOf(LIVE_CLASS_QUEUE, account)).toBeUndefined();
   });
 
   it('keeps sequences independent per aggregate', async () => {
@@ -308,11 +310,11 @@ describe('E2E: an out-of-order delivery converges on the newest sequence (W2 C1)
 
     await waitForPublished(forAccount);
     await waitForPublished(forClass);
-    await waitForProcessed(APPROVED_QUEUE, forAccount);
-    await waitForProcessed('live-class.skill-evidence-approved', forClass);
+    await waitForProcessed(LIVE_CLASS_QUEUE, forAccount);
+    await waitForProcessed(LIVE_CLASS_QUEUE, forClass);
 
-    expect(await watermarkOf(APPROVED_QUEUE, account)).toBe(0);
-    expect(await watermarkOf('live-class.skill-evidence-approved', otherAccount)).toBe(0);
+    expect(await watermarkOf(LIVE_CLASS_QUEUE, account)).toBe(0);
+    expect(await watermarkOf(LIVE_CLASS_QUEUE, otherAccount)).toBe(0);
     // And the second aggregate's event was actually applied, not merely recorded.
     const approval = await harness.query<{ approved_level: string }>(
       'live-class',
@@ -332,7 +334,7 @@ describe('E2E: an out-of-order delivery converges on the newest sequence (W2 C1)
 
     await store.runOnce(
       'live-class',
-      'live-class.test-no-aggregate',
+      LIVE_CLASS_QUEUE,
       'event-without-an-aggregate',
       async () => {
         handled += 1;
@@ -341,10 +343,14 @@ describe('E2E: an out-of-order delivery converges on the newest sequence (W2 C1)
     );
 
     expect(handled).toBe(1);
+    // The guard writes a watermark only when it can place the event inside an aggregate. This
+    // delivery has none, so nothing may be recorded — and the query must be scoped to *this*
+    // delivery, because `live-class` is now the shared consumer id for the whole module
+    // (ADR-013 Amendment B) and the other cases legitimately write their own watermarks.
     const rows = await harness.query<{ id: string }>(
       'live-class',
-      `SELECT "id" FROM processed_events WHERE "id" LIKE $1`,
-      ['live-class.test-no-aggregate:seq:%'],
+      `SELECT "id" FROM processed_events WHERE "id" = $1`,
+      ['live-class:seq:event-without-an-aggregate'],
     );
     expect(rows).toEqual([]);
   });
