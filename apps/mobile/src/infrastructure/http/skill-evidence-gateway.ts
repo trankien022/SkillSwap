@@ -1,3 +1,5 @@
+import { evidenceDocumentUploadRequestSchema, evidenceDocumentUploadTargetSchema, documentDownloadTargetSchema, type EvidenceDocumentUploadRequestInput } from '@skillswap/contracts';
+import { uploadSignedDocument } from './signed-document-upload';
 import {
   profileSkillListSchema,
   skillEvidenceHistorySchema,
@@ -17,7 +19,7 @@ import { GatewayClient } from './gateway-client';
  * - Uses @skillswap/contracts schemas for validation and serialization.
  * - Routes all calls strictly through GatewayClient.authenticatedRequest (sole auth/GET-retry owner).
  * - Never auto-replays POST commands on 401.
- * - Does not invent file upload endpoints for skills; utilizes optional documentRef and description fields.
+ * - Uses the B9 upload/read endpoints and the signed Cloudinary multipart contract.
  * - Rejects empty evidence IDs locally and URI-encodes URL path parameters.
  * - Enforces static 4-level skill hierarchy from contracts (beginner, intermediate, advanced, expert).
  * - Preserves server-authoritative evidence statuses and decision histories without premature client approval.
@@ -25,6 +27,20 @@ import { GatewayClient } from './gateway-client';
  */
 export class SkillEvidenceGateway {
   constructor(private readonly gatewayClient: GatewayClient) {}
+
+  async uploadCertificate(input: EvidenceDocumentUploadRequestInput, bytes: Uint8Array | ArrayBuffer) {
+    const target = evidenceDocumentUploadTargetSchema.parse(await this.gatewayClient.authenticatedRequest<unknown>(
+      '/skill-evidence/documents', { method: 'POST', body: evidenceDocumentUploadRequestSchema.parse(input) },
+    ));
+    await uploadSignedDocument(target, bytes, { contentType: input.contentType, expectedSizeBytes: input.sizeBytes });
+    return target.objectKey;
+  }
+
+  async readDocument(id: string) {
+    return documentDownloadTargetSchema.parse(await this.gatewayClient.authenticatedRequest<unknown>(
+      `/skill-evidence/${encodeURIComponent(id)}/document`, { method: 'GET' },
+    ));
+  }
 
   /**
    * Submits skill evidence for a known skill at a requested level (POST /skill-evidence).

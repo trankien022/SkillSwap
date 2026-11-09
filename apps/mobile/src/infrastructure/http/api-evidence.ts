@@ -2,7 +2,7 @@ const routes = [
   /^\/auth\/(register|login|refresh|logout|me)$/,
   /^\/student-verifications(?:\/(documents|me))?$/,
   /^\/skills$/,
-  /^\/skill-evidence$/,
+  /^\/skill-evidence(?:\/documents)?$/,
   /^\/profile-skills\/me$/,
   /^\/wallet\/(balance|history|top-ups)$/,
   /^\/notifications$/,
@@ -36,6 +36,7 @@ export function evidenceRoute(url: string): string | null {
   if (/^\/classes\/[^/]+\/(cancel|start)$/.test(path)) return `/api${path}`;
   if (/^\/classes\/[^/]+\/bookings$/.test(path)) return '/api/classes/:id/bookings';
   if (/^\/classes\/[^/]+$/.test(path)) return '/api/classes/:id';
+  if (/^\/skill-evidence\/[^/]+\/document$/.test(path)) return '/api/skill-evidence/:id/document';
   if (/^\/skill-evidence\/[^/]+\/history$/.test(path)) return '/api/skill-evidence/:id/history';
   if (/^\/skill-evidence\/[^/]+\/(claim|decision)$/.test(path)) return `/api${path}`;
   if (/^\/notification-devices\/[^/]+$/.test(path)) return '/api/notification-devices/:id';

@@ -1,3 +1,5 @@
+import { Linking } from 'react-native';
+import { SkillEvidenceGateway } from '@/infrastructure/http/skill-evidence-gateway';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -66,6 +68,11 @@ export function VerifierQueueView() {
     return new VerifierGateway(gatewayClient);
   }, [gatewayClient]);
 
+  const openDocument = async (id: string) => {
+    if (!gatewayClient || user?.role !== 'verifier') return;
+    try { const target = await new SkillEvidenceGateway(gatewayClient).readDocument(id); await Linking.openURL(target.downloadUrl); }
+    catch { setErrorMessage(t('Skills.documentError')); }
+  };
   const loadQueue = useCallback(
     async (refresh = false) => {
       if (!gateway) return;
@@ -340,6 +347,7 @@ export function VerifierQueueView() {
                     <Text style={styles.metaLabel} numberOfLines={1}>
                       {item.documentRef}
                     </Text>
+                    <AppButton tone="quiet" onPress={() => void openDocument(item.id)} label={t('Skills.openDocument')} />
                   </View>
                 ) : null}
               </View>

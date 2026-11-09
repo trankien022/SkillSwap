@@ -6,6 +6,7 @@ import { ClassReadGateway } from '@/infrastructure/http/class-read-gateway';
 import { TeachingGateway } from '@/infrastructure/http/teaching-gateway';
 import { colors, radius, spacing, typography } from '@/design/tokens';
 import { useSession } from '@/ui/session-context';
+import { DateTimeField } from '@/ui/date-time-field';
 import { AppButton, FeedbackBanner, ScreenScroll, SurfaceCard } from '@/ui/primitives';
 
 export default function TeachingScreen() {
@@ -16,7 +17,7 @@ export default function TeachingScreen() {
   const [skillId, setSkillId] = useState('');
   const [classTitle, setClassTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [startsAt, setStartsAt] = useState(() => new Date(Date.now() + 48 * 3600000).toISOString());
+  const [startsAt, setStartsAt] = useState(() => new Date(Date.now() + 48 * 3600000));
   const [price, setPrice] = useState('10');
   const [capacity, setCapacity] = useState('1');
   const [duration, setDuration] = useState('60');
@@ -63,7 +64,7 @@ export default function TeachingScreen() {
         skillIds: [skillId],
         title: classTitle.trim(),
         description: description.trim(),
-        startsAt,
+        startsAt: startsAt.toISOString(),
         durationMinutes: Number(duration),
         priceCredits: Number(price),
         capacity: Number(capacity),
@@ -112,13 +113,8 @@ export default function TeachingScreen() {
               style={styles.input}
               accessibilityLabel={t('Teaching.description')}
             />
-            <TextInput
-              value={startsAt}
-              onChangeText={setStartsAt}
-              placeholder={t('Teaching.startsAt')}
-              style={styles.input}
-              accessibilityLabel={t('Teaching.startsAt')}
-            />
+            <Text style={styles.body}>{t('Teaching.startsAt')}</Text>
+            <DateTimeField value={startsAt} minDate={new Date(Date.now() + 24 * 3600000)} locale={locale === 'vi' ? 'vi-VN' : 'en-US'} dateLabel={t('Teaching.pickDate')} timeLabel={t('Teaching.pickTime')} helper={t('Teaching.earliestStart', { when: new Date(Date.now() + 24 * 3600000).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US') })} onChange={setStartsAt} />
             <View style={styles.row}>
               {[
                 [duration, setDuration, t('Teaching.duration')],

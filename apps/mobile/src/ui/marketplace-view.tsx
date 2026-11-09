@@ -5,6 +5,7 @@ import type { ClassListItemView, SkillCatalogueItemView } from '@skillswap/contr
 import { colors, radius, spacing, typography } from '@/design/tokens';
 import { ClassReadGateway } from '@/infrastructure/http/class-read-gateway';
 import { MarketplaceCard } from './marketplace-card';
+import { filterMarketplaceItems } from './marketplace-filters';
 import { useSession } from './session-context';
 
 export function MarketplaceView() {
@@ -15,6 +16,15 @@ export function MarketplaceView() {
   const [keywordInput, setKeywordInput] = useState('');
   const [activeKeyword, setActiveKeyword] = useState('');
   const [selectedSkillId, setSelectedSkillId] = useState<string | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [draftStartDate, setDraftStartDate] = useState('');
+  const [draftEndDate, setDraftEndDate] = useState('');
+  const [format, setFormat] = useState<'all' | 'one-on-one' | 'group'>('all');
+  const [verified, setVerified] = useState<'all' | 'yes' | 'no'>('all');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [minRating, setMinRating] = useState('');
 
   const [classes, setClasses] = useState<ClassListItemView[]>([]);
   const [skillsList, setSkillsList] = useState<SkillCatalogueItemView[]>([]);
@@ -96,7 +106,7 @@ export function MarketplaceView() {
   useEffect(() => { void fetchSkills(); }, [fetchSkills]);
 
   const queryClasses = useCallback(
-    async (keyword: string, skillId: string | null, isRefresh = false) => {
+    async (keyword: string, skillId: string | null, isRefresh = false, from = startDate, to = endDate) => {
       if (!gatewayClient) {
         setIsLoadingInitial(false);
         return;
@@ -114,7 +124,7 @@ export function MarketplaceView() {
       try {
         const page = await new ClassReadGateway(gatewayClient).getClassesPage({
           keyword: keyword.trim() || undefined,
-          skillId: skillId || undefined,
+          skillId: skillId || undefined, startDate: from || undefined, endDate: to || undefined,
           limit: 20,
         });
 
@@ -132,10 +142,10 @@ export function MarketplaceView() {
         }
       }
     },
-    [gatewayClient, t, ownerId],
+    [gatewayClient, t, ownerId, startDate, endDate],
   );
 
-  useEffect(() => { void queryClasses(activeKeyword, selectedSkillId); }, [queryClasses, activeKeyword, selectedSkillId]);
+  useEffect(() => { void queryClasses(activeKeyword, selectedSkillId); }, [queryClasses, activeKeyword, selectedSkillId, startDate, endDate]);
 
   const handleSearchSubmit = () => {
     const trimmed = keywordInput.trim();
@@ -152,7 +162,7 @@ export function MarketplaceView() {
     try {
       const page = await new ClassReadGateway(gatewayClient).getClassesPage({
         keyword: activeKeyword.trim() || undefined,
-        skillId: selectedSkillId || undefined,
+        skillId: selectedSkillId || undefined, startDate: startDate || undefined, endDate: endDate || undefined,
         cursor: nextCursor,
         limit: 20,
       });
@@ -177,12 +187,14 @@ export function MarketplaceView() {
   };
 
   const selectedSkillName = selectedSkillId ? skillMap.get(selectedSkillId) ?? t('Marketplace.skillPending') : t('Marketplace.filterSkillAll');
-  const hasActiveFilters = Boolean(activeKeyword || selectedSkillId);
+  const visibleClasses = useMemo(() => filterMarketplaceItems(classes, { format, verified, maxPrice, minRating }), [classes, format, verified, maxPrice, minRating]);
+  const clientFilterCount = Number(format !== 'all') + Number(verified !== 'all') + Number(Boolean(maxPrice)) + Number(Boolean(minRating));
+  const hasActiveFilters = Boolean(activeKeyword || selectedSkillId || startDate || endDate || clientFilterCount);
 
   return (
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <FlatList
-        data={classes}
+        data={visibleClasses}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <MarketplaceCard item={item} skillMap={skillMap} onPress={(id) => router.push(`/classes/${id}`)} />}
         contentContainerStyle={styles.listContainer}
@@ -218,13 +230,16 @@ export function MarketplaceView() {
               <Pressable style={styles.filterBtn} onPress={() => setIsSkillModalOpen(true)} accessibilityRole="button" accessibilityLabel={selectedSkillName}>
                 <Text style={styles.filterBtnText} numberOfLines={1}>{selectedSkillName}</Text>
               </Pressable>
+              <Pressable style={styles.filterBtn} onPress={() => { setDraftStartDate(startDate); setDraftEndDate(endDate); setFilterOpen(true); }} accessibilityRole="button" accessibilityLabel={t('Marketplace.filtersCount', { count: clientFilterCount + Number(Boolean(startDate)) + Number(Boolean(endDate)) })}>
+                <Text style={styles.filterBtnText}>{t('Marketplace.filtersCount', { count: clientFilterCount + Number(Boolean(startDate)) + Number(Boolean(endDate)) })}</Text>
+              </Pressable>
               {hasActiveFilters && (
                 <Pressable
                   style={styles.clearBtn}
                   onPress={() => {
                     setKeywordInput('');
                     setActiveKeyword('');
-                    setSelectedSkillId(null);
+                    setSelectedSkillId(null); setStartDate(''); setEndDate(''); setFormat('all'); setVerified('all'); setMaxPrice(''); setMinRating('');
                   }}
                   accessibilityRole="button"
                   accessibilityLabel={t('Marketplace.clearFilters')}
@@ -264,6 +279,20 @@ export function MarketplaceView() {
           ) : null
         }
       />
+      <Modal visible={filterOpen} transparent animationType="slide" onRequestClose={() => setFilterOpen(false)}>
+        <View style={styles.modalOverlay}><View style={styles.modalCard}>
+          <View style={styles.modalHeader}><Text style={styles.modalTitle}>{t('Marketplace.filterTitle')}</Text><Pressable style={styles.modalCloseBtn} onPress={() => setFilterOpen(false)}><Text style={styles.modalCloseText}>{t('Marketplace.closeFilter')}</Text></Pressable></View>
+          <Text style={styles.statusText}>{t('Marketplace.filterScope')}</Text>
+          <TextInput style={styles.searchInput} value={draftStartDate} onChangeText={setDraftStartDate} placeholder={t('Marketplace.startDate')} accessibilityLabel={t('Marketplace.startDate')} />
+          <TextInput style={styles.searchInput} value={draftEndDate} onChangeText={setDraftEndDate} placeholder={t('Marketplace.endDate')} accessibilityLabel={t('Marketplace.endDate')} />
+          <TextInput style={styles.searchInput} value={maxPrice} onChangeText={setMaxPrice} keyboardType="number-pad" placeholder={t('Marketplace.maxPrice')} accessibilityLabel={t('Marketplace.maxPrice')} />
+          <TextInput style={styles.searchInput} value={minRating} onChangeText={setMinRating} keyboardType="decimal-pad" placeholder={t('Marketplace.minRating')} accessibilityLabel={t('Marketplace.minRating')} />
+          <View style={styles.filterRow}>{(['all','one-on-one','group'] as const).map((value) => <Pressable key={value} style={[styles.filterBtn, format === value && styles.skillItemSelected]} onPress={() => setFormat(value)}><Text style={styles.filterBtnText}>{t(`Marketplace.format_${value}`)}</Text></Pressable>)}</View>
+          <View style={styles.filterRow}>{(['all','yes','no'] as const).map((value) => <Pressable key={value} style={[styles.filterBtn, verified === value && styles.skillItemSelected]} onPress={() => setVerified(value)}><Text style={styles.filterBtnText}>{t(`Marketplace.verified_${value}`)}</Text></Pressable>)}</View>
+          <Text style={styles.statusText}>{t('Marketplace.filterDisclaimer')}</Text>
+          <Pressable style={styles.searchBtn} onPress={() => { setStartDate(draftStartDate.trim()); setEndDate(draftEndDate.trim()); setFilterOpen(false); }}><Text style={styles.searchBtnText}>{t('Marketplace.applyFilters')}</Text></Pressable>
+        </View></View>
+      </Modal>
       <Modal visible={isSkillModalOpen} transparent animationType="slide" onRequestClose={() => setIsSkillModalOpen(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
