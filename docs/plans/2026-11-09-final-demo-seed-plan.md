@@ -130,10 +130,17 @@ Each phase is one commit, independently runnable.
     ledger_entries → top_up_intents → wallets →
     skill_evidence_audit → profile_skills → verifier_expertise → verifiers →
     verified_students → inbox_notifications → notification_devices →
-    account_verification_status → sessions → accounts →
-    admin_audit_event (by `source_event_id LIKE 'demo-seed-%')`.
+    account_verification_status → sessions → accounts`.
     (`push_deliveries` cascades from `inbox_notifications`; `skill_evidence` cascades from
     `profile_skills`; `class_reminders`/`class_skills` cascade from `classes`.)
+  - **`admin_audit_event` is never deleted.** `1791072000001-CreateAdminAuditEvent` runs
+    `REVOKE UPDATE, DELETE … FROM "skillswap_admin_operation"`, and PostgreSQL honours an explicit
+    ACL against the table's own owner — verified live: the delete fails with `42501`. Demo audit
+    rows are therefore written `ON CONFLICT ("source_event_id") DO NOTHING`, the same
+    deduplication the production consumer relies on, and the store is append-only in fact rather
+    than only in intent.
+  - `skills` is **not** deleted either: the catalogue is shared with real data, and the old
+    unconditional delete would have removed every skill and every profile reference to one.
   - Target guard: print `DATABASE_HOST`; refuse non-local without `--allow-remote`.
   - `--check` (read-only): report target, row counts per table, and any demo balance that does
     not reconcile. Safe to run against Neon.
@@ -217,7 +224,7 @@ claimed counts by domain; `/admin/verifiers` shows one suspended.
   `skill.verifier.suspended`, `wallet.transaction.completed`, `account.status.changed`),
   `actor_id` = who acted (ADR-035), `target_type`/`target_id` per the mapping, `old_state` →
   `new_state` jsonb, backdated `occurred_at`, `source_event_id` `demo-seed-…` (unique index).
-  Note: the module role owns the table, so the `REVOKE` in the migration does not block this.
+  is no-op when the row exists — the seed must not depend on clearing an append-only table.
 - **No `outbox_messages`, no `push_deliveries`** (§1 decision 6). Devices are seeded
   `is_active=false` so a later real notification does not push to a fake token.
 

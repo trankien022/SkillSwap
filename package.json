@@ -27,6 +27,7 @@
     "db:bootstrap": "pnpm build && node scripts/bootstrap-managed-db.mjs",
     "db:seed-verifier": "pnpm build && node scripts/seed-verifiers.mjs",
     "db:demo": "node scripts/db-demo.mjs",
+    "db:seed-demo": "pnpm build && node scripts/seed-demo.mjs",
     "docs:api": "pnpm build && node scripts/gen-api-docs.cjs",
     "keys:gen": "node scripts/generate-dev-keys.mjs",
     "queue:purge-legacy": "node scripts/purge-legacy-queues.mjs"
