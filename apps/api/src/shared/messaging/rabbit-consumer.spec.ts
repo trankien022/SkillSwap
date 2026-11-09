@@ -24,15 +24,43 @@ function makeLogger(): AppLogger {
   return logger;
 }
 
+interface FakeChannel {
+  prefetch: jest.Mock;
+  assertExchange: jest.Mock;
+  assertQueue: jest.Mock;
+  bindQueue: jest.Mock;
+  consume: jest.Mock;
+  close: jest.Mock;
+  ack: jest.Mock;
+  nack: jest.Mock;
+  sendToQueue: jest.Mock;
+}
+
 interface FakeConnection {
   close: jest.Mock<Promise<void>, []>;
   on: jest.Mock;
   createChannel: jest.Mock;
   emitClose: () => void;
+  channel: FakeChannel;
+}
+
+function makeChannel(): FakeChannel {
+  return {
+    prefetch: jest.fn(async () => undefined),
+    assertExchange: jest.fn(async () => undefined),
+    assertQueue: jest.fn(async () => undefined),
+    bindQueue: jest.fn(async () => undefined),
+    consume: jest.fn(async () => undefined),
+    close: jest.fn(async () => undefined),
+    ack: jest.fn(),
+    nack: jest.fn(),
+    sendToQueue: jest.fn(() => true),
+  };
 }
 
 function makeConnection(): FakeConnection {
   const listeners: Record<string, Array<() => void>> = {};
+  const channel = makeChannel();
   const connection: FakeConnection = {
     close: jest.fn(async () => {
       // amqplib emits 'close' after the socket is torn down; the consumer must not
@@ -43,33 +71,35 @@ function makeConnection(): FakeConnection {
       (listeners[event] ??= []).push(fn);
       return connection;
     }),
-    createChannel: jest.fn(async () => ({
-      prefetch: jest.fn(async () => undefined),
-      assertExchange: jest.fn(async () => undefined),
-      assertQueue: jest.fn(async () => undefined),
-      bindQueue: jest.fn(async () => undefined),
-      consume: jest.fn(async () => undefined),
-      close: jest.fn(async () => undefined),
-      ack: jest.fn(),
-      nack: jest.fn(),
-      sendToQueue: jest.fn(() => true),
-    })),
+    createChannel: jest.fn(async () => channel),
     emitClose: () => (listeners.close ?? []).forEach((fn) => fn()),
+    channel,
   };
   return connection;
 }
 
-function makeConsumer(): RabbitConsumer {
+/** A registry with `queueCount` modules, each bound to two routing keys. */
+function makeRegistry(queueCount: number): EventHandlerRegistry {
+  const queues = Array.from({ length: queueCount }, (_unused, index) => {
+    const moduleName = `module-${index}`;
+    return {
+      moduleName,
+      queue: moduleName,
+      eventTypes: [`${moduleName}.first`, `${moduleName}.second`],
+    };
+  });
+  return {
+    isEmpty: () => false,
+    queues: () => queues,
+    handlersFor: () => [async () => undefined],
+  } as unknown as EventHandlerRegistry;
+}
+
+function makeConsumer(handlerCount = 1): RabbitConsumer {
   const config = { rabbitmqUrl: 'amqp://localhost', maxDeliveryAttempts: 5 } as unknown as ApiConfig;
   const registry = { ready: Promise.resolve(), names: () => [] } as unknown as ModuleDataSourceRegistry;
-  const handlers = {
-    isEmpty: () => false,
-    list: () => [
-      { moduleName: 'schedule', eventType: 'evt', queue: 'q', handler: async () => undefined },
-    ],
-  } as unknown as EventHandlerRegistry;
-  const store = {} as PostgresProcessedEventStore;
-  return new RabbitConsumer(config, registry, handlers, store, makeLogger());
+  const store = { runOnce: jest.fn(async () => undefined) } as unknown as PostgresProcessedEventStore;
+  return new RabbitConsumer(config, registry, makeRegistry(handlerCount), store, makeLogger());
 }
 
 async function flush(): Promise<void> {
@@ -126,5 +156,67 @@ describe('RabbitConsumer shutdown race', () => {
 
     const { connect } = jest.requireMock('amqplib') as { connect: jest.Mock };
     expect(connect).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('RabbitConsumer topology (ADR-013 Amendment B)', () => {
+  /** Boots a consumer against a fake broker and returns the channel it set up. */
+  async function boot(handlerCount: number): Promise<FakeChannel> {
+    const consumer = makeConsumer(handlerCount);
+    consumer.onApplicationBootstrap();
+    await flush();
+    const connection = makeConnection();
+    resolveConnect(connection);
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    await consumer.onApplicationShutdown();
+    return connection.channel;
+  }
+
+  it('declares three queues per module, not per handler', async () => {
+    const channel = await boot(5);
+
+    // 5 modules × (main + retry + dlq).
+    expect(channel.assertQueue).toHaveBeenCalledTimes(15);
+    const declared = channel.assertQueue.mock.calls.map((call) => call[0] as string);
+    expect(declared).toEqual(
+      expect.arrayContaining([
+        'module-0',
+        'module-0.retry',
+        'module-0.dlq',
+        'module-4',
+        'module-4.retry',
+        'module-4.dlq',
+      ]),
+    );
+  });
+
+  it('binds every routing key of a module to its one queue', async () => {
+    const channel = await boot(2);
+
+    const bindings = channel.bindQueue.mock.calls.map((call) => [call[0], call[2]]);
+    expect(bindings).toEqual([
+      ['module-0', 'module-0.first'],
+      ['module-0', 'module-0.second'],
+      ['module-1', 'module-1.first'],
+      ['module-1', 'module-1.second'],
+    ]);
+  });
+
+  it('consumes one queue per module', async () => {
+    const channel = await boot(3);
+    expect(channel.consume).toHaveBeenCalledTimes(3);
+  });
+
+  it('dead-letters a retried event back to its own module queue', async () => {
+    const channel = await boot(1);
+    const retry = channel.assertQueue.mock.calls.find(
+      (call) => call[0] === 'module-0.retry',
+    );
+    expect(retry?.[1]).toMatchObject({
+      arguments: {
+        'x-dead-letter-exchange': '',
+        'x-dead-letter-routing-key': 'module-0',
+      },
+    });
   });
 });

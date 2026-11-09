@@ -75,22 +75,21 @@ export class AdminOperationRegistrar implements OnModuleInit {
     // FR-015 / ADR-034: one consumer per audited event. The use case is created here rather than
     // injected so the module has a single wiring point for the mapping and its repository.
     const useCase = new RecordAdminAuditEventUseCase(this.audit);
-    for (const eventType of AUDITED_EVENT_TYPE_LIST) {
-      this.handlers.register({
-        moduleName: MODULE_NAME,
-        eventType,
-        queue: `admin-operation.audit-${eventType.replace(/\./g, '-')}`,
-        handler: async (message: BusMessage): Promise<void> => {
-          // The registrar is allowed to know the shared message shape; the use case takes a
-          // structural subset so `application/` stays free of `shared` (ADR-009).
-          await useCase.execute({
-            id: message.id,
-            eventType: message.eventType,
-            payload: message.payload,
-          });
-        },
-      });
-    }
+    // ADR-013 Amendment B: one queue per module. The audit mapping already switches on the event
+    // type, so many routing keys on one subscription is the shape the handler wanted.
+    this.handlers.register({
+      moduleName: MODULE_NAME,
+      eventTypes: AUDITED_EVENT_TYPE_LIST,
+      handler: async (message: BusMessage): Promise<void> => {
+        // The registrar is allowed to know the shared message shape; the use case takes a
+        // structural subset so `application/` stays free of `shared` (ADR-009).
+        await useCase.execute({
+          id: message.id,
+          eventType: message.eventType,
+          payload: message.payload,
+        });
+      },
+    });
   }
 }
 
