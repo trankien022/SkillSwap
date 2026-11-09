@@ -1,6 +1,7 @@
 import {
   evidenceDocumentUploadRequestSchema,
   evidenceDocumentUploadTargetSchema,
+  documentDownloadTargetSchema,
   profileSkillListSchema,
   skillEvidenceHistorySchema,
   skillEvidenceViewSchema,
@@ -98,6 +99,14 @@ export class SkillEvidenceGateway {
       documentRef: target.objectKey,
       ...(input.description ? { description: input.description } : {}),
     });
+  }
+
+  async readDocument(evidenceId: string) {
+    if (!evidenceId.trim()) throw new Error('Evidence ID cannot be empty');
+    return documentDownloadTargetSchema.parse(await this.gatewayClient.authenticatedRequest<unknown>(
+      `/skill-evidence/${encodeURIComponent(evidenceId.trim())}/document`,
+      { method: 'GET' },
+    ));
   }
   /**
    * Submits skill evidence for a known skill at a requested level (POST /skill-evidence).

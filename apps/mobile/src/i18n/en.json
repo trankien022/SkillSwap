@@ -119,6 +119,12 @@
     "reference": "Ref: {ref}"
   },
   "Profile": {
+    "displayName": "Display name",
+    "saveName": "Save name",
+    "nameRequired": "Enter a display name.",
+    "nameTooLong": "Display name must be 120 characters or fewer.",
+    "nameUpdated": "Display name updated.",
+    "nameUpdateError": "Could not update display name. Please try again.",
     "title": "My Profile",
     "accountDetails": "Account Information",
     "learningAndTeaching": "Learning and teaching",
@@ -151,6 +157,10 @@
     "submitError": "Verification submission failed. Check your connection and retry."
   },
   "Skills": {
+    "pickerError": "Could not open the file picker.",
+    "documentRef": "Document reference",
+    "openDocument": "Open certificate",
+    "documentError": "Could not open this certificate.",
     "title": "My skills",
     "approved": "Approved skills",
     "noneApproved": "No approved skills yet.",
@@ -174,13 +184,13 @@
     "startsAtEmpty": "Enter the class start time.",
     "startsAtInvalid": "Enter the start time as an ISO 8601 date with a timezone, for example 2026-12-01T19:00:00+07:00.",
     "startsAtPast": "The start time must be in the future.",
-    "title": "Teaching", "createTitle": "Create a class", "detailTitle": "Class details", "classTitle": "Class title", "description": "Class description", "startsAt": "Start time (ISO 8601)", "duration": "Minutes", "price": "Credits", "capacity": "Seats", "publish": "Publish class", "myClasses": "Classes I created", "empty": "You have no classes yet.", "openDetail": "View details", "save": "Save changes", "cancel": "Cancel class", "cancelTitle": "Confirm cancellation", "cancelConfirm": "Are you sure you want to cancel this class?", "invalidForm": "Check the description, time, price, and seat count.", "notFound": "Class was not found in your teaching list.", "start": "Start", "complete": "Complete", "loadError": "Could not load class data.", "actionError": "Action failed. The server may have locked editing; reload the class to check its state.", "state": { "draft": "Draft", "published": "Open", "full": "Full", "in_progress": "In progress", "completed": "Completed", "cancelled": "Cancelled" }
+    "title": "Teaching", "createTitle": "Create a class", "detailTitle": "Class details", "classTitle": "Class title", "description": "Class description", "startsAt": "Start time", "pickDate": "Choose date", "pickTime": "Choose time", "earliestStart": "Earliest class time: {when} (at least 24 hours from now).", "dateTooSoon": "Choose a class time at least 24 hours from now.", "duration": "Minutes", "price": "Credits", "capacity": "Seats", "publish": "Publish class", "myClasses": "Classes I created", "empty": "You have no classes yet.", "openDetail": "View details", "save": "Save changes", "cancel": "Cancel class", "cancelTitle": "Confirm cancellation", "cancelConfirm": "Are you sure you want to cancel this class?", "invalidForm": "Check the description, time, price, and seat count.", "notFound": "Class was not found in your teaching list.", "start": "Start", "loadError": "Could not load class data.", "actionError": "Action failed. The server may have locked editing; reload the class to check its state.", "state": { "draft": "Draft", "published": "Open", "full": "Full", "in_progress": "In progress", "completed": "Completed", "cancelled": "Cancelled" }
   },
   "Notifications": {
+    "read": "Read",
+    "unreadItem": "Unread",
     "title":"Notifications", "unread":"{count} unread notifications", "enablePush":"Enable push notifications on this device", "disablePush":"Disable push notifications on this device", "empty":"No notifications yet.", "loadMore":"Load more", "loadError":"Could not load your inbox.", "pushError":"Could not register this device. Check notification permission and retry.",
-    "markAllRead":"Mark all as read", "markReadError":"Could not mark the notification as read. Try again later.", "markAllReadError":"Could not mark all notifications as read. Try again.",
-    "type_verification_outcome":"Verification update", "type_booking_confirmed":"Booking confirmed", "type_booking_cancelled":"Class cancelled", "type_class_starting_soon":"Class starting soon", "type_wallet_transaction":"Wallet transaction completed", "type_withdrawal_outcome":"Withdrawal update",
-    "body_verification_outcome":"Your student verification status changed.", "body_booking_confirmed":"Your booking was paid and confirmed.", "body_booking_cancelled":"The booking was cancelled; check your wallet balance.", "body_class_starting_soon":"The class is starting soon. Open your schedule to join.", "body_wallet_transaction":"Your wallet balance changed.", "body_withdrawal_outcome":"Your withdrawal request status changed."
+    "markAllRead":"Mark all as read", "markReadError":"Could not mark the notification as read. Try again later.", "markAllReadError":"Could not mark all notifications as read. Try again."
   },
   "Verifier": {
     "title": "Moderation Queue",
@@ -238,6 +248,24 @@
     "searchPlaceholder": "Search by keyword…",
     "searchButton": "Search",
     "filterSkillAll": "All skills",
+    "filtersCount": "Filters ({count})",
+    "filterTitle": "Class filters",
+    "filterScope": "Filter by date, price, rating, and class format",
+    "startDate": "From date (ISO 8601 with timezone)",
+    "endDate": "To date (ISO 8601 with timezone)",
+    "school": "School name",
+    "maxPrice": "Maximum price (credits)",
+    "minRating": "Minimum rating (0–5)",
+    "category_all": "All categories",
+    "format_all": "Any format",
+    "format_one-on-one": "One-on-one",
+    "format_group": "Group class",
+    "verified_all": "Any verification status",
+    "verified_yes": "Verified teachers",
+    "verified_no": "Unverified teachers",
+    "filterDisclaimer": "Enter dates in ISO 8601 format with a timezone, for example 2026-11-11T09:00:00+07:00.",
+    "invalidFilters": "Filters are invalid. Check the dates, price, and rating.",
+    "applyFilters": "Apply filters",
     "filterSkillModalTitle": "Filter by skill",
     "closeFilter": "Close",
     "clearFilters": "Clear filters",

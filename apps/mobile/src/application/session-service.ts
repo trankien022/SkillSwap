@@ -489,6 +489,26 @@ export class SessionService {
     return user;
   }
 
+  /** MM8: persist the server-authoritative profile returned by the authenticated mutation. */
+  async updateDisplayName(displayName: string): Promise<SessionUser> {
+    const opGen = this.generation;
+    const token = await this.getValidAccessToken();
+    if (this.generation !== opGen) throw new SessionExpiredError('Session ended before profile update');
+
+    const user = await this.authApi.updateMe(token, displayName.trim());
+    if (this.generation !== opGen) throw new SessionExpiredError('Session ended during profile update');
+
+    if (this.activeSession) {
+      const updated = { ...this.activeSession, user };
+      this.activeSession = updated;
+      await this.runSerializedStoreOp(async () => {
+        if (this.generation === opGen) await this.sessionStore.save(updated);
+      });
+    }
+    if (this.generation !== opGen) throw new SessionExpiredError('Session ended during profile persistence');
+    return user;
+  }
+
   /**
    * Executes an authenticated action with token management:
    * - Retries eligible GET operations at most once on 401 after token refresh.

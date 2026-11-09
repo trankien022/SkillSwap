@@ -23,6 +23,7 @@ export default function SkillsScreen() {
   const [description, setDescription] = useState('');
   const [historyId, setHistoryId] = useState('');
   const [history, setHistory] = useState<string | null>(null);
+  const [documentRef, setDocumentRef] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const load = useCallback(async () => {
@@ -39,8 +40,10 @@ export default function SkillsScreen() {
   const isCertificate = evidenceType === 'certificate';
   const canSubmit = !!selected && (isCertificate ? !!file : !!description.trim());
   const pick = async () => {
-    const result = await DocumentPicker.getDocumentAsync({ type: ['image/*', 'application/pdf'], copyToCacheDirectory: true });
-    if (!result.canceled) setFile(result.assets[0]);
+    try {
+      const result = await DocumentPicker.getDocumentAsync({ type: ['image/png', 'image/jpeg', 'application/pdf'], copyToCacheDirectory: true });
+      if (!result.canceled) setFile(result.assets[0]);
+    } catch { setError(t('Skills.pickerError')); }
   };
   const submit = async () => {
     if (!gatewayClient || !canSubmit) return;
@@ -50,10 +53,10 @@ export default function SkillsScreen() {
       const result = isCertificate && file
         ? await gateway.submitCertificateEvidence({
           skillId: selected, requestedLevel: level, ...(description.trim() ? { description: description.trim() } : {}),
-          fileName: file.name, contentType: file.mimeType ?? 'application/octet-stream', bytes: await new File(file.uri).bytes(),
+          fileName: file.name, contentType: certificateMimeType(file.name, file.mimeType ?? null), bytes: await new File(file.uri).bytes(),
         })
         : await gateway.submitSkillEvidence({ skillId: selected, requestedLevel: level, evidenceType: 'verifier_assessment', description: description.trim() });
-      setHistoryId(result.id); setDescription(''); setFile(null); await load();
+      setHistoryId(result.id); setDocumentRef(result.documentRef ?? null); setDescription(''); setFile(null); await load();
     } catch { setError(t('Skills.submitError')); }
     finally { setBusy(false); }
   };
@@ -61,7 +64,7 @@ export default function SkillsScreen() {
     if (!gatewayClient || !historyId) return;
     try {
       const result = await new SkillEvidenceGateway(gatewayClient).getSkillEvidenceHistory(historyId);
-      setHistory(result.versions.map((v) => `${t(`Skills.type_${v.evidenceType}`)} · ${t(`Skills.level_${v.requestedLevel}`)} · ${t(`Skills.state_${v.currentStatus}`)}`).join('\n') || t('Skills.noHistory'));
+      setHistory(result.versions.map((v) => `${t(`Skills.type_${v.evidenceType}`)} · ${t(`Skills.level_${v.requestedLevel}`)} · ${t(`Skills.state_${v.currentStatus}`)}${v.documentRef ? ` · ${t('Skills.documentRef')}: ${v.documentRef}` : ''}`).join('\n') || t('Skills.noHistory'));
     } catch { setError(t('Skills.historyError')); }
   };
   return <ScreenScroll contentContainerStyle={styles.container}>
@@ -79,9 +82,20 @@ export default function SkillsScreen() {
       {error && <FeedbackBanner tone="danger">{error}</FeedbackBanner>}
       <AppButton onPress={() => void submit()} busy={busy} disabled={!canSubmit} label={t('Skills.submit')} />
       {!!historyId && <Pressable onPress={() => void showHistory()} style={styles.option} accessibilityRole="button"><Text style={styles.actionText}>{t('Skills.history')}</Text></Pressable>}
+      {documentRef ? <Text style={styles.body}>{t('Skills.documentRef')}: {documentRef}</Text> : null}
       {history && <Text style={styles.body}>{history}</Text>}
     </SurfaceCard>
   </ScreenScroll>;
+}
+
+function certificateMimeType(fileName: string, mimeType: string | null): string {
+  const allowed = ['application/pdf', 'image/png', 'image/jpeg'];
+  if (mimeType && allowed.includes(mimeType)) return mimeType;
+  const extension = fileName.toLocaleLowerCase().split('.').pop();
+  if (extension === 'pdf') return 'application/pdf';
+  if (extension === 'png') return 'image/png';
+  if (extension === 'jpg' || extension === 'jpeg') return 'image/jpeg';
+  throw new Error('Unsupported certificate file type');
 }
 
 const styles = StyleSheet.create({

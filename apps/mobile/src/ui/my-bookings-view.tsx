@@ -11,11 +11,11 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Linking } from 'react-native';
-import type { BookingState, ClassLifecycleState } from '@skillswap/contracts';
+import type { BookingState, ClassLifecycleState, RoomAccessResponse } from '@skillswap/contracts';
 import { colors } from '@/design/tokens';
 import { MyBookingsGateway } from '@/infrastructure/http/my-bookings-gateway';
 import { RoomAccessGateway } from '@/infrastructure/http/room-access-gateway';
+import { getJaasRoomTarget } from './jitsi-room-target';
 import { RatingGateway } from '@/infrastructure/http/rating-gateway';
 import { TeachingGateway } from '@/infrastructure/http/teaching-gateway';
 import {
@@ -27,6 +27,7 @@ import { myBookingsStyles as styles } from './my-bookings-styles';
 import { useSession } from './session-context';
 import { StatusPill, type PillTone } from './status-pill';
 import { FeedbackBanner, ScreenScroll } from './primitives';
+import { JitsiRoom } from './jitsi-room';
 
 /**
  * Real authenticated learner bookings view (Route 22, FR-007, FR-009).
@@ -38,7 +39,7 @@ import { FeedbackBanner, ScreenScroll } from './primitives';
  * - Fenced async updates: generation and unmount protected; no render-mutation.
  * - Status pills display text + color (never color alone, DESIGN.md).
  * - Price presented as integer credits / tuition (never claimed as paid).
- * - Room and rating actions reserved for T15/T16; only navigates to /classes/[id].
+ * - Room access uses the authenticated API response and opens the native Jitsi SDK.
  * - Minimum touch target >= 44px with 360px flex safety.
  * - Flat-by-default cards in Emerald and slate tokens.
  */
@@ -48,6 +49,7 @@ export function MyBookingsView() {
   const accountId = user?.id ?? '';
   const [openingBookingId, setOpeningBookingId] = useState<string | null>(null);
   const [roomError, setRoomError] = useState(false);
+  const [roomAccess, setRoomAccess] = useState<RoomAccessResponse | null>(null);
   const [ratingBookingId, setRatingBookingId] = useState<string | null>(null);
   const [ratingStars, setRatingStars] = useState(5);
   const [ratingComment, setRatingComment] = useState('');
@@ -230,7 +232,8 @@ export function MyBookingsView() {
     setOpeningBookingId(bookingId); setRoomError(false);
     try {
       const access = await new RoomAccessGateway(gatewayClient).request(bookingId, user?.displayName ?? 'SkillSwap user');
-      await Linking.openURL(access.url);
+      getJaasRoomTarget(access);
+      setRoomAccess(access);
     } catch { setRoomError(true); }
     finally { setOpeningBookingId(null); }
   };
@@ -635,6 +638,11 @@ export function MyBookingsView() {
           )}
         </View>
       ) : null}
+      <JitsiRoom
+        access={roomAccess}
+        displayName={user?.displayName ?? 'SkillSwap user'}
+        onClose={() => setRoomAccess(null)}
+      />
     </ScreenScroll>
   );
 }

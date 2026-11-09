@@ -15,6 +15,7 @@ jest.mock('react-native', () => ({
     create: <T,>(styles: T): T => styles,
   },
   Text: 'Text',
+  Pressable: 'Pressable',
   TextInput: 'TextInput',
   View: 'View',
 }));

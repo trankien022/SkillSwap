@@ -57,3 +57,22 @@ describe('NotificationGateway', () => {
     expect(body).not.toHaveBeenCalled();
   });
 });
+
+
+describe('notification read commands', () => {
+  it('uses encoded owner-scoped routes and the exact server count', async () => {
+    const request = jest.fn().mockResolvedValueOnce({ success: true, unreadCount: 24 }).mockResolvedValueOnce({ success: true, unreadCount: 0 });
+    const gateway = new NotificationGateway({ authenticatedRequest: request } as unknown as GatewayClient);
+    await expect(gateway.markRead('a/b')).resolves.toEqual({ success: true, unreadCount: 24 });
+    await expect(gateway.markAllRead()).resolves.toEqual({ success: true, unreadCount: 0 });
+    expect(request.mock.calls).toEqual([
+      ['/notifications/a%2Fb/read', { method: 'POST' }],
+      ['/notifications/read-all', { method: 'POST' }],
+    ]);
+  });
+  it('rejects an invalid count instead of guessing', async () => {
+    const request = jest.fn().mockResolvedValue({ success: true, unreadCount: -1 });
+    const gateway = new NotificationGateway({ authenticatedRequest: request } as unknown as GatewayClient);
+    await expect(gateway.markAllRead()).rejects.toThrow();
+  });
+});

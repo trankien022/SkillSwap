@@ -256,6 +256,12 @@ export const meResponseSchema = z.object({
 });
 export type MeResponse = z.infer<typeof meResponseSchema>;
 
+/** MM8: the signed-in user may change only their own public display name. */
+export const updateMeRequestSchema = z.object({
+  displayName: z.string().trim().min(1).max(120),
+}).strict();
+export type UpdateMeRequest = z.infer<typeof updateMeRequestSchema>;
+
 /** FR-008: wallet top-up and callback (ADR-033). Amounts are integer VND. */
 export const topUpRequestSchema = z.object({
   amountVnd: z.number().int().positive().max(100_000_000),
@@ -594,4 +600,5 @@ export * from './mobile-my-bookings';
 export * from './mobile-ratings';
 export * from './mobile-notifications';
 export * from './chat';
+export * from './booking-rejections';
 export * from './class-roster';

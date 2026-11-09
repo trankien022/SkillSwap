@@ -44,6 +44,7 @@ export interface SessionContextValue {
   readonly register: (credentials: RegisterCredentials) => Promise<void>;
   readonly logout: () => Promise<void>;
   readonly refreshMe: () => Promise<SessionUser>;
+  readonly updateDisplayName: (displayName: string) => Promise<SessionUser>;
   readonly retryBoot: () => void;
   readonly gatewayClient: GatewayClient | null;
   readonly sessionService: SessionService | null;
@@ -230,6 +231,18 @@ export function SessionProvider({
     }
   }, [sessionService]);
 
+  const updateDisplayName = useCallback(async (displayName: string) => {
+    if (!sessionService) throw new Error('SessionService not initialized');
+    const currentGen = uiGenerationRef.current;
+    try {
+      return await sessionService.updateDisplayName(displayName);
+    } finally {
+      if (isMountedRef.current && uiGenerationRef.current === currentGen) {
+        setSession(sessionService.getActiveSession());
+      }
+    }
+  }, [sessionService]);
+
   const t = useMemo(() => translator(locale), [locale]);
 
   const value = useMemo<SessionContextValue>(
@@ -248,6 +261,7 @@ export function SessionProvider({
       register,
       logout,
       refreshMe,
+      updateDisplayName,
       retryBoot: runBootRestore,
       gatewayClient,
       sessionService,
@@ -264,6 +278,7 @@ export function SessionProvider({
       register,
       logout,
       refreshMe,
+      updateDisplayName,
       runBootRestore,
       gatewayClient,
       sessionService,

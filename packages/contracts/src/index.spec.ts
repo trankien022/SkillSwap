@@ -36,6 +36,7 @@ import {
   loginSchema,
   markTeacherNoShowResultSchema,
   meResponseSchema,
+  updateMeRequestSchema,
   pageMetaSchema,
   pagedSchema,
   paginationQuerySchema,
@@ -669,6 +670,13 @@ describe('auth schemas (ADR-016)', () => {
       studentVerification: null,
     };
     expect(meResponseSchema.parse(me)).toEqual(me);
+  });
+
+  it('accepts only a trimmed display-name update within the profile limits (MM8)', () => {
+    expect(updateMeRequestSchema.parse({ displayName: '  An Nguyen  ' })).toEqual({ displayName: 'An Nguyen' });
+    expect(() => updateMeRequestSchema.parse({ displayName: '   ' })).toThrow();
+    expect(() => updateMeRequestSchema.parse({ displayName: 'a'.repeat(121) })).toThrow();
+    expect(() => updateMeRequestSchema.parse({ displayName: 'An', email: 'other@example.com' })).toThrow();
   });
 
   it('round-trips a me response with a projected verification (FR-017)', () => {

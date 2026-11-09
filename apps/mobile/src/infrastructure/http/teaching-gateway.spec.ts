@@ -14,6 +14,8 @@ describe('TeachingGateway', () => {
   });
   const response = (data: unknown) => ({ ok: true, status: 200, json: async () => data });
 
+  it('does not expose manual completion', () => { expect('complete' in gateway).toBe(false); });
+
   it('validates and creates a published class', async () => {
     const input = { skillIds: ['skill-1'], title: 'TypeScript basics', description: 'TypeScript basics', startsAt: '2026-10-20T10:00:00.000Z', durationMinutes: 60, priceCredits: 10, capacity: 1 };
     const view = { id: 'class-1', teacherId: 'teacher-1', state: 'published', title: 'TypeScript basics', level: 'beginner', format: 'one-on-one', startsAt: input.startsAt, durationMinutes: 60, priceCredits: 10, capacity: 1 };

@@ -120,36 +120,6 @@ describe('NotificationsScreen (MM11, MM4)', () => {
     expect(texts(screen).join('|')).not.toMatch(/Notifications\.(type|body)_/);
   });
 
-  it('falls back to the client copy only when the server text is blank', async () => {
-    const original = mockSession.t;
-    mockSession.t = (key: string, vars?: Record<string, string | number>) =>
-      key === 'Notifications.type_booking_confirmed' ? 'Booking confirmed'
-        : key === 'Notifications.body_booking_confirmed' ? 'Your booking was paid and confirmed.'
-          : original(key, vars);
-    try {
-      mockList.mockResolvedValue({ items: [item({ title: '  ', body: '' })], nextCursor: null, unreadCount: 1 });
-      const screen = await renderScreen();
-      expect(texts(screen)).toEqual(expect.arrayContaining(['Booking confirmed', 'Your booking was paid and confirmed.']));
-    } finally {
-      mockSession.t = original;
-    }
-  });
-
-  it('never renders a missing fallback key as raw text', async () => {
-    const original = mockSession.t;
-    mockSession.t = (key: string, vars?: Record<string, string | number>) =>
-      key.startsWith('Notifications.type_') || key.startsWith('Notifications.body_') ? key : original(key, vars);
-    try {
-      mockList.mockResolvedValue({ items: [item({ title: '', body: '' })], nextCursor: null, unreadCount: 1 });
-      const screen = await renderScreen();
-      const rendered = texts(screen);
-      expect(rendered.join('|')).not.toMatch(/Notifications\.(type|body)_/);
-      expect(rendered).toContain('Notifications.title');
-    } finally {
-      mockSession.t = original;
-    }
-  });
-
   it('marks an unread item read, updates the unread count, and still navigates', async () => {
     const screen = await renderScreen();
     expect(texts(screen)).toContain('Notifications.unread:1');

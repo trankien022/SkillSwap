@@ -251,6 +251,25 @@ export class GatewayClient implements AuthApiPort {
     };
   }
 
+  async updateMe(accessToken: string, displayName: string): Promise<SessionUser> {
+    const response = await this.request<unknown>('/auth/me', {
+      method: 'PATCH',
+      accessToken,
+      body: { displayName: displayName.trim() },
+    });
+    const parsed = meResponseSchema.parse(response);
+    return {
+      id: parsed.id,
+      email: parsed.email,
+      displayName: parsed.displayName,
+      role: parsed.role,
+      status: parsed.status,
+      studentVerification: parsed.studentVerification
+        ? { status: parsed.studentVerification.status, reason: parsed.studentVerification.reason }
+        : null,
+    };
+  }
+
   // ==========================================
   // General & Authenticated HTTP Requests
   // ==========================================

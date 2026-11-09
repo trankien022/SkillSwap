@@ -1,9 +1,13 @@
 packages:
-  - "apps/*"
-  - "packages/*"
+  - 'apps/*'
+  - 'packages/*'
+patchedDependencies:
+  '@jitsi/react-native-sdk@13.3.0': patches/@jitsi__react-native-sdk@13.3.0.patch
 allowBuilds:
+  '@jitsi/react-native-sdk': false
   '@parcel/watcher': true
   '@scarf/scarf': false
   '@swc/core': true
   esbuild: true
+  'react-native-worklets-core@https://codeload.github.com/jitsi/react-native-worklets-core/tar.gz/8b20145466186a369d13dd38e979642035a9bda1': true
 nodeLinker: hoisted

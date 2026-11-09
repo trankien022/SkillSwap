@@ -118,6 +118,18 @@ export class SqlAccountRepository implements AccountRepository, AccountLockRepos
     return rows[0] === undefined ? null : toAccount(rows[0]);
   }
 
+  async updateDisplayName(id: string, displayName: string): Promise<Account | null> {
+    const source = this.registry.get(this.moduleName);
+    const rows = (await source.query(
+      `UPDATE ${this.table}
+          SET "display_name" = $2, "updated_at" = now()
+        WHERE "id" = $1
+        RETURNING ${ACCOUNT_COLUMNS}`,
+      [id, displayName.trim()],
+    )) as AccountRow[];
+    return rows[0] === undefined ? null : toAccount(rows[0]);
+  }
+
   /**
    * FR-015 / OQ-015 / ADR-037: sets an account's status **and** emits the audited event in the same
    * transaction (ADR-013), so the audit log can never record a lock that did not commit, nor miss

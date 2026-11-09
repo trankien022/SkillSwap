@@ -10,7 +10,8 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-notifications"
+      "expo-notifications",
+      "./plugins/with-jitsi-android"
     ],
     "experiments": {
       "typedRoutes": true
@@ -19,13 +20,16 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.skillswap.app",
       "infoPlist": {
+        "NSCameraUsageDescription": "SkillSwap uses your camera during live lessons.",
+        "NSMicrophoneUsageDescription": "SkillSwap uses your microphone during live lessons.",
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
         }
       }
     },
     "android": {
-      "package": "com.skillswap.app"
+      "package": "com.skillswap.app",
+      "permissions": ["CAMERA", "RECORD_AUDIO"]
     },
     "extra": {
       "eas": {

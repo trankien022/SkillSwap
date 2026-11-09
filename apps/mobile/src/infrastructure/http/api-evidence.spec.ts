@@ -10,6 +10,7 @@ describe('mobile API evidence', () => {
       '/api/classes/:id',
     );
     expect(evidenceRoute('http://gateway/api/unknown/secret')).toBeNull();
+    expect(evidenceRoute('http://gateway/api/classes/c-1/complete')).toBeNull();
     expect(evidenceRoute('http://gateway/api/classes/bookings/me')).toBe(
       '/api/classes/bookings/me',
     );

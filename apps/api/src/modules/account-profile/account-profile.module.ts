@@ -28,12 +28,14 @@ import { LoginUseCase } from './internal/application/login.use-case';
 import { RefreshSessionUseCase } from './internal/application/refresh-session.use-case';
 import { LogoutUseCase } from './internal/application/logout.use-case';
 import { GetMeUseCase } from './internal/application/get-me.use-case';
+import { UpdateMeUseCase } from './internal/application/update-me.use-case';
 import { ProjectVerificationStatusUseCase } from './internal/application/project-verification-status.use-case';
 import { REGISTER_ACCOUNT } from './internal/application/port/in/register-account';
 import { LOGIN } from './internal/application/port/in/login';
 import { REFRESH_SESSION } from './internal/application/port/in/refresh-session';
 import { LOGOUT } from './internal/application/port/in/logout';
 import { GET_ME } from './internal/application/port/in/get-me';
+import { UPDATE_ME } from './internal/application/port/in/update-me';
 import {
   ACCOUNT_LOCK_REPOSITORY,
   ACCOUNT_REPOSITORY,
@@ -283,6 +285,12 @@ export class AccountProfileRegistrar implements OnModuleInit {
       provide: GET_ME,
       useFactory: (accounts: AccountRepository, verificationStatus: VerificationStatusReader) =>
         new GetMeUseCase(accounts, verificationStatus),
+      inject: [ACCOUNT_REPOSITORY, VERIFICATION_STATUS_READER],
+    },
+    {
+      provide: UPDATE_ME,
+      useFactory: (accounts: AccountRepository, verificationStatus: VerificationStatusReader) =>
+        new UpdateMeUseCase(accounts, verificationStatus),
       inject: [ACCOUNT_REPOSITORY, VERIFICATION_STATUS_READER],
     },
     {

@@ -11,6 +11,7 @@ module.exports = {
   },
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^@react-native-community/datetimepicker$': '<rootDir>/src/ui/__mocks__/datetimepicker.tsx',
     '^@skillswap/contracts$': '<rootDir>/../../packages/contracts/src/index.ts',
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
