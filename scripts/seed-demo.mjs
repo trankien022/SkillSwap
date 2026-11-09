@@ -256,7 +256,9 @@ async function resetDemo(ctx) {
   // platform-fee row (owner `platform`) is cleared too.
   await ctx.walletDs.query(`DELETE FROM "wallet_ledger"."ledger_entries" WHERE "reference_id" LIKE $1`, [`${DEMO_REF_PREFIX}%`]);
   await ctx.walletDs.query(`DELETE FROM "wallet_ledger"."top_up_intents" WHERE "provider_ref" LIKE $1`, [`${DEMO_REF_PREFIX}%`]);
-  await ctx.walletDs.query(`DELETE FROM "wallet_ledger"."wallets" WHERE "owner_id" = ${text}`, p);
+  // `platform` is included: it is not an account, but the fee rows are keyed to it as owner and
+  // a previous version of this script could leave a platform wallet row behind.
+  await ctx.walletDs.query(`DELETE FROM "wallet_ledger"."wallets" WHERE "owner_id" = ${text} OR "owner_id" = 'platform'`, p);
 
   // skill_verification — audit first, then profile_skills (skill_evidence cascades from it).
   await ctx.skillDs.query(
@@ -488,19 +490,29 @@ async function upsertEvidence(ctx, { profileSkillId, accountId, skillId, version
 }
 
 /** Inserts a class and its skill links; returns its id. */
-async function insertClass(ctx, { index, teacherId, state, title, level, startsAt, durationMinutes, priceCredits, capacity, description, skillIds }) {
+async function insertClass(ctx, { index, teacherId, state, title, level, startsAt, durationMinutes, priceCredits, capacity, description, skillIds, createdAt, completedAt, completionBasis, cancelledAt, cancellationReason }) {
   const classId = demoId(ID_KIND.class, index);
   await ctx.classDs.query(
     `INSERT INTO "live_class"."classes"
-       ("id", "teacher_id", "state", "title", "level", "starts_at", "duration_minutes", "price_credits", "capacity", "description")
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       ("id", "teacher_id", "state", "title", "level", "starts_at", "duration_minutes",
+        "price_credits", "capacity", "description", "created_at", "completed_at",
+        "completion_basis", "cancelled_at", "cancellation_reason")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
      ON CONFLICT ("id") DO UPDATE
        SET "teacher_id" = EXCLUDED."teacher_id", "state" = EXCLUDED."state",
            "title" = EXCLUDED."title", "level" = EXCLUDED."level",
            "starts_at" = EXCLUDED."starts_at", "duration_minutes" = EXCLUDED."duration_minutes",
            "price_credits" = EXCLUDED."price_credits", "capacity" = EXCLUDED."capacity",
-           "description" = EXCLUDED."description", "updated_at" = now()`,
-    [classId, teacherId, state, title, level, startsAt, durationMinutes, priceCredits, capacity, description],
+           "description" = EXCLUDED."description", "created_at" = EXCLUDED."created_at",
+           "completed_at" = EXCLUDED."completed_at",
+           "completion_basis" = EXCLUDED."completion_basis",
+           "cancelled_at" = EXCLUDED."cancelled_at",
+           "cancellation_reason" = EXCLUDED."cancellation_reason", "updated_at" = now()`,
+    [
+      classId, teacherId, state, title, level, startsAt, durationMinutes, priceCredits,
+      capacity, description, createdAt, completedAt ?? null, completionBasis ?? null,
+      cancelledAt ?? null, cancellationReason ?? null,
+    ],
   );
   for (const skillId of skillIds) {
     await ctx.classDs.query(
@@ -512,17 +524,23 @@ async function insertClass(ctx, { index, teacherId, state, title, level, startsA
 }
 
 /** Upserts a booking on a class (deterministic id). */
-async function insertBooking(ctx, { index, classId, learnerId, state, priceCredits, idempotencyKey, expiresAt, confirmedAt, cancelledAt, cancelReason }) {
+async function insertBooking(ctx, { index, classId, learnerId, state, priceCredits, idempotencyKey, expiresAt, confirmedAt, cancelledAt, cancelReason, createdAt }) {
   const bookingId = demoId(ID_KIND.booking, index);
   await ctx.classDs.query(
     `INSERT INTO "live_class"."bookings"
-       ("id", "class_id", "learner_id", "state", "price_credits", "idempotency_key", "expires_at", "confirmed_at", "cancelled_at", "cancel_reason")
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       ("id", "class_id", "learner_id", "state", "price_credits", "idempotency_key",
+        "expires_at", "confirmed_at", "cancelled_at", "cancel_reason", "created_at")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
      ON CONFLICT ("id") DO UPDATE
        SET "state" = EXCLUDED."state", "confirmed_at" = EXCLUDED."confirmed_at",
            "cancelled_at" = EXCLUDED."cancelled_at", "cancel_reason" = EXCLUDED."cancel_reason",
-           "expires_at" = EXCLUDED."expires_at", "updated_at" = now()`,
-    [bookingId, classId, learnerId, state, priceCredits, idempotencyKey, expiresAt ?? null, confirmedAt ?? null, cancelledAt ?? null, cancelReason ?? null],
+           "expires_at" = EXCLUDED."expires_at", "created_at" = EXCLUDED."created_at",
+           "updated_at" = now()`,
+    [
+      bookingId, classId, learnerId, state, priceCredits, idempotencyKey,
+      expiresAt ?? null, confirmedAt ?? null, cancelledAt ?? null, cancelReason ?? null,
+      createdAt,
+    ],
   );
   return bookingId;
 }
@@ -539,26 +557,126 @@ async function upsertWallet(ctx, ownerId, availableCredits, pendingCredits = 0) 
   );
 }
 
-/** Inserts a ledger entry keyed by (owner_id, reference_id, entry_type). */
-async function insertLedgerEntry(ctx, { ownerId, entryType, direction, amountCredits, referenceId, bookingId, teacherId }) {
+/**
+ * Posts one ledger movement.
+ *
+ * `entryType` values are the ones production actually writes (`sql-wallet-repository.ts`):
+ * `top_up`, `reversal`, `learner_debit`, `teacher_pending`, `platform_fee`, `release`, `refund`.
+ * The unique index on `(entry_type, reference_id)` covers four of them, so the insert is keyed on
+ * that pair and a re-run cannot double-post.
+ */
+async function postMovement(ctx, { ownerId, entryType, direction, amountCredits, referenceId, teacherId, bookingId, releaseKey, occurredAt }) {
   await ctx.walletDs.query(
     `INSERT INTO "wallet_ledger"."ledger_entries"
-       ("owner_id", "entry_type", "direction", "amount_credits", "reference_id", "booking_id", "teacher_id", "trace_id")
-     SELECT $1, $2, $3, $4, $5, $6, $7, $5
-     WHERE NOT EXISTS (
-       SELECT 1 FROM "wallet_ledger"."ledger_entries"
-       WHERE "owner_id" = $1 AND "reference_id" = $5 AND "entry_type" = $2
-     )`,
-    [ownerId, entryType, direction, amountCredits, referenceId, bookingId ?? null, teacherId ?? ownerId],
+       ("owner_id", "teacher_id", "amount_credits", "direction", "entry_type", "reference_id",
+        "booking_id", "release_key", "trace_id", "created_at")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $6, $9)
+     ON CONFLICT DO NOTHING`,
+    [ownerId, teacherId ?? ownerId, amountCredits, direction, entryType, referenceId, bookingId ?? null, releaseKey ?? null, occurredAt],
   );
 }
 
 /**
- * 90/10 split in integer credits (ADR-002). Mirrors the wallet module's own arithmetic.
+ * 90/10 split in integer credits (ADR-002). The teacher's share is floored and the platform takes
+ * the remainder, so the two always sum to the price and no float ever appears.
  */
 function splitSettlement(priceCredits) {
   const teacherCredits = Math.floor((priceCredits * 9000) / 10000);
   return { teacherCredits, platformFeeCredits: priceCredits - teacherCredits };
+}
+
+/**
+ * Recomputes every demo wallet from the ledger and upserts it.
+ *
+ * This is the correction to the previous seed, which asserted balances by hand (`500 + i*250`)
+ * while the ledger it was supposed to summarise held nothing of the sort — a learner could hold a
+ * confirmed 120-credit booking and an untouched balance. The balance is now a function of the rows,
+ * and `assertWalletsReconcile` proves it after the fact rather than trusting the arithmetic here.
+ *
+ * The two columns follow `sql-wallet-repository.ts` exactly:
+ *  - `available` is every credit that has settled, **excluding `teacher_pending`**, minus debits;
+ *  - `pending` is teacher income earned but not yet released (`teacher_pending − release`).
+ *    A refund reduces the teacher's pending balance in production without a ledger row of its
+ *    own (ADR-022), but demo refunds only ever reverse cancelled-class bookings, which never
+ *    booked pending income, so nothing is double-counted here.
+ *
+ * `platform` is skipped: platform fees are not a wallet, and production never creates one.
+ */
+async function reconcileWallets(ctx) {
+  const rows = await ctx.walletDs.query(
+    `SELECT "owner_id",
+            COALESCE(SUM("amount_credits") FILTER (
+              WHERE "direction" = 'credit' AND "entry_type" <> 'teacher_pending'
+            ), 0)::int AS "settled_credits",
+            COALESCE(SUM("amount_credits") FILTER (WHERE "direction" = 'debit'), 0)::int AS "debits",
+            COALESCE(SUM("amount_credits") FILTER (
+              WHERE "entry_type" = 'teacher_pending'
+            ), 0)::int - COALESCE(SUM("amount_credits") FILTER (
+              WHERE "entry_type" = 'release'
+            ), 0)::int AS "pending"
+       FROM "wallet_ledger"."ledger_entries"
+      WHERE "reference_id" LIKE $1
+      GROUP BY "owner_id"
+     HAVING "owner_id" <> 'platform'`,
+    [`${DEMO_REF_PREFIX}%`],
+  );
+  for (const row of rows) {
+    await upsertWallet(ctx, row.owner_id, row.settled_credits - row.debits, row.pending);
+  }
+  return rows.length;
+}
+
+/**
+ * Fails the run when a demo wallet does not equal the sum of its own ledger rows.
+ */
+async function assertWalletsReconcile(ctx) {
+  const mismatches = await ctx.walletDs.query(
+    `SELECT w."owner_id", w."available_credits", w."pending_credits",
+            COALESCE(SUM(l."amount_credits") FILTER (
+              WHERE l."direction" = 'credit' AND l."entry_type" <> 'teacher_pending'
+            ), 0)::int - COALESCE(SUM(l."amount_credits") FILTER (
+              WHERE l."direction" = 'debit'
+            ), 0)::int AS "expected_available",
+            COALESCE(SUM(l."amount_credits") FILTER (
+              WHERE l."entry_type" = 'teacher_pending'
+            ), 0)::int - COALESCE(SUM(l."amount_credits") FILTER (
+              WHERE l."entry_type" = 'release'
+            ), 0)::int AS "expected_pending"
+       FROM "wallet_ledger"."wallets" w
+       LEFT JOIN "wallet_ledger"."ledger_entries" l
+         ON l."owner_id" = w."owner_id" AND l."reference_id" LIKE $1
+      WHERE w."owner_id" = ANY($2::text[])
+      GROUP BY w."owner_id", w."available_credits", w."pending_credits"
+     HAVING w."available_credits" <> COALESCE(SUM(l."amount_credits") FILTER (
+              WHERE l."direction" = 'credit' AND l."entry_type" <> 'teacher_pending'
+            ), 0)::int - COALESCE(SUM(l."amount_credits") FILTER (
+              WHERE l."direction" = 'debit'
+            ), 0)::int
+         OR w."pending_credits" <> COALESCE(SUM(l."amount_credits") FILTER (
+              WHERE l."entry_type" = 'teacher_pending'
+            ), 0)::int - COALESCE(SUM(l."amount_credits") FILTER (
+              WHERE l."entry_type" = 'release'
+            ), 0)::int`,
+    [`${DEMO_REF_PREFIX}%`, DEMO_ACCOUNT_IDS],
+  );
+  if (mismatches.length > 0) {
+    const detail = mismatches
+      .map((m) => `  ${m.owner_id}: available ${m.available_credits} (ledger ${m.expected_available}), pending ${m.pending_credits} (ledger ${m.expected_pending})`)
+      .join('\n');
+    throw new Error(`Demo wallets do not reconcile with their ledger:\n${detail}`);
+  }
+  if (await walletHasNegative(ctx)) {
+    throw new Error('A demo wallet was driven negative — the ledger is inconsistent.');
+  }
+}
+
+async function walletHasNegative(ctx) {
+  const rows = await ctx.walletDs.query(
+    `SELECT 1 FROM "wallet_ledger"."wallets"
+      WHERE "owner_id" = ANY($1::text[]) AND "available_credits" < 0 LIMIT 1`,
+    [DEMO_ACCOUNT_IDS],
+  );
+  return rows.length > 0;
 }
 
 /**
@@ -722,10 +840,11 @@ try {
   console.log('skill evidence: 6 teachers approved, 3 in the verifier queue');
 
   // ── FR-005/FR-007: classes + bookings ────────────────────────────────────
-  // Teachers are users 0–5. Class states cover the lifecycle; only classes whose scheduled end
-  // is in the future stay open (the completion sweeper closes the rest on boot). Prices are
-  // integer credits.
+  // Teachers are users 0–5. Class states cover the whole lifecycle — all six values the CHECK
+  // allows — and each class carries a *backdated* history rather than `now()`, so the demo reads
+  // as three weeks of use instead of one timestamp repeated down every table.
   const HOUR = 3600 * 1000;
+  const DAY = 24 * HOUR;
   const now = Date.now();
   const iso = (ms) => new Date(ms).toISOString();
 
@@ -737,26 +856,40 @@ try {
 
   // B2: each class states the level its teacher is approved at for that skill (the same rule the
   // publish gate applies), so the badge is a fact rather than a catalogue lookup.
+  //
+  // `startInH` is relative to now: negative is past. Completed classes keep their bookings
+  // `confirmed` (see the note in the booking loop).
   const CLASS_SPECS = [
-    { teacher: 0, skill: 'IELTS', state: 'published', startInH: 48, duration: 60, price: 120, capacity: 8, level: 'intermediate', title: 'IELTS Speaking Part 2: cue cards that sound natural' },
-    { teacher: 0, skill: 'English Conversation', state: 'published', startInH: 72, duration: 45, price: 90, capacity: 6, level: 'advanced', title: 'Everyday English Conversation Practice' },
-    { teacher: 1, skill: 'Python', state: 'published', startInH: 24, duration: 90, price: 200, capacity: 10, level: 'advanced', title: 'Python for Beginners: Functions and Loops' },
-    { teacher: 2, skill: 'React', state: 'published', startInH: 36, duration: 120, price: 260, capacity: 12, level: 'expert', title: 'React Hooks Deep Dive' },
+    // ── history: finished, rated, paid ─────────────────────────────────────
+    { teacher: 5, skill: 'Calculus', state: 'completed', startInH: -21 * 24, duration: 90, price: 180, capacity: 10, level: 'expert', title: 'Calculus: Limits and Derivatives Explained' },
+    { teacher: 1, skill: 'Python', state: 'completed', startInH: -16 * 24, duration: 90, price: 200, capacity: 10, level: 'advanced', title: 'Python for Beginners: Functions and Loops' },
+    { teacher: 2, skill: 'React', state: 'completed', startInH: -9 * 24, duration: 120, price: 260, capacity: 12, level: 'expert', title: 'React Hooks Deep Dive' },
+    { teacher: 4, skill: 'Guitar', state: 'completed', startInH: -4 * 24, duration: 60, price: 130, capacity: 6, level: 'advanced', title: 'Guitar Chords for Absolute Beginners' },
+    // A class its teacher cancelled, refunded end to end (BR-045).
+    { teacher: 3, skill: 'Japanese', state: 'cancelled', startInH: -14 * 24, duration: 90, price: 150, capacity: 8, level: 'intermediate', title: 'Japanese Conversation: Ordering Food' },
+    // The class running right now: joinable, chat live, presence open.
+    { teacher: 0, skill: 'IELTS', state: 'in_progress', startInH: -1, duration: 120, price: 120, capacity: 8, level: 'intermediate', title: 'IELTS Speaking Part 2: cue cards that sound natural' },
+    // ── upcoming ───────────────────────────────────────────────────────────
+    { teacher: 0, skill: 'English Conversation', state: 'published', startInH: 2, duration: 45, price: 90, capacity: 6, level: 'advanced', title: 'Everyday English Conversation Practice' },
     { teacher: 2, skill: 'TypeScript', state: 'full', startInH: 12, duration: 90, price: 220, capacity: 2, level: 'intermediate', title: 'TypeScript Types That Scale' },
-    { teacher: 3, skill: 'Japanese', state: 'in_progress', startInH: -1, duration: 120, price: 150, capacity: 8, level: 'intermediate', title: 'Japanese Conversation: Ordering Food' },
-    { teacher: 4, skill: 'Guitar', state: 'published', startInH: 96, duration: 60, price: 130, capacity: 6, level: 'advanced', title: 'Guitar Chords for Absolute Beginners' },
-    { teacher: 5, skill: 'Calculus', state: 'completed', startInH: -72, duration: 90, price: 180, capacity: 10, level: 'expert', title: 'Calculus: Limits and Derivatives Explained' },
+    { teacher: 1, skill: 'TypeScript', state: 'published', startInH: 36, duration: 90, price: 240, capacity: 10, level: 'advanced', title: 'TypeScript Generics: From Confusing to Routine' },
+    { teacher: 3, skill: 'Japanese', state: 'published', startInH: 48, duration: 60, price: 160, capacity: 8, level: 'intermediate', title: 'Japanese Particles: は, が and を Without the Guesswork' },
+    { teacher: 4, skill: 'Piano', state: 'published', startInH: 72, duration: 60, price: 140, capacity: 6, level: 'intermediate', title: 'Piano: Reading Your First Left-Hand Chords' },
+    { teacher: 5, skill: 'Calculus', state: 'published', startInH: 96, duration: 90, price: 190, capacity: 10, level: 'expert', title: 'Calculus: Integration by Parts, Slowly' },
+    // Draft: visible only to its teacher (FR-005), so the publish flow has something to publish.
+    { teacher: 1, skill: 'Python', state: 'draft', startInH: 120, duration: 90, price: 210, capacity: 10, level: 'advanced', title: 'Python Data Classes and TypedDicts (draft)' },
   ];
 
   const classIds = [];
   for (let i = 0; i < CLASS_SPECS.length; i += 1) {
     const spec = CLASS_SPECS[i];
     const teacher = TEACHER_SKILLS.find((t) => t.teacher === spec.teacher);
+    const startsAtMs = now + spec.startInH * HOUR;
     const classId = await insertClass(ctx, {
       index: i + 1,
       teacherId: teacher.teacherId,
       state: spec.state,
-      startsAt: iso(now + spec.startInH * HOUR),
+      startsAt: iso(startsAtMs),
       durationMinutes: spec.duration,
       priceCredits: spec.price,
       capacity: spec.capacity,
@@ -764,82 +897,185 @@ try {
       level: spec.level,
       description: `Demo ${spec.skill} class #${i + 1} by Demo User ${spec.teacher + 1}`,
       skillIds: [skillIdByName[spec.skill]],
+      createdAt: iso(startsAtMs - 6 * DAY),
+      completedAt: spec.state === 'completed' ? iso(startsAtMs + spec.duration * 60 * 1000) : null,
+      completionBasis: spec.state === 'completed' ? 'scheduled_end' : null,
+      cancelledAt: spec.state === 'cancelled' ? iso(startsAtMs - 2 * DAY) : null,
+      cancellationReason: spec.state === 'cancelled' ? 'teacher_unavailable' : null,
     });
-    classIds.push({ classId, spec });
+    classIds.push({ classId, spec, startsAtMs });
   }
 
-  // Learners: users 6–9 (the non-teachers). Spread bookings across open classes.
+  // Learners: users 6–9 (the non-teachers). Every completed class has a full house of confirmed
+  // bookings because those bookings are what the ledger and the ratings below are built from.
   const learnerIds = userIdByIndex.slice(6);
+  const bookings = [];
   let bookingSeq = 0;
-  let bookingCount = 0;
   for (let ci = 0; ci < classIds.length; ci += 1) {
-    const { classId, spec } = classIds[ci];
-    const seats = spec.state === 'full' ? 2 : Math.min(spec.capacity, 2 + (ci % 3));
-    const open = spec.startInH > 0 && spec.state !== 'completed';
+    const { classId, spec, startsAtMs } = classIds[ci];
+    const isPast = spec.state === 'completed' || spec.state === 'cancelled';
+    const seats = spec.state === 'full' ? 2 : isPast ? 3 : Math.min(spec.capacity, 2 + (ci % 3));
     for (let s = 0; s < seats; s += 1) {
       const learnerId = learnerIds[(ci + s) % learnerIds.length];
       // A booking stays `confirmed` when its class completes — nothing transitions a booking to
       // `completed`, and both the rating gate and `ratingEligible` read `confirmed` + a completed
-      // class. Seeding `completed` here made the class impossible to rate in the demo.
-      const state = spec.state === 'completed' ? 'confirmed' : !open ? 'cancelled' : s % 3 === 0 ? 'pending' : 'confirmed';
+      // class. Seeding `completed` made the class impossible to rate in the demo.
+      const state =
+        spec.state === 'completed'
+          ? 'confirmed'
+          : spec.state === 'cancelled'
+            ? 'cancelled'
+            : spec.state === 'in_progress'
+              ? 'confirmed'
+              : s % 3 === 0
+                ? 'pending'
+                : 'confirmed';
+      const confirmedAtMs = state === 'confirmed' ? startsAtMs - 3 * DAY : null;
       bookingSeq += 1;
-      await insertBooking(ctx, {
+      const bookingId = await insertBooking(ctx, {
         index: bookingSeq,
         classId,
         learnerId,
         state,
         priceCredits: spec.price,
-        idempotencyKey: `demo-seed-cls${ci}-seat${s}`,
-        expiresAt: state === 'pending' ? iso(now + 30 * 60 * 1000) : null,
-        confirmedAt: state === 'confirmed' || state === 'completed' ? iso(now - 2 * HOUR) : null,
-        cancelledAt: state === 'cancelled' ? iso(now - HOUR) : null,
+        idempotencyKey: `${DEMO_REF_PREFIX}cls${ci}-seat${s}`,
+        expiresAt: state === 'pending' ? iso(Math.min(now + 30 * 60 * 1000, startsAtMs)) : null,
+        confirmedAt: confirmedAtMs === null ? null : iso(confirmedAtMs),
+        cancelledAt: state === 'cancelled' ? iso(startsAtMs - 2 * DAY) : null,
         cancelReason: state === 'cancelled' ? 'class_cancelled' : null,
+        createdAt: iso(startsAtMs - 4 * DAY),
       });
-      bookingCount += 1;
+      bookings.push({ bookingId, classId, learnerId, state, spec, startsAtMs });
     }
   }
-  console.log(`classes: ${classIds.length}, bookings: ${bookingCount}`);
+  console.log(`classes: ${classIds.length} (6 states), bookings: ${bookings.length}`);
 
-  // ── FR-008/FR-010: wallets + ledger ──────────────────────────────────────
-  // Every user gets a funded wallet; learners also get a top-up and booking debits so history is
-  // non-trivial. Balances are asserted here and reconciled from the ledger in a later phase.
+  // ── FR-008/FR-009/FR-010: the ledger, then the balances ──────────────────
+  // Ledger first. Every confirmed booking debits the learner and splits the price 90/10 to the
+  // teacher (pending) and the platform; every completed class releases the teacher's pending
+  // income; a cancelled class refunds the learner. Balances are derived from these rows at the
+  // end, so the wallet history and the wallet total cannot disagree.
+  const learnerTopUp = new Map();
   for (let i = 0; i < USERS.length; i += 1) {
     const ownerId = userIdByIndex[i];
     const credits = 500 + i * 250;
-    await upsertWallet(ctx, ownerId, credits);
-    await insertLedgerEntry(ctx, {
-      ownerId, entryType: 'top_up', direction: 'credit', amountCredits: credits,
+    learnerTopUp.set(ownerId, credits);
+    await postMovement(ctx, {
+      ownerId,
+      entryType: 'top_up',
+      direction: 'credit',
+      amountCredits: credits,
       referenceId: `${DEMO_REF_PREFIX}topup-user${i + 1}`,
+      occurredAt: iso(now - (24 - i) * DAY),
     });
   }
-  // A settled top-up intent for the first learner (FR-008).
-  const learner0 = learnerIds[0];
-  await ctx.walletDs.query(
-    `INSERT INTO "wallet_ledger"."top_up_intents"
-       ("id", "owner_id", "provider", "provider_ref", "amount_vnd", "amount_credits", "status")
-     VALUES ($1, $2, 'demo', $3, $4, $5, 'settled')
-     ON CONFLICT ("id") DO UPDATE SET "status" = EXCLUDED."status", "updated_at" = now()`,
-    [demoId(ID_KIND.topUp, 1), learner0, `${DEMO_REF_PREFIX}topup-user7`, 500_000, 500],
-  );
-  // Teachers earn credits from their completed classes (FR-020 release).
-  const lastTeacher = TEACHER_SKILLS[5].teacherId;
-  const lastPrice = CLASS_SPECS[7].price;
-  const { teacherCredits, platformFeeCredits } = splitSettlement(lastPrice);
-  await insertLedgerEntry(ctx, {
-    ownerId: lastTeacher, entryType: 'teacher_pending', direction: 'credit',
-    amountCredits: teacherCredits, referenceId: `${DEMO_REF_PREFIX}class-8`,
+
+  // Four top-up intents covering every status the CHECK allows (FR-008), so `/wallet` can show a
+  // settled credit, a pending payment, a failed one and a reversed one.
+  const TOP_UPS = [
+    { index: 1, ownerId: learnerIds[0], ref: 'topup-a', credits: 500, vnd: 500_000, status: 'settled', atMs: now - 18 * DAY },
+    { index: 2, ownerId: learnerIds[1], ref: 'topup-b', credits: 300, vnd: 300_000, status: 'settled', atMs: now - 11 * DAY },
+    { index: 3, ownerId: learnerIds[2], ref: 'topup-c', credits: 400, vnd: 400_000, status: 'pending', atMs: now - 2 * HOUR },
+    { index: 4, ownerId: learnerIds[3], ref: 'topup-d', credits: 200, vnd: 200_000, status: 'failed', atMs: now - 6 * DAY },
+    { index: 5, ownerId: learnerIds[0], ref: 'topup-e', credits: 250, vnd: 250_000, status: 'reversed', atMs: now - 5 * DAY },
+  ];
+  for (const topUp of TOP_UPS) {
+    const settled = topUp.status === 'settled';
+    const decidedMs = topUp.status === 'pending' ? null : topUp.atMs + 5 * 60 * 1000;
+    await ctx.walletDs.query(
+      `INSERT INTO "wallet_ledger"."top_up_intents"
+         ("id", "owner_id", "provider", "provider_ref", "provider_order_id", "amount_vnd",
+          "amount_credits", "paid_amount_vnd", "paid_at", "status", "created_at", "updated_at")
+       VALUES ($1, $2, 'sepay', $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       ON CONFLICT ("id") DO UPDATE
+         SET "status" = EXCLUDED."status", "paid_amount_vnd" = EXCLUDED."paid_amount_vnd",
+             "paid_at" = EXCLUDED."paid_at", "updated_at" = EXCLUDED."updated_at"`,
+      [
+        demoId(ID_KIND.topUp, topUp.index),
+        topUp.ownerId,
+        `${DEMO_REF_PREFIX}${topUp.ref}`,
+        `ORD-${topUp.ref.toUpperCase()}`,
+        topUp.vnd,
+        topUp.credits,
+        settled ? topUp.vnd : null,
+        decidedMs === null ? null : iso(decidedMs),
+        topUp.status,
+        iso(topUp.atMs),
+        iso(decidedMs ?? topUp.atMs),
+      ],
+    );
+  }
+  // The reversed intent has a matching debit, so the "money taken back" path has a real row.
+  await postMovement(ctx, {
+    ownerId: learnerIds[0],
+    entryType: 'reversal',
+    direction: 'debit',
+    amountCredits: 250,
+    referenceId: `${DEMO_REF_PREFIX}topup-e`,
+    occurredAt: iso(now - 5 * DAY + 60 * 60 * 1000),
   });
-  await insertLedgerEntry(ctx, {
-    ownerId: 'platform', entryType: 'platform_fee', direction: 'credit',
-    amountCredits: platformFeeCredits, referenceId: `${DEMO_REF_PREFIX}class-8`,
-  });
-  await upsertWallet(ctx, lastTeacher, teacherCredits, teacherCredits);
-  // A refunded learner entry to show a reversed record (ADR-022).
-  await insertLedgerEntry(ctx, {
-    ownerId: learner0, entryType: 'refund', direction: 'credit', amountCredits: 260,
-    referenceId: `${DEMO_REF_PREFIX}refund-1`,
-  });
-  console.log(`wallets: ${USERS.length} funded (+1 top-up intent, teacher income, refund)`);
+
+  for (const booking of bookings) {
+    // A cancelled-class booking was paid and then refunded, so it gets the learner's debit but no
+    // teacher income: the lesson never happened. Posting `teacher_pending` for it would leave the
+    // teacher holding income for a class that was called off, and posting the refund without the
+    // debit would mint credits out of nothing.
+    if (booking.state !== 'confirmed' && booking.state !== 'cancelled') continue;
+    const { bookingId, learnerId, spec, startsAtMs } = booking;
+    const isRefunded = booking.state === 'cancelled';
+    const { teacherCredits, platformFeeCredits } = splitSettlement(spec.price);
+    const teacherId = TEACHER_SKILLS.find((t) => t.teacher === spec.teacher).teacherId;
+    const paidAt = iso(startsAtMs - 3 * DAY);
+
+    await postMovement(ctx, {
+      ownerId: learnerId, entryType: 'learner_debit', direction: 'debit',
+      amountCredits: spec.price, referenceId: `${DEMO_REF_PREFIX}booking-${bookingId}`,
+      bookingId, occurredAt: paidAt,
+    });
+    if (isRefunded) continue;
+
+    await postMovement(ctx, {
+      ownerId: teacherId, entryType: 'teacher_pending', direction: 'credit',
+      amountCredits: teacherCredits, referenceId: `${DEMO_REF_PREFIX}booking-${bookingId}`,
+      teacherId, bookingId, occurredAt: paidAt,
+    });
+    await postMovement(ctx, {
+      ownerId: 'platform', entryType: 'platform_fee', direction: 'credit',
+      amountCredits: platformFeeCredits, referenceId: `${DEMO_REF_PREFIX}booking-${bookingId}`,
+      teacherId, bookingId, occurredAt: paidAt,
+    });
+
+    // FR-020: income is released only once the class completed. Three of the four finished
+    // classes are settled; the most recent keeps its pending income so the teacher's wallet shows
+    // both a released history and earnings still on hold.
+    if (spec.state === 'completed' && spec.startInH < -5 * 24) {
+      await postMovement(ctx, {
+        ownerId: teacherId, entryType: 'release', direction: 'credit',
+        amountCredits: teacherCredits, referenceId: `${DEMO_REF_PREFIX}booking-${bookingId}`,
+        teacherId, bookingId, releaseKey: `${DEMO_REF_PREFIX}release-${bookingId}`,
+        occurredAt: iso(startsAtMs + spec.duration * 60 * 1000),
+      });
+    }
+  }
+
+  // The cancelled class refunds each learner in full (BR-045 / ADR-022).
+  for (const booking of bookings) {
+    if (booking.state !== 'cancelled') continue;
+    await postMovement(ctx, {
+      ownerId: booking.learnerId,
+      entryType: 'refund',
+      direction: 'credit',
+      amountCredits: booking.spec.price,
+      referenceId: `${DEMO_REF_PREFIX}booking-${booking.bookingId}`,
+      bookingId: booking.bookingId,
+      occurredAt: iso(booking.startsAtMs - 2 * DAY),
+    });
+  }
+
+  // Balances are now a pure function of the rows above.
+  const walletCount = await reconcileWallets(ctx);
+  await assertWalletsReconcile(ctx);
+  console.log(`wallets: ${walletCount} derived from the ledger and reconciled`);
 
   await reportCounts(ctx);
 
