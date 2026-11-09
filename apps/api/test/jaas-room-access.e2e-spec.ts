@@ -15,10 +15,12 @@ jest.setTimeout(60_000);
  * account — so the assertion moved to what *is* observable and is ours: the room-access
  * endpoint must hand a client a URL and a token that agree with each other.
  *
- * That pairing is exactly what broke silently during the migration. A token scoped to
- * `skillswap-<classId>` opens a room in no tenant when the URL carries an `<appId>/` prefix, so
- * the user sees a broken conference rather than an error. Pinning both to the same
- * tenant-qualified room makes that mismatch a test failure.
+ * That pairing is exactly what broke silently during the migration, and then broke a second time
+ * in the opposite direction. A token scoped to `skillswap-<classId>` opens a room in no tenant
+ * when the URL carries an `<appId>/` prefix — but a token whose `room` claim carries that prefix
+ * is rejected too, because JaaS validates the claim against `conference.<sub>` and never strips
+ * the AppID. The claim must be the bare room node; `sub` carries the tenant (ADR-039
+ * Amendment A). Pin that, and either mismatch becomes a test failure rather than broken video.
  *
  * What this still does NOT prove: WebRTC media, two-device sessions, or that JaaS itself accepts
  * the signature. Those need real credentials and are noted as an open risk in ADR-039.
@@ -143,8 +145,11 @@ describeJaas('E2E: JaaS room access (FR-011 / ADR-039)', () => {
     // ...while the URL carries the tenant, so `https://<JITSI_DOMAIN>/<room>` is a real meeting.
     expect(access.json.url).toBe(`https://${config.jitsiDomain}/${room}`);
 
-    // The token must name the same tenant-qualified room the URL opens. A token scoped to the
-    // bare room would be accepted by nobody, and the failure would look like broken video.
+    // The token names the **bare** room node, not the tenant-qualified one the URL opens. JaaS's
+    // validator builds the expected MUC address as `jid.join(claim, "conference." .. sub)`, so a
+    // claim that already carries the AppID can never match a real room and every join fails with
+    // "Room and token mismatched" — reproduced against the live tenant (ADR-039 Amendment A).
+    // The tenant is carried by `sub`, asserted below; the URL prefix is a different field.
     const token = access.json.token as string;
     const [headerB64, payloadB64, sigB64] = token.split('.');
     const header = JSON.parse(Buffer.from(headerB64, 'base64url').toString('utf8')) as {
@@ -166,7 +171,10 @@ describeJaas('E2E: JaaS room access (FR-011 / ADR-039)', () => {
     expect(payload.aud).toBe('jitsi');
     expect(payload.iss).toBe('chat');
     expect(payload.sub).toBe(config.jitsiAppId);
-    expect(payload.room).toBe(`${config.jitsiAppId}/${room}`);
+    expect(payload.room).toBe(room);
+    // Locks the regression: a tenant-qualified claim makes every join fail with
+    // "Room and token mismatched", which surfaces to users as broken video.
+    expect(payload.room).not.toContain('/');
     expect(payload.context.user.id).toBe(learnerId);
     // A Learner is never a moderator; a regression here would let them end the class early.
     expect(payload.context.user.moderator).toBe('false');
@@ -180,7 +188,7 @@ describeJaas('E2E: JaaS room access (FR-011 / ADR-039)', () => {
       .verify(publicKeyPem, Buffer.from(sigB64, 'base64url'));
     expect(verified).toBe(true);
 
-    // The teacher's token is a moderator token for the same tenant-qualified room.
+    // The teacher's token is a moderator token for the same bare room node.
     api.actAs(teacherId);
     const teacherAccess = await api.post(`/api/classes/bookings/${bookingId}/room-access`, {
       displayName: 'JaaS Teacher',
@@ -188,7 +196,7 @@ describeJaas('E2E: JaaS room access (FR-011 / ADR-039)', () => {
     const teacherPayload = JSON.parse(
       Buffer.from((teacherAccess.json.token as string).split('.')[1], 'base64url').toString('utf8'),
     ) as { room: string; context: { user: { moderator: unknown } } };
-    expect(teacherPayload.room).toBe(`${config.jitsiAppId}/${room}`);
+    expect(teacherPayload.room).toBe(room);
     // String, not boolean: a boolean silently demotes the teacher (ADR-039 decision 2).
     expect(teacherPayload.context.user.moderator).toBe('true');
   });
