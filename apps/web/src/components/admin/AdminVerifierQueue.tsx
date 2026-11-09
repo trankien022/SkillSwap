@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { AdminVerifierQueuePage } from '@skillswap/contracts';
 import { AdminAuthError, HttpVerificationGateway } from '../../lib/verification/http-gateway';
+import { shortRef } from '../../lib/refs';
 
 /**
  * FR-015 / W2: the admin-wide Verifier queue, by domain.
@@ -219,7 +220,9 @@ export function AdminVerifierQueue({ initialDomain = '' }: { initialDomain?: str
               {/* The claim state is the operational signal: an old `pending` row means
                   nobody has picked it up, an old `claimed` row means someone is stuck. */}
               <span className="text-xs text-slate-500">
-                {item.claimedBy === null ? t('unclaimed') : t('claimedBy', { id: item.claimedBy })}
+                {item.claimedBy === null
+                  ? t('unclaimed')
+                  : t('claimedBy', { id: shortRef(item.claimedBy) })}
               </span>
             </li>
           ))}

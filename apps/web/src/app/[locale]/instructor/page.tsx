@@ -268,9 +268,18 @@ export default function InstructorDashboard() {
                       </p>
                     </div>
                     <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                      <span className="text-sm text-slate-500">
-                        {ui('id')}
-                        {s.skillId.slice(0, 8)}
+                      {/*
+                        A truncated UUID told the teacher nothing and is not
+                        anonymised by cutting eight characters off it. What belongs
+                        where a reference would go is the approval status, which is
+                        the fact about a skill that decides whether it can be
+                        published on.
+                      */}
+                      <span className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700">
+                        <span aria-hidden="true" className="material-symbols-outlined text-[14px]">
+                          verified_user
+                        </span>
+                        {ui('approved')}
                       </span>
                       <a
                         href={`/${locale}/teach/classes/new`}
@@ -419,9 +428,13 @@ export default function InstructorDashboard() {
                           </div>
                         </div>
                         <div className="flex max-w-full flex-wrap items-center gap-2.5 pt-2 lg:pt-0">
-                          <span className="text-sm text-slate-500 font-mono">
-                            {item.id.slice(0, 8)}
-                          </span>
+                          {/*
+                            This slot used to show `item.id.slice(0, 8)`, a
+                            truncated UUID with no label. A teacher reads a class
+                            list by name and time, both of which are already on
+                            the card; the id was noise that also leaked an
+                            internal identifier.
+                          */}
                           {!isCompleted && (
                             <button
                               onClick={() =>

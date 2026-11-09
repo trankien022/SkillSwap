@@ -13,6 +13,7 @@ import {
   type RoomAccessReason,
 } from '../../lib/classroom/room-access-client';
 import { fetchClassRoster } from '../../lib/classroom/class-roster-client';
+import { shortRef } from '../../lib/refs';
 import { useJitsiConference } from './use-jitsi-conference';
 
 /**
@@ -203,7 +204,7 @@ export function TeacherLiveClassroomContent({
           </Link>
           <span aria-hidden="true">/</span>
           <span className="text-slate-900 font-semibold">{classTitle}</span>
-          <span className="font-mono text-slate-500">{t('nav.classCode', { code: classId.slice(0, 8) })}</span>
+          <span className="font-mono text-slate-500">{t('nav.classCode', { code: shortRef(classId) })}</span>
         </div>
         <div className="flex items-center gap-2">
           <span

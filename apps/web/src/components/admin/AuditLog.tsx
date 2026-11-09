@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import type { AuditEvent, AuditLogPage } from '@skillswap/contracts';
 import { AdminAuthError, HttpVerificationGateway } from '../../lib/verification/http-gateway';
 import { ACTION_MESSAGE_KEY, AUDITED_ACTIONS } from '../../lib/audit-action-labels';
+import { shortRef } from '../../lib/refs';
 
 /**
  * FR-015 / W3: the admin audit log.
@@ -265,12 +266,12 @@ function AuditRow({ event }: { event: AuditEvent }) {
       <span className="text-xs text-slate-500">
         {event.actorId === null
           ? t('actorUnknown')
-          : t('actorKnown', { id: event.actorId })}
+          : t('actorKnown', { id: shortRef(event.actorId) })}
       </span>
 
       {event.targetId !== null && (
         <span className="break-all text-xs text-slate-500">
-          {t('targetId', { id: event.targetId })}
+          {t('targetId', { id: shortRef(event.targetId) })}
         </span>
       )}
 

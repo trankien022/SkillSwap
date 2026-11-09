@@ -17,6 +17,7 @@ import {
   type SettlementStatus,
 } from '../../../../../lib/booking/settlement';
 import { BookingError } from '../../../../../lib/booking/domain';
+import { shortRef } from '../../../../../lib/refs';
 import type { ClassDetailView } from '../../../../../lib/marketplace/types';
 import type { WalletBalanceView, TopUpIntentCreated, TopUpIntentStatusView } from '@skillswap/contracts';
 
@@ -369,7 +370,7 @@ export default function BookingCheckoutPage({ params }: PageProps) {
   };
 
   return <div className="flex min-h-dvh flex-col bg-mist text-ink"><Navbar currentTab="explore" {...(balance ? {balance} : {})}/><main id="main-content" tabIndex={-1} className="workspace-page flex-1"><PageIntro title={t('title')} description={t('description')} actions={<a href={`/${locale}/classes/${id}`} className="workspace-link">← {t('back')}</a>}/>
- {bookingId && <p className="mb-4 break-all text-sm text-ink-soft">{t('bookingRef')}: {bookingId}</p>}
+ {bookingId && <p className="mb-4 break-all text-sm text-ink-soft">{t('bookingRef')}: {shortRef(bookingId)}</p>}
  {toastMessage && <p role="status" className="workspace-feedback bg-neutral-tint mb-6">{toastMessage}</p>}
  {display===null || classDetail===null ? <StatePanel title={loadError ? t('loadError') : t('loading')} tone={loadError?'error':'neutral'}>{loadError || t('loadingBody')}</StatePanel> : <>
  {isSuccessModalOpen && <div className="mb-6"><StatePanel title={t('successTitle')} action={<a href={`/${locale}/bookings`} className="workspace-primary">{t('myClasses')}</a>}>{t('successBody')}</StatePanel></div>}

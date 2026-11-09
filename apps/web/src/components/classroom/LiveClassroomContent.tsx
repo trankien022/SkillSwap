@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import Link from 'next/link';
 import { getStoredUser } from '../../lib/api-client';
 import { HttpLearnerDashboardGateway } from '../../lib/dashboard/http-gateway';
+import { shortRef } from '../../lib/refs';
 import type { LearnerBookingView } from '../../lib/dashboard/types';
 import {
   requestRoomAccess,
@@ -293,7 +294,7 @@ export function LiveClassroomContent({ bookingId = '', roomCode = '' }: LiveClas
             chevron_right
           </span>
           <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-sm font-bold text-slate-700">
-            {t('nav.bookingCode', { code: booking === null ? bookingId : booking.id })}
+            {t('nav.bookingCode', { code: shortRef(booking === null ? bookingId : booking.id) })}
           </span>
         </div>
 
