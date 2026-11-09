@@ -33,6 +33,10 @@ const WEB_ROUTES = [
   '/classes/:id',
   '/classes/:id/bookings',
   '/classes/:id/cancel',
+  // FR-011 / ADR-040: the teacher opens their class room (no booking to key on) and reads
+  // the roster for the in-room participant panel.
+  '/classes/:id/room-access',
+  '/classes/:id/roster',
   '/classes/:id/start',
   '/classes/bookings/:bookingId/confirm',
   // FR-012 / ADR-036: in-class chat. The query string is not part of the route

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import Link from 'next/link';
 import { getStoredUser } from '../../lib/api-client';
@@ -13,15 +13,7 @@ import {
   type RequestRoomAccessResult,
   type RoomAccessReason,
 } from '../../lib/classroom/room-access-client';
-import {
-  loadJitsiExternalApi,
-  jitsiHostFromUrl,
-  jitsiProtocolFromUrl,
-  jitsiRoomNameFromUrl,
-  jitsiScriptBaseFromUrl,
-  buildJitsiOptions,
-  type JitsiApi,
-} from './jitsi-external-api';
+import { useJitsiConference } from './use-jitsi-conference';
 import { ChatPanel } from './ChatPanel';
 
 export interface LiveClassroomProps {
@@ -61,15 +53,8 @@ export function LiveClassroomContent({ bookingId = '', roomCode = '' }: LiveClas
 
   const [phase, setPhase] = useState<Phase>({ kind: 'loading_booking' });
 
-  // Jitsi instance lives in a ref (never in state: it is not render data).
-  const jitsiRef = useRef<JitsiApi | null>(null);
-  const stageRef = useRef<HTMLDivElement | null>(null);
+  // Jitsi instance lives in the shared hook's ref (never in state: it is not render data).
   const [notice, setNotice] = useState<string | null>(null);
-
-  // Pressed state tracked from real Jitsi events, not local toggles.
-  const [micMuted, setMicMuted] = useState<boolean>(true);
-  const [videoMuted, setVideoMuted] = useState<boolean>(false);
-  const [sharingScreen, setSharingScreen] = useState<boolean>(false);
 
   // Display name comes from the session; never an invented person's name.
   //
@@ -153,16 +138,16 @@ export function LiveClassroomContent({ bookingId = '', roomCode = '' }: LiveClas
     };
   }, [phase]);
 
-  /* 3. Load the Jitsi External API and construct the real conference. */
-  // Depends on the connection attempt's identity only: the `connecting ->
-  // connected` transition must NOT tear the conference down and rebuild it.
-  // Both phases therefore yield the SAME access values — deriving them only from
-  // `connecting` (the obvious reading) nulls them the instant `videoConferenceJoined`
-  // lands, which re-runs this effect with nulls and its cleanup disposes the
-  // conference we just created: the iframe vanished while the UI still claimed
-  // "connected".
-  // `embed_error` carries the access it was built from, so the retry button can rebuild the
-  // conference with the same token instead of asking the API for a new one.
+  /* 3. Load the Jitsi External API and construct the real conference.
+   *
+   * The lifecycle lives in `useJitsiConference` so the teacher classroom shares it verbatim.
+   * Keying on the access values only — never on `connected` — is what stops the
+   * `connecting -> connected` transition from tearing down the conference that just connected
+   * and blanking the iframe while the UI still claims the call is live.
+   *
+   * `embed_error` carries the access it was built from, so the retry button rebuilds from the
+   * same token instead of asking the API for a new one.
+   */
   const access =
     phase.kind === 'connecting' ||
     phase.kind === 'prejoin' ||
@@ -170,106 +155,25 @@ export function LiveClassroomContent({ bookingId = '', roomCode = '' }: LiveClas
     phase.kind === 'embed_error'
       ? phase.access
       : null;
-  const accessUrl = access?.url ?? null;
-  const accessRoom = access?.room ?? null;
-  const accessToken = access?.token ?? null;
-  useEffect(() => {
-    if (accessUrl === null || accessRoom === null || accessToken === null) return;
-    const container = stageRef.current;
-    if (container === null) return;
 
-    let cancelled = false;
-    const listeners: Array<{ event: string; handler: (payload: unknown) => void }> = [];
-
-    const mount = async () => {
-      try {
-        // The script is served per tenant (JaaS: `https://8x8.vc/<appId>/external_api.js`),
-        // while the constructor wants a bare HOST (it prepends the protocol itself).
-        const base = jitsiScriptBaseFromUrl(accessUrl);
-        const JitsiMeetExternalAPI = await loadJitsiExternalApi(base);
-        if (cancelled) return;
-
-        const api = new JitsiMeetExternalAPI(
-          jitsiHostFromUrl(accessUrl),
-          buildJitsiOptions({
-            // JaaS needs the tenant-prefixed name (`<appId>/<room>`), so it is taken from the
-            // access URL rather than from the provider-agnostic `room` field.
-            roomName: jitsiRoomNameFromUrl(accessUrl),
-            parentNode: container,
-            protocol: jitsiProtocolFromUrl(accessUrl),
-            jwt: accessToken,
-            displayName: displayNameRef.current,
-            audioMuted: true,
-            videoMuted: false,
-            prejoinEnabled: true,
-          }),
-        );
-        jitsiRef.current = api;
-
-        const onAudio = (payload: unknown) => {
-          const muted = readBooleanField(payload, 'muted');
-          if (muted !== null) setMicMuted(muted);
-        };
-        const onVideo = (payload: unknown) => {
-          const muted = readBooleanField(payload, 'muted');
-          if (muted !== null) setVideoMuted(muted);
-        };
-        const onScreenShare = (payload: unknown) => {
-          const on = readBooleanField(payload, 'on');
-          if (on !== null) setSharingScreen(on);
-        };
-        const onJoined = () => {
-          setPhase((prev) =>
-            prev.kind === 'connecting' || prev.kind === 'prejoin'
-              ? { ...prev, kind: 'connected', connectedAt: Date.now() }
-              : prev,
-          );
-        };
-
-        listeners.push(
-          { event: 'audioMuteStatusChanged', handler: onAudio },
-          { event: 'videoMuteStatusChanged', handler: onVideo },
-          { event: 'screenSharingStatusChanged', handler: onScreenShare },
-          { event: 'videoConferenceJoined', handler: onJoined },
-        );
-        for (const { event, handler } of listeners) {
-          api.addEventListener(event, handler);
-        }
-
-        // The embed is up: show Jitsi's own prejoin screen (device check, name
-        // confirmation) WITHOUT claiming the learner is in the room. The phase
-        // becomes `connected` only when Jitsi fires `videoConferenceJoined`, so
-        // the status bar and timer never report a call that has not started.
-        setPhase((prev) => (prev.kind === 'connecting' ? { ...prev, kind: 'prejoin' } : prev));
-      } catch {
-        if (!cancelled) {
-          // Keep the access values: the retry button rebuilds the conference from them rather
-          // than spending a second room-access request on a transient script failure.
-          setPhase((prev) =>
-            prev.kind === 'connecting'
-              ? { kind: 'embed_error', booking: prev.booking, access: prev.access }
-              : prev,
-          );
-        }
-      }
-    };
-
-    void mount();
-
-    return () => {
-      cancelled = true;
-      const api = jitsiRef.current;
-      if (api !== null) {
-        for (const { event, handler } of listeners) {
-          api.removeEventListener(event, handler);
-        }
-        api.dispose();
-        jitsiRef.current = null;
-      }
-      // Do not leave a detached container behind for the next mount.
-      if (container !== null) container.replaceChildren();
-    };
-  }, [accessUrl, accessRoom, accessToken]);
+  const { stageRef, micMuted, videoMuted, sharingScreen, runCommand } = useJitsiConference({
+    access,
+    displayName,
+    onPrejoin: () =>
+      setPhase((prev) => (prev.kind === 'connecting' ? { ...prev, kind: 'prejoin' } : prev)),
+    onJoined: () =>
+      setPhase((prev) =>
+        prev.kind === 'connecting' || prev.kind === 'prejoin'
+          ? { ...prev, kind: 'connected', connectedAt: Date.now() }
+          : prev,
+      ),
+    onEmbedError: () =>
+      setPhase((prev) =>
+        prev.kind === 'connecting'
+          ? { kind: 'embed_error', booking: prev.booking, access: prev.access }
+          : prev,
+      ),
+  });
 
   /* 4. Real elapsed timer: only ticks once the call is connected. */
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -305,13 +209,8 @@ export function LiveClassroomContent({ bookingId = '', roomCode = '' }: LiveClas
     return () => clearInterval(timer);
   }, [opensAt]);
 
-  /* 6. Control bar — every button drives the real conference. */
+  /* 6. Control bar — every button drives the real conference (`runCommand` from the hook). */
   const connected = phase.kind === 'connected';
-  const runCommand = useCallback((command: string) => {
-    const api = jitsiRef.current;
-    if (api === null) return;
-    api.executeCommand(command);
-  }, []);
 
   const handleToggleMic = () => runCommand('toggleAudio');
   const handleToggleCamera = () => runCommand('toggleVideo');
@@ -917,13 +816,6 @@ export function LiveClassroomContent({ bookingId = '', roomCode = '' }: LiveClas
 
 /* --- Helpers --- */
 
-/** Reads a boolean field from an unknown Jitsi event payload, or null when absent. */
-function readBooleanField(payload: unknown, field: string): boolean | null {
-  if (typeof payload !== 'object' || payload === null) return null;
-  const value = (payload as Record<string, unknown>)[field];
-  return typeof value === 'boolean' ? value : null;
-}
-
 /** First glyph of a display name, or a neutral dash. Never invents a name. */
 function initialOf(name: string): string {
   const trimmed = name.trim();
@@ -968,6 +860,10 @@ function denialKey(reason: RoomAccessReason): string {
       return 'states.windowClosed';
     case 'not_found':
       return 'states.roomNotFound';
+    case 'class_not_joinable':
+      // ADR-040: a teacher-only denial. Unreachable from the learner endpoint, but the union
+      // is shared, so it needs an answer rather than a silent gap.
+      return 'states.unavailable';
     case 'provider_unavailable':
       return 'states.providerUnavailable';
     case 'unavailable':
@@ -988,6 +884,9 @@ function denialIcon(reason: RoomAccessReason): string {
       return 'schedule';
     case 'not_found':
       return 'search_off';
+    case 'class_not_joinable':
+      // ADR-040: teacher-only denial, unreachable from the learner endpoint.
+      return 'error';
     case 'provider_unavailable':
       return 'cloud_off';
     case 'unavailable':

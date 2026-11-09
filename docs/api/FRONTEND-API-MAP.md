@@ -38,6 +38,8 @@ paths follow and `FRONTEND-API-GUIDE.md` for how to call them.
 | `/classes/:id/bookings` | POST | `lib/booking/http-gateway.ts` | `infrastructure/http/booking-http-gateway.ts` | |
 | `/classes/:id/cancel` | POST | `lib/dashboard/http-gateway.ts` | `infrastructure/http/teaching-gateway.ts` | |
 | `/classes/:id/start` | POST | `app/[locale]/instructor/page.tsx` | `infrastructure/http/teaching-gateway.ts` | A class completes automatically (ADR-021 Amendment A / AC-035); there is no `/complete` route. |
+| `/classes/:id/room-access` | POST | `lib/classroom/room-access-client.ts` (`requestTeacherRoomAccess`) | — | FR-011 / ADR-040. Teacher entry point, keyed on the class because a teacher has no booking for the class they teach. Same room and window as the learner route; the teacher receives `moderator`. Denied (`RoomAccessDeniedError`, 403) for `draft`/`completed`/`cancelled` and outside the window. |
+| `/classes/:id/roster` | GET | `lib/teacher/http-gateway.ts` | — | FR-011 / ADR-040. Teacher-only active seats for the in-room participant panel; anyone else gets 404, not 403, so the route does not confirm an unowned class exists. |
 | `/classes/bookings/me` | GET | `lib/dashboard/http-gateway.ts`, `components/dashboard/PostSessionReviewContent.tsx` | `infrastructure/http/my-bookings-gateway.ts` | `limit=50`; the learner dashboard filters client-side (see below). |
 | `/classes/bookings/:bookingId/confirm` | POST | `lib/booking/http-gateway.ts`, `lib/dashboard/http-gateway.ts` | `infrastructure/http/booking-http-gateway.ts` | |
 | `/classes/bookings/:bookingId/rating` | POST | `lib/dashboard/http-gateway.ts`, `components/dashboard/PostSessionReviewContent.tsx` | `infrastructure/http/rating-gateway.ts` | |

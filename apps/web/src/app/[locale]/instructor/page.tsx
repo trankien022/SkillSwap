@@ -11,6 +11,7 @@ import {
   type ClassEditDraft,
   type TeacherClassItem,
 } from '../../../lib/teacher/dashboard-view-model';
+import { teacherJoinability } from '../../../lib/teacher/teacher-joinability';
 import { WorkspaceFooter } from '../../../components/ui/WorkspaceFooter';
 import { SkillCategoryLabel } from '../../../components/ui/SkillCategoryLabel';
 import { PageIntro } from '../../../components/ui/PageIntro';
@@ -482,6 +483,38 @@ export default function InstructorDashboard() {
                               {ui('start')}
                             </button>
                           )}
+                          {/* FR-011 / ADR-040: the teacher needs a way into the room they
+                              started. The window and the class-state rule mirror the server,
+                              so the button is disabled — with the reason — rather than
+                              enabled and then refused with a 403. */}
+                          {(() => {
+                            const join = teacherJoinability(item);
+                            if (join.state === 'not_joinable') return null;
+                            const open = join.state === 'open';
+                            return (
+                              <a
+                                href={`/${locale}/teach/classes/${item.id}/live`}
+                                aria-disabled={open ? undefined : true}
+                                tabIndex={open ? undefined : -1}
+                                onClick={(event) => {
+                                  if (!open) event.preventDefault();
+                                }}
+                                className={`px-4 py-2 rounded-full text-sm font-semibold border transition-colors flex items-center gap-1.5 ${
+                                  open
+                                    ? 'border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700'
+                                    : 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
+                                }`}
+                              >
+                                <span
+                                  aria-hidden="true"
+                                  className="material-symbols-outlined text-[16px]"
+                                >
+                                  video_call
+                                </span>{' '}
+                                {open ? ui('joinRoom') : ui('roomOpensSoon')}
+                              </a>
+                            );
+                          })()}
                           {/* ADR-021 Amendment A / AC-035: no "complete" button. A
                               class ends when its scheduled time elapses; a Teacher
                               cannot end it themselves. */}
