@@ -114,6 +114,7 @@ import { CancelClassUseCase } from './internal/application/cancel-class.use-case
 import { MarkTeacherNoShowUseCase } from './internal/application/mark-teacher-no-show.use-case';
 import { ExpirePendingBookingsUseCase } from './internal/application/expire-pending-bookings.use-case';
 import { RequestRoomAccessUseCase } from './internal/application/request-room-access.use-case';
+import { RequestTeacherRoomAccessUseCase } from './internal/application/request-teacher-room-access.use-case';
 import { StartClassUseCase } from './internal/application/start-class.use-case';
 import { CompleteElapsedClassesUseCase } from './internal/application/complete-elapsed-classes.use-case';
 import { PendingHoldSweeper } from './internal/adapter/in/scheduler/pending-hold.sweeper';
@@ -139,6 +140,10 @@ import {
   REQUEST_ROOM_ACCESS,
   type RequestRoomAccessPort,
 } from './internal/application/port/in/request-room-access';
+import {
+  REQUEST_TEACHER_ROOM_ACCESS,
+  type RequestTeacherRoomAccessPort,
+} from './internal/application/port/in/request-teacher-room-access';
 import { START_CLASS, type StartClassPort } from './internal/application/port/in/start-class';
 import {
   COMPLETE_ELAPSED_CLASSES,
@@ -433,6 +438,31 @@ const systemClock: Clock = { now: () => new Date() };
         ),
       inject: [
         BOOKING_REPOSITORY,
+        CLASS_REPOSITORY,
+        ROOM_TOKEN_ISSUER,
+        ROOM_INCIDENT_RECORDER,
+        CLOCK,
+        ApiConfig,
+      ],
+    },
+    {
+      provide: REQUEST_TEACHER_ROOM_ACCESS,
+      useFactory: (
+        classes: ClassRepository,
+        tokens: RoomTokenIssuer,
+        incidents: RoomIncidentRecorder,
+        clock: Clock,
+        config: ApiConfig,
+      ): RequestTeacherRoomAccessPort =>
+        new RequestTeacherRoomAccessUseCase(
+          classes,
+          tokens,
+          incidents,
+          clock,
+          config.jitsiDomain,
+          config.jitsiOpenMinutes,
+        ),
+      inject: [
         CLASS_REPOSITORY,
         ROOM_TOKEN_ISSUER,
         ROOM_INCIDENT_RECORDER,
