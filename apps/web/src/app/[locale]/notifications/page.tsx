@@ -23,7 +23,7 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     let active = true;
-    fetchNotifications().then((result) => {
+    fetchNotifications(locale).then((result) => {
       if (!active) return;
       if (result) {
         setItems(result.items);
@@ -36,7 +36,7 @@ export default function NotificationsPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [locale]);
 
   async function handleMarkAllRead() {
     const nextUnread = await markAllNotificationsRead();

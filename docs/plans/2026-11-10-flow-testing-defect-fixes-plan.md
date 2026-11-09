@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-10
 **Branch:** `fix/flow-testing-defects` (off `main` @ `7e11943`)
-**Status:** planned
+**Status:** phases 1–5 landed; 6–7 outstanding
 
 ## Context
 
@@ -120,11 +120,51 @@ actually returns before choosing whether the join belongs in the API or the clie
 
 ## Phase 5 — #3 Vietnamese copy on `/en`
 
-`routing.defaultLocale` is `'en'`, so the earlier note blaming `DEFAULT_LOCALE='vi'`
-is imprecise. The likely cause is a hardcoded Vietnamese string or a
-locale-independent constant inside the notification producer. Locate the string,
-make it locale-aware or move it to the message catalogue, and add a test that
-`/en/notifications` contains no Vietnamese diacritics.
+### What is actually wrong (confirmed by reading the code)
+
+`routing.defaultLocale` is `'en'`, so the earlier note blaming `DEFAULT_LOCALE='vi'` was
+right about the constant but wrong about the cause. Both were needed:
+
+- `SqlNotificationManagement.readLocale` resolves the inbox language from the account's most
+  recently updated **active push device**, and falls back to `DEFAULT_LOCALE = 'vi'`.
+- The web client registers **no** push device — it never calls `POST /notifications/devices`,
+  because it has no push tokens. Every web-only account therefore took the `vi` fallback.
+- The reader's own language was never consulted at all: `GET /notifications` ignored
+  `Accept-Language`, and nothing in `apps/api/src` read the header.
+
+So a user on `/en/notifications` read Vietnamese titles over a page whose every other string was
+English. `notificationCopy` already carried both languages; only the choice of which one was wrong.
+The mobile audit plan had already logged this as risk R-05.
+
+### Decision
+
+Request language → device language → one shared constant, in that order.
+
+- `apps/api/src/shared/http/accept-language.ts` — `localeFromAcceptLanguage`, narrow on purpose:
+  returns `vi`, `en` or `undefined`, honours `q=0` and caller ordering, ignores `*` and unsupported
+  languages rather than guessing.
+- `notifications.controller.ts` passes it to the adapter read.
+- `DEFAULT_NOTIFICATION_LOCALE = 'en'` beside `notificationCopy`, used by both the inbox fallback
+  and `PushDeliveryWorker`, so one event cannot arrive as two different strings per channel. The old
+  push default was `'vi'` too.
+- `readLocale` now names both supported languages. Its old
+  `locale === 'en' ? 'en' : DEFAULT_LOCALE` shape only worked while the default was `vi`; flipping
+  the default without this would have turned every Vietnamese device English.
+- `fetchNotifications(locale)` sends `Accept-Language`; the page re-fetches on locale change.
+
+Recorded as [ADR-041](../../adr/ADR-041-notification-language-negotiation.md).
+
+### Done when
+
+- `/en/notifications` renders English and `/vi/notifications` Vietnamese, same account, no device.
+- A request with no header keeps the old behaviour, except that the no-device default is now `en`.
+- Push and inbox agree on their fallback (parity test).
+
+### Proof
+
+The three adapter tests in `sql-notification-management.spec.ts` and the two controller tests fail
+against the pre-fix resolution. The controller test could not even be *written* against the old
+signature — `list` took three arguments and rejected a fourth at compile time.
 
 ## Phase 6 — #7 validation errors as raw JSON
 

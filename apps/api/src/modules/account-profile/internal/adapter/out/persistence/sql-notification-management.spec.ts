@@ -7,7 +7,14 @@ describe('SqlNotificationManagement', () => {
   const source = { query: jest.fn(), transaction: jest.fn(async (cb: (m: EntityManager) => Promise<unknown>) => cb(manager)) } as unknown as DataSource;
   const registry = { get: jest.fn().mockReturnValue(source), getSchema: jest.fn().mockReturnValue('account_profile') } as unknown as ModuleDataSourceRegistry;
   const repository = new SqlNotificationManagement(registry, 'account-profile');
-  beforeEach(() => { jest.clearAllMocks(); });
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // `clearAllMocks` drops recorded calls but keeps queued `mockResolvedValueOnce`
+    // values, so a test that supplies more than it consumes would leak them into the
+    // next one. Reset the two query spies outright.
+    (source.query as jest.Mock).mockReset();
+    (manager.query as jest.Mock).mockReset();
+  });
 
   it('returns owner-scoped notifications with an exact unread count', async () => {
     (source.query as jest.Mock)
@@ -59,7 +66,7 @@ describe('SqlNotificationManagement', () => {
       expect(page.items[0]?.body).toBe('Your class booking is confirmed. Open your schedule to view the details.');
     });
 
-    it('defaults to Vietnamese when the account has no active device', async () => {
+    it('defaults to English when the account has no active device', async () => {
       (source.query as jest.Mock)
         .mockResolvedValueOnce([stored])
         .mockResolvedValueOnce([{ count: '1' }])
@@ -67,8 +74,10 @@ describe('SqlNotificationManagement', () => {
 
       const page = await repository.list('account-1', { limit: 20 });
 
-      // The same default the device insert uses, so the inbox cannot disagree with the device.
-      expect(page.items[0]?.title).toBe('Đặt lớp thành công');
+      // Defect #3: the old default was `vi`, so an account with no registered device —
+      // which is every web-only account, since the web client registers none — got
+      // Vietnamese rows on `/en`. `en` is the product's `routing.defaultLocale`.
+      expect(page.items[0]?.title).toBe('Booking confirmed');
     });
 
     it('ignores a device locale that is not one of the two supported languages', async () => {
@@ -79,7 +88,56 @@ describe('SqlNotificationManagement', () => {
 
       const page = await repository.list('account-1', { limit: 20 });
 
+      expect(page.items[0]?.title).toBe('Booking confirmed');
+    });
+
+    it('keeps a Vietnamese device Vietnamese now that the fallback is English', async () => {
+      // The old `locale === 'en' ? 'en' : DEFAULT_LOCALE` shape only held while the
+      // default was `vi`; flipping the default without naming both values would have
+      // silently turned every Vietnamese device English.
+      (source.query as jest.Mock)
+        .mockResolvedValueOnce([stored])
+        .mockResolvedValueOnce([{ count: '1' }])
+        .mockResolvedValueOnce([{ locale: 'vi' }]);
+
+      const page = await repository.list('account-1', { limit: 20 });
+
       expect(page.items[0]?.title).toBe('Đặt lớp thành công');
+    });
+
+    describe('the caller’s stated language wins (defect #3)', () => {
+      it('renders in the request locale even when the active device says otherwise', async () => {
+        (source.query as jest.Mock)
+          .mockResolvedValueOnce([stored])
+          .mockResolvedValueOnce([{ count: '1' }])
+          .mockResolvedValueOnce([{ locale: 'vi' }]);
+
+        const page = await repository.list('account-1', { limit: 20 }, undefined, 'en');
+
+        expect(page.items[0]?.title).toBe('Booking confirmed');
+      });
+
+      it('does not consult the device at all when the caller stated a language', async () => {
+        (source.query as jest.Mock)
+          .mockResolvedValueOnce([stored])
+          .mockResolvedValueOnce([{ count: '1' }]);
+
+        await repository.list('account-1', { limit: 20 }, undefined, 'en');
+
+        // Two queries: the page and the unread count. No device lookup, so a stale
+        // device row cannot override what the screen asked for.
+        expect(source.query).toHaveBeenCalledTimes(2);
+      });
+
+      it('renders Vietnamese on request for an account whose device is en', async () => {
+        (source.query as jest.Mock)
+          .mockResolvedValueOnce([stored])
+          .mockResolvedValueOnce([{ count: '1' }]);
+
+        const page = await repository.list('account-1', { limit: 20 }, undefined, 'vi');
+
+        expect(page.items[0]?.title).toBe('Đặt lớp thành công');
+      });
     });
 
     it('renders every contract notification type in both languages, with no stored text leaking', async () => {

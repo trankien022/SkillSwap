@@ -23,11 +23,13 @@ describe('push and inbox agree on the copy (B7)', () => {
     created_at: new Date('2026-11-07T10:00:00.000Z'),
   };
 
-  function inbox(locale: 'vi' | 'en') {
+  function inbox(locale?: 'vi' | 'en') {
     const query = jest.fn()
       .mockResolvedValueOnce([stored])
       .mockResolvedValueOnce([{ count: '1' }])
-      .mockResolvedValueOnce([{ locale }]);
+      // The device lookup always runs when the caller states no language; an empty
+      // result is "this account registered no active device".
+      .mockResolvedValueOnce(locale === undefined ? [] : [{ locale }]);
     const registry = {
       get: jest.fn().mockReturnValue({ query } as unknown as DataSource),
       getSchema: jest.fn().mockReturnValue('account_profile'),
@@ -71,13 +73,26 @@ describe('push and inbox agree on the copy (B7)', () => {
     expect(page.items[0]?.body).toBe(push.body);
   });
 
-  it('agrees on the Vietnamese default when neither side knows a language', async () => {
-    // The inbox has no active device and the delivery has no locale yet.
-    const page = await inbox('vi').list('account-1', { limit: 20 });
+  it('agrees on the English default when neither side knows a language', async () => {
+    // The inbox has no active device and the delivery has no locale yet. Defect #3:
+    // this default used to be `vi`, which rendered `/en/notifications` in Vietnamese
+    // for every web-only account. Both sides now read the one constant.
+    const page = await inbox().list('account-1', { limit: 20 });
     const push = await pushed({});
 
     expect(page.items[0]?.title).toBe(push.title);
     expect(page.items[0]?.body).toBe(push.body);
+    expect(push.title).toBe('Class canceled');
+  });
+
+  it('lets the reader’s stated language beat a conflicting device language', async () => {
+    // The account's device says Vietnamese (a native app), but this read is a browser on
+    // /en. The screen states its language, so the row must follow the screen.
+    const page = await inbox('vi').list('account-1', { limit: 20 }, undefined, 'en');
+    const push = await pushed({ locale: 'vi' });
+
+    expect(page.items[0]?.title).toBe('Class canceled');
+    // The push still goes to the device in the device's language; only this read moved.
     expect(push.title).toBe('Lớp học đã hủy');
   });
 });

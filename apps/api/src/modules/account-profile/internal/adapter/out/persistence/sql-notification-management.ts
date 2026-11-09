@@ -2,7 +2,7 @@ import { deviceSubscriptionSchema, notificationsPageSchema, type DeviceSubscript
 import type { ModuleDataSourceRegistry } from '../../../../../../shared/messaging/module-registry';
 import { qualified } from '../../../../../../shared/sql/ident';
 import { returnedRows } from '../../../../../../shared/sql/result';
-import { notificationCopy } from '../../../application/notification-copy';
+import { DEFAULT_NOTIFICATION_LOCALE, notificationCopy, type NotificationLocale } from '../../../application/notification-copy';
 import type { NotificationManagementPort, RecordInboxNotification } from '../../../application/port/notification-management';
 
 interface RawDevice { id: string; installation_id: string; platform: string; is_active: boolean; created_at: Date | string }
@@ -13,16 +13,24 @@ function iso(value: Date | string): string { return value instanceof Date ? valu
 function encodeCursor(createdAt: string, id: string): string { return Buffer.from(`${createdAt}|${id}`).toString('base64url'); }
 
 /**
- * B7: the language an inbox row is rendered in.
+ * B7 / defect #3: the language an inbox row is rendered in.
  *
- * A push is already built per installation, because each delivery knows its own device. An inbox
- * row is read by a person, not a device, so the account's most recently updated **active** device
- * speaks for them. An account with no device reads `vi` — the same default the device insert (and
- * therefore `notification_devices.locale`) uses, so a user who never registered one still gets a
- * language rather than a fallback that disagrees with their own device.
+ * Three sources, in this order of authority:
+ *
+ *  1. **The caller's `Accept-Language`.** The inbox is read by a person looking at a
+ *     screen, and the screen states its language. Honouring the request is what makes
+ *     `/en/notifications` read as English.
+ *  2. **The account's most recently updated active device.** Still the right answer for
+ *     a push-only client that reads its inbox natively, because there is no header to
+ *     consult.
+ *  3. **`en`.** Previously `vi`, which meant an account with no registered device — every
+ *     web-only account, since the web client registers none — had its inbox rendered in
+ *     Vietnamese regardless of the screen it was on. `en` is the product's own
+ *     `routing.defaultLocale`, so the fallback now agrees with the app's default rather
+ *     than contradicting it.
  */
-type Locale = 'vi' | 'en';
-const DEFAULT_LOCALE: Locale = 'vi';
+type Locale = NotificationLocale;
+const DEFAULT_LOCALE: Locale = DEFAULT_NOTIFICATION_LOCALE;
 
 /** Account-owned notification storage adapter; all reads are owner-filtered. */
 export class SqlNotificationManagement implements NotificationManagementPort {
@@ -36,7 +44,7 @@ export class SqlNotificationManagement implements NotificationManagementPort {
    * arrived as a Vietnamese push and an English inbox row. Nothing about the row depends on who
    * read it when it was written, so the language belongs to the read.
    */
-  async list(accountId: string, query: ListNotificationsQuery, cursor?: readonly [Date, string]): Promise<NotificationsPage> {
+  async list(accountId: string, query: ListNotificationsQuery, cursor?: readonly [Date, string], requestLocale?: Locale): Promise<NotificationsPage> {
     const source = this.registry.get(this.moduleName);
     const inbox = qualified(this.schema, 'inbox_notifications');
     const params: unknown[] = [accountId];
@@ -46,7 +54,8 @@ export class SqlNotificationManagement implements NotificationManagementPort {
     params.push(query.limit + 1);
     const rows = await source.query(`SELECT "id", "type", "title", "body", "target_type", "target_id", "read", "created_at" FROM ${inbox} WHERE ${where.join(' AND ')} ORDER BY "created_at" DESC, "id" DESC LIMIT $${params.length}`, params) as RawNotification[];
     const unreadRows = await source.query(`SELECT COUNT(*)::int AS "count" FROM ${inbox} WHERE "account_id" = $1 AND "read" = false`, [accountId]) as CountRow[];
-    const locale = await this.readLocale(accountId);
+    // Defect #3: only consult the device when the caller did not state a language.
+    const locale = requestLocale ?? (await this.readLocale(accountId));
     const pageRows = rows.slice(0, query.limit);
     const last = pageRows[pageRows.length - 1];
     const nextCursor = rows.length > query.limit && last ? encodeCursor(iso(last.created_at), last.id) : null;
@@ -67,7 +76,11 @@ export class SqlNotificationManagement implements NotificationManagementPort {
     });
   }
 
-  /** The account's speaking language: their most recently updated active device. */
+  /**
+   * The account's speaking language, for callers that did not state one: their most
+   * recently updated active device. An unsupported or missing value falls through to
+   * `en`.
+   */
   private async readLocale(accountId: string): Promise<Locale> {
     const devices = qualified(this.schema, 'notification_devices');
     const rows = (await this.registry.get(this.moduleName).query(
@@ -78,7 +91,10 @@ export class SqlNotificationManagement implements NotificationManagementPort {
       [accountId],
     )) as LocaleRow[];
     const locale = rows[0]?.locale;
-    return locale === 'en' ? 'en' : DEFAULT_LOCALE;
+    // Was `locale === 'en' ? 'en' : DEFAULT_LOCALE`, which only worked while the
+    // default was `vi`. Naming both supported values keeps a `vi` device Vietnamese
+    // now that the fallback is English.
+    return locale === 'vi' || locale === 'en' ? locale : DEFAULT_LOCALE;
   }
 
   async upsertDevice(accountId: string, input: UpsertDeviceInput): Promise<DeviceSubscription> {
