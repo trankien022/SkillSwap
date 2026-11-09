@@ -452,7 +452,6 @@
     },
     "card": {
       "pending": "Chờ bạn xác nhận hoàn tất",
-      "autoRelease": "Tự động giải ngân sau {time}",
       "confirmedSlot": "Đã chốt slot",
       "confirmedSlotHint": "Còn {hours} giờ tới buổi học",
       "bookingId": "Mã đặt: {id}",
@@ -465,7 +464,8 @@
       "minutes": "Thời lượng: {n} phút",
       "cost": "Chi phí: {credits} credits",
       "confirm": "Xác nhận hoàn tất",
-      "confirmReview": "Xác nhận & gửi đánh giá",
+      "confirmReview": "Gửi đánh giá",
+      "reviewNotOpenYet": "Đánh giá sẽ mở khi buổi học được ghi nhận hoàn tất.",
       "report": "Báo cáo sự cố",
       "noShow": "Giảng viên vắng mặt",
       "joinRoom": "Vào phòng học",
@@ -478,7 +478,7 @@
       "rebook": "Đặt lại với cùng giảng viên",
       "downloadNotes": "Tải ghi chú",
       "ruleTitle": "Quy tắc bảo vệ",
-      "ruleBody": "Số credits đang được giữ an toàn trong sổ cái. Khi bạn xác nhận hoàn tất, số credits sẽ được chuyển sang ví giảng viên. Nếu giảng viên vắng mặt quá 15 phút hoặc vi phạm cam kết, bạn sẽ được hoàn về ví theo chính sách.",
+      "ruleBody": "Số credits đang được giữ an toàn trong sổ cái. Khi buổi học hoàn tất, số credits sẽ tự động được chuyển sang ví giảng viên — bạn không cần giải ngân. Nếu giảng viên vắng mặt quá 15 phút, số credits sẽ được hoàn về ví của bạn.",
       "noShowBody": "Đã báo cáo sự cố vắng mặt. Hệ thống sẽ hoàn credits ký quỹ về ví của bạn trong vòng 24 giờ.",
       "cancelledBody": "Lớp học đã được huỷ. Số credits ký quỹ đã hoàn về ví của bạn.",
       "completedReview": "Đánh giá bạn đã gửi",
@@ -536,15 +536,15 @@
       }
     },
     "reviewModal": {
-      "title": "Đánh giá buổi học & Giải ngân ký quỹ",
-      "subtitle": "Xác nhận ca học đã diễn ra thành công để chuyển số credits ký quỹ cho giảng viên.",
+      "title": "Đánh giá buổi học",
+      "subtitle": "Đánh giá của bạn là cơ sở để giảng viên được ghi nhận. Số credits ký quỹ sẽ tự động giải ngân khi buổi học kết thúc — bạn không cần giải ngân.",
       "ratingLabel": "Mức độ hài lòng của bạn",
       "starHint": "{rating} trên 5 sao",
       "commentLabel": "Nhận xét học thuật & Góp ý (tuỳ chọn)",
       "commentPlaceholder": "Chia sẻ trải nghiệm học tập, sự nhiệt tình và nội dung kiến thức được trao đổi...",
       "pledge": "Cam kết học thuật: Đánh giá trung thực giúp xây dựng môi trường trao đổi kỹ năng minh bạch giữa sinh viên các trường.",
       "cancel": "Để sau",
-      "submit": "Xác nhận & Giải ngân",
+      "submit": "Gửi đánh giá",
       "starLabel": "{count} sao"
     },
     "noShowModal": {

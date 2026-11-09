@@ -71,9 +71,11 @@ function PendingCard({
   tCard: CardTranslator;
 }) {
   const locale = useLocale();
-  const countdown = booking.autoReleaseCountdownSeconds ?? 0;
-  const hours = Math.floor(countdown / 3600);
-  const minutes = Math.floor((countdown % 3600) / 60);
+  // No countdown here on purpose. This card means "the class time has passed",
+  // and the teacher's share is released by `class.completed` (ADR-021 §6) — not by
+  // a learner deadline. The old "Auto-releases in {time}" chip read
+  // `expiresAt`, which is the *seat-hold* expiry of a pending booking and is null
+  // once the booking is confirmed, so it rendered `0h:00m` forever.
   return (
     <article className="workspace-panel relative overflow-hidden transition-shadow hover:">
       <div className="absolute inset-x-0 top-0 h-1.5 bg-warning-ink" />
@@ -85,11 +87,9 @@ function PendingCard({
               <span>{tCard('pending')}</span>
             </Chip>
           </div>
-          <span className="inline-flex items-center gap-1 text-sm font-semibold text-danger-ink">
-            <AlarmIcon className="h-3.5 w-3.5" />
-            <span>
-              {tCard('autoRelease', { time: `${hours}h:${String(minutes).padStart(2, '0')}m` })}
-            </span>
+          <span className="inline-flex items-center gap-1 text-sm font-semibold text-ink-soft">
+            <LockIcon className="h-3.5 w-3.5" />
+            <span>{tCard('escrowHeld', { credits: booking.priceCredits })}</span>
           </span>
         </div>
         <CardBody booking={booking} tCard={tCard} />
@@ -113,14 +113,30 @@ function PendingCard({
                 arrow_forward
               </span>
             </Link>
-            <button
-              type="button"
-              onClick={() => onAction?.({ type: 'confirm', bookingId: booking.id })}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-campus-emerald-deep px-6 py-2.5 text-sm font-semibold text-white  transition-colors hover:bg-ink sm:w-auto"
-            >
-              <CheckCircleIcon className="h-4 w-4" />
-              <span>{tCard('confirmReview')}</span>
-            </button>
+            {/*
+              Offer the review only when the API will accept it. `ratingEligible`
+              is the server's own gate (booking confirmed AND class `completed`);
+              inferring it from the clock asked learners to review a session whose
+              state machine had not reached `completed` yet, and the rating POST
+              then failed.
+            */}
+            {booking.hasRated ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800">
+                <CheckCircleIcon className="h-4 w-4" />
+                <span>{tCard('reviewGiven')}</span>
+              </span>
+            ) : booking.ratingEligible ? (
+              <button
+                type="button"
+                onClick={() => onAction?.({ type: 'confirm', bookingId: booking.id })}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-campus-emerald-deep px-6 py-2.5 text-sm font-semibold text-white  transition-colors hover:bg-ink sm:w-auto"
+              >
+                <CheckCircleIcon className="h-4 w-4" />
+                <span>{tCard('confirmReview')}</span>
+              </button>
+            ) : (
+              <span className="text-sm text-ink-soft">{tCard('reviewNotOpenYet')}</span>
+            )}
           </div>
         </div>
       </div>
@@ -251,6 +267,21 @@ function CompletedCard({
             </div>
             <p className="text-sm italic text-ink-soft">"{booking.reviewSubmitted.body}"</p>
           </div>
+        )}
+        {/*
+          The completion sweep flips the booking to `completed`, which is also when
+          the rating endpoint starts accepting a review (`ratingEligible`). Without
+          this branch the review form disappeared at exactly that moment.
+        */}
+        {!booking.reviewSubmitted && booking.ratingEligible && (
+          <button
+            type="button"
+            onClick={() => onAction?.({ type: 'confirm', bookingId: booking.id })}
+            className="inline-flex items-center justify-center gap-2 self-start rounded-full bg-campus-emerald-deep px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ink"
+          >
+            <CheckCircleIcon className="h-4 w-4" />
+            <span>{tCard('confirmReview')}</span>
+          </button>
         )}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -577,27 +608,6 @@ function PendingIcon({ className = '' }: { className?: string }) {
     >
       <circle cx="12" cy="12" r="9" />
       <polyline points="12 7 12 12 15 14" />
-    </svg>
-  );
-}
-
-function AlarmIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="14"
-      height="14"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className={className}
-    >
-      <circle cx="12" cy="13" r="8" />
-      <line x1="12" y1="9" x2="12" y2="13" />
-      <line x1="9" y1="3" x2="15" y2="3" />
     </svg>
   );
 }

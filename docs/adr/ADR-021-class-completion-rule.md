@@ -1,6 +1,6 @@
 # ADR-021: Class completion and income release rule
 
-- **Status:** Accepted — **amended 2026-10-25 (§Amendment A)**: `teacher_ended` is removed; **amended 2026-11-10 (§Amendment B)**: the web `Start` control is removed
+- **Status:** Accepted — **amended 2026-10-25 (§Amendment A)**: `teacher_ended` is removed; **amended 2026-11-10 (§Amendment B)**: the web `Start` control is removed; **amended 2026-11-10 (§Amendment C)**: no learner-driven release
 - **Level:** Software (C4 Level 3 · Component)
 - **Date:** 2026-10-10
 
@@ -93,4 +93,58 @@ The API route is **kept**, because the mobile client still uses it (#106 tracks 
 - Web: the studio renders no `Start` button and issues no `POST /classes/:id/start` for any class state (`instructor/page.test.tsx`).
 - Web API map: `/classes/:id/start` is no longer listed as a web-called route (`lib/api-map.test.ts`), so a reintroduced call site fails the "only calls documented routes" test rather than passing silently.
 - Mobile: unchanged — `teaching-gateway.spec.ts` still asserts the `POST …/start` call.
+
+---
+
+## Amendment C — the learner does not release escrow (2026-11-10)
+
+**Supersedes:** nothing in the Decision; it settles a question the Decision left implicit.
+
+**Context.** The learner dashboard offered a `Confirm & Release Escrow` button on a
+finished session. It did not work, and could not have worked. Reading the handler
+turned up three independent faults:
+
+1. It called `POST /classes/bookings/:id/confirm`, which is FR-009's **settlement**
+   request for a booking that is still `pending` — not a release. The repository
+   answers a non-pending booking with `{ confirmed: false }` instead of an error
+   (`sql-booking-repository.ts`), so the call returned 200 and did nothing. That is
+   why the button "did nothing" rather than failing visibly.
+2. It submitted the rating only `if (review.body.trim().length > 0)`. A learner who
+   picked stars and wrote nothing had their rating silently discarded.
+3. It offered the form whenever the clock said the session had ended, while the
+   rating endpoint requires the class to actually be `completed`. Between the
+   scheduled end and the completion sweep, the form was shown and then refused.
+
+**Decision.** Escrow release is **not** a learner action, in the UI or the API. It
+stays where Decision §6 put it: `class.completed` → outbox → `wallet-ledger`.
+
+The both-sides-of-a-role argument is the reason, and it is the same one that removed
+`teacher_ended` in Amendment A: a release button lets **the payer move the payee's
+money** on their own say-so. A learner who wants the teacher's income withheld has
+exactly one lever, and it already exists — the 15-minute no-show report, which
+refunds rather than releases. For everything else, time releases.
+
+The dashboard control therefore becomes a **review**: it always posts the rating,
+never calls `/confirm`, and is offered only when the server reports
+`ratingEligible`. Copy that promised a release is removed, in both locales.
+
+**Consequences.**
+
+- (+) The payer cannot release the payee's funds; the completion sweep is the only
+  release trigger, as ADR-018 and Decision §6 already required.
+- (+) A star-only review is recorded, so ratings stop under-counting silent reviewers.
+- (+) No request is made that the API answers with a silent no-op.
+- (−) A learner cannot release *early*. They never could — only the copy claimed it.
+- (−) `POST /classes/bookings/:id/confirm` is untouched and still meaningful for its
+  real purpose (settling a pending booking from checkout).
+
+**Verification.**
+
+- Web: `submitReview` posts the rating and issues no `/confirm` call; a rating with an
+  empty comment still sends `{ stars, comment: '' }` (`lib/dashboard/http-gateway.test.ts`).
+  These tests fail against the pre-amendment code.
+- Web: the view model carries `ratingEligible`/`hasRated` from the server, and the card
+  renders the review control only when eligible (`Dashboard.card`).
+- Unchanged: release remains covered by ADR-021's own verification and
+  `wallet-ledger`'s release tests.
 

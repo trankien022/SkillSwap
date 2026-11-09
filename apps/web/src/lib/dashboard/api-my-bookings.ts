@@ -30,6 +30,9 @@ export function mapContractBookingToView(item: LearnerBookingItemView): LearnerB
     durationMinutes: item.classSummary.durationMinutes,
     priceCredits: item.priceCredits,
     state: toPresentationState(item),
+    // Straight from the server: the gate the rating endpoint itself enforces.
+    ratingEligible: item.ratingEligible,
+    hasRated: item.hasRated,
     // derived: the backend exposes the escrow deadline, not a live countdown.
     autoReleaseCountdownSeconds:
       item.state === 'completed' && item.expiresAt !== null

@@ -112,6 +112,78 @@ describe('HttpLearnerDashboardGateway', () => {
     expect(snapshot.metrics.pendingReviewCount).toBe(1);
   });
 
+  it('carries the server rating gate through to the view model', async () => {
+    stubApi({
+      bookings: {
+        items: [
+          bookingItem({ state: 'completed', ratingEligible: true, hasRated: false }),
+          bookingItem({ bookingId: 'bkg-0002', state: 'completed', ratingEligible: false, hasRated: false }),
+        ],
+        nextCursor: null,
+        totalUpcomingCount: 0,
+      },
+      balance: { availableCredits: 0, pendingCredits: 0 },
+    });
+
+    const snapshot = await new HttpLearnerDashboardGateway().getSnapshot();
+
+    // The UI must not offer a review the API will refuse.
+    expect(snapshot.bookings.map((b) => b.ratingEligible)).toEqual([true, false]);
+  });
+
+  describe('submitReview', () => {
+    it('posts the rating without touching the settlement-confirm route', async () => {
+      // A booking whose class is over but whose booking is still `confirmed`:
+      // exactly the state the review modal opens in. `/confirm` used to be called
+      // here and silently no-opped, which is why the button looked dead.
+      const fetchMock = stubApi({
+        bookings: { items: [bookingItem()], nextCursor: null, totalUpcomingCount: 1 },
+        balance: { availableCredits: 150, pendingCredits: 60 },
+      });
+
+      await new HttpLearnerDashboardGateway().submitReview('bkg-0001', {
+        rating: 5,
+        body: 'Clear explanations.',
+      });
+
+      const urls = fetchMock.mock.calls.map((c) => c[0] as string);
+      expect(urls.some((u) => u.includes('/bkg-0001/rating'))).toBe(true);
+      expect(urls.some((u) => u.includes('/bkg-0001/confirm'))).toBe(false);
+    });
+
+    it('submits a rating even when the learner wrote no comment', async () => {
+      // The guard used to be `if (body.trim().length > 0)`, so a bare star
+      // rating was never sent and every silent reviewer counted as unreviewed.
+      const fetchMock = stubApi({
+        bookings: { items: [bookingItem()], nextCursor: null, totalUpcomingCount: 1 },
+        balance: { availableCredits: 150, pendingCredits: 60 },
+      });
+
+      await new HttpLearnerDashboardGateway().submitReview('bkg-0001', { rating: 4, body: '' });
+
+      const ratingCall = fetchMock.mock.calls.find(
+        (c) => String(c[0]).includes('/bkg-0001/rating'),
+      ) as unknown as [string, RequestInit] | undefined;
+      expect(ratingCall).toBeDefined();
+      expect(JSON.parse(String(ratingCall?.[1].body))).toEqual({
+        stars: 4,
+        comment: '',
+      });
+    });
+
+    it('surfaces the API message when the rating is refused', async () => {
+      stubApi({
+        bookings: { items: [bookingItem()], nextCursor: null, totalUpcomingCount: 1 },
+        balance: { availableCredits: 0, pendingCredits: 0 },
+        postStatus: { '/classes/bookings/bkg-0001/rating': 409 },
+      });
+
+      await expect(
+        new HttpLearnerDashboardGateway().submitReview('bkg-0001', { rating: 5, body: '' }),
+      ).rejects.toThrow();
+    });
+  });
+
   it('throws DashboardAuthError when the bookings endpoint is unauthorized', async () => {
     vi.stubGlobal(
       'fetch',

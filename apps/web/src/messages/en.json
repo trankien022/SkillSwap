@@ -452,7 +452,6 @@
     },
     "card": {
       "pending": "Waiting for your confirmation",
-      "autoRelease": "Auto-releases in {time}",
       "confirmedSlot": "Slot confirmed",
       "confirmedSlotHint": "{hours} hours until the session",
       "bookingId": "Booking #{id}",
@@ -465,7 +464,8 @@
       "minutes": "Duration: {n} min",
       "cost": "Cost: {credits} credits",
       "confirm": "Confirm completion",
-      "confirmReview": "Confirm & send review",
+      "confirmReview": "Send review",
+      "reviewNotOpenYet": "The review opens once the session is marked complete.",
       "report": "Report an issue",
       "noShow": "Teacher no-show",
       "joinRoom": "Join the room",
@@ -478,7 +478,7 @@
       "rebook": "Rebook with the same teacher",
       "downloadNotes": "Download notes",
       "ruleTitle": "Escrow protection",
-      "ruleBody": "Your credits are held safely in the ledger. When you confirm completion, the credits are transferred to the teacher. If the teacher is absent for more than 15 minutes, the credits are returned to your wallet.",
+      "ruleBody": "Your credits are held safely in the ledger. Once the session is complete, the credits are transferred to the teacher automatically — you do not need to release them. If the teacher is absent for more than 15 minutes, the credits are returned to your wallet.",
       "noShowBody": "A no-show has been reported. The held credits will be returned to your wallet within 24 hours.",
       "cancelledBody": "This class has been cancelled. The held credits have been returned to your wallet.",
       "completedReview": "Your review",
@@ -536,15 +536,15 @@
       }
     },
     "reviewModal": {
-      "title": "Review Session & Release Escrow",
-      "subtitle": "Confirm that the session was completed successfully to release the held credits to the teacher.",
+      "title": "Review Session",
+      "subtitle": "Your review is what the teacher earns on. The held credits release automatically at the end of the session — you do not need to release them.",
       "ratingLabel": "Your rating",
       "starHint": "{rating} of 5 stars",
       "commentLabel": "Academic feedback (optional)",
       "commentPlaceholder": "Share your learning experience, clarity, and mentor helpfulness...",
       "pledge": "Academic pledge: Honest reviews uphold transparent peer-mentoring standards across universities.",
       "cancel": "Later",
-      "submit": "Confirm & Release Escrow",
+      "submit": "Submit review",
       "starLabel": "{count} stars"
     },
     "noShowModal": {

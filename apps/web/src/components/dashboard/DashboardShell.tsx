@@ -98,7 +98,7 @@ export function DashboardShell({ initial }: Props) {
       try {
         switch (action.type) {
           case 'confirm':
-            await gateway.confirmBooking(action.bookingId, {
+            await gateway.submitReview(action.bookingId, {
               rating: action.rating ?? 5,
               body: action.comment ?? '',
             });
