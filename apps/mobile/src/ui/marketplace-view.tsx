@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { ClassListItemView, SkillCatalogueItemView } from '@skillswap/contracts';
 import { colors, radius, spacing, typography } from '@/design/tokens';
@@ -17,6 +17,7 @@ export function MarketplaceView() {
   const [activeKeyword, setActiveKeyword] = useState('');
   const [selectedSkillId, setSelectedSkillId] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [filterError, setFilterError] = useState<string | null>(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [draftStartDate, setDraftStartDate] = useState('');
@@ -25,6 +26,8 @@ export function MarketplaceView() {
   const [verified, setVerified] = useState<'all' | 'yes' | 'no'>('all');
   const [maxPrice, setMaxPrice] = useState('');
   const [minRating, setMinRating] = useState('');
+  const [category, setCategory] = useState('all');
+  const [school, setSchool] = useState('');
 
   const [classes, setClasses] = useState<ClassListItemView[]>([]);
   const [skillsList, setSkillsList] = useState<SkillCatalogueItemView[]>([]);
@@ -187,8 +190,9 @@ export function MarketplaceView() {
   };
 
   const selectedSkillName = selectedSkillId ? skillMap.get(selectedSkillId) ?? t('Marketplace.skillPending') : t('Marketplace.filterSkillAll');
-  const visibleClasses = useMemo(() => filterMarketplaceItems(classes, { format, verified, maxPrice, minRating }), [classes, format, verified, maxPrice, minRating]);
-  const clientFilterCount = Number(format !== 'all') + Number(verified !== 'all') + Number(Boolean(maxPrice)) + Number(Boolean(minRating));
+  const visibleClasses = useMemo(() => filterMarketplaceItems(classes, { format, verified, maxPrice, minRating, category, school, skillCategories: new Map(skillsList.map((skill) => [skill.id, skill.category])) }), [classes, format, verified, maxPrice, minRating, category, school, skillsList]);
+  const clientFilterCount = Number(format !== 'all') + Number(verified !== 'all') + Number(Boolean(maxPrice)) + Number(Boolean(minRating)) + Number(category !== 'all') + Number(Boolean(school));
+  const activeFilterCount = clientFilterCount + Number(Boolean(startDate)) + Number(Boolean(endDate)) + Number(Boolean(activeKeyword)) + Number(Boolean(selectedSkillId));
   const hasActiveFilters = Boolean(activeKeyword || selectedSkillId || startDate || endDate || clientFilterCount);
 
   return (
@@ -230,8 +234,8 @@ export function MarketplaceView() {
               <Pressable style={styles.filterBtn} onPress={() => setIsSkillModalOpen(true)} accessibilityRole="button" accessibilityLabel={selectedSkillName}>
                 <Text style={styles.filterBtnText} numberOfLines={1}>{selectedSkillName}</Text>
               </Pressable>
-              <Pressable style={styles.filterBtn} onPress={() => { setDraftStartDate(startDate); setDraftEndDate(endDate); setFilterOpen(true); }} accessibilityRole="button" accessibilityLabel={t('Marketplace.filtersCount', { count: clientFilterCount + Number(Boolean(startDate)) + Number(Boolean(endDate)) })}>
-                <Text style={styles.filterBtnText}>{t('Marketplace.filtersCount', { count: clientFilterCount + Number(Boolean(startDate)) + Number(Boolean(endDate)) })}</Text>
+              <Pressable style={styles.filterBtn} onPress={() => { setDraftStartDate(startDate); setDraftEndDate(endDate); setFilterError(null); setFilterOpen(true); }} accessibilityRole="button" accessibilityLabel={t('Marketplace.filtersCount', { count: activeFilterCount })}>
+                <Text style={styles.filterBtnText}>{t('Marketplace.filtersCount', { count: activeFilterCount })}</Text>
               </Pressable>
               {hasActiveFilters && (
                 <Pressable
@@ -239,7 +243,7 @@ export function MarketplaceView() {
                   onPress={() => {
                     setKeywordInput('');
                     setActiveKeyword('');
-                    setSelectedSkillId(null); setStartDate(''); setEndDate(''); setFormat('all'); setVerified('all'); setMaxPrice(''); setMinRating('');
+                    setSelectedSkillId(null); setStartDate(''); setEndDate(''); setFormat('all'); setVerified('all'); setMaxPrice(''); setMinRating(''); setCategory('all'); setSchool('');
                   }}
                   accessibilityRole="button"
                   accessibilityLabel={t('Marketplace.clearFilters')}
@@ -280,18 +284,21 @@ export function MarketplaceView() {
         }
       />
       <Modal visible={filterOpen} transparent animationType="slide" onRequestClose={() => setFilterOpen(false)}>
-        <View style={styles.modalOverlay}><View style={styles.modalCard}>
+        <View style={styles.modalOverlay}><ScrollView style={styles.modalCard} contentContainerStyle={styles.modalContent}>
           <View style={styles.modalHeader}><Text style={styles.modalTitle}>{t('Marketplace.filterTitle')}</Text><Pressable style={styles.modalCloseBtn} onPress={() => setFilterOpen(false)}><Text style={styles.modalCloseText}>{t('Marketplace.closeFilter')}</Text></Pressable></View>
           <Text style={styles.statusText}>{t('Marketplace.filterScope')}</Text>
+          {filterError && <Text style={styles.errorText}>{filterError}</Text>}
           <TextInput style={styles.searchInput} value={draftStartDate} onChangeText={setDraftStartDate} placeholder={t('Marketplace.startDate')} accessibilityLabel={t('Marketplace.startDate')} />
           <TextInput style={styles.searchInput} value={draftEndDate} onChangeText={setDraftEndDate} placeholder={t('Marketplace.endDate')} accessibilityLabel={t('Marketplace.endDate')} />
+          <TextInput style={styles.searchInput} value={school} onChangeText={setSchool} placeholder={t('Marketplace.school')} accessibilityLabel={t('Marketplace.school')} />
           <TextInput style={styles.searchInput} value={maxPrice} onChangeText={setMaxPrice} keyboardType="number-pad" placeholder={t('Marketplace.maxPrice')} accessibilityLabel={t('Marketplace.maxPrice')} />
           <TextInput style={styles.searchInput} value={minRating} onChangeText={setMinRating} keyboardType="decimal-pad" placeholder={t('Marketplace.minRating')} accessibilityLabel={t('Marketplace.minRating')} />
+          <View style={styles.filterRow}>{['all', ...Array.from(new Set(skillsList.map((skill) => skill.category)))].map((value) => <Pressable key={value} style={[styles.filterBtn, category === value && styles.skillItemSelected]} onPress={() => setCategory(value)}><Text style={styles.filterBtnText}>{value === 'all' ? t('Marketplace.category_all') : value}</Text></Pressable>)}</View>
           <View style={styles.filterRow}>{(['all','one-on-one','group'] as const).map((value) => <Pressable key={value} style={[styles.filterBtn, format === value && styles.skillItemSelected]} onPress={() => setFormat(value)}><Text style={styles.filterBtnText}>{t(`Marketplace.format_${value}`)}</Text></Pressable>)}</View>
           <View style={styles.filterRow}>{(['all','yes','no'] as const).map((value) => <Pressable key={value} style={[styles.filterBtn, verified === value && styles.skillItemSelected]} onPress={() => setVerified(value)}><Text style={styles.filterBtnText}>{t(`Marketplace.verified_${value}`)}</Text></Pressable>)}</View>
           <Text style={styles.statusText}>{t('Marketplace.filterDisclaimer')}</Text>
-          <Pressable style={styles.searchBtn} onPress={() => { setStartDate(draftStartDate.trim()); setEndDate(draftEndDate.trim()); setFilterOpen(false); }}><Text style={styles.searchBtnText}>{t('Marketplace.applyFilters')}</Text></Pressable>
-        </View></View>
+          <Pressable style={styles.searchBtn} onPress={() => { const from = draftStartDate.trim(); const to = draftEndDate.trim(); const fromMs = from ? Date.parse(from) : null; const toMs = to ? Date.parse(to) : null; const price = maxPrice.trim() ? Number(maxPrice) : null; const rating = minRating.trim() ? Number(minRating) : null; if ((from && (!Number.isFinite(fromMs) || !/T.*(?:Z|[+-]\d{2}:?\d{2})$/.test(from))) || (to && (!Number.isFinite(toMs) || !/T.*(?:Z|[+-]\d{2}:?\d{2})$/.test(to))) || (fromMs !== null && toMs !== null && fromMs > toMs) || (price !== null && (!Number.isInteger(price) || price < 0)) || (rating !== null && (!Number.isFinite(rating) || rating < 0 || rating > 5))) { setFilterError(t('Marketplace.invalidFilters')); return; } setStartDate(from); setEndDate(to); setFilterError(null); setFilterOpen(false); }}><Text style={styles.searchBtnText}>{t('Marketplace.applyFilters')}</Text></Pressable>
+        </ScrollView></View>
       </Modal>
       <Modal visible={isSkillModalOpen} transparent animationType="slide" onRequestClose={() => setIsSkillModalOpen(false)}>
         <View style={styles.modalOverlay}>
@@ -361,7 +368,7 @@ const styles = StyleSheet.create({
   searchBtn: { minHeight: 48, maxWidth: '100%', flexShrink: 1, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, backgroundColor: colors.campusEmerald, borderRadius: radius.pill, justifyContent: 'center', alignItems: 'center' },
   searchBtnPressed: { backgroundColor: colors.campusEmeraldDeep },
   searchBtnText: { color: colors.surface, fontSize: typography.label.fontSize, fontWeight: '600' },
-  filterRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
+  filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, alignItems: 'center' },
   filterBtn: { minHeight: 44, borderWidth: 1, borderColor: colors.border, borderRadius: radius.pill, paddingHorizontal: spacing.md, justifyContent: 'center', backgroundColor: colors.surface, maxWidth: 220 },
   filterBtnText: { color: colors.inkSoft, fontSize: typography.label.fontSize, fontWeight: '500' },
   clearBtn: { minHeight: 44, paddingHorizontal: spacing.sm, justifyContent: 'center' },
@@ -378,7 +385,8 @@ const styles = StyleSheet.create({
   loadMoreBtn: { minHeight: 44, borderWidth: 1, borderColor: colors.border, borderRadius: radius.pill, justifyContent: 'center', alignItems: 'center', marginVertical: spacing.md },
   loadMoreText: { color: colors.inkSoft, fontSize: typography.label.fontSize, fontWeight: '600' },
   modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
-  modalCard: { backgroundColor: colors.surface, borderTopLeftRadius: radius.card, borderTopRightRadius: radius.card, maxHeight: '75%', padding: spacing.lg, gap: spacing.md },
+  modalCard: { backgroundColor: colors.surface, borderTopLeftRadius: radius.card, borderTopRightRadius: radius.card, maxHeight: '75%' },
+  modalContent: { padding: spacing.lg, gap: spacing.md },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
   modalTitle: { fontSize: typography.heading.fontSize, fontWeight: typography.heading.fontWeight, color: colors.ink },
   modalCloseBtn: { minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.sm },

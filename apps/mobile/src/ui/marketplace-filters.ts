@@ -5,12 +5,17 @@ export interface MarketplaceFilterState {
   verified: 'all' | 'yes' | 'no';
   maxPrice: string;
   minRating: string;
+  category: string;
+  school: string;
+  skillCategories: ReadonlyMap<string, string>;
 }
 
 export function filterMarketplaceItems(items: readonly ClassListItemView[], filters: MarketplaceFilterState) {
   const maxPrice = filters.maxPrice.trim() ? Number(filters.maxPrice) : null;
   const minRating = filters.minRating.trim() ? Number(filters.minRating) : null;
   return items.filter((item) =>
+    (filters.category === 'all' || item.skillIds.some((skillId) => filters.skillCategories.get(skillId) === filters.category)) &&
+    (!filters.school.trim() || (item.schoolName ?? '').toLocaleLowerCase().includes(filters.school.trim().toLocaleLowerCase())) &&
     (filters.format === 'all' || item.format === filters.format) &&
     (filters.verified === 'all' || item.verified === (filters.verified === 'yes')) &&
     (maxPrice === null || (Number.isFinite(maxPrice) && item.priceCredits <= maxPrice)) &&

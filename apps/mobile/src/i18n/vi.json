@@ -215,7 +215,8 @@
     },
     "pickDate": "Chọn ngày",
     "pickTime": "Chọn giờ",
-    "earliestStart": "Thời gian sớm nhất: {when} (ít nhất 24 giờ nữa)."
+    "earliestStart": "Thời gian sớm nhất: {when} (ít nhất 24 giờ nữa).",
+    "dateTooSoon": "Vui lòng chọn thời gian bắt đầu ít nhất 24 giờ nữa."
   },
   "Notifications": {
     "title": "Thông báo",
@@ -326,7 +327,10 @@
     "verified_all": "Mọi giáo viên",
     "verified_yes": "Đã xác minh",
     "verified_no": "Chưa xác minh",
-    "applyFilters": "Áp dụng"
+    "applyFilters": "Áp dụng",
+    "school": "Trường đại học",
+    "category_all": "Mọi danh mục",
+    "invalidFilters": "Nhập ngày giờ ISO, số credit nguyên không âm và đánh giá từ 0 đến 5. Thời điểm bắt đầu phải trước thời điểm kết thúc."
   },
   "Common": {
     "cancel": "Hủy",

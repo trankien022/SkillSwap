@@ -11,10 +11,10 @@ const sample = (id: string, overrides: Partial<ClassListItemView> = {}): ClassLi
 describe('marketplace client refinements', () => {
   const rows = [sample('low', { priceCredits: 8 }), sample('group', { format: 'group', verified: false }), sample('unrated', { averageRating: null })];
   it('combines format, verification, price and rating without inventing server query fields', () => {
-    expect(filterMarketplaceItems(rows, { format: 'one-on-one', verified: 'yes', maxPrice: '9', minRating: '4' }).map((row) => row.id)).toEqual(['low']);
+    expect(filterMarketplaceItems(rows, { format: 'one-on-one', verified: 'yes', maxPrice: '9', minRating: '4', category: 'all', school: '', skillCategories: new Map() }).map((row) => row.id)).toEqual(['low']);
   });
   it('excludes null ratings from a minimum rating and ignores invalid numeric filters safely', () => {
-    expect(filterMarketplaceItems(rows, { format: 'all', verified: 'all', maxPrice: '', minRating: '4' }).map((row) => row.id)).toEqual(['low', 'group']);
-    expect(filterMarketplaceItems(rows, { format: 'all', verified: 'all', maxPrice: 'bad', minRating: '' })).toEqual([]);
+    expect(filterMarketplaceItems(rows, { format: 'all', verified: 'all', maxPrice: '', minRating: '4', category: 'all', school: '', skillCategories: new Map() }).map((row) => row.id)).toEqual(['low', 'group']);
+    expect(filterMarketplaceItems(rows, { format: 'all', verified: 'all', maxPrice: 'bad', minRating: '', category: 'all', school: '', skillCategories: new Map() })).toEqual([]);
   });
 });

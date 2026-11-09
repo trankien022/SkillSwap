@@ -215,7 +215,8 @@
     },
     "pickDate": "Choose date",
     "pickTime": "Choose time",
-    "earliestStart": "Earliest class time: {when} (at least 24 hours from now)."
+    "earliestStart": "Earliest class time: {when} (at least 24 hours from now).",
+    "dateTooSoon": "Choose a class time at least 24 hours from now."
   },
   "Notifications": {
     "title": "Notifications",
@@ -326,7 +327,10 @@
     "verified_all": "Any teacher",
     "verified_yes": "Verified",
     "verified_no": "Unverified",
-    "applyFilters": "Apply filters"
+    "applyFilters": "Apply filters",
+    "school": "University/school",
+    "category_all": "Any category",
+    "invalidFilters": "Enter ISO date/time values, a non-negative whole credit amount and a rating from 0 to 5. The start must not follow the end."
   },
   "Common": {
     "cancel": "Cancel",

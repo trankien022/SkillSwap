@@ -68,7 +68,6 @@ jest.mock('@/infrastructure/http/teaching-gateway', () => ({
     update: jest.fn(),
     cancel: jest.fn(),
     start: jest.fn(),
-    complete: jest.fn(),
   })),
 }));
 

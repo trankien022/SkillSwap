@@ -114,7 +114,7 @@ export default function TeachingScreen() {
               accessibilityLabel={t('Teaching.description')}
             />
             <Text style={styles.body}>{t('Teaching.startsAt')}</Text>
-            <DateTimeField value={startsAt} minDate={new Date(Date.now() + 24 * 3600000)} locale={locale === 'vi' ? 'vi-VN' : 'en-US'} dateLabel={t('Teaching.pickDate')} timeLabel={t('Teaching.pickTime')} helper={t('Teaching.earliestStart', { when: new Date(Date.now() + 24 * 3600000).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US') })} onChange={setStartsAt} />
+            <DateTimeField value={startsAt} minDate={new Date(Date.now() + 24 * 3600000)} locale={locale === 'vi' ? 'vi-VN' : 'en-US'} dateLabel={t('Teaching.pickDate')} timeLabel={t('Teaching.pickTime')} invalidMessage={t('Teaching.dateTooSoon')} helper={t('Teaching.earliestStart', { when: new Date(Date.now() + 24 * 3600000).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US') })} onChange={setStartsAt} />
             <View style={styles.row}>
               {[
                 [duration, setDuration, t('Teaching.duration')],

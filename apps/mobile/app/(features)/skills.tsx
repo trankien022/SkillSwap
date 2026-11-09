@@ -58,7 +58,12 @@ export default function SkillsScreen() {
       let ref: string | undefined;
       if (evidenceType === 'certificate' && file) {
         const bytes = await new File(file.uri).bytes();
-        ref = await api.uploadCertificate({ fileName: file.name, contentType: file.mimeType ?? 'application/octet-stream', sizeBytes: bytes.byteLength }, bytes);
+        const supported = ['application/pdf', 'image/png', 'image/jpeg'];
+        const ext = file.name.toLocaleLowerCase().split('.').pop();
+        const inferred = ext === 'pdf' ? 'application/pdf' : ext === 'png' ? 'image/png' : ['jpg', 'jpeg'].includes(ext ?? '') ? 'image/jpeg' : undefined;
+        const contentType = supported.includes(file.mimeType ?? '') ? file.mimeType! : inferred;
+        if (!contentType) throw new Error('Unsupported certificate file type');
+        ref = await api.uploadCertificate({ fileName: file.name, contentType, sizeBytes: bytes.byteLength }, bytes);
       }
       const result = await api.submitSkillEvidence({ skillId: selected, requestedLevel: level, evidenceType, ...(description.trim() ? { description: description.trim() } : {}), ...(ref ? { documentRef: ref } : {}) });
       setDocumentRef(result.documentRef ?? null); setFile(null);
