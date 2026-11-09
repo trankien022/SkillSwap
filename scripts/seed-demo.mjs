@@ -11,6 +11,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
  *   node scripts/seed-demo.mjs --allow-remote  # seed the configured remote database
  *   node scripts/seed-demo.mjs --check         # read-only: report target and row counts
  *   node scripts/seed-demo.mjs --reset         # accepted; a plain run already replaces demo rows
+ *   node scripts/seed-demo.mjs --upload-documents  # also upload the demo PDFs to Cloudinary
  *
  * Requires `pnpm build` first.
  *
@@ -55,6 +56,14 @@ const ALLOW_REMOTE = ARGS.has('--allow-remote');
 /** Kept for compatibility: the seed always converges, so `--reset` cannot mean more than that. */
 const RESET = ARGS.has('--reset');
 const CHECK_ONLY = ARGS.has('--check');
+/**
+ * FR-002 document-open limitation. `read-verification-document` signs a Cloudinary URL from
+ * `document_ref`, so a fake key produces a URL that 404s. With this flag and real
+ * `CLOUDINARY_*` credentials the seed uploads a real one-page PDF under each key, which makes
+ * the admin's "open document" action demoable. Without credentials it prints a warning instead
+ * of failing — the rest of the dataset does not depend on it.
+ */
+const UPLOAD_DOCUMENTS = ARGS.has('--upload-documents');
 
 function loadRootEnv() {
   const envPath = join(ROOT, '.env');
@@ -739,17 +748,25 @@ async function insertNotification(ctx, { index, accountId, type, targetType, tar
   return rows[0].id;
 }
 
-/** One registered push installation. `token` and `installation_id` are both unique. */
+/**
+ * One registered push installation.
+ *
+ * `is_active` is **false**: these tokens are demo strings, not real Expo tokens, and an active row
+ * would make the push worker attempt a delivery to a token that cannot exist. The delivery history
+ * below is still seeded — `push_deliveries` only needs the row to exist — so the retry path is
+ * visible without anything actually being sent.
+ */
 async function insertDevice(ctx, { index, accountId, platform, locale, appVersion, createdAt }) {
   const installationId = `${DEMO_REF_PREFIX}install-${index}`;
   await ctx.accountDs.query(
     `INSERT INTO "account_profile"."notification_devices"
        ("id", "account_id", "token", "platform", "installation_id", "app_version", "locale", "is_active", "created_at")
-     VALUES ($1, $2, $3, $4, $5, $6, $7, true, $8)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, false, $8)
      ON CONFLICT ("installation_id") DO UPDATE
        SET "account_id" = EXCLUDED."account_id", "token" = EXCLUDED."token",
            "platform" = EXCLUDED."platform", "app_version" = EXCLUDED."app_version",
-           "locale" = EXCLUDED."locale", "created_at" = EXCLUDED."created_at", "updated_at" = now()`,
+           "locale" = EXCLUDED."locale", "created_at" = EXCLUDED."created_at",
+           "is_active" = false, "updated_at" = now()`,
     [
       demoId(ID_KIND.device, index), accountId,
       `${DEMO_REF_PREFIX}token-${platform}-${index}`, platform, installationId,
@@ -806,6 +823,66 @@ async function insertAuditEvent(ctx, { action, actorId, targetType, targetId, ol
       `${DEMO_REF_PREFIX}${key}`,
     ],
   );
+}
+
+/**
+ * A minimal one-page PDF carrying the account id, so an uploaded document is visibly a demo file
+ * rather than an empty placeholder. The bytes are assembled by hand because the seed has no PDF
+ * library and adding one for a few hundred bytes would be a dependency for nothing.
+ */
+function demoPdf(accountId, label) {
+  const text = `SkillSwap demo document - ${label} - account ${accountId}`;
+  const stream = `BT /F1 12 Tf 40 760 Td (${text.replace(/[()\\]/g, '')}) Tj ET`;
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
+    `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+  ];
+  let pdf = '%PDF-1.4\n';
+  const offsets = [];
+  for (let i = 0; i < objects.length; i += 1) {
+    offsets.push(pdf.length);
+    pdf += `${i + 1} 0 obj\n${objects[i]}\nendobj\n`;
+  }
+  const xref = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (const offset of offsets) pdf += `${String(offset).padStart(10, '0')} 00000 n \n`;
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  return Buffer.from(pdf, 'latin1');
+}
+
+/**
+ * Uploads one demo document through the **same** signing helpers the API uses, so the object key
+ * stored in the seed is reachable by the URL `read-verification-document` will later sign.
+ *
+ * Cloudinary requires `authenticated` delivery and a `raw` resource for PDFs; both come from
+ * `shared/storage/cloudinary-sign` rather than being re-derived here (ADR-038).
+ */
+async function uploadDemoDocument({ objectKey, bytes, contentType }) {
+  const sign = await import(
+    pathToFileURL(join(ROOT, 'apps', 'api', 'dist', 'shared', 'storage', 'cloudinary-sign.js')).href
+  );
+  const resourceType = sign.resourceTypeFor(contentType);
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signedFields = {
+    timestamp: String(timestamp),
+    public_id: sign.publicIdFor(objectKey, resourceType),
+    type: 'authenticated',
+  };
+  const form = new FormData();
+  for (const [key, value] of Object.entries(signedFields)) form.append(key, value);
+  form.append('api_key', config.cloudinaryApiKey);
+  form.append('signature', sign.signFields(signedFields, config.cloudinaryApiSecret));
+  form.append('file', new Blob([bytes], { type: contentType }), objectKey.split('/').pop());
+  const response = await fetch(sign.uploadUrlFor(
+    { cloudName: config.cloudinaryCloudName, apiKey: config.cloudinaryApiKey, apiSecret: config.cloudinaryApiSecret },
+    resourceType,
+  ), { method: 'POST', body: form });
+  if (!response.ok) {
+    throw new Error(`Cloudinary upload failed (${response.status}): ${(await response.text()).slice(0, 200)}`);
+  }
 }
 
 /** Upserts a wallet balance. */
@@ -1055,6 +1132,30 @@ try {
     new Date(now - 2 * DAY),
   );
   console.log(`student verifications: ${USERS.length} (users 7–10 cover pending, rejected and revoked)`);
+
+  // FR-002 document open: upload the files the verifications point at, when asked and configured.
+  // `read-verification-document` signs a URL from `document_ref`, so without a real object behind
+  // that key the admin's "open document" action is a 404 — stated here rather than hidden.
+  if (UPLOAD_DOCUMENTS) {
+    const placeholderCreds =
+      config.cloudinaryApiKey === 'skillswap_dev_key' ||
+      config.cloudinaryApiSecret === 'skillswap_dev_secret';
+    if (placeholderCreds) {
+      console.warn('upload: skipped — CLOUDINARY_* is unset, so the admin document link will 404');
+    } else {
+      let uploaded = 0;
+      for (let i = 0; i < USERS.length; i += 1) {
+        const accountId = userIdByIndex[i];
+        await uploadDemoDocument({
+          objectKey: `demo-seed/${accountId}.pdf`,
+          bytes: demoPdf(accountId, `student card ${i + 1}`),
+          contentType: 'application/pdf',
+        });
+        uploaded += 1;
+      }
+      console.log(`upload: ${uploaded} demo documents stored in Cloudinary`);
+    }
+  }
 
   // FR-003: approved skills for the teachers (users 1–6). Each teacher gets 1–2 approved skills
   // at a level, so the publish gate is satisfied.
