@@ -78,3 +78,52 @@ surface, which means the front-end contract survives. Its free developer account
 - **LiveKit Cloud / Daily.** Both have more generous free tiers (5,000 and 10,000 minutes/month) and neither caps
   participants. Rejected because both require replacing the client entirely, whereas JaaS reuses the Jitsi iframe and
   the `RoomTokenIssuer` port. The MAU ceiling is the price of a smaller diff, and is recorded as such.
+
+---
+
+## Amendment A — the `room` claim is the bare room node (2026-11-09)
+
+**Decision 2 is wrong on one point; this amendment supersedes it.** Decision 2 states *"`room` must
+match the full tenant-prefixed name"*, and the shipped `roomClaim()` prefixed the AppID accordingly.
+That shape is rejected by JaaS and **no class could start**. The original text is left in place
+because ADRs here are append-mostly; read the sentence as struck.
+
+**Corrected rule.** The `room` claim carries the **bare room node** (`skillswap-<classId>`). The
+tenant is carried by `sub`, which decision 2 already specified correctly.
+
+**Why the prefix cannot work.** JaaS's validator builds the expected MUC address by joining the
+claim with `conference.<sub>` (`resources/prosody-plugins/token/util.lib.lua`, `Util:verify_room`,
+read 2026-11-09):
+
+```lua
+return room_address_to_verify == jid.join(room_to_check, self.muc_domain_prefix.."."..auth_domain)
+```
+
+`room_to_check` is the `room` claim and `auth_domain` is `sub`. A claim that already contains the
+AppID yields `<appId>/<room>@conference.<appId>.8x8.vc`, which no real room equals.
+
+**How it was found and confirmed.** Live, against this project's own tenant, with three tokens signed
+by the same real API key and differing only in the `room` claim:
+
+| Claim | Outcome |
+|---|---|
+| `<appId>/skillswap-<id>` (shipped) | `conference.connectionError.notAllowed` — *"Room and token mismatched"*, reproduced twice on fresh rooms |
+| `skillswap-<id>` | joined, `participantRoleChanged` → `moderator` |
+| `*` | joined, `moderator` |
+
+The refusal is a claim check, not a signature check: `context.user.name` was applied before the
+rejection, so key, `kid` and signature were all accepted. Decision 4 is therefore unaffected — the
+web client's `roomName: "<appId>/<room>"` is the *iframe* contract and remains correct.
+
+**Rejected.**
+
+- **`room: "*"`**, though it also works. It would let any token signed by the tenant key open any
+  room in the tenant, discarding the per-class binding AC-006 relies on.
+- **Keeping the prefix and dropping `sub`.** The tenant must be in `sub`; that claim also drives the
+  domain/tenant check.
+
+**Left unchanged deliberately.** The presence webhook's `fqn` genuinely is the tenant-qualified
+name (`<appId>/skillswap-<classId>`); it is a different field from the token claim, and
+`classIdFromRoom` continues to take the last path segment. `jaas-room-token-issuer.spec.ts` now
+pins the corrected shape and asserts a slash never appears in the claim.
+
