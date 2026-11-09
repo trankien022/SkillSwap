@@ -58,7 +58,7 @@ the demo is public and the password is published.
 | `user5@demo…` | user | Teacher: Piano **refused, then approved on resubmission** (two versions) |
 | `user6@demo…` | user | Teacher: Calculus approved then **superseded** by a higher level |
 | `user7@demo…` | user | Student verification **pending** — a queue item to decide |
-| `user8@demo…` | user | Student verification **rejected**, with its reason |
+| `user8@demo…` | user | Student verification **rejected**, with its reason; also holds the one **unrated completed booking**, so it is the account that shows "rate this class" |
 | `user9@demo…` | user | Student verification **revoked** after approval |
 | `user10@demo…` | user | **Suspended** account — on the lock list; login refused |
 
@@ -81,7 +81,8 @@ the demo is public and the password is published.
   recomputed from those rows and the run **fails** if they disagree. `top_up_intents` covers
   `settled`, `pending`, `failed` and `reversed`.
 - **Ratings (11)** on three completed classes, chosen so the newest finished class keeps one
-  unrated booking (the "rate this class" flow) and the averages are not a flat 5.0.
+  unrated booking (the "rate this class" flow — that booking belongs to `user8`) and the averages
+  are not a flat 5.0.
 - **Chat (5)**, **presence (19)**, **reminders (1)**, **room-access incidents (2)**.
 - **Inbox (29)**, **devices (5)**, **push deliveries (13)** across five of the six notification
   types, mixed read/unread, with failed attempts among the deliveries.

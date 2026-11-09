@@ -409,7 +409,12 @@ async function upsertStudentVerification(ctx, {
   accountId, schoolName, major, status, reviewerId, reason, index,
   submittedAt, decidedAt, revokedAt, revocationReason, document,
 }) {
-  const decided = ['approved', 'rejected'].includes(status) ? (decidedAt ?? new Date()) : null;
+  // A revoked row is an approval that was later withdrawn, so it keeps the date it was decided
+  // (`sql-verification-repository.revoke` only sets status/revoker/reason/revoked_at and leaves
+  // `decided_at` alone). Dropping it here lost the fact that the student had ever been approved.
+  const decided = ['approved', 'rejected', 'revoked'].includes(status)
+    ? (decidedAt ?? new Date())
+    : null;
   const revoked = status === 'revoked' ? (revokedAt ?? decided ?? new Date()) : null;
   const verificationId = demoId(ID_KIND.studentVerification, index);
   const documentRef = `demo-seed/${accountId}.pdf`;
