@@ -28,13 +28,16 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+/**
+ * The modules that actually register consumers (ADR-013 Amendment B). Only these five get a
+ * queue. `schedule` and `student-verification` emit but never consume, so a stale entry for them
+ * here would let a future legacy-looking queue through unnoticed.
+ */
 const MODULE_QUEUES = [
   'account-profile',
   'admin-operation',
   'live-class',
-  'schedule',
   'skill-verification',
-  'student-verification',
   'wallet-ledger',
 ];
 

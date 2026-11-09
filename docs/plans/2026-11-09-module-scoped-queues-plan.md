@@ -3,7 +3,7 @@ title: Module-scoped consumer queues — collapse 117 queues to 15
 type: plan
 date: 2026-11-09
 topic: module-scoped-queues
-status: Proposed
+status: Implemented
 owner: Group 4
 ---
 
@@ -177,21 +177,30 @@ module:
 
 ### Phase 6 — purge the old queues from the broker (`chore`)
 
-The 117 durable queues already exist; code changes do not delete them. A one-off script
-(`scripts/purge-legacy-queues.mjs`) uses the CloudAMQP management API
-(`DELETE /api/queues/{vhost}/{name}`) to remove queues whose name contains a `.` and is not one of
-the five module queues or their `.retry`/`.dlq` suffixes. It supports `--dry-run`, which is the
-default, and prints every name it would delete.
+The 117 durable queues already exist; code changes do not delete them. `scripts/purge-legacy-queues.mjs`
+(`pnpm queue:purge-legacy`) uses the CloudAMQP management API to remove queues named
+`<module>.<something>` and their `.retry`/`.dlq` siblings, where `<module>` is one of the five
+consuming modules. It is **dry run by default** (`--apply` to delete), never touches the 15 module
+queues, and **skips any queue holding messages** unless `--force-drain` is passed.
 
-**Done when:** a dry run lists exactly the 117 legacy names and nothing else. Deletion is the
-operator's call, not the script's default.
+The dry run against the project instance reported exactly 117 legacy queues, 15 module queues, and
+21 legacy queues holding messages — those messages are work that was never done and must be
+inspected before deletion, which is why they are not drained automatically.
+
+**Done when:** a dry run lists exactly the 117 legacy names and nothing else, and the operator has
+decided what to do about the 21 non-empty ones.
 
 ### Phase 7 — full gate (`chore`)
 
-`pnpm verify`, then boot against the real broker and confirm the declared queue count is 15
-(5 modules × 3) and that a booking still settles.
+`pnpm verify`, then confirm the declared count on the broker is 15 and that a booking still settles.
 
-**Done when:** `pnpm verify` exits 0 and the boot log shows five consumers bound.
+Observed on 2026-11-09: `pnpm verify` exit 0 (1,187 api + 446 web + 251 contracts + 37 gateway +
+262 mobile tests, arch clean). The old topology was reproduced at exactly **117** queues on the
+local stack, the broker was emptied, and the new code's boot declared **15**. On CloudAMQP the
+management API then reported 132 = 117 legacy + 15 new.
+
+**Done when:** `pnpm verify` exits 0 and a broker listing shows five module queues plus their
+`.retry`/`.dlq`.
 
 ## 3. Out of scope
 
