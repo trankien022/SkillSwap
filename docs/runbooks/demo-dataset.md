@@ -103,8 +103,10 @@ the demo is public and the password is published.
    the module's role, and PostgreSQL honours that against the table owner. The seed inserts with
    `ON CONFLICT (source_event_id) DO NOTHING`, so re-runs never rewrite a past decision — and a
    stale audit row from an earlier dataset revision will persist until the role's grant changes.
-5. **`withdrawal_outcome`'s FR is deferred**, as is the payout rail; `/wallet` shows top-ups and
-   settlement, not payouts.
+5. **Evidence version history has no UI entry point for existing skills.** The two profile skills
+   with real version history (Piano, Calculus) are correct in the database and readable through
+   `GET /skill-evidence/:id/history`, but the web screen only offers that link immediately after a
+   fresh submit. Demo FR-018 from the API, or accept that the button is not there for seeded rows.
 
 ## Verifying a run
 
