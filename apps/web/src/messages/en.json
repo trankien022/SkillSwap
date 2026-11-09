@@ -1017,6 +1017,7 @@
         "badgeIncomplete": "Not yet eligible",
         "ok": "Valid",
         "notMet": "Not met",
+        "notPicked": "Pick a subject",
         "item1": "Subject verified by academic panel",
         "item2": "Scheduled at least 24 hours in advance",
         "item3": "Transparent 90/10 Escrow Settlement",
