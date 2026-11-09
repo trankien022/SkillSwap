@@ -46,15 +46,24 @@ export function mapBackendNotificationToUI(item: BackendNotificationItem): UINot
 /**
  * Fetches notification inbox for authenticated user via GET /api/notifications.
  *
+ * `locale` is the language the current screen is rendered in, sent as
+ * `Accept-Language`. The inbox copy is resolved server-side at read time, and the
+ * server cannot otherwise know which language the reader is looking at: it falls
+ * back to a registered push device, and the web client registers none. Without
+ * this header `/en/notifications` rendered Vietnamese rows.
+ *
  * Returns `null` for "could not read" so the caller can render an error state,
  * while logging the HTTP status or network error.
  */
-export async function fetchNotifications(): Promise<{
+export async function fetchNotifications(locale?: string): Promise<{
   items: UINotificationItem[];
   unreadCount: number;
 } | null> {
   try {
-    const res = await callApi('/notifications');
+    const res = await callApi(
+      '/notifications',
+      locale === undefined ? {} : { headers: { 'accept-language': locale } },
+    );
     if (!res.ok) {
       console.warn(`GET /api/notifications failed: HTTP ${res.status}`);
       return null;

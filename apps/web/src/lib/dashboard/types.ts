@@ -45,6 +45,19 @@ export interface LearnerBookingView {
   autoReleaseCountdownSeconds?: number;
 
   /**
+   * Whether the server will accept a review for this booking.
+   *
+   * `ratingEligible` is the API's own gate (booking `confirmed` **and** class
+   * `completed`). The dashboard used to infer "the class is over, so ask for a
+   * review" from the clock alone, which offered the form for a class whose state
+   * machine had not reached `completed` yet — and the rating request then failed.
+   */
+  ratingEligible: boolean;
+
+  /** True when a rating is already on record, so the form must not be re-offered. */
+  hasRated: boolean;
+
+  /**
    * When the learner already submitted a review after completion.
    *
    * The room code and receipt id are deliberately **not** part of the

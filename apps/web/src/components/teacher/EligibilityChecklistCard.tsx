@@ -38,8 +38,12 @@ export function EligibilityChecklistCard({ draft, skills }: Props) {
 
   const allOk = skillApproved && leadTimeOk && payoutOk;
 
+  // "Not met" on an empty draft told the teacher nothing they could act on: the
+  // draft starts with no skill, so the honest status is "nothing picked yet".
+  const skillStatus = skillApproved ? t('ok') : draft.skillId === '' ? t('notPicked') : t('notMet');
+
   const rows: { label: string; ok: boolean; status: string }[] = [
-    { label: t('item1'), ok: skillApproved, status: skillApproved ? t('ok') : t('notMet') },
+    { label: t('item1'), ok: skillApproved, status: skillStatus },
     { label: t('item2'), ok: leadTimeOk, status: leadTimeOk ? t('ok') : t('notMet') },
     { label: t('item3'), ok: payoutOk, status: t('ok') },
   ];

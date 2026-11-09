@@ -6,7 +6,18 @@ export interface RecordInboxNotification {
   targetType: 'class'|'booking'|'wallet'|'verification'; targetId: string;
 }
 export interface NotificationManagementPort {
-  list(accountId: string, query: ListNotificationsQuery, cursor?: readonly [Date, string]): Promise<NotificationsPage>;
+  /**
+   * `requestLocale` is the language the *caller* asked to be answered in (its
+   * `Accept-Language`), when they expressed one. It outranks the stored device
+   * language: the device language describes an installation, and an inbox read in a
+   * browser is a person reading a screen in the language of that screen.
+   */
+  list(
+    accountId: string,
+    query: ListNotificationsQuery,
+    cursor?: readonly [Date, string],
+    requestLocale?: 'vi' | 'en',
+  ): Promise<NotificationsPage>;
   upsertDevice(accountId: string, input: UpsertDeviceInput): Promise<DeviceSubscription>;
   deleteDevice(accountId: string, id: string): Promise<{ success: true }>;
   recordInboxNotification(notification: RecordInboxNotification): Promise<void>;

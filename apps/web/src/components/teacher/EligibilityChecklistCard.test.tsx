@@ -53,10 +53,11 @@ describe('EligibilityChecklistCard', () => {
 
   it('shows Not yet eligible when no approved skill is chosen', () => {
     renderCard(draft({ skillId: '' }));
-    // The skill row is the only one that can fail on this input.
+    // The skill row is the only one that can fail on this input. It reports the
+    // missing pick as such, not as a verification verdict.
     expect(screen.getByText('Not yet eligible', { selector: 'span' })).toBeDefined();
     expect(screen.queryByText('Eligible', { selector: 'span' })).toBeNull();
-    expect(screen.getAllByText('Not met').length).toBeGreaterThan(0);
+    expect(screen.getByText('Pick a subject')).toBeDefined();
   });
 
   it('shows Not yet eligible when the start time is under 24 hours away', () => {
@@ -78,5 +79,14 @@ describe('EligibilityChecklistCard', () => {
     renderCard(draft({ startsOn: '', startsAt: '' }));
     expect(screen.getByText('Not yet eligible', { selector: 'span' })).toBeDefined();
     expect(screen.getAllByText('Not met').length).toBeGreaterThan(0);
+  });
+
+  it('says the subject has not been picked yet, not that verification failed', () => {
+    // The draft starts with skillId '', so row 1 used to read "Not met" — the same
+    // words as a rejected verification. That is what a teacher saw on first load
+    // and read as "my subject failed the review board".
+    renderCard(draft({ skillId: '' }));
+    expect(screen.getByText('Pick a subject')).toBeDefined();
+    expect(screen.queryByText('Not met')).toBeNull();
   });
 });

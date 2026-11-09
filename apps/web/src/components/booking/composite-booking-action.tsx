@@ -36,6 +36,7 @@ import { StatusPill } from './status-pill';
  * 3. **Confirm** — and settlement is shown only when the read-back earns it:
  *    `resolveSettlement` never turns `confirmed: false` into success.
  */
+import { describeError } from '../../lib/error-message';
 const service = new BookClassService(new HttpBookingGateway());
 
 /** Why a class cannot be booked, when the server says it cannot. */
@@ -122,7 +123,7 @@ export function CompositeBookingAction({
     }
     setState({
       phase: 'failed',
-      message: error instanceof Error ? error.message : t('error.unknown'),
+      message: describeError(error, t('error.unknown')),
     });
   }
 
@@ -134,7 +135,7 @@ export function CompositeBookingAction({
       return {
         phase: 'failed',
         message:
-          confirmError instanceof Error ? confirmError.message : t('error.unknown'),
+          describeError(confirmError, t('error.unknown')),
       };
     }
     return { phase: 'checking', status, reading: false };

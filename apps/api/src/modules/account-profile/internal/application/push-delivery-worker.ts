@@ -1,4 +1,4 @@
-import { notificationCopy } from './notification-copy';
+import { DEFAULT_NOTIFICATION_LOCALE, notificationCopy } from './notification-copy';
 import type { PushDeliveryStorePort } from './port/push-delivery-store';
 import type { PushDeliveryLoggerPort } from './port/push-delivery-logger';
 import type { PushProviderPort, PushProviderResult } from './port/push-provider';
@@ -51,7 +51,7 @@ export class PushDeliveryWorker {
   private async dispatchDue(): Promise<void> {
     const deliveries = await this.store.claimDueDeliveries(PUSH_BATCH_SIZE, PUSH_LEASE_SECONDS);
     await Promise.all(deliveries.map(async (delivery) => {
-      const copy = notificationCopy(delivery.type, delivery.locale ?? 'vi');
+      const copy = notificationCopy(delivery.type, delivery.locale ?? DEFAULT_NOTIFICATION_LOCALE);
       const data = {
         notificationId: delivery.notificationId,
         type: delivery.type,

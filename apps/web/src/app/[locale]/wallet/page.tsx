@@ -7,6 +7,7 @@ import { PageIntro } from '../../../components/ui/PageIntro';
 import { StatePanel } from '../../../components/ui/StatePanel';
 import { WorkspaceFooter } from '../../../components/ui/WorkspaceFooter';
 import { Navbar } from '../../../components/navbar';
+import { describeLedgerEntry, shouldShowReference } from '../../../lib/wallet/ledger-entry';
 import type {
   WalletBalanceView,
   WalletHistoryItemView,
@@ -14,6 +15,7 @@ import type {
   TopUpIntentCreated,
   TopUpIntentStatusView,
 } from '@skillswap/contracts';
+import { describeError } from '../../../lib/error-message';
 
 function getCombinedHistory(serverItems: WalletHistoryItemView[]): WalletHistoryItemView[] {
   // The server ledger is the only source of wallet history. An earlier version
@@ -86,7 +88,7 @@ export default function WalletPage() {
         // An empty ledger and an unread ledger look identical, so the failure
         // is surfaced instead of leaving a blank list that reads as "no
         // transactions".
-        setLoadError(e instanceof Error ? e.message : t('loadError'));
+        setLoadError(describeError(e, t('loadError')));
       }
     };
     fetchWallet();
@@ -210,7 +212,7 @@ export default function WalletPage() {
       void pollIntent(intent.id);
     } catch (e: unknown) {
       console.error(e);
-      const errMsg = e instanceof Error ? e.message : t('retry');
+      const errMsg = describeError(e, t('retry'));
       setNotice(errMsg);
     } finally {
       setIsPending(false);
@@ -239,16 +241,16 @@ export default function WalletPage() {
         <PageIntro title={t('title')} description={t('description')} actions={<><button onClick={scrollToDeposit} className="workspace-primary">{t('topUp')}<span aria-hidden="true">↗</span></button><a href={`/${locale}/wallet/withdrawal`} className="workspace-link">{t('withdraw')}</a></>} />
         {loadError && <p role="alert" data-testid="wallet-load-error" className="workspace-feedback workspace-feedback-error mb-6">{t('loadError')} {loadError}</p>}
         <dl className="workspace-wallet-summary">
-          <div><dt>{t('available')}</dt><dd>{balance ? number(balance.availableCredits) : '—'} <span>{t('credits')}</span></dd><p>{balance ? `${number(balance.availableCredits * 1000)} VND` : t('unavailable')}</p></div>
-          <div><dt>{t('held')}</dt><dd>{balance ? number(balance.pendingCredits) : '—'} <span>{t('credits')}</span></dd><p>{t('heldHint')}</p></div>
-          <div><dt>{t('rate')}</dt><dd className="workspace-wallet-rate">1 <span>{t('credits')}</span> = 1.000 VND</dd><p>{t('rateHint')}</p></div>
+          <div><dt>{t('available')}</dt><dd>{balance ? number(balance.availableCredits) : '—'} <span>{t('creditUnit')}</span></dd><p>{balance ? `${number(balance.availableCredits * 1000)} VND` : t('unavailable')}</p></div>
+          <div><dt>{t('held')}</dt><dd>{balance ? number(balance.pendingCredits) : '—'} <span>{t('creditUnit')}</span></dd><p>{t('heldHint')}</p></div>
+          <div><dt>{t('rate')}</dt><dd className="workspace-wallet-rate">1 <span>{t('creditUnit')}</span> = 1.000 VND</dd><p>{t('rateHint')}</p></div>
         </dl>
         <div id="deposit-section" className="workspace-wallet-grid">
           <section className="workspace-panel workspace-form">
             <h2 className="workspace-panel-title">{t('depositTitle')}</h2>
             <p className="mt-3 text-base leading-relaxed text-ink-soft">{t('depositHint')}</p>
             <label htmlFor="wallet-amount" className="mt-6 block font-semibold">{t('amountLabel')}</label>
-            <div className="mt-2 flex items-center gap-3"><input id="wallet-amount" type="number" min={1} step={1} inputMode="numeric" value={amount} onChange={handleAmountChange} className="w-full border px-4 py-3" /><span className="text-sm font-semibold">{t('credits')}</span></div>
+            <div className="mt-2 flex items-center gap-3"><input id="wallet-amount" type="number" min={1} step={1} inputMode="numeric" value={amount} onChange={handleAmountChange} className="w-full border px-4 py-3" /><span className="text-sm font-semibold">{t('creditUnit')}</span></div>
             <div className="mt-4 flex flex-wrap gap-2">{[50,100,200,500].map(value=><button key={value} onClick={()=>setQuickAmount(value)} aria-pressed={amount === value} className={amount === value ? 'workspace-secondary ring-2 ring-ink' : 'workspace-secondary'}>{number(value)}</button>)}</div>
             <div className="my-6 flex items-center justify-between rounded-xl bg-mist p-4"><span className="text-ink-soft">{t('total')}</span><strong className="text-xl">{number(amount * 1000)} VND</strong></div>
             {notice && <p role="alert" className="workspace-feedback workspace-feedback-error mb-4">{notice}</p>}
@@ -258,16 +260,59 @@ export default function WalletPage() {
             <h2 className="workspace-panel-title">{t('paymentTitle')}</h2>
             <p className="text-base leading-relaxed text-ink-soft">{t('paymentBody')}</p>
             {activeIntent && <a href={activeIntent.paymentUrl} target="_blank" rel="noopener noreferrer" className="workspace-link">{t('reopen')}<span aria-hidden="true">↗</span></a>}
-            {intentStatus && <div role="status" data-testid="topup-status" className={`workspace-feedback ${intentStatus.status === 'settled' ? 'workspace-feedback-success' : 'bg-neutral-tint text-ink'}`}><strong>{t(`status.${intentStatus.status}`)}</strong><p className="mt-2 break-all">{intentStatus.providerRef}</p>{pollExpired && <p className="mt-2">{t('pollExpired')}</p>}</div>}
+            {intentStatus && <div role="status" data-testid="topup-status" className={`workspace-feedback ${intentStatus.status === 'settled' ? 'workspace-feedback-success' : 'bg-neutral-tint text-ink'}`}><strong>{t(`status.${intentStatus.status}`)}</strong>{intentStatus.providerRef && <p className="mt-2 break-all">{t('reference', { ref: intentStatus.providerRef })}</p>}{pollExpired && <p className="mt-2">{t('pollExpired')}</p>}</div>}
             <button type="button" onClick={handleRefreshBalance} className="workspace-secondary">{t('refresh')}</button>
             <a href={`/${locale}#trust`} className="workspace-link">{t('rules')}</a>
           </aside>
         </div>
         <section className="mt-10" aria-labelledby="wallet-history-heading">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-4"><h2 id="wallet-history-heading" className="workspace-panel-title">{t('history')}</h2><div className="flex flex-wrap gap-2">{['all','deposit','pay','escrow'].map(value=><button key={value} onClick={()=>setFilter(value)} aria-pressed={filter === value} className={filter === value ? 'workspace-secondary ring-2 ring-ink' : 'workspace-secondary'}>{t(`filter.${value}`)}</button>)}</div></div>
-          {filteredHistory.length === 0 ? <StatePanel title={loadError ? t('unavailable') : t('emptyTitle')} art="programming">{loadError ? t('loadError') : t('emptyBody')}</StatePanel> : <div className="workspace-ledger">{filteredHistory.map(item=><article key={item.id} className="workspace-ledger-row"><div><h3 className="font-semibold">{item.direction === 'credit' ? t('creditTransaction') : t('debitTransaction')}</h3><p className="mt-1 break-all text-sm text-ink-soft">{item.reference || item.id}</p><p className="mt-2 text-sm text-ink-soft">{new Date(item.createdAt).toLocaleString(locale)}</p></div><div className="workspace-ledger-amount"><strong className={item.direction === 'credit' ? 'text-success-ink' : 'text-ink'}>{item.direction === 'credit' ? '+' : '−'}{number(item.amountCredits)} {t('credits')}</strong><p className="mt-1 text-sm text-ink-soft">{number(item.amountCredits * 1000)} VND</p><span className="mt-2 inline-flex rounded-full bg-neutral-tint px-3 py-1 text-sm">{t.has(`historyStatus.${item.status}`) ? t(`historyStatus.${item.status}`) : item.status}</span></div></article>)}</div>}
+          {filteredHistory.length === 0 ? <StatePanel title={loadError ? t('unavailable') : t('emptyTitle')} art="programming">{loadError ? t('loadError') : t('emptyBody')}</StatePanel> : <div className="workspace-ledger">{filteredHistory.map(item=><LedgerRow key={item.id} item={item} locale={locale} />)}</div>}
         </section>
       </main><WorkspaceFooter />
     </div>
+  );
+}
+
+/**
+ * One wallet-history row (FR-010 / FR-021).
+ *
+ * The row is titled by *what happened* (top-up, class payment, teaching income,
+ * refund) rather than by direction, which made a top-up and a payout read
+ * identically. The reference is shown only where it identifies a returned payment
+ * the learner may need to match against a bank statement; elsewhere it is an
+ * internal intent or booking id and is omitted.
+ */
+function LedgerRow({ item, locale }: { item: WalletHistoryItemView; locale: string }) {
+  const t = useTranslations('Workspace.wallet');
+  const kind = describeLedgerEntry(item);
+  const isCredit = item.direction === 'credit';
+
+  return (
+    <article className="workspace-ledger-row">
+      <div>
+        <h3 className="font-semibold">{t(`entryKind.${kind}`)}</h3>
+        {shouldShowReference(kind) && item.reference !== null && (
+          <p className="mt-1 break-all text-sm text-ink-soft">
+            {t('reference', { ref: item.reference })}
+          </p>
+        )}
+        <p className="mt-2 text-sm text-ink-soft">
+          {new Date(item.createdAt).toLocaleString(locale)}
+        </p>
+      </div>
+      <div className="workspace-ledger-amount">
+        <strong className={isCredit ? 'text-success-ink' : 'text-ink'}>
+          {isCredit ? '+' : '−'}
+          {t('credits', { count: item.amountCredits })}
+        </strong>
+        <p className="mt-1 text-sm text-ink-soft">
+          {(item.amountCredits * 1000).toLocaleString(locale)} VND
+        </p>
+        <span className="mt-2 inline-flex rounded-full bg-neutral-tint px-3 py-1 text-sm">
+          {t.has(`historyStatus.${item.status}`) ? t(`historyStatus.${item.status}`) : item.status}
+        </span>
+      </div>
+    </article>
   );
 }

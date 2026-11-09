@@ -20,6 +20,7 @@ import type { VerifierStatus, VerifierView } from '@skillswap/contracts';
  * Every mutation refetches via the gateway — the card on the right never
  * patches state locally.
  */
+import { describeError } from '../../lib/error-message';
 export function VerifierStatusForm({
   accountId,
   initial,
@@ -68,7 +69,7 @@ export function VerifierStatusForm({
       if (err instanceof AdminAuthError) {
         setError(tErrors('forbidden'));
       } else {
-        setError(err instanceof Error ? err.message : tErrors('generic'));
+        setError(describeError(err, tErrors('generic')));
       }
     } finally {
       setPending(false);

@@ -81,4 +81,41 @@ describe('VerifierQueuePage (W6)', () => {
     expect(screen.queryByText(/raw-owner-uuid-9999/)).toBeNull();
     expect(screen.queryByText(new RegExp(rawIso))).toBeNull();
   });
+
+  /**
+   * Defect #7: a response that fails the shared contract used to surface as the
+   * `ZodError` message, which is `JSON.stringify(issues, null, 2)`. The screen
+   * printed a JSON document at the reviewer. It must read as prose that names the
+   * offending field instead, and must never show braces or an issue `code`.
+   */
+  it('shows a readable reason, not a JSON blob, when the response breaks its contract', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          jsonResponse(
+            envelopeOk({
+              items: [{ id: 42, skillName: null }],
+              page: { limit: 20, nextCursor: null, total: 1 },
+            }),
+          ),
+        ),
+      ),
+    );
+
+    const { container } = render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <VerifierQueuePage />
+      </NextIntlClientProvider>,
+    );
+
+    // The pre-fix screen rendered `ZodError#message`, which is the issues array
+    // serialised — an issue object carries a `code`, and nothing the reader can
+    // use. Waiting on the absence of it first makes that failure the one reported.
+    await waitFor(() => {
+      expect(container.textContent).not.toContain('"code"');
+    });
+    expect(container.textContent).not.toContain('{');
+    expect(container.textContent).toContain('items.0.id: Expected string, received number');
+  });
 });

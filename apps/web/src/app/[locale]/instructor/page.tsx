@@ -24,6 +24,7 @@ import type {
 } from '@skillswap/contracts';
 
 /** The class lifecycle states that mean "this class is over". */
+import { describeError } from '../../../lib/error-message';
 const COMPLETED_CLASS_STATES = new Set(['completed', 'cancelled']);
 
 export default function InstructorDashboard() {
@@ -92,7 +93,7 @@ export default function InstructorDashboard() {
       } catch (err) {
         if (active) {
           setLoadError(
-            err instanceof Error ? err.message : ui('couldNotLoadYourTeachingInformation'),
+            describeError(err, ui('couldNotLoadYourTeachingInformation')),
           );
         }
       } finally {
@@ -156,7 +157,7 @@ export default function InstructorDashboard() {
       setEditingClassId(null);
       await refreshServerState();
     } catch (e) {
-      showToast(ui('errorundefined') + (e as Error).message);
+      showToast(describeError(e, ui('couldNotSaveChanges')));
     } finally {
       setIsProcessing(false);
     }
@@ -268,15 +269,24 @@ export default function InstructorDashboard() {
                       </p>
                     </div>
                     <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                      <span className="text-sm text-slate-500">
-                        {ui('id')}
-                        {s.skillId.slice(0, 8)}
+                      {/*
+                        A truncated UUID told the teacher nothing and is not
+                        anonymised by cutting eight characters off it. What belongs
+                        where a reference would go is the approval status, which is
+                        the fact about a skill that decides whether it can be
+                        published on.
+                      */}
+                      <span className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700">
+                        <span aria-hidden="true" className="material-symbols-outlined text-[14px]">
+                          verified_user
+                        </span>
+                        {ui('approved')}
                       </span>
                       <a
                         href={`/${locale}/teach/classes/new`}
                         className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
                       >
-                        {ui('publishAClassundefined')}
+                        {ui('publishAClassLink')}
                       </a>
                     </div>
                   </div>
@@ -376,7 +386,7 @@ export default function InstructorDashboard() {
                               {isCompleted ? ui('ended') : ui('openForBooking')}
                             </span>
                             <span className="text-sm text-slate-600 font-medium">
-                              {item.availableSeats} {ui('availableSeats')}
+                              {ui('availableSeats', { count: item.availableSeats })}
                             </span>
                           </div>
                           <h3 className="font-bold text-slate-900 text-base">{item.title}</h3>
@@ -419,9 +429,13 @@ export default function InstructorDashboard() {
                           </div>
                         </div>
                         <div className="flex max-w-full flex-wrap items-center gap-2.5 pt-2 lg:pt-0">
-                          <span className="text-sm text-slate-500 font-mono">
-                            {item.id.slice(0, 8)}
-                          </span>
+                          {/*
+                            This slot used to show `item.id.slice(0, 8)`, a
+                            truncated UUID with no label. A teacher reads a class
+                            list by name and time, both of which are already on
+                            the card; the id was noise that also leaked an
+                            internal identifier.
+                          */}
                           {!isCompleted && (
                             <button
                               onClick={() =>

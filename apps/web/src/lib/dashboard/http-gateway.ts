@@ -85,30 +85,33 @@ export class HttpLearnerDashboardGateway {
   }
 
   /**
-   * Confirms a completed session and, when supplied, submits the review.
-   * Both legs hit real endpoints, then the bookings are refetched so the UI
-   * reflects server state rather than a fabricated local transition.
+   * Submits the learner's review of a completed session.
+   *
+   * This used to POST `/classes/bookings/:id/confirm` first. That route settles a
+   * booking that is still `pending` (FR-009 / API-006); the review modal only ever
+   * opens for `pending_learner_confirmation`, where the booking is already
+   * `confirmed` and the class is already over. The repository answers a
+   * non-pending booking with `{ confirmed: false }` rather than an error, so the
+   * call was a silent no-op that held up nothing and did nothing — the reason the
+   * button looked dead. Removing it is a deletion of unreachable work, not a
+   * behaviour change.
+   *
+   * There is also no learner-driven escrow release to call: the teacher's share is
+   * released by `class.completed` through `wallet-ledger` (ADR-021 §6). So the one
+   * thing this action can honestly do is record the review.
+   *
+   * The rating is sent whenever the learner rated, whatever they wrote: the star
+   * value *is* the review. It used to be gated on a non-empty comment, which
+   * silently discarded the rating of every learner who had nothing to add.
    */
-  async confirmBooking(
-    bookingId: string,
-    review: { rating: number; body: string },
-  ): Promise<LearnerBookingView> {
-    const confirmRes = await callApi(`/classes/bookings/${bookingId}/confirm`, { method: 'POST' });
-    if (!confirmRes.ok) {
-      throw new Error(await readErrorMessage(confirmRes, 'Could not confirm the booking'));
+  async submitReview(bookingId: string, review: { rating: number; body: string }): Promise<void> {
+    const ratingRes = await callApi(`/classes/bookings/${bookingId}/rating`, {
+      method: 'POST',
+      body: JSON.stringify({ stars: review.rating, comment: review.body.trim() }),
+    });
+    if (!ratingRes.ok) {
+      throw new Error(await readErrorMessage(ratingRes, 'Could not submit the review'));
     }
-
-    if (review.body.trim().length > 0) {
-      const ratingRes = await callApi(`/classes/bookings/${bookingId}/rating`, {
-        method: 'POST',
-        body: JSON.stringify({ stars: review.rating, comment: review.body.trim() }),
-      });
-      if (!ratingRes.ok) {
-        throw new Error(await readErrorMessage(ratingRes, 'Could not submit the review'));
-      }
-    }
-
-    return this.requireBooking(bookingId);
   }
 
   /** Reports a teacher no-show; the backend cancels and the escrow returns. */

@@ -95,4 +95,38 @@ describe('api-notifications (W7)', () => {
     const result = await fetchNotifications();
     expect(result).toBeNull();
   });
+
+  /**
+   * Defect #3: the inbox copy is rendered server-side, and the server resolves the
+   * language from the request. If the client does not state one, the server falls back
+   * to a registered push device — and the web app registers none — so `/en` showed
+   * Vietnamese rows.
+   */
+  it('sends the screen language as Accept-Language', async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse(envelopeOk({ items: [], nextCursor: null, unreadCount: 0 })),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await fetchNotifications('en');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/notifications'),
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'accept-language': 'en' }),
+      }),
+    );
+  });
+
+  it('omits the header when no locale is given, so the server keeps its own default', async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse(envelopeOk({ items: [], nextCursor: null, unreadCount: 0 })),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await fetchNotifications();
+
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(init.headers).not.toHaveProperty('accept-language');
+  });
 });

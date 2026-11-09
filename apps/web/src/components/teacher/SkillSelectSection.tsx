@@ -45,18 +45,23 @@ export function SkillSelectSection({ skills, draft, onChange }: Props) {
           onChange={(e) => onChange({ skillId: e.target.value })}
           className="w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-2.5 pr-10 text-sm font-medium text-slate-900 shadow-xs focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white transition-colors"
         >
-          {skills.length === 0 ? (
-            <option value="">{t('placeholder')}</option>
-          ) : (
-            skills.map((skill) => (
-              <option key={skill.id} value={skill.id}>
-                {skill.label}
-                {skill.approvedLevel !== null
-                  ? ` (${t('verifiedTag')}: ${skill.approvedLevel})`
-                  : ''}
-              </option>
-            ))
-          )}
+          {/*
+            The empty option is always rendered, and it is first. Without it the
+            browser displays the first real skill while `draft.skillId` is still
+            '', so the select looked answered and the eligibility checklist reported
+            "Subject verified: Not met" for a choice the teacher thought they had
+            made. Putting the step's own placeholder here makes the visible value
+            and the draft agree, which is what the teacher reads it as.
+          */}
+          <option value="">{t('placeholder')}</option>
+          {skills.map((skill) => (
+            <option key={skill.id} value={skill.id}>
+              {skill.label}
+              {skill.approvedLevel !== null
+                ? ` (${t('verifiedTag')}: ${skill.approvedLevel})`
+                : ''}
+            </option>
+          ))}
         </select>
         <ExpandMoreIcon className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-muted" />
       </div>

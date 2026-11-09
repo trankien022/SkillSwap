@@ -21,6 +21,7 @@ import { ACTION_MESSAGE_KEY } from '../../lib/audit-action-labels';
  * reports "0 pending" because a read threw is worse than one that admits it could
  * not ask, because an operator acts on the first and waits on the second.
  */
+import { describeError } from '../../lib/error-message';
 
 type LoadState =
   | { kind: 'loading' }
@@ -46,7 +47,7 @@ export function AdminDashboard() {
       }
       setState({
         kind: 'failed',
-        message: error instanceof Error ? error.message : t('errors.generic'),
+        message: describeError(error, t('errors.generic')),
       });
     }
   }, [t]);
