@@ -20,6 +20,28 @@ function readInt(name: string, fallback: number): number {
   return parsed;
 }
 
+/**
+ * Reads a boolean, refusing anything that is not visibly one of the two states.
+ *
+ * Deliberately not `=== 'true'`: a typo'd value would then silently mean "false", and the two
+ * variables this reads decide whether real credentials cross the network in plaintext. A loud
+ * failure at boot is the only safe reading of an unrecognised value.
+ */
+function readBool(name: string, fallback: boolean): boolean {
+  const raw = process.env[name];
+  if (raw === undefined || raw === '') {
+    return fallback;
+  }
+  const normalised = raw.trim().toLowerCase();
+  if (['true', '1', 'yes', 'on'].includes(normalised)) {
+    return true;
+  }
+  if (['false', '0', 'no', 'off'].includes(normalised)) {
+    return false;
+  }
+  throw new Error(`Invalid boolean for ${name}: ${raw} (expected true or false)`);
+}
+
 function snake(value: string): string {
   return value.toUpperCase().replace(/-/g, '_');
 }
@@ -34,6 +56,23 @@ export class ApiConfig {
   readonly databasePort: number;
   readonly databaseName: string;
   readonly databasePassword: string;
+  /**
+   * Whether to negotiate TLS with Postgres.
+   *
+   * Defaults to false because the local stack is `docker compose` on localhost, where the
+   * server offers no TLS; every *managed* provider requires it, so a deployment sets this true.
+   */
+  readonly databaseSsl: boolean;
+  /**
+   * Whether a TLS connection also validates the certificate chain.
+   *
+   * Defaults to true: an encrypted connection to an unverified peer protects against passive
+   * eavesdropping but not against a machine-in-the-middle. Only a host whose CA is genuinely
+   * unavailable should turn this off, which is why it takes a second, deliberate variable.
+   */
+  readonly databaseSslVerify: boolean;
+  /** Connection ceiling per module pool. Seven modules each open their own pool (ADR-007). */
+  readonly databasePoolMax: number;
   readonly rabbitmqUrl: string;
   readonly outboxPollIntervalMs: number;
   readonly outboxBatchSize: number;
@@ -118,6 +157,13 @@ export class ApiConfig {
     this.databasePort = readInt('DATABASE_PORT', 5432);
     this.databaseName = readString('DATABASE_NAME', 'skillswap');
     this.databasePassword = readString('DATABASE_PASSWORD', 'skillswap_dev');
+    // NFR-004: a managed Postgres (Neon, Aiven, …) refuses plaintext connections, while the
+    // local container offers no TLS at all — so this has to be configuration, not a constant.
+    this.databaseSsl = readBool('DATABASE_SSL', false);
+    this.databaseSslVerify = readBool('DATABASE_SSL_VERIFY', true);
+    // Seven pools (ADR-007) against a free plan's ~104 connection ceiling: the default keeps
+    // local behaviour, a deployment template lowers it.
+    this.databasePoolMax = readInt('DATABASE_POOL_MAX', 10);
     this.rabbitmqUrl = readString('RABBITMQ_URL', 'amqp://guest:guest@localhost:5672');
     this.outboxPollIntervalMs = readInt('OUTBOX_POLL_INTERVAL_MS', 2000);
     this.outboxBatchSize = readInt('OUTBOX_BATCH_SIZE', 20);

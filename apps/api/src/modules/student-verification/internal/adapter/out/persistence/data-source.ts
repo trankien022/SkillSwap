@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import { ApiConfig } from '../../../../../../shared/config/api-config';
+import { extraOptions, sslOptions } from '../../../../../../shared/config/postgres-options';
 import { MIGRATIONS_TABLE } from '../../../../../../shared/messaging/constants';
 import { CreateModuleTables1791072000000 } from './migrations/1791072000000-CreateModuleTables';
 import { CreateStudentVerifications1791072000100 } from './migrations/1791072000100-CreateStudentVerifications';
@@ -24,7 +25,8 @@ export function createModuleDataSource(config: ApiConfig, schema: string = SCHEM
     username: credentials.user,
     password: credentials.password,
     schema,
-    extra: { options: `-c search_path=${schema},public` },
+    ssl: sslOptions(config),
+    extra: extraOptions(config, schema),
     migrations: [
       CreateModuleTables1791072000000,
       CreateStudentVerifications1791072000100,
