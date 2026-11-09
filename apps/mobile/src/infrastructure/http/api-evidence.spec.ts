@@ -55,6 +55,7 @@ describe('mobile API evidence', () => {
       ['http://gateway/api/classes/bookings/b-1/no-show', '/api/classes/bookings/:bookingId/no-show'],
       ['http://gateway/api/skills', '/api/skills'],
       ['http://gateway/api/skill-evidence', '/api/skill-evidence'],
+      ['http://gateway/api/skill-evidence/documents', '/api/skill-evidence/documents'],
       ['http://gateway/api/skill-evidence/e-1/history', '/api/skill-evidence/:id/history'],
       ['http://gateway/api/skill-evidence/e-1/claim', '/api/skill-evidence/e-1/claim'],
       ['http://gateway/api/skill-evidence/e-1/decision', '/api/skill-evidence/e-1/decision'],
@@ -69,6 +70,8 @@ describe('mobile API evidence', () => {
       ['http://gateway/api/wallet/top-ups/i-1', '/api/wallet/top-ups/:id'],
       ['http://gateway/api/wallet/top-ups/by-provider-ref/SS-1', '/api/wallet/top-ups/by-provider-ref/:providerRef'],
       ['http://gateway/api/notifications', '/api/notifications'],
+      ['http://gateway/api/notifications/n-1/read', '/api/notifications/:id/read'],
+      ['http://gateway/api/notifications/read-all', '/api/notifications/read-all'],
       ['http://gateway/api/notification-devices', '/api/notification-devices'],
       ['http://gateway/api/notification-devices/d-1', '/api/notification-devices/:id'],
     ]);
@@ -76,6 +79,10 @@ describe('mobile API evidence', () => {
     for (const [url, template] of called) {
       expect([url, evidenceRoute(url)]).toEqual([url, template]);
     }
+  });
+  it('does not allow-list the removed class complete route (AC-035)', () => {
+    // `/classes/:id/complete` still matches the bare-resource rules? No: it has two segments.
+    expect(evidenceRoute('http://gateway/api/classes/c-1/complete')).toBeNull();
   });
   it('keeps booking actions out of the class templates', () => {
     // `/classes/bookings/...` must never be templated as `/api/classes/:id/...`;

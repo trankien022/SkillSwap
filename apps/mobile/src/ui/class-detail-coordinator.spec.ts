@@ -111,6 +111,25 @@ describe('ClassDetailCoordinator', () => {
     expect(coordinator.getState().classDetail).toBeNull();
   });
 
+  it('surfaces learner_not_verified from the backend error code as the rejection reason', async () => {
+    mockGateway.bookClass.mockRejectedValueOnce(
+      new GatewayHttpError(409, 'Learner is not verified', {
+        errorDetails: { code: 'learner_not_verified', errors: [{ code: 'learner_not_verified' }] },
+      }),
+    );
+    const coordinator = new ClassDetailCoordinator({
+      gateway: mockGateway,
+      accountId: 'account-1',
+      classId: 'class-1',
+    });
+
+    await coordinator.loadDetail();
+    await coordinator.bookClass();
+
+    expect(coordinator.getState().phase).toBe('error');
+    expect(coordinator.getState().errorReason).toBe('learner_not_verified');
+  });
+
   it('rotates the reserve key after a hold expires and the server reports its cancellation', async () => {
     const coordinator = new ClassDetailCoordinator({
       gateway: mockGateway,

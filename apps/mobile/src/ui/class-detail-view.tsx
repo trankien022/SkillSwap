@@ -1,4 +1,3 @@
-import { BOOKING_REJECTION_REASONS } from '@skillswap/contracts';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -145,7 +144,6 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
 
   const getLocalizedErrorMessage = (reason: string | null): string => {
     if (!reason) return t('Common.errorMessage');
-    if (BOOKING_REJECTION_REASONS.some((value) => value === reason)) return t(`ClassDetail.rejections.${reason}`);
     switch (reason) {
       case 'session_expired':
         return t('ClassDetail.errorSessionExpired');
@@ -163,6 +161,8 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
         return t('ClassDetail.holdExpired');
       case 'BookingNotAllowedError':
         return t('ClassDetail.errorBookingNotAllowed');
+      case 'learner_not_verified':
+        return t('ClassDetail.errorLearnerNotVerified');
       default:
         return t('Common.errorMessage');
     }
@@ -311,7 +311,9 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
       {/* 1. Header & Teacher Card */}
       <SurfaceCard style={styles.card}>
         <View style={styles.headerRow}>
-          <Text accessibilityRole="header" style={[styles.title, { flex: 1, flexShrink: 1 }]}>{detail.title}</Text>
+          <Text style={styles.title}>
+            {detail.title?.trim() ? detail.title : t('ClassDetail.title')}
+          </Text>
           <StatusPill tone={statusTone} label={statusText} />
         </View>
 

@@ -42,6 +42,10 @@ describe('TeachingGateway', () => {
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ title: 'Updated class', description: 'Updated class', startsAt: updated.startsAt, priceCredits: 25, capacity: 3 });
   });
 
+  it('does not expose a manual complete action (AC-035: completion is automatic)', () => {
+    expect('complete' in gateway).toBe(false);
+  });
+
   it('declares a teacher no-show against the booking resource, not the class', async () => {
     fetchMock.mockResolvedValueOnce(response({ cancelled: true }));
 

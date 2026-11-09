@@ -3,6 +3,19 @@
 Baseline: main `16ba1aa`. Work only on `feat/vu-hung-mobile-completion`.
 Source: mobile remaining assignment (2026-11-07), reconciled with ADR-038/039.
 
+## Scope update — latest main and user authorization (2026-11-09)
+
+The user supplied a fresh main snapshot. Remote `origin/main` advanced to `aa9039c`
+(`fix(mobile): sync mobile flows with API audit (#102)`), so merge it into this feature
+branch before continuing and preserve its API-audit implementation and screen tests.
+The user explicitly authorized implementing the missing MM8 API as part of completing
+the assignment. Add authenticated display-name editing to `/auth/me`, wire mobile profile
+editing through the session layer, and cover the endpoint, persistence, and screen with tests.
+Use the current upstream MM14 screen tests and add coverage for profile editing. Attempt
+MM9/MM15 checks on available emulator/device surfaces; never report physical-device results
+without an observed run. If no suitable device, JaaS test account, or screen-reader setup is
+available, leave those runtime acceptance items explicitly pending and report what is needed.
+
 ## Scope and commit phases
 
 0. Commit this plan before implementation; install the locked workspace dependencies.

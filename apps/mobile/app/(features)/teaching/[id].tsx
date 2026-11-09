@@ -7,7 +7,6 @@ import { GatewayHttpError } from '@/infrastructure/http/gateway-client';
 import { TeachingGateway } from '@/infrastructure/http/teaching-gateway';
 import { colors, spacing, typography } from '@/design/tokens';
 import { useSession } from '@/ui/session-context';
-import { DateTimeField } from '@/ui/date-time-field';
 import { AppButton, FeedbackBanner, ScreenScroll, SurfaceCard } from '@/ui/primitives';
 
 export default function TeachingClassDetailScreen() {
@@ -18,7 +17,7 @@ export default function TeachingClassDetailScreen() {
   const [item, setItem] = useState<ClassDetailView | null>(null);
   const [classTitle, setClassTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [startsAt, setStartsAt] = useState(new Date(Date.now() + 48 * 3600000));
+  const [startsAt, setStartsAt] = useState('');
   const [price, setPrice] = useState('');
   const [capacity, setCapacity] = useState('');
   const [busy, setBusy] = useState(false);
@@ -37,7 +36,7 @@ export default function TeachingClassDetailScreen() {
       setItem(found);
       setClassTitle(found.title);
       setDescription(found.description);
-      setStartsAt(new Date(found.startsAt));
+      setStartsAt(found.startsAt);
       setPrice(String(found.priceCredits));
       setCapacity(String(found.capacity));
       setError(null);
@@ -63,10 +62,10 @@ export default function TeachingClassDetailScreen() {
   const canCancel = item?.state === 'published' || item?.state === 'full';
   const save = () => {
     const priceCredits = Number(price); const seats = Number(capacity);
-    if (!gatewayClient || !item || !classTitle.trim() || !description.trim() || !Number.isInteger(priceCredits) || priceCredits <= 0 || !Number.isInteger(seats) || seats <= 0 || !Number.isFinite(startsAt.getTime())) {
+    if (!gatewayClient || !item || !classTitle.trim() || !description.trim() || !Number.isInteger(priceCredits) || priceCredits <= 0 || !Number.isInteger(seats) || seats <= 0 || !Number.isFinite(Date.parse(startsAt))) {
       setError(t('Teaching.invalidForm')); return;
     }
-    return run(() => new TeachingGateway(gatewayClient).update(item.id, { title: classTitle.trim(), description: description.trim(), startsAt: startsAt.toISOString(), priceCredits, capacity: seats }));
+    return run(() => new TeachingGateway(gatewayClient).update(item.id, { title: classTitle.trim(), description: description.trim(), startsAt: new Date(startsAt).toISOString(), priceCredits, capacity: seats }));
   };
   const cancel = () => Alert.alert(t('Teaching.cancelTitle'), t('Teaching.cancelConfirm'), [
     { text: t('Common.cancel'), style: 'cancel' },
@@ -81,7 +80,7 @@ export default function TeachingClassDetailScreen() {
       <Text style={styles.meta}>{item.priceCredits} {t('Teaching.price')} · {item.capacity} {t('Teaching.capacity')}</Text>
       <TextInput value={classTitle} onChangeText={setClassTitle} editable={Boolean(canEdit) && !busy} placeholder={t('Teaching.classTitle')} style={styles.input} accessibilityLabel={t('Teaching.classTitle')} />
       <TextInput value={description} onChangeText={setDescription} editable={Boolean(canEdit) && !busy} placeholder={t('Teaching.description')} style={styles.input} accessibilityLabel={t('Teaching.description')} />
-      <Text style={styles.meta}>{t('Teaching.startsAt')}</Text><DateTimeField value={startsAt} minDate={new Date(Date.now() + 24 * 3600000)} locale={locale === 'vi' ? 'vi-VN' : 'en-US'} dateLabel={t('Teaching.pickDate')} timeLabel={t('Teaching.pickTime')} invalidMessage={t('Teaching.dateTooSoon')} helper={t('Teaching.earliestStart', { when: new Date(Date.now() + 24 * 3600000).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US') })} onChange={setStartsAt} />
+      <TextInput value={startsAt} onChangeText={setStartsAt} editable={Boolean(canEdit) && !busy} placeholder={t('Teaching.startsAt')} style={styles.input} accessibilityLabel={t('Teaching.startsAt')} />
       <View style={styles.row}>
         <TextInput value={price} onChangeText={setPrice} editable={Boolean(canEdit) && !busy} keyboardType="number-pad" placeholder={t('Teaching.price')} style={[styles.input, styles.small]} accessibilityLabel={t('Teaching.price')} />
         <TextInput value={capacity} onChangeText={setCapacity} editable={Boolean(canEdit) && !busy} keyboardType="number-pad" placeholder={t('Teaching.capacity')} style={[styles.input, styles.small]} accessibilityLabel={t('Teaching.capacity')} />
@@ -89,7 +88,6 @@ export default function TeachingClassDetailScreen() {
       {canEdit ? <AppButton busy={busy} onPress={() => void save()} label={t('Teaching.save')} /> : null}
       {canCancel ? <AppButton disabled={busy} onPress={cancel} label={t('Teaching.cancel')} /> : null}
       {(item.state === 'published' || item.state === 'full') && <AppButton disabled={busy} onPress={() => gatewayClient && void run(() => new TeachingGateway(gatewayClient).start(item.id))} label={t('Teaching.start')} />}
-      {item.state === 'in_progress' && <Text style={styles.meta}>{t('Teaching.automaticCompletion')}</Text>}
     </> : null}
     {error && <FeedbackBanner tone="danger">{error}</FeedbackBanner>}
     <AppButton disabled={busy} onPress={() => router.back()} label={t('Common.back')} />

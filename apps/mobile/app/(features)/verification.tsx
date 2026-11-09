@@ -49,18 +49,18 @@ export default function VerificationScreen() {
       <Text style={styles.title}>{t('Verification.title')}</Text>
       <Text style={styles.body}>{t('Verification.description')}</Text>
       {verification && <View style={styles.status}>
-        <Text style={styles.body}>{t('Verification.submittedSchool')}: {verification.schoolName}</Text>
-        <Text style={styles.body}>{t('Verification.submittedMajor')}: {verification.major || t('Verification.notProvided')}</Text>
-        <Text style={styles.body}>{t('Verification.submittedAt', { when: new Date(verification.submittedAt).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US') })}</Text>
-        {verification.documentId && <Text selectable style={styles.body}>{t('Verification.documentReceived')}: {verification.documentId}</Text>}
-        {['pending', 'approved'].includes(verification.status) && <Text style={styles.body}>{t(verification.status === 'pending' ? 'Verification.pendingLock' : 'Verification.approvedLock')}</Text>}
-
         <Text style={styles.body}>{t('Verification.status')}: {t(`Dashboard.${verification.status}`)}</Text>
         {verification.reason && <Text style={styles.error}>{verification.reason}</Text>}
       </View>}
-      <TextInput editable={!busy && !['pending', 'approved'].includes(verification?.status ?? '')} value={schoolName} onChangeText={setSchoolName} placeholder={t('Verification.school')} style={styles.input} accessibilityLabel={t('Verification.school')} />
-      <TextInput editable={!busy && !['pending', 'approved'].includes(verification?.status ?? '')} value={major} onChangeText={setMajor} placeholder={t('Verification.major')} style={styles.input} accessibilityLabel={t('Verification.major')} />
-      <AppButton tone="quiet" onPress={() => void pick()} disabled={busy || ['pending', 'approved'].includes(verification?.status ?? '')} label={file?.name ?? t('Verification.chooseFile')} />
+      {verification?.documentId ? <View style={styles.status}>
+        <Text style={styles.sectionLabel}>{t('Verification.currentSubmission')}</Text>
+        <Text style={styles.body}>{t('Verification.school')}: {verification.schoolName}</Text>
+        <Text style={styles.body}>{t('Verification.documentSubmitted', { ref: verification.documentId })}</Text>
+        <Text style={styles.meta}>{t('Verification.submittedAt', { when: new Date(verification.submittedAt).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US') })}</Text>
+      </View> : null}
+      <TextInput value={schoolName} onChangeText={setSchoolName} placeholder={t('Verification.school')} style={styles.input} accessibilityLabel={t('Verification.school')} />
+      <TextInput value={major} onChangeText={setMajor} placeholder={t('Verification.major')} style={styles.input} accessibilityLabel={t('Verification.major')} />
+      <AppButton tone="quiet" onPress={() => void pick()} label={file?.name ?? t('Verification.chooseFile')} />
       {!!error && <FeedbackBanner tone="danger">{error}</FeedbackBanner>}
       <AppButton disabled={!canSubmit} busy={busy} onPress={() => void submit()} label={t('Verification.submit')} />
     </SurfaceCard>
@@ -72,6 +72,8 @@ const styles = StyleSheet.create({
   card: { gap: spacing.md },
   title: { color: colors.ink, fontSize: typography.heading.fontSize, fontWeight: '700' },
   body: { color: colors.inkSoft, fontSize: typography.body.fontSize },
+  sectionLabel: { color: colors.ink, fontSize: typography.body.fontSize, fontWeight: '700' },
+  meta: { color: colors.inkMuted, fontSize: typography.caption.fontSize },
   status: { backgroundColor: colors.mist, borderRadius: radius.control, padding: spacing.md, gap: spacing.xs },
   input: { minHeight: 52, borderWidth: 1, borderColor: colors.border, borderRadius: radius.control, paddingHorizontal: spacing.md, color: colors.ink },
   error: { color: colors.dangerInk, fontSize: typography.body.fontSize },

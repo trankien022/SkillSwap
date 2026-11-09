@@ -1,4 +1,4 @@
-import { markNotificationsReadResponseSchema, deviceSubscriptionSchema, notificationsPageSchema, upsertDeviceSchema, type ListNotificationsQuery, type UpsertDeviceInput } from '@skillswap/contracts';
+import { deviceSubscriptionSchema, markNotificationsReadResponseSchema, notificationsPageSchema, upsertDeviceSchema, type ListNotificationsQuery, type MarkNotificationsReadResponse, type UpsertDeviceInput } from '@skillswap/contracts';
 import type { GatewayClient } from './gateway-client';
 
 export class NotificationGateway {
@@ -11,10 +11,12 @@ export class NotificationGateway {
     const qs = params.toString();
     return notificationsPageSchema.parse(await this.gateway.authenticatedRequest<unknown>(`/notifications${qs ? `?${qs}` : ''}`, { method: 'GET' }));
   }
-  async markRead(id: string) {
+  /** B6: marks one notification read; the server answers with the remaining unread count. */
+  async markRead(id: string): Promise<MarkNotificationsReadResponse> {
     return markNotificationsReadResponseSchema.parse(await this.gateway.authenticatedRequest<unknown>(`/notifications/${encodeURIComponent(id)}/read`, { method: 'POST' }));
   }
-  async markAllRead() {
+  /** B6: marks the whole inbox read; the server answers with the remaining unread count. */
+  async markAllRead(): Promise<MarkNotificationsReadResponse> {
     return markNotificationsReadResponseSchema.parse(await this.gateway.authenticatedRequest<unknown>('/notifications/read-all', { method: 'POST' }));
   }
   async registerDevice(input: UpsertDeviceInput) {
