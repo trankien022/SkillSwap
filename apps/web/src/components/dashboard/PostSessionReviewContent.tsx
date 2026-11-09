@@ -14,6 +14,7 @@ import {
 } from '@skillswap/contracts';
 import { callApi, getTokens, unwrapEnvelope } from '../../lib/api-client';
 import { computeNetCredits, computePlatformFee, computeVndEstimate } from '../../lib/teacher/money';
+import { describeError } from '../../lib/error-message';
 
 export interface PostSessionReviewProps {
   bookingId: string;
@@ -150,7 +151,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
         if (active) {
           setLoad({
             phase: 'error',
-            message: error instanceof Error ? error.message : t('form.errorTitle'),
+            message: describeError(error, t('form.errorTitle')),
           });
         }
       }
@@ -201,7 +202,7 @@ export function PostSessionReviewContent({ bookingId }: PostSessionReviewProps) 
     } catch (error) {
       setSubmit({
         phase: 'error',
-        message: error instanceof Error ? error.message : t('form.errorTitle'),
+        message: describeError(error, t('form.errorTitle')),
       });
     }
   };

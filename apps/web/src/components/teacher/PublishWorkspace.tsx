@@ -22,6 +22,7 @@ import { PublishForm } from './PublishForm';
  * It never falls back to fixture skills: the picker only ever shows skills the
  * server reports as approved.
  */
+import { describeError } from '../../lib/error-message';
 export function PublishWorkspace() {
   const locale = useLocale();
   const t = useTranslations('Teacher.publish');
@@ -52,7 +53,7 @@ export function PublishWorkspace() {
         if (error instanceof TeacherPublishAuthError) {
           setStatus('signed-out');
         } else {
-          setErrorMessage(error instanceof Error ? error.message : t('loadError'));
+          setErrorMessage(describeError(error, t('loadError')));
           setStatus('error');
         }
       }

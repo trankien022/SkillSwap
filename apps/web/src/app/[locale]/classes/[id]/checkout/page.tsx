@@ -18,6 +18,7 @@ import {
 } from '../../../../../lib/booking/settlement';
 import { BookingError } from '../../../../../lib/booking/domain';
 import { shortRef } from '../../../../../lib/refs';
+import { describeError } from '../../../../../lib/error-message';
 import type { ClassDetailView } from '../../../../../lib/marketplace/types';
 import type { WalletBalanceView, TopUpIntentCreated, TopUpIntentStatusView } from '@skillswap/contracts';
 
@@ -119,7 +120,7 @@ export default function BookingCheckoutPage({ params }: PageProps) {
         }
       } catch (e) {
         if (isMounted) {
-          setLoadError(e instanceof Error ? e.message : ui('couldNotLoadTheClassInformation'));
+          setLoadError(describeError(e, ui('couldNotLoadTheClassInformation')));
         }
       }
     };
@@ -260,7 +261,7 @@ export default function BookingCheckoutPage({ params }: PageProps) {
       showToast(
         err instanceof BookingError
           ? err.message
-          : ui('errorundefined') + (err instanceof Error ? err.message : ui('couldNotCompleteTheBooking')),
+          : describeError(err, ui('couldNotCompleteTheBooking')),
       );
     } finally {
       setIsProcessing(false);

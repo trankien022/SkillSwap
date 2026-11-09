@@ -8,6 +8,7 @@ import { StatePanel } from '../../../../components/ui/StatePanel';
 import { WorkspaceFooter } from '../../../../components/ui/WorkspaceFooter';
 import { Navbar } from '../../../../components/navbar';
 import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
+import { describeError } from '../../../../lib/error-message';
 
 export default function WithdrawalPage() {
   const tUnavailable = useTranslations('Wallet.withdrawal');
@@ -30,7 +31,7 @@ export default function WithdrawalPage() {
         setBalance(await unwrapEnvelope(balRes));
         setMe(await unwrapEnvelope(meRes));
       } catch (e) {
-        setLoadError(e instanceof Error ? e.message : tUnavailable('loadError'));
+        setLoadError(describeError(e, tUnavailable('loadError')));
       }
     };
     loadData();

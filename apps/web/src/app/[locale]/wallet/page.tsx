@@ -15,6 +15,7 @@ import type {
   TopUpIntentCreated,
   TopUpIntentStatusView,
 } from '@skillswap/contracts';
+import { describeError } from '../../../lib/error-message';
 
 function getCombinedHistory(serverItems: WalletHistoryItemView[]): WalletHistoryItemView[] {
   // The server ledger is the only source of wallet history. An earlier version
@@ -87,7 +88,7 @@ export default function WalletPage() {
         // An empty ledger and an unread ledger look identical, so the failure
         // is surfaced instead of leaving a blank list that reads as "no
         // transactions".
-        setLoadError(e instanceof Error ? e.message : t('loadError'));
+        setLoadError(describeError(e, t('loadError')));
       }
     };
     fetchWallet();
@@ -211,7 +212,7 @@ export default function WalletPage() {
       void pollIntent(intent.id);
     } catch (e: unknown) {
       console.error(e);
-      const errMsg = e instanceof Error ? e.message : t('retry');
+      const errMsg = describeError(e, t('retry'));
       setNotice(errMsg);
     } finally {
       setIsPending(false);

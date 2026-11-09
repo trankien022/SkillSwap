@@ -20,6 +20,7 @@ import { shortRef } from '../../lib/refs';
  * screen would create two places that can decide the same row, which is how a
  * queue and a detail view end up disagreeing.
  */
+import { describeError } from '../../lib/error-message';
 
 const PAGE_SIZE = 20;
 
@@ -80,7 +81,7 @@ export function AdminVerifierQueue({ initialDomain = '' }: { initialDomain?: str
       }
       setState({
         kind: 'failed',
-        message: error instanceof Error ? error.message : t('errors.generic'),
+        message: describeError(error, t('errors.generic')),
       });
     }
   }, [domain, status, sort, t]);
@@ -104,7 +105,7 @@ export function AdminVerifierQueue({ initialDomain = '' }: { initialDomain?: str
     } catch (error) {
       setState({
         kind: 'failed',
-        message: error instanceof Error ? error.message : t('errors.generic'),
+        message: describeError(error, t('errors.generic')),
       });
     } finally {
       setLoadingMore(false);

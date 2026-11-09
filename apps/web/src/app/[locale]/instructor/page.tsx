@@ -24,6 +24,7 @@ import type {
 } from '@skillswap/contracts';
 
 /** The class lifecycle states that mean "this class is over". */
+import { describeError } from '../../../lib/error-message';
 const COMPLETED_CLASS_STATES = new Set(['completed', 'cancelled']);
 
 export default function InstructorDashboard() {
@@ -92,7 +93,7 @@ export default function InstructorDashboard() {
       } catch (err) {
         if (active) {
           setLoadError(
-            err instanceof Error ? err.message : ui('couldNotLoadYourTeachingInformation'),
+            describeError(err, ui('couldNotLoadYourTeachingInformation')),
           );
         }
       } finally {
@@ -156,7 +157,7 @@ export default function InstructorDashboard() {
       setEditingClassId(null);
       await refreshServerState();
     } catch (e) {
-      showToast(ui('errorundefined') + (e as Error).message);
+      showToast(describeError(e, ui('couldNotSaveChanges')));
     } finally {
       setIsProcessing(false);
     }
@@ -285,7 +286,7 @@ export default function InstructorDashboard() {
                         href={`/${locale}/teach/classes/new`}
                         className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
                       >
-                        {ui('publishAClassundefined')}
+                        {ui('publishAClassLink')}
                       </a>
                     </div>
                   </div>

@@ -33,6 +33,7 @@ import {
  * The booking command is never auto-replayed: `callApi` retries only on 401,
  * and even then the idempotency key makes a replay safe.
  */
+import { describeError } from '../error-message';
 export class HttpBookingGateway implements BookingGateway {
   /**
    * `GET /classes/:id` answers with the richer `classDetailViewSchema`, so the
@@ -114,6 +115,6 @@ function toBookingError(error: unknown): BookingError {
     ? (code as BookingRejectionReason)
     : 'class_not_bookable';
 
-  const message = error instanceof Error ? error.message : 'Booking failed';
+  const message = describeError(error, 'Booking failed');
   return new BookingError(reason, message);
 }

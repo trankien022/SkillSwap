@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { HttpVerificationGateway, AdminAuthError } from '../../lib/verification/http-gateway';
+import { describeError } from '../../lib/error-message';
 
 const gateway = new HttpVerificationGateway();
 
@@ -32,10 +33,8 @@ export function StudentVerificationReview({ verificationId }: { verificationId: 
     } catch (err) {
       if (err instanceof AdminAuthError) {
         setError(t('errors.auth'));
-      } else if (err instanceof Error) {
-        setError(err.message);
       } else {
-        setError(String(err));
+        setError(describeError(err, t('errors.generic')));
       }
     } finally {
       setLoading(false);
@@ -58,10 +57,8 @@ export function StudentVerificationReview({ verificationId }: { verificationId: 
     } catch (err) {
       if (err instanceof AdminAuthError) {
         setError(t('errors.auth'));
-      } else if (err instanceof Error) {
-        setError(err.message);
       } else {
-        setError(String(err));
+        setError(describeError(err, t('errors.generic')));
       }
     } finally {
       setLoading(false);

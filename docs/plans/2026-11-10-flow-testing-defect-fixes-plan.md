@@ -168,12 +168,73 @@ signature — `list` took three arguments and rejected a fourth at compile time.
 
 ## Phase 6 — #7 validation errors as raw JSON
 
-**Needs reproduction first.** The envelope renders zod issues as `field: message`
-(`domain-error.filter.ts:248-264`) and the local pipe does the same, so a
-well-formed caller should already read prose. Something is showing the body
-verbatim — find which surface, then make it read `message` like every other caller
-(`readApiMessage`). If the culprit is a `Res`-returning handler or a page rendering
-`JSON.stringify(body)`, fix that surface rather than the shared helper.
+### Reproduction (the plan's guess was wrong)
+
+The plan suspected a surface printing a response body. Reproduced instead: the API's
+envelope is prose on every reachable path — verified live against the local API
+(`POST /auth/register` → `"email: Invalid email; displayName: Required"`,
+`POST /classes` → `"skillIds: Required; title: Required; …"`). No caller in
+`apps/web/src` renders a body: no `.text()`, no `JSON.stringify`, no `<pre>`.
+
+The JSON is generated **client-side**. Every `schema.parse(...)` from
+`packages/contracts` throws a `ZodError`, and `ZodError#message` is
+`JSON.stringify(issues, null, 2)`:
+
+```
+[
+  {
+    "code": "too_big",
+    "maximum": 5,
+    "type": "number",
+    ...
+    "message": "Number must be less than or equal to 5",
+    "path": ["stars"]
+  }
+]
+```
+
+Caught and rendered as `err.message`, that document is what the reader saw. The
+trigger is any contract drift or unexpected response shape — which is exactly why it
+was reachable during flow testing and not from the happy path.
+
+### Fix
+
+`apps/web/src/lib/error-message.ts` — `describeError(error, fallback)`:
+
+- `ZodError` → its issues as `field: message`, joined by `; `. This is the same prose
+  the API's own filter produces (`domain-error.filter.ts`), so the reader sees one
+  shape whichever side rejected the input.
+- Any other `Error` → its message, which is already the API's prose.
+- A blank message, a serialised blob (`{…}`/`[…]`), or a non-`Error` → the caller's
+  fallback. A screen always words that better than a shared helper can.
+
+Applied at every surface that rendered `err.message` (28 call sites, 20 files), so the
+trap cannot be re-entered by the next component that copies its neighbour.
+
+### Also fixed here: two generated catalogue keys
+
+Both were reachable from real screens, and both are what a template literal key looks
+like when its variable was `undefined`:
+
+- `Workspace.copy.errorundefined` (`"Error: "` / `"Lỗi: "`) was concatenated in front
+  of the real message on the checkout and instructor pages, so every failure read
+  `Error: …` with an internal key baked into the catalogue. Replaced by `describeError`.
+- `Workspace.copy.publishAClassundefined` → renamed `publishAClassLink` (the link to
+  the publish workspace).
+
+Both entries deleted. `messages-parity.test.ts` gains a guard: no key may contain a
+segment ending in `undefined`. Restoring one key fails that test by naming it.
+
+### Proof
+
+- `error-message.test.ts` (9 tests) drives real contract schemas
+  (`walletBalanceSchema`, `topUpRequestSchema`), asserting prose, no braces/brackets,
+  no issue codes, no newlines.
+- `verifier-queue.test.tsx` renders the page against a response that breaks its
+  contract. Pre-fix it fails on `expect(container.textContent).not.toContain('"code"')`
+  — the DOM literally held the serialised issues.
+- Adding `errorundefined` back to `en.json` fails
+  `no keys built from an undefined variable` with `['Workspace.copy.errorundefined']`.
 
 ## Phase 7 — #9 pluralisation
 

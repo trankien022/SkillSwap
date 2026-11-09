@@ -23,6 +23,7 @@ import { shortRef } from '../../lib/refs';
  * says this plainly rather than letting an administrator conclude the filter is
  * broken, and it says it next to the control rather than in a footnote nobody reads.
  */
+import { describeError } from '../../lib/error-message';
 
 const PAGE_SIZE = 20;
 
@@ -79,7 +80,7 @@ export function AuditLog() {
       }
       setState({
         kind: 'failed',
-        message: error instanceof Error ? error.message : t('errors.generic'),
+        message: describeError(error, t('errors.generic')),
       });
     }
   }, [buildQuery, t]);
@@ -99,7 +100,7 @@ export function AuditLog() {
     } catch (error) {
       setState({
         kind: 'failed',
-        message: error instanceof Error ? error.message : t('errors.generic'),
+        message: describeError(error, t('errors.generic')),
       });
     } finally {
       setLoadingMore(false);

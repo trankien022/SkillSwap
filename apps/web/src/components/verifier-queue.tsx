@@ -11,6 +11,7 @@ import type {
   SkillLevel,
 } from '@skillswap/contracts';
 import { HttpVerificationGateway, VerifierAuthError } from '../lib/verification/http-gateway';
+import { describeError } from '../lib/error-message';
 
 const gateway = new HttpVerificationGateway();
 
@@ -49,10 +50,8 @@ export function VerifierQueuePage() {
     } catch (err) {
       if (err instanceof VerifierAuthError) {
         setError(t('errors.auth'));
-      } else if (err instanceof Error) {
-        setError(err.message);
       } else {
-        setError(String(err));
+        setError(describeError(err, t('errors.generic')));
       }
     } finally {
       setLoading(false);
@@ -70,7 +69,7 @@ export function VerifierQueuePage() {
       await gateway.claimEvidence(id);
       await load();
     } catch (err) {
-      setMutateError(err instanceof Error ? err.message : String(err));
+      setMutateError(describeError(err, t('errors.generic')));
     } finally {
       setMutating(false);
     }
@@ -88,7 +87,7 @@ export function VerifierQueuePage() {
       await gateway.decideEvidence(id, { decision, approvedLevel, reason });
       await load();
     } catch (err) {
-      setMutateError(err instanceof Error ? err.message : String(err));
+      setMutateError(describeError(err, t('errors.generic')));
     } finally {
       setMutating(false);
     }

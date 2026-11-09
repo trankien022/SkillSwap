@@ -10,6 +10,7 @@ import { MetricTiles } from './MetricTiles';
 import { RightSidebar } from './RightSidebar';
 import type { DashboardSnapshot, LearnerBookingView } from '../../lib/dashboard/types';
 import { DashboardAuthError, HttpLearnerDashboardGateway } from '../../lib/dashboard/http-gateway';
+import { describeError } from '../../lib/error-message';
 
 interface Props {
   /** Snapshot rendered before the first live fetch; null until it resolves. */
@@ -58,7 +59,7 @@ export function DashboardShell({ initial }: Props) {
       }
       setLoad({
         phase: 'error',
-        message: error instanceof Error ? error.message : 'Could not load your bookings',
+        message: describeError(error, 'Could not load your bookings'),
       });
     }
   }, [gateway]);
@@ -116,7 +117,7 @@ export function DashboardShell({ initial }: Props) {
         await reload();
       } catch (error) {
         setActionError(
-          error instanceof Error ? error.message : 'The action could not be completed',
+          describeError(error, 'The action could not be completed'),
         );
       } finally {
         setPendingBookingId(null);

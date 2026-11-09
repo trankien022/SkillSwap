@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { authenticate } from '../../lib/api-client';
 import { resolvePostLoginPath } from '../../lib/post-login-path';
+import { describeError } from '../../lib/error-message';
 
 interface AuthFormProps {
   initialTab?: 'register' | 'login';
@@ -96,7 +97,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
           router.refresh();
         }, 1000);
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : t('validationError');
+        const msg = describeError(err, t('validationError'));
         setErrorMessage(msg);
       }
     });
@@ -136,7 +137,7 @@ export function AuthForm({ initialTab = 'register', locale }: AuthFormProps) {
           router.refresh();
         }, 1000);
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : t('validationError');
+        const msg = describeError(err, t('validationError'));
         setErrorMessage(msg);
       }
     });
