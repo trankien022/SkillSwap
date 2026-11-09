@@ -545,6 +545,76 @@ async function insertBooking(ctx, { index, classId, learnerId, state, priceCredi
   return bookingId;
 }
 
+/**
+ * One in-class chat message (FR-012).
+ *
+ * `sender_role` is constrained to `learner`/`teacher` by `ck_chat_messages_sender_role`, and the
+ * read path only ever shows messages to the booking's two parties — so every row written here
+ * belongs to a real booking on the class it names.
+ */
+async function insertChatMessage(ctx, { index, classId, bookingId, senderId, senderRole, body, createdAt }) {
+  await ctx.classDs.query(
+    `INSERT INTO "live_class"."chat_messages"
+       ("id", "class_id", "booking_id", "sender_id", "sender_role", "body", "created_at")
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     ON CONFLICT ("id") DO UPDATE SET "body" = EXCLUDED."body", "created_at" = EXCLUDED."created_at"`,
+    [demoId(ID_KIND.chat, index), classId, bookingId, senderId, senderRole, body, createdAt],
+  );
+}
+
+/**
+ * Join/leave evidence (FR-011 / AC-035).
+ *
+ * `class_id` is **text** here and holds the bare class id, which is exactly what
+ * `classIdFromRoom` extracts from the JaaS room name. The unique index
+ * `uq_class_presence_open_session` allows only one open session per account per class, so an
+ * open row (`left_at` null) is the only record of "still in the room".
+ */
+async function insertPresence(ctx, { index, classId, accountId, joinedAt, leftAt }) {
+  await ctx.classDs.query(
+    `INSERT INTO "live_class"."class_presence"
+       ("id", "class_id", "account_id", "joined_at", "left_at", "created_at")
+     VALUES ($1, $2, $3, $4, $5, $4)
+     ON CONFLICT ("id") DO UPDATE
+       SET "joined_at" = EXCLUDED."joined_at", "left_at" = EXCLUDED."left_at"`,
+    [demoId(ID_KIND.presence, index), classId, accountId, joinedAt, leftAt ?? null],
+  );
+}
+
+/** A rating (FR-013). One per booking — `uq_ratings_booking_id` — so the loop can never duplicate. */
+async function insertRating(ctx, { index, bookingId, classId, learnerId, stars, comment, createdAt }) {
+  await ctx.classDs.query(
+    `INSERT INTO "live_class"."ratings"
+       ("id", "booking_id", "class_id", "learner_id", "stars", "comment", "created_at")
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     ON CONFLICT ("id") DO UPDATE
+       SET "stars" = EXCLUDED."stars", "comment" = EXCLUDED."comment",
+           "created_at" = EXCLUDED."created_at"`,
+    [demoId(ID_KIND.rating, index), bookingId, classId, learnerId, stars, comment, createdAt],
+  );
+}
+
+/** The "class starting soon" lease (FR-016). Primary key is (class_id, kind). */
+async function insertReminder(ctx, { classId, kind, sentAt }) {
+  await ctx.classDs.query(
+    `INSERT INTO "live_class"."class_reminders" ("class_id", "kind", "sent_at")
+     VALUES ($1, $2, $3)
+     ON CONFLICT ("class_id", "kind") DO UPDATE SET "sent_at" = EXCLUDED."sent_at"`,
+    [classId, kind, sentAt],
+  );
+}
+
+/** A refused room entry, recorded for the Administrator (reason ∈ ROOM_ACCESS_DENIALS). */
+async function insertIncident(ctx, { index, bookingId, classId, requesterId, reason, createdAt }) {
+  await ctx.classDs.query(
+    `INSERT INTO "live_class"."room_access_incidents"
+       ("id", "booking_id", "class_id", "requester_id", "reason", "trace_id", "created_at")
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     ON CONFLICT ("id") DO UPDATE SET "reason" = EXCLUDED."reason", "created_at" = EXCLUDED."created_at"`,
+    [demoId(ID_KIND.incident, index), bookingId, classId, requesterId, reason, `${DEMO_REF_PREFIX}trace-${index}`, createdAt],
+  );
+}
+
 /** Upserts a wallet balance. */
 async function upsertWallet(ctx, ownerId, availableCredits, pendingCredits = 0) {
   await ctx.walletDs.query(
@@ -1076,6 +1146,165 @@ try {
   const walletCount = await reconcileWallets(ctx);
   await assertWalletsReconcile(ctx);
   console.log(`wallets: ${walletCount} derived from the ledger and reconciled`);
+
+  // ── FR-011/FR-012/FR-013/FR-016: the classroom's own history ─────────────
+  // Everything here is derived from the bookings above, so a rating cannot exist without the
+  // confirmed booking it rates, and chat/presence cannot exist without the class's parties.
+  const completed = classIds.filter((c) => c.spec.state === 'completed');
+  const inProgress = classIds.find((c) => c.spec.state === 'in_progress');
+  const soon = classIds.find((c) => c.spec.startInH === 2);
+
+  const RATING_TEXT = {
+    5: 'Explained it slowly and checked that I understood before moving on.',
+    4: 'Good pace and useful examples. Would take another class.',
+    3: 'The content was right but we ran out of time for questions.',
+    2: 'Hard to follow in places; the slides had a lot on them.',
+  };
+
+  let ratingSeq = 0;
+  let ratedCount = 0;
+  for (const cls of completed) {
+    const clsBookings = bookings.filter((b) => b.classId === cls.classId && b.state === 'confirmed');
+    const endMs = cls.startsAtMs + cls.spec.duration * 60 * 1000;
+    for (let i = 0; i < clsBookings.length; i += 1) {
+      // Leave the newest finished class's last booking unrated: that is the "rate this class"
+      // row the demo needs on /my-bookings, and it is what makes the flow demonstrable.
+      const isNewest = cls === completed[completed.length - 1];
+      if (isNewest && i === clsBookings.length - 1) continue;
+      const stars = [5, 4, 5, 3, 4][(ratingSeq + i) % 5];
+      ratingSeq += 1;
+      await insertRating(ctx, {
+        index: ratingSeq,
+        bookingId: clsBookings[i].bookingId,
+        classId: cls.classId,
+        learnerId: clsBookings[i].learnerId,
+        stars,
+        comment: RATING_TEXT[stars],
+        createdAt: iso(endMs + (1 + i) * DAY),
+      });
+      ratedCount += 1;
+    }
+  }
+
+  // Chat history: a full transcript on the last finished class, and a live one in the room that
+  // is running right now. `sender_role` alternates learner/teacher with the booking's own parties.
+  let chatSeq = 0;
+  const transcriptClass = completed[completed.length - 1];
+  const transcriptBooking = bookings.find(
+    (b) => b.classId === transcriptClass.classId && b.state === 'confirmed',
+  );
+  const transcriptTeacher = TEACHER_SKILLS.find((t) => t.teacher === transcriptClass.spec.teacher).teacherId;
+  const transcriptStart = transcriptClass.startsAtMs;
+  const TRANSCRIPT = [
+    ['teacher', 'Welcome! We will start with the warm-up in a moment.', 0],
+    ['learner', 'Ready. I had a question about the last exercise.', 3],
+    ['teacher', 'Ask away — I will answer it before we move on.', 4],
+    ['learner', 'How do I keep my fingers from muting the next string?', 6],
+    ['teacher', 'Angle your fingertips more; I will show it on camera.', 7],
+  ];
+  for (const [role, body, minutes] of TRANSCRIPT) {
+    chatSeq += 1;
+    await insertChatMessage(ctx, {
+      index: chatSeq,
+      classId: transcriptClass.classId,
+      bookingId: transcriptBooking.bookingId,
+      senderId: role === 'teacher' ? transcriptTeacher : transcriptBooking.learnerId,
+      senderRole: role,
+      body,
+      createdAt: iso(transcriptStart + minutes * 60 * 1000),
+    });
+  }
+
+  // Presence: closed sessions for the finished classes (this is the join evidence no-show
+  // detection reads), and open sessions in the class that is running right now.
+  let presenceSeq = 0;
+  for (const cls of completed) {
+    const endMs = cls.startsAtMs + cls.spec.duration * 60 * 1000;
+    const teacherId = TEACHER_SKILLS.find((t) => t.teacher === cls.spec.teacher).teacherId;
+    presenceSeq += 1;
+    const joinedAt = iso(cls.startsAtMs);
+    const leftAt = iso(endMs);
+    await insertPresence(ctx, { index: presenceSeq, classId: cls.classId, accountId: teacherId, joinedAt, leftAt });
+    for (const b of bookings.filter((x) => x.classId === cls.classId && x.state === 'confirmed')) {
+      presenceSeq += 1;
+      await insertPresence(ctx, {
+        index: presenceSeq,
+        classId: cls.classId,
+        accountId: b.learnerId,
+        joinedAt: iso(cls.startsAtMs + 2 * 60 * 1000),
+        leftAt,
+      });
+    }
+  }
+  if (inProgress) {
+    const teacherId = TEACHER_SKILLS.find((t) => t.teacher === inProgress.spec.teacher).teacherId;
+    presenceSeq += 1;
+    await insertPresence(ctx, {
+      index: presenceSeq,
+      classId: inProgress.classId,
+      accountId: teacherId,
+      joinedAt: iso(inProgress.startsAtMs),
+      leftAt: null,
+    });
+    const liveBooking = bookings.find((b) => b.classId === inProgress.classId && b.state === 'confirmed');
+    if (liveBooking) {
+      presenceSeq += 1;
+      await insertPresence(ctx, {
+        index: presenceSeq,
+        classId: inProgress.classId,
+        accountId: liveBooking.learnerId,
+        joinedAt: iso(inProgress.startsAtMs + 60 * 1000),
+        leftAt: null,
+      });
+      // A learner already left, so the room shows a mix of present and departed participants.
+      presenceSeq += 1;
+      await insertPresence(ctx, {
+        index: presenceSeq,
+        classId: inProgress.classId,
+        accountId: bookings.filter((b) => b.classId === inProgress.classId && b.state === 'confirmed')[1]?.learnerId ?? liveBooking.learnerId,
+        joinedAt: iso(inProgress.startsAtMs + 2 * 60 * 1000),
+        leftAt: iso(inProgress.startsAtMs + 20 * 60 * 1000),
+      });
+    }
+  }
+
+  // The reminder lease for the class that starts in two hours, so the "starting soon" path has
+  // already fired and the scheduler will not fire it again during the demo.
+  if (soon) {
+    await insertReminder(ctx, {
+      classId: soon.classId,
+      kind: 'starting_soon',
+      sentAt: iso(soon.startsAtMs - 15 * 60 * 1000),
+    });
+  }
+
+  // Refused room entries. Both are real refusal reasons from `ROOM_ACCESS_DENIALS`, and both name
+  // a booking, because the recorder is only ever reached through one.
+  let incidentSeq = 0;
+  const firstOpenBooking = bookings.find((b) => b.state === 'confirmed' && b.spec.startInH > 0);
+  if (firstOpenBooking) {
+    incidentSeq += 1;
+    await insertIncident(ctx, {
+      index: incidentSeq,
+      bookingId: firstOpenBooking.bookingId,
+      classId: firstOpenBooking.classId,
+      requesterId: firstOpenBooking.learnerId,
+      reason: 'window_not_open',
+      createdAt: iso(now - 2 * HOUR),
+    });
+  }
+  if (inProgress) {
+    incidentSeq += 1;
+    await insertIncident(ctx, {
+      index: incidentSeq,
+      bookingId: `${DEMO_REF_PREFIX}no-booking`,
+      classId: inProgress.classId,
+      requesterId: ACCOUNT_ID[USERS[8].email],
+      reason: 'not_a_party',
+      createdAt: iso(inProgress.startsAtMs + 5 * 60 * 1000),
+    });
+  }
+  console.log(`ratings: ${ratedCount}, chat: ${chatSeq}, presence: ${presenceSeq}, incidents: ${incidentSeq}`);
 
   await reportCounts(ctx);
 
