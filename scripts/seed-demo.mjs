@@ -130,6 +130,8 @@ const ID_KIND = {
   incident: '1ac1',
   topUp: '70b1',
   session: '5e55',
+  notification: '0071',
+  device: 'de71',
 };
 
 function demoId(kind, index) {
@@ -137,21 +139,22 @@ function demoId(kind, index) {
 }
 
 // ── Demo identities ────────────────────────────────────────────────────────
-// 1 admin, 4 verifiers, 10 users. Deterministic emails so re-runs converge.
+// 1 admin, 5 verifiers, 10 users. Deterministic emails so re-runs converge.
 const ADMIN = { email: DEMO_ADMIN_EMAIL, displayName: 'Quan Tri (Admin)', role: 'admin', index: 1 };
 const VERIFIERS = [
   { email: `verifier1@${DEMO_DOMAIN}`, displayName: 'Verifier An', role: 'verifier', expertise: ['IELTS', 'English Conversation', 'Japanese'], status: 'active', index: 2 },
   { email: `verifier2@${DEMO_DOMAIN}`, displayName: 'Verifier Binh', role: 'verifier', expertise: ['Python', 'React', 'TypeScript', 'Calculus'], status: 'active', index: 3 },
   { email: `verifier3@${DEMO_DOMAIN}`, displayName: 'Verifier Chi', role: 'verifier', expertise: ['Guitar', 'Piano'], status: 'active', index: 4 },
-  // Suspended: no approvals, so the admin screen shows a verifier who was stood down before
-  // deciding anything rather than rewriting somebody's history.
+  // Suspended and revoked Verifiers have decided nothing, so standing them down does not rewrite
+  // anybody's approval history — the admin screens show the states without a fake past.
   { email: `verifier4@${DEMO_DOMAIN}`, displayName: 'Verifier Dung', role: 'verifier', expertise: ['UI/UX'], status: 'suspended', index: 5 },
+  { email: `verifier5@${DEMO_DOMAIN}`, displayName: 'Verifier Em', role: 'verifier', expertise: [], status: 'revoked', index: 6 },
 ];
 const USERS = Array.from({ length: 10 }, (_, i) => ({
   email: `user${i + 1}@${DEMO_DOMAIN}`,
   displayName: `Demo User ${i + 1}`,
   role: 'user',
-  index: 6 + i,
+  index: 7 + i,
 }));
 
 /** Managed skill catalogue (ADR-026 §1–2): `category → name`. */
@@ -709,6 +712,102 @@ async function insertIncident(ctx, { index, bookingId, classId, requesterId, rea
   );
 }
 
+/**
+ * One inbox notification (FR-016).
+ *
+ * The six types and four target types are CHECK-constrained, and every row carries the
+ * `deduplication_key` the production consumer derives (`<eventId>:<accountId>`), so seeding the
+ * same notification twice is a no-op instead of a duplicate.
+ */
+async function insertNotification(ctx, { index, accountId, type, targetType, targetId, dedupeKey, read, createdAt }) {
+  await ctx.accountDs.query(
+    `INSERT INTO "account_profile"."inbox_notifications"
+       ("id", "account_id", "deduplication_key", "type", "title", "body",
+        "target_type", "target_id", "read", "created_at")
+     VALUES ($1, $2, $3, $4, $4, $4, $5, $6, $7, $8)
+     ON CONFLICT ("deduplication_key") DO UPDATE
+       SET "read" = EXCLUDED."read", "created_at" = EXCLUDED."created_at"`,
+    [
+      demoId(ID_KIND.notification, index), accountId, `${DEMO_REF_PREFIX}${dedupeKey}`,
+      type, targetType, targetId, read, createdAt,
+    ],
+  );
+  const rows = await ctx.accountDs.query(
+    `SELECT "id" FROM "account_profile"."inbox_notifications" WHERE "deduplication_key" = $1`,
+    [`${DEMO_REF_PREFIX}${dedupeKey}`],
+  );
+  return rows[0].id;
+}
+
+/** One registered push installation. `token` and `installation_id` are both unique. */
+async function insertDevice(ctx, { index, accountId, platform, locale, appVersion, createdAt }) {
+  const installationId = `${DEMO_REF_PREFIX}install-${index}`;
+  await ctx.accountDs.query(
+    `INSERT INTO "account_profile"."notification_devices"
+       ("id", "account_id", "token", "platform", "installation_id", "app_version", "locale", "is_active", "created_at")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, true, $8)
+     ON CONFLICT ("installation_id") DO UPDATE
+       SET "account_id" = EXCLUDED."account_id", "token" = EXCLUDED."token",
+           "platform" = EXCLUDED."platform", "app_version" = EXCLUDED."app_version",
+           "locale" = EXCLUDED."locale", "created_at" = EXCLUDED."created_at", "updated_at" = now()`,
+    [
+      demoId(ID_KIND.device, index), accountId,
+      `${DEMO_REF_PREFIX}token-${platform}-${index}`, platform, installationId,
+      appVersion, locale, createdAt,
+    ],
+  );
+  return demoId(ID_KIND.device, index);
+}
+
+/**
+ * One outbound push attempt for an inbox row.
+ *
+ * `push_deliveries` is unique on (notification_id, device_id), so an attempt is identified by the
+ * pair rather than by a generated id — that is also what makes the status visible per device.
+ */
+async function insertPushDelivery(ctx, { notificationId, deviceId, status, attempts, providerTicketId, lastError, createdAt }) {
+  await ctx.accountDs.query(
+    `INSERT INTO "account_profile"."push_deliveries"
+       ("notification_id", "device_id", "status", "attempts", "provider_ticket_id", "last_error",
+        "next_attempt_at", "created_at", "updated_at")
+     VALUES ($1, $2, $3, $4, $5, $6, now(), $7, $7)
+     ON CONFLICT ("notification_id", "device_id") DO UPDATE
+       SET "status" = EXCLUDED."status", "attempts" = EXCLUDED."attempts",
+           "provider_ticket_id" = EXCLUDED."provider_ticket_id",
+           "last_error" = EXCLUDED."last_error", "created_at" = EXCLUDED."created_at"`,
+    [notificationId, deviceId, status, attempts, providerTicketId ?? null, lastError ?? null, createdAt],
+  );
+}
+
+/**
+ * One audit row, idempotently.
+ *
+ * The store is append-only — the module's role has `UPDATE, DELETE` revoked (see `resetDemo`) — so
+ * a re-run cannot clear demo audit rows the way every other table is cleared. `source_event_id` is
+ * unique where not null, exactly as it is for the production consumer, and the insert is keyed on
+ * it: the statement is a no-op when the row already exists instead of failing the whole seed.
+ */
+async function insertAuditEvent(ctx, { action, actorId, targetType, targetId, oldState, newState, metadata, occurredAt, key }) {
+  await ctx.adminDs.query(
+    `INSERT INTO "admin_operation"."admin_audit_event"
+       ("action", "actor_id", "target_type", "target_id", "old_state", "new_state",
+        "occurred_at", "trace_id", "metadata", "source_event_id")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, NULL, $8, $9)
+     ON CONFLICT ("source_event_id") WHERE "source_event_id" IS NOT NULL DO NOTHING`,
+    [
+      action,
+      actorId ?? null,
+      targetType,
+      targetId ?? null,
+      oldState === undefined ? null : JSON.stringify(oldState),
+      newState === undefined ? null : JSON.stringify(newState),
+      occurredAt,
+      metadata === undefined ? null : JSON.stringify(metadata),
+      `${DEMO_REF_PREFIX}${key}`,
+    ],
+  );
+}
+
 /** Upserts a wallet balance. */
 async function upsertWallet(ctx, ownerId, availableCredits, pendingCredits = 0) {
   await ctx.walletDs.query(
@@ -982,7 +1081,6 @@ try {
     Calculus: 1,
     Guitar: 2,
     Piano: 2,
-    'UI/UX': 3,
   };
   const verifierIdFor = (skillName) => {
     const index = SKILL_VERIFIER[skillName];
@@ -1020,11 +1118,12 @@ try {
 
   // FR-018 history: a request that was refused and then granted on resubmission. Both versions
   // live on one profile skill, so the screen can show why the first attempt failed.
+  const historyEvidence = {};
   {
     const accountId = userIdByIndex[4];
     const skillId = skillIdByName.Piano;
     const profileSkillId = await upsertProfileSkill(ctx.skillDs, accountId, skillId, ++profileSkillSeq);
-    await upsertEvidence(ctx, {
+    const rejectedId = await upsertEvidence(ctx, {
       profileSkillId, accountId, skillId, version: 1, status: 'rejected',
       requestedLevel: 'expert', approvedLevel: null,
       evidenceType: 'certificate', description: 'Grade 8 piano certificate (photo of a screen)',
@@ -1034,7 +1133,7 @@ try {
       decidedAt: new Date(now - 28 * DAY),
       reason: 'The certificate image was a photo of a screen and the grade was unreadable',
     });
-    await upsertEvidence(ctx, {
+    const approvedId = await upsertEvidence(ctx, {
       profileSkillId, accountId, skillId, version: 2, status: 'approved',
       requestedLevel: 'intermediate', approvedLevel: 'intermediate',
       evidenceType: 'verifier_assessment', description: 'Live assessment: scales and a short piece',
@@ -1043,6 +1142,7 @@ try {
       submittedAt: new Date(now - 20 * DAY),
       decidedAt: new Date(now - 18 * DAY),
     });
+    historyEvidence.piano = { profileSkillId, rejectedId, approvedId };
   }
 
   // FR-018 history: an approved level that a later, higher approval replaced. The old row is
@@ -1505,6 +1605,201 @@ try {
     });
   }
   console.log(`ratings: ${ratedCount}, chat: ${chatSeq}, presence: ${presenceSeq}, incidents: ${incidentSeq}`);
+
+  // ── FR-016: inbox, installations, push attempts ──────────────────────────
+  // Every notification is anchored to a row that exists above: a real booking, a real class, a
+  // real ledger entry, a real verification. Nothing here can be opened to a 404.
+  const devices = [];
+  let deviceSeq = 0;
+  const DEVICE_SPECS = [
+    ...USERS.slice(0, 4).map((u, i) => ({ user: u, platform: ['ios', 'android', 'web'][i % 3], locale: i % 2 === 0 ? 'vi' : 'en', appVersion: '1.4.0' })),
+    { user: USERS[6], platform: 'android', locale: 'vi', appVersion: '1.4.0' },
+  ];
+  for (const spec of DEVICE_SPECS) {
+    deviceSeq += 1;
+    const deviceId = await insertDevice(ctx, {
+      index: deviceSeq,
+      accountId: ACCOUNT_ID[spec.user.email],
+      platform: spec.platform,
+      locale: spec.locale,
+      appVersion: spec.appVersion,
+      createdAt: iso(now - 20 * DAY),
+    });
+    devices.push({ deviceId, accountId: ACCOUNT_ID[spec.user.email], platform: spec.platform });
+  }
+
+  let notificationSeq = 0;
+  let pushSeq = 0;
+  const notify = async (spec) => {
+    notificationSeq += 1;
+    const notificationId = await insertNotification(ctx, { ...spec, index: notificationSeq });
+    // One delivery per active installation of the recipient, which is what the worker fans out.
+    for (const device of devices.filter((d) => d.accountId === spec.accountId)) {
+      pushSeq += 1;
+      const failed = pushSeq % 5 === 0;
+      await insertPushDelivery(ctx, {
+        notificationId,
+        deviceId: device.deviceId,
+        status: failed ? 'failed' : 'accepted',
+        attempts: failed ? 3 : 1,
+        providerTicketId: failed ? null : `demo-seed-ticket-${pushSeq}`,
+        lastError: failed ? 'DeviceNotRegistered' : null,
+        createdAt: spec.createdAt,
+      });
+    }
+    return notificationId;
+  };
+
+  // An inbox for each user, with a spread of read/unread and ages so the unread badge and the
+  // "mark all read" action both have something to act on.
+  for (let i = 0; i < USERS.length; i += 1) {
+    const accountId = userIdByIndex[i];
+    const owned = bookings.filter((b) => b.learnerId === accountId && b.state === 'confirmed');
+    const upcoming = owned.find((b) => b.spec.startInH > 0) ?? owned[0];
+    if (upcoming) {
+      await notify({
+        accountId, type: 'booking_confirmed', targetType: 'booking', targetId: upcoming.bookingId,
+        dedupeKey: `notify-booking-${i}`, read: i % 3 !== 0,
+        createdAt: iso(now - (12 - i) * DAY),
+      });
+    }
+    await notify({
+      accountId, type: 'verification_outcome', targetType: 'verification',
+      targetId: demoId(ID_KIND.studentVerification, i + 1),
+      dedupeKey: `notify-verification-${i}`, read: i % 2 === 0,
+      createdAt: iso(now - (14 - i) * DAY),
+    });
+    await notify({
+      accountId, type: 'wallet_transaction', targetType: 'wallet',
+      targetId: `${DEMO_REF_PREFIX}topup-user${i + 1}`, dedupeKey: `notify-wallet-${i}`,
+      read: i > 5, createdAt: iso(now - (10 - i) * DAY),
+    });
+  }
+
+  // The teacher side of a reminder, and a cancellation notice, so both message kinds are visible.
+  if (soon) {
+    const teacherId = TEACHER_SKILLS.find((t) => t.teacher === soon.spec.teacher).teacherId;
+    await notify({
+      accountId: teacherId, type: 'class_starting_soon', targetType: 'class',
+      targetId: soon.classId, dedupeKey: 'notify-soon-teacher', read: false,
+      createdAt: iso(soon.startsAtMs - 15 * 60 * 1000),
+    });
+    for (const b of bookings.filter((x) => x.classId === soon.classId && x.state === 'confirmed')) {
+      await notify({
+        accountId: b.learnerId, type: 'class_starting_soon', targetType: 'class',
+        targetId: soon.classId, dedupeKey: `notify-soon-${b.bookingId}`, read: false,
+        createdAt: iso(soon.startsAtMs - 15 * 60 * 1000),
+      });
+    }
+  }
+  const cancelledClass = classIds.find((c) => c.spec.state === 'cancelled');
+  if (cancelledClass) {
+    for (const b of bookings.filter((x) => x.classId === cancelledClass.classId)) {
+      await notify({
+        accountId: b.learnerId, type: 'booking_cancelled', targetType: 'booking',
+        targetId: b.bookingId, dedupeKey: `notify-cancel-${b.bookingId}`, read: true,
+        createdAt: iso(cancelledClass.startsAtMs - 2 * DAY),
+      });
+    }
+  }
+  // `withdrawal_outcome` is deliberately absent: FR-014 is deferred and the SRS records that the
+  // type is declared with no producer. Seeding one would invent a notification the product cannot
+  // send, so the inbox covers the five types that actually have a producer.
+  console.log(`notifications: ${notificationSeq}, devices: ${devices.length}, push deliveries: ${pushSeq}`);
+
+  // ── FR-015: the audit trail ───────────────────────────────────────────────
+  // One row per audited action in `audit-actions.ts`, with the same target types and the same
+  // old→new shape that consumer writes. `actorId` is the person who acted, never the subject.
+  const auditedVerification = demoId(ID_KIND.studentVerification, 9);
+  await insertAuditEvent(ctx, {
+    action: 'student.verification.approved', actorId: adminId, targetType: 'verification',
+    targetId: auditedVerification, oldState: null,
+    newState: { status: 'approved', schoolName: 'Demo University 3', reason: null },
+    occurredAt: iso(now - 14 * DAY), key: 'audit-verification-approved',
+  });
+  await insertAuditEvent(ctx, {
+    action: 'student.verification.rejected', actorId: adminId, targetType: 'verification',
+    targetId: demoId(ID_KIND.studentVerification, 8), oldState: null,
+    newState: { status: 'rejected', schoolName: 'Demo University 2', reason: 'Document could not be verified' },
+    occurredAt: iso(now - 16 * DAY), key: 'audit-verification-rejected',
+  });
+  await insertAuditEvent(ctx, {
+    action: 'student.verification.revoked', actorId: adminId, targetType: 'verification',
+    targetId: auditedVerification, oldState: null,
+    newState: {
+      status: 'revoked', schoolName: 'Demo University 3',
+      reason: 'Re-submitted student card did not match the enrolled programme',
+    },
+    occurredAt: iso(now - 3 * DAY), key: 'audit-verification-revoked',
+  });
+  await insertAuditEvent(ctx, {
+    action: 'student.verification.document.read', actorId: adminId,
+    targetType: 'verification_document', targetId: demoId(ID_KIND.studentVerification, 7),
+    oldState: null, newState: null,
+    metadata: { actorRole: 'admin', documentRef: `demo-seed/${userIdByIndex[6]}.pdf` },
+    occurredAt: iso(now - 13 * DAY), key: 'audit-verification-document-read',
+  });
+  await insertAuditEvent(ctx, {
+    action: 'skill.verifier.suspended', actorId: adminId, targetType: 'verifier_account',
+    targetId: ACCOUNT_ID[VERIFIERS[3].email], oldState: { status: 'active' },
+    newState: { status: 'suspended' }, occurredAt: iso(now - 9 * DAY), key: 'audit-verifier-suspended',
+  });
+  await insertAuditEvent(ctx, {
+    action: 'skill.verifier.revoked', actorId: adminId, targetType: 'verifier_account',
+    targetId: ACCOUNT_ID[VERIFIERS[4].email], oldState: { status: 'suspended' },
+    newState: { status: 'revoked' }, occurredAt: iso(now - 8 * DAY), key: 'audit-verifier-revoked',
+  });
+  await insertAuditEvent(ctx, {
+    action: 'account.status.changed', actorId: adminId, targetType: 'account',
+    targetId: userIdByIndex[9], oldState: { status: 'active' },
+    newState: { status: 'suspended', reason: 'Chargeback investigation opened by the payment provider' },
+    occurredAt: iso(now - 2 * DAY), key: 'audit-account-suspended',
+  });
+  await insertAuditEvent(ctx, {
+    action: 'skill.evidence.document.read', actorId: ACCOUNT_ID[VERIFIERS[2].email],
+    targetType: 'skill_evidence_document',
+    targetId: historyEvidence.piano.rejectedId,
+    oldState: null, newState: null,
+    metadata: { actorRole: 'verifier', documentRef: `demo-seed/${userIdByIndex[4]}.pdf` },
+    occurredAt: iso(now - 29 * DAY), key: 'audit-evidence-document-read',
+  });
+  // The two evidence decisions the Piano version history is built from, plus the claim that
+  // preceded them, so a filtered "skill evidence" view has a full story rather than a result.
+  for (const [key, action, evidenceId, at, extra] of [
+    ['audit-evidence-claimed', 'skill.evidence.claimed', historyEvidence.piano.rejectedId, now - 29 * DAY, { status: 'claimed' }],
+    ['audit-evidence-rejected', 'skill.evidence.rejected', historyEvidence.piano.rejectedId, now - 28 * DAY, { status: 'rejected', reason: 'The certificate image was a photo of a screen and the grade was unreadable' }],
+    ['audit-evidence-approved', 'skill.evidence.approved', historyEvidence.piano.approvedId, now - 18 * DAY, { status: 'approved' }],
+  ]) {
+    const approved = extra.status === 'approved';
+    await insertAuditEvent(ctx, {
+      action, actorId: ACCOUNT_ID[VERIFIERS[2].email], targetType: 'skill_evidence',
+      targetId: evidenceId, oldState: null,
+      newState: {
+        ...extra,
+        skillId: skillIdByName.Piano,
+        version: approved ? 2 : 1,
+        requestedLevel: approved ? 'intermediate' : 'expert',
+        approvedLevel: approved ? 'intermediate' : null,
+      },
+      metadata: { profileSkillId: historyEvidence.piano.profileSkillId },
+      occurredAt: iso(at), key,
+    });
+  }
+  // One settlement row, which is what the production consumer writes with SYSTEM_ACTOR_ID.
+  const firstRelease = bookings.find((b) => b.spec.state === 'completed' && b.state === 'confirmed');
+  if (firstRelease) {
+    await insertAuditEvent(ctx, {
+      action: 'wallet.transaction.completed',
+      actorId: '00000000-0000-4000-8000-000000000000',
+      targetType: 'wallet_transaction', targetId: `${DEMO_REF_PREFIX}release-${firstRelease.bookingId}`,
+      oldState: null,
+      newState: { type: 'release', direction: 'credit', amountCredits: splitSettlement(firstRelease.spec.price).teacherCredits },
+      metadata: { bookingId: firstRelease.bookingId },
+      occurredAt: iso(firstRelease.startsAtMs + firstRelease.spec.duration * 60 * 1000),
+      key: 'audit-wallet-release',
+    });
+  }
+  console.log('audit: 12 rows covering every audited action');
 
   await reportCounts(ctx);
 
