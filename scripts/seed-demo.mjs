@@ -269,7 +269,16 @@ async function resetDemo(ctx) {
 
   // wallet_ledger — ledger rows are identified by their demo reference, not by owner, so the
   // platform-fee row (owner `platform`) is cleared too.
-  await ctx.walletDs.query(`DELETE FROM "wallet_ledger"."ledger_entries" WHERE "reference_id" LIKE $1`, [`${DEMO_REF_PREFIX}%`]);
+  //
+  // Two reference shapes exist and both must be cleared. The seed's own rows use natural keys
+  // (`demo-seed-topup-user1`), but production writes `intent.id` for a top-up and `booking.id` for
+  // a booking, so anything the API posts against a demo intent or booking is keyed by a `5eed…`
+  // id. A forged IPN during a demo probe produced exactly such a row and survived the older
+  // `demo-seed-%`-only delete, leaving credits the dataset never accounted for.
+  await ctx.walletDs.query(
+    `DELETE FROM "wallet_ledger"."ledger_entries" WHERE "reference_id" LIKE $1 OR "reference_id" LIKE $2`,
+    [`${DEMO_REF_PREFIX}%`, `${DEMO_ID_PREFIX}%`],
+  );
   await ctx.walletDs.query(`DELETE FROM "wallet_ledger"."top_up_intents" WHERE "provider_ref" LIKE $1`, [`${DEMO_REF_PREFIX}%`]);
   // `platform` is included: it is not an account, but the fee rows are keyed to it as owner and
   // a previous version of this script could leave a platform wallet row behind.
@@ -335,7 +344,7 @@ const REPORT_TABLES = [
   ['student-verification', 'student_verifications', `"account_id" LIKE '${DEMO_ID_PREFIX}%'`],
   ['student-verification', 'verification_documents', `"account_id" LIKE '${DEMO_ID_PREFIX}%'`],
   ['wallet-ledger', 'wallets', `"owner_id" LIKE '${DEMO_ID_PREFIX}%' OR "owner_id" LIKE '${DEMO_REF_PREFIX}%'`],
-  ['wallet-ledger', 'ledger_entries', `"reference_id" LIKE '${DEMO_REF_PREFIX}%'`],
+  ['wallet-ledger', 'ledger_entries', `"reference_id" LIKE '${DEMO_REF_PREFIX}%' OR "reference_id" LIKE '${DEMO_ID_PREFIX}%'`],
   ['wallet-ledger', 'top_up_intents', `"provider_ref" LIKE '${DEMO_REF_PREFIX}%'`],
 ];
 
