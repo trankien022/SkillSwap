@@ -7,6 +7,7 @@ import { PageIntro } from '../../../components/ui/PageIntro';
 import { StatePanel } from '../../../components/ui/StatePanel';
 import { WorkspaceFooter } from '../../../components/ui/WorkspaceFooter';
 import { Navbar } from '../../../components/navbar';
+import { describeLedgerEntry, shouldShowReference } from '../../../lib/wallet/ledger-entry';
 import type {
   WalletBalanceView,
   WalletHistoryItemView,
@@ -258,16 +259,59 @@ export default function WalletPage() {
             <h2 className="workspace-panel-title">{t('paymentTitle')}</h2>
             <p className="text-base leading-relaxed text-ink-soft">{t('paymentBody')}</p>
             {activeIntent && <a href={activeIntent.paymentUrl} target="_blank" rel="noopener noreferrer" className="workspace-link">{t('reopen')}<span aria-hidden="true">↗</span></a>}
-            {intentStatus && <div role="status" data-testid="topup-status" className={`workspace-feedback ${intentStatus.status === 'settled' ? 'workspace-feedback-success' : 'bg-neutral-tint text-ink'}`}><strong>{t(`status.${intentStatus.status}`)}</strong><p className="mt-2 break-all">{intentStatus.providerRef}</p>{pollExpired && <p className="mt-2">{t('pollExpired')}</p>}</div>}
+            {intentStatus && <div role="status" data-testid="topup-status" className={`workspace-feedback ${intentStatus.status === 'settled' ? 'workspace-feedback-success' : 'bg-neutral-tint text-ink'}`}><strong>{t(`status.${intentStatus.status}`)}</strong>{intentStatus.providerRef && <p className="mt-2 break-all">{t('reference', { ref: intentStatus.providerRef })}</p>}{pollExpired && <p className="mt-2">{t('pollExpired')}</p>}</div>}
             <button type="button" onClick={handleRefreshBalance} className="workspace-secondary">{t('refresh')}</button>
             <a href={`/${locale}#trust`} className="workspace-link">{t('rules')}</a>
           </aside>
         </div>
         <section className="mt-10" aria-labelledby="wallet-history-heading">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-4"><h2 id="wallet-history-heading" className="workspace-panel-title">{t('history')}</h2><div className="flex flex-wrap gap-2">{['all','deposit','pay','escrow'].map(value=><button key={value} onClick={()=>setFilter(value)} aria-pressed={filter === value} className={filter === value ? 'workspace-secondary ring-2 ring-ink' : 'workspace-secondary'}>{t(`filter.${value}`)}</button>)}</div></div>
-          {filteredHistory.length === 0 ? <StatePanel title={loadError ? t('unavailable') : t('emptyTitle')} art="programming">{loadError ? t('loadError') : t('emptyBody')}</StatePanel> : <div className="workspace-ledger">{filteredHistory.map(item=><article key={item.id} className="workspace-ledger-row"><div><h3 className="font-semibold">{item.direction === 'credit' ? t('creditTransaction') : t('debitTransaction')}</h3><p className="mt-1 break-all text-sm text-ink-soft">{item.reference || item.id}</p><p className="mt-2 text-sm text-ink-soft">{new Date(item.createdAt).toLocaleString(locale)}</p></div><div className="workspace-ledger-amount"><strong className={item.direction === 'credit' ? 'text-success-ink' : 'text-ink'}>{item.direction === 'credit' ? '+' : '−'}{number(item.amountCredits)} {t('credits')}</strong><p className="mt-1 text-sm text-ink-soft">{number(item.amountCredits * 1000)} VND</p><span className="mt-2 inline-flex rounded-full bg-neutral-tint px-3 py-1 text-sm">{t.has(`historyStatus.${item.status}`) ? t(`historyStatus.${item.status}`) : item.status}</span></div></article>)}</div>}
+          {filteredHistory.length === 0 ? <StatePanel title={loadError ? t('unavailable') : t('emptyTitle')} art="programming">{loadError ? t('loadError') : t('emptyBody')}</StatePanel> : <div className="workspace-ledger">{filteredHistory.map(item=><LedgerRow key={item.id} item={item} locale={locale} />)}</div>}
         </section>
       </main><WorkspaceFooter />
     </div>
+  );
+}
+
+/**
+ * One wallet-history row (FR-010 / FR-021).
+ *
+ * The row is titled by *what happened* (top-up, class payment, teaching income,
+ * refund) rather than by direction, which made a top-up and a payout read
+ * identically. The reference is shown only where it identifies a returned payment
+ * the learner may need to match against a bank statement; elsewhere it is an
+ * internal intent or booking id and is omitted.
+ */
+function LedgerRow({ item, locale }: { item: WalletHistoryItemView; locale: string }) {
+  const t = useTranslations('Workspace.wallet');
+  const kind = describeLedgerEntry(item);
+  const isCredit = item.direction === 'credit';
+
+  return (
+    <article className="workspace-ledger-row">
+      <div>
+        <h3 className="font-semibold">{t(`entryKind.${kind}`)}</h3>
+        {shouldShowReference(kind) && item.reference !== null && (
+          <p className="mt-1 break-all text-sm text-ink-soft">
+            {t('reference', { ref: item.reference })}
+          </p>
+        )}
+        <p className="mt-2 text-sm text-ink-soft">
+          {new Date(item.createdAt).toLocaleString(locale)}
+        </p>
+      </div>
+      <div className="workspace-ledger-amount">
+        <strong className={isCredit ? 'text-success-ink' : 'text-ink'}>
+          {isCredit ? '+' : '−'}
+          {item.amountCredits.toLocaleString(locale)} {t('credits')}
+        </strong>
+        <p className="mt-1 text-sm text-ink-soft">
+          {(item.amountCredits * 1000).toLocaleString(locale)} VND
+        </p>
+        <span className="mt-2 inline-flex rounded-full bg-neutral-tint px-3 py-1 text-sm">
+          {t.has(`historyStatus.${item.status}`) ? t(`historyStatus.${item.status}`) : item.status}
+        </span>
+      </div>
+    </article>
   );
 }

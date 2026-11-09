@@ -1498,6 +1498,16 @@
       "emptyBody": "Credit top-ups and class payments will appear here.",
       "creditTransaction": "Credits into your wallet",
       "debitTransaction": "Credits out of your wallet",
+      "entryKind": {
+        "topUp": "Top-up",
+        "topUpReversed": "Top-up reversed",
+        "classPayment": "Class payment",
+        "classRefund": "Class refund",
+        "teacherIncome": "Teaching income",
+        "platformFee": "Platform fee",
+        "unknown": "Wallet movement"
+      },
+      "reference": "Reference: {ref}",
       "status": {
         "pending": "Awaiting payment confirmation",
         "settled": "Credits added to your wallet",

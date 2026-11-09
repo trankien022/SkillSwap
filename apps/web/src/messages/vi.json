@@ -1498,6 +1498,16 @@
       "emptyBody": "Giao dịch nạp credit và thanh toán lớp học sẽ xuất hiện tại đây.",
       "creditTransaction": "Credit vào ví",
       "debitTransaction": "Credit ra khỏi ví",
+      "entryKind": {
+        "topUp": "Nạp credit",
+        "topUpReversed": "Hoàn tiền nạp",
+        "classPayment": "Thanh toán lớp học",
+        "classRefund": "Hoàn tiền lớp học",
+        "teacherIncome": "Thu nhập giảng dạy",
+        "platformFee": "Phí nền tảng",
+        "unknown": "Biến động ví"
+      },
+      "reference": "Mã tham chiếu: {ref}",
       "status": {
         "pending": "Đang chờ xác nhận thanh toán",
         "settled": "Đã cộng credit vào ví",
