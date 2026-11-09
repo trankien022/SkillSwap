@@ -3,8 +3,8 @@ import DateTimePicker, { type DateTimePickerEvent } from '@react-native-communit
 import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, typography } from '@/design/tokens';
 
-export function DateTimeField({ value, minDate, locale, dateLabel, timeLabel, helper, invalidMessage, onChange }:{
-  value: Date; minDate: Date; locale: string; dateLabel: string; timeLabel: string; helper: string; invalidMessage: string; onChange: (value: Date) => void;
+export function DateTimeField({ value, minDate, locale, dateLabel, timeLabel, helper, invalidMessage, disabled = false, onChange }:{
+  value: Date; minDate: Date; locale: string; dateLabel: string; timeLabel: string; helper: string; invalidMessage: string; disabled?: boolean; onChange: (value: Date) => void;
 }) {
   const [mode, setMode] = useState<'date' | 'time' | null>(null);
   const update = (_event: DateTimePickerEvent, picked?: Date) => {
@@ -18,11 +18,11 @@ export function DateTimeField({ value, minDate, locale, dateLabel, timeLabel, he
   };
   return <View style={styles.field}>
     <View style={styles.row}>
-      <Pressable accessibilityRole="button" accessibilityLabel={dateLabel} style={styles.button} onPress={() => setMode('date')}><Text style={styles.text}>{value.toLocaleDateString(locale)}</Text></Pressable>
-      <Pressable accessibilityRole="button" accessibilityLabel={timeLabel} style={styles.button} onPress={() => setMode('time')}><Text style={styles.text}>{value.toLocaleTimeString(locale, { hour:'2-digit', minute:'2-digit' })}</Text></Pressable>
+      <Pressable disabled={disabled} accessibilityRole="button" accessibilityLabel={dateLabel} style={[styles.button, disabled && styles.disabled]} onPress={() => setMode('date')}><Text style={styles.text}>{value.toLocaleDateString(locale)}</Text></Pressable>
+      <Pressable disabled={disabled} accessibilityRole="button" accessibilityLabel={timeLabel} style={[styles.button, disabled && styles.disabled]} onPress={() => setMode('time')}><Text style={styles.text}>{value.toLocaleTimeString(locale, { hour:'2-digit', minute:'2-digit' })}</Text></Pressable>
     </View>
     <Text style={styles.helper}>{helper}</Text>
     {mode && <DateTimePicker value={value} mode={mode} display={Platform.OS === 'ios' ? 'compact' : 'default'} minimumDate={minDate} onChange={update} />}
   </View>;
 }
-const styles=StyleSheet.create({field:{gap:spacing.xs},row:{flexDirection:'row',gap:spacing.sm},button:{flex:1,minHeight:48,justifyContent:'center',paddingHorizontal:spacing.md,borderWidth:1,borderColor:colors.border,borderRadius:radius.control,backgroundColor:colors.surface},text:{color:colors.ink,fontSize:typography.body.fontSize},helper:{color:colors.inkMuted,fontSize:typography.caption.fontSize}});
+const styles=StyleSheet.create({field:{gap:spacing.xs},row:{flexDirection:'row',gap:spacing.sm},button:{flex:1,minHeight:48,justifyContent:'center',paddingHorizontal:spacing.md,borderWidth:1,borderColor:colors.border,borderRadius:radius.control,backgroundColor:colors.surface},disabled:{opacity:0.5},text:{color:colors.ink,fontSize:typography.body.fontSize},helper:{color:colors.inkMuted,fontSize:typography.caption.fontSize}});

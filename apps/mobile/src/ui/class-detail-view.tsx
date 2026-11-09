@@ -311,7 +311,7 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
       {/* 1. Header & Teacher Card */}
       <SurfaceCard style={styles.card}>
         <View style={styles.headerRow}>
-          <Text style={styles.title}>
+          <Text accessibilityRole="header" style={styles.title}>
             {detail.title?.trim() ? detail.title : t('ClassDetail.title')}
           </Text>
           <StatusPill tone={statusTone} label={statusText} />

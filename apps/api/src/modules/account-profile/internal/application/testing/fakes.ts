@@ -42,6 +42,17 @@ export class FakeAccountRepository implements AccountRepository {
     }
     return null;
   }
+
+  async updateDisplayName(id: string, displayName: string): Promise<Account | null> {
+    for (const [email, account] of this.byEmail.entries()) {
+      if (account.id === id) {
+        const updated = { ...account, displayName: displayName.trim() };
+        this.byEmail.set(email, updated);
+        return updated;
+      }
+    }
+    return null;
+  }
 }
 
 /** Deterministic hash: "hash:<plaintext>" — good enough for use-case tests. */

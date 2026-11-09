@@ -6,6 +6,7 @@ import { ClassReadGateway } from '@/infrastructure/http/class-read-gateway';
 import { TeachingGateway } from '@/infrastructure/http/teaching-gateway';
 import { colors, radius, spacing, typography } from '@/design/tokens';
 import { useSession } from '@/ui/session-context';
+import { DateTimeField } from '@/ui/date-time-field';
 import { parseStartsAt, startsAtMessageKey } from '@/ui/teaching-form';
 import { AppButton, FeedbackBanner, ScreenScroll, SurfaceCard } from '@/ui/primitives';
 
@@ -118,12 +119,15 @@ export default function TeachingScreen() {
               style={styles.input}
               accessibilityLabel={t('Teaching.description')}
             />
-            <TextInput
-              value={startsAt}
-              onChangeText={setStartsAt}
-              placeholder={t('Teaching.startsAt')}
-              style={styles.input}
-              accessibilityLabel={t('Teaching.startsAt')}
+            <DateTimeField
+              value={new Date(startsAt)}
+              minDate={new Date(Date.now() + 24 * 3600000)}
+              locale={locale === 'vi' ? 'vi-VN' : 'en-US'}
+              dateLabel={t('Teaching.pickDate')}
+              timeLabel={t('Teaching.pickTime')}
+              helper={t('Teaching.earliestStart', { when: new Date(Date.now() + 24 * 3600000).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US') })}
+              invalidMessage={t('Teaching.dateTooSoon')}
+              onChange={(date) => setStartsAt(date.toISOString())}
             />
             <View style={styles.row}>
               {[

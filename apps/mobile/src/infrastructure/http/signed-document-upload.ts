@@ -1,5 +1,10 @@
-import type { EvidenceDocumentUploadTargetView } from '@skillswap/contracts';
 import { sanitizeErrorMessage } from './gateway-client';
+
+export interface SignedDocumentUploadTarget {
+  readonly uploadUrl: string;
+  readonly fields: Record<string, string>;
+  readonly expiresAt: string;
+}
 
 export class DocumentUploadError extends Error {
   readonly statusCode: number;
@@ -17,7 +22,7 @@ export interface UploadDocumentOptions {
   readonly expiresAt?: string | Date;
 }
 
-export async function uploadSignedDocument(targetOrUrl: EvidenceDocumentUploadTargetView | string, bytes: Uint8Array | ArrayBuffer, options?: UploadDocumentOptions, fetchFn: typeof fetch = globalThis.fetch.bind(globalThis)): Promise<void> {
+export async function uploadSignedDocument(targetOrUrl: SignedDocumentUploadTarget | string, bytes: Uint8Array | ArrayBuffer, options?: UploadDocumentOptions, fetchFn: typeof fetch = globalThis.fetch.bind(globalThis)): Promise<void> {
     const uploadUrl = typeof targetOrUrl === 'string' ? targetOrUrl : targetOrUrl.uploadUrl;
 
     if (!uploadUrl || typeof uploadUrl !== 'string') {

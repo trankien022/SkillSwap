@@ -99,6 +99,7 @@ Common status codes: `400` invalid body/query, `401` missing/expired token or ba
 | POST | `/api/auth/refresh` | none | `{ refreshToken }` | `200` token pair (rotates) |
 | POST | `/api/auth/logout` | none | `{ refreshToken }` | `204` |
 | GET | `/api/auth/me` | **yes** | — | `200` account |
+| PATCH | `/api/auth/me` | **yes** | `{ displayName }` | `200` updated account |
 
 `role` ∈ `user` only (default `user`); `verifier`/`admin` are provisioned out of band (ADR-030). `password` ≥ 8 chars. Account roles are `user | verifier | admin`; Learner/Teacher are capabilities, not roles.
 

@@ -171,6 +171,19 @@ describe('GatewayClient', () => {
       );
       expect(profile).toEqual(sampleMeResponse);
     });
+
+    it('updates current display name via authenticated PATCH /api/auth/me', async () => {
+      const updated = { ...sampleMeResponse, displayName: 'New Name' };
+      const mockFetch = jest.fn().mockResolvedValue({ ok: true, status: 200, json: async () => updated });
+      const client = new GatewayClient(config, { fetchFn: mockFetch as unknown as typeof fetch });
+
+      await expect(client.updateMe('valid-access-token', '  New Name  ')).resolves.toMatchObject({ displayName: 'New Name' });
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:4000/api/auth/me', expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({ displayName: 'New Name' }),
+        headers: expect.objectContaining({ Authorization: 'Bearer valid-access-token' }),
+      }));
+    });
   });
 
   describe('response envelope compatibility', () => {

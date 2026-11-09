@@ -16,4 +16,5 @@ export interface AuthApiPort {
   refresh(refreshToken: string): Promise<RawTokenPayload>;
   logout(refreshToken: string): Promise<void>;
   getMe(accessToken: string): Promise<SessionUser>;
+  updateMe(accessToken: string, displayName: string): Promise<SessionUser>;
 }

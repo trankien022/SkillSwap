@@ -20,6 +20,7 @@ jest.mock('react-native', () => ({
   Pressable: 'Pressable',
   StyleSheet: { create: <T,>(styles: T): T => styles },
   Text: 'Text',
+  TextInput: 'TextInput',
   View: 'View',
 }));
 
@@ -29,12 +30,14 @@ jest.mock('expo-router', () => ({
 
 jest.mock('@/ui/primitives', () => ({
   AppButton: 'AppButton',
+  FeedbackBanner: 'FeedbackBanner',
   ScreenScroll: 'ScreenScroll',
   SurfaceCard: 'SurfaceCard',
 }));
 
 const mockTranslate = (key: string) => key;
 let mockUser: SessionUser | null = null;
+const mockUpdateDisplayName = jest.fn();
 
 jest.mock('./session-context', () => ({
   useSession: () => ({
@@ -43,6 +46,7 @@ jest.mock('./session-context', () => ({
     locale: 'vi',
     setLocale: jest.fn(),
     logout: jest.fn(),
+    updateDisplayName: mockUpdateDisplayName,
   }),
 }));
 
@@ -85,6 +89,8 @@ describe('ProfileView role-gated navigation', () => {
     Reflect.set(globalThis, 'IS_REACT_ACT_ENVIRONMENT', true);
   });
 
+  beforeEach(() => mockUpdateDisplayName.mockReset());
+
   afterAll(() => {
     if (previousActEnvironment === undefined) {
       Reflect.deleteProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT');
@@ -125,6 +131,17 @@ describe('ProfileView role-gated navigation', () => {
     ]) {
       expect(texts).toContain(key);
     }
+  });
+
+  it('saves the trimmed display name through the session profile action', async () => {
+    mockUpdateDisplayName.mockResolvedValue(userWithRole('user'));
+    const tree = await renderProfile(userWithRole('user'));
+    const input = tree.root.findByType('TextInput' as never);
+    await act(async () => { input.props.onChangeText('  New Name  '); });
+    const save = tree.root.findAllByType('AppButton' as never).find((node) => node.props.label === 'Profile.saveName');
+    expect(save).toBeDefined();
+    await act(async () => { await save?.props.onPress(); });
+    expect(mockUpdateDisplayName).toHaveBeenCalledWith('New Name');
   });
 
   it('never offers a learner a way to cancel a confirmed booking', async () => {

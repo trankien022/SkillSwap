@@ -137,6 +137,8 @@ module.exports = {
         orphan: true,
         pathNot: [
           '\\.(d\\.ts|spec\\.ts|test\\.ts)$',
+          // Jest maps this native picker stub by package name; the resolver does not see that mapping.
+          'apps/mobile/src/ui/__mocks__/datetimepicker\\.tsx$',
           'src/index\\.ts$',
           '\\.module\\.ts$',
           'src/bootstrap/',

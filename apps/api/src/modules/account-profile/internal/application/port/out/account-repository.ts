@@ -14,6 +14,7 @@ export interface AccountRepository {
   create(input: NewAccount): Promise<Account>;
   findByEmail(email: string): Promise<Account | null>;
   findById(id: string): Promise<Account | null>;
+  updateDisplayName(id: string, displayName: string): Promise<Account | null>;
 }
 
 /**

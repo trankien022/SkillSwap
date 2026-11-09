@@ -33,6 +33,7 @@ class MockAuthApi implements AuthApiPort {
   public refreshCallCount = 0;
   public logoutCallCount = 0;
   public getMeCallCount = 0;
+  public updateMeCallCount = 0;
 
   public refreshDelayMs = 0;
   public shouldFailRefresh = false;
@@ -125,6 +126,12 @@ class MockAuthApi implements AuthApiPort {
       },
     };
   }
+
+  async updateMe(accessToken: string, displayName: string): Promise<SessionUser> {
+    this.updateMeCallCount++;
+    const current = await this.getMe(accessToken);
+    return { ...current, displayName: displayName.trim() };
+  }
 }
 
 class MockSessionStore implements SessionStorePort {
@@ -190,6 +197,18 @@ describe('SessionService', () => {
     store = new MockSessionStore();
     currentTime = 1000000;
     clock = () => currentTime;
+  });
+
+  it('updates and persists the current display name without replacing the session tokens', async () => {
+    const service = new SessionService(authApi, store, clock);
+    const initial = await service.login({ email: 'userA@example.com', password: 'password123' });
+
+    const updated = await service.updateDisplayName('  New Name  ');
+
+    expect(updated.displayName).toBe('New Name');
+    expect(authApi.updateMeCallCount).toBe(1);
+    expect(service.getActiveSession()).toMatchObject({ user: updated, tokens: initial.tokens });
+    expect(store.currentStored).toMatchObject({ user: updated, tokens: initial.tokens });
   });
 
   describe('Single-Flight Refresh & Token Rotation Invariants', () => {

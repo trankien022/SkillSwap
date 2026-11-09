@@ -37,6 +37,7 @@ export function evidenceRoute(url: string): string | null {
   if (/^\/classes\/[^/]+\/bookings$/.test(path)) return '/api/classes/:id/bookings';
   if (/^\/classes\/[^/]+$/.test(path)) return '/api/classes/:id';
   if (/^\/skill-evidence\/[^/]+\/history$/.test(path)) return '/api/skill-evidence/:id/history';
+  if (/^\/skill-evidence\/[^/]+\/document$/.test(path)) return '/api/skill-evidence/:id/document';
   if (/^\/skill-evidence\/[^/]+\/(claim|decision)$/.test(path)) return `/api${path}`;
   if (/^\/notification-devices\/[^/]+$/.test(path)) return '/api/notification-devices/:id';
   if (/^\/notifications\/[^/]+\/read$/.test(path)) return '/api/notifications/:id/read';

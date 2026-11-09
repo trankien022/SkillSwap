@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Post, Req, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Patch, Post, Req, UnauthorizedException } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type {
   LoginInput,
@@ -7,12 +7,14 @@ import type {
   RefreshRequestInput,
   RegisterInput,
   TokenResponse,
+  UpdateMeRequest,
 } from '@skillswap/contracts';
 import { REGISTER_ACCOUNT, type RegisterAccountPort } from '../../../application/port/in/register-account';
 import { LOGIN, type LoginPort } from '../../../application/port/in/login';
 import { REFRESH_SESSION, type RefreshSessionPort } from '../../../application/port/in/refresh-session';
 import { LOGOUT, type LogoutPort } from '../../../application/port/in/logout';
 import { GET_ME, type GetMePort } from '../../../application/port/in/get-me';
+import { UPDATE_ME, type UpdateMePort } from '../../../application/port/in/update-me';
 import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
 import {
   ResponseCode,
@@ -25,6 +27,7 @@ import {
   RefreshRequestDto,
   RegisterDto,
   TokenResponseDto,
+  UpdateMeDto,
 } from './dto/auth.dto';
 
 @Controller('auth')
@@ -36,6 +39,7 @@ export class AuthController {
     @Inject(REFRESH_SESSION) private readonly refresh: RefreshSessionPort,
     @Inject(LOGOUT) private readonly logout: LogoutPort,
     @Inject(GET_ME) private readonly getMe: GetMePort,
+    @Inject(UPDATE_ME) private readonly updateMe: UpdateMePort,
   ) {}
 
   @Post('register')
@@ -87,5 +91,22 @@ export class AuthController {
       throw new UnauthorizedException('Authentication required');
     }
     return this.getMe.execute(accountId);
+  }
+
+  @Patch('me')
+  @ApiBearerAuth('bearer')
+  @ResponseCode('ME_OK')
+  @ResponseMessage('Account updated')
+  @ApiOperation({ summary: 'Update the signed-in account display name (MM8)' })
+  @ApiOkResponse({ type: MeResponseDto, description: 'The updated current account profile' })
+  updateMyProfile(
+    @Req() request: RequestWithIdentity,
+    @Body() body: UpdateMeDto,
+  ): Promise<MeResponse> {
+    const accountId = currentUserId(request);
+    if (!accountId || accountId === 'anonymous') {
+      throw new UnauthorizedException('Authentication required');
+    }
+    return this.updateMe.execute(accountId, body as UpdateMeRequest);
   }
 }

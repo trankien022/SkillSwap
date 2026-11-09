@@ -1,19 +1,27 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { colors, radius, spacing, typography } from '@/design/tokens';
-import { AppButton, ScreenScroll, SurfaceCard } from './primitives';
+import { AppButton, FeedbackBanner, ScreenScroll, SurfaceCard } from './primitives';
 import { useSession } from './session-context';
 
 export function ProfileView() {
   const router = useRouter();
-  const { t, user, locale, setLocale, logout } = useSession();
+  const { t, user, locale, setLocale, logout, updateDisplayName } = useSession();
   const [isSigningOut, setIsSigningOut] = useState<boolean>(false);
+  const [displayName, setDisplayName] = useState(user?.displayName ?? '');
+  const [isSavingName, setIsSavingName] = useState(false);
+  const [nameFeedback, setNameFeedback] = useState<{ tone: 'success' | 'danger'; key: string } | null>(null);
+
+  useEffect(() => {
+    setDisplayName(user?.displayName ?? '');
+  }, [user?.id, user?.displayName]);
 
   const verificationStatus = user?.studentVerification?.status ?? 'notSubmitted';
 
@@ -42,6 +50,33 @@ export function ProfileView() {
     }
   };
 
+  const handleSaveName = async () => {
+    const nextName = displayName.trim();
+    if (!nextName) {
+      setNameFeedback({ tone: 'danger', key: 'Profile.nameRequired' });
+      return;
+    }
+    if (nextName.length > 120) {
+      setNameFeedback({ tone: 'danger', key: 'Profile.nameTooLong' });
+      return;
+    }
+    if (nextName === user?.displayName) {
+      setNameFeedback(null);
+      return;
+    }
+    setIsSavingName(true);
+    setNameFeedback(null);
+    try {
+      const updated = await updateDisplayName(nextName);
+      setDisplayName(updated.displayName);
+      setNameFeedback({ tone: 'success', key: 'Profile.nameUpdated' });
+    } catch {
+      setNameFeedback({ tone: 'danger', key: 'Profile.nameUpdateError' });
+    } finally {
+      setIsSavingName(false);
+    }
+  };
+
   return (
     <ScreenScroll contentContainerStyle={styles.container}>
       {/* 1. Account Details Card */}
@@ -61,6 +96,24 @@ export function ProfileView() {
             <Text style={styles.userEmail}>{user?.email}</Text>
           </View>
         </View>
+
+        <TextInput
+          value={displayName}
+          onChangeText={(value) => { setDisplayName(value); setNameFeedback(null); }}
+          editable={!isSavingName}
+          maxLength={120}
+          autoCapitalize="words"
+          placeholder={t('Profile.displayName')}
+          accessibilityLabel={t('Profile.displayName')}
+          style={styles.nameInput}
+        />
+        <AppButton
+          onPress={() => void handleSaveName()}
+          disabled={isSavingName || !displayName.trim() || displayName.trim() === user?.displayName}
+          busy={isSavingName}
+          label={t('Profile.saveName')}
+        />
+        {nameFeedback && <FeedbackBanner tone={nameFeedback.tone}>{t(nameFeedback.key)}</FeedbackBanner>}
 
         <View style={styles.divider} />
 
@@ -220,6 +273,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.ink,
   },
+  nameInput: { minHeight: 48, borderWidth: 1, borderColor: colors.border, borderRadius: radius.control, paddingHorizontal: spacing.md, color: colors.ink, backgroundColor: colors.surface },
   userEmail: {
     fontSize: typography.body.fontSize,
     color: colors.inkMuted,

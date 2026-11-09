@@ -9,7 +9,6 @@ import { PUSH_DEVICE_ID_KEY, PUSH_OPT_IN_KEY, registerPushDevice, unregisterPush
 import { notificationRoute } from '@/infrastructure/push/notification-target';
 import { useSession } from '@/ui/session-context';
 import { AppButton, FeedbackBanner, ScreenScroll, SurfaceCard } from '@/ui/primitives';
-import { notificationCopy } from '@/ui/notification-copy';
 
 export default function NotificationsScreen() {
   const router = useRouter();
@@ -97,11 +96,14 @@ export default function NotificationsScreen() {
       <AppButton tone="secondary" onPress={() => void (deviceId ? disablePush() : enablePush())} busy={busy} label={deviceId ? t('Notifications.disablePush') : t('Notifications.enablePush')} />
       {unread > 0 && <AppButton tone="quiet" onPress={() => void markAllRead()} busy={busy} label={t('Notifications.markAllRead')} />}
       {error && <FeedbackBanner tone="danger">{error}</FeedbackBanner>}
-      {items.length === 0 && !busy ? <Text style={styles.body}>{t('Notifications.empty')}</Text> : items.map((item) => { const copy = notificationCopy(item, t); return <Pressable key={item.id} style={styles.item} onPress={() => openItem(item)} accessibilityRole="button">
-        <Text style={styles.itemTitle}>{copy.title}</Text>
-        {copy.body ? <Text style={styles.body}>{copy.body}</Text> : null}
-        <Text style={styles.meta}>{new Date(item.createdAt).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}</Text>
-      </Pressable>; })}
+      {items.length === 0 && !busy ? <Text style={styles.body}>{t('Notifications.empty')}</Text> : items.map((item) => (
+        <Pressable key={item.id} style={styles.item} onPress={() => openItem(item)} accessibilityRole="button">
+          <Text style={styles.itemTitle}>{item.title}</Text>
+          <Text style={styles.body}>{item.body}</Text>
+          <Text style={styles.meta}>{t(item.read ? 'Notifications.read' : 'Notifications.unreadItem')}</Text>
+          <Text style={styles.meta}>{new Date(item.createdAt).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}</Text>
+        </Pressable>
+      ))}
       {cursor && <AppButton tone="quiet" onPress={() => void load(true)} busy={busy} label={t('Notifications.loadMore')} />}
     </SurfaceCard>
   </ScreenScroll>;

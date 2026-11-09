@@ -196,3 +196,25 @@ describe('SqlAccountRepository.changeStatus (FR-015 / ADR-037)', () => {
     ).resolves.toBeNull();
   });
 });
+
+describe('SqlAccountRepository.updateDisplayName (MM8)', () => {
+  it('updates only the selected account display name and maps the returned row', async () => {
+    const updated = accountRow({ display_name: 'New Name' });
+    const { registry, recordedQueries } = createRecordingRegistry([[updated]]);
+    const repository = new SqlAccountRepository(registry, 'account-profile');
+
+    await expect(repository.updateDisplayName(SUBJECT, 'New Name')).resolves.toMatchObject({
+      id: SUBJECT,
+      displayName: 'New Name',
+    });
+    expect(recordedQueries[0].sql).toContain('UPDATE "account_profile"."accounts"');
+    expect(recordedQueries[0].sql).toContain('WHERE "id" = $1');
+    expect(recordedQueries[0].params).toEqual([SUBJECT, 'New Name']);
+  });
+
+  it('returns null when the requested account does not exist', async () => {
+    const { registry } = createRecordingRegistry([[]]);
+    const repository = new SqlAccountRepository(registry, 'account-profile');
+    await expect(repository.updateDisplayName(SUBJECT, 'New Name')).resolves.toBeNull();
+  });
+});

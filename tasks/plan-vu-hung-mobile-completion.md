@@ -1,6 +1,6 @@
 # Mobile completion plan — Vu Hung
 
-Baseline: main `16ba1aa`. Work only on `feat/vu-hung-mobile-completion`.
+Baseline: latest `origin/main` `aa9039c`. Work only on `feat/vu-hung-mobile-completion`.
 Source: mobile remaining assignment (2026-11-07), reconciled with ADR-038/039.
 
 ## Scope update — latest main and user authorization (2026-11-09)
@@ -11,10 +11,11 @@ branch before continuing and preserve its API-audit implementation and screen te
 The user explicitly authorized implementing the missing MM8 API as part of completing
 the assignment. Add authenticated display-name editing to `/auth/me`, wire mobile profile
 editing through the session layer, and cover the endpoint, persistence, and screen with tests.
-Use the current upstream MM14 screen tests and add coverage for profile editing. Attempt
-MM9/MM15 checks on available emulator/device surfaces; never report physical-device results
-without an observed run. If no suitable device, JaaS test account, or screen-reader setup is
-available, leave those runtime acceptance items explicitly pending and report what is needed.
+MM8 is in scope; the older deferred-scope note below is superseded. Use current upstream
+tests, but also implement any MM14 gaps from the assignment. Attempt MM9/MM15 checks on
+available emulator/device surfaces; never report physical-device results without an observed
+run. If no suitable device, JaaS test account, or screen-reader setup is available, leave those
+runtime acceptance items explicitly pending and report what is needed.
 
 ## Scope and commit phases
 
@@ -37,9 +38,11 @@ available, leave those runtime acceptance items explicitly pending and report wh
 8. MM12: confirm unused UI imports, remove orphan components while preserving test mocks.
 9. MM13: shared date/time picker for create/edit; ISO serialization, locale labels and
    lead-time validation aligned with backend. Verify native dependency compatibility.
-10. ADR-039: authenticated JaaS join through a compatible native integration; preserve
-    tenant and token, handle permissions/errors, document native-build requirements.
-11. MM14: focused screen tests for wallet, dashboard, publish guard and marketplace errors.
+10. ADR-039: authenticated JaaS join through the native SDK; preserve tenant and token,
+    handle permissions/errors, and document native-build requirements. Verify SDK compatibility
+    with the current Expo/React Native versions before changing dependencies.
+11. MM12/MM14: remove the confirmed orphan UI files and add focused view tests for wallet,
+    dashboard, teaching publish guard and marketplace error/retry states.
 12. MM9/MM15: prepare dated device/push/JaaS/accessibility checklists and record only
     actually observed results. Leave unavailable physical-device/vendor checks pending.
 13. Run focused tests and full pnpm verify, review diff and secret exposure, commit each
@@ -47,8 +50,7 @@ available, leave those runtime acceptance items explicitly pending and report wh
 
 ## Explicit exclusions
 
-- MM8 display-name editing remains deferred: no agreed API/product scope.
-- No main branch modifications or merge; no database reset or demo reseeding.
+- No commits on `main`; the current main snapshot is merged into the feature branch. No database reset or demo reseeding.
 - Historical MinIO evidence does not prove Cloudinary runtime acceptance.
 - Do not mark MM2/MM3 device acceptance complete from source inspection alone.
 

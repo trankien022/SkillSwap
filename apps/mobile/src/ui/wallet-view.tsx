@@ -47,7 +47,7 @@ export function WalletView() {
   const [topUpStatus, setTopUpStatus] = useState<TopUpIntentStatusView | null>(null);
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const parsedAmount = parseInt(amountInput.trim(), 10);
+  const parsedAmount = Number(amountInput.trim());
   const isValidAmount =
     !isNaN(parsedAmount) &&
     Number.isInteger(parsedAmount) &&

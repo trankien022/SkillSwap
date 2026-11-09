@@ -6,6 +6,7 @@ import {
   refreshRequestSchema,
   registerSchema,
   tokenResponseSchema,
+  updateMeRequestSchema,
 } from '@skillswap/contracts';
 
 /** FR-001 / ADR-030: create a local account. Request body for POST /auth/register. */
@@ -25,3 +26,6 @@ export class TokenResponseDto extends createZodDto(tokenResponseSchema) {}
 
 /** FR-001/FR-017: the signed-in account projection returned by GET /auth/me. */
 export class MeResponseDto extends createZodDto(meResponseSchema) {}
+
+/** MM8: edit only the signed-in account's display name. */
+export class UpdateMeDto extends createZodDto(updateMeRequestSchema) {}

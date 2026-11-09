@@ -79,6 +79,16 @@ Read the signed-in account and its student-verification status. Use to hydrate t
 | `status` | enum | yes | one of `pending`, `approved`, `rejected`, `revoked` |
 | `reason` | string | yes | min 1 chars; nullable |
 
+### `PATCH /api/auth/me`
+
+**Update the signed-in account display name (MM8)**
+
+- Auth: 🔒 Bearer token required
+- Request body: `{ "displayName": "New name" }`
+- Response: updated `MeResponseDto` in the standard `data` envelope
+- `displayName` is trimmed and must contain 1–120 characters. No other profile fields are accepted.
+- The account id comes from the verified request identity; clients cannot choose another account.
+
 ### `POST /api/auth/refresh`
 
 **Rotate a refresh token for a new session (FR-001)**

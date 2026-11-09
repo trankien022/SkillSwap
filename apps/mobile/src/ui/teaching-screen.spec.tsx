@@ -1,6 +1,7 @@
 import React from 'react';
 import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'react-test-renderer';
 import TeachingScreen from '../../app/(features)/teaching';
+import { DateTimeField } from './date-time-field';
 
 const mockGetClassesPage = jest.fn();
 const mockGetSkillsPage = jest.fn();
@@ -9,6 +10,8 @@ const mockGatewayClient = {};
 const mockSession = { t: (key: string) => key, locale: 'en', gatewayClient: mockGatewayClient };
 
 jest.mock('react-native', () => ({
+  Alert: { alert: jest.fn() },
+  Platform: { OS: 'ios' },
   Pressable: 'Pressable',
   StyleSheet: { create: <T,>(styles: T): T => styles },
   Text: 'Text',
@@ -87,7 +90,7 @@ describe('TeachingScreen publish form start time (MM13)', () => {
   const input = (screen: ReactTestRenderer, label: string): ReactTestInstance =>
     screen.root.find((node) => String(node.type) === 'TextInput' && node.props.accessibilityLabel === label);
 
-  async function fillForm(startsAt: string): Promise<ReactTestRenderer> {
+  async function fillForm(): Promise<ReactTestRenderer> {
     let screen!: ReactTestRenderer;
     await act(async () => {
       screen = create(<TeachingScreen />);
@@ -102,9 +105,13 @@ describe('TeachingScreen publish form start time (MM13)', () => {
         .props.onPress();
       input(screen, 'Teaching.classTitle').props.onChangeText('TypeScript basics');
       input(screen, 'Teaching.description').props.onChangeText('Learn the basics');
-      input(screen, 'Teaching.startsAt').props.onChangeText(startsAt);
     });
     return screen;
+  }
+
+  async function selectStartTime(screen: ReactTestRenderer, startsAt: string): Promise<void> {
+    const field = screen.root.findByType(DateTimeField);
+    await act(async () => field.props.onChange(new Date(startsAt)));
   }
 
   async function publish(screen: ReactTestRenderer): Promise<void> {
@@ -116,23 +123,12 @@ describe('TeachingScreen publish form start time (MM13)', () => {
   const banner = (screen: ReactTestRenderer): unknown =>
     screen.root.findAllByType('FeedbackBanner' as never)[0]?.props.children;
 
-  it.each([
-    ['empty', '   ', 'Teaching.startsAtEmpty'],
-    ['not an ISO date', 'next friday', 'Teaching.startsAtInvalid'],
-    ['an impossible calendar date', '2099-02-31T10:00:00Z', 'Teaching.startsAtInvalid'],
-    ['in the past', '2000-01-01T00:00:00.000Z', 'Teaching.startsAtPast'],
-  ])('blocks submit and shows feedback when the start time is %s', async (_label, startsAt, message) => {
-    const screen = await fillForm(startsAt);
-
-    await publish(screen);
-
-    expect(mockCreate).not.toHaveBeenCalled();
-    expect(banner(screen)).toBe(message);
-  });
-
-  it('sends the typed start time unchanged when it is a valid future date', async () => {
+  it('provides accessible date and time controls and sends the selected future instant as ISO', async () => {
     const startsAt = '2099-01-01T10:00:00.000Z';
-    const screen = await fillForm(startsAt);
+    const screen = await fillForm();
+    const labels = screen.root.findAll((node) => String(node.type) === 'Pressable').map((node) => node.props.accessibilityLabel);
+    expect(labels).toEqual(expect.arrayContaining(['Teaching.pickDate', 'Teaching.pickTime']));
+    await selectStartTime(screen, startsAt);
 
     await publish(screen);
 
@@ -170,5 +166,29 @@ describe('TeachingScreen publish form start time (MM13)', () => {
 
     expect(mockCreate).toHaveBeenCalledTimes(1);
     expect(banner(screen)).toBeUndefined();
+  });
+
+  it.each([
+    ['skill', false, true, true],
+    ['title', true, false, true],
+    ['description', true, true, false],
+  ])('blocks publishing when the required %s is missing before sending a request', async (_missing, includeSkill, includeTitle, includeDescription) => {
+    let screen!: ReactTestRenderer;
+    await act(async () => { screen = create(<TeachingScreen />); });
+    renderer = screen;
+    await act(async () => { button(screen, 'Teaching.createTitle').props.onPress(); });
+    await act(async () => {
+      if (includeSkill) {
+        screen.root
+          .find((node) => String(node.type) === 'Pressable' && textOf(node) === 'Programming · TypeScript')
+          .props.onPress();
+      }
+      if (includeTitle) input(screen, 'Teaching.classTitle').props.onChangeText('TypeScript basics');
+      if (includeDescription) input(screen, 'Teaching.description').props.onChangeText('Learn the basics');
+    });
+
+    expect(button(screen, 'Teaching.publish').props.disabled).toBe(true);
+    await publish(screen);
+    expect(mockCreate).not.toHaveBeenCalled();
   });
 });

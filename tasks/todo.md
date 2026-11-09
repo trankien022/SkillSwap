@@ -91,10 +91,10 @@ Các task dưới đây thuộc kế hoạch mobile đầy đủ, không mặc �
 
 ## Phase 4 — classroom/rating
 
-- [ ] T15. Room access/start/complete mobile.
-  - AC: JWT room đúng và access window/party; Teacher entry đã chốt; complete → release đúng.
-  - Verify: hai thiết bị, outsider/time-window reject + pending→available.
-  - Depends: T03,T10,T14. Files: room port/adapter/UI và teaching actions; chia room và completion. Scope: 2 x M.
+- [ ] T15. Authenticated room access and start on mobile (completion is automatic; no mobile complete route).
+  - AC: JWT room đúng và access window/party; Teacher entry đã chốt; class completion chạy tự động theo lịch/room presence rồi release đúng.
+  - Verify: hai thiết bị, outsider/time-window reject + pending→available; không có mobile `/complete` action.
+  - Depends: T03,T10,T14. Files: room port/adapter/UI; completion do scheduler/presence xử lý. Scope: M.
 - [ ] T16. Rating endpoint + form/result.
   - AC: eligible completed booking, own learner; unique rating enforced database/concurrency; comment đọc lại trong class detail.
   - Verify: duplicate concurrent submissions/non-owner/incomplete denied + phone rating.
