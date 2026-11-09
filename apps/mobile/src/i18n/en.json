@@ -248,6 +248,7 @@
     "searchPlaceholder": "Search by keyword…",
     "searchButton": "Search",
     "filterSkillAll": "All skills",
+    "filtersCount": "Filters ({count})",
     "filterSkillModalTitle": "Filter by skill",
     "closeFilter": "Close",
     "clearFilters": "Clear filters",

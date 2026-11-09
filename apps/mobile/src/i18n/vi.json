@@ -248,6 +248,7 @@
     "searchPlaceholder": "Tìm kiếm theo từ khóa…",
     "searchButton": "Tìm kiếm",
     "filterSkillAll": "Tất cả kỹ năng",
+    "filtersCount": "Bộ lọc ({count})",
     "filterSkillModalTitle": "Lọc theo kỹ năng",
     "closeFilter": "Đóng",
     "clearFilters": "Xóa bộ lọc",
