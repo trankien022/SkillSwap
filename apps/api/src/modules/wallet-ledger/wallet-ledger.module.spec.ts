@@ -38,9 +38,7 @@ describe('WalletLedgerRegistrar (ADR-032 / Phase C2)', () => {
 
     registrar.onModuleInit();
 
-    const bookingConfirmedHandler = handlers
-      .list()
-      .find((r) => r.eventType === 'booking.confirmed')?.handler;
+    const bookingConfirmedHandler = handlers.handlersFor('wallet-ledger', 'booking.confirmed')[0];
 
     if (!bookingConfirmedHandler) {
       throw new Error('booking.confirmed handler was not registered');

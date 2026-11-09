@@ -600,6 +600,5 @@ export * from './mobile-my-bookings';
 export * from './mobile-ratings';
 export * from './mobile-notifications';
 export * from './chat';
-
-
 export * from './booking-rejections';
+export * from './class-roster';

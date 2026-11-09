@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { AdminVerifierQueuePage } from '@skillswap/contracts';
 import { AdminAuthError, HttpVerificationGateway } from '../../lib/verification/http-gateway';
+import { shortRef } from '../../lib/refs';
 
 /**
  * FR-015 / W2: the admin-wide Verifier queue, by domain.
@@ -19,6 +20,7 @@ import { AdminAuthError, HttpVerificationGateway } from '../../lib/verification/
  * screen would create two places that can decide the same row, which is how a
  * queue and a detail view end up disagreeing.
  */
+import { describeError } from '../../lib/error-message';
 
 const PAGE_SIZE = 20;
 
@@ -79,7 +81,7 @@ export function AdminVerifierQueue({ initialDomain = '' }: { initialDomain?: str
       }
       setState({
         kind: 'failed',
-        message: error instanceof Error ? error.message : t('errors.generic'),
+        message: describeError(error, t('errors.generic')),
       });
     }
   }, [domain, status, sort, t]);
@@ -103,7 +105,7 @@ export function AdminVerifierQueue({ initialDomain = '' }: { initialDomain?: str
     } catch (error) {
       setState({
         kind: 'failed',
-        message: error instanceof Error ? error.message : t('errors.generic'),
+        message: describeError(error, t('errors.generic')),
       });
     } finally {
       setLoadingMore(false);
@@ -219,7 +221,9 @@ export function AdminVerifierQueue({ initialDomain = '' }: { initialDomain?: str
               {/* The claim state is the operational signal: an old `pending` row means
                   nobody has picked it up, an old `claimed` row means someone is stuck. */}
               <span className="text-xs text-slate-500">
-                {item.claimedBy === null ? t('unclaimed') : t('claimedBy', { id: item.claimedBy })}
+                {item.claimedBy === null
+                  ? t('unclaimed')
+                  : t('claimedBy', { id: shortRef(item.claimedBy) })}
               </span>
             </li>
           ))}

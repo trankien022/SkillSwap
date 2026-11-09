@@ -18,6 +18,7 @@ import { AdminAuthError, HttpVerificationGateway } from '../../lib/verification/
  * account directory (C-010 rules out building one), and an id arrives from a
  * support ticket or the audit log.
  */
+import { describeError } from '../../lib/error-message';
 export function SuspendAccountForm({ onSuspended }: { onSuspended: () => void }) {
   const t = useTranslations('Admin.suspendedAccounts');
   const [accountId, setAccountId] = useState('');
@@ -48,7 +49,7 @@ export function SuspendAccountForm({ onSuspended }: { onSuspended: () => void })
         setError(t('errors.forbidden'));
         return;
       }
-      setError(caught instanceof Error ? caught.message : t('errors.suspend'));
+      setError(describeError(caught, t('errors.suspend')));
     }
   };
 

@@ -57,8 +57,10 @@ export function readJitsiPrivateKey(path: string): string {
  * - `moderator` is the **string** `"true"`, not a boolean. A boolean is not a type error at
  *   sign time — it fails the claim check and silently demotes every teacher to participant,
  *   which would strand them unable to end a class.
- * - `room` must be the **tenant-prefixed** name (`<appId>/<room>`), matching the `fqn` JaaS
- *   later reports to the presence webhook.
+ * - `room` must be the **bare room node** (`skillswap-<classId>`), *not* the tenant-prefixed
+ *   name. The tenant is carried by `sub`; prefixing the claim makes every join fail with
+ *   "Room and token mismatched". JaaS only reports the prefixed `fqn` to the presence webhook
+ *   after the join succeeds — that is a different field from this claim.
  *
  * Signing is `node:crypto` rather than the 8x8 SDK: it is one call, and a pinned test over the
  * verified claim shape is worth more than an opaque dependency in the room-access path.
@@ -114,11 +116,18 @@ export class JaasRoomTokenIssuer implements RoomTokenIssuer {
   }
 
   /**
-   * JaaS identifies a meeting by `<appId>/<room>`. Prefixing here keeps the domain's room
-   * name (`skillswap-<classId>`) provider-agnostic, so `classIdFromRoom` still has one
-   * definition to parse.
+   * The `room` claim is the **bare room node** (`skillswap-<classId>`); the tenant lives in `sub`.
+   *
+   * JaaS rejects a tenant-prefixed claim with "Room and token mismatched". Its validator
+   * (`token/util.lib.lua`, `Util:verify_room`) builds the expected MUC address as
+   * `jid.join(room_claim, "conference." .. sub)`, so a claim that already contains the AppID can
+   * never match a real room — reproduced against the live tenant, see the 2026-11-09 plan.
+   *
+   * The strip is defensive only: it keeps a caller that passes an already-qualified room from
+   * producing a token JaaS would refuse.
    */
   private roomClaim(room: string): string {
-    return room.startsWith(`${this.options.appId}/`) ? room : `${this.options.appId}/${room}`;
+    const prefix = `${this.options.appId}/`;
+    return room.startsWith(prefix) ? room.slice(prefix.length) : room;
   }
 }

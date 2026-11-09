@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { HttpSkillsGateway, SkillsAuthError } from '../../lib/skills/http-gateway';
+import { describeError } from '../../lib/error-message';
 import type {
   ProfileSkillView,
   SkillCatalogueItemView,
@@ -66,7 +67,7 @@ export function SkillsContent() {
       if (error instanceof SkillsAuthError) {
         setStatus('signed-out');
       } else {
-        setErrorMessage(error instanceof Error ? error.message : t('loadError'));
+        setErrorMessage(describeError(error, t('loadError')));
         setStatus('error');
       }
     }
@@ -110,7 +111,7 @@ export function SkillsContent() {
       // Any rejection is surfaced with the API's own message. The previous
       // mobile screen swallowed the reason into a generic banner; the Web
       // screen shows the message so the learner can act on it.
-      setSubmitError(error instanceof Error ? error.message : t('submitError'));
+      setSubmitError(describeError(error, t('submitError')));
     } finally {
       setBusy(false);
     }
@@ -123,7 +124,7 @@ export function SkillsContent() {
     try {
       setHistory(await new HttpSkillsGateway().getEvidenceHistory(evidenceId));
     } catch (error) {
-      setHistoryError(error instanceof Error ? error.message : t('historyError'));
+      setHistoryError(describeError(error, t('historyError')));
     }
   };
 

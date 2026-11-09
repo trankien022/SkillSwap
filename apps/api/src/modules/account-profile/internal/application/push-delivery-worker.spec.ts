@@ -32,7 +32,10 @@ describe('PushDeliveryWorker', () => {
 
     expect(provider.send).toHaveBeenCalledWith(expect.objectContaining({
       to: delivery.token,
-      title: 'Lớp học đã hủy',
+      // No device locale on this delivery, so it renders in the shared default. That
+      // default is `en` (defect #3): a Vietnamese fallback put Vietnamese copy in front
+      // of a reader who never asked for it.
+      title: 'Class canceled',
       data: { notificationId: 'notification-1', type: 'booking_cancelled', targetType: 'booking', targetId: 'booking-1' },
       channelId: 'skillswap-updates-v1',
     }));

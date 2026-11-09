@@ -1,5 +1,20 @@
+/**
+ * The language used when nothing states one.
+ *
+ * Two callers fall back here — the push worker, when a delivery carries no locale, and
+ * the inbox reader, when the caller sent no usable `Accept-Language` and the account
+ * has no active device. They must agree, or one event arrives as two different strings
+ * depending on which channel the person happens to read.
+ *
+ * It is `en` because that is the product's own `routing.defaultLocale`; a fallback that
+ * disagreed with the app default is what made `/en/notifications` render Vietnamese.
+ */
+export const DEFAULT_NOTIFICATION_LOCALE = 'en' as const;
+
+export type NotificationLocale = 'vi' | 'en';
+
 /** Provider-visible copy uses the receiving installation's selected language. */
-export function notificationCopy(type: string, locale: 'vi' | 'en'): { title: string; body: string } | undefined {
+export function notificationCopy(type: string, locale: NotificationLocale): { title: string; body: string } | undefined {
   const copy: Record<string, readonly [string, string, string, string]> = {
     booking_cancelled: ['Lớp học đã hủy', 'Giáo viên đã hủy lớp bạn đặt. Mở lịch học và ví để kiểm tra trạng thái.', 'Class canceled', 'A teacher canceled a class you booked. Open your schedule and wallet to review the status.'],
     booking_confirmed: ['Đặt lớp thành công', 'Lớp bạn đặt đã được xác nhận. Mở lịch học để xem chi tiết.', 'Booking confirmed', 'Your class booking is confirmed. Open your schedule to view the details.'],

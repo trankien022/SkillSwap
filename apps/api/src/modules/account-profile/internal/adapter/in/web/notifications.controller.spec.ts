@@ -4,8 +4,11 @@ import type { RequestWithIdentity } from '../../../../../../shared/http/identity
 import type { NotificationManagementPort } from '../../../application/port/notification-management';
 import { NotificationsController } from './notifications.controller';
 
-function request(accountId: string | null): RequestWithIdentity {
-  return { user: accountId ? { id: accountId } : undefined } as unknown as RequestWithIdentity;
+function request(accountId: string | null, acceptLanguage?: string): RequestWithIdentity {
+  return {
+    user: accountId ? { id: accountId } : undefined,
+    headers: acceptLanguage === undefined ? {} : { 'accept-language': acceptLanguage },
+  } as unknown as RequestWithIdentity;
 }
 
 const emptyPage: NotificationsPage = { items: [], nextCursor: null, unreadCount: 0 };
@@ -81,5 +84,36 @@ describe('NotificationsController (B6 read state)', () => {
     expect(declarationOrder.indexOf('markAllRead')).toBeLessThan(
       declarationOrder.indexOf('markRead'),
     );
+  });
+});
+
+describe('NotificationsController language negotiation (defect #3)', () => {
+  it('passes the caller’s Accept-Language through to the read', async () => {
+    const { port, subject } = controller();
+
+    await subject.list({ limit: 20 }, request('account-a', 'en-GB,en;q=0.9'));
+
+    // Fourth argument: the resolved language, not the raw header.
+    expect(port.list).toHaveBeenCalledWith('account-a', { limit: 20 }, undefined, 'en');
+  });
+
+  it('passes undefined when the caller states no supported language', async () => {
+    const { port, subject } = controller();
+
+    await subject.list({ limit: 20 }, request('account-a', 'fr-FR'));
+    expect(port.list).toHaveBeenCalledWith('account-a', { limit: 20 }, undefined, undefined);
+
+    (port.list as jest.Mock).mockClear();
+    await subject.list({ limit: 20 }, request('account-a'));
+    expect(port.list).toHaveBeenCalledWith('account-a', { limit: 20 }, undefined, undefined);
+  });
+
+  it('still resolves the owner from the token, not the header', async () => {
+    const { port, subject } = controller();
+
+    await expect(subject.list({ limit: 20 }, request(null, 'en'))).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(port.list).not.toHaveBeenCalled();
   });
 });

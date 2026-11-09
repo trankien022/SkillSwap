@@ -25,6 +25,7 @@ import { SuspendAccountForm } from './SuspendAccountForm';
  * decision 2 rejects a reason on a release, so a form field for one would be a
  * trap for whoever filled it in.
  */
+import { describeError } from '../../lib/error-message';
 
 type LoadState =
   | { kind: 'loading' }
@@ -72,7 +73,7 @@ export function SuspendedAccountsPanel({ reloadKey = 0 }: { reloadKey?: number }
       }
       setState({
         kind: 'failed',
-        message: error instanceof Error ? error.message : t('errors.generic'),
+        message: describeError(error, t('errors.generic')),
       });
     }
   }, [t]);
@@ -97,7 +98,7 @@ export function SuspendedAccountsPanel({ reloadKey = 0 }: { reloadKey?: number }
           setState({ kind: 'unauthorized' });
           return;
         }
-        setReleaseError(error instanceof Error ? error.message : t('errors.release'));
+        setReleaseError(describeError(error, t('errors.release')));
       }
     },
     [load, t],

@@ -40,7 +40,6 @@ function jsonResponse(body: unknown, status = 200): Response {
 function stubApi(overrides: {
   classes?: () => Response;
   onPatch?: (init: RequestInit) => Response;
-  onStart?: () => Response;
 } = {}) {
   const calls: Array<{ url: string; init: RequestInit }> = [];
   vi.stubGlobal(
@@ -53,9 +52,6 @@ function stubApi(overrides: {
         return Promise.resolve(
           overrides.classes ? overrides.classes() : jsonResponse(envelopeOk({ items: [classItem()] })),
         );
-      }
-      if (url.match(/\/classes\/[^/]+\/start$/)) {
-        return Promise.resolve(overrides.onStart ? overrides.onStart() : jsonResponse(envelopeOk({ started: true })));
       }
       if (url.match(/\/classes\/[^/?]+$/) && method === 'PATCH') {
         return Promise.resolve(
@@ -96,26 +92,19 @@ describe('InstructorDashboard lifecycle controls', () => {
     expect(screen.getByText('Learn basic chords and strumming patterns')).toBeTruthy();
   });
 
-  it('starts a published class through the documented route', async () => {
+  // ADR-021 Amendment B: the Start control is removed. It flipped a class to
+  // `in_progress`, a one-way state that hid it from the marketplace and stopped
+  // its reminder, while the room was already joinable on the time window alone
+  // and the completion sweep never read the state. No request may be made to the
+  // route, and no button may offer it.
+  it('offers no Start control and never calls the start route', async () => {
     const calls = stubApi();
     renderPage();
 
-    const startButton = await screen.findByRole('button', { name: /Start/ });
-    fireEvent.click(startButton);
-
-    await waitFor(() => {
-      const start = calls.find((c) => /\/classes\/cls-1\/start$/.test(c.url));
-      expect(start).toBeTruthy();
-      expect((start!.init.method ?? 'GET').toUpperCase()).toBe('POST');
-    });
-  });
-
-  it('does not offer start for a class that has already ended', async () => {
-    stubApi({ classes: () => jsonResponse(envelopeOk({ items: [classItem({ state: 'completed' })] })) });
-    renderPage();
-
     await screen.findByText('Guitar co-ban');
+
     expect(screen.queryByRole('button', { name: /Start/ })).toBeNull();
+    expect(calls.some((c) => /\/classes\/[^/]+\/start$/.test(c.url))).toBe(false);
   });
 
   it('saves an edit with PATCH including title, priceCredits, and capacity (W3)', async () => {
@@ -144,18 +133,6 @@ describe('InstructorDashboard lifecycle controls', () => {
     });
   });
 
-  it('does not claim a fresh start when the class was already in progress', async () => {
-    // The server answers { started: false } for a class already started. That is
-    // a truthful no-op, so the screen must not say "Đã bắt đầu lớp học."
-    stubApi({ onStart: () => jsonResponse(envelopeOk({ started: false })) });
-    renderPage();
-
-    fireEvent.click(await screen.findByRole('button', { name: /Start/ }));
-
-    expect(await screen.findByText(/was already started/)).toBeTruthy();
-    expect(screen.queryByText(en.Workspace.copy.classStarted)).toBeNull();
-  });
-
   // ADR-021 Amendment A / AC-035: a Teacher cannot end a class themselves, so the
   // control must not exist — and no request may be made to the removed route.
   it('offers no way for a Teacher to end a class', async () => {
@@ -177,7 +154,7 @@ describe('InstructorDashboard lifecycle controls', () => {
     );
     renderPage();
 
-    await screen.findByRole('button', { name: /Start/ });
+    await screen.findByRole('button', { name: /Edit/ });
 
     expect(screen.queryByRole('button', { name: /Complete/i })).toBeNull();
     expect(calls.some((c) => c.includes('/complete'))).toBe(false);

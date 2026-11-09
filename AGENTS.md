@@ -36,7 +36,9 @@ docker/         postgres init (7 roles + 7 schemas, ADR-007)
 | Dev stack (postgres + rabbitmq) | `pnpm db:up` (down: `pnpm db:down`) |
 | Apply DB migrations | `pnpm db:migrate` |
 | One-command demo (up + migrate + seed) | `pnpm db:demo` |
+| Seed/replace the demo dataset | `pnpm db:seed-demo` (`--check` to inspect, `--allow-remote` for Neon; see `docs/runbooks/demo-dataset.md`) |
 | Regenerate API reference docs | `pnpm docs:api` |
+| Remove pre-ADR-013-B broker queues | `pnpm queue:purge-legacy` (dry run; `--apply` deletes) |
 | Dev JWT/signing keys | `pnpm keys:gen` |
 | One app | `pnpm --filter @skillswap/api …` (names: `api`, `gateway`, `web`, `mobile`, `contracts`) |
 

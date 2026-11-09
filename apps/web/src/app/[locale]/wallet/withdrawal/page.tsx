@@ -8,6 +8,7 @@ import { StatePanel } from '../../../../components/ui/StatePanel';
 import { WorkspaceFooter } from '../../../../components/ui/WorkspaceFooter';
 import { Navbar } from '../../../../components/navbar';
 import type { WalletBalanceView, MeResponse } from '@skillswap/contracts';
+import { describeError } from '../../../../lib/error-message';
 
 export default function WithdrawalPage() {
   const tUnavailable = useTranslations('Wallet.withdrawal');
@@ -30,11 +31,11 @@ export default function WithdrawalPage() {
         setBalance(await unwrapEnvelope(balRes));
         setMe(await unwrapEnvelope(meRes));
       } catch (e) {
-        setLoadError(e instanceof Error ? e.message : tUnavailable('loadError'));
+        setLoadError(describeError(e, tUnavailable('loadError')));
       }
     };
     loadData();
   }, [tUnavailable]);
 
-  return <div className="flex min-h-dvh flex-col bg-mist text-ink"><Navbar currentTab="wallet" balance={balance} me={me}/><main id="main-content" tabIndex={-1} className="workspace-page workspace-page-narrow flex-1"><PageIntro title={t('withdrawTitle')} description={t('withdrawDescription')}/>{loadError && <p role="alert" data-testid="withdrawal-load-error" className="workspace-feedback workspace-feedback-error mb-6">{loadError}</p>}<section className="workspace-panel mb-6"><h2 className="workspace-panel-title">{t('available')}</h2><p className="mt-4 text-3xl font-bold">{balance ? balance.availableCredits.toLocaleString(locale) : '—'} <span className="text-base font-medium">{t('credits')}</span></p><p className="mt-3 text-sm text-ink-soft">{t('rateHint')}</p></section><StatePanel title={tUnavailable('notice')} art="peer-learning" action={<a href={`/${locale}/wallet`} className="workspace-primary">{t('backWallet')}</a>}>{tUnavailable('body')}</StatePanel></main><WorkspaceFooter/></div>;
+  return <div className="flex min-h-dvh flex-col bg-mist text-ink"><Navbar currentTab="wallet" balance={balance} me={me}/><main id="main-content" tabIndex={-1} className="workspace-page workspace-page-narrow flex-1"><PageIntro title={t('withdrawTitle')} description={t('withdrawDescription')}/>{loadError && <p role="alert" data-testid="withdrawal-load-error" className="workspace-feedback workspace-feedback-error mb-6">{loadError}</p>}<section className="workspace-panel mb-6"><h2 className="workspace-panel-title">{t('available')}</h2><p className="mt-4 text-3xl font-bold">{balance ? balance.availableCredits.toLocaleString(locale) : '—'} <span className="text-base font-medium">{t('creditUnit')}</span></p><p className="mt-3 text-sm text-ink-soft">{t('rateHint')}</p></section><StatePanel title={tUnavailable('notice')} art="peer-learning" action={<a href={`/${locale}/wallet`} className="workspace-primary">{t('backWallet')}</a>}>{tUnavailable('body')}</StatePanel></main><WorkspaceFooter/></div>;
 }

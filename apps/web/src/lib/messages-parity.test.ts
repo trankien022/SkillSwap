@@ -121,6 +121,30 @@ describe('i18n messages', () => {
   });
 
   /**
+   * Codegen-artifact guard.
+   *
+   * A key whose own name ends in `undefined` is never written by hand: it is what
+   * a template-literal key looks like when it was built from a missing variable
+   * (`ui('error' + code)` where `code` was undefined). Two shipped, and both were
+   * reachable from a real screen:
+   *
+   *  - `Workspace.copy.errorundefined` = "Error: ", concatenated in front of the
+   *    real message on the checkout and instructor pages, so every failure read
+   *    "Error: …" with an internal key baked into the catalogue.
+   *  - `Workspace.copy.publishAClassundefined` = "Publish a class →", the link to
+   *    the publish workspace.
+   *
+   * The keys are gone now. This test keeps a future `+ undefined` slip from
+   * quieting shipping, because a wrong key that *has* a value fails no other test.
+   */
+  it('has no keys built from an undefined variable', () => {
+    const artifacts = [...leafKeys(en), ...leafKeys(vi)].filter((key) =>
+      key.split('.').some((segment) => segment.endsWith('undefined')),
+    );
+    expect(artifacts).toEqual([]);
+  });
+
+  /**
    * Content-guard: copy must not expose internal BR/FR/AC identifiers,
    * fabricated marketing metrics, or anti-pattern claims that contradict
    * PRODUCT.md / SRS. Each pattern has a specific reason:

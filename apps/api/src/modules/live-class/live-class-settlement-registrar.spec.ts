@@ -24,11 +24,9 @@ describe('LiveClassRegistrar wallet outcome handler (ADR-032)', () => {
       record,
     );
     registrar.onModuleInit();
-    const handler = registry
-      .list()
-      .find((entry) => entry.eventType === 'wallet.transaction.completed');
+    const handler = registry.handlersFor('live-class', 'wallet.transaction.completed')[0];
     if (!handler) throw new Error('Missing wallet outcome registration');
-    return { handler: handler.handler, record };
+    return { handler, record };
   }
 
   // ADR-035: the emitter records an actor; this consumer does not read it.

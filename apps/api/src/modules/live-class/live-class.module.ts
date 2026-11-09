@@ -37,6 +37,7 @@ import { SqlMyBookingsReader } from './internal/adapter/out/persistence/sql-my-b
 import { AccountProfilePublicTeacherReader } from './internal/adapter/out/account-profile/account-profile-public-teacher-reader';
 import { ClassListController } from './internal/adapter/in/web/class-list.controller';
 import { ClassDetailController } from './internal/adapter/in/web/class-detail.controller';
+import { ClassRosterController } from './internal/adapter/in/web/class-roster.controller';
 import { MyBookingsController } from './internal/adapter/in/web/my-bookings.controller';
 import { RatingsController } from './internal/adapter/in/web/ratings.controller';
 import { ChatMessagesController } from './internal/adapter/in/web/chat-messages.controller';
@@ -114,6 +115,8 @@ import { CancelClassUseCase } from './internal/application/cancel-class.use-case
 import { MarkTeacherNoShowUseCase } from './internal/application/mark-teacher-no-show.use-case';
 import { ExpirePendingBookingsUseCase } from './internal/application/expire-pending-bookings.use-case';
 import { RequestRoomAccessUseCase } from './internal/application/request-room-access.use-case';
+import { RequestTeacherRoomAccessUseCase } from './internal/application/request-teacher-room-access.use-case';
+import { GetClassRosterQueryHandler } from './internal/application/query/get-class-roster.query';
 import { StartClassUseCase } from './internal/application/start-class.use-case';
 import { CompleteElapsedClassesUseCase } from './internal/application/complete-elapsed-classes.use-case';
 import { PendingHoldSweeper } from './internal/adapter/in/scheduler/pending-hold.sweeper';
@@ -139,6 +142,19 @@ import {
   REQUEST_ROOM_ACCESS,
   type RequestRoomAccessPort,
 } from './internal/application/port/in/request-room-access';
+import {
+  REQUEST_TEACHER_ROOM_ACCESS,
+  type RequestTeacherRoomAccessPort,
+} from './internal/application/port/in/request-teacher-room-access';
+import {
+  GET_CLASS_ROSTER,
+  type GetClassRosterPort,
+} from './internal/application/port/in/get-class-roster';
+import {
+  CLASS_ROSTER_READER,
+  type ClassRosterReader,
+} from './internal/application/port/out/class-roster-reader';
+import { SqlClassRosterReader } from './internal/adapter/out/persistence/sql-class-roster-reader';
 import { START_CLASS, type StartClassPort } from './internal/application/port/in/start-class';
 import {
   COMPLETE_ELAPSED_CLASSES,
@@ -185,40 +201,34 @@ export class LiveClassRegistrar implements OnModuleInit {
     // FR-005 / ADR-024: keep a local projection of publish rights so the gate never
     // reads another module's schema.
     const project = new ProjectTeacherTrustUseCase(this.trust);
-    for (const eventType of [
-      'student.verification.submitted',
-      'student.verification.approved',
-      'student.verification.rejected',
-      'student.verification.revoked',
-    ]) {
-      this.handlers.register({
-        moduleName: MODULE_NAME,
-        eventType,
-        queue: `live-class.${eventType.replace(/\./g, '-')}`,
-        handler: async (message: BusMessage): Promise<void> => {
-          await project.onVerification(studentVerificationEventSchema.parse(message.payload));
-        },
-      });
-    }
-    for (const eventType of [
-      'skill.evidence.submitted',
-      'skill.evidence.claimed',
-      'skill.evidence.approved',
-      'skill.evidence.rejected',
-    ]) {
-      this.handlers.register({
-        moduleName: MODULE_NAME,
-        eventType,
-        queue: `live-class.${eventType.replace(/\./g, '-')}`,
-        handler: async (message: BusMessage): Promise<void> => {
-          await project.onSkillEvidence(skillEvidenceEventSchema.parse(message.payload));
-        },
-      });
-    }
+    // ADR-013 Amendment B: one queue per module; both projections below are subscriptions on it.
     this.handlers.register({
       moduleName: MODULE_NAME,
-      eventType: 'wallet.transaction.completed',
-      queue: 'live-class.wallet-transaction-completed',
+      eventTypes: [
+        'student.verification.submitted',
+        'student.verification.approved',
+        'student.verification.rejected',
+        'student.verification.revoked',
+      ],
+      handler: async (message: BusMessage): Promise<void> => {
+        await project.onVerification(studentVerificationEventSchema.parse(message.payload));
+      },
+    });
+    this.handlers.register({
+      moduleName: MODULE_NAME,
+      eventTypes: [
+        'skill.evidence.submitted',
+        'skill.evidence.claimed',
+        'skill.evidence.approved',
+        'skill.evidence.rejected',
+      ],
+      handler: async (message: BusMessage): Promise<void> => {
+        await project.onSkillEvidence(skillEvidenceEventSchema.parse(message.payload));
+      },
+    });
+    this.handlers.register({
+      moduleName: MODULE_NAME,
+      eventTypes: ['wallet.transaction.completed'],
       handler: async (message: BusMessage): Promise<void> => {
         const event = walletTransactionCompletedEventSchema.parse(message.payload);
         if (event.type !== 'booking_payment' || event.direction !== 'debit') {
@@ -255,6 +265,7 @@ const systemClock: Clock = { now: () => new Date() };
     RatingsController,
     ChatMessagesController,
     ClassDetailController,
+    ClassRosterController,
     JitsiPresenceController,
   ],
   providers: [
@@ -447,6 +458,31 @@ const systemClock: Clock = { now: () => new Date() };
       ],
     },
     {
+      provide: REQUEST_TEACHER_ROOM_ACCESS,
+      useFactory: (
+        classes: ClassRepository,
+        tokens: RoomTokenIssuer,
+        incidents: RoomIncidentRecorder,
+        clock: Clock,
+        config: ApiConfig,
+      ): RequestTeacherRoomAccessPort =>
+        new RequestTeacherRoomAccessUseCase(
+          classes,
+          tokens,
+          incidents,
+          clock,
+          config.jitsiDomain,
+          config.jitsiOpenMinutes,
+        ),
+      inject: [
+        CLASS_REPOSITORY,
+        ROOM_TOKEN_ISSUER,
+        ROOM_INCIDENT_RECORDER,
+        CLOCK,
+        ApiConfig,
+      ],
+    },
+    {
       provide: PendingHoldSweeper,
       useFactory: (expire: ExpirePendingBookingsPort, logger: AppLogger) =>
         new PendingHoldSweeper(expire, logger),
@@ -587,6 +623,23 @@ const systemClock: Clock = { now: () => new Date() };
         RATING_REPOSITORY,
         CLOCK,
       ],
+    },
+    {
+      provide: CLASS_ROSTER_READER,
+      useFactory: (registry: ModuleDataSourceRegistry): ClassRosterReader =>
+        new SqlClassRosterReader(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
+      provide: GET_CLASS_ROSTER,
+      useFactory: (
+        classes: ClassRepository,
+        roster: ClassRosterReader,
+        publicTeacherReader: PublicTeacherReader,
+        clock: Clock,
+      ): GetClassRosterPort =>
+        new GetClassRosterQueryHandler(classes, roster, publicTeacherReader, clock),
+      inject: [CLASS_REPOSITORY, CLASS_ROSTER_READER, PUBLIC_TEACHER_READER, CLOCK],
     },
     {
       provide: MY_BOOKINGS_READER,

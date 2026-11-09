@@ -17,6 +17,7 @@ import type {
   StudentVerificationView,
   DocumentUploadTargetView,
 } from '@skillswap/contracts';
+import { describeError } from '../../lib/error-message';
 
 export function VerificationContent() {
   const t = useTranslations('Workspace.verification');
@@ -67,7 +68,7 @@ export function VerificationContent() {
           setLoadError(t('loadError'));
         }
       } catch (err) {
-        setLoadError(err instanceof Error ? err.message : t('loadError'));
+        setLoadError(describeError(err, t('loadError')));
       } finally {
         setIsLoading(false);
       }
@@ -172,8 +173,8 @@ export function VerificationContent() {
     } catch (err: unknown) {
       console.error(err);
       // If upload failed, never call POST /student-verifications — we ensure that by sequencing
-      const message = err instanceof Error ? err.message : String(err);
-      setUploadError(message || t('uploadError'));
+      const message = describeError(err, t('uploadError'));
+      setUploadError(message);
       setUploadedMessage(null);
       // do not close immediately so user can see the error
     } finally {

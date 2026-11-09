@@ -7,6 +7,10 @@ coverage/
 *.tsbuildinfo
 .env
 .env.local
+# Backups of .env hold the same secrets as .env itself (SEPAY keys, ngrok token,
+# DB and JaaS credentials), so they must never be stageable either.
+.env.backup-*
+.env.*.backup
 apps/mobile/google-services.json
 apps/mobile/*service-account*.json
 .secrets/

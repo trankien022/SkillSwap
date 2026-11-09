@@ -24,6 +24,7 @@ import { AdminAuthError, HttpVerificationGateway } from '../../lib/verification/
  * retryable message. Nothing is swallowed into an empty list, because "no
  * verifications" and "we could not load them" are different screens.
  */
+import { describeError } from '../../lib/error-message';
 
 const PAGE_SIZE = 20;
 
@@ -74,7 +75,7 @@ export function StudentVerificationsQueue({
       }
       setState({
         kind: 'failed',
-        message: error instanceof Error ? error.message : t('queue.errors.generic'),
+        message: describeError(error, t('queue.errors.generic')),
       });
     }
   }, [status, query, sort, t]);
@@ -100,7 +101,7 @@ export function StudentVerificationsQueue({
       // A failed "load more" must not discard the rows already on screen.
       setState({
         kind: 'failed',
-        message: error instanceof Error ? error.message : t('queue.errors.generic'),
+        message: describeError(error, t('queue.errors.generic')),
       });
     } finally {
       setLoadingMore(false);

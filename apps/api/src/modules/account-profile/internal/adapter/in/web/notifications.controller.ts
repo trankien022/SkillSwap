@@ -8,7 +8,8 @@ import {
   type MarkNotificationsReadResponse,
   type NotificationsPage,
 } from '@skillswap/contracts';
-import { currentUserId, type RequestWithIdentity } from '../../../../../../shared/http/identity';
+import { currentUserId, headerValue, type RequestWithIdentity } from '../../../../../../shared/http/identity';
+import { localeFromAcceptLanguage } from '../../../../../../shared/http/accept-language';
 import {
   ResponseCode,
   ResponseMessage,
@@ -47,14 +48,19 @@ export class NotificationsController {
   @ApiOperation({
     summary: 'List the signed-in user notification inbox (FR-016 / Route 28)',
     description:
-      'Owner-scoped and keyset-paginated (`limit` 1–100, default 20; opaque `cursor`). `unreadCount` counts the whole inbox, not just the current page.',
+      'Owner-scoped and keyset-paginated (`limit` 1–100, default 20; opaque `cursor`). `unreadCount` counts the whole inbox, not just the current page. `title`/`body` are rendered in the caller\'s `Accept-Language` when it names a supported language (`vi`/`en`), falling back to the account\'s active device language and then English.',
   })
   @ApiQuery({ name: 'unreadOnly', required: false, description: 'When `true`, only unread notifications are returned' })
   @ApiQuery({ name: 'limit', required: false, description: 'Page size, 1–100 (default 20)' })
   @ApiQuery({ name: 'cursor', required: false, description: 'Opaque cursor from the previous `nextCursor`' })
   @ApiOkResponse({ type: NotificationsPageDto, description: 'Owner-scoped notifications, cursor and exact unread count' })
   async list(@Query(new ZodValidationPipe<unknown>(listNotificationsQuerySchema)) query: ListNotificationsQuery, @Req() request: RequestWithIdentity): Promise<NotificationsPage> {
-    return notificationsPageSchema.parse(await this.notifications.list(owner(request), query, decodeCursor(query.cursor)));
+    // Defect #3: the reader's own language. A web client registers no push device, so
+    // resolving from `notification_devices` alone rendered a `/en` inbox in Vietnamese.
+    const requestLocale = localeFromAcceptLanguage(headerValue(request.headers, 'accept-language'));
+    return notificationsPageSchema.parse(
+      await this.notifications.list(owner(request), query, decodeCursor(query.cursor), requestLocale),
+    );
   }
 
   /**

@@ -1,4 +1,6 @@
 export const EVENT_EXCHANGE = 'skillswap.events';
+/** The broker's predeclared default exchange: routes by queue name, no binding required. */
+export const DEFAULT_EXCHANGE = '';
 export const CONSUMER_PREFETCH = 20;
 export const RETRY_QUEUE_TTL_MS = 5000;
 export const TRANSIENT_RETRY_DELAY_MS = 5000;

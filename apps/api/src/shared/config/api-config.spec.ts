@@ -36,3 +36,58 @@ describe('ApiConfig.vndPerCredit (BR-027 / D3)', () => {
     expect(() => new ApiConfig()).toThrow(/VND_PER_CREDIT/);
   });
 });
+
+/**
+ * NFR-004: a managed Postgres refuses plaintext connections, so TLS has to be configuration.
+ *
+ * The assertions below are mostly about what happens on a *bad* value. These two flags decide
+ * whether real credentials and real money movements cross the network in plaintext, so an
+ * unrecognised value must stop the process rather than quietly resolve to the insecure branch.
+ */
+describe('ApiConfig database TLS (NFR-004)', () => {
+  const KEYS = ['DATABASE_SSL', 'DATABASE_SSL_VERIFY', 'DATABASE_POOL_MAX'] as const;
+  const original = Object.fromEntries(KEYS.map((k) => [k, process.env[k]]));
+
+  afterEach(() => {
+    for (const key of KEYS) {
+      if (original[key] === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = original[key];
+      }
+    }
+  });
+
+  it('leaves TLS off by default, so the local docker server still connects', () => {
+    for (const key of KEYS) delete process.env[key];
+    expect(new ApiConfig().databaseSsl).toBe(false);
+  });
+
+  it('verifies certificates by default when TLS is on', () => {
+    for (const key of KEYS) delete process.env[key];
+    expect(new ApiConfig().databaseSslVerify).toBe(true);
+  });
+
+  it.each([
+    ['true', true],
+    ['TRUE', true],
+    ['1', true],
+    ['on', true],
+    ['false', false],
+    ['0', false],
+    ['off', false],
+  ])('reads DATABASE_SSL=%s as %s', (raw, expected) => {
+    process.env.DATABASE_SSL = raw;
+    expect(new ApiConfig().databaseSsl).toBe(expected);
+  });
+
+  it('refuses to start on an unparseable TLS flag instead of assuming the insecure side', () => {
+    process.env.DATABASE_SSL = 'ture';
+    expect(() => new ApiConfig()).toThrow(/DATABASE_SSL/);
+  });
+
+  it.each(['0', '-1', 'abc'])('refuses a pool size of %s', (value) => {
+    process.env.DATABASE_POOL_MAX = value;
+    expect(() => new ApiConfig()).toThrow(/DATABASE_POOL_MAX/);
+  });
+});

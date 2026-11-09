@@ -13,6 +13,7 @@ import { PublishActions } from './PublishActions';
 import { PublishToast } from './PublishToast';
 import { capacityIsValid, priceIsValid, titleOver } from '../../lib/teacher/money';
 import { HttpTeacherPublishGateway, TeacherPublishAuthError } from '../../lib/teacher/http-gateway';
+import { describeError } from '../../lib/error-message';
 import {
   TITLE_MAX_CHARS,
   type ClassDraft,
@@ -80,9 +81,7 @@ export function PublishForm({ initialDraft, skills, publish }: Props) {
         setPublishError(
           err instanceof TeacherPublishAuthError
             ? ui('signInBeforePublishingAClass')
-            : err instanceof Error
-              ? err.message
-              : ui('couldNotPublishTheClass'),
+            : describeError(err, ui('couldNotPublishTheClass')),
         );
       }
     });

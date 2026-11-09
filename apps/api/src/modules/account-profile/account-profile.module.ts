@@ -91,38 +91,39 @@ export class AccountProfileRegistrar implements OnModuleInit {
       createModuleDataSource(this.config, schema),
     );
     const useCase = new ProjectVerificationStatusUseCase(this.projector);
-    for (const eventType of [
-      'student.verification.submitted',
-      'student.verification.approved',
-      'student.verification.rejected',
-      'student.verification.revoked',
-    ]) {
-      this.handlers.register({
-        moduleName: MODULE_NAME,
-        eventType,
-        queue: `account-profile.${eventType.replace(/\./g, '-')}`,
-        handler: async (message: BusMessage): Promise<void> => {
-          const event = studentVerificationEventSchema.parse(message.payload);
-          await useCase.execute(event);
-        },
-      });
-    }
-
-    for (const eventType of ['student.verification.approved', 'student.verification.rejected', 'student.verification.revoked']) {
-      this.handlers.register({
-        moduleName: MODULE_NAME,
-        eventType,
-        queue: `account-profile.notification-${eventType.replace(/\./g, '-')}`,
-        handler: async (message: BusMessage): Promise<void> => {
-          const event = studentVerificationEventSchema.parse(message.payload);
-          await this.notificationManagement.recordInboxNotification({
-            eventId: message.id, accountId: event.accountId, type: 'verification_outcome', targetType: 'verification', targetId: event.verificationId,
-          });
-        },
-      });
-    }
+    // ADR-013 Amendment B: one queue per module, so these are subscriptions on the same queue
+    // rather than a queue each. A routing key may still carry two handlers — the projection below
+    // and the inbox notification that follows both react to the same decision.
     this.handlers.register({
-      moduleName: MODULE_NAME, eventType: 'booking.confirmed', queue: 'account-profile.notification-booking-confirmed',
+      moduleName: MODULE_NAME,
+      eventTypes: [
+        'student.verification.submitted',
+        'student.verification.approved',
+        'student.verification.rejected',
+        'student.verification.revoked',
+      ],
+      handler: async (message: BusMessage): Promise<void> => {
+        const event = studentVerificationEventSchema.parse(message.payload);
+        await useCase.execute(event);
+      },
+    });
+
+    this.handlers.register({
+      moduleName: MODULE_NAME,
+      eventTypes: [
+        'student.verification.approved',
+        'student.verification.rejected',
+        'student.verification.revoked',
+      ],
+      handler: async (message: BusMessage): Promise<void> => {
+        const event = studentVerificationEventSchema.parse(message.payload);
+        await this.notificationManagement.recordInboxNotification({
+          eventId: message.id, accountId: event.accountId, type: 'verification_outcome', targetType: 'verification', targetId: event.verificationId,
+        });
+      },
+    });
+    this.handlers.register({
+      moduleName: MODULE_NAME, eventTypes: ['booking.confirmed'],
       handler: async (message: BusMessage): Promise<void> => {
         const event = bookingConfirmedSchema.parse(message.payload);
         if (!event.settled) return;
@@ -132,14 +133,14 @@ export class AccountProfileRegistrar implements OnModuleInit {
       },
     });
     this.handlers.register({
-      moduleName: MODULE_NAME, eventType: 'booking.cancelled', queue: 'account-profile.notification-booking-cancelled',
+      moduleName: MODULE_NAME, eventTypes: ['booking.cancelled'],
       handler: async (message: BusMessage): Promise<void> => {
         const event = bookingCancelledSchema.parse(message.payload);
         await this.notificationManagement.recordInboxNotification({ eventId: message.id, accountId: event.learnerId, type: 'booking_cancelled', targetType: 'booking', targetId: event.bookingId });
       },
     });
     this.handlers.register({
-      moduleName: MODULE_NAME, eventType: 'wallet.transaction.completed', queue: 'account-profile.notification-wallet-completed',
+      moduleName: MODULE_NAME, eventTypes: ['wallet.transaction.completed'],
       handler: async (message: BusMessage): Promise<void> => {
         const event = walletTransactionCompletedEventSchema.parse(message.payload);
         await this.notificationManagement.recordInboxNotification({ eventId: message.id, accountId: event.accountId, type: 'wallet_transaction', targetType: 'wallet', targetId: event.transactionId });
@@ -150,8 +151,7 @@ export class AccountProfileRegistrar implements OnModuleInit {
       // multiplying outbox rows by seats. `eventId` is the message id for every person, which is
       // what makes a redelivered event leave each inbox with one row instead of one per retry.
       moduleName: MODULE_NAME,
-      eventType: CLASS_STARTING_SOON_EVENT,
-      queue: 'account-profile.notification-class-starting-soon',
+      eventTypes: [CLASS_STARTING_SOON_EVENT],
       handler: async (message: BusMessage): Promise<void> => {
         const event = classStartingSoonSchema.parse(message.payload);
         // A participant may legitimately appear twice (a repeat booking by the same learner); the

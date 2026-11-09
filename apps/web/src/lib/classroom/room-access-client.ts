@@ -44,6 +44,32 @@ export interface RequestRoomAccessResult {
 }
 
 /**
+ * FR-011 / ADR-040: the teacher opens their class room.
+ *
+ * Keyed on the class, because a teacher has no booking for the class they teach — that is
+ * the whole reason the learner path could not serve them.
+ */
+export async function requestTeacherRoomAccess(
+  classId: string,
+  displayName: string,
+): Promise<RequestRoomAccessResult> {
+  const res = await callApi(`/classes/${encodeURIComponent(classId)}/room-access`, {
+    method: 'POST',
+    body: JSON.stringify({ displayName }),
+  });
+
+  try {
+    const data = await unwrapEnvelope<RoomAccessResponse>(res);
+    return roomAccessResponseSchema.parse(data);
+  } catch (error) {
+    if (error instanceof ApiResponseError) {
+      throw new RoomAccessError(error.code, res.status, error.message);
+    }
+    throw error;
+  }
+}
+
+/**
  * Asks the API for a room token. Resolves with the validated payload on success
  * and throws `RoomAccessError` with the server `code` otherwise.
  */
@@ -76,6 +102,7 @@ export type RoomAccessReason =
   | 'not_confirmed'
   | 'window_not_open'
   | 'window_closed'
+  | 'class_not_joinable'
   | 'not_found'
   | 'provider_unavailable'
   | 'unavailable';
@@ -93,15 +120,22 @@ const DENIAL_MESSAGES: Record<string, RoomAccessReason> = {
   'Requester is not a party to this booking': 'not_a_party',
   'Room access opens shortly before the class starts': 'window_not_open',
   'Room access has closed for this class': 'window_closed',
+  // FR-011 / ADR-040: the teacher's class-state rule. Distinct from `not_confirmed`,
+  // which is about a booking, because the teacher has no booking.
+  'Requester is not the teacher of this class': 'not_a_party',
 };
 
 export function reasonForFailure(code: string, message: string): RoomAccessReason {
-  if (code === 'BookingNotFoundError' || code === 'HTTP_404') return 'not_found';
+  if (code === 'BookingNotFoundError' || code === 'TeacherClassNotFoundError' || code === 'HTTP_404') {
+    return 'not_found';
+  }
   if (code === 'RoomUnavailableError' || code === 'HTTP_503') return 'provider_unavailable';
   if (code === 'RoomAccessDeniedError' || code === 'HTTP_403') {
     if (message in DENIAL_MESSAGES) return DENIAL_MESSAGES[message];
     // `Booking is ${state}, not joinable` — the state is interpolated.
     if (/^Booking is .*, not joinable$/.test(message)) return 'not_confirmed';
+    // `Teacher cannot open a room for a ${state} class` — ADR-040 class-state rule.
+    if (/^Teacher cannot open a room for a .* class$/.test(message)) return 'class_not_joinable';
   }
   return 'unavailable';
 }
