@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-10
 **Branch:** `fix/flow-testing-defects` (off `main` @ `7e11943`)
-**Status:** phases 1–5 landed; 6–7 outstanding
+**Status:** phases 1–7 landed
 
 ## Context
 
@@ -238,8 +238,57 @@ segment ending in `undefined`. Restoring one key fails that test by naming it.
 
 ## Phase 7 — #9 pluralisation
 
-"1 available seats", "1,542 credit", "1 messages". Introduce `Intl.PluralRules`-backed
-count strings in the catalogue for the three affected keys, both locales.
+### Reproduction
+
+The report listed three: "1 available seats", "1,542 credit", "1 messages". All three
+are the same shape — the number is interpolated *beside* a fixed noun, so the noun
+cannot agree with it:
+
+- `Workspace.copy.availableSeats` = `"available seats"`, rendered as
+  `{item.availableSeats} {ui('availableSeats')}` in `instructor/page.tsx`.
+- `LiveClassroom.chat.total` = `"{total} messages"` in the classroom chat header.
+- `Workspace.wallet.credits` = `"credits"`, and `Workspace.checkout.credits` likewise,
+  appended to a `toLocaleString()` number on the wallet summary, the ledger rows and
+  the checkout summary. `PostSessionReview.escrow.credits` = `"{n} Credits"` had the
+  same fault and inconsistent casing with it.
+
+### Fix
+
+ICU plural syntax in the catalogue, not a `count === 1` branch in each component. The
+catalogue already used it once (`Teacher.publish.step1VerifiedBadge`), and ICU plurals
+are resolved by `Intl.PluralRules`, so the correct form per locale comes from the
+platform rather than from whoever wrote the component.
+
+The count moves *into* the message. Two things follow, and both are the point:
+
+- `#` renders the number, and it formats it for the locale — so the component no
+  longer calls `toLocaleString()` and can no longer disagree with the copy.
+- The noun and its number are one translatable unit. A translator sees
+  `{count, plural, one {# credit} other {# credits}}` and knows what the number
+  governs, which is impossible when the number lives in the TSX.
+
+**Vietnamese is deliberately not built as a plural.** `Intl.PluralRules('vi')` reports
+a single category, so `{count} credit` and `{count} chỗ trống` are already correct for
+every count. Writing `{count, plural, …}` there would add branches that render
+identically — maintenance cost with no reader benefit. The tests assert the two
+locales behave differently for that reason.
+
+`creditUnit` is a new bare label for the places that name the unit without counting
+anything — the exchange-rate line (`1 credit = 1.000 VND`) and the amount-input
+suffix. Those must not go through the plural, because there is no count to agree with.
+
+### Proof
+
+`plural-forms.test.ts` (8 tests) runs the real `createTranslator` against the real
+catalogues, so it asserts the message every call site shares rather than one
+component's copy. Against the pre-fix catalogue all 8 fail, and they fail on the
+reported strings: `expected 'available seats' to be '1 seat available'`,
+`expected '1 messages' to be '1 message'`, `expected 'credits' to be '1 credit'`.
+
+A no-argument audit over every `.ts`/`.tsx` in `apps/web/src` confirms no surviving
+`t('credits')` / `t('availableSeats')` / `t('total')` call that would now render an
+empty slot. TypeScript cannot see that mistake — the second argument is optional — so
+it is checked mechanically instead.
 
 ## Out of scope
 

@@ -386,7 +386,7 @@ export default function InstructorDashboard() {
                               {isCompleted ? ui('ended') : ui('openForBooking')}
                             </span>
                             <span className="text-sm text-slate-600 font-medium">
-                              {item.availableSeats} {ui('availableSeats')}
+                              {ui('availableSeats', { count: item.availableSeats })}
                             </span>
                           </div>
                           <h3 className="font-bold text-slate-900 text-base">{item.title}</h3>

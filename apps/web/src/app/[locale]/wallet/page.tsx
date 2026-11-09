@@ -241,16 +241,16 @@ export default function WalletPage() {
         <PageIntro title={t('title')} description={t('description')} actions={<><button onClick={scrollToDeposit} className="workspace-primary">{t('topUp')}<span aria-hidden="true">↗</span></button><a href={`/${locale}/wallet/withdrawal`} className="workspace-link">{t('withdraw')}</a></>} />
         {loadError && <p role="alert" data-testid="wallet-load-error" className="workspace-feedback workspace-feedback-error mb-6">{t('loadError')} {loadError}</p>}
         <dl className="workspace-wallet-summary">
-          <div><dt>{t('available')}</dt><dd>{balance ? number(balance.availableCredits) : '—'} <span>{t('credits')}</span></dd><p>{balance ? `${number(balance.availableCredits * 1000)} VND` : t('unavailable')}</p></div>
-          <div><dt>{t('held')}</dt><dd>{balance ? number(balance.pendingCredits) : '—'} <span>{t('credits')}</span></dd><p>{t('heldHint')}</p></div>
-          <div><dt>{t('rate')}</dt><dd className="workspace-wallet-rate">1 <span>{t('credits')}</span> = 1.000 VND</dd><p>{t('rateHint')}</p></div>
+          <div><dt>{t('available')}</dt><dd>{balance ? number(balance.availableCredits) : '—'} <span>{t('creditUnit')}</span></dd><p>{balance ? `${number(balance.availableCredits * 1000)} VND` : t('unavailable')}</p></div>
+          <div><dt>{t('held')}</dt><dd>{balance ? number(balance.pendingCredits) : '—'} <span>{t('creditUnit')}</span></dd><p>{t('heldHint')}</p></div>
+          <div><dt>{t('rate')}</dt><dd className="workspace-wallet-rate">1 <span>{t('creditUnit')}</span> = 1.000 VND</dd><p>{t('rateHint')}</p></div>
         </dl>
         <div id="deposit-section" className="workspace-wallet-grid">
           <section className="workspace-panel workspace-form">
             <h2 className="workspace-panel-title">{t('depositTitle')}</h2>
             <p className="mt-3 text-base leading-relaxed text-ink-soft">{t('depositHint')}</p>
             <label htmlFor="wallet-amount" className="mt-6 block font-semibold">{t('amountLabel')}</label>
-            <div className="mt-2 flex items-center gap-3"><input id="wallet-amount" type="number" min={1} step={1} inputMode="numeric" value={amount} onChange={handleAmountChange} className="w-full border px-4 py-3" /><span className="text-sm font-semibold">{t('credits')}</span></div>
+            <div className="mt-2 flex items-center gap-3"><input id="wallet-amount" type="number" min={1} step={1} inputMode="numeric" value={amount} onChange={handleAmountChange} className="w-full border px-4 py-3" /><span className="text-sm font-semibold">{t('creditUnit')}</span></div>
             <div className="mt-4 flex flex-wrap gap-2">{[50,100,200,500].map(value=><button key={value} onClick={()=>setQuickAmount(value)} aria-pressed={amount === value} className={amount === value ? 'workspace-secondary ring-2 ring-ink' : 'workspace-secondary'}>{number(value)}</button>)}</div>
             <div className="my-6 flex items-center justify-between rounded-xl bg-mist p-4"><span className="text-ink-soft">{t('total')}</span><strong className="text-xl">{number(amount * 1000)} VND</strong></div>
             {notice && <p role="alert" className="workspace-feedback workspace-feedback-error mb-4">{notice}</p>}
@@ -304,7 +304,7 @@ function LedgerRow({ item, locale }: { item: WalletHistoryItemView; locale: stri
       <div className="workspace-ledger-amount">
         <strong className={isCredit ? 'text-success-ink' : 'text-ink'}>
           {isCredit ? '+' : '−'}
-          {item.amountCredits.toLocaleString(locale)} {t('credits')}
+          {t('credits', { count: item.amountCredits })}
         </strong>
         <p className="mt-1 text-sm text-ink-soft">
           {(item.amountCredits * 1000).toLocaleString(locale)} VND
