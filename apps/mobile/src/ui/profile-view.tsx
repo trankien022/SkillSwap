@@ -13,7 +13,7 @@ import { useSession } from './session-context';
 
 export function ProfileView() {
   const router = useRouter();
-  const { t, user, locale, setLocale, logout, updateDisplayName } = useSession();
+  const { t, user, locale, setLocale, logout, refreshMe, updateDisplayName } = useSession();
   const [isSigningOut, setIsSigningOut] = useState<boolean>(false);
   const [displayName, setDisplayName] = useState(user?.displayName ?? '');
   const [isSavingName, setIsSavingName] = useState(false);
@@ -71,6 +71,19 @@ export function ProfileView() {
       setDisplayName(updated.displayName);
       setNameFeedback({ tone: 'success', key: 'Profile.nameUpdated' });
     } catch {
+      // A PATCH may reach the server and commit even if the client fails while
+      // parsing its response or persisting the refreshed session. Reconcile
+      // against the server before telling the user the update failed.
+      try {
+        const currentUser = await refreshMe();
+        if (currentUser.displayName === nextName) {
+          setDisplayName(currentUser.displayName);
+          setNameFeedback({ tone: 'success', key: 'Profile.nameUpdated' });
+          return;
+        }
+      } catch {
+        // Keep the original failure feedback if the authoritative read also fails.
+      }
       setNameFeedback({ tone: 'danger', key: 'Profile.nameUpdateError' });
     } finally {
       setIsSavingName(false);

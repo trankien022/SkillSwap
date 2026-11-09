@@ -38,6 +38,7 @@ jest.mock('@/ui/primitives', () => ({
 const mockTranslate = (key: string) => key;
 let mockUser: SessionUser | null = null;
 const mockUpdateDisplayName = jest.fn();
+const mockRefreshMe = jest.fn();
 
 jest.mock('./session-context', () => ({
   useSession: () => ({
@@ -46,6 +47,7 @@ jest.mock('./session-context', () => ({
     locale: 'vi',
     setLocale: jest.fn(),
     logout: jest.fn(),
+    refreshMe: mockRefreshMe,
     updateDisplayName: mockUpdateDisplayName,
   }),
 }));
@@ -89,7 +91,10 @@ describe('ProfileView role-gated navigation', () => {
     Reflect.set(globalThis, 'IS_REACT_ACT_ENVIRONMENT', true);
   });
 
-  beforeEach(() => mockUpdateDisplayName.mockReset());
+  beforeEach(() => {
+    mockUpdateDisplayName.mockReset();
+    mockRefreshMe.mockReset();
+  });
 
   afterAll(() => {
     if (previousActEnvironment === undefined) {
@@ -142,6 +147,22 @@ describe('ProfileView role-gated navigation', () => {
     expect(save).toBeDefined();
     await act(async () => { await save?.props.onPress(); });
     expect(mockUpdateDisplayName).toHaveBeenCalledWith('New Name');
+  });
+
+  it('reconciles a failed client response when the server already saved the name', async () => {
+    mockUpdateDisplayName.mockRejectedValue(new Error('Response handling failed'));
+    mockRefreshMe.mockResolvedValue({ ...userWithRole('user'), displayName: 'New Name' });
+    const tree = await renderProfile(userWithRole('user'));
+    const input = tree.root.findByType('TextInput' as never);
+    await act(async () => { input.props.onChangeText('New Name'); });
+    const save = tree.root.findAllByType('AppButton' as never).find((node) => node.props.label === 'Profile.saveName');
+
+    await act(async () => { await save?.props.onPress(); });
+
+    expect(mockRefreshMe).toHaveBeenCalledTimes(1);
+    const banners = tree.root.findAllByType('FeedbackBanner' as never);
+    expect(banners).toHaveLength(1);
+    expect(banners[0].props.tone).toBe('success');
   });
 
   it('never offers a learner a way to cancel a confirmed booking', async () => {
