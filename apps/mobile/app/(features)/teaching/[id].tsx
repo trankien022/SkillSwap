@@ -88,7 +88,6 @@ export default function TeachingClassDetailScreen() {
       {canEdit ? <AppButton busy={busy} onPress={() => void save()} label={t('Teaching.save')} /> : null}
       {canCancel ? <AppButton disabled={busy} onPress={cancel} label={t('Teaching.cancel')} /> : null}
       {(item.state === 'published' || item.state === 'full') && <AppButton disabled={busy} onPress={() => gatewayClient && void run(() => new TeachingGateway(gatewayClient).start(item.id))} label={t('Teaching.start')} />}
-      {item.state === 'in_progress' && <AppButton disabled={busy} onPress={() => gatewayClient && void run(() => new TeachingGateway(gatewayClient).complete(item.id))} label={t('Teaching.complete')} />}
     </> : null}
     {error && <FeedbackBanner tone="danger">{error}</FeedbackBanner>}
     <AppButton disabled={busy} onPress={() => router.back()} label={t('Common.back')} />

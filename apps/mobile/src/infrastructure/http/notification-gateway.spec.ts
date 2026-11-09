@@ -22,6 +22,31 @@ describe('NotificationGateway', () => {
     ]);
   });
 
+  it('marks one notification read and parses the unread count from the server', async () => {
+    const fetchMock = jest.fn().mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ success: true, code: 'OK', message: 'OK', data: { success: true, unreadCount: 2 }, errors: [] }) });
+    const client = new GatewayClient(config, { fetchFn: fetchMock as unknown as typeof fetch });
+    client.setTokenProvider({ getAccessToken: async () => 'access', refreshSession: async () => ({ tokens: { accessToken: 'next' } }) });
+    await expect(new NotificationGateway(client).markRead('n/1')).resolves.toEqual({ success: true, unreadCount: 2 });
+    expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:4000/api/notifications/n%2F1/read');
+    expect(fetchMock.mock.calls[0][1].method).toBe('POST');
+  });
+
+  it('marks the whole inbox read and parses the unread count from the server', async () => {
+    const fetchMock = jest.fn().mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ success: true, code: 'OK', message: 'OK', data: { success: true, unreadCount: 0 }, errors: [] }) });
+    const client = new GatewayClient(config, { fetchFn: fetchMock as unknown as typeof fetch });
+    client.setTokenProvider({ getAccessToken: async () => 'access', refreshSession: async () => ({ tokens: { accessToken: 'next' } }) });
+    await expect(new NotificationGateway(client).markAllRead()).resolves.toEqual({ success: true, unreadCount: 0 });
+    expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:4000/api/notifications/read-all');
+    expect(fetchMock.mock.calls[0][1].method).toBe('POST');
+  });
+
+  it('rejects a mark-read response that breaks the contract', async () => {
+    const fetchMock = jest.fn().mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ success: true, code: 'OK', message: 'OK', data: { success: true }, errors: [] }) });
+    const client = new GatewayClient(config, { fetchFn: fetchMock as unknown as typeof fetch });
+    client.setTokenProvider({ getAccessToken: async () => 'access', refreshSession: async () => ({ tokens: { accessToken: 'next' } }) });
+    await expect(new NotificationGateway(client).markAllRead()).rejects.toThrow();
+  });
+
   it('treats a 204 device deletion as complete without parsing a body', async () => {
     const body = jest.fn();
     const fetchMock = jest.fn().mockResolvedValueOnce({ ok: true, status: 204, json: body });

@@ -19,9 +19,6 @@ export class TeachingGateway {
   async start(classId: string): Promise<void> {
     await this.gateway.authenticatedRequest<unknown>(`/classes/${encodeURIComponent(classId)}/start`, { method: 'POST' });
   }
-  async complete(classId: string): Promise<void> {
-    await this.gateway.authenticatedRequest<unknown>(`/classes/${encodeURIComponent(classId)}/complete`, { method: 'POST' });
-  }
   /**
    * Declares that the **teacher** never joined this booking's class, which
    * cancels the booking and refunds the learner (FR-007 / AC-024).

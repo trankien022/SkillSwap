@@ -67,7 +67,6 @@ jest.mock('@/infrastructure/http/teaching-gateway', () => ({
     update: jest.fn(),
     cancel: jest.fn(),
     start: jest.fn(),
-    complete: jest.fn(),
   })),
 }));
 
@@ -179,6 +178,24 @@ describe('TeachingClassDetailScreen', () => {
 
     expect(getButtonLabels(screen)).toContain('Teaching.save');
     expect(getButtonLabels(screen)).toContain('Teaching.cancel');
+  });
+
+  it('offers start/cancel/edit but no manual complete action for an in-progress class', async () => {
+    mockGetClassDetail.mockResolvedValue({ ...detail, state: 'in_progress' });
+    const screen = await renderScreen();
+    expect(getButtonLabels(screen)).not.toContain('Teaching.complete');
+
+    await act(async () => {
+      renderer?.unmount();
+    });
+    renderer = undefined;
+    mockGetClassDetail.mockResolvedValue(detail);
+    const published = await renderScreen();
+    const labels = getButtonLabels(published);
+    expect(labels).toEqual(
+      expect.arrayContaining(['Teaching.save', 'Teaching.cancel', 'Teaching.start']),
+    );
+    expect(labels).not.toContain('Teaching.complete');
   });
 
   it('shows the teacher draft without enabling published-class actions', async () => {

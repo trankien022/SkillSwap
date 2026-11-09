@@ -6,6 +6,7 @@ import { ClassReadGateway } from '@/infrastructure/http/class-read-gateway';
 import { TeachingGateway } from '@/infrastructure/http/teaching-gateway';
 import { colors, radius, spacing, typography } from '@/design/tokens';
 import { useSession } from '@/ui/session-context';
+import { parseStartsAt, startsAtMessageKey } from '@/ui/teaching-form';
 import { AppButton, FeedbackBanner, ScreenScroll, SurfaceCard } from '@/ui/primitives';
 
 export default function TeachingScreen() {
@@ -58,12 +59,17 @@ export default function TeachingScreen() {
   };
   const create = async () => {
     if (!gatewayClient || !skillId || !classTitle.trim() || !description.trim()) return;
+    const parsedStartsAt = parseStartsAt(startsAt);
+    if (!parsedStartsAt.ok) {
+      setError(t(startsAtMessageKey[parsedStartsAt.error]));
+      return;
+    }
     const saved = await run(() =>
       new TeachingGateway(gatewayClient).create({
         skillIds: [skillId],
         title: classTitle.trim(),
         description: description.trim(),
-        startsAt,
+        startsAt: parsedStartsAt.value,
         durationMinutes: Number(duration),
         priceCredits: Number(price),
         capacity: Number(capacity),

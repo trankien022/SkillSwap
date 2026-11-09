@@ -1,5 +1,6 @@
 import { newIdempotencyKey } from '@/application/idempotency';
 import { SessionExpiredRetryRequiredError } from '@/application/port/session-types';
+import { BOOKING_REJECTION_REASONS } from '@/domain/booking/booking';
 import type { BookingHttpGateway } from '@/infrastructure/http/booking-http-gateway';
 import { GatewayHttpError } from '@/infrastructure/http/gateway-client';
 import type { ClassDetailView } from '@skillswap/contracts';
@@ -227,6 +228,11 @@ export class ClassDetailCoordinator {
         let reason = 'unknown';
         if (error instanceof GatewayHttpError && typeof error.errorDetails === 'string') {
           reason = error.errorDetails;
+        } else if (error instanceof GatewayHttpError) {
+          const code = (error.errorDetails as { code?: unknown } | null | undefined)?.code;
+          if (typeof code === 'string' && (BOOKING_REJECTION_REASONS as readonly string[]).includes(code)) {
+            reason = code;
+          }
         }
         try {
           const detail = await this.options.gateway.getClassDetail(this.options.classId);

@@ -2,10 +2,10 @@ const routes = [
   /^\/auth\/(register|login|refresh|logout|me)$/,
   /^\/student-verifications(?:\/(documents|me))?$/,
   /^\/skills$/,
-  /^\/skill-evidence$/,
+  /^\/skill-evidence(?:\/documents)?$/,
   /^\/profile-skills\/me$/,
   /^\/wallet\/(balance|history|top-ups)$/,
-  /^\/notifications$/,
+  /^\/notifications(?:\/read-all)?$/,
   /^\/notification-devices$/,
   /^\/classes$/,
   /^\/classes\/bookings\/me$/,
@@ -32,13 +32,14 @@ export function evidenceRoute(url: string): string | null {
     return '/api/classes/bookings/:bookingId/room-access';
   if (/^\/classes\/bookings\/[^/]+\/no-show$/.test(path))
     return '/api/classes/bookings/:bookingId/no-show';
-  // Class actions (`cancel`, `start`, `complete`) and the bare class resource.
-  if (/^\/classes\/[^/]+\/(cancel|start|complete)$/.test(path)) return `/api${path}`;
+  // Class actions (`cancel`, `start`) and the bare class resource.
+  if (/^\/classes\/[^/]+\/(cancel|start)$/.test(path)) return `/api${path}`;
   if (/^\/classes\/[^/]+\/bookings$/.test(path)) return '/api/classes/:id/bookings';
   if (/^\/classes\/[^/]+$/.test(path)) return '/api/classes/:id';
   if (/^\/skill-evidence\/[^/]+\/history$/.test(path)) return '/api/skill-evidence/:id/history';
   if (/^\/skill-evidence\/[^/]+\/(claim|decision)$/.test(path)) return `/api${path}`;
   if (/^\/notification-devices\/[^/]+$/.test(path)) return '/api/notification-devices/:id';
+  if (/^\/notifications\/[^/]+\/read$/.test(path)) return '/api/notifications/:id/read';
   return null;
 }
 

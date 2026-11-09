@@ -161,6 +161,8 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
         return t('ClassDetail.holdExpired');
       case 'BookingNotAllowedError':
         return t('ClassDetail.errorBookingNotAllowed');
+      case 'learner_not_verified':
+        return t('ClassDetail.errorLearnerNotVerified');
       default:
         return t('Common.errorMessage');
     }
@@ -309,7 +311,9 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
       {/* 1. Header & Teacher Card */}
       <SurfaceCard style={styles.card}>
         <View style={styles.headerRow}>
-          <Text style={styles.title}>{t('ClassDetail.title')}</Text>
+          <Text style={styles.title}>
+            {detail.title?.trim() ? detail.title : t('ClassDetail.title')}
+          </Text>
           <StatusPill tone={statusTone} label={statusText} />
         </View>
 
@@ -332,7 +336,6 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
       {/* 2. Title & Description Card */}
       <SurfaceCard style={styles.card}>
         <Text style={styles.sectionTitle}>{t('ClassDetail.description')}</Text>
-        <Text style={styles.classTitle}>{detail.title}</Text>
         <Text style={styles.descriptionText}>{detail.description}</Text>
 
         {/* Skills: the API resolves the names in `GET /classes/:id`; an id the

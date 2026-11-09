@@ -291,6 +291,134 @@ describe('SkillEvidenceGateway', () => {
     });
   });
 
+  describe('submitCertificateEvidence (B9)', () => {
+    const futureExpiry = () => new Date(Date.now() + 10 * 60_000).toISOString();
+    const uploadTarget = () => ({
+      uploadUrl: 'https://api.cloudinary.com/v1_1/demo/auto/upload',
+      method: 'POST' as const,
+      fields: { api_key: 'key-1', signature: 'sig-1', public_id: 'certs/abc' },
+      objectKey: 'certs/abc',
+      expiresAt: futureExpiry(),
+    });
+    const bytes = new Uint8Array([1, 2, 3, 4]);
+
+    it('requests a target, uploads through the shared flow, then submits certificate with documentRef = objectKey', async () => {
+      const storageFetch = jest.fn().mockResolvedValue({ ok: true, status: 200 });
+      const certGateway = new SkillEvidenceGateway(gatewayClient, {
+        fetchFn: storageFetch as unknown as typeof fetch,
+      });
+      mockGatewayFetch
+        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => uploadTarget() })
+        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => sampleEvidenceView });
+
+      const result = await certGateway.submitCertificateEvidence({
+        skillId: 'skill-ts',
+        requestedLevel: 'advanced',
+        description: 'Certified TypeScript Professional',
+        fileName: 'cert.pdf',
+        contentType: 'application/pdf',
+        bytes,
+      });
+
+      const [targetUrl, targetInit] = mockGatewayFetch.mock.calls[0];
+      expect(targetUrl).toBe('http://localhost:4000/api/skill-evidence/documents');
+      expect(targetInit.method).toBe('POST');
+      expect(JSON.parse(targetInit.body)).toEqual({
+        fileName: 'cert.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 4,
+      });
+
+      // Storage upload: signed fields verbatim, no gateway credentials.
+      expect(storageFetch).toHaveBeenCalledTimes(1);
+      const [uploadUrl, uploadInit] = storageFetch.mock.calls[0];
+      expect(uploadUrl).toBe('https://api.cloudinary.com/v1_1/demo/auto/upload');
+      expect(uploadInit.credentials).toBe('omit');
+      expect(uploadInit.headers).toEqual({});
+      const form = uploadInit.body as FormData;
+      expect(form.get('api_key')).toBe('key-1');
+      expect(form.get('signature')).toBe('sig-1');
+      expect(form.get('public_id')).toBe('certs/abc');
+      expect(form.has('file')).toBe(true);
+
+      const [submitUrl, submitInit] = mockGatewayFetch.mock.calls[1];
+      expect(submitUrl).toBe('http://localhost:4000/api/skill-evidence');
+      expect(JSON.parse(submitInit.body)).toEqual({
+        skillId: 'skill-ts',
+        requestedLevel: 'advanced',
+        evidenceType: 'certificate',
+        documentRef: 'certs/abc',
+        description: 'Certified TypeScript Professional',
+      });
+      expect(result).toEqual(sampleEvidenceView);
+    });
+
+    it('omits description from the payload when none was given', async () => {
+      const certGateway = new SkillEvidenceGateway(gatewayClient, {
+        fetchFn: jest.fn().mockResolvedValue({ ok: true, status: 200 }) as unknown as typeof fetch,
+      });
+      mockGatewayFetch
+        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => uploadTarget() })
+        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => sampleEvidenceView });
+
+      await certGateway.submitCertificateEvidence({
+        skillId: 'skill-ts',
+        requestedLevel: 'beginner',
+        fileName: 'cert.png',
+        contentType: 'image/png',
+        bytes,
+      });
+
+      expect(JSON.parse(mockGatewayFetch.mock.calls[1][1].body)).toEqual({
+        skillId: 'skill-ts',
+        requestedLevel: 'beginner',
+        evidenceType: 'certificate',
+        documentRef: 'certs/abc',
+      });
+    });
+
+    it('never submits the evidence when the storage upload fails', async () => {
+      const certGateway = new SkillEvidenceGateway(gatewayClient, {
+        fetchFn: jest.fn().mockResolvedValue({ ok: false, status: 500 }) as unknown as typeof fetch,
+      });
+      mockGatewayFetch.mockResolvedValueOnce({ ok: true, status: 200, json: async () => uploadTarget() });
+
+      await expect(
+        certGateway.submitCertificateEvidence({
+          skillId: 'skill-ts',
+          requestedLevel: 'advanced',
+          fileName: 'cert.pdf',
+          contentType: 'application/pdf',
+          bytes,
+        }),
+      ).rejects.toMatchObject({ name: 'DocumentUploadError', statusCode: 500 });
+
+      expect(mockGatewayFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the verifier_assessment payload free of documentRef', async () => {
+      mockGatewayFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ ...sampleEvidenceView, evidenceType: 'verifier_assessment', documentRef: null }),
+      });
+
+      await gateway.submitSkillEvidence({
+        skillId: 'skill-ts',
+        requestedLevel: 'advanced',
+        evidenceType: 'verifier_assessment',
+        description: 'Please assess me',
+      });
+
+      expect(JSON.parse(mockGatewayFetch.mock.calls[0][1].body)).toEqual({
+        skillId: 'skill-ts',
+        requestedLevel: 'advanced',
+        evidenceType: 'verifier_assessment',
+        description: 'Please assess me',
+      });
+    });
+  });
+
   describe('getMyProfileSkills', () => {
     it('fetches profile skills from exact /profile-skills/me path with Bearer token', async () => {
       mockGatewayFetch.mockResolvedValueOnce({

@@ -10,7 +10,7 @@ import { useSession } from '@/ui/session-context';
 import { AppButton, FeedbackBanner, ScreenScroll, SurfaceCard } from '@/ui/primitives';
 
 export default function VerificationScreen() {
-  const { t, gatewayClient, refreshMe } = useSession();
+  const { t, locale, gatewayClient, refreshMe } = useSession();
   const [schoolName, setSchoolName] = useState('');
   const [major, setMajor] = useState('');
   const [file, setFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
@@ -52,6 +52,12 @@ export default function VerificationScreen() {
         <Text style={styles.body}>{t('Verification.status')}: {t(`Dashboard.${verification.status}`)}</Text>
         {verification.reason && <Text style={styles.error}>{verification.reason}</Text>}
       </View>}
+      {verification?.documentId ? <View style={styles.status}>
+        <Text style={styles.sectionLabel}>{t('Verification.currentSubmission')}</Text>
+        <Text style={styles.body}>{t('Verification.school')}: {verification.schoolName}</Text>
+        <Text style={styles.body}>{t('Verification.documentSubmitted', { ref: verification.documentId })}</Text>
+        <Text style={styles.meta}>{t('Verification.submittedAt', { when: new Date(verification.submittedAt).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US') })}</Text>
+      </View> : null}
       <TextInput value={schoolName} onChangeText={setSchoolName} placeholder={t('Verification.school')} style={styles.input} accessibilityLabel={t('Verification.school')} />
       <TextInput value={major} onChangeText={setMajor} placeholder={t('Verification.major')} style={styles.input} accessibilityLabel={t('Verification.major')} />
       <AppButton tone="quiet" onPress={() => void pick()} label={file?.name ?? t('Verification.chooseFile')} />
@@ -66,6 +72,8 @@ const styles = StyleSheet.create({
   card: { gap: spacing.md },
   title: { color: colors.ink, fontSize: typography.heading.fontSize, fontWeight: '700' },
   body: { color: colors.inkSoft, fontSize: typography.body.fontSize },
+  sectionLabel: { color: colors.ink, fontSize: typography.body.fontSize, fontWeight: '700' },
+  meta: { color: colors.inkMuted, fontSize: typography.caption.fontSize },
   status: { backgroundColor: colors.mist, borderRadius: radius.control, padding: spacing.md, gap: spacing.xs },
   input: { minHeight: 52, borderWidth: 1, borderColor: colors.border, borderRadius: radius.control, paddingHorizontal: spacing.md, color: colors.ink },
   error: { color: colors.dangerInk, fontSize: typography.body.fontSize },
