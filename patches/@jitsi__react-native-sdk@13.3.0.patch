@@ -1,0 +1,29 @@
+diff --git a/package.json b/package.json
+index 230268a29da517dd899732f777d5fd7254193caf..5774e67d95ffe3b5095618b10d149eb1c839134f 100644
+--- a/package.json
++++ b/package.json
+@@ -31,7 +31,6 @@
+         "i18next-http-backend": "4.0.2",
+         "js-sha512": "0.8.0",
+         "jwt-decode": "2.2.0",
+-        "lib-jitsi-meet": "https://github.com/jitsi/lib-jitsi-meet/releases/download/v2223.0.0+a8e7d0b1/lib-jitsi-meet.tgz",
+         "lodash-es": "4.18.1",
+         "optional-require": "1.0.3",
+         "promise.withresolvers": "1.0.3",
+@@ -39,7 +38,6 @@
+         "react-emoji-render": "2.0.1",
+         "react-i18next": "10.11.4",
+         "react-linkify": "1.0.0-alpha",
+-        "react-native-dialog": "https://github.com/jitsi/react-native-dialog/releases/download/v9.2.2-jitsi.1/react-native-dialog-9.2.2.tgz",
+         "react-native-paper": "5.14.5",
+         "react-native-svg-transformer": "1.2.0",
+         "react-native-tab-view": "4.3.2",
+@@ -55,6 +53,8 @@
+         "zxcvbn": "4.4.2"
+     },
+     "peerDependencies": {
++        "lib-jitsi-meet": "https://github.com/jitsi/lib-jitsi-meet/releases/download/v2223.0.0+a8e7d0b1/lib-jitsi-meet.tgz",
++        "react-native-dialog": "https://github.com/jitsi/react-native-dialog/releases/download/v9.2.2-jitsi.1/react-native-dialog-9.2.2.tgz",
+         "@amplitude/analytics-react-native": "1.5.16",
+         "@giphy/react-native-sdk": "5.0.1",
+         "@react-native-async-storage/async-storage": "1.23.1",
