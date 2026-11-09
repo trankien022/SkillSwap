@@ -120,7 +120,7 @@ const ID_KIND = {
   evidence: 'e71d',
   evidenceAudit: '0ad7',
   studentVerification: '5e7d',
-  document: 'd0c5',
+  studentDocument: 'd0c5',
   class: 'c1a5',
   booking: 'b00c',
   rating: '2a71',
@@ -137,18 +137,21 @@ function demoId(kind, index) {
 }
 
 // ── Demo identities ────────────────────────────────────────────────────────
-// 1 admin, 3 verifiers, 10 users. Deterministic emails so re-runs converge.
+// 1 admin, 4 verifiers, 10 users. Deterministic emails so re-runs converge.
 const ADMIN = { email: DEMO_ADMIN_EMAIL, displayName: 'Quan Tri (Admin)', role: 'admin', index: 1 };
 const VERIFIERS = [
-  { email: `verifier1@${DEMO_DOMAIN}`, displayName: 'Verifier An', role: 'verifier', expertise: ['IELTS', 'Japanese'], index: 2 },
-  { email: `verifier2@${DEMO_DOMAIN}`, displayName: 'Verifier Binh', role: 'verifier', expertise: ['Python', 'React'], index: 3 },
-  { email: `verifier3@${DEMO_DOMAIN}`, displayName: 'Verifier Chi', role: 'verifier', expertise: ['Guitar', 'Piano'], index: 4 },
+  { email: `verifier1@${DEMO_DOMAIN}`, displayName: 'Verifier An', role: 'verifier', expertise: ['IELTS', 'English Conversation', 'Japanese'], status: 'active', index: 2 },
+  { email: `verifier2@${DEMO_DOMAIN}`, displayName: 'Verifier Binh', role: 'verifier', expertise: ['Python', 'React', 'TypeScript', 'Calculus'], status: 'active', index: 3 },
+  { email: `verifier3@${DEMO_DOMAIN}`, displayName: 'Verifier Chi', role: 'verifier', expertise: ['Guitar', 'Piano'], status: 'active', index: 4 },
+  // Suspended: no approvals, so the admin screen shows a verifier who was stood down before
+  // deciding anything rather than rewriting somebody's history.
+  { email: `verifier4@${DEMO_DOMAIN}`, displayName: 'Verifier Dung', role: 'verifier', expertise: ['UI/UX'], status: 'suspended', index: 5 },
 ];
 const USERS = Array.from({ length: 10 }, (_, i) => ({
   email: `user${i + 1}@${DEMO_DOMAIN}`,
   displayName: `Demo User ${i + 1}`,
   role: 'user',
-  index: 5 + i,
+  index: 6 + i,
 }));
 
 /** Managed skill catalogue (ADR-026 §1–2): `category → name`. */
@@ -284,8 +287,8 @@ async function resetDemo(ctx) {
   // admin_operation is deliberately absent: `1791072000001-CreateAdminAuditEvent` revokes UPDATE
   // and DELETE from the module's role, and PostgreSQL honours that even against the table's owner
   // because the ACL is explicit. The store is append-only in fact, not only in intent, so the seed
-  // cannot clear its own audit rows. It inserts them idempotently keyed on `source_event_id`
-  // instead (see `insertAuditEvent`), which is the same deduplication the production consumer uses.
+  // cannot clear its own audit rows. Audit rows are written in the ops phase below, keyed on
+  // `source_event_id`, which is the same deduplication the production consumer uses.
 }
 
 /** Tables reported by `--check` and the closing summary. */
@@ -342,12 +345,12 @@ async function upsertSkill(ds, { name, category }, index) {
 }
 
 /** Creates/refreshes a verifier row and its expertise set. */
-async function upsertVerifier(ds, accountId, skillIds) {
+async function upsertVerifier(ds, accountId, skillIds, status = 'active') {
   await ds.query(
     `INSERT INTO "skill_verification"."verifiers" ("account_id", "status")
-     VALUES ($1, 'active')
-     ON CONFLICT ("account_id") DO UPDATE SET "status" = 'active', "updated_at" = now()`,
-    [accountId],
+     VALUES ($1, $2)
+     ON CONFLICT ("account_id") DO UPDATE SET "status" = EXCLUDED."status", "updated_at" = now()`,
+    [accountId, status],
   );
   await ds.query(`DELETE FROM "skill_verification"."verifier_expertise" WHERE "account_id" = $1`, [accountId]);
   for (const skillId of skillIds) {
@@ -359,27 +362,65 @@ async function upsertVerifier(ds, accountId, skillIds) {
   }
 }
 
+/** Marks an account suspended (ADR-037). The CHECK demands a reason and a timestamp together. */
+async function suspendAccount(ds, accountId, reason, at) {
+  await ds.query(
+    `UPDATE "account_profile"."accounts"
+        SET "status" = 'suspended', "suspended_reason" = $2, "suspended_at" = $3, "updated_at" = now()
+      WHERE "id" = $1`,
+    [accountId, reason, at],
+  );
+}
+
 /**
  * Upserts one student verification and fans it out into the read projections, mirroring the
  * event flow (ADR-024): account-profile status, skill-verification verified_students,
  * live-class teacher_verified.
  */
-async function upsertStudentVerification(ctx, { accountId, schoolName, major, status, reviewerId, reason, index }) {
-  const decidedAt = status === 'pending' ? null : new Date();
+async function upsertStudentVerification(ctx, {
+  accountId, schoolName, major, status, reviewerId, reason, index,
+  submittedAt, decidedAt, revokedAt, revocationReason, document,
+}) {
+  const decided = ['approved', 'rejected'].includes(status) ? (decidedAt ?? new Date()) : null;
+  const revoked = status === 'revoked' ? (revokedAt ?? decided ?? new Date()) : null;
   const verificationId = demoId(ID_KIND.studentVerification, index);
+  const documentRef = `demo-seed/${accountId}.pdf`;
   await ctx.studentDs.query(
     `INSERT INTO "student_verification"."student_verifications"
-       ("id", "account_id", "school_name", "major", "document_ref", "status", "reviewer_id", "reason", "decided_at")
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       ("id", "account_id", "school_name", "major", "document_ref", "status", "reviewer_id", "reason",
+        "decided_at", "created_at", "revoked_at", "revocation_reason")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
      ON CONFLICT ("id") DO UPDATE
        SET "account_id" = EXCLUDED."account_id", "school_name" = EXCLUDED."school_name",
            "major" = EXCLUDED."major", "document_ref" = EXCLUDED."document_ref",
            "status" = EXCLUDED."status", "reviewer_id" = EXCLUDED."reviewer_id",
-           "reason" = EXCLUDED."reason", "decided_at" = EXCLUDED."decided_at", "updated_at" = now()`,
-    [verificationId, accountId, schoolName, major ?? null, `demo-seed/${accountId}.pdf`, status, reviewerId ?? null, reason ?? null, decidedAt],
+           "reason" = EXCLUDED."reason", "decided_at" = EXCLUDED."decided_at",
+           "created_at" = EXCLUDED."created_at", "revoked_at" = EXCLUDED."revoked_at",
+           "revocation_reason" = EXCLUDED."revocation_reason", "updated_at" = now()`,
+    [
+      verificationId, accountId, schoolName, major ?? null, documentRef, status,
+      reviewerId ?? null, reason ?? null, decided, submittedAt,
+      revoked, revoked ? (revocationReason ?? 'Student status could not be re-confirmed') : null,
+    ],
   );
 
-  const occurredAt = decidedAt ?? new Date();
+  // The document the Administrator opens. `document_ref` above is what the download target is
+  // signed from, so both rows must name the same object key (ADR-038).
+  if (document) {
+    await ctx.studentDs.query(
+      `INSERT INTO "student_verification"."verification_documents"
+         ("id", "account_id", "object_key", "file_name", "content_type", "size_bytes", "status", "created_at")
+       VALUES ($1, $2, $3, $4, $5, $6, 'attached', $7)
+       ON CONFLICT ("id") DO UPDATE
+         SET "object_key" = EXCLUDED."object_key", "file_name" = EXCLUDED."file_name",
+             "content_type" = EXCLUDED."content_type", "size_bytes" = EXCLUDED."size_bytes",
+             "created_at" = EXCLUDED."created_at", "updated_at" = now()`,
+      [demoId(ID_KIND.studentDocument, index), accountId, documentRef, document.fileName,
+        document.contentType, document.sizeBytes, submittedAt],
+    );
+  }
+
+  const occurredAt = revoked ?? decided ?? submittedAt ?? new Date();
   await ctx.accountDs.query(
     `INSERT INTO "account_profile"."account_verification_status"
        ("account_id", "status", "reason", "verification_id", "occurred_at", "updated_at")
@@ -421,29 +462,69 @@ async function upsertProfileSkill(ds, accountId, skillId, index) {
 }
 
 /**
+ * Writes one evidence audit row, idempotently.
+ *
+ * `skill_evidence_audit` has no natural key, so a re-run would append a duplicate history. The id
+ * is derived from the evidence and the row's ordinal, which makes the whole trail reproducible.
+ */
+async function insertEvidenceAudit(ctx, { index, evidenceId, profileSkillId, version, action, actorId, fromStatus, toStatus, reason, snapshot, occurredAt }) {
+  await ctx.skillDs.query(
+    `INSERT INTO "skill_verification"."skill_evidence_audit"
+       ("id", "evidence_id", "profile_skill_id", "version", "action", "actor_id",
+        "from_status", "to_status", "reason", "snapshot", "occurred_at")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+     ON CONFLICT ("id") DO UPDATE
+       SET "action" = EXCLUDED."action", "actor_id" = EXCLUDED."actor_id",
+           "from_status" = EXCLUDED."from_status", "to_status" = EXCLUDED."to_status",
+           "reason" = EXCLUDED."reason", "snapshot" = EXCLUDED."snapshot",
+           "occurred_at" = EXCLUDED."occurred_at"`,
+    [
+      demoId(ID_KIND.evidenceAudit, index), evidenceId, profileSkillId, version, action,
+      actorId ?? null, fromStatus ?? null, toStatus, reason ?? null,
+      JSON.stringify(snapshot), occurredAt,
+    ],
+  );
+}
+
+/**
  * Writes an evidence version plus its audit trail (FR-003/FR-018/ADR-028) and, when approved,
  * mirrors the effective level into profile_skills and the live-class teacher_skill_approval
  * projection.
+ *
+ * The trail follows the real transitions rather than jumping straight to the result: a decided
+ * version is `submitted` → `claimed` → `approved`/`rejected`, and a version replaced by a later
+ * one ends `superseded`. That is what FR-018 asks the screen to retain.
+ *
+ * `suppressApproval` lets a caller record an approved version whose approval was later superseded,
+ * without leaving `profile_skills.approved_level` pointing at a level the current evidence does
+ * not support.
  */
-async function upsertEvidence(ctx, { profileSkillId, accountId, skillId, version, status, requestedLevel, approvedLevel, evidenceType, description, claimedBy, reviewerId, evidenceIndex }) {
-  const decidedAt = ['approved', 'rejected'].includes(status) ? new Date() : null;
-  const claimedAt = claimedBy ? new Date() : null;
+async function upsertEvidence(ctx, {
+  profileSkillId, accountId, skillId, version, status, requestedLevel, approvedLevel,
+  evidenceType, description, claimedBy, reviewerId, evidenceIndex,
+  submittedAt, decidedAt, reason,
+}) {
+  const submittedMs = submittedAt.getTime();
+  const decided = decidedAt ?? null;
+  const claimed = claimedBy ? new Date(submittedMs + 20 * 60 * 1000) : null;
   const evidenceId = demoId(ID_KIND.evidence, evidenceIndex);
+  const refusal = reason ?? (status === 'rejected' ? 'Insufficient evidence' : null);
+
   await ctx.skillDs.query(
     `INSERT INTO "skill_verification"."skill_evidence"
        ("id", "profile_skill_id", "evidence_type", "document_ref", "description", "version",
         "requested_level", "approved_level", "status", "claimed_by", "claimed_at",
-        "reviewer_id", "reason", "decided_at")
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        "reviewer_id", "reason", "submitted_at", "decided_at")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
      ON CONFLICT ("id") DO UPDATE
        SET "status" = EXCLUDED."status", "approved_level" = EXCLUDED."approved_level",
            "claimed_by" = EXCLUDED."claimed_by", "claimed_at" = EXCLUDED."claimed_at",
            "reviewer_id" = EXCLUDED."reviewer_id", "reason" = EXCLUDED."reason",
-           "decided_at" = EXCLUDED."decided_at"`,
+           "submitted_at" = EXCLUDED."submitted_at", "decided_at" = EXCLUDED."decided_at"`,
     [
       evidenceId, profileSkillId, evidenceType, null, description, version,
-      requestedLevel, approvedLevel ?? null, status, claimedBy ?? null, claimedAt,
-      reviewerId ?? null, status === 'rejected' ? 'Insufficient evidence' : null, decidedAt,
+      requestedLevel, approvedLevel ?? null, status, claimedBy ?? null, claimed,
+      reviewerId ?? null, refusal, submittedAt, decided,
     ],
   );
 
@@ -453,25 +534,38 @@ async function upsertEvidence(ctx, { profileSkillId, accountId, skillId, version
     evidenceType,
     requestedLevel,
     approvedLevel: approvedLevel ?? null,
-    reason: status === 'rejected' ? 'Insufficient evidence' : null,
+    reason: refusal,
   };
-  await ctx.skillDs.query(
-    `INSERT INTO "skill_verification"."skill_evidence_audit"
-       ("evidence_id", "profile_skill_id", "version", "action", "actor_id", "from_status", "to_status", "reason", "snapshot", "occurred_at")
-     VALUES ($1, $2, $3, 'submitted', $4, NULL, 'pending', NULL, $5, now())`,
-    [evidenceId, profileSkillId, version, accountId, JSON.stringify(snapshot)],
-  );
-  if (status !== 'pending') {
-    const action = status === 'claimed' ? 'claimed' : status;
-    await ctx.skillDs.query(
-      `INSERT INTO "skill_verification"."skill_evidence_audit"
-         ("evidence_id", "profile_skill_id", "version", "action", "actor_id", "from_status", "to_status", "reason", "snapshot", "occurred_at")
-       VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7, $8, now())`,
-      [evidenceId, profileSkillId, version, action, claimedBy ?? reviewerId ?? accountId, status, snapshot.reason, JSON.stringify(snapshot)],
-    );
+  const auditBase = evidenceIndex * 10;
+  let auditStep = 1;
+
+  await insertEvidenceAudit(ctx, {
+    index: auditBase + auditStep,
+    evidenceId, profileSkillId, version, action: 'submitted', actorId: accountId,
+    fromStatus: null, toStatus: 'pending', snapshot, occurredAt: submittedAt,
+  });
+
+  if (claimed) {
+    auditStep += 1;
+    await insertEvidenceAudit(ctx, {
+      index: auditBase + auditStep,
+      evidenceId, profileSkillId, version, action: 'claimed', actorId: claimedBy,
+      fromStatus: 'pending', toStatus: 'claimed', snapshot, occurredAt: claimed,
+    });
   }
 
-  if (status === 'approved') {
+  if (status !== 'pending' && status !== 'claimed') {
+    auditStep += 1;
+    await insertEvidenceAudit(ctx, {
+      index: auditBase + auditStep,
+      evidenceId, profileSkillId, version, action: status,
+      actorId: reviewerId ?? claimedBy ?? accountId,
+      fromStatus: claimed ? 'claimed' : 'pending', toStatus: status,
+      reason: refusal, snapshot, occurredAt: decided ?? submittedAt,
+    });
+  }
+
+  if (status === 'approved' && approvedLevel) {
     await ctx.skillDs.query(
       `UPDATE "skill_verification"."profile_skills" SET "approved_level" = $2, "updated_at" = now()
        WHERE "id" = $1`,
@@ -480,10 +574,10 @@ async function upsertEvidence(ctx, { profileSkillId, accountId, skillId, version
     await ctx.classDs.query(
       `INSERT INTO "live_class"."teacher_skill_approval"
          ("account_id", "skill_id", "approved_level", "occurred_at", "updated_at")
-       VALUES ($1, $2, $3, now(), now())
+       VALUES ($1, $2, $3, $4, $4)
        ON CONFLICT ("account_id", "skill_id") DO UPDATE
          SET "approved_level" = EXCLUDED."approved_level", "occurred_at" = EXCLUDED."occurred_at", "updated_at" = now()`,
-      [accountId, skillId, approvedLevel],
+      [accountId, skillId, approvedLevel, decided ?? submittedAt],
     );
   }
   return evidenceId;
@@ -749,34 +843,6 @@ async function walletHasNegative(ctx) {
   return rows.length > 0;
 }
 
-/**
- * Writes one audit row, idempotently.
- *
- * The store is append-only — the module's role has `UPDATE, DELETE` revoked (see `resetDemo`) —
- * so a re-run cannot clear demo audit rows the way every other table is cleared. `source_event_id`
- * is unique, exactly as it is for the production consumer, and the insert is keyed on it: the
- * statement is a no-op when the row already exists instead of failing the whole seed.
- */
-async function insertAuditEvent(ctx, { action, actorId, targetType, targetId, oldState, newState, occurredAt, key }) {
-  await ctx.adminDs.query(
-    `INSERT INTO "admin_operation"."admin_audit_event"
-       ("action", "actor_id", "target_type", "target_id", "old_state", "new_state",
-        "occurred_at", "trace_id", "source_event_id")
-     VALUES ($1, $2, $3, $4, $5, $6, $7, NULL, $8)
-     ON CONFLICT ("source_event_id") WHERE "source_event_id" IS NOT NULL DO NOTHING`,
-    [
-      action,
-      actorId,
-      targetType,
-      targetId ?? null,
-      oldState === undefined ? null : JSON.stringify(oldState),
-      newState === undefined ? null : JSON.stringify(newState),
-      occurredAt,
-      `${DEMO_REF_PREFIX}${key}`,
-    ],
-  );
-}
-
 // ── Main ───────────────────────────────────────────────────────────────────
 const MODULES = [
   'account-profile',
@@ -813,6 +879,13 @@ try {
   await resetDemo(ctx);
   console.log(RESET ? 'reset: cleared previous demo rows' : 'cleared any previous demo rows');
 
+  // One clock anchor for the whole seed. Everything below is expressed relative to it, so the
+  // dataset reads as three weeks of use rather than one `now()` repeated down every table.
+  const HOUR = 3600 * 1000;
+  const DAY = 24 * HOUR;
+  const now = Date.now();
+  const iso = (ms) => new Date(ms).toISOString();
+
   for (const identity of ALL_IDENTITIES) {
     await upsertAccount(ctx.accountDs, identity);
   }
@@ -830,21 +903,27 @@ try {
       if (id === undefined) throw new Error(`Verifier ${verifier.email} references unknown skill "${name}"`);
       return id;
     });
-    await upsertVerifier(ctx.skillDs, ACCOUNT_ID[verifier.email], skillIds);
+    await upsertVerifier(ctx.skillDs, ACCOUNT_ID[verifier.email], skillIds, verifier.status ?? 'active');
   }
   console.log(`verifiers: ${VERIFIERS.length} with expertise`);
 
-  // FR-002: verifications across every status. The first six users are approved students
-  // (candidate teachers); one pending and one rejected for the admin queue.
+  // FR-002: verifications across every status, each on the timeline below. Users 1–6 are approved
+  // students (the candidate teachers). User 7 is waiting, user 8 was refused, user 9 was approved
+  // and has since been **revoked**.
+  //
+  // Revocation mutates the row rather than appending one (`sql-verification-repository.ts`
+  // `revoke`), so the history is the `decided_at`/`revoked_at` pair on a single row — not two rows
+  // claiming the same account.
   const adminId = ACCOUNT_ID[ADMIN.email];
-  const verifier1Id = ACCOUNT_ID[VERIFIERS[0].email];
   const USER_STATUS = [
     'approved', 'approved', 'approved', 'approved', 'approved', 'approved',
-    'pending', 'rejected', 'approved', 'pending',
+    'pending', 'rejected', 'revoked', 'pending',
   ];
   const userIdByIndex = USERS.map((u) => ACCOUNT_ID[u.email]);
   for (let i = 0; i < USERS.length; i += 1) {
     const status = USER_STATUS[i];
+    const decidedOn = now - (32 - i * 2) * DAY;
+    const submittedOn = now - (41 - i * 2) * DAY;
     await upsertStudentVerification(ctx, {
       accountId: userIdByIndex[i],
       schoolName: `Demo University ${1 + (i % 3)}`,
@@ -853,9 +932,30 @@ try {
       reviewerId: status === 'pending' ? undefined : adminId,
       reason: status === 'rejected' ? 'Document could not be verified' : undefined,
       index: i + 1,
+      submittedAt: new Date(submittedOn),
+      decidedAt: status === 'pending' ? undefined : new Date(decidedOn),
+      ...(status === 'revoked'
+        ? {
+            revokedAt: new Date(now - 3 * DAY),
+            revocationReason: 'Re-submitted student card did not match the enrolled programme',
+          }
+        : {}),
+      document: {
+        fileName: `student-card-${i + 1}.pdf`,
+        contentType: 'application/pdf',
+        sizeBytes: 180_000 + i * 9_500,
+      },
     });
   }
-  console.log(`student verifications: ${USERS.length}`);
+  // An account the Administrator has locked. `accounts` demands a reason and a timestamp together
+  // whenever the status is suspended (ADR-037).
+  await suspendAccount(
+    ctx.accountDs,
+    userIdByIndex[9],
+    'Chargeback investigation opened by the payment provider',
+    new Date(now - 2 * DAY),
+  );
+  console.log(`student verifications: ${USERS.length} (users 7–10 cover pending, rejected and revoked)`);
 
   // FR-003: approved skills for the teachers (users 1–6). Each teacher gets 1–2 approved skills
   // at a level, so the publish gate is satisfied.
@@ -868,14 +968,43 @@ try {
     { user: 5, skills: ['Calculus'] },
   ];
   const LEVELS = ['intermediate', 'advanced', 'expert'];
+
+  // A decision is made by a verifier who actually owns that skill: the queue is filtered by
+  // `verifier_expertise`, so an approval from someone outside it would be a state the real flow
+  // cannot reach (and the demo would show an expert approving something they do not review).
+  const SKILL_VERIFIER = {
+    IELTS: 0,
+    'English Conversation': 0,
+    Japanese: 0,
+    Python: 1,
+    React: 1,
+    TypeScript: 1,
+    Calculus: 1,
+    Guitar: 2,
+    Piano: 2,
+    'UI/UX': 3,
+  };
+  const verifierIdFor = (skillName) => {
+    const index = SKILL_VERIFIER[skillName];
+    if (index === undefined) throw new Error(`No verifier owns "${skillName}"`);
+    return ACCOUNT_ID[VERIFIERS[index].email];
+  };
+
+  // Skills whose single approved version is written by a history block below instead of the simple
+  // loop, so a profile skill never ends up with two version-1 rows or two `approved` rows.
+  const HISTORY_SKILLS = new Set(['Piano:4', 'Calculus:5']);
+
   let profileSkillSeq = 0;
   let evidenceSeq = 0;
   for (const t of TEACHING) {
     const accountId = userIdByIndex[t.user];
     for (let s = 0; s < t.skills.length; s += 1) {
       const skillName = t.skills[s];
+      if (HISTORY_SKILLS.has(`${skillName}:${t.user}`)) continue;
       const skillId = skillIdByName[skillName];
       const level = LEVELS[(t.user + s) % LEVELS.length];
+      const submittedAt = new Date(now - (48 - t.user * 2 - s) * DAY);
+      const decidedAt = new Date(submittedAt.getTime() + 2 * DAY);
       profileSkillSeq += 1;
       evidenceSeq += 1;
       const profileSkillId = await upsertProfileSkill(ctx.skillDs, accountId, skillId, profileSkillSeq);
@@ -883,16 +1012,89 @@ try {
         profileSkillId, accountId, skillId, version: 1, status: 'approved',
         requestedLevel: level, approvedLevel: level,
         evidenceType: 'certificate', description: `Demo certificate for ${skillName}`,
-        reviewerId: verifier1Id, evidenceIndex: evidenceSeq,
+        claimedBy: verifierIdFor(skillName), reviewerId: verifierIdFor(skillName),
+        evidenceIndex: evidenceSeq, submittedAt, decidedAt,
       });
     }
   }
 
-  // A live verifier queue: two claims for verifier1, covering skills it owns.
+  // FR-018 history: a request that was refused and then granted on resubmission. Both versions
+  // live on one profile skill, so the screen can show why the first attempt failed.
+  {
+    const accountId = userIdByIndex[4];
+    const skillId = skillIdByName.Piano;
+    const profileSkillId = await upsertProfileSkill(ctx.skillDs, accountId, skillId, ++profileSkillSeq);
+    await upsertEvidence(ctx, {
+      profileSkillId, accountId, skillId, version: 1, status: 'rejected',
+      requestedLevel: 'expert', approvedLevel: null,
+      evidenceType: 'certificate', description: 'Grade 8 piano certificate (photo of a screen)',
+      claimedBy: verifierIdFor('Piano'), reviewerId: verifierIdFor('Piano'),
+      evidenceIndex: ++evidenceSeq,
+      submittedAt: new Date(now - 30 * DAY),
+      decidedAt: new Date(now - 28 * DAY),
+      reason: 'The certificate image was a photo of a screen and the grade was unreadable',
+    });
+    await upsertEvidence(ctx, {
+      profileSkillId, accountId, skillId, version: 2, status: 'approved',
+      requestedLevel: 'intermediate', approvedLevel: 'intermediate',
+      evidenceType: 'verifier_assessment', description: 'Live assessment: scales and a short piece',
+      claimedBy: verifierIdFor('Piano'), reviewerId: verifierIdFor('Piano'),
+      evidenceIndex: ++evidenceSeq,
+      submittedAt: new Date(now - 20 * DAY),
+      decidedAt: new Date(now - 18 * DAY),
+    });
+  }
+
+  // FR-018 history: an approved level that a later, higher approval replaced. The old row is
+  // `superseded` rather than deleted, which is exactly what the audit screen is for. The skill must
+  // be one this teacher already owns (`profile_skills` is unique on account+skill), and the simple
+  // loop above skips it via HISTORY_SKILLS so the profile does not get a third, competing version.
+  {
+    const accountId = userIdByIndex[5];
+    const skillId = skillIdByName.Calculus;
+    const profileSkillId = await upsertProfileSkill(ctx.skillDs, accountId, skillId, ++profileSkillSeq);
+    const firstSubmitted = new Date(now - 58 * DAY);
+    const firstDecided = new Date(now - 56 * DAY);
+    const firstEvidenceId = await upsertEvidence(ctx, {
+      profileSkillId, accountId, skillId, version: 1, status: 'approved',
+      requestedLevel: 'beginner', approvedLevel: 'beginner',
+      evidenceType: 'certificate', description: 'Calculus I transcript, grade B',
+      claimedBy: verifierIdFor('Calculus'), reviewerId: verifierIdFor('Calculus'),
+      evidenceIndex: ++evidenceSeq, submittedAt: firstSubmitted, decidedAt: firstDecided,
+    });
+    const supersededAt = new Date(now - 40 * DAY);
+    await ctx.skillDs.query(
+      `UPDATE "skill_verification"."skill_evidence" SET "status" = 'superseded' WHERE "id" = $1`,
+      [firstEvidenceId],
+    );
+    await insertEvidenceAudit(ctx, {
+      index: evidenceSeq * 10 + 9,
+      evidenceId: firstEvidenceId, profileSkillId, version: 1, action: 'superseded',
+      actorId: verifierIdFor('Calculus'), fromStatus: 'approved', toStatus: 'superseded',
+      reason: 'Replaced by a higher-level assessment',
+      snapshot: { version: 1, status: 'superseded', requestedLevel: 'beginner', approvedLevel: 'beginner' },
+      occurredAt: supersededAt,
+    });
+    await upsertEvidence(ctx, {
+      profileSkillId, accountId, skillId, version: 2, status: 'approved',
+      requestedLevel: 'expert', approvedLevel: 'expert',
+      evidenceType: 'verifier_assessment', description: 'Calculus II and III transcripts plus a timed assessment',
+      claimedBy: verifierIdFor('Calculus'), reviewerId: verifierIdFor('Calculus'),
+      evidenceIndex: ++evidenceSeq,
+      submittedAt: new Date(now - 42 * DAY),
+      decidedAt: supersededAt,
+    });
+  }
+
+  // A live verifier queue. Every claimant is an **approved** student submitting a *second* skill:
+  // `SubmitSkillEvidenceUseCase` refuses anyone whose `verified_students` row is not `approved`, so
+  // a queue built on the pending/rejected/revoked users above would be a state the API cannot
+  // produce. Each claim names a verifier who actually owns that skill in `verifier_expertise`.
   const queueSeeds = [
-    { user: 6, skillName: 'IELTS', status: 'pending', claimedBy: null, reviewerId: null },
-    { user: 7, skillName: 'Japanese', status: 'claimed', claimedBy: verifier1Id, reviewerId: null },
-    { user: 6, skillName: 'English Conversation', status: 'claimed', claimedBy: verifier1Id, reviewerId: null },
+    { user: 0, skillName: 'Japanese', status: 'pending', claimedBy: null, ageDays: 2 },
+    { user: 1, skillName: 'React', status: 'claimed', claimedBy: verifierIdFor('React'), ageDays: 4 },
+    { user: 2, skillName: 'Python', status: 'claimed', claimedBy: verifierIdFor('Python'), ageDays: 1 },
+    { user: 3, skillName: 'IELTS', status: 'pending', claimedBy: null, ageDays: 3 },
   ];
   for (const q of queueSeeds) {
     const accountId = userIdByIndex[q.user];
@@ -904,19 +1106,17 @@ try {
       profileSkillId, accountId, skillId, version: 1, status: q.status,
       requestedLevel: 'intermediate', approvedLevel: null,
       evidenceType: 'verifier_assessment', description: `Demo evidence for ${q.skillName}`,
-      claimedBy: q.claimedBy, reviewerId: q.reviewerId, evidenceIndex: evidenceSeq,
+      claimedBy: q.claimedBy, reviewerId: null, evidenceIndex: evidenceSeq,
+      submittedAt: new Date(now - q.ageDays * DAY),
+      decidedAt: undefined,
     });
   }
-  console.log('skill evidence: 6 teachers approved, 3 in the verifier queue');
+  console.log('skill evidence: 12 teachers approved, 4 in the verifier queue, 2 with version history');
 
   // ── FR-005/FR-007: classes + bookings ────────────────────────────────────
   // Teachers are users 0–5. Class states cover the whole lifecycle — all six values the CHECK
-  // allows — and each class carries a *backdated* history rather than `now()`, so the demo reads
-  // as three weeks of use instead of one timestamp repeated down every table.
-  const HOUR = 3600 * 1000;
-  const DAY = 24 * HOUR;
-  const now = Date.now();
-  const iso = (ms) => new Date(ms).toISOString();
+  // allows — and each class is placed on the same backdated timeline as the trust history above,
+  // so the demo reads as three weeks of use instead of one timestamp repeated down every table.
 
   const TEACHER_SKILLS = TEACHING.map((t) => ({
     teacherId: userIdByIndex[t.user],
