@@ -37,6 +37,7 @@ import { SqlMyBookingsReader } from './internal/adapter/out/persistence/sql-my-b
 import { AccountProfilePublicTeacherReader } from './internal/adapter/out/account-profile/account-profile-public-teacher-reader';
 import { ClassListController } from './internal/adapter/in/web/class-list.controller';
 import { ClassDetailController } from './internal/adapter/in/web/class-detail.controller';
+import { ClassRosterController } from './internal/adapter/in/web/class-roster.controller';
 import { MyBookingsController } from './internal/adapter/in/web/my-bookings.controller';
 import { RatingsController } from './internal/adapter/in/web/ratings.controller';
 import { ChatMessagesController } from './internal/adapter/in/web/chat-messages.controller';
@@ -115,6 +116,7 @@ import { MarkTeacherNoShowUseCase } from './internal/application/mark-teacher-no
 import { ExpirePendingBookingsUseCase } from './internal/application/expire-pending-bookings.use-case';
 import { RequestRoomAccessUseCase } from './internal/application/request-room-access.use-case';
 import { RequestTeacherRoomAccessUseCase } from './internal/application/request-teacher-room-access.use-case';
+import { GetClassRosterQueryHandler } from './internal/application/query/get-class-roster.query';
 import { StartClassUseCase } from './internal/application/start-class.use-case';
 import { CompleteElapsedClassesUseCase } from './internal/application/complete-elapsed-classes.use-case';
 import { PendingHoldSweeper } from './internal/adapter/in/scheduler/pending-hold.sweeper';
@@ -144,6 +146,15 @@ import {
   REQUEST_TEACHER_ROOM_ACCESS,
   type RequestTeacherRoomAccessPort,
 } from './internal/application/port/in/request-teacher-room-access';
+import {
+  GET_CLASS_ROSTER,
+  type GetClassRosterPort,
+} from './internal/application/port/in/get-class-roster';
+import {
+  CLASS_ROSTER_READER,
+  type ClassRosterReader,
+} from './internal/application/port/out/class-roster-reader';
+import { SqlClassRosterReader } from './internal/adapter/out/persistence/sql-class-roster-reader';
 import { START_CLASS, type StartClassPort } from './internal/application/port/in/start-class';
 import {
   COMPLETE_ELAPSED_CLASSES,
@@ -254,6 +265,7 @@ const systemClock: Clock = { now: () => new Date() };
     RatingsController,
     ChatMessagesController,
     ClassDetailController,
+    ClassRosterController,
     JitsiPresenceController,
   ],
   providers: [
@@ -611,6 +623,23 @@ const systemClock: Clock = { now: () => new Date() };
         RATING_REPOSITORY,
         CLOCK,
       ],
+    },
+    {
+      provide: CLASS_ROSTER_READER,
+      useFactory: (registry: ModuleDataSourceRegistry): ClassRosterReader =>
+        new SqlClassRosterReader(registry, MODULE_NAME),
+      inject: [ModuleDataSourceRegistry],
+    },
+    {
+      provide: GET_CLASS_ROSTER,
+      useFactory: (
+        classes: ClassRepository,
+        roster: ClassRosterReader,
+        publicTeacherReader: PublicTeacherReader,
+        clock: Clock,
+      ): GetClassRosterPort =>
+        new GetClassRosterQueryHandler(classes, roster, publicTeacherReader, clock),
+      inject: [CLASS_REPOSITORY, CLASS_ROSTER_READER, PUBLIC_TEACHER_READER, CLOCK],
     },
     {
       provide: MY_BOOKINGS_READER,
