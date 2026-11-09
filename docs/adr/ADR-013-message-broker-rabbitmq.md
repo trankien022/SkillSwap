@@ -103,3 +103,97 @@ Two gaps are recorded rather than papered over:
 - **`processed-event-store.spec` covers deduplication only.** The guard lives in the same method
   but its cases are the `event-ordering` E2E, which needs a real schema per module.
 
+---
+
+## Amendment B — one queue per module, not per event type (2026-11-09)
+
+**Status:** Accepted — implemented by `docs/plans/2026-11-09-module-scoped-queues-plan.md`.
+
+**Context.** The consumer declared **three durable queues per registered handler** (`rabbit-consumer.ts`:
+the main queue, `${queue}.retry` with a 5 s TTL, and `${queue}.dlq`), and modules registered one
+queue per (module, event type). Five consuming modules produced 39 registrations, so a boot
+declared **39 × 3 = 117 queues**. Reproduced against the local stack and confirmed against
+CloudAMQP's management API on the project's own instance.
+
+CloudAMQP's free shared plan refuses to declare more than **100 queues per instance**, so
+`assertQueue` began failing. `onApplicationBootstrap` does not await the broker, so the API still
+booted and served HTTP while every consumer looped on `BrokerUnavailableError`. The symptom was
+therefore silent: no wallet settlement, no inbox rows, no audit rows, no trust projection.
+
+**Decision.** A queue is a **consumer endpoint**, so the queue is keyed by **module**:
+
+1. **Queue name is the module name, verbatim** (`account-profile`, `admin-operation`, `live-class`,
+   `skill-verification`, `wallet-ledger`). It is simultaneously the AMQP queue, the module's
+   `MODULE_NAME`, and the `consumerId` half of the `processed_events` primary key. `ADMIN_OPERATION`
+   etc. are `MODULE_NAME` constants, so the three cannot drift.
+2. **One queue binds many routing keys.** `EventHandlerRegistration` carries `eventTypes: readonly
+   string[]`; `assertTopology` declares the three queues once and then binds each key.
+3. **A routing key may map to several handlers, and must.** `account-profile` projects a
+   verification's status *and* writes an inbox row from the same event. Merging those into one
+   handler would have silently dropped a notification, so `register` appends handlers per key.
+4. **Dispatch is all-or-nothing.** Every handler for an event runs before the message is acked.
+   A partial success would mark the event `DONE` for a consumer that never applied it; the sibling
+   that did run is already required to be idempotent, so re-running it is safe.
+5. **The retry queue dead-letters to its own module queue** via the default exchange
+   (`x-dead-letter-exchange: ""`, `x-dead-letter-routing-key: <module>`), not to the topic exchange.
+   It previously baked the event type into `x-dead-letter-routing-key`, which cannot vary per
+   message once one retry queue serves many event types. Returning the message to the queue that
+   failed it, and dispatching again by the envelope's `eventType`, is where the type already lives.
+6. **An event type with no handler on the queue it was bound to is a permanent failure**, not a
+   silent ack. Acking would report success for work nobody did.
+
+Declared queues: **15** (5 modules × main/retry/dlq), independent of load.
+
+**Rejected — lazy-asserting the retry and DLQ queues.** It reduces the count at rest to 39 but
+leaves the ceiling at 117, and it creates the extra 78 queues precisely during an incident, when
+declarations are already failing. Worse, the retry queue deliberately has **no consumer** so
+messages sit for the TTL, which makes `x-expires` a message-dropping hazard that cannot be verified
+without the live broker's behaviour. A design that only holds while nothing goes wrong is not a fix.
+
+**Rejected — a dedicated CloudAMQP plan.** It removes the limit and is the cleanest operational
+answer, but it is not free, and the deployment constraint is permanent free tier.
+
+**Consequences.**
+
+- (+) Declared queues fall 117 → 15, with headroom under the free-plan limit that survives any
+  failure burst.
+- (+) The topology now matches what ADR-031 §4 already describes for notifications, and what
+  `tasks/mobile-contracts.md` draws. The implementation had drifted; this returns it to the
+  documented design.
+- (+) `event-handler-registry` gets simpler: one map keyed by module, with routing keys inside.
+- (−) **`processed_events` and watermark keys change.** The stored id is `${consumerId}:${eventId}`
+  and the watermark key is `${consumerId}:seq:${aggregateId}`; `consumerId` is the queue name.
+  Merging orphans every existing dedup row, so the dedup window resets. The durable guarantee is
+  unaffected — the outbox row is still the record — and the sequence guard absorbs the realistic
+  redelivery window, but a redelivery spanning the deploy could apply an event twice. Handlers are
+  idempotent, so this degrades to no more than a duplicate no-op.
+- (−) Intra-module head-of-line blocking: one slow handler now delays its siblings. Cross-module
+  isolation, which is what failure domains are for, is preserved. `CONSUMER_PREFETCH` (20) was
+  already shared per channel, so the isolation removed was largely nominal; the old topology
+  implied 39 × 20 = 780 unacked messages in a 512 MB container, which was never real.
+- (−) The queue name is now load-bearing in three places at once (AMQP queue, `MODULE_NAME`,
+  `consumerId`). Renaming a module later is a migration.
+
+**Verification.**
+
+| Claim | Evidence |
+|---|---|
+| Boot declares three queues per module, not per handler | `rabbit-consumer.spec` — "declares three queues per module, not per handler" (5 modules → 15 `assertQueue` calls) |
+| Every routing key of a module binds to its one queue | `rabbit-consumer.spec` — "binds every routing key of a module to its one queue" |
+| One `consume` per module | `rabbit-consumer.spec` — "consumes one queue per module" |
+| A retried event returns to its own module queue | `rabbit-consumer.spec` — "dead-letters a retried event back to its own module queue" |
+| Two handlers for one event type both run, in order | `event-handler-registry.spec` — "keeps two handlers for the same event type, in registration order" |
+| A handler cannot be registered twice for one event type | `event-handler-registry.spec` — "rejects the same handler registered twice for one event type" |
+| An unbound event type reaches no handler | `event-handler-registry.spec` — "returns no handlers for an event type the queue never bound" |
+| Ordering still converges with one shared consumer id | `event-ordering.e2e-spec` — 5/5 against the real stack |
+
+Two facts recorded rather than asserted:
+
+- **The 117 → 15 reduction was observed on a broker, not inferred.** The old topology was reproduced
+  at exactly 117 queues on the local stack (matching CloudAMQP's report), the local broker was
+  emptied, and the new code's boot declared the 15 module queues. On CloudAMQP, after a run against
+  the same instance, `/api/queues` returned 132 = 117 legacy + 15 new.
+- **The 117 legacy queues still exist on CloudAMQP.** Code changes do not delete them, so the purge
+  in plan phase 6 is required before the limit is actually relieved.
+
+
