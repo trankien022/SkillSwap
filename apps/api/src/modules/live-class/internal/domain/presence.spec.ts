@@ -164,6 +164,49 @@ describe('room idle rule (AC-035)', () => {
     );
   });
 
+  it('is false when everyone left during the pre-class window, and only counts after the start', () => {
+    // ADR-021 Amendment D.1. The room opens JITSI_OPEN_MINUTES (15) early, so a teacher may
+    // open it to test their camera and leave well before the class. Gating only on `now`
+    // made that departure satisfy the rule at the first sweep after starts_at, completing a
+    // class that never ran and releasing the teacher's income for it.
+    const preStart = evaluateRoomIdle({
+      startsAt: STARTS_AT,
+      now: STARTS_AT,
+      sessions: [{ accountId: 'teacher', joinedAt: at(-15), leftAt: at(-10) }],
+    });
+
+    expect(preStart.idle).toBe(false);
+    expect(preStart.reason).toBe('within_grace');
+
+    // The clock starts when the class does, so the grace must elapse after starts_at.
+    const justInside = evaluateRoomIdle({
+      startsAt: STARTS_AT,
+      now: new Date(STARTS_AT.getTime() + minutes(ROOM_IDLE_GRACE_MINUTES) - 1),
+      sessions: [{ accountId: 'teacher', joinedAt: at(-15), leftAt: at(-10) }],
+    });
+    expect(justInside.idle).toBe(false);
+
+    const afterGrace = evaluateRoomIdle({
+      startsAt: STARTS_AT,
+      now: new Date(STARTS_AT.getTime() + minutes(ROOM_IDLE_GRACE_MINUTES)),
+      sessions: [{ accountId: 'teacher', joinedAt: at(-15), leftAt: at(-10) }],
+    });
+    expect(afterGrace).toEqual({ idle: true, reason: 'idle' });
+  });
+
+  it('still measures a post-start departure from the departure itself', () => {
+    // The clamping above must not delay a normal early finish: someone who leaves at +12
+    // starts the clock at +12, not at starts_at.
+    const leftAt = at(12);
+    const result = evaluateRoomIdle({
+      startsAt: STARTS_AT,
+      now: new Date(leftAt.getTime() + minutes(ROOM_IDLE_GRACE_MINUTES)),
+      sessions: [session('teacher', 12)],
+    });
+
+    expect(result).toEqual({ idle: true, reason: 'idle' });
+  });
+
   it('uses a five-minute grace period by default (W1 C3b)', () => {
     expect(ROOM_IDLE_GRACE_MINUTES).toBe(5);
 

@@ -9,6 +9,12 @@
  * nobody in it, and completing it would release the Teacher's income for a session that never
  * happened.
  *
+ * The grace is measured from the later of the departure and `startsAt` (ADR-021
+ * Amendment D.1). Measuring from the raw departure was a money defect: the room opens 15
+ * minutes early, so a teacher who opened it to test their camera and left before the start
+ * had already "been gone" longer than the grace by the time the class began — and the first
+ * sweep completed it.
+ *
  * ## The three ways this could go wrong, and why it does not
  *
  * 1. **Completing an unstarted class.** Guarded by the `startsAt` floor, checked first.
@@ -85,8 +91,16 @@ export function evaluateRoomIdle(input: RoomIdleInput): RoomIdleEvaluation {
   }
 
   // 4. Everyone has left; is it long enough ago?
+  //
+  // ADR-021 Amendment D.1: the clock starts when the class does. The room opens
+  // `JITSI_OPEN_MINUTES` early, so a session may have joined and left entirely before
+  // `startsAt` — a teacher testing their camera. Measuring from that departure would let the
+  // first sweep after the start see "everyone gone for 10 minutes" and complete a class that
+  // never ran, releasing the teacher's income for it. Clamping each departure up to
+  // `startsAt` keeps the honest case intact: somebody who leaves at +12 still starts the
+  // clock at +12.
   const latestLeft = Math.max(
-    ...input.sessions.map((session) => (session.leftAt as Date).getTime()),
+    ...input.sessions.map((session) => Math.max((session.leftAt as Date).getTime(), input.startsAt.getTime())),
   );
   if (input.now.getTime() - latestLeft < graceMs) {
     return { idle: false, reason: 'within_grace' };
