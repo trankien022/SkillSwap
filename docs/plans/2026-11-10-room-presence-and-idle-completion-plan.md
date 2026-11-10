@@ -60,6 +60,12 @@ so the existing anti-stranger tests keep their meaning.
 controller mapped only two event types, so it fell through to `unknown_room` and was
 acknowledged into nothing.
 
+Checking the documented payload turned up a second, independent bug on the same path: its
+`data` object contains only `conference`, `isBreakout` and `breakoutRoomId` — there is **no
+`data.id`**, because the event is about the room rather than a participant. The controller
+reads `data.id` for identity, so even a correct `EVENT_TYPES` entry would have been refused
+as `unknown_party`. The routing therefore has to happen *before* the identity gate.
+
 **Deliberately not used to complete the class.** JaaS creates a room on first join and
 destroys it when the room empties, so a 40-second WiFi drop produces
 `PARTICIPANT_LEFT` → `ROOM_DESTROYED` → `ROOM_CREATED` on reconnect. Completing on that
@@ -120,6 +126,18 @@ number is how a money path acquires an unintended rule. Default stays `5` (W1 C3
 |---|---|
 | New `readNonNegativeInt` | as planned, plus `ApiConfig.jitsiIdleGraceMinutes` |
 | Departure floor at `starts_at` | as planned; sessions ending before the start are clamped to `starts_at` rather than dropped, so the grace still runs |
-| Leave ignores booking state | as planned; `recordLeave` port already closed only the newest open row |
-| `ROOM_DESTROYED` recovery | as planned; `PresenceSessionClosedByRoomDestroyed` keeps the floor and does not complete |
-| Grace wired to the sweeper | as planned; injected as a constructor argument, defaulted so existing callers are untouched |
+| Leave ignores booking state | as planned; `interpretPresenceDeparture` is a separate domain function rather than a flag, so the two rules read independently |
+| `ROOM_DESTROYED` recovery | as planned, and it had to route **before** the identity gate — the documented payload has no `data.id`, so mapping alone would have produced `unknown_party` |
+| Grace wired to the sweeper | as planned; injected as the fifth constructor argument, defaulted so existing callers are untouched |
+
+Two things found while implementing that the plan did not anticipate:
+
+- `parseInt` leniency. The first version of the new reader used `parseInt`, and the test
+  written against it caught that `ROOM_IDLE_GRACE_MINUTES=1.5x` silently became `1`. It now
+  uses `Number` plus `Number.isInteger`, so a typo fails at boot instead of becoming a
+  different rule.
+- A stranger's `PARTICIPANT_LEFT` now returns `accepted: true` where it previously returned
+  `not_a_party`. That is intended rather than incidental: the write is keyed on
+  `(classId, accountId)`, so it closes nothing, and `accepted` describes whether the delivery
+  was well-formed and safe to apply — not whether a row changed. The tests assert the
+  property that matters (no row created, none closed) rather than the string.

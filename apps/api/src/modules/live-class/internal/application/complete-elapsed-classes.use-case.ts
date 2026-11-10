@@ -1,5 +1,5 @@
 import { completionOutcome } from '../domain/class';
-import { evaluateRoomIdle } from '../domain/presence';
+import { ROOM_IDLE_GRACE_MINUTES, evaluateRoomIdle } from '../domain/presence';
 import type {
   CompleteElapsedClassesPort,
   CompleteElapsedClassesResult,
@@ -31,6 +31,14 @@ export class CompleteElapsedClassesUseCase implements CompleteElapsedClassesPort
     private readonly bookings: BookingRepository,
     private readonly presence: PresenceRepository,
     private readonly clock: Clock,
+    /**
+     * ADR-021 Amendment D.4: `ROOM_IDLE_GRACE_MINUTES`, defaulting to the W1 C3b value.
+     *
+     * Optional so existing constructions (and the tests that do not care) keep working, but
+     * the module always passes the configured number. `0` is honoured — it means "complete on
+     * the first sweep after the last departure", which is why this is `??` and not `||`.
+     */
+    private readonly idleGraceMinutes: number = ROOM_IDLE_GRACE_MINUTES,
   ) {}
 
   async execute(): Promise<CompleteElapsedClassesResult> {
@@ -61,7 +69,13 @@ export class CompleteElapsedClassesUseCase implements CompleteElapsedClassesPort
         continue;
       }
       const sessions = await this.presence.listSessions(classView.id);
-      if (!evaluateRoomIdle({ startsAt: classView.startsAt, now, sessions }).idle) {
+      const idle = evaluateRoomIdle({
+        startsAt: classView.startsAt,
+        now,
+        sessions,
+        graceMinutes: this.idleGraceMinutes,
+      });
+      if (!idle.idle) {
         continue;
       }
       const result = await this.classes.completeAndEmit(classView.id, 'room_idle');

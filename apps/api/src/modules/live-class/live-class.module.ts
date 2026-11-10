@@ -500,9 +500,22 @@ const systemClock: Clock = { now: () => new Date() };
         bookings: BookingRepository,
         presence: PresenceRepository,
         clock: Clock,
+        config: ApiConfig,
       ): CompleteElapsedClassesPort =>
-        new CompleteElapsedClassesUseCase(classes, bookings, presence, clock),
-      inject: [CLASS_REPOSITORY, BOOKING_REPOSITORY, PRESENCE_REPOSITORY, CLOCK],
+        new CompleteElapsedClassesUseCase(
+          classes,
+          bookings,
+          presence,
+          clock,
+          config.jitsiIdleGraceMinutes,
+        ),
+      inject: [
+        CLASS_REPOSITORY,
+        BOOKING_REPOSITORY,
+        PRESENCE_REPOSITORY,
+        CLOCK,
+        ApiConfig,
+      ],
     },
     {
       provide: PRESENCE_REPOSITORY,

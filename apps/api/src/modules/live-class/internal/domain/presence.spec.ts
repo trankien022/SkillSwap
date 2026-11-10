@@ -226,4 +226,23 @@ describe('room idle rule (AC-035)', () => {
       }),
     ).toBe(true);
   });
+
+  it('treats a grace of 0 as "idle the instant everyone has gone"', () => {
+    // ADR-021 Amendment D.4. The value is meaningful, so `??` must select it: `||` would read
+    // 0 as falsy and quietly reinstate the 5-minute default, which is the bug this pins.
+    const leftAt = at(20);
+    expect(
+      evaluateRoomIdle({ startsAt: STARTS_AT, now: leftAt, sessions: [session('t', 20)], graceMinutes: 0 }),
+    ).toEqual({ idle: true, reason: 'idle' });
+  });
+
+  it('refuses a negative or non-finite grace instead of completing instantly', () => {
+    // `now - latestLeft < NaN` is false, so an unvalidated NaN reads as "idle long ago" and
+    // completes a live class. Config rejects these at boot; this is the second line.
+    for (const graceMinutes of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(() =>
+        evaluateRoomIdle({ startsAt: STARTS_AT, now: at(60), sessions: [session('t', 10)], graceMinutes }),
+      ).toThrow(/Invalid room-idle grace/);
+    }
+  });
 });

@@ -168,6 +168,62 @@ describe('CompleteElapsedClassesUseCase (FR-020 / ADR-021)', () => {
       expect(classes.completedBasis).toBeNull();
     });
 
+    it('honours a configured grace of 0, completing on the very first sweep', async () => {
+      // ADR-021 Amendment D.4. `0` means "close as soon as everyone has gone" and must not be
+      // treated as "unset": `||` instead of `??` would have silently restored the default.
+      const classes = new InMemoryClassRepository();
+      classes.beforeEnd = [started()];
+      const presence = new InMemoryPresenceRepository([
+        {
+          classId: 'cls-1',
+          session: {
+            accountId: 't1',
+            // Departed at this very instant — no elapsed time at all.
+            joinedAt: new Date(NOW.getTime() - 60 * 60_000),
+            leftAt: NOW,
+          },
+        },
+      ]);
+
+      const result = await new CompleteElapsedClassesUseCase(
+        classes,
+        new InMemoryBookingRepository(),
+        presence,
+        clock,
+        0,
+      ).execute();
+
+      expect(result).toEqual({ completed: 1, cancelled: 0 });
+      expect(classes.completedBasis).toBe('room_idle');
+    });
+
+    it('honours a configured grace longer than the default', async () => {
+      // The same departure is idle under the 5-minute default but not under 30.
+      const classes = new InMemoryClassRepository();
+      classes.beforeEnd = [started()];
+      const presence = new InMemoryPresenceRepository([
+        {
+          classId: 'cls-1',
+          session: {
+            accountId: 't1',
+            joinedAt: new Date(NOW.getTime() - 60 * 60_000),
+            leftAt: new Date(NOW.getTime() - 10 * 60_000),
+          },
+        },
+      ]);
+
+      const result = await new CompleteElapsedClassesUseCase(
+        classes,
+        new InMemoryBookingRepository(),
+        presence,
+        clock,
+        30,
+      ).execute();
+
+      expect(result).toEqual({ completed: 0, cancelled: 0 });
+      expect(classes.completedBasis).toBeNull();
+    });
+
     it('never completes a class whose only visits happened before the start', async () => {
       // ADR-021 Amendment D.1, at the level where money moves: a camera test during the
       // early-open window must not complete the class on the first sweep after starts_at.

@@ -33,7 +33,10 @@
  * Pure domain — no framework, no clock, no persistence (ADR-009).
  */
 
-/** How long the room must stay empty before the class may complete (W1 C3b). */
+/**
+ * The default grace, and the value W1 C3b decided. Deployments override it with
+ * `ROOM_IDLE_GRACE_MINUTES`; this stays the fallback for callers that do not pass one.
+ */
 export const ROOM_IDLE_GRACE_MINUTES = 5;
 
 /** One participation session: joined at, and left at (null while still present). */
@@ -72,6 +75,13 @@ export type RoomIdleEvaluation =
  */
 export function evaluateRoomIdle(input: RoomIdleInput): RoomIdleEvaluation {
   const graceMinutes = input.graceMinutes ?? ROOM_IDLE_GRACE_MINUTES;
+  // Zero is legal (close as soon as the room empties) and is why this is not `||`. A
+  // negative or non-finite value is refused rather than clamped: `now - latestLeft < NaN` is
+  // false, so a typo would read as "idle long ago" and complete a live class. Config rejects
+  // these at boot, so reaching here means a caller passed one directly.
+  if (!Number.isFinite(graceMinutes) || graceMinutes < 0) {
+    throw new Error(`Invalid room-idle grace: ${String(graceMinutes)} minutes`);
+  }
   const graceMs = graceMinutes * 60 * 1000;
 
   // 1. Never before the class starts (C3a).
