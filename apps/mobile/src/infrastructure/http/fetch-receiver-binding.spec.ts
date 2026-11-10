@@ -20,7 +20,7 @@ import type { MobileConfig } from '../config';
 describe('fetch receiver binding (browser parity)', () => {
   const config: MobileConfig = {
     gatewayBaseUrl: 'http://localhost:4000',
-    apiBaseUrl: 'http://localhost:4000/api',
+    apiBaseUrl: 'http://localhost:4000/api/v1',
   };
 
   // Matches the shape the existing GatewayClient specs use: the client only

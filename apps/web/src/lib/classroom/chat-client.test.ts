@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { API_BASE_PATH } from '@skillswap/contracts';
 import { ChatError, loadMessages, sendMessage } from './chat-client';
 
 const BOOKING_ID = '7c1e0000-0000-4000-8000-0000000000bb';
@@ -58,7 +59,7 @@ describe('loadMessages (FR-012 / NFR-014)', () => {
     expect(page.items).toHaveLength(1);
     expect(page.items[0]?.body).toBe('Bài 3, trang 45');
     const url = (fetchMock.mock.calls[0]?.[0] as string) ?? '';
-    expect(url).toContain(`/api/classes/bookings/${BOOKING_ID}/messages`);
+    expect(url).toContain(`${API_BASE_PATH}/classes/bookings/${BOOKING_ID}/messages`);
     expect(url).toContain('limit=20');
   });
 

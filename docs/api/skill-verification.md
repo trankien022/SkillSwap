@@ -10,11 +10,9 @@ Proving a specific skill at a level (FR-003/FR-004/FR-018, ADR-026/ADR-027/ADR-0
 
 Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
 
-### `GET /api/profile-skills/me`
+### `GET /api/v1/profile-skills/me`
 
 **List the caller's skills and approved levels (FR-003 / NFR-014)**
-
-List the caller's skills and their effective approved levels (FR-003).
 
 - Auth: 🔒 Bearer token required
 - Response: `ProfileSkillListDto`
@@ -41,11 +39,9 @@ List the caller's skills and their effective approved levels (FR-003).
 | `category` | string | yes | min 1 chars |
 | `approvedLevel` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert`; nullable |
 
-### `POST /api/skill-evidence`
+### `POST /api/v1/skill-evidence`
 
 **Submit skill evidence for a known skill (FR-003 / API-002)**
-
-Submit evidence for a known skill at a requested level (API-002). Requires being a verified student.
 
 - Auth: 🔒 Bearer token required
 - Request body: `SubmitSkillEvidenceDto`
@@ -84,11 +80,9 @@ Submit evidence for a known skill at a requested level (API-002). Requires being
 | `decidedAt` | string | yes | date-time; nullable |
 | `submittedAt` | string | yes | date-time |
 
-### `POST /api/skill-evidence/{id}/claim`
+### `POST /api/v1/skill-evidence/{id}/claim`
 
 **Claim a pending evidence request, locking it (FR-004 / BR-071)**
-
-Verifier claims a pending request, locking it to them (BR-071).
 
 - Auth: 🔒 Bearer token required
 - Response: `SkillEvidenceDto`
@@ -120,11 +114,9 @@ Verifier claims a pending request, locking it to them (BR-071).
 | `decidedAt` | string | yes | date-time; nullable |
 | `submittedAt` | string | yes | date-time |
 
-### `POST /api/skill-evidence/{id}/decision`
+### `POST /api/v1/skill-evidence/{id}/decision`
 
 **Approve or reject a claimed evidence request (FR-004 / API-003)**
-
-Verifier approves or rejects a claimed request (API-003).
 
 - Auth: 🔒 Bearer token required
 - Request body: `SkillEvidenceDecisionDto`
@@ -165,9 +157,9 @@ Verifier approves or rejects a claimed request (API-003).
 | `decidedAt` | string | yes | date-time; nullable |
 | `submittedAt` | string | yes | date-time |
 
-### `GET /api/skill-evidence/{id}/document`
+### `GET /api/v1/skill-evidence/{id}/document`
 
-**Mint a pre-signed download URL for certificate evidence (FR-003)**
+**Mint a short-lived download URL for certificate evidence (FR-003)**
 
 - Auth: 🔒 Bearer token required
 - Response: `EvidenceDocumentDownloadTargetDto`
@@ -183,11 +175,9 @@ Verifier approves or rejects a claimed request (API-003).
 | `downloadUrl` | string | yes | min 1 chars |
 | `expiresAt` | string | yes | date-time |
 
-### `GET /api/skill-evidence/{id}/history`
+### `GET /api/v1/skill-evidence/{id}/history`
 
 **Decision history for each evidence version (FR-018)**
-
-Read every version and its audit trail (FR-018).
 
 - Auth: 🔒 Bearer token required
 - Response: `SkillEvidenceHistoryDto`
@@ -245,7 +235,7 @@ Read every version and its audit trail (FR-018).
 | `approvedLevel` | enum | yes | one of `beginner`, `intermediate`, `advanced`, `expert`; nullable |
 | `reason` | string | yes | min 1 chars; nullable |
 
-### `POST /api/skill-evidence/documents`
+### `POST /api/v1/skill-evidence/documents`
 
 **Request a signed upload form for certificate evidence (FR-003)**
 
@@ -271,7 +261,7 @@ Read every version and its audit trail (FR-018).
 | `objectKey` | string | yes | min 1 chars |
 | `expiresAt` | string | yes | date-time |
 
-### `GET /api/skills`
+### `GET /api/v1/skills`
 
 **List available skills catalogue (mobile / T12)**
 
@@ -302,11 +292,9 @@ Read every version and its audit trail (FR-018).
 | `category` | string | yes | min 1 chars |
 | `levels` | enum[] | yes |  |
 
-### `POST /api/verifiers/{accountId}/status`
+### `POST /api/v1/verifiers/{accountId}/status`
 
 **Suspend, revoke or reactivate a Verifier (admin, FR-004 / ADR-027)**
-
-Admin suspends, revokes or reactivates a Verifier (FR-004, ADR-027).
 
 - Auth: 🔒 Bearer token required
 - Request body: `VerifierStatusChangeDto`
@@ -330,7 +318,7 @@ Admin suspends, revokes or reactivates a Verifier (FR-004, ADR-027).
 | `status` | enum | yes | one of `active`, `suspended`, `revoked` |
 | `expertise` | string[] | yes |  |
 
-### `GET /api/verifiers/admin/queue`
+### `GET /api/v1/verifiers/admin/queue`
 
 **The cross-domain Verifier queue by domain (FR-015)**
 
@@ -384,11 +372,9 @@ Admin suspends, revokes or reactivates a Verifier (FR-004, ADR-027).
 | `nextCursor` | string | yes | min 1 chars; nullable |
 | `total` | integer | yes | ≥ 0 |
 
-### `GET /api/verifiers/me/queue`
+### `GET /api/v1/verifiers/me/queue`
 
 **The Verifier's expertise-scoped pending queue (FR-004 / NFR-014)**
-
-A Verifier's pending queue, scoped to their expertise (FR-004).
 
 - Auth: 🔒 Bearer token required
 - Response: `VerifierQueuePageDto`

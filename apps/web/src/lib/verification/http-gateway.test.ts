@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { envelopeOk } from '@skillswap/contracts';
+import { API_BASE_PATH, envelopeOk } from '@skillswap/contracts';
 import { AdminAuthError, HttpVerificationGateway } from './http-gateway';
 
 const STATUS_BODY = envelopeOk({
@@ -23,7 +23,7 @@ afterEach(() => {
 describe('HttpVerificationGateway.setVerifierStatus', () => {
   it('POSTs the status change and parses the updated VerifierView', async () => {
     const fetchMock = vi.fn((url: string, init: RequestInit) => {
-      expect(url).toContain('/api/verifiers/acc-1234/status');
+      expect(url).toContain(`${API_BASE_PATH}/verifiers/acc-1234/status`);
       expect(init.method).toBe('POST');
       expect(JSON.parse(String(init.body))).toEqual({ status: 'suspended' });
       return Promise.resolve(jsonResponse(STATUS_BODY));
@@ -54,7 +54,7 @@ describe('HttpVerificationGateway.setVerifierStatus', () => {
     const call = fetchMock.mock.calls[0];
     expect(call).toBeDefined();
     const url = (call?.[0] ?? '') as string;
-    expect(url).toContain('/api/verifiers/acc%2Fwith-slash/status');
+    expect(url).toContain(`${API_BASE_PATH}/verifiers/acc%2Fwith-slash/status`);
   });
 
   it('throws AdminAuthError on 401 (session gone) and 403 (not an admin)', async () => {

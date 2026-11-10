@@ -143,7 +143,7 @@ from `scripts/generate-api-modules.mjs`.
 
 | Exception | Justification |
 |---|---|
-| No `/api/v1` segment (§3.3) | Additive-only contract; a version prefix would be new surface with no client to serve. Revisit at the first breaking change. |
+| No `/api/v1` segment (§3.3) | **Superseded 2026-11-10 by [ADR-042](../adr/ADR-042-api-path-versioning.md).** The stated revisit trigger ("at the first breaking change") was met: the mobile client now ships independently of the API. Original justification, kept for the record: additive-only contract; a version prefix would be new surface with no client to serve. |
 | Action endpoints (`/cancel`, `/start`, `/complete`, `/confirm`) (§10) | Domain state transitions with guards; §10 permits them explicitly. |
 | Flat booking paths (`/classes/bookings/me`) (§3.2 nesting) | Nested form would break two shipped clients. Documented in the frontend map. |
 | Envelope instead of RFC 9457 problem+json (§8) | Existing, uniform, already carries stable codes; §8 recommends rather than requires it. |

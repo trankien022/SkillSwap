@@ -10,7 +10,7 @@ import {
 describe('MyBookingsGateway', () => {
   const config: MobileConfig = {
     gatewayBaseUrl: 'http://localhost:4000',
-    apiBaseUrl: 'http://localhost:4000/api',
+    apiBaseUrl: 'http://localhost:4000/api/v1',
   };
 
   const sampleBookingItem: LearnerBookingItemView = {
@@ -73,7 +73,7 @@ describe('MyBookingsGateway', () => {
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
       const [url, init] = mockFetch.mock.calls[0];
-      expect(url).toBe('http://localhost:4000/api/classes/bookings/me');
+      expect(url).toBe('http://localhost:4000/api/v1/classes/bookings/me');
       expect(init.method).toBe('GET');
       expect(init.headers['Authorization']).toBe('Bearer test-access-token');
       expect(result).toEqual(sampleBookingsPage);
@@ -100,7 +100,7 @@ describe('MyBookingsGateway', () => {
       const [url] = mockFetch.mock.calls[0];
       const parsedUrl = new URL(url);
 
-      expect(parsedUrl.pathname).toBe('/api/classes/bookings/me');
+      expect(parsedUrl.pathname).toBe('/api/v1/classes/bookings/me');
       expect(parsedUrl.searchParams.get('state')).toBe('confirmed');
       expect(parsedUrl.searchParams.has('learnerId')).toBe(false);
       expect(parsedUrl.searchParams.has('owner')).toBe(false);
@@ -178,7 +178,7 @@ describe('MyBookingsGateway', () => {
       const [url] = mockFetch.mock.calls[0];
       const parsedUrl = new URL(url);
 
-      expect(parsedUrl.pathname).toBe('/api/classes/bookings/me');
+      expect(parsedUrl.pathname).toBe('/api/v1/classes/bookings/me');
       expect(parsedUrl.searchParams.get('state')).toBe('pending');
       expect(parsedUrl.searchParams.get('upcoming')).toBe('false');
       expect(parsedUrl.searchParams.get('limit')).toBe('10');
@@ -257,11 +257,11 @@ describe('MyBookingsGateway', () => {
       expect(mockTokenProvider.refreshSession).toHaveBeenCalledTimes(1);
 
       const [firstUrl, firstInit] = mockFetch.mock.calls[0];
-      expect(firstUrl).toBe('http://localhost:4000/api/classes/bookings/me');
+      expect(firstUrl).toBe('http://localhost:4000/api/v1/classes/bookings/me');
       expect(firstInit.headers['Authorization']).toBe('Bearer test-access-token');
 
       const [secondUrl, secondInit] = mockFetch.mock.calls[1];
-      expect(secondUrl).toBe('http://localhost:4000/api/classes/bookings/me');
+      expect(secondUrl).toBe('http://localhost:4000/api/v1/classes/bookings/me');
       expect(secondInit.headers['Authorization']).toBe('Bearer refreshed-token');
 
       expect(result).toEqual(sampleBookingsPage);

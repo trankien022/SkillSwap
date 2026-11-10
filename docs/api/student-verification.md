@@ -10,7 +10,7 @@ Proving a learner is a real student (FR-002/FR-019, ADR-023/ADR-025). A submissi
 
 Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
 
-### `GET /api/student-verifications`
+### `GET /api/v1/student-verifications`
 
 **The admin verification queue (FR-015)**
 
@@ -54,11 +54,9 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 | `nextCursor` | string | yes | min 1 chars; nullable |
 | `total` | integer | yes | ≥ 0 |
 
-### `POST /api/student-verifications`
+### `POST /api/v1/student-verifications`
 
 **Submit a student verification (FR-002 / API-001)**
-
-Submit a verification with the uploaded document (API-001). Only one effective (pending/approved) per account.
 
 - Auth: 🔒 Bearer token required
 - Request body: `SubmitStudentVerificationDto`
@@ -86,11 +84,9 @@ Submit a verification with the uploaded document (API-001). Only one effective (
 | `submittedAt` | string | yes | date-time |
 | `documentId` | string | no | min 1 chars; nullable |
 
-### `POST /api/student-verifications/{id}/decision`
+### `POST /api/v1/student-verifications/{id}/decision`
 
 **Approve or reject a verification (admin, FR-002)**
-
-Admin approves or rejects a pending verification (FR-002).
 
 - Auth: 🔒 Bearer token required
 - Request body: `VerificationDecisionDto`
@@ -122,9 +118,9 @@ Admin approves or rejects a pending verification (FR-002).
 | `submittedAt` | string | yes | date-time |
 | `documentId` | string | no | min 1 chars; nullable |
 
-### `GET /api/student-verifications/{id}/document`
+### `GET /api/v1/student-verifications/{id}/document`
 
-**Mint a pre-signed download URL for the uploaded document (FR-002)**
+**Mint a short-lived download URL for the uploaded document (FR-002)**
 
 - Auth: 🔒 Bearer token required
 - Response: `DocumentDownloadTargetDto`
@@ -140,11 +136,9 @@ Admin approves or rejects a pending verification (FR-002).
 | `downloadUrl` | string | yes | min 1 chars |
 | `expiresAt` | string | yes | date-time |
 
-### `POST /api/student-verifications/{id}/revocation`
+### `POST /api/v1/student-verifications/{id}/revocation`
 
 **Revoke a verification (admin, FR-019 / ADR-025)**
-
-Admin revokes an approved verification (FR-019); the publish gate demotes the account.
 
 - Auth: 🔒 Bearer token required
 - Request body: `VerificationRevocationDto`
@@ -174,11 +168,9 @@ Admin revokes an approved verification (FR-019); the publish gate demotes the ac
 | `submittedAt` | string | yes | date-time |
 | `documentId` | string | no | min 1 chars; nullable |
 
-### `POST /api/student-verifications/documents`
+### `POST /api/v1/student-verifications/documents`
 
 **Request a signed document upload target (FR-002)**
-
-Request a signed Cloudinary upload target (FR-002, ADR-038). POST the file as multipart form data to uploadUrl together with the returned fields, then submit its documentId.
 
 - Auth: 🔒 Bearer token required
 - Request body: `DocumentUploadRequestDto`
@@ -203,11 +195,9 @@ Request a signed Cloudinary upload target (FR-002, ADR-038). POST the file as mu
 | `objectKey` | string | yes | min 1 chars |
 | `expiresAt` | string | yes | date-time |
 
-### `GET /api/student-verifications/me`
+### `GET /api/v1/student-verifications/me`
 
 **Read the caller's own verification (FR-017)**
-
-Read the caller's own verification and its status (FR-017).
 
 - Auth: 🔒 Bearer token required
 - Response: `StudentVerificationDto`

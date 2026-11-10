@@ -10,11 +10,9 @@ Money in and out (FR-008/FR-010, ADR-033/ADR-022). Credits are integer VND, 1 cr
 
 Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
 
-### `GET /api/wallet/balance`
+### `GET /api/v1/wallet/balance`
 
 **Read the wallet balance (FR-008/FR-010)**
-
-Read available + pending credits. Use to show the wallet balance and to pre-check affordability before booking.
 
 - Auth: 🔒 Bearer token required
 - Response: `WalletBalanceDto`
@@ -26,11 +24,9 @@ Read available + pending credits. Use to show the wallet balance and to pre-chec
 | `availableCredits` | integer | yes |  |
 | `pendingCredits` | integer | yes |  |
 
-### `GET /api/wallet/history`
+### `GET /api/v1/wallet/history`
 
 **Read the wallet ledger history (FR-010 / ADR-022)**
-
-Paginated ledger entries (newest first). Use on the wallet activity screen; follow nextCursor for more.
 
 - Auth: 🔒 Bearer token required
 - Response: `WalletHistoryPageDto`
@@ -67,11 +63,9 @@ Paginated ledger entries (newest first). Use on the wallet activity screen; foll
 | `nextCursor` | string | yes | min 1 chars; nullable |
 | `total` | integer | yes | ≥ 0 |
 
-### `POST /api/wallet/top-ups`
+### `POST /api/v1/wallet/top-ups`
 
 **Start a wallet top-up (FR-008 / API-006)**
-
-Start a top-up and get a hosted SePay checkout URL to open. Use from the "Add funds" screen.
 
 - Auth: 🔒 Bearer token required
 - Request body: `TopUpRequestDto`
@@ -97,7 +91,7 @@ Start a top-up and get a hosted SePay checkout URL to open. Use from the "Add fu
 | `status` | string | yes | min 1 chars |
 | `paymentUrl` | string | yes | min 1 chars |
 
-### `GET /api/wallet/top-ups/{id}`
+### `GET /api/v1/wallet/top-ups/{id}`
 
 **Poll a wallet top-up intent (FR-008 / ADR-033)**
 
@@ -122,7 +116,7 @@ Start a top-up and get a hosted SePay checkout URL to open. Use from the "Add fu
 | `paidAmountVnd` | integer | yes | nullable |
 | `paidAt` | string | yes | nullable |
 
-### `GET /api/wallet/top-ups/by-provider-ref/{providerRef}`
+### `GET /api/v1/wallet/top-ups/by-provider-ref/{providerRef}`
 
 **Read a top-up intent by invoice number (FR-008)**
 

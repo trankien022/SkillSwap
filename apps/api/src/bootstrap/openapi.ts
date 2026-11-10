@@ -62,7 +62,10 @@ export function buildOpenApiDocument(app: INestApplication): OpenApiDocument {
     .setVersion('1.0')
     // ADR-016: the gateway verifies the RS256 bearer token before proxying.
     .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'bearer')
-    .addServer('/api');
+    // ADR-042: Nest's document paths already carry the full `/api/v1/...` (and the
+    // version-neutral `/api/...` for the vendor hooks), so the server is the origin.
+    // Declaring a prefix here would double it in Swagger's "Try it out".
+    .addServer('/');
   for (const tag of API_TAGS) {
     builder.addTag(tag);
   }

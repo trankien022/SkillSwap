@@ -13,7 +13,7 @@ import {
 describe('GatewayClient', () => {
   const config: MobileConfig = {
     gatewayBaseUrl: 'http://localhost:4000',
-    apiBaseUrl: 'http://localhost:4000/api',
+    apiBaseUrl: 'http://localhost:4000/api/v1',
   };
 
   const sampleTokenResponse = {
@@ -53,7 +53,7 @@ describe('GatewayClient', () => {
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
       const [url, init] = mockFetch.mock.calls[0];
-      expect(url).toBe('http://localhost:4000/api/auth/register');
+      expect(url).toBe('http://localhost:4000/api/v1/auth/register');
       expect(init.method).toBe('POST');
       expect(JSON.parse(init.body)).toEqual({
         email: 'new@example.com',
@@ -79,7 +79,7 @@ describe('GatewayClient', () => {
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:4000/api/auth/login',
+        'http://localhost:4000/api/v1/auth/login',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ email: 'test@example.com', password: 'mypassword' }),
@@ -121,7 +121,7 @@ describe('GatewayClient', () => {
       const result = await client.refresh('old-refresh-token');
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:4000/api/auth/refresh',
+        'http://localhost:4000/api/v1/auth/refresh',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ refreshToken: 'old-refresh-token' }),
@@ -141,7 +141,7 @@ describe('GatewayClient', () => {
       await client.logout('revoke-token');
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:4000/api/auth/logout',
+        'http://localhost:4000/api/v1/auth/logout',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ refreshToken: 'revoke-token' }),
@@ -161,7 +161,7 @@ describe('GatewayClient', () => {
       const profile = await client.getMe('valid-access-token');
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:4000/api/auth/me',
+        'http://localhost:4000/api/v1/auth/me',
         expect.objectContaining({
           method: 'GET',
           headers: expect.objectContaining({
@@ -178,7 +178,7 @@ describe('GatewayClient', () => {
       const client = new GatewayClient(config, { fetchFn: mockFetch as unknown as typeof fetch });
 
       await expect(client.updateMe('valid-access-token', '  New Name  ')).resolves.toMatchObject({ displayName: 'New Name' });
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:4000/api/auth/me', expect.objectContaining({
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:4000/api/v1/auth/me', expect.objectContaining({
         method: 'PATCH',
         body: JSON.stringify({ displayName: 'New Name' }),
         headers: expect.objectContaining({ Authorization: 'Bearer valid-access-token' }),

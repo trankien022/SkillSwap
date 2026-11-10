@@ -1,3 +1,5 @@
+import { normalizeApiPath } from '@skillswap/contracts';
+
 const routes = [
   /^\/auth\/(register|login|refresh|logout|me)$/,
   /^\/student-verifications(?:\/(documents|me))?$/,
@@ -13,7 +15,11 @@ const routes = [
 ];
 
 export function evidenceRoute(url: string): string | null {
-  const path = new URL(url).pathname.replace(/^\/api/, '');
+  // ADR-042: requests carry `/api/v1`, so strip the version segment before matching
+  // the templates below. `normalizeApiPath` is the shared implementation — stripping
+  // `^/api` alone would leave `/v1/classes`, match nothing, and silently stop
+  // recording evidence for every call.
+  const path = normalizeApiPath(new URL(url).pathname).replace(/^\/api/, '');
   // The poll route (FR-008 / ADR-033). `callback` is excluded explicitly: it is
   // server-to-server, is never posted by this client, and would otherwise match
   // the `:id` template and be recorded as client evidence.

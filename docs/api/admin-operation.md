@@ -10,7 +10,7 @@ Administrator oversight (FR-015, ADR-034). The append-only audit log plus the op
 
 Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
 
-### `GET /api/admin-operation/dashboard`
+### `GET /api/v1/admin-operation/dashboard`
 
 **The operations dashboard aggregate (FR-015)**
 
@@ -69,7 +69,7 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 |---|---|---|---|
 | `total` | integer | yes | ≥ 0 |
 
-### `GET /api/audit-log`
+### `GET /api/v1/audit-log`
 
 **The Admin audit log, filterable by actor, time and action (FR-015)**
 
@@ -120,7 +120,7 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 | `nextCursor` | string | yes | min 1 chars; nullable |
 | `total` | integer | yes | ≥ 0 |
 
-### `GET /api/operations/accounts`
+### `GET /api/v1/operations/accounts`
 
 **The account-lock list: suspended accounts (FR-015)**
 
@@ -160,7 +160,7 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 | `nextCursor` | string | yes | min 1 chars; nullable |
 | `total` | integer | yes | ≥ 0 |
 
-### `POST /api/operations/accounts/{accountId}/reinstatement`
+### `POST /api/v1/operations/accounts/{accountId}/reinstatement`
 
 **Reactivate a suspended account (admin, FR-015)**
 
@@ -170,7 +170,7 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 |---|---|---|---|---|
 | `accountId` | path | string | yes | The account id to reactivate |
 
-### `POST /api/operations/accounts/{accountId}/suspension`
+### `POST /api/v1/operations/accounts/{accountId}/suspension`
 
 **Suspend an account with a required reason (admin, FR-015)**
 
@@ -187,7 +187,7 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 |---|---|---|---|
 | `reason` | string | yes | min 1 chars; max 500 chars |
 
-### `GET /api/operations/dashboard`
+### `GET /api/v1/operations/dashboard`
 
 **The operations dashboard aggregate (FR-015)**
 
@@ -246,7 +246,7 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 |---|---|---|---|
 | `total` | integer | yes | ≥ 0 |
 
-### `GET /api/operations/outbox-dead-letters`
+### `GET /api/v1/operations/outbox-dead-letters`
 
 **Outbox rows the relay proved it cannot publish (FR-015 / ADR-013 Amendment A)**
 
@@ -288,7 +288,7 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 | `nextCursor` | string | yes | min 1 chars; nullable |
 | `total` | integer | yes | ≥ 0 |
 
-### `POST /api/operations/outbox-dead-letters/{id}/replay`
+### `POST /api/v1/operations/outbox-dead-letters/{id}/replay`
 
 **Reset one dead letter to PENDING and audit the action (W2 C3)**
 

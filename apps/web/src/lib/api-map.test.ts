@@ -13,6 +13,11 @@ import { describe, expect, it } from 'vitest';
 
 const SRC_ROOT = join(__dirname, '..');
 
+/** Every non-test source file the scan covers, relative to `SRC_ROOT`. */
+function sourceFileList(): string[] {
+  return sourceFiles(SRC_ROOT).map((file) => relative(SRC_ROOT, file).split(sep).join('/'));
+}
+
 /**
  * Every route the web client is allowed to call, under the gateway `/api`
  * prefix. `:param` stands for one path segment.
@@ -91,9 +96,21 @@ interface CallSite {
   readonly literal: string;
 }
 
-/** `callApi('/x')`, `callApiOk('/x')`, and the wrapper's own `fetch(\`${API}/api/x\`)`. */
+/**
+ * `callApi('/x')`, `callApiOk('/x')`, and the wrapper's own
+ * `fetch(\`${API}${API_PREFIX}/x\`)` (ADR-042 — the prefix is a shared constant so a
+ * version bump is one line, not a sweep of every call site).
+ */
 const CALL_MATCHER =
-  /(?:callApiOk|callApi)\(\s*(?:'([^']*)'|`([^`]*)`|([A-Za-z_$][\w$.]*))|fetch\(\s*`\$\{API\}\/api(\/[^`]*)`/g;
+  /(?:callApiOk|callApi)\(\s*(?:'([^']*)'|`([^`]*)`|([A-Za-z_$][\w$.]*))|fetch\(\s*`\$\{API\}\$\{API_PREFIX\}(\/[^`]*)`/g;
+
+/**
+ * ADR-042: no call site may hardcode a version segment or a bare `/api` prefix.
+ * A literal `/api/auth/login` still works (the legacy rewrite serves it) which is
+ * exactly why it would survive review while being wrong — the client would silently
+ * stay on the deprecated surface. This catches that.
+ */
+const LEGACY_LITERAL_MATCHER = /fetch\(\s*`\$\{API\}\/api\//g;
 
 /**
  * A `const`-bound path: `const path = \`/x${...}\`` or the common
@@ -222,6 +239,18 @@ describe('web API map', () => {
       .map((site) => `${site.file}: ${site.literal}`);
 
     expect(dynamic).toEqual([]);
+  });
+
+  it('builds no URL from the unversioned /api prefix (ADR-042)', () => {
+    // The legacy rewrite keeps unversioned paths working, so a straggler would not
+    // fail at runtime — it would just quietly talk to the deprecated surface. The
+    // web client must use `API_PREFIX` everywhere instead.
+    const offenders = sourceFileList().flatMap((file) => {
+      const text = readFileSync(join(SRC_ROOT, file), 'utf8');
+      return [...text.matchAll(LEGACY_LITERAL_MATCHER)].map((m) => `${file}: ${m[0]}`);
+    });
+
+    expect(offenders).toEqual([]);
   });
 
   it('lists no route that the client has stopped calling', () => {

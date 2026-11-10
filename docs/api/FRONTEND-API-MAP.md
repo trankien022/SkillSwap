@@ -13,9 +13,18 @@ This file is **pinned by tests**, so it cannot drift silently:
 Adding a route to a client therefore fails CI until it is added to the list
 in this file *and* to the client's pinned list.
 
-Paths are relative to the gateway prefix `http://<gateway>:4000/api`. `:id`
-stands for one path segment. See `RESTful-CONVENTIONS.md` for the rules those
-paths follow and `FRONTEND-API-GUIDE.md` for how to call them.
+Paths are relative to the gateway's versioned prefix `http://<gateway>:4000/api/v1`
+(ADR-042). `:id` stands for one path segment. See `RESTful-CONVENTIONS.md` for the
+rules those paths follow and `FRONTEND-API-GUIDE.md` for how to call them.
+
+Three routes do **not** carry `/v1`, because their URLs are registered outside this
+repository or belong to infrastructure — client code must keep them unversioned:
+
+| Route | Why it is unversioned |
+|---|---|
+| `POST /api/wallet/top-ups/callback` | The SePay IPN URL is configured once in SePay's dashboard. |
+| `POST /api/internal/jitsi/presence` | The JaaS presence webhook URL is registered in the 8x8 console. |
+| `GET /api/health` | A Render/Vercel deploy probe, not a client contract. |
 
 ## Routes
 
@@ -123,9 +132,6 @@ convention exception or a known gap. Both are listed so they are visible.
 These are deliberate, recorded in
 `docs/plans/2026-10-19-restful-conventions-alignment-plan.md`:
 
-- **No `/api/v1` segment.** The gateway serves `/api/...` and clients are
-  versioned in lock-step. A version segment buys nothing while both clients
-  ship with the API.
 - **Booking actions are sub-resources of a booking**, not of a class:
   `/classes/bookings/:bookingId/{confirm,rating,no-show,room-access,messages}`. This
   reads oddly next to `/classes/:id/bookings` but is stable and already

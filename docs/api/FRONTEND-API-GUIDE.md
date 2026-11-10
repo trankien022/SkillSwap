@@ -26,15 +26,23 @@ comes back".
 | Jitsi (room host) | `https://8x8.vc/<appId>` | hosted JaaS, ADR-039 |
 | Document storage | `https://api.cloudinary.com` | Cloudinary, ADR-038 |
 
-All routes are prefixed with **`/api`**. The gateway forwards `/api/*` to the API and, when
-auth is on, verifies the bearer token and injects trusted `x-user-*` headers.
+Client routes are prefixed with **`/api/v1`** (ADR-042). The gateway forwards the path
+unchanged to the API and, when auth is on, verifies the bearer token and injects trusted
+`x-user-*` headers.
 
 ```
-Browser ──▶ gateway :4000/api/* ──(verify JWT, inject identity)──▶ api :4001/api/*
+Browser ──▶ gateway :4000/api/v1/* ──(verify JWT, inject identity)──▶ api :4001/api/v1/*
 ```
+
+Three routes are deliberately unversioned, because their URLs are registered outside this
+repository or belong to infrastructure: `POST /api/wallet/top-ups/callback` (SePay),
+`POST /api/internal/jitsi/presence` (8x8), `GET /api/health` (deploy probe). The
+unversioned `/api/<route>` form of client routes also still works during the changeover,
+via a rewrite shim that will be removed once web and mobile ship on `v1`.
 
 **Base URL for the FE:** `const API = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000'`.
-Every path below is relative to `API` and already includes `/api`.
+Every path below is relative to `API` and includes `/api/v1` — use `API_PREFIX`
+from `apps/web/src/lib/api-client.ts` rather than typing the segment.
 
 ### Auth header
 After login/register you hold an `accessToken`. Attach it to **every** authenticated request:
@@ -90,16 +98,16 @@ Common status codes: `400` invalid body/query, `401` missing/expired token or ba
 
 ## 2. Endpoint reference
 
-### 2.1 Auth — FR-001 (`/api/auth`)
+### 2.1 Auth — FR-001 (`/api/v1/auth`)
 
 | Method | Path | Auth | Body | Returns |
 |---|---|---|---|---|
-| POST | `/api/auth/register` | none | `{ email, displayName, password, role? }` | `201` token pair |
-| POST | `/api/auth/login` | none | `{ email, password }` | `200` token pair |
-| POST | `/api/auth/refresh` | none | `{ refreshToken }` | `200` token pair (rotates) |
-| POST | `/api/auth/logout` | none | `{ refreshToken }` | `204` |
-| GET | `/api/auth/me` | **yes** | — | `200` account |
-| PATCH | `/api/auth/me` | **yes** | `{ displayName }` | `200` updated account |
+| POST | `/api/v1/auth/register` | none | `{ email, displayName, password, role? }` | `201` token pair |
+| POST | `/api/v1/auth/login` | none | `{ email, password }` | `200` token pair |
+| POST | `/api/v1/auth/refresh` | none | `{ refreshToken }` | `200` token pair (rotates) |
+| POST | `/api/v1/auth/logout` | none | `{ refreshToken }` | `204` |
+| GET | `/api/v1/auth/me` | **yes** | — | `200` account |
+| PATCH | `/api/v1/auth/me` | **yes** | `{ displayName }` | `200` updated account |
 
 `role` ∈ `user` only (default `user`); `verifier`/`admin` are provisioned out of band (ADR-030). `password` ≥ 8 chars. Account roles are `user | verifier | admin`; Learner/Teacher are capabilities, not roles.
 
@@ -126,20 +134,20 @@ const { accessToken, refreshToken } = body.data; // NFR-013 envelope: payload is
 ```
 
 > The `accessToken` is short-lived (`expiresIn` seconds, 900 by default). On `401`, call
-> `/api/auth/refresh` with the `refreshToken` to get a new pair, then retry. Refresh is
+> `/api/v1/auth/refresh` with the `refreshToken` to get a new pair, then retry. Refresh is
 > **single-use**: the old `refreshToken` is invalidated and a new one is returned — replace
 > your stored one.
 
 ---
 
-### 2.2 Wallet — FR-008 / FR-010 (`/api/wallet`)
+### 2.2 Wallet — FR-008 / FR-010 (`/api/v1/wallet`)
 
 | Method | Path | Auth | Body/Query | Returns |
 |---|---|---|---|---|
-| POST | `/api/wallet/top-ups` | **yes** | `{ amountVnd }` | `201` top-up intent |
+| POST | `/api/v1/wallet/top-ups` | **yes** | `{ amountVnd }` | `201` top-up intent |
 | POST | `/api/wallet/top-ups/callback` | **no** (HMAC) | `{ providerRef, amountVnd, status }` + `x-signature` | `200` `{ applied, status }` |
-| GET | `/api/wallet/balance` | **yes** | — | `200` `{ availableCredits, pendingCredits }` |
-| GET | `/api/wallet/history` | **yes** | `?limit=&cursor=` | `200` paged envelope (`{ items, page }`) |
+| GET | `/api/v1/wallet/balance` | **yes** | — | `200` `{ availableCredits, pendingCredits }` |
+| GET | `/api/v1/wallet/history` | **yes** | `?limit=&cursor=` | `200` paged envelope (`{ items, page }`) |
 
 - `amountVnd` is an **integer VND**, max `100,000,000`, and must be a whole number of
   credits at **1 credit = 1,000 VND** (so `100000` → 100 credits).
@@ -172,22 +180,22 @@ const bal = await (await fetch(`${API}/api/wallet/balance`, { headers: auth })).
 
 ---
 
-### 2.3 Classes & bookings — FR-005 / FR-007 / FR-009 / FR-020 (`/api/classes`)
+### 2.3 Classes & bookings — FR-005 / FR-007 / FR-009 / FR-020 (`/api/v1/classes`)
 
 | Method | Path | Who | Body | Returns |
 |---|---|---|---|---|
-| GET | `/api/classes` | none | `?state=&teacherId=&skillId=&startDate=&endDate=&q=&limit=&cursor=` | `200` paged list |
-| GET | `/api/classes/:id` | none | — | `200` class detail (includes `skills`) |
-| GET | `/api/classes/bookings/me` | **yes** | `?state=&upcoming=&limit=&cursor=` | `200` paged bookings |
-| POST | `/api/classes` | **Teacher** | `createClassSchema` | `201` class |
-| PATCH | `/api/classes/:id` | **Teacher** (owner) | `updateClassSchema` | `200` class |
-| POST | `/api/classes/:id/cancel` | **Teacher** (owner) | — | `200` `{ classCancelled, bookingsCancelled }` |
-| POST | `/api/classes/:id/start` | **Teacher** (owner) | — | `200` `{ started }` |
-| POST | `/api/classes/:id/bookings` | **Learner** | `{ idempotencyKey }` | `201` `{ booking, created }` |
-| POST | `/api/classes/bookings/:bookingId/confirm` | **Learner** (owner) | — | `200` confirm result |
-| POST | `/api/classes/bookings/:bookingId/rating` | **Learner** (owner) | `{ stars, comment }` | `201` rating |
-| POST | `/api/classes/bookings/:bookingId/room-access` | **party** | `{ displayName? }` | `200` room access |
-| POST | `/api/classes/bookings/:bookingId/no-show` | system/Teacher | — | `200` `{ cancelled }` |
+| GET | `/api/v1/classes` | none | `?state=&teacherId=&skillId=&startDate=&endDate=&q=&limit=&cursor=` | `200` paged list |
+| GET | `/api/v1/classes/:id` | none | — | `200` class detail (includes `skills`) |
+| GET | `/api/v1/classes/bookings/me` | **yes** | `?state=&upcoming=&limit=&cursor=` | `200` paged bookings |
+| POST | `/api/v1/classes` | **Teacher** | `createClassSchema` | `201` class |
+| PATCH | `/api/v1/classes/:id` | **Teacher** (owner) | `updateClassSchema` | `200` class |
+| POST | `/api/v1/classes/:id/cancel` | **Teacher** (owner) | — | `200` `{ classCancelled, bookingsCancelled }` |
+| POST | `/api/v1/classes/:id/start` | **Teacher** (owner) | — | `200` `{ started }` |
+| POST | `/api/v1/classes/:id/bookings` | **Learner** | `{ idempotencyKey }` | `201` `{ booking, created }` |
+| POST | `/api/v1/classes/bookings/:bookingId/confirm` | **Learner** (owner) | — | `200` confirm result |
+| POST | `/api/v1/classes/bookings/:bookingId/rating` | **Learner** (owner) | `{ stars, comment }` | `201` rating |
+| POST | `/api/v1/classes/bookings/:bookingId/room-access` | **party** | `{ displayName? }` | `200` room access |
+| POST | `/api/v1/classes/bookings/:bookingId/no-show` | system/Teacher | — | `200` `{ cancelled }` |
 
 `q` is the search term (`keyword` is a deprecated alias). `limit` is capped at **100**.
 
@@ -227,7 +235,7 @@ payment **asynchronously** — the Learner is debited `priceCredits`, the Teache
 { "confirmed": true, "booking": { "…": "…", "state": "confirmed" } }
 ```
 If the Learner's balance is insufficient, the booking stays `pending` (no partial state).
-The FE should re-read `/api/wallet/balance` after a moment to reflect the debit.
+The FE should re-read `/api/v1/wallet/balance` after a moment to reflect the debit.
 
 **Room access** (`roomAccessResponseSchema`):
 ```json
@@ -283,11 +291,11 @@ API calls in order (Learner side):
 // 3. top up
 await post('/api/wallet/top-ups', { amountVnd: 100000 });      // → redirect to paymentUrl
 // 4. book
-const { booking } = await post(`/api/classes/${classId}/bookings`, { idempotencyKey: crypto.randomUUID() });
+const { booking } = await post(`/api/v1/classes/${classId}/bookings`, { idempotencyKey: crypto.randomUUID() });
 // 5. confirm (pay)
-await post(`/api/classes/bookings/${booking.bookingId}/confirm`);
+await post(`/api/v1/classes/bookings/${booking.bookingId}/confirm`);
 // 6. join (only inside the window)
-const access = await post(`/api/classes/bookings/${booking.bookingId}/room-access`, { displayName: 'An' });
+const access = await post(`/api/v1/classes/bookings/${booking.bookingId}/room-access`, { displayName: 'An' });
 // access.url + access.token → Jitsi
 ```
 
@@ -357,7 +365,7 @@ Key reminders for the UI:
 - Store `accessToken`/`refreshToken`; refresh on `401` and **replace** the refresh token.
 - Money is **integer credits** everywhere (display `credits`; `1 credit = 1,000 VND`).
 - Confirm/complete/refund/release are **event-driven** — UI state may lag a moment; re-read
-  `/api/wallet/balance` or the booking state shortly after.
+  `/api/v1/wallet/balance` or the booking state shortly after.
 - **Never** send `x-user-*` headers yourself; the gateway injects identity from the JWT.
 
 ---

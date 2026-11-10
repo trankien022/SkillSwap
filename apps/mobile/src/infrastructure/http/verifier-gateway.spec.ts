@@ -5,7 +5,7 @@ import { VerifierGateway } from './verifier-gateway';
 describe('VerifierGateway', () => {
   const config: MobileConfig = {
     gatewayBaseUrl: 'http://localhost:4000',
-    apiBaseUrl: 'http://localhost:4000/api',
+    apiBaseUrl: 'http://localhost:4000/api/v1',
   };
   let fetchMock: jest.Mock;
   let client: GatewayClient;
@@ -71,7 +71,7 @@ describe('VerifierGateway', () => {
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
       const [url, init] = fetchMock.mock.calls[0];
-      expect(url).toContain('http://localhost:4000/api/verifiers/me/queue');
+      expect(url).toContain('http://localhost:4000/api/v1/verifiers/me/queue');
       expect(url).toContain('limit=20');
       expect(url).toContain('level=advanced');
       expect(url).toContain('type=certificate');
@@ -114,7 +114,7 @@ describe('VerifierGateway', () => {
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
       const [url, init] = fetchMock.mock.calls[0];
-      expect(url).toBe('http://localhost:4000/api/skill-evidence/ev-1/claim');
+      expect(url).toBe('http://localhost:4000/api/v1/skill-evidence/ev-1/claim');
       expect(init.method).toBe('POST');
       expect(result.status).toBe('claimed');
       expect(result.claimedBy).toBe('vf-1');
@@ -144,7 +144,7 @@ describe('VerifierGateway', () => {
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
       const [url, init] = fetchMock.mock.calls[0];
-      expect(url).toBe('http://localhost:4000/api/skill-evidence/ev-1/decision');
+      expect(url).toBe('http://localhost:4000/api/v1/skill-evidence/ev-1/decision');
       expect(init.method).toBe('POST');
       expect(JSON.parse(init.body)).toEqual({
         decision: 'approve',

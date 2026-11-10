@@ -1,10 +1,12 @@
 import 'reflect-metadata';
 import { config as loadEnv } from 'dotenv';
 import { resolve } from 'node:path';
+import { VersioningType } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import type { DataSource } from 'typeorm';
 import { AppModule } from '../src/bootstrap/app.module';
+import { legacyPathRewrite } from '../src/shared/http/legacy-path-rewrite';
 import { ModuleDataSourceRegistry } from '../src/shared/messaging/module-registry';
 import { RabbitConsumer } from '../src/shared/messaging/rabbit-consumer';
 import { PAYMENT_GATEWAY } from '../src/modules/wallet-ledger/internal/application/port/out/payment-gateway';
@@ -61,6 +63,10 @@ export async function startHarness(): Promise<Harness> {
   // settlement, the outbox and the consumers all stay real, so the suite runs
   // offline without a sandbox merchant.
   app.setGlobalPrefix('api');
+  // ADR-042: mirror the production bootstrap so e2e covers the real routing
+  // (versioned canonical paths, version-neutral vendor callbacks, legacy rewrite).
+  app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
+  app.use(legacyPathRewrite());
   await app.listen(0);
 
   const registry = app.get(ModuleDataSourceRegistry);

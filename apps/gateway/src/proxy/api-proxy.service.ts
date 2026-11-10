@@ -1,4 +1,5 @@
 import { Logger, type OnModuleDestroy } from '@nestjs/common';
+import { isPublicPath } from '@skillswap/contracts';
 import { readFileSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { Socket } from 'node:net';
@@ -14,29 +15,15 @@ import {
 } from './identity';
 import { verifyBearerToken } from './jwt';
 
-/** Routes reachable without a token even when AUTH_REQUIRED=true (ADR-016). */
-const PUBLIC_PATHS = [
-  '/api/health',
-  '/api/docs',
-  '/api/docs-json',
-  '/api/auth/register',
-  '/api/auth/login',
-  '/api/auth/refresh',
-  '/api/auth/logout',
-  // SePay IPN: the provider holds no bearer token; authenticity is the edge IP allow-list.
-  '/api/wallet/top-ups/callback',
-  // JaaS presence webhook: it authenticates with X-Jaas-Signature over the raw body, so it
-  // arrives with no bearer token. Without this the API would 401 at the gateway in production,
-  // silently costing early class completion (AC-035).
-  '/api/internal/jitsi',
-];
-
-function isPublicPath(path: string): boolean {
-  const withoutQuery = path.split('?')[0];
-  return PUBLIC_PATHS.some(
-    (prefix) => withoutQuery === prefix || withoutQuery.startsWith(`${prefix}/`),
-  );
-}
+/**
+ * Routes reachable without a bearer token even when AUTH_REQUIRED=true (ADR-016).
+ *
+ * The list moved to `@skillswap/contracts` (ADR-042): this service and the API's
+ * `TrustedIdentityGuard` both enforce it, and when the two copies drifted the
+ * failure was silent — a webhook freed at the edge but 401'd by the API looks
+ * exactly like a vendor outage. One list, matched through `normalizeApiPath`, so
+ * `/api/v1/...` and the legacy `/api/...` form are both recognised.
+ */
 
 /**
  * The slice of http-proxy this service uses — narrow so tests can fake it.

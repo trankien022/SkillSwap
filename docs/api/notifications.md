@@ -10,11 +10,9 @@ Per-account notifications (FR-012) and the push device subscriptions that receiv
 
 Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
 
-### `POST /api/notification-devices`
+### `POST /api/v1/notification-devices`
 
 **Register or rotate a push device token (Route 29)**
-
-Register or rotate a push token for the caller (app launch, token refresh). Idempotent per installation.
 
 - Auth: 🔒 Bearer token required
 - Response: `DeviceSubscriptionDto`
@@ -29,11 +27,9 @@ Register or rotate a push token for the caller (app launch, token refresh). Idem
 | `isActive` | boolean | yes |  |
 | `createdAt` | string | yes | date-time |
 
-### `DELETE /api/notification-devices/{id}`
+### `DELETE /api/v1/notification-devices/{id}`
 
 **Deactivate an owned notification device (Route 30)**
-
-Deactivate an owned device on sign-out. Answers 204 No Content; a foreign or unknown id is 404.
 
 - Auth: 🔒 Bearer token required
 - Response: `no content`
@@ -42,11 +38,9 @@ Deactivate an owned device on sign-out. Answers 204 No Content; a foreign or unk
 |---|---|---|---|---|
 | `id` | path | string | yes | The device subscription id |
 
-### `GET /api/notifications`
+### `GET /api/v1/notifications`
 
 **List the signed-in user notification inbox (FR-016 / Route 28)**
-
-Paginated notifications for the caller, optionally only unread ones. Use on the bell/notification list.
 
 - Auth: 🔒 Bearer token required
 - Response: `NotificationsPageDto`
@@ -78,7 +72,7 @@ Paginated notifications for the caller, optionally only unread ones. Use on the 
 | `read` | boolean | yes |  |
 | `createdAt` | string | yes | date-time |
 
-### `POST /api/notifications/{id}/read`
+### `POST /api/v1/notifications/{id}/read`
 
 **Mark one owned notification as read (FR-016)**
 
@@ -96,7 +90,7 @@ Paginated notifications for the caller, optionally only unread ones. Use on the 
 | `success` | boolean | yes |  |
 | `unreadCount` | integer | yes | ≥ 0 |
 
-### `POST /api/notifications/read-all`
+### `POST /api/v1/notifications/read-all`
 
 **Mark the caller's whole inbox as read (FR-016)**
 

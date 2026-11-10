@@ -5,13 +5,15 @@
 Live, interactive spec: **`/api/docs`** (Swagger UI) · `/api/docs-json` (raw OpenAPI).
 For the guided booking flow, see [FRONTEND-API-GUIDE.md](./FRONTEND-API-GUIDE.md).
 
-All routes are prefixed with `/api`. Authenticated routes need `Authorization: Bearer <accessToken>`.
+Client routes are prefixed with `/api/v1` (ADR-042). Authenticated routes need `Authorization: Bearer <accessToken>`.
+
+Three routes are deliberately **not** versioned, because their URLs are registered outside this repository or belong to infrastructure: `POST /api/wallet/top-ups/callback` (SePay dashboard), `POST /api/internal/jitsi/presence` (8x8 console) and `GET /api/health` (deploy probe). The unversioned `/api/<route>` forms of client routes also work during the changeover.
 
 | Module | Endpoints | What it is for |
 |---|---|---|
 | [admin-operation](./admin-operation.md) | 8 | Administrator oversight (FR-015, ADR-034) |
-| [auth](./auth.md) | 5 | Account identity (FR-001, ADR-016) |
-| [classes](./classes.md) | 14 | The marketplace core (FR-005/FR-007/FR-009/FR-011/FR-020) |
+| [auth](./auth.md) | 6 | Account identity (FR-001, ADR-016) |
+| [classes](./classes.md) | 16 | The marketplace core (FR-005/FR-007/FR-009/FR-011/FR-020) |
 | [health](./health.md) | 1 | Liveness/readiness for the load balancer and CI. |
 | [internal](./internal.md) | 1 |  |
 | [notifications](./notifications.md) | 5 | Per-account notifications (FR-012) and the push device subscriptions that receive them |

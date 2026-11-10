@@ -10,6 +10,8 @@ import {
   Post,
   Query,
   Req,
+  VERSION_NEUTRAL,
+  Version,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -146,7 +148,10 @@ export class WalletController {
    * IPN carries no secret header and SePay does not send a `User-Agent`, so
    * neither can be used as a check.
    */
+  // ADR-042: the SePay IPN URL is registered once in SePay's dashboard against a fixed
+  // tunnel. It is a vendor callback, not client API surface, so it keeps its URL.
   @Post('top-ups/callback')
+  @Version(VERSION_NEUTRAL)
   @HttpCode(HttpStatus.OK)
   @RawResponse()
   @ApiOperation({ summary: 'SePay Payment Gateway IPN (ADR-033)' })
@@ -169,6 +174,7 @@ export class WalletController {
    * It is a plain GET and must never credit anything; the IPN above does that.
    */
   @Get('top-ups/callback')
+  @Version(VERSION_NEUTRAL)
   @RawResponse()
   @ApiOperation({ summary: 'Browser return from the SePay hosted checkout (ADR-033)' })
   returnFromCheckout(): SepayIpnAck {

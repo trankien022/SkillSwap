@@ -14,7 +14,7 @@ import {
 describe('StudentVerificationGateway', () => {
   const config: MobileConfig = {
     gatewayBaseUrl: 'http://localhost:4000',
-    apiBaseUrl: 'http://localhost:4000/api',
+    apiBaseUrl: 'http://localhost:4000/api/v1',
   };
 
   const sampleTarget = {
@@ -85,7 +85,7 @@ describe('StudentVerificationGateway', () => {
 
       expect(mockGatewayFetch).toHaveBeenCalledTimes(1);
       const [url, init] = mockGatewayFetch.mock.calls[0];
-      expect(url).toBe('http://localhost:4000/api/student-verifications/documents');
+      expect(url).toBe('http://localhost:4000/api/v1/student-verifications/documents');
       expect(init.method).toBe('POST');
       expect(init.headers['Authorization']).toBe('Bearer test-access-token');
       expect(init.headers['Content-Type']).toBe('application/json');
@@ -315,7 +315,7 @@ describe('StudentVerificationGateway', () => {
 
       expect(mockGatewayFetch).toHaveBeenCalledTimes(1);
       const [url, init] = mockGatewayFetch.mock.calls[0];
-      expect(url).toBe('http://localhost:4000/api/student-verifications');
+      expect(url).toBe('http://localhost:4000/api/v1/student-verifications');
       expect(init.method).toBe('POST');
       expect(JSON.parse(init.body)).toEqual({
         schoolName: 'HCMUT',
@@ -353,7 +353,7 @@ describe('StudentVerificationGateway', () => {
       const result = await gateway.getMyVerification();
 
       expect(mockGatewayFetch).toHaveBeenCalledWith(
-        'http://localhost:4000/api/student-verifications/me',
+        'http://localhost:4000/api/v1/student-verifications/me',
         expect.objectContaining({
           method: 'GET',
           headers: expect.objectContaining({
@@ -412,11 +412,11 @@ describe('StudentVerificationGateway', () => {
       expect(mockStorageFetch).toHaveBeenCalledTimes(1);
 
       expect(mockGatewayFetch.mock.calls[0][0]).toBe(
-        'http://localhost:4000/api/student-verifications/documents',
+        'http://localhost:4000/api/v1/student-verifications/documents',
       );
       expect(mockStorageFetch.mock.calls[0][0]).toBe(sampleTarget.uploadUrl);
       expect(mockGatewayFetch.mock.calls[1][0]).toBe(
-        'http://localhost:4000/api/student-verifications',
+        'http://localhost:4000/api/v1/student-verifications',
       );
 
       expect(result).toEqual(sampleVerification);
@@ -451,7 +451,7 @@ describe('StudentVerificationGateway', () => {
       // Verify Step 3 (POST /student-verifications) was NEVER called!
       expect(mockGatewayFetch).toHaveBeenCalledTimes(1);
       expect(mockGatewayFetch.mock.calls[0][0]).toBe(
-        'http://localhost:4000/api/student-verifications/documents',
+        'http://localhost:4000/api/v1/student-verifications/documents',
       );
     });
   });
