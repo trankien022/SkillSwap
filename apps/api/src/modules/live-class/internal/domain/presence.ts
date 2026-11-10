@@ -96,8 +96,12 @@ export function evaluateRoomIdle(input: RoomIdleInput): RoomIdleEvaluation {
   }
 
   // 3. Any participant still present blocks the rule.
-  if (input.sessions.some((session) => session.leftAt === null)) {
-    return { idle: false, reason: 'occupied' };
+  const departures: Date[] = [];
+  for (const session of input.sessions) {
+    if (session.leftAt === null) {
+      return { idle: false, reason: 'occupied' };
+    }
+    departures.push(session.leftAt);
   }
 
   // 4. Everyone has left; is it long enough ago?
@@ -109,9 +113,11 @@ export function evaluateRoomIdle(input: RoomIdleInput): RoomIdleEvaluation {
   // never ran, releasing the teacher's income for it. Clamping each departure up to
   // `startsAt` keeps the honest case intact: somebody who leaves at +12 still starts the
   // clock at +12.
-  const latestLeft = Math.max(
-    ...input.sessions.map((session) => Math.max((session.leftAt as Date).getTime(), input.startsAt.getTime())),
-  );
+  //
+  // `departures` is non-empty: gate 2 rejected an empty session list, and every entry above
+  // contributed one, so the spread below is never `Math.max()` on nothing (`-Infinity`).
+  const startsAtMs = input.startsAt.getTime();
+  const latestLeft = Math.max(...departures.map((leftAt) => Math.max(leftAt.getTime(), startsAtMs)));
   if (input.now.getTime() - latestLeft < graceMs) {
     return { idle: false, reason: 'within_grace' };
   }
