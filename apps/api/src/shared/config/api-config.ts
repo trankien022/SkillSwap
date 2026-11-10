@@ -21,6 +21,33 @@ function readInt(name: string, fallback: number): number {
 }
 
 /**
+ * Reads an integer that is allowed to be **zero**, refusing only negatives.
+ *
+ * `readInt` rejects `<= 0`, which is right for ports, ports-of-wait and intervals whose
+ * zero would be a busy loop. Some settings are the opposite: `ROOM_IDLE_GRACE_MINUTES = 0`
+ * is a meaningful instruction ("close as soon as everyone has gone"), and reusing `readInt`
+ * would have made the documented value impossible to configure at all.
+ *
+ * A negative or non-numeric value still fails loudly at boot. Silently coercing a typo to a
+ * plausible number is how a money path acquires a rule nobody chose.
+ */
+function readNonNegativeInt(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw === '') {
+    return fallback;
+  }
+  // `Number`, not `parseInt`: `parseInt('1.5x')` is `1` and `parseInt('5x')` is `5`, so a
+  // truncated value would be accepted as if it had been written deliberately. `Number` is
+  // all-or-nothing, and the integer check below rejects a fractional grace, which would
+  // otherwise be silently floored into a different rule.
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    throw new Error(`Invalid non-negative integer for ${name}: ${raw}`);
+  }
+  return parsed;
+}
+
+/**
  * Reads a boolean, refusing anything that is not visibly one of the two states.
  *
  * Deliberately not `=== 'true'`: a typo'd value would then silently mean "false", and the two
@@ -90,6 +117,21 @@ export class ApiConfig {
   readonly jitsiDomain: string;
   readonly jitsiTokenTtlSeconds: number;
   readonly jitsiOpenMinutes: number;
+  /**
+   * FR-020 / AC-035 (ADR-021 Amendment D): how long the room must stay empty before the
+   * class may complete with basis `room_idle`.
+   *
+   * Was a constant (`ROOM_IDLE_GRACE_MINUTES = 5`), which made the one tunable part of the
+   * early-completion rule impossible to change without a code change. Default stays 5, the
+   * value W1 C3a decided.
+   *
+   * `0` is valid and means "complete on the first sweep after the last departure". Read with
+   * `readNonNegativeInt`, not `readInt`, because `readInt` rejects zero.
+   *
+   * Note: the completion sweeper ticks every 60 s, so any value below one minute behaves
+   * exactly like 0.
+   */
+  readonly jitsiIdleGraceMinutes: number;
   /**
    * FR-011 / AC-035: endpoint secret used to verify `X-Jaas-Signature` on presence webhooks.
    * Empty = refuse all presence, so an unset secret is never mistaken for "trust everyone".
@@ -220,6 +262,9 @@ export class ApiConfig {
     this.jitsiDomain = readString('JITSI_DOMAIN', '8x8.vc');
     this.jitsiTokenTtlSeconds = readInt('JITSI_TOKEN_TTL_SECONDS', 3600);
     this.jitsiOpenMinutes = readInt('JITSI_OPEN_MINUTES', 15);
+    // ADR-021 Amendment D: zero is meaningful here (close as soon as the room empties),
+    // so this deliberately does not use readInt.
+    this.jitsiIdleGraceMinutes = readNonNegativeInt('ROOM_IDLE_GRACE_MINUTES', 5);
     this.classReminderOffsetMinutes = readInt('CLASS_REMINDER_OFFSET_MINUTES', 15);
     // Deliberately empty by default: an unset secret must refuse presence rather than
     // accept it, so a misconfigured deployment cannot have its classes closed by strangers.

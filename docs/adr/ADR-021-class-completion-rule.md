@@ -1,6 +1,6 @@
 # ADR-021: Class completion and income release rule
 
-- **Status:** Accepted — **amended 2026-10-25 (§Amendment A)**: `teacher_ended` is removed; **amended 2026-11-10 (§Amendment B)**: the web `Start` control is removed; **amended 2026-11-10 (§Amendment C)**: no learner-driven release
+- **Status:** Accepted — **amended 2026-10-25 (§Amendment A)**: `teacher_ended` is removed; **amended 2026-11-10 (§Amendment B)**: the web `Start` control is removed; **amended 2026-11-10 (§Amendment C)**: no learner-driven release; **amended 2026-11-10 (§Amendment D)**: the idle clock starts at `starts_at`, `ROOM_DESTROYED` is recovery-only, and the grace is configuration
 - **Level:** Software (C4 Level 3 · Component)
 - **Date:** 2026-10-10
 
@@ -147,4 +147,102 @@ never calls `/confirm`, and is offered only when the server reports
   renders the review control only when eligible (`Dashboard.card`).
 - Unchanged: release remains covered by ADR-021's own verification and
   `wallet-ledger`'s release tests.
+
+---
+
+## Amendment D — the idle clock starts when the class does (2026-11-10)
+
+**Supersedes:** Amendment A §2's implementation, not its intent. Amendment A said "if nobody
+is in the class any more, the room closes and the class completes" and gated it on
+`starts_at`; the gate turned out to be satisfiable by a departure that happened *before* the
+class, which is the same defect Amendment A was written to remove.
+
+**Context.** Verifying the JaaS presence contract against 8x8's documentation
+(`developer.8x8.com/jaas/docs/webhooks-payload`, read 2026-11-10) turned up four defects in
+the shipped idle rule. Two of them change behaviour on a money path.
+
+### D.1 A pre-start departure completed the class at the first sweep after `starts_at`
+
+`evaluateRoomIdle` compared `now` against `startsAt` but never asked when the participants
+left. The room opens `JITSI_OPEN_MINUTES` (15) before the class, so:
+
+1. Teacher opens the room at `starts_at − 15m` to test their camera.
+2. Teacher leaves at `starts_at − 10m`.
+3. At `starts_at`, the rule sees "started" and "everyone gone for 10 min > 5 min grace" and
+   reports idle.
+
+The class then completes with basis `room_idle`, publishing `class.completed` and releasing
+the Teacher's pending income (ADR-018) for a session that never happened.
+
+**Decision.** The idle clock starts at `starts_at`, not at the first departure. A session
+that ended before the class started is treated as having ended **at** `starts_at`, so the
+full grace must still elapse *after* the class begins. This keeps the existing
+"never before `starts_at`" invariant in substance rather than only in the letter, and it
+means an early camera test can no longer end a class.
+
+### D.2 A departure was ignored once the booking was no longer `confirmed`
+
+Presence resolved its party list from bookings in state `confirmed`. A Learner whose booking
+is cancelled mid-class therefore stopped being a party, their `PARTICIPANT_LEFT` returned
+`not_a_party`, and their session row kept `left_at IS NULL` — leaving the room permanently
+"occupied" so `room_idle` could never fire.
+
+**Decision.** A **join** remains a party check: a stranger must not create presence, because
+that is how an outsider could hold a room open or be its last departure. A **leave** only
+requires that the room is one we issued and that the account holds an open session. A
+departure is evidence about the room, not a claim about entitlement, and refusing it records
+a false fact. A leave with no open session stays a no-op.
+
+### D.3 `ROOM_DESTROYED` is accepted for recovery, and never completes a class
+
+8x8 documents `ROOM_DESTROYED` as fired "after all of the participants have left", and the
+controller previously discarded it as an unknown event.
+
+It is **not** used as a completion trigger. JaaS creates a room on first join and destroys it
+when the room empties, so a brief disconnect produces `PARTICIPANT_LEFT` →
+`ROOM_DESTROYED` → `ROOM_CREATED` on reconnect; completing on that signal would end a
+60-minute class in its second minute and release escrow irreversibly (§5), with the Learner
+still connected. The vendor documentation names the case — `disconnectReason: "unknown"`,
+"a participant experienced a connection issue". The event also says nothing about emptiness
+that the last `PARTICIPANT_LEFT` does not already say.
+
+Its value is fault tolerance. Presence is *inferred* from N deliveries, so a single lost
+`PARTICIPANT_LEFT` leaves a row open indefinitely and the class silently loses its early
+path. `ROOM_DESTROYED` arrives regardless and closes every open session for the class, under
+the same `starts_at` floor as D.1.
+
+The asymmetry is the decision: closing a presence row is reversible (a reconnect opens a new
+one), completing a class is not.
+
+### D.4 The grace period is configuration, and `0` is a valid value
+
+`ROOM_IDLE_GRACE_MINUTES` was a constant with no environment override, unlike
+`JITSI_OPEN_MINUTES`. It is now read from the environment, defaulting to **5** (W1 C3a).
+
+`0` is meaningful and must not be rejected: it completes the class on the first sweep after
+the last departure. `ApiConfig`'s existing `readInt` throws on `<= 0`, so this uses a
+separate `readNonNegativeInt`. A negative or non-numeric value still fails loudly at boot:
+silently coercing a typo into a plausible number is how a money path gains a rule nobody
+chose.
+
+**Note for operators.** The completion sweeper ticks every 60 s, so any value below one
+minute behaves the same as `0`. A non-zero grace shorter than a record/reconnect cycle is the
+only reason to deviate from the default.
+
+**Consequences.**
+
+- (+) An early room visit can no longer complete a class or release income.
+- (+) A class can still end early when its booking was cancelled mid-session.
+- (+) A lost webhook no longer disables the early path permanently.
+- (−) A class whose only participants left before `starts_at` still waits the full grace
+  after the start before completing, rather than completing instantly.
+- (−) One more environment variable to document.
+
+**Verification (amended).** Unit: a session joining and leaving entirely before `starts_at`
+is **not** idle at `starts_at`, and becomes idle only after the grace elapses post-start;
+a cancelled-booking departure closes its row; `ROOM_DESTROYED` closes open rows without
+completing; grace `0` completes on the first sweep and grace `5` does not. Controller:
+`ROOM_DESTROYED` is signature-checked like any other delivery. Config: `0` accepted,
+`-1` rejected at boot.
+
 
