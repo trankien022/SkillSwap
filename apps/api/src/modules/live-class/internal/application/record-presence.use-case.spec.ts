@@ -215,6 +215,96 @@ describe('RecordPresenceUseCase (FR-011 / AC-035)', () => {
     expect(await presence.listSessions(CLASS_ID)).toEqual([]);
   });
 
+  it('closes open sessions on ROOM_DESTROYED, recovering a lost departure', async () => {
+    // ADR-021 Amendment D.3. Presence is inferred from individual deliveries, so one lost
+    // `PARTICIPANT_LEFT` leaves a row open forever and the class never qualifies for the idle
+    // rule. ROOM_DESTROYED arrives regardless and closes what the individual events missed.
+    const classes = new InMemoryClassRepository(
+      classView({ id: CLASS_ID, teacherId: 'teacher-1', state: 'in_progress' }),
+    );
+    const bookings = new InMemoryBookingRepository([]);
+    const presence = new InMemoryPresenceRepository();
+    const useCase = new RecordPresenceUseCase(classes, bookings, presence);
+
+    await useCase.execute(join('teacher-1'));
+    // No `leave` is delivered — this is the packet that went missing.
+    const destroyed = await useCase.execute({
+      type: 'room-destroyed',
+      room: `skillswap-${CLASS_ID}`,
+      classId: CLASS_ID,
+      accountId: '',
+      occurredAt: AT,
+    });
+
+    expect(destroyed).toEqual({ accepted: true });
+    const sessions = await presence.listSessions(CLASS_ID);
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]?.leftAt).toEqual(AT);
+  });
+
+  it('treats ROOM_DESTROYED as recovery only, never as a completion signal', async () => {
+    // The event cannot distinguish "everyone finished" from "the WiFi dropped": JaaS destroys
+    // the room when it empties and recreates it on reconnect. Closing rows is reversible, so
+    // applying it is safe; the idle grace is what actually decides completion, and it still
+    // has to run afterwards.
+    const classes = new InMemoryClassRepository(
+      classView({ id: CLASS_ID, teacherId: 'teacher-1', state: 'in_progress' }),
+    );
+    const presence = new InMemoryPresenceRepository();
+    const useCase = new RecordPresenceUseCase(classes, new InMemoryBookingRepository([]), presence);
+    const startsAt = new Date(AT.getTime() - 60 * 60_000);
+
+    await useCase.execute(join('teacher-1'));
+    await useCase.execute({
+      type: 'room-destroyed',
+      room: `skillswap-${CLASS_ID}`,
+      classId: CLASS_ID,
+      accountId: '',
+      occurredAt: AT,
+    });
+
+    const sessions = await presence.listSessions(CLASS_ID);
+    // Empty, but the grace starts now rather than being skipped.
+    expect(evaluateRoomIdle({ startsAt, now: AT, sessions })).toEqual({
+      idle: false,
+      reason: 'within_grace',
+    });
+    expect(
+      evaluateRoomIdle({
+        startsAt,
+        now: new Date(AT.getTime() + ROOM_IDLE_GRACE_MINUTES * 60_000),
+        sessions,
+      }),
+    ).toEqual({ idle: true, reason: 'idle' });
+  });
+
+  it('is idempotent for a redelivered ROOM_DESTROYED', async () => {
+    // JaaS retries (and the docs tell consumers to dedupe on `idempotencyKey`, which this
+    // handler does not track), so a second delivery must not close anything twice.
+    const classes = new InMemoryClassRepository(
+      classView({ id: CLASS_ID, teacherId: 'teacher-1', state: 'in_progress' }),
+    );
+    const presence = new InMemoryPresenceRepository();
+    const useCase = new RecordPresenceUseCase(classes, new InMemoryBookingRepository([]), presence);
+    const destroyed = {
+      type: 'room-destroyed' as const,
+      room: `skillswap-${CLASS_ID}`,
+      classId: CLASS_ID,
+      accountId: '',
+      occurredAt: AT,
+    };
+
+    await useCase.execute(join('teacher-1'));
+    await useCase.execute(destroyed);
+    const later = new Date(AT.getTime() + 60_000);
+    await useCase.execute({ ...destroyed, occurredAt: later });
+
+    const sessions = await presence.listSessions(CLASS_ID);
+    expect(sessions).toHaveLength(1);
+    // The first close stands; the redelivery does not move the timestamp forward.
+    expect(sessions[0]?.leftAt).toEqual(AT);
+  });
+
   it('exposes the Teacher first join as the no-show evidence', async () => {
     const { presence, useCase } = setup();
     await useCase.execute(join('teacher-1'));

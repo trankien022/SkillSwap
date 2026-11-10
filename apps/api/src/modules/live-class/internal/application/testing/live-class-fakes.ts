@@ -282,6 +282,17 @@ export class InMemoryPresenceRepository implements PresenceRepository {
     open.session = { ...open.session, leftAt: record.joinedAt };
   }
 
+  async closeOpenSessions(classId: string, leftAt: Date): Promise<number> {
+    let closed = 0;
+    for (const row of this.sessions) {
+      if (row.classId === classId && row.session.leftAt === null) {
+        row.session = { ...row.session, leftAt };
+        closed += 1;
+      }
+    }
+    return closed;
+  }
+
   async listSessions(classId: string): Promise<PresenceSession[]> {
     return this.sessions.filter((row) => row.classId === classId).map((row) => row.session);
   }

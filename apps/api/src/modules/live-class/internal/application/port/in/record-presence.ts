@@ -8,7 +8,12 @@ export interface RecordPresenceCommand {
   room: string;
   /** The class the room name resolved to. */
   classId: string;
-  /** The authenticated occupant: the `context.user.id` claim of the issued token. */
+  /**
+   * The authenticated occupant: the `context.user.id` claim of the issued token.
+   *
+   * Empty for `room-destroyed`, which 8x8 emits without any `data.id`: the event describes
+   * the room, not a person, so it has no occupant to attribute.
+   */
   accountId: string;
   occurredAt: Date;
 }

@@ -35,7 +35,7 @@ const SIGNATURE_TOLERANCE_SECONDS = 5 * 60;
  * JWT `context.user.id` we issued, which is why a participant cannot be impersonated by
  * choosing a similar display name.
  *
- * A webhook carries many event types and only two of them mean anything here, so `eventType`
+ * A webhook carries many event types and only three of them mean anything here, so `eventType`
  * stays a plain string: narrowing it with an enum would turn every unrelated event (recording,
  * transcription, lobby) into a schema failure and a needless 400.
  */
@@ -57,10 +57,22 @@ const jaasWebhookSchema = z.object({
 
 type JaasWebhookBody = z.infer<typeof jaasWebhookSchema>;
 
-/** JaaS event names mapped onto the domain's two presence types. */
+/** JaaS event names mapped onto the domain's presence types. */
 const EVENT_TYPES: Readonly<Record<string, 'participant-joined' | 'participant-left'>> = {
   PARTICIPANT_JOINED: 'participant-joined',
   PARTICIPANT_LEFT: 'participant-left',
+};
+
+/**
+ * Room-scoped events, handled separately because they carry **no `data.id`**.
+ *
+ * 8x8 documents `ROOM_DESTROYED`'s `data` as only `conference` / `isBreakout` /
+ * `breakoutRoomId` — there is no participant to attribute the event to. Consequently this
+ * must be routed *before* the identity gate below, or it is refused as `unknown_party`,
+ * which is exactly what happened while it was missing from the map entirely.
+ */
+const ROOM_EVENT_TYPES: Readonly<Record<string, 'room-destroyed'>> = {
+  ROOM_DESTROYED: 'room-destroyed',
 };
 
 /**
@@ -112,12 +124,6 @@ export class JitsiPresenceController {
       return { accepted: false, reason: 'unknown_room' };
     }
 
-    const type = EVENT_TYPES[parsed.data.eventType];
-    if (type === undefined) {
-      // Recordings, lobby, transcription: real events this endpoint has no opinion on.
-      return { accepted: false, reason: 'unknown_room' };
-    }
-
     const room = parsed.data.fqn ?? parsed.data.conference;
     if (room === undefined) {
       return { accepted: false, reason: 'unknown_room' };
@@ -125,6 +131,24 @@ export class JitsiPresenceController {
 
     const classId = classIdFromRoom(room);
     if (classId === null) {
+      return { accepted: false, reason: 'unknown_room' };
+    }
+
+    const roomType = ROOM_EVENT_TYPES[parsed.data.eventType];
+    if (roomType !== undefined) {
+      // No occupant: `occurredAt` is the whole payload as far as presence is concerned.
+      return this.record.execute({
+        type: roomType,
+        room,
+        classId,
+        accountId: '',
+        occurredAt: this.occurredAt(parsed.data.timestamp),
+      });
+    }
+
+    const type = EVENT_TYPES[parsed.data.eventType];
+    if (type === undefined) {
+      // Recordings, lobby, transcription: real events this endpoint has no opinion on.
       return { accepted: false, reason: 'unknown_room' };
     }
 

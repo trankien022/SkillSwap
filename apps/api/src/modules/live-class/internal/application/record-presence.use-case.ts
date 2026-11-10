@@ -1,6 +1,7 @@
 import {
   interpretPresenceDeparture,
   interpretPresenceEvent,
+  interpretRoomDestroyed,
   type PresenceEvent,
 } from '../domain/presence-webhook';
 import type {
@@ -39,6 +40,18 @@ export class RecordPresenceUseCase implements RecordPresencePort {
 
   async execute(command: RecordPresenceCommand): Promise<RecordPresenceResult> {
     const classView = await this.classes.findById(command.classId);
+
+    // ROOM_DESTROYED first: it carries no occupant, so it must not reach any path that reads
+    // one (ADR-021 Amendment D.3). Recovery only — closing rows is reversible, completing a
+    // class is not, and JaaS emits this on a temporary disconnect too.
+    if (command.type === 'room-destroyed') {
+      const intent = interpretRoomDestroyed(command.room, classView === null ? null : classView.id);
+      if (!intent.accepted) {
+        return { accepted: false, reason: intent.reason };
+      }
+      await this.presence.closeOpenSessions(intent.classId, command.occurredAt);
+      return { accepted: true };
+    }
 
     const event: PresenceEvent = {
       type: command.type,

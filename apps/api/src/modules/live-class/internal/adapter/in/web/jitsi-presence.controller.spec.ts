@@ -193,6 +193,57 @@ describe('JitsiPresenceController (FR-011 / AC-035 / ADR-039)', () => {
     expect(presence.commands[0]?.occurredAt).toEqual(new Date(1_760_000_000_000));
   });
 
+  it('routes ROOM_DESTROYED, which carries no participant identity', async () => {
+    // ADR-021 Amendment D.3. The shape is 8x8's documented example verbatim: `data` has only
+    // `conference` / `isBreakout` / `breakoutRoomId`. Because there is no `data.id`, the event
+    // must be routed before the identity gate — it used to be discarded as `unknown_room`, and
+    // would have been refused as `unknown_party` even once mapped.
+    const { controller, presence } = controllerWith();
+    const body = {
+      idempotencyKey: '251d4ca8-6192-403c-9098-645042679257',
+      customerId: 'c2824d584eac4489a1e32e4e164d5a3c',
+      appId: APP_ID,
+      eventType: 'ROOM_DESTROYED',
+      sessionId: 'c3348153-1027-4382-afad-5ae91b433c26',
+      timestamp: 1_760_000_000_000,
+      fqn: `${APP_ID}/skillswap-cls-1`,
+      data: {
+        conference: `cls-1@conference.${APP_ID}.stage.8x8.vc`,
+        isBreakout: false,
+      },
+    };
+
+    const result = await call(controller, body, { 'x-jaas-signature': signatureFor(body) });
+
+    expect(result).toEqual({ accepted: true });
+    expect(presence.commands).toEqual([
+      {
+        type: 'room-destroyed',
+        room: `${APP_ID}/skillswap-cls-1`,
+        classId: 'cls-1',
+        // No occupant to attribute: the event is about the room.
+        accountId: '',
+        occurredAt: new Date(1_760_000_000_000),
+      },
+    ]);
+  });
+
+  it('verifies the signature on ROOM_DESTROYED like any other delivery', async () => {
+    // Recovery closes presence rows, so an unsigned delivery must not be able to trigger it.
+    const { controller, presence } = controllerWith();
+    const body = joinedBody({ eventType: 'ROOM_DESTROYED', data: { conference: 'x' } });
+    await expect(call(controller, body, {})).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(presence.commands).toHaveLength(0);
+  });
+
+  it('ignores ROOM_DESTROYED for a room this application never created', async () => {
+    const { controller, presence } = controllerWith();
+    const body = joinedBody({ eventType: 'ROOM_DESTROYED', fqn: `${APP_ID}/random-room` });
+    const result = await call(controller, body, { 'x-jaas-signature': signatureFor(body) });
+    expect(result).toEqual({ accepted: false, reason: 'unknown_room' });
+    expect(presence.commands).toHaveLength(0);
+  });
+
   it('treats a missing timestamp as now', async () => {
     const { controller, presence } = controllerWith();
     const body = joinedBody({ timestamp: undefined });

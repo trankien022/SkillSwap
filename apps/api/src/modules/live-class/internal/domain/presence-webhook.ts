@@ -27,7 +27,7 @@
 
 import { roomName } from './room-access';
 
-export const PRESENCE_EVENT_TYPES = ['participant-joined', 'participant-left'] as const;
+export const PRESENCE_EVENT_TYPES = ['participant-joined', 'participant-left', 'room-destroyed'] as const;
 export type PresenceEventType = (typeof PRESENCE_EVENT_TYPES)[number];
 
 /** The prefix every room this application issues begins with (ADR-020). */
@@ -152,4 +152,32 @@ export function interpretPresenceDeparture(
     accountId: event.occupantId,
     joinedAt: event.occurredAt,
   };
+}
+
+/** A room-level intent names no occupant: `ROOM_DESTROYED` describes the room, not a person. */
+export type PresenceRoomIntent =
+  | { readonly accepted: true; readonly classId: string }
+  | {
+      readonly accepted: false;
+      readonly reason: 'unknown_room' | 'not_a_party' | 'unknown_party';
+    };
+
+/**
+ * Maps a `ROOM_DESTROYED` delivery to a room-level presence write (ADR-021 Amendment D.3).
+ *
+ * The event has **no `data.id`** — it is about the room, not a participant — so it must be
+ * routed before anything reads an occupant identity. That is why it was previously discarded:
+ * the controller's identity gate refused it before the event type was ever consulted.
+ *
+ * The only check kept is that the room is one we issued and the class exists.
+ */
+export function interpretRoomDestroyed(
+  room: string | null | undefined,
+  knownClassId: string | null,
+): PresenceRoomIntent {
+  const classId = classIdFromRoom(room);
+  if (classId === null || knownClassId === null || knownClassId !== classId) {
+    return { accepted: false, reason: 'unknown_room' };
+  }
+  return { accepted: true, classId };
 }
