@@ -1,12 +1,14 @@
 import './init-env';
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
+import { VersioningType } from '@nestjs/common';
 import { SwaggerModule } from '@nestjs/swagger';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { pinoHttp } from 'pino-http';
 import { AppModule } from './app.module';
 import { ApiConfig } from '../shared/config/api-config';
 import { AppLogger } from '../shared/logger/app-logger';
+import { legacyPathRewrite } from '../shared/http/legacy-path-rewrite';
 import { createHttpLoggerOptions } from './http-logger-options';
 import { buildOpenApiDocument } from './openapi';
 
@@ -21,6 +23,19 @@ async function bootstrap(): Promise<void> {
   app.useLogger(logger);
   app.use(pinoHttp(createHttpLoggerOptions(logger.raw)));
   app.setGlobalPrefix('api');
+
+  /**
+   * ADR-042: the client-facing surface is `/api/v1`. `defaultVersion: '1'` makes
+   * every route versioned unless it declares `@Version(VERSION_NEUTRAL)` — the
+   * vendor callbacks, health and the OpenAPI doc, whose URLs are registered
+   * elsewhere and must not move.
+   *
+   * the legacy rewrite keeps the unversioned client paths working for one release,
+   * so the API can deploy before the web and mobile clients do.
+   */
+  app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
+  app.use(legacyPathRewrite());
+
   app.enableShutdownHooks();
 
   SwaggerModule.setup('api/docs', app, buildOpenApiDocument(app), {

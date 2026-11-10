@@ -7,6 +7,7 @@ import {
   Post,
   Req,
   UnauthorizedException,
+  VERSION_NEUTRAL,
 } from '@nestjs/common';
 import { ApiHeader, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
@@ -79,7 +80,10 @@ const EVENT_TYPES: Readonly<Record<string, 'participant-joined' | 'participant-l
  * because a non-2xx makes JaaS retry events that will never become valid. A malformed body is
  * the one 400: retrying it cannot help.
  */
-@Controller('internal/jitsi')
+// ADR-042: this URL is registered in the 8x8 console, which we cannot change from
+// here. A `/v1` segment would stop presence arriving and silently degrade class
+// completion (AC-035), so the route opts out of versioning entirely.
+@Controller({ path: 'internal/jitsi', version: VERSION_NEUTRAL })
 @ApiTags('internal')
 export class JitsiPresenceController {
   constructor(

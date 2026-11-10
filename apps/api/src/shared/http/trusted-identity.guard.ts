@@ -1,28 +1,17 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { isPublicPath } from '@skillswap/contracts';
 import type { AuthMode } from '../config/api-config';
 import { headerValue, type RequestWithIdentity } from './identity';
 
-const PUBLIC_PREFIXES = [
-  '/api/health',
-  '/api/docs',
-  '/api/docs-json',
-  // FR-001 / ADR-016: reachable before a session exists. `GET /api/auth/me`
-  // is intentionally NOT public — it reads the trusted identity.
-  '/api/auth/register',
-  '/api/auth/login',
-  '/api/auth/refresh',
-  '/api/auth/logout',
-  // FR-008 / ADR-017: the provider callback is authenticated by its HMAC
-  // signature, not a user session.
-  '/api/wallet/top-ups/callback',
-  // FR-011 / FR-020 / ADR-039: the JaaS presence webhook cannot carry user
-  // headers — JaaS is not a user. It authenticates itself with a signed
-  // delivery (`X-Jaas-Signature`, an HMAC over the raw body, compared in
-  // constant time), so requiring a trusted identity on top would make the
-  // endpoint unreachable in strict mode. Being public here means "no user
-  // session", not "no authentication".
-  '/api/internal/jitsi',
-];
+/**
+ * The allow-list lives in `@skillswap/contracts` (ADR-042) because the gateway keeps
+ * the same list. It used to be duplicated here and there, and a divergence in the
+ * silent direction — public at the edge, protected at the API — is invisible.
+ *
+ * Entries are matched through `normalizeApiPath`, so both `/api/v1/auth/login` and the
+ * legacy `/api/auth/login` are recognised from one list. `GET /api/auth/me` is
+ * deliberately absent: it reads the trusted identity, so it needs a session.
+ */
 
 /**
  * In strict mode, accepts the X-User-* headers injected by the trusted
@@ -37,7 +26,7 @@ export class TrustedIdentityGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<RequestWithIdentity>();
     const path = request.path ?? request.url ?? '';
 
-    if (PUBLIC_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) {
+    if (isPublicPath(path)) {
       request.user = { id: 'anonymous' };
       return true;
     }

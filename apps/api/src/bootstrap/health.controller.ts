@@ -1,4 +1,4 @@
-import { Controller, Get, Inject } from '@nestjs/common';
+import { Controller, Get, Inject, Version, VERSION_NEUTRAL } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ModuleDataSourceRegistry } from '../shared/messaging/module-registry';
 import { RawResponse } from '../shared/http/response-code.decorator';
@@ -18,6 +18,7 @@ export class HealthController {
   ) {}
 
   @Get()
+  @Version(VERSION_NEUTRAL)
   @RawResponse()
   @ApiOperation({ summary: 'Liveness and readiness of the module data sources' })
   @ApiOkResponse({
