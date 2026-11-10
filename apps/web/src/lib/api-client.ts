@@ -1,7 +1,14 @@
-import type { WalletBalanceView } from '@skillswap/contracts';
+import { API_BASE_PATH, type WalletBalanceView } from '@skillswap/contracts';
 
 // Use empty string on client side so it hits Next.js rewrites, avoiding CORS
 export const API = typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000');
+
+/**
+ * ADR-042: the client-facing API is versioned. Every browser request goes through
+ * this one constant so a future `/v2` (or a path fix) is a one-line change, and so
+ * `api-map.test.ts` can prove no call site bypasses it.
+ */
+export const API_PREFIX = API_BASE_PATH;
 
 export const TOKEN_STORAGE_KEY = 'skillswap-api-tokens';
 export const USER_STORAGE_KEY = 'skillswap-api-user';
@@ -127,7 +134,7 @@ export async function refreshSession(): Promise<TokenPair | null> {
 
   refreshInFlight = (async () => {
     try {
-      const res = await fetch(`${API}/api/auth/refresh`, {
+      const res = await fetch(`${API}${API_PREFIX}/auth/refresh`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ refreshToken: current.refreshToken }),
@@ -154,7 +161,7 @@ export async function callApi(path: string, init: RequestInit = {}, retry = true
   const session = getTokens();
   const token = session?.accessToken;
 
-  const res = await fetch(`${API}/api${path}`, {
+  const res = await fetch(`${API}${API_PREFIX}${path}`, {
     ...init,
     headers: {
       'content-type': 'application/json',
@@ -271,8 +278,8 @@ export async function authenticate(
   // Both targets are literals so `api-map.test.ts` can see them.
   const res =
     mode === 'register'
-      ? await fetch(`${API}/api/auth/register`, init)
-      : await fetch(`${API}/api/auth/login`, init);
+      ? await fetch(`${API}${API_PREFIX}/auth/register`, init)
+      : await fetch(`${API}${API_PREFIX}/auth/login`, init);
 
   if (!res.ok) {
     const errorBody = (await res.json().catch(() => null)) as ApiEnvelope<unknown> | null;
@@ -293,7 +300,7 @@ export async function authenticate(
 
   // Immediately try to fetch user info from /auth/me or store payload
   try {
-    const meRes = await fetch(`${API}/api/auth/me`, {
+    const meRes = await fetch(`${API}${API_PREFIX}/auth/me`, {
       headers: {
         'content-type': 'application/json',
         authorization: `Bearer ${data.accessToken}`,
@@ -342,7 +349,7 @@ export async function logout(): Promise<void> {
   const session = getTokens();
   if (session?.refreshToken) {
     try {
-      await fetch(`${API}/api/auth/logout`, {
+      await fetch(`${API}${API_PREFIX}/auth/logout`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ refreshToken: session.refreshToken }),

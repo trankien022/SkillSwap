@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { envelopeOk } from '@skillswap/contracts';
+import { API_BASE_PATH, envelopeOk } from '@skillswap/contracts';
 import { DashboardAuthError, HttpLearnerDashboardGateway } from './http-gateway';
 
 /**
@@ -57,7 +57,7 @@ function stubApi(map: {
     if (url.includes('/wallet/balance')) {
       return Promise.resolve(jsonResponse(envelopeOk(map.balance)));
     }
-    const status = map.postStatus?.[url.split('/api')[1] ?? ''] ?? 200;
+    const status = map.postStatus?.[url.split(API_BASE_PATH)[1] ?? ''] ?? 200;
     return Promise.resolve(jsonResponse(envelopeOk({ ok: true }), status));
   });
   vi.stubGlobal('fetch', fetchMock);

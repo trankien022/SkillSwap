@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { envelopeErr, envelopeOk } from '@skillswap/contracts';
+import { API_BASE_PATH, envelopeErr, envelopeOk } from '@skillswap/contracts';
 import { HttpBookingGateway } from './http-gateway';
 import { BookingError } from './domain';
 
@@ -65,7 +65,7 @@ describe('HttpBookingGateway', () => {
 
     const view = await new HttpBookingGateway().getClass(CLASS_ID);
 
-    expect(fetchMock.mock.calls[0][0]).toContain(`/api/classes/${CLASS_ID}`);
+    expect(fetchMock.mock.calls[0][0]).toContain(`${API_BASE_PATH}/classes/${CLASS_ID}`);
     expect(view).toEqual({
       id: CLASS_ID,
       teacherId: 'teacher-1',
@@ -89,7 +89,7 @@ describe('HttpBookingGateway', () => {
     const result = await new HttpBookingGateway().bookClass(CLASS_ID, IDEMPOTENCY_KEY);
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toContain(`/api/classes/${CLASS_ID}/bookings`);
+    expect(url).toContain(`${API_BASE_PATH}/classes/${CLASS_ID}/bookings`);
     expect(init.method).toBe('POST');
     expect(JSON.parse(init.body)).toEqual({ idempotencyKey: IDEMPOTENCY_KEY });
     expect(init.headers['idempotency-key']).toBe(IDEMPOTENCY_KEY);
@@ -142,7 +142,7 @@ describe('HttpBookingGateway', () => {
     const reply = await new HttpBookingGateway().confirmBooking('booking-1');
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toContain('/api/classes/bookings/booking-1/confirm');
+    expect(url).toContain(`${API_BASE_PATH}/classes/bookings/booking-1/confirm`);
     expect(init.method).toBe('POST');
     // `confirmed: false` is a legitimate answer while the debit settles, so it
     // parses into data instead of being thrown or believed as success.
