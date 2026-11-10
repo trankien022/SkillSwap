@@ -229,6 +229,13 @@ chose.
 minute behaves the same as `0`. A non-zero grace shorter than a record/reconnect cycle is the
 only reason to deviate from the default.
 
+What `0` does **not** remove is the `starts_at` floor (D.1): the class still cannot complete
+before it starts, because that check runs before the grace is consulted. It does mean that a
+session which joined and left during the early-open window completes at the first sweep at or
+after `starts_at`, since there is no waiting time left to elapse. That is what "close as soon
+as everyone has gone" means, and it is why the default stays at 5 rather than 0 — the grace
+is what keeps a camera test in the pre-class window from ending the session.
+
 **Consequences.**
 
 - (+) An early room visit can no longer complete a class or release income.

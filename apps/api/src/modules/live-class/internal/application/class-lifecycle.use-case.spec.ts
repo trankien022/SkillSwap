@@ -224,6 +224,38 @@ describe('CompleteElapsedClassesUseCase (FR-020 / ADR-021)', () => {
       expect(classes.completedBasis).toBeNull();
     });
 
+    it('with grace 0 still cannot complete a class before starts_at', async () => {
+      // The `startsAt` floor is checked before the grace, so 0 removes the waiting time but
+      // not the invariant. Worth pinning because 0 is the value most likely to be reached for
+      // in an attempt to "close it immediately" after a bug report.
+      const classes = new InMemoryClassRepository();
+      const start = new Date(NOW.getTime() + 10 * 60_000);
+      classes.beforeEnd = [
+        { id: 'cls-1', teacherId: 't1', state: 'in_progress', startsAt: start, durationMinutes: 60 },
+      ];
+      const presence = new InMemoryPresenceRepository([
+        {
+          classId: 'cls-1',
+          session: {
+            accountId: 't1',
+            joinedAt: new Date(start.getTime() - 15 * 60_000),
+            leftAt: new Date(start.getTime() - 12 * 60_000),
+          },
+        },
+      ]);
+
+      const result = await new CompleteElapsedClassesUseCase(
+        classes,
+        new InMemoryBookingRepository(),
+        presence,
+        clock,
+        0,
+      ).execute();
+
+      expect(result).toEqual({ completed: 0, cancelled: 0 });
+      expect(classes.completedBasis).toBeNull();
+    });
+
     it('never completes a class whose only visits happened before the start', async () => {
       // ADR-021 Amendment D.1, at the level where money moves: a camera test during the
       // early-open window must not complete the class on the first sweep after starts_at.
