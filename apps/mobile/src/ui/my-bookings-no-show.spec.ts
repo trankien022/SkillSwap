@@ -5,7 +5,7 @@ import { TeachingGateway } from '../infrastructure/http/teaching-gateway';
 describe('MyBookings no-show action integration', () => {
   const config: MobileConfig = {
     gatewayBaseUrl: 'http://localhost:4000',
-    apiBaseUrl: 'http://localhost:4000/api',
+    apiBaseUrl: 'http://localhost:4000/api/v1',
   };
   let fetchMock: jest.Mock;
   let client: GatewayClient;
@@ -31,7 +31,7 @@ describe('MyBookings no-show action integration', () => {
     const result = await teachingGateway.reportTeacherNoShow('bk-123');
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:4000/api/classes/bookings/bk-123/no-show');
+    expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:4000/api/v1/classes/bookings/bk-123/no-show');
     expect(fetchMock.mock.calls[0][1].method).toBe('POST');
     expect(result.cancelled).toBe(true);
   });

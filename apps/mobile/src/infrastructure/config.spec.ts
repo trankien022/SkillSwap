@@ -12,7 +12,7 @@ describe('resolveMobileConfig', () => {
       process.env.EXPO_PUBLIC_API_BASE_URL = 'http://localhost:4000';
       const config = resolveMobileConfig();
       expect(config.gatewayBaseUrl).toBe('http://localhost:4000');
-      expect(config.apiBaseUrl).toBe('http://localhost:4000/api');
+      expect(config.apiBaseUrl).toBe('http://localhost:4000/api/v1');
     });
 
     it('throws ConfigurationError when variable is missing or blank', () => {
@@ -86,21 +86,32 @@ describe('resolveMobileConfig', () => {
         expoPublicApiBaseUrl: 'http://localhost:4000///',
       });
       expect(config.gatewayBaseUrl).toBe('http://localhost:4000');
-      expect(config.apiBaseUrl).toBe('http://localhost:4000/api');
+      expect(config.apiBaseUrl).toBe('http://localhost:4000/api/v1');
     });
 
-    it('strips redundant /api and /api/ from path', () => {
+    it('strips a redundant /api or /api/v1 suffix from the configured path', () => {
       const config1 = resolveMobileConfig({
         expoPublicApiBaseUrl: 'http://192.168.1.100:4000/api',
       });
       expect(config1.gatewayBaseUrl).toBe('http://192.168.1.100:4000');
-      expect(config1.apiBaseUrl).toBe('http://192.168.1.100:4000/api');
+      expect(config1.apiBaseUrl).toBe('http://192.168.1.100:4000/api/v1');
 
       const config2 = resolveMobileConfig({
         expoPublicApiBaseUrl: 'http://192.168.1.100:4000/api///',
       });
       expect(config2.gatewayBaseUrl).toBe('http://192.168.1.100:4000');
-      expect(config2.apiBaseUrl).toBe('http://192.168.1.100:4000/api');
+      expect(config2.apiBaseUrl).toBe('http://192.168.1.100:4000/api/v1');
+    });
+
+    it('does not double the version when the operator pastes /api/v1', () => {
+      // ADR-042: the base URL may already carry the version. Suffixing again would
+      // produce `/api/v1/api/v1`, which 404s only at runtime on a device.
+      const config = resolveMobileConfig({
+        expoPublicApiBaseUrl: 'http://192.168.1.100:4000/api/v1',
+      });
+      expect(config.gatewayBaseUrl).toBe('http://192.168.1.100:4000');
+      expect(config.apiBaseUrl).toBe('http://192.168.1.100:4000/api/v1');
+      expect(config.apiBaseUrl).not.toContain('/api/v1/api/v1');
     });
 
     it('supports HTTPS domain configurations', () => {
@@ -108,7 +119,7 @@ describe('resolveMobileConfig', () => {
         expoPublicApiBaseUrl: 'https://gateway.skillswap.edu.vn',
       });
       expect(config.gatewayBaseUrl).toBe('https://gateway.skillswap.edu.vn');
-      expect(config.apiBaseUrl).toBe('https://gateway.skillswap.edu.vn/api');
+      expect(config.apiBaseUrl).toBe('https://gateway.skillswap.edu.vn/api/v1');
     });
   });
 });

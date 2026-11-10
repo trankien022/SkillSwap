@@ -3,7 +3,7 @@ import { GatewayClient } from './gateway-client';
 import { TeachingGateway } from './teaching-gateway';
 
 describe('TeachingGateway', () => {
-  const config: MobileConfig = { gatewayBaseUrl: 'http://localhost:4000', apiBaseUrl: 'http://localhost:4000/api' };
+  const config: MobileConfig = { gatewayBaseUrl: 'http://localhost:4000', apiBaseUrl: 'http://localhost:4000/api/v1' };
   let fetchMock: jest.Mock;
   let gateway: TeachingGateway;
   beforeEach(() => {
@@ -21,7 +21,7 @@ describe('TeachingGateway', () => {
     const view = { id: 'class-1', teacherId: 'teacher-1', state: 'published', title: 'TypeScript basics', level: 'beginner', format: 'one-on-one', startsAt: input.startsAt, durationMinutes: 60, priceCredits: 10, capacity: 1 };
     fetchMock.mockResolvedValueOnce(response(view));
     await expect(gateway.create(input)).resolves.toEqual(view);
-    expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:4000/api/classes');
+    expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:4000/api/v1/classes');
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual(input);
     await expect(gateway.create({ ...input, priceCredits: 0 })).rejects.toThrow();
   });
@@ -35,9 +35,9 @@ describe('TeachingGateway', () => {
     await gateway.cancel('class-1');
     await gateway.start('class-1');
     expect(fetchMock.mock.calls.map(([url, init]) => [url, init.method])).toEqual([
-      ['http://localhost:4000/api/classes/class%2F1', 'PATCH'],
-      ['http://localhost:4000/api/classes/class-1/cancel', 'POST'],
-      ['http://localhost:4000/api/classes/class-1/start', 'POST'],
+      ['http://localhost:4000/api/v1/classes/class%2F1', 'PATCH'],
+      ['http://localhost:4000/api/v1/classes/class-1/cancel', 'POST'],
+      ['http://localhost:4000/api/v1/classes/class-1/start', 'POST'],
     ]);
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ title: 'Updated class', description: 'Updated class', startsAt: updated.startsAt, priceCredits: 25, capacity: 3 });
   });
@@ -52,7 +52,7 @@ describe('TeachingGateway', () => {
     const result = await gateway.reportTeacherNoShow('booking/9');
 
     expect(fetchMock.mock.calls[0][0]).toBe(
-      'http://localhost:4000/api/classes/bookings/booking%2F9/no-show',
+      'http://localhost:4000/api/v1/classes/bookings/booking%2F9/no-show',
     );
     expect(fetchMock.mock.calls[0][1].method).toBe('POST');
     expect(result).toEqual({ cancelled: true });

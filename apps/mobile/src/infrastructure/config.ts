@@ -1,3 +1,5 @@
+import { API_BASE_PATH } from '@skillswap/contracts';
+
 export class ConfigurationError extends Error {
   constructor(message: string) {
     super(message);
@@ -69,14 +71,21 @@ export function resolveMobileConfig(input?: MobileConfigInput): MobileConfig {
     );
   }
 
-  // Clean trailing slashes from pathname and normalize redundant /api
+  // Clean trailing slashes from pathname and normalize a redundant trailing
+  // `/api` or `/api/v1` the operator may have pasted. Stripping only `/api`
+  // would let `.../api/v1` become `.../api/v1` and then be suffixed again,
+  // producing `.../api/v1/api/v1`.
   let cleanedPath = parsed.pathname.replace(/\/+$/, '');
-  if (cleanedPath === '/api' || cleanedPath.endsWith('/api')) {
+  if (cleanedPath.endsWith('/api/v1')) {
+    cleanedPath = cleanedPath.slice(0, -'/api/v1'.length);
+  } else if (cleanedPath === '/api' || cleanedPath.endsWith('/api')) {
     cleanedPath = cleanedPath.slice(0, -4);
   }
 
   const gatewayBaseUrl = `${parsed.protocol}//${parsed.host}${cleanedPath}`;
-  const apiBaseUrl = `${gatewayBaseUrl}/api`;
+  // ADR-042: the client-facing surface is versioned; the segment comes from the
+  // shared constant so a future version bump is one line here.
+  const apiBaseUrl = `${gatewayBaseUrl}${API_BASE_PATH}`;
 
   return {
     gatewayBaseUrl,

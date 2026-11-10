@@ -6,7 +6,7 @@ import { GatewayClient, GatewayHttpError, type SessionTokenProvider } from './ga
 describe('BookingHttpGateway', () => {
   const config: MobileConfig = {
     gatewayBaseUrl: 'http://localhost:4000',
-    apiBaseUrl: 'http://localhost:4000/api',
+    apiBaseUrl: 'http://localhost:4000/api/v1',
   };
 
   const sampleClassDetail = {
@@ -84,7 +84,7 @@ describe('BookingHttpGateway', () => {
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
       const [url, init] = mockFetch.mock.calls[0];
-      expect(url).toBe('http://localhost:4000/api/classes/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d');
+      expect(url).toBe('http://localhost:4000/api/v1/classes/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d');
       expect(init.method).toBe('GET');
       expect(init.headers['Authorization']).toBe('Bearer test-access-token');
       expect(result).toEqual(sampleClassDetail);
@@ -99,7 +99,7 @@ describe('BookingHttpGateway', () => {
 
       await bookingHttpGateway.getClassDetail('class/id');
 
-      expect(mockFetch.mock.calls[0][0]).toBe('http://localhost:4000/api/classes/class%2Fid');
+      expect(mockFetch.mock.calls[0][0]).toBe('http://localhost:4000/api/v1/classes/class%2Fid');
       expect(mockFetch.mock.calls[0][1].method).toBe('GET');
     });
 
@@ -188,7 +188,7 @@ describe('BookingHttpGateway', () => {
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
       const [url, init] = mockFetch.mock.calls[0];
-      expect(url).toBe('http://localhost:4000/api/classes/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d/bookings');
+      expect(url).toBe('http://localhost:4000/api/v1/classes/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d/bookings');
       expect(init.method).toBe('POST');
       expect(init.headers['Authorization']).toBe('Bearer test-access-token');
       expect(init.headers['x-idempotency-key']).toBe('idem-key-abc-123');
@@ -269,7 +269,7 @@ describe('BookingHttpGateway', () => {
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
       const [url, init] = mockFetch.mock.calls[0];
-      expect(url).toBe('http://localhost:4000/api/classes/bookings/booking-uuid-1/confirm');
+      expect(url).toBe('http://localhost:4000/api/v1/classes/bookings/booking-uuid-1/confirm');
       expect(init.method).toBe('POST');
       expect(init.headers['Authorization']).toBe('Bearer test-access-token');
       expect(init.body).toBeUndefined();

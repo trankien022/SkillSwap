@@ -3,7 +3,7 @@ import { GatewayClient } from './gateway-client';
 import { NotificationGateway } from './notification-gateway';
 
 describe('NotificationGateway', () => {
-  const config: MobileConfig = { gatewayBaseUrl: 'http://localhost:4000', apiBaseUrl: 'http://localhost:4000/api' };
+  const config: MobileConfig = { gatewayBaseUrl: 'http://localhost:4000', apiBaseUrl: 'http://localhost:4000/api/v1' };
   it('calls inbox and device subscription routes with contract-checked payloads', async () => {
     const fetchMock = jest.fn()
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ success: true, code: 'OK', message: 'OK', data: { items: [], nextCursor: null, unreadCount: 0 }, errors: [] }) })
@@ -16,9 +16,9 @@ describe('NotificationGateway', () => {
     await gateway.registerDevice({ token: 'ExponentPushToken[test]', platform: 'ios', installationId: 'install1' });
     await gateway.removeDevice('dev/1');
     expect(fetchMock.mock.calls.map(([url, init]) => [url, init.method])).toEqual([
-      ['http://localhost:4000/api/notifications?unreadOnly=true&limit=10', 'GET'],
-      ['http://localhost:4000/api/notification-devices', 'POST'],
-      ['http://localhost:4000/api/notification-devices/dev%2F1', 'DELETE'],
+      ['http://localhost:4000/api/v1/notifications?unreadOnly=true&limit=10', 'GET'],
+      ['http://localhost:4000/api/v1/notification-devices', 'POST'],
+      ['http://localhost:4000/api/v1/notification-devices/dev%2F1', 'DELETE'],
     ]);
   });
 
@@ -27,7 +27,7 @@ describe('NotificationGateway', () => {
     const client = new GatewayClient(config, { fetchFn: fetchMock as unknown as typeof fetch });
     client.setTokenProvider({ getAccessToken: async () => 'access', refreshSession: async () => ({ tokens: { accessToken: 'next' } }) });
     await expect(new NotificationGateway(client).markRead('n/1')).resolves.toEqual({ success: true, unreadCount: 2 });
-    expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:4000/api/notifications/n%2F1/read');
+    expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:4000/api/v1/notifications/n%2F1/read');
     expect(fetchMock.mock.calls[0][1].method).toBe('POST');
   });
 
@@ -36,7 +36,7 @@ describe('NotificationGateway', () => {
     const client = new GatewayClient(config, { fetchFn: fetchMock as unknown as typeof fetch });
     client.setTokenProvider({ getAccessToken: async () => 'access', refreshSession: async () => ({ tokens: { accessToken: 'next' } }) });
     await expect(new NotificationGateway(client).markAllRead()).resolves.toEqual({ success: true, unreadCount: 0 });
-    expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:4000/api/notifications/read-all');
+    expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:4000/api/v1/notifications/read-all');
     expect(fetchMock.mock.calls[0][1].method).toBe('POST');
   });
 

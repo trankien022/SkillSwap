@@ -11,7 +11,7 @@ import { SkillEvidenceGateway } from './skill-evidence-gateway';
 describe('SkillEvidenceGateway', () => {
   const config: MobileConfig = {
     gatewayBaseUrl: 'http://localhost:4000',
-    apiBaseUrl: 'http://localhost:4000/api',
+    apiBaseUrl: 'http://localhost:4000/api/v1',
   };
 
   const sampleEvidenceView = {
@@ -204,7 +204,7 @@ describe('SkillEvidenceGateway', () => {
 
       expect(mockGatewayFetch).toHaveBeenCalledTimes(1);
       const [url, init] = mockGatewayFetch.mock.calls[0];
-      expect(url).toBe('http://localhost:4000/api/skill-evidence');
+      expect(url).toBe('http://localhost:4000/api/v1/skill-evidence');
       expect(init.method).toBe('POST');
       expect(init.headers['Authorization']).toBe('Bearer test-access-token');
       expect(init.headers['Content-Type']).toBe('application/json');
@@ -321,7 +321,7 @@ describe('SkillEvidenceGateway', () => {
       });
 
       const [targetUrl, targetInit] = mockGatewayFetch.mock.calls[0];
-      expect(targetUrl).toBe('http://localhost:4000/api/skill-evidence/documents');
+      expect(targetUrl).toBe('http://localhost:4000/api/v1/skill-evidence/documents');
       expect(targetInit.method).toBe('POST');
       expect(JSON.parse(targetInit.body)).toEqual({
         fileName: 'cert.pdf',
@@ -342,7 +342,7 @@ describe('SkillEvidenceGateway', () => {
       expect(form.has('file')).toBe(true);
 
       const [submitUrl, submitInit] = mockGatewayFetch.mock.calls[1];
-      expect(submitUrl).toBe('http://localhost:4000/api/skill-evidence');
+      expect(submitUrl).toBe('http://localhost:4000/api/v1/skill-evidence');
       expect(JSON.parse(submitInit.body)).toEqual({
         skillId: 'skill-ts',
         requestedLevel: 'advanced',
@@ -431,7 +431,7 @@ describe('SkillEvidenceGateway', () => {
 
       expect(mockGatewayFetch).toHaveBeenCalledTimes(1);
       const [url, init] = mockGatewayFetch.mock.calls[0];
-      expect(url).toBe('http://localhost:4000/api/profile-skills/me');
+      expect(url).toBe('http://localhost:4000/api/v1/profile-skills/me');
       expect(init.method).toBe('GET');
       expect(init.headers['Authorization']).toBe('Bearer test-access-token');
       expect(result).toEqual(sampleProfileSkills);
@@ -481,7 +481,7 @@ describe('SkillEvidenceGateway', () => {
       expect(mockGatewayFetch).toHaveBeenCalledTimes(1);
       const [url, init] = mockGatewayFetch.mock.calls[0];
       expect(url).toBe(
-        `http://localhost:4000/api/skill-evidence/${encodeURIComponent(rawId)}/history`,
+        `http://localhost:4000/api/v1/skill-evidence/${encodeURIComponent(rawId)}/history`,
       );
       expect(init.method).toBe('GET');
       expect(init.headers['Authorization']).toBe('Bearer test-access-token');

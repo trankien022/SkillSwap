@@ -5,7 +5,7 @@ import { GatewayClient, GatewayHttpError, type SessionTokenProvider } from './ga
 describe('ClassReadGateway', () => {
   const config: MobileConfig = {
     gatewayBaseUrl: 'http://localhost:4000',
-    apiBaseUrl: 'http://localhost:4000/api',
+    apiBaseUrl: 'http://localhost:4000/api/v1',
   };
 
   const sampleClassItem = {
@@ -85,7 +85,7 @@ describe('ClassReadGateway', () => {
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
       const [url, init] = mockFetch.mock.calls[0];
-      expect(url).toBe('http://localhost:4000/api/classes');
+      expect(url).toBe('http://localhost:4000/api/v1/classes');
       expect(init.method).toBe('GET');
       expect(init.headers['Authorization']).toBe('Bearer test-access-token');
       expect(result).toEqual(sampleClassesPage);
@@ -113,7 +113,7 @@ describe('ClassReadGateway', () => {
       const [url] = mockFetch.mock.calls[0];
       const parsedUrl = new URL(url);
 
-      expect(parsedUrl.pathname).toBe('/api/classes');
+      expect(parsedUrl.pathname).toBe('/api/v1/classes');
       expect(parsedUrl.searchParams.get('q')).toBe('typescript search');
       // The legacy `keyword` alias is never sent; `q` is the canonical name.
       expect(parsedUrl.searchParams.has('keyword')).toBe(false);
