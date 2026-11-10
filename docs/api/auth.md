@@ -6,15 +6,13 @@
 
 Account identity (FR-001, ADR-016). Registration, sign-in and the rotating refresh-token session. Everything else in the API trusts the identity the gateway injects from the access token.
 
-5 endpoints.
+6 endpoints.
 
 Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
 
-### `POST /api/auth/login`
+### `POST /api/v1/auth/login`
 
 **Sign in with email and password (FR-001)**
-
-Exchange email + password for a token pair. Use on the sign-in screen.
 
 - Auth: Public
 - Request body: `LoginDto`
@@ -36,11 +34,9 @@ Exchange email + password for a token pair. Use on the sign-in screen.
 | `expiresIn` | integer | yes | > 0 |
 | `tokenType` | enum | yes | one of `Bearer` |
 
-### `POST /api/auth/logout`
+### `POST /api/v1/auth/logout`
 
 **Revoke a refresh session (FR-001)**
-
-Revoke the refresh session. Call on sign-out so the refresh token can no longer mint access tokens.
 
 - Auth: Public
 - Request body: `LogoutRequestDto`
@@ -52,11 +48,9 @@ Revoke the refresh session. Call on sign-out so the refresh token can no longer 
 |---|---|---|---|
 | `refreshToken` | string | yes | min 1 chars |
 
-### `GET /api/auth/me`
+### `GET /api/v1/auth/me`
 
 **Read the signed-in account and verification status (FR-001/FR-017)**
-
-Read the signed-in account and its student-verification status. Use to hydrate the header/profile and to gate verified-only UI (FR-017).
 
 - Auth: 🔒 Bearer token required
 - Response: `MeResponseDto`
@@ -79,21 +73,41 @@ Read the signed-in account and its student-verification status. Use to hydrate t
 | `status` | enum | yes | one of `pending`, `approved`, `rejected`, `revoked` |
 | `reason` | string | yes | min 1 chars; nullable |
 
-### `PATCH /api/auth/me`
+### `PATCH /api/v1/auth/me`
 
 **Update the signed-in account display name (MM8)**
 
 - Auth: 🔒 Bearer token required
-- Request body: `{ "displayName": "New name" }`
-- Response: updated `MeResponseDto` in the standard `data` envelope
-- `displayName` is trimmed and must contain 1–120 characters. No other profile fields are accepted.
-- The account id comes from the verified request identity; clients cannot choose another account.
+- Request body: `UpdateMeDto`
+- Response: `MeResponseDto`
 
-### `POST /api/auth/refresh`
+**Request body — `UpdateMeDto`**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `displayName` | string | yes | min 1 chars; max 120 chars |
+
+**Response — `MeResponseDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | yes | min 1 chars |
+| `email` | string | yes | email |
+| `displayName` | string | yes | min 1 chars |
+| `role` | enum | yes | one of `user`, `verifier`, `admin` |
+| `status` | string | yes | min 1 chars |
+| `studentVerification` | object | yes | nullable |
+
+**`studentVerification`** — MeResponseDto.studentVerification fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `status` | enum | yes | one of `pending`, `approved`, `rejected`, `revoked` |
+| `reason` | string | yes | min 1 chars; nullable |
+
+### `POST /api/v1/auth/refresh`
 
 **Rotate a refresh token for a new session (FR-001)**
-
-Rotate an expiring refresh token for a new pair. Call when the access token is near expiry, before it 401s.
 
 - Auth: Public
 - Request body: `RefreshRequestDto`
@@ -114,11 +128,9 @@ Rotate an expiring refresh token for a new pair. Call when the access token is n
 | `expiresIn` | integer | yes | > 0 |
 | `tokenType` | enum | yes | one of `Bearer` |
 
-### `POST /api/auth/register`
+### `POST /api/v1/auth/register`
 
 **Create a local account (FR-001)**
-
-Create a local account and receive the first token pair. Use on the sign-up screen.
 
 - Auth: Public
 - Request body: `RegisterDto`

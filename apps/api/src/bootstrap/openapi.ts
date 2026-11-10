@@ -1,5 +1,4 @@
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { API_BASE_PATH } from '@skillswap/contracts';
 import { cleanupOpenApiDoc } from 'nestjs-zod';
 import type { INestApplication } from '@nestjs/common';
 
@@ -63,10 +62,10 @@ export function buildOpenApiDocument(app: INestApplication): OpenApiDocument {
     .setVersion('1.0')
     // ADR-016: the gateway verifies the RS256 bearer token before proxying.
     .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'bearer')
-    // ADR-042: paths in the document are the canonical versioned ones. Each operation
-    // reads `/classes/...` because Nest applies the version segment from
-    // `enableVersioning`, so the server URL carries the prefix.
-    .addServer(API_BASE_PATH);
+    // ADR-042: Nest's document paths already carry the full `/api/v1/...` (and the
+    // version-neutral `/api/...` for the vendor hooks), so the server is the origin.
+    // Declaring a prefix here would double it in Swagger's "Try it out".
+    .addServer('/');
   for (const tag of API_TAGS) {
     builder.addTag(tag);
   }

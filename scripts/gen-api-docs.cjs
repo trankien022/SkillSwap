@@ -477,7 +477,14 @@ function renderIndex(byTag) {
   out.push('For the guided booking flow, see [FRONTEND-API-GUIDE.md](./FRONTEND-API-GUIDE.md).');
   out.push('');
   out.push(
-    'All routes are prefixed with `/api`. Authenticated routes need `Authorization: Bearer <accessToken>`.',
+    'Client routes are prefixed with `/api/v1` (ADR-042). Authenticated routes need `Authorization: Bearer <accessToken>`.',
+  );
+  out.push('');
+  out.push(
+    'Three routes are deliberately **not** versioned, because their URLs are registered outside this ' +
+      'repository or belong to infrastructure: `POST /api/wallet/top-ups/callback` (SePay dashboard), ' +
+      '`POST /api/internal/jitsi/presence` (8x8 console) and `GET /api/health` (deploy probe). ' +
+      'The unversioned `/api/<route>` forms of client routes also work during the changeover.',
   );
   out.push('');
   out.push('| Module | Endpoints | What it is for |');
@@ -504,6 +511,11 @@ async function main() {
 
   const app = await NestFactory.create(AppModule, { logger: false });
   app.setGlobalPrefix('api');
+  // ADR-042: mirror the real bootstrap. Without this the generated document would
+  // describe `/api/<route>` while the deployed surface is `/api/v1/<route>` — docs
+  // that are wrong about the one thing they exist to state.
+  const { VersioningType } = require('@nestjs/common');
+  app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
   const doc = buildOpenApiDocument(app);
   await app.close();
 

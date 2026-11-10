@@ -6,11 +6,11 @@
 
 The marketplace core (FR-005/FR-007/FR-009/FR-011/FR-020). A student teacher publishes a class; learners book and pay; the teacher starts it or cancels it, and a class completes automatically at its scheduled end (ADR-021 Amendment A); room access issues a Jitsi token.
 
-14 endpoints.
+16 endpoints.
 
 Every domain response is wrapped in the uniform envelope `{ success, code, message, data, errors }` (NFR-013). The tables below describe the **`data`** payload; see [RESPONSE-CONVENTIONS.md](./RESPONSE-CONVENTIONS.md) for the envelope and error codes.
 
-### `GET /api/classes`
+### `GET /api/v1/classes`
 
 **List classes for marketplace or own teaching (FR-005, FR-006 / Route 13)**
 
@@ -61,11 +61,9 @@ Every domain response is wrapped in the uniform envelope `{ success, code, messa
 | `averageRating` | number | yes | ≥ 0; ≤ 5; nullable |
 | `ratingsCount` | integer | yes | ≥ 0 |
 
-### `POST /api/classes`
+### `POST /api/v1/classes`
 
 **Create and publish a class (FR-005 / API-004)**
-
-Publish a new class (FR-005). Requires the teacher to be a verified student approved for every skill (publish gate); otherwise 403.
 
 - Auth: 🔒 Bearer token required
 - Request body: `CreateClassDto`
@@ -98,7 +96,7 @@ Publish a new class (FR-005). Requires the teacher to be a verified student appr
 | `priceCredits` | integer | yes |  |
 | `capacity` | integer | yes |  |
 
-### `GET /api/classes/{id}`
+### `GET /api/v1/classes/{id}`
 
 **Get class detail (FR-005, FR-006, FR-007 / Route 14)**
 
@@ -169,11 +167,9 @@ Publish a new class (FR-005). Requires the teacher to be a verified student appr
 | `state` | enum | yes | one of `pending`, `confirmed`, `completed`, `cancelled` |
 | `expiresAt` | string | yes | date-time; nullable |
 
-### `PATCH /api/classes/{id}`
+### `PATCH /api/v1/classes/{id}`
 
 **Edit a class before its first confirmed booking (FR-007 / AC-017)**
-
-Edit a class before its first confirmed booking locks it (AC-017).
 
 - Auth: 🔒 Bearer token required
 - Request body: `UpdateClassDto`
@@ -210,11 +206,9 @@ Edit a class before its first confirmed booking locks it (AC-017).
 | `priceCredits` | integer | yes |  |
 | `capacity` | integer | yes |  |
 
-### `POST /api/classes/{id}/bookings`
+### `POST /api/v1/classes/{id}/bookings`
 
 **Book a class (FR-007 / API-005)**
-
-Hold a seat with a pending booking (FR-007). Send an idempotencyKey so retries are safe; the seat expires if not confirmed.
 
 - Auth: 🔒 Bearer token required
 - Request body: `BookingRequestDto`
@@ -248,11 +242,9 @@ Hold a seat with a pending booking (FR-007). Send an idempotencyKey so retries a
 | `priceCredits` | integer | yes |  |
 | `createdAt` | string | yes | date-time |
 
-### `POST /api/classes/{id}/cancel`
+### `POST /api/v1/classes/{id}/cancel`
 
 **Cancel a class and refund affected learners (FR-007 / AC-022)**
-
-Cancel a class and refund every affected learner (AC-022). Teacher-only.
 
 - Auth: 🔒 Bearer token required
 - Response: `CancelClassResultDto`
@@ -268,11 +260,65 @@ Cancel a class and refund every affected learner (AC-022). Teacher-only.
 | `classCancelled` | boolean | yes |  |
 | `bookingsCancelled` | integer | yes | ≥ 0 |
 
-### `POST /api/classes/{id}/start`
+### `POST /api/v1/classes/{id}/room-access`
+
+**Request room access as the class teacher (FR-011 / ADR-040)**
+
+- Auth: 🔒 Bearer token required
+- Request body: `RoomAccessRequestDto`
+- Response: `RoomAccessResponseDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `id` | path | string | yes | The class id |
+
+**Request body — `RoomAccessRequestDto`**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `displayName` | string | no | min 1 chars; max 120 chars |
+
+**Response — `RoomAccessResponseDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `room` | string | yes | min 1 chars |
+| `token` | string | yes | min 1 chars |
+| `expiresAt` | string | yes | date-time |
+| `url` | string | yes | min 1 chars |
+
+### `GET /api/v1/classes/{id}/roster`
+
+**Get the teacher roster for a class (FR-011 / ADR-040)**
+
+- Auth: 🔒 Bearer token required
+- Response: `ClassRosterDto`
+
+| Param | In | Type | Required | Description |
+|---|---|---|---|---|
+| `id` | path | string | yes | The class id |
+
+**Response — `ClassRosterDto`** (inside the `data` envelope key)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `classId` | string | yes | min 1 chars |
+| `capacity` | integer | yes | > 0 |
+| `entries` | object[] | yes |  |
+
+**`entries`[]** — ClassRosterDto.entries fields:
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `bookingId` | string | yes | min 1 chars |
+| `learnerId` | string | yes | min 1 chars |
+| `displayName` | string | yes | min 1 chars |
+| `state` | enum | yes | one of `pending`, `confirmed` |
+| `createdAt` | string | yes | date-time |
+
+### `POST /api/v1/classes/{id}/start`
 
 **Start a class the teacher is holding (FR-020 / ADR-021)**
-
-Teacher starts a held class, moving it to in-progress (FR-020).
 
 - Auth: 🔒 Bearer token required
 - Response: `StartClassResultDto`
@@ -287,11 +333,9 @@ Teacher starts a held class, moving it to in-progress (FR-020).
 |---|---|---|---|
 | `started` | boolean | yes |  |
 
-### `POST /api/classes/bookings/{bookingId}/confirm`
+### `POST /api/v1/classes/bookings/{bookingId}/confirm`
 
 **Confirm a pending booking and settle payment (FR-009 / API-006)**
-
-Confirm a pending booking and settle payment from the wallet (FR-009). Fails when the learner lacks balance.
 
 - Auth: 🔒 Bearer token required
 - Response: `ConfirmBookingResultDto`
@@ -318,7 +362,7 @@ Confirm a pending booking and settle payment from the wallet (FR-009). Fails whe
 | `priceCredits` | integer | yes |  |
 | `createdAt` | string | yes | date-time |
 
-### `GET /api/classes/bookings/{bookingId}/messages`
+### `GET /api/v1/classes/bookings/{bookingId}/messages`
 
 **Read a class chat (FR-012 / NFR-014)**
 
@@ -358,7 +402,7 @@ Confirm a pending booking and settle payment from the wallet (FR-009). Fails whe
 | `nextCursor` | string | yes | min 1 chars; nullable |
 | `total` | integer | yes | ≥ 0 |
 
-### `POST /api/classes/bookings/{bookingId}/messages`
+### `POST /api/v1/classes/bookings/{bookingId}/messages`
 
 **Post one message to a class chat (FR-012)**
 
@@ -381,11 +425,9 @@ Confirm a pending booking and settle payment from the wallet (FR-009). Fails whe
 | `body` | string | yes | min 1 chars; max 1000 chars |
 | `createdAt` | string | yes | date-time |
 
-### `POST /api/classes/bookings/{bookingId}/no-show`
+### `POST /api/v1/classes/bookings/{bookingId}/no-show`
 
 **Mark a teacher no-show for a booking (FR-007 / AC-024)**
-
-Mark that the teacher never joined, cancelling and refunding the booking (AC-024).
 
 - Auth: 🔒 Bearer token required
 - Response: `MarkTeacherNoShowResultDto`
@@ -400,7 +442,7 @@ Mark that the teacher never joined, cancelling and refunding the booking (AC-024
 |---|---|---|---|
 | `cancelled` | boolean | yes |  |
 
-### `POST /api/classes/bookings/{bookingId}/rating`
+### `POST /api/v1/classes/bookings/{bookingId}/rating`
 
 **Submit one rating for an eligible completed class (FR-013 / Route 27)**
 
@@ -422,11 +464,9 @@ Mark that the teacher never joined, cancelling and refunding the booking (AC-024
 | `comment` | string | yes | min 1 chars |
 | `createdAt` | string | yes | date-time |
 
-### `POST /api/classes/bookings/{bookingId}/room-access`
+### `POST /api/v1/classes/bookings/{bookingId}/room-access`
 
 **Request room access for a booking (FR-011 / API-008)**
-
-Issue a short-lived Jitsi room token for a party to the booking (FR-011). Use when the learner/teacher taps "Join class".
 
 - Auth: 🔒 Bearer token required
 - Request body: `RoomAccessRequestDto`
@@ -451,7 +491,7 @@ Issue a short-lived Jitsi room token for a party to the booking (FR-011). Use wh
 | `expiresAt` | string | yes | date-time |
 | `url` | string | yes | min 1 chars |
 
-### `GET /api/classes/bookings/me`
+### `GET /api/v1/classes/bookings/me`
 
 **Get learner bookings and exact upcoming count (FR-007, FR-009, FR-011, FR-020 / Route 22)**
 
