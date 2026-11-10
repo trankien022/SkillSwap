@@ -438,10 +438,11 @@ describe('E2E: an idle room completes the class and pays the Teacher (AC-035)', 
     expect(rows).toEqual([]);
 
     // And a stranger's departure cannot be the event that completes the class either: nothing
-    // was recorded for them, so the class still has no presence at all.
+    // was recorded for them, so the class still has no presence at all. The delivery is
+    // accepted because a departure is not party-checked (ADR-021 Amendment D.2) — a leave can
+    // only close the departing account's own open session, and this account has none.
     expect((await postPresence(joinEvent(scenario.room, stranger, 'left'))).body).toMatchObject({
-      accepted: false,
-      reason: 'not_a_party',
+      accepted: true,
     });
     await sweep();
     expect(await classState(scenario.classId)).toEqual({ state: 'in_progress', basis: null });

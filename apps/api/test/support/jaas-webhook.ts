@@ -52,3 +52,31 @@ export function participantEvent(
     data: { id: occupantId, participantId: `p-${occupantId}` },
   };
 }
+
+/**
+ * A `ROOM_DESTROYED` payload in JaaS's shape.
+ *
+ * Deliberately has **no `data.id`**: 8x8 documents `data` as only `conference` / `isBreakout` /
+ * `breakoutRoomId`, because the event is about the room rather than a participant. A helper
+ * that added an identity would hide the very thing that made this event unusable before
+ * ADR-021 Amendment D.3 — that it must route before the identity gate.
+ */
+export function roomDestroyedEvent(
+  appId: string,
+  classId: string,
+  at: Date,
+): Record<string, unknown> {
+  return {
+    idempotencyKey: `ROOM_DESTROYED-${classId}-${at.getTime()}`,
+    customerId: appId.replace('vpaas-magic-cookie-', ''),
+    appId,
+    eventType: 'ROOM_DESTROYED',
+    sessionId: `session-${classId}`,
+    timestamp: at.getTime(),
+    fqn: `${appId}/skillswap-${classId}`,
+    data: {
+      conference: `${classId}@conference.${appId}.stage.8x8.vc`,
+      isBreakout: false,
+    },
+  };
+}
