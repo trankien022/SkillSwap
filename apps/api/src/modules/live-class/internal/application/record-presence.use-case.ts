@@ -1,4 +1,8 @@
-import { interpretPresenceEvent, type PresenceEvent } from '../domain/presence-webhook';
+import {
+  interpretPresenceDeparture,
+  interpretPresenceEvent,
+  type PresenceEvent,
+} from '../domain/presence-webhook';
 import type {
   RecordPresenceCommand,
   RecordPresencePort,
@@ -12,14 +16,19 @@ import type { PresenceRepository } from './port/out/presence-repository';
  * FR-011 / FR-020 (AC-035): applies a Jitsi participant webhook to `class_presence`.
  *
  * The decision about *whether* an event may affect a class lives in the domain
- * (`interpretPresenceEvent`); this class only supplies the parties and performs the
- * write. Every rejection is reported as an outcome rather than thrown, because a
- * webhook must be acknowledged: an error response makes Jitsi retry an event that will
- * never become valid.
+ * (`interpretPresenceEvent` / `interpretPresenceDeparture`); this class only supplies the
+ * parties and performs the write. Every rejection is reported as an outcome rather than
+ * thrown, because a webhook must be acknowledged: an error response makes Jitsi retry an
+ * event that will never become valid.
  *
- * The refusals are the defence against a stranger whose guessed room name would
- * otherwise be able to keep a class looking occupied — or, on leaving, be the last
- * departure that completes it and releases money.
+ * The refusals are the defence against a stranger whose guessed room name would otherwise be
+ * able to keep a class looking occupied.
+ *
+ * Joins and departures are resolved differently on purpose (ADR-021 Amendment D.2). A join is
+ * checked against the parties because creating presence is the act that can hold a room open.
+ * A departure is not, because the write is keyed on `(classId, accountId)` and can only close
+ * the departee's own session — requiring party membership there silently dropped real
+ * departures, leaving rooms permanently "occupied" once a booking changed state.
  */
 export class RecordPresenceUseCase implements RecordPresencePort {
   constructor(
@@ -30,12 +39,6 @@ export class RecordPresenceUseCase implements RecordPresencePort {
 
   async execute(command: RecordPresenceCommand): Promise<RecordPresenceResult> {
     const classView = await this.classes.findById(command.classId);
-    const learnerIds =
-      classView === null
-        ? []
-        : (await this.bookings.findActiveByClass(command.classId))
-            .filter((booking) => booking.state === 'confirmed')
-            .map((booking) => booking.learnerId);
 
     const event: PresenceEvent = {
       type: command.type,
@@ -43,12 +46,20 @@ export class RecordPresenceUseCase implements RecordPresencePort {
       occupantId: command.accountId,
       occurredAt: command.occurredAt,
     };
-    const intent = interpretPresenceEvent(
-      event,
-      classView === null
-        ? null
-        : { classId: classView.id, teacherId: classView.teacherId, learnerIds },
-    );
+
+    const intent =
+      command.type === 'participant-left'
+        ? interpretPresenceDeparture(event, classView === null ? null : classView.id)
+        : interpretPresenceEvent(
+            event,
+            classView === null
+              ? null
+              : {
+                  classId: classView.id,
+                  teacherId: classView.teacherId,
+                  learnerIds: await this.confirmedLearnerIds(command.classId),
+                },
+          );
 
     if (!intent.accepted) {
       return { accepted: false, reason: intent.reason };
@@ -65,5 +76,11 @@ export class RecordPresenceUseCase implements RecordPresencePort {
       await this.presence.recordLeave(record);
     }
     return { accepted: true };
+  }
+
+  private async confirmedLearnerIds(classId: string): Promise<string[]> {
+    return (await this.bookings.findActiveByClass(classId))
+      .filter((booking) => booking.state === 'confirmed')
+      .map((booking) => booking.learnerId);
   }
 }

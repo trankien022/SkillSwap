@@ -88,6 +88,11 @@ export type PresenceIntent =
  *
  * `parties` is null when no class matches the room — which is exactly what a guessed
  * room name produces, and it must be a no-op rather than an error.
+ *
+ * This is the **join** rule. A join must be a party, because creating presence is what lets
+ * an outsider hold a room open — or be its last departure and complete the class. Departures
+ * are the mirror image and are handled by `interpretPresenceDeparture`: refusing a departure
+ * does not protect anything the write does not already protect, and it records a fiction.
  */
 export function interpretPresenceEvent(
   event: PresenceEvent,
@@ -104,6 +109,42 @@ export function interpretPresenceEvent(
   const isLearner = parties.learnerIds.includes(event.occupantId);
   if (!isTeacher && !isLearner) {
     return { accepted: false, reason: 'not_a_party' };
+  }
+  return {
+    accepted: true,
+    classId,
+    accountId: event.occupantId,
+    joinedAt: event.occurredAt,
+  };
+}
+
+/**
+ * Maps a **departure** to a presence write (ADR-021 Amendment D.2).
+ *
+ * A leave only has to prove two things: the room is one we issued and the class it names
+ * exists, and the occupant has an identity. Party membership is deliberately **not** required.
+ *
+ * The failure that forced this: presence resolved parties from `confirmed` bookings, so a
+ * learner whose booking was cancelled mid-class stopped being a party. Their
+ * `PARTICIPANT_LEFT` was refused, their session row kept `left_at IS NULL`, and the room
+ * looked permanently occupied — `room_idle` could never fire again, so the class could only
+ * end at its scheduled time.
+ *
+ * Dropping the check is safe rather than merely convenient: the write is keyed on
+ * `(classId, accountId)`, so a departure can only ever close the departing account's own open
+ * session. A stranger closes nothing, which is exactly what the party check achieved for
+ * leaves while also suppressing real departures.
+ */
+export function interpretPresenceDeparture(
+  event: PresenceEvent,
+  knownClassId: string | null,
+): PresenceIntent {
+  const classId = classIdFromRoom(event.room);
+  if (classId === null || knownClassId === null || knownClassId !== classId) {
+    return { accepted: false, reason: 'unknown_room' };
+  }
+  if (event.occupantId === '') {
+    return { accepted: false, reason: 'unknown_party' };
   }
   return {
     accepted: true,
