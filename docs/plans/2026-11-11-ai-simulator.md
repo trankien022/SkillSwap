@@ -23,3 +23,13 @@ the original API 37 device. Emulator booted; doctor reports boot=1, 720x1280,
 Gateway HTTP 200 and Metro HTTP 200. Registered global Codex Maestro MCP with
 analytics disabled. SDK avdmanager did not discover the custom SDK image path;
 created the standard AVD ini/config directly, verified by emulator boot.
+
+Phase 2 evidence: helper commands installed/opened the native debug app, captured
+PNG/XML/window state and verified local Gateway/Metro health. Maestro smoke passed
+all steps: dismiss dev overlay, select labeled email field, enter/assert/erase ASCII
+text, hide keyboard and assert login button. MCP initialize and tools/list succeeded.
+Full pnpm verify passed under Node 24.22.1 (357 mobile tests; architecture clean).
+No AndroidRuntime/ActivityManager error lines were returned after this smoke.
+Runbook documents cold boot, explicit serial, bounded waits, local HTTP/debug scope,
+Maestro Unicode limitation and exact reinstall workflow. Emulator remains open.
+This completes environment setup only; the broader mobile acceptance goal stays paused.
