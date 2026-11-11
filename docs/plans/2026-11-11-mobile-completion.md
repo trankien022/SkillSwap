@@ -399,3 +399,19 @@ undefined localStorage.getItem; investigating the supported installed Node 24 be
 - CocoaPods retry succeeded: 137 Podfile dependencies / 146 installed pods. iOS Simulator compilation and device smoke are in progress.
 - Provider configuration check found missing Cloudinary credentials, JaaS key/private key and SePay credentials in the original local environment. User was asked for an alternative config path. No real provider acceptance claimed.
 - Original checkout and its dirty documentation remain untouched. Local acceptance infrastructure uses separate Docker project `skillswap-mobile-acceptance`, Postgres port 55432, RabbitMQ 55672.
+
+### Resumed acceptance with supplied provider configuration
+User supplied `.env` and PEM files; imported with a private backup and verified matching JWT keypair.
+The supplied database is remote. Acceptance API overrides database and broker settings to isolated local services;
+no seed/reset is run against the supplied remote database.
+Cloudinary HTTP smoke: signed target 201, upload 200 with asset receipt, local evidence submission 201,
+history 200 and authenticated download target 200. Synthetic image only. Provider reports a different byte
+count, so original-byte preservation is not claimed. This is not mobile picker/runtime evidence.
+Android runtime attempt 1 reached VI login but input triggered an ANR. The single allowed cold-boot restart
+also stalled: emulator log reports `detected a hanging thread 'QEMU2 CPU0 thread'`, and package-manager/input
+commands did not finish. Stop Android flow retries per the supplied plan. No auth or business flow is marked
+passed on Android; native debug compilation and APK installation are separate verified evidence.
+Cloudinary signed download returned HTTP 200, image/png, 67 bytes. SePay checkout creation returned
+201/pending with paymentUrl and unchanged balance; no actual payment or settlement was performed.
+iOS native Debug Simulator build succeeded and app installed. First UI harness attempt stopped at
+system deep-link confirmation before reaching login; second attempt handles that system dialog.
