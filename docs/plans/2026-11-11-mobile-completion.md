@@ -491,3 +491,20 @@ Targeted inbox/gateway/translation tests 22/22 and mobile typecheck passed. Nati
 now shows server Vietnamese copy. Tapping the booking outcome navigated to schedule and
 changed server unread count from 4 to 3; mark-all changed it to 0. Screenshots:
 `artifacts/ai-simulator/12-inbox-vietnamese.png`, `13-inbox-read-all.png`.
+
+#### Native regression repair — signed document multipart bytes
+
+The Android picker selected the synthetic PNG and kept the school/file after submission
+failure. The signed-target request returned 201, but no verification was submitted.
+Installed React Native `BlobManager.createFromParts` explicitly rejects ArrayBuffer parts;
+the shared uploader constructs precisely this unsupported Blob. Node Blob tests cannot
+exercise this native restriction.
+1. Keep the shared upload validation/signed fields; introduce a platform file-part adapter.
+   Browser/Node use their supported Blob. Native writes the exact byte view to a private
+   Expo cache File, appends that Blob-compatible File and removes it after upload success or
+   failure. Use the installed Expo 57 filesystem/fetch contract; no native rebuild needed.
+2. Test native exact subarray bytes/MIME and cleanup, plus cleanup when upload fails, while
+   retaining existing storage credential isolation/expiry/size tests. Check typecheck/lint.
+3. Retry the preserved Android submission once, read back the new pending record/provider
+   document, then exercise admin rejection and native resubmission if prerequisites pass.
+   Synthetic documents never count as identity or certificate verification.
