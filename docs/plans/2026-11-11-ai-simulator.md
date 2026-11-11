@@ -16,3 +16,10 @@ or remote database operations. Keep logs and screenshots out of commits.
 Use Maestro for semantic interaction and ADB for diagnostics. Validate actual device
 navigation and app rendering, and record measured evidence and limitations.
 Each phase lands as a meaningful commit. Full pnpm verify after code changes.
+
+Phase 1 evidence: installed Maestro 2.12.1 and Android command-line tools;
+API 35 Google APIs ARM64 image installed. Created dedicated AVD without touching
+the original API 37 device. Emulator booted; doctor reports boot=1, 720x1280,
+Gateway HTTP 200 and Metro HTTP 200. Registered global Codex Maestro MCP with
+analytics disabled. SDK avdmanager did not discover the custom SDK image path;
+created the standard AVD ini/config directly, verified by emulator boot.
