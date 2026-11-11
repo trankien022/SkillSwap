@@ -13,3 +13,10 @@ describe('RoomAccessGateway', () => {
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ displayName: 'Learner' });
   });
 });
+
+it('uses the teacher class route and never accepts a client-supplied moderator role', async () => {
+  const request = jest.fn().mockResolvedValue({ room: 'skillswap-class', token: 'server-token', expiresAt: '2026-11-11T01:00:00Z', url: 'https://8x8.vc/tenant/skillswap-class' });
+  const client = { authenticatedRequest: request } as unknown as GatewayClient;
+  await new RoomAccessGateway(client).requestTeacher('class/1', 'Teacher');
+  expect(request).toHaveBeenCalledWith('/classes/class%2F1/room-access', { method: 'POST', body: { displayName: 'Teacher' } });
+});

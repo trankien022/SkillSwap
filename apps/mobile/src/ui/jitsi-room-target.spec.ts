@@ -12,6 +12,8 @@ describe('getJaasRoomTarget', () => {
 
   it.each([
     'http://8x8.vc/app-id/skillswap-class-123',
+    'https://8x8.vc/app%2Fother/skillswap-class-123',
+    'https://8x8.vc/%2E%2E/skillswap-class-123',
     'https://evil.example/app-id/skillswap-class-123',
     'https://8x8.vc:444/app-id/skillswap-class-123',
     'https://user@8x8.vc/app-id/skillswap-class-123',

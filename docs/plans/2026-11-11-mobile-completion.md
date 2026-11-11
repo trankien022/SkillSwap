@@ -390,3 +390,12 @@ locale copy remain covered by the inbox tests; app-shell push routing waits for 
 Mobile checks after rating changes: 51 suites / 354 tests passed in full verify.
 Full verify reached web tests but failed (12 files, 81 tests) under host Node 26, including
 undefined localStorage.getItem; investigating the supported installed Node 24 before classifying.
+
+### Phase 5 verified progress
+- Full `pnpm verify` passed under installed Node 24.22.1 (Node 26 failed web tests because of Web Storage behavior). Mobile: 354 tests/51 suites at this point; contracts 258, API 1238, Gateway 37, web 517; architecture passed.
+- Chat integration: 8/8 tests passed against isolated local Postgres/RabbitMQ. Covers unauthenticated/stranger refusal, participant read/write, closed windows, history, contact text and cursor. Harness substitutes outbound SePay; this is not a provider or simulator test.
+- Additional room-route/encoded-target tests: 12/12 passed.
+- Android Expo export passed. Android native debug APK built successfully on the second bounded attempt after stalled dependency downloads; 1426 Gradle tasks, build log `/tmp/skillswap-mobile-android-retry.log`.
+- CocoaPods retry succeeded: 137 Podfile dependencies / 146 installed pods. iOS Simulator compilation and device smoke are in progress.
+- Provider configuration check found missing Cloudinary credentials, JaaS key/private key and SePay credentials in the original local environment. User was asked for an alternative config path. No real provider acceptance claimed.
+- Original checkout and its dirty documentation remain untouched. Local acceptance infrastructure uses separate Docker project `skillswap-mobile-acceptance`, Postgres port 55432, RabbitMQ 55672.
