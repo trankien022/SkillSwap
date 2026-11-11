@@ -381,3 +381,12 @@ Jitsi accepts forwardRef SDK exports, shows invalid-target errors with an exit a
 copy and continues to use server-issued tokens with an allowlisted JaaS origin. Tenant comes from
 validated backend URL; encoded path separators are rejected.
 Initial post-change mobile run: 50 suites, 352 tests passed. This is source/test evidence only.
+
+### Phase 4 implementation and checks
+Rating form now owns state per account/booking, synchronously guards concurrent sends, resets
+on success, and reconciles a server 409 duplicate instead of replaying a command. Server eligibility
+still controls visibility. Existing notification one/all reads, cursor, server unread count and
+locale copy remain covered by the inbox tests; app-shell push routing waits for auth/navigation.
+Mobile checks after rating changes: 51 suites / 354 tests passed in full verify.
+Full verify reached web tests but failed (12 files, 81 tests) under host Node 26, including
+undefined localStorage.getItem; investigating the supported installed Node 24 before classifying.
