@@ -419,3 +419,13 @@ iOS attempt 2 reached boot error: Expo/SecureStore keychain access lacked an ent
 Simulator build. One ad-hoc signing/reinstall repair was attempted. Attempt 3 was refused by Simulator
 launchd (`FBSOpenApplicationServiceErrorDomain`, underlying POSIX 163). Stop auth flow at three attempts;
 no iOS login, session, business, accessibility or provider-native flow has passed.
+
+### Final gate and remaining packaging blocker
+Final `pnpm verify` completed successfully under Node 24.22.1: mobile 357 tests / 51 suites,
+contracts 258, API 1238, gateway 37, web 517; lint, build, typecheck and architecture passed.
+Log: `/tmp/skillswap-mobile-final-verify.log`.
+Android release packaging failed at `:react-native-gesture-handler:lintVitalAnalyzeRelease`
+with JVM `Metaspace` exhaustion; no release APK is claimed. Log:
+`/tmp/skillswap-mobile-android-release.log`. Simulator retry limits remain exhausted as above.
+iOS Simulator archive is a local compilation artifact, not an accepted runnable release.
+Native acceptance, Jitsi join/leave, remote push and SePay settlement remain unverified.
