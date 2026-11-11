@@ -548,3 +548,12 @@ failing SDK/module boundary before changing configuration, add a focused guard/t
 repair if possible, and retry at most twice after concrete changes. Classroom acceptance
 must remain failed if only the fallback/exit path works. Chat can be tested independently
 after the room closes; do not count provider join from a returned room token.
+
+### iOS environment repair round (user-authorized, maximum three attempts)
+
+Android is stopped before iOS work to limit memory usage. The previous artifact was built
+without normal Xcode signing then manually signed and rejected by launchd. Use the existing
+workspace/DerivedData with Xcode-managed Simulator ad-hoc signing enabled, and an available
+iOS Simulator. Build/install/launch attempt 1; verify Keychain boot and login only after a
+runnable install. Do not wipe existing simulators. If signing/runtime remains blocked,
+preserve its diagnostics and stop; do not consume more attempts without a concrete repair.
