@@ -429,3 +429,26 @@ with JVM `Metaspace` exhaustion; no release APK is claimed. Log:
 `/tmp/skillswap-mobile-android-release.log`. Simulator retry limits remain exhausted as above.
 iOS Simulator archive is a local compilation artifact, not an accepted runnable release.
 Native acceptance, Jitsi join/leave, remote push and SePay settlement remain unverified.
+
+### Resumed Phase 5 — dedicated Android environment
+
+The user authorized one additional environment repair and bounded test round (at most three
+attempts per platform), then selected convenience and speed over platform preference. The
+dedicated `SkillSwap_AI_API35` emulator is now the primary native target; the previous iOS
+failures remain recorded. Gateway/Metro health and Maestro text-entry smoke passed.
+
+Remaining execution phases, with separate meaningful commits:
+1. **Native core acceptance:** authenticate an existing isolated-local fixture, restore after
+   process death, browse/detail/book/confirm, inspect wallet and verification/teaching screens.
+   Record each actual result and attempt count, including server readback. Use no remote reset.
+2. **Native specialist acceptance:** exercise uploads, verifier, chat/rating/room/inbox and
+   locale/accessibility paths with suitable local fixtures. A provider connection or remote
+   push receipt is recorded independently from local/native behavior. Preserve every failure
+   before diagnosing it. Any required code fix gets a focused regression test and commit.
+3. **Final evidence:** update the tracked acceptance matrix with actual runtime evidence,
+   verify internal package checksums, run `pnpm verify` under Node 24.22.1 and record remaining
+   externally blocked acceptance. Do not infer settlement, APNs or production readiness.
+
+The new round begins with Android auth attempt 1. No iOS retry is required for the Android
+environment setup. Flows use small Maestro scripts and the dedicated serial `emulator-5580`;
+do not restart a failed flow without a concrete repair or changed prerequisite.
