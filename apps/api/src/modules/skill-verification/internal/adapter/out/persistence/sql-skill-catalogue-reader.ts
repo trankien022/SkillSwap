@@ -101,7 +101,7 @@ export class SqlSkillCatalogueReader implements SkillCatalogueReader {
       SELECT "id", "name", "category", "active"
         FROM ${this.table}
        WHERE "active" = true
-         AND "id" = ANY($1::text[])
+         AND "id"::text = ANY($1::text[])
     `;
 
     const rows = (await source.query(sql, [unique])) as SkillRow[];

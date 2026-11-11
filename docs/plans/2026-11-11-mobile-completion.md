@@ -465,3 +465,11 @@ optional summary reader catches it. Before further native acceptance:
    Run the focused reader suite and the lookup against real PostgreSQL, rebuild/restart only
    the task-owned API, then verify API and native class detail show the real skill name.
 3. Land the repair separately, then resume acceptance and run the full final gate.
+
+Repair verification: the previous SQL produced PostgreSQL `operator does not exist: uuid =
+text`. Casting the UUID column to text fixed the bound-array lookup. Reader unit tests 9/9
+and the new non-destructive catalogue facade integration tests 2/2 passed against local
+PostgreSQL (including duplicate, inactive, missing and opaque string IDs). The restarted
+task API returns the Japanese skill; Maestro asserted `Japanese` on the native detail screen.
+Evidence: `artifacts/ai-simulator/11-skill-name-fixed.png`,
+`/tmp/skillswap-native-lookup-e2e.log`. No schema migration is needed.
