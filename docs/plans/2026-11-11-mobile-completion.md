@@ -533,3 +533,9 @@ skills also update independent projections while sharing that account sequence.
    in this isolated acceptance DB (clear its local live-class processed marker, requeue the
    original outbox row). No remote data changes. Retry preserved native publish once.
 4. Commit repair and evidence separately; full verify remains the final gate.
+
+Repair checks: 23 messaging unit tests and 2 PostgreSQL trust-stream tests passed; API build
+and focused lint passed. Replayed exactly approval event
+`98f24a89-ecc2-4293-a606-a698424bbe2c` in the isolated local DB; the missing beginner Python
+projection appeared and native publication succeeded on retry. Native pre-booking edit passed;
+post-confirmation edit was refused by the server as intended. No remote replay was performed.

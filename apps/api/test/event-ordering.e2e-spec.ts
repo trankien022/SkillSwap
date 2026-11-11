@@ -2,6 +2,7 @@ import { SYSTEM_ACTOR_ID } from '@skillswap/contracts';
 import { startHarness, type Harness } from './harness';
 import { resetDatabase } from './support/db';
 import { PostgresProcessedEventStore } from '../src/shared/messaging/processed-event-store';
+import { orderingKeyOf } from '../src/shared/messaging/event-sequence';
 import { ProjectTeacherTrustUseCase } from '../src/modules/live-class/internal/application/project-teacher-trust.use-case';
 import { TEACHER_TRUST_WRITER, type TeacherTrustWriter } from '../src/modules/live-class/internal/application/port/out/account-trust';
 
@@ -141,7 +142,7 @@ describe('E2E: an out-of-order delivery converges on the newest sequence (W2 C1)
     const rows = await harness.query<{ sequence: number | null }>(
       'live-class',
       'SELECT "sequence" FROM processed_events WHERE "id" = $1',
-      [`${queue}:seq:${account}`],
+      [`${queue}:seq:${orderingKeyOf('student.verification.approved', { accountId: account })}`],
     );
     return rows[0]?.sequence;
   }
@@ -217,7 +218,7 @@ describe('E2E: an out-of-order delivery converges on the newest sequence (W2 C1)
             // ADR-035: required on the wire. This test is about ordering, not attribution.
             actorId: SYSTEM_ACTOR_ID,
           }),
-        { aggregateId: account, sequence: delivery.sequence },
+        { aggregateId: orderingKeyOf('student.verification.approved', { accountId: account }), sequence: delivery.sequence },
       );
     }
 

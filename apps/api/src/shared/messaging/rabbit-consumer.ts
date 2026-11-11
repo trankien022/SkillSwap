@@ -18,7 +18,7 @@ import {
 } from './constants';
 import type { ConsumerQueue, EventHandlerRegistry } from './event-handler-registry';
 import { parseEnvelope } from './event-handler-registry';
-import { aggregateIdOf, sequenceOf } from './event-sequence';
+import { orderingKeyOf, sequenceOf } from './event-sequence';
 import type { ModuleDataSourceRegistry } from './module-registry';
 import type { PostgresProcessedEventStore } from './processed-event-store';
 
@@ -252,7 +252,7 @@ export class RabbitConsumer implements OnApplicationBootstrap, OnApplicationShut
         },
         // ADR-013 Amendment A (W2 C1): every envelope is placed within its aggregate here,
         // so no handler has to remember to compare sequences itself.
-        { aggregateId: aggregateIdOf(parsed.payload), sequence: sequenceOf(parsed) },
+        { aggregateId: orderingKeyOf(parsed.eventType, parsed.payload), sequence: sequenceOf(parsed) },
       );
       this.safeAck(message);
     } catch (error) {

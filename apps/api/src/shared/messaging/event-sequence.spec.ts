@@ -1,10 +1,33 @@
 import {
   UNSEQUENCED,
   aggregateIdOf,
+  orderingKeyOf,
   isNewerThan,
   remember,
   sequenceOf,
 } from './event-sequence';
+
+describe('orderingKeyOf', () => {
+  it('separates independent student and skill producer counters on the same account', () => {
+    expect(orderingKeyOf('student.verification.approved', { accountId: 'a1' }))
+      .not.toBe(orderingKeyOf('skill.evidence.approved', { accountId: 'a1' }));
+  });
+
+  it('keeps skill streams independent while preserving order across versions of one skill', () => {
+    const a = { accountId: 'a1', profileSkillId: 'skill-a', evidenceId: 'v1' };
+    const b = { accountId: 'a1', profileSkillId: 'skill-b' };
+    expect(orderingKeyOf('skill.evidence.approved', a)).not.toBe(orderingKeyOf('skill.evidence.approved', b));
+    expect(orderingKeyOf('skill.evidence.submitted', { ...a, evidenceId: 'v2' }))
+      .toBe(orderingKeyOf('skill.evidence.approved', a));
+    expect(orderingKeyOf('skill.evidence.approved', a)).toBe('["skill","skill-a"]');
+  });
+
+  it('separates wallet and booking counters and leaves id-less events unguarded', () => {
+    expect(orderingKeyOf('wallet.transaction.completed', { bookingId: 'b1' }))
+      .not.toBe(orderingKeyOf('booking.confirmed', { bookingId: 'b1' }));
+    expect(orderingKeyOf('skill.evidence.approved', {})).toBeNull();
+  });
+});
 
 /**
  * ADR-013 Amendment A (W2 C1): ordering guards are consumer-side and must stay harmless for
