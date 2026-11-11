@@ -539,3 +539,12 @@ and focused lint passed. Replayed exactly approval event
 `98f24a89-ecc2-4293-a606-a698424bbe2c` in the isolated local DB; the missing beginner Python
 projection appeared and native publication succeeded on retry. Native pre-booking edit passed;
 post-confirmation edit was refused by the server as intended. No remote replay was performed.
+
+#### Native classroom runtime triage
+
+Teacher room request returned access but Jitsi initialization raised `undefined is not a
+function` on Android (attempt 1). Preserve Metro/ADB stack and screenshot, identify the
+failing SDK/module boundary before changing configuration, add a focused guard/test for a
+repair if possible, and retry at most twice after concrete changes. Classroom acceptance
+must remain failed if only the fallback/exit path works. Chat can be tested independently
+after the room closes; do not count provider join from a returned room token.
