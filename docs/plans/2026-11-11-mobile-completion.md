@@ -508,3 +508,10 @@ exercise this native restriction.
 3. Retry the preserved Android submission once, read back the new pending record/provider
    document, then exercise admin rejection and native resubmission if prerequisites pass.
    Synthetic documents never count as identity or certificate verification.
+
+After the native adapter repair, 40/40 targeted upload tests, typecheck and lint passed.
+Android retry submitted the preserved synthetic PNG through the signed Cloudinary target;
+Maestro observed `Trạng thái: Đang chờ duyệt`. The preceding failure kept the selected file
+and school; the successful retry used them without re-entry. Screenshot:
+`artifacts/ai-simulator/17-verification-pending.png`. This verifies the native multipart path,
+not a real person's student identity.
