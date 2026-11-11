@@ -415,3 +415,7 @@ Cloudinary signed download returned HTTP 200, image/png, 67 bytes. SePay checkou
 201/pending with paymentUrl and unchanged balance; no actual payment or settlement was performed.
 iOS native Debug Simulator build succeeded and app installed. First UI harness attempt stopped at
 system deep-link confirmation before reaching login; second attempt handles that system dialog.
+iOS attempt 2 reached boot error: Expo/SecureStore keychain access lacked an entitlement in the unsigned
+Simulator build. One ad-hoc signing/reinstall repair was attempted. Attempt 3 was refused by Simulator
+launchd (`FBSOpenApplicationServiceErrorDomain`, underlying POSIX 163). Stop auth flow at three attempts;
+no iOS login, session, business, accessibility or provider-native flow has passed.
