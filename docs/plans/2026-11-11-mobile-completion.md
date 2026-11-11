@@ -358,3 +358,10 @@ Do not mark provider or device acceptance passed from unit tests. Each runtime f
 | 016 | inbox/device/deep links | existing read-state/push source | pending |
 | 014 | withdrawal | deferred | excluded |
 | 015 | admin | web only | excluded |
+
+### Phase 1 source audit
+App routes and UI contain no imports of mock gateways or calls to httpApiEnabled.
+SessionProvider uses validated config and renders ConfigErrorView on missing/invalid URL.
+Removed the unused httpApiEnabled toggle and misleading mock-first instructions; mocks remain test-injected only.
+Existing session generation fences and logout's awaited device unregister are retained.
+Profile display-name update and persisted locale are already wired. Runtime checks remain pending.
