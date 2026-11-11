@@ -365,3 +365,10 @@ SessionProvider uses validated config and renders ConfigErrorView on missing/inv
 Removed the unused httpApiEnabled toggle and misleading mock-first instructions; mocks remain test-injected only.
 Existing session generation fences and logout's awaited device unregister are retained.
 Profile display-name update and persisted locale are already wired. Runtime checks remain pending.
+
+### Phase 2 source audit
+Certificate selection, signed multipart upload, documentRef submission and history exist in SkillsScreen/SkillEvidenceGateway.
+Upload failure does not clear the selected file and cannot submit evidence before storage succeeds.
+Student verification and teaching already have dedicated negative-path suites. Teacher edit eligibility is finally enforced by the server commitment rule; class detail does not expose an irreversible commitment flag, so client must not infer it from availableSeats.
+No manual completion command remains. Booking/wallet keep server-confirmation and reconciliation adapters.
+Retain this implementation and rerun its suites; no new money or policy logic is required.
