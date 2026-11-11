@@ -515,3 +515,21 @@ Maestro observed `Trạng thái: Đang chờ duyệt`. The preceding failure kep
 and school; the successful retry used them without re-entry. Screenshot:
 `artifacts/ai-simulator/17-verification-pending.png`. This verifies the native multipart path,
 not a real person's student identity.
+
+#### Native regression repair — independent trust event ordering
+
+Certificate claim/approve succeeded on native and stored `approved/beginner`; native class
+publication then returned 403. The skill approval event is PUBLISHED and processed DONE,
+but live-class has no approval projection. Student and skill outboxes independently number
+events for the same account ID; the consumer compared both against one watermark. Multiple
+skills also update independent projections while sharing that account sequence.
+1. Add a consumer ordering key that separates producer event families and, for skill evidence,
+   stable profileSkillId. Preserve existing emitted sequence numbers, payloads, event-id
+   deduplication and per-stream stale-event rejection. No applied migration changes.
+2. Test student high sequence followed by skill low sequence, two skills arriving inverted,
+   and stale updates within one skill. Add real-PostgreSQL coverage for projection effects.
+   Existing legacy watermark rows stay intact; fresh namespaced keys start on first delivery.
+3. Rebuild/restart task API with local overrides; replay only the one dropped approval event
+   in this isolated acceptance DB (clear its local live-class processed marker, requeue the
+   original outbox row). No remote data changes. Retry preserved native publish once.
+4. Commit repair and evidence separately; full verify remains the final gate.
