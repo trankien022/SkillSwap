@@ -91,3 +91,52 @@ describe('ApiConfig database TLS (NFR-004)', () => {
     expect(() => new ApiConfig()).toThrow(/DATABASE_POOL_MAX/);
   });
 });
+
+/**
+ * FR-020 / AC-035 (ADR-021 Amendment D): the room-idle grace period is configuration.
+ *
+ * `0` is the case worth keeping: it means "complete as soon as the room empties", and the
+ * shared `readInt` helper rejects zero, so a config built on that helper would have made the
+ * documented value impossible to set. The negative cases are here for the opposite reason —
+ * a grace of `-5` minutes would satisfy the idle comparison at every instant, so an
+ * accidental minus must stop the process rather than silently mean "always idle".
+ */
+describe('ApiConfig.jitsiIdleGraceMinutes (ADR-021 Amendment D)', () => {
+  const KEY = 'ROOM_IDLE_GRACE_MINUTES';
+  const original = process.env[KEY];
+
+  afterEach(() => {
+    if (original === undefined) {
+      delete process.env[KEY];
+    } else {
+      process.env[KEY] = original;
+    }
+  });
+
+  it('defaults to 5, the value W1 C3a decided', () => {
+    delete process.env[KEY];
+    // Pinned literally rather than derived from the domain constant: the default must stay
+    // the decided number even if somebody retunes the constant.
+    expect(new ApiConfig().jitsiIdleGraceMinutes).toBe(5);
+  });
+
+  it('accepts 0, which closes the room as soon as it empties', () => {
+    process.env[KEY] = '0';
+    expect(new ApiConfig().jitsiIdleGraceMinutes).toBe(0);
+  });
+
+  it('reads a configured grace', () => {
+    process.env[KEY] = '2';
+    expect(new ApiConfig().jitsiIdleGraceMinutes).toBe(2);
+  });
+
+  it('treats an empty value as unset rather than as zero', () => {
+    process.env[KEY] = '';
+    expect(new ApiConfig().jitsiIdleGraceMinutes).toBe(5);
+  });
+
+  it.each(['-1', '-5', 'abc', '1.5x', '2.5'])('refuses to start with %s', (value) => {
+    process.env[KEY] = value;
+    expect(() => new ApiConfig()).toThrow(new RegExp(KEY));
+  });
+});

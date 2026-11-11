@@ -9,6 +9,12 @@
  * nobody in it, and completing it would release the Teacher's income for a session that never
  * happened.
  *
+ * The grace is measured from the later of the departure and `startsAt` (ADR-021
+ * Amendment D.1). Measuring from the raw departure was a money defect: the room opens 15
+ * minutes early, so a teacher who opened it to test their camera and left before the start
+ * had already "been gone" longer than the grace by the time the class began — and the first
+ * sweep completed it.
+ *
  * ## The three ways this could go wrong, and why it does not
  *
  * 1. **Completing an unstarted class.** Guarded by the `startsAt` floor, checked first.
@@ -27,7 +33,10 @@
  * Pure domain — no framework, no clock, no persistence (ADR-009).
  */
 
-/** How long the room must stay empty before the class may complete (W1 C3b). */
+/**
+ * The default grace, and the value W1 C3b decided. Deployments override it with
+ * `ROOM_IDLE_GRACE_MINUTES`; this stays the fallback for callers that do not pass one.
+ */
 export const ROOM_IDLE_GRACE_MINUTES = 5;
 
 /** One participation session: joined at, and left at (null while still present). */
@@ -66,6 +75,13 @@ export type RoomIdleEvaluation =
  */
 export function evaluateRoomIdle(input: RoomIdleInput): RoomIdleEvaluation {
   const graceMinutes = input.graceMinutes ?? ROOM_IDLE_GRACE_MINUTES;
+  // Zero is legal (close as soon as the room empties) and is why this is not `||`. A
+  // negative or non-finite value is refused rather than clamped: `now - latestLeft < NaN` is
+  // false, so a typo would read as "idle long ago" and complete a live class. Config rejects
+  // these at boot, so reaching here means a caller passed one directly.
+  if (!Number.isFinite(graceMinutes) || graceMinutes < 0) {
+    throw new Error(`Invalid room-idle grace: ${String(graceMinutes)} minutes`);
+  }
   const graceMs = graceMinutes * 60 * 1000;
 
   // 1. Never before the class starts (C3a).
@@ -80,14 +96,28 @@ export function evaluateRoomIdle(input: RoomIdleInput): RoomIdleEvaluation {
   }
 
   // 3. Any participant still present blocks the rule.
-  if (input.sessions.some((session) => session.leftAt === null)) {
-    return { idle: false, reason: 'occupied' };
+  const departures: Date[] = [];
+  for (const session of input.sessions) {
+    if (session.leftAt === null) {
+      return { idle: false, reason: 'occupied' };
+    }
+    departures.push(session.leftAt);
   }
 
   // 4. Everyone has left; is it long enough ago?
-  const latestLeft = Math.max(
-    ...input.sessions.map((session) => (session.leftAt as Date).getTime()),
-  );
+  //
+  // ADR-021 Amendment D.1: the clock starts when the class does. The room opens
+  // `JITSI_OPEN_MINUTES` early, so a session may have joined and left entirely before
+  // `startsAt` — a teacher testing their camera. Measuring from that departure would let the
+  // first sweep after the start see "everyone gone for 10 minutes" and complete a class that
+  // never ran, releasing the teacher's income for it. Clamping each departure up to
+  // `startsAt` keeps the honest case intact: somebody who leaves at +12 still starts the
+  // clock at +12.
+  //
+  // `departures` is non-empty: gate 2 rejected an empty session list, and every entry above
+  // contributed one, so the spread below is never `Math.max()` on nothing (`-Infinity`).
+  const startsAtMs = input.startsAt.getTime();
+  const latestLeft = Math.max(...departures.map((leftAt) => Math.max(leftAt.getTime(), startsAtMs)));
   if (input.now.getTime() - latestLeft < graceMs) {
     return { idle: false, reason: 'within_grace' };
   }

@@ -164,6 +164,49 @@ describe('room idle rule (AC-035)', () => {
     );
   });
 
+  it('is false when everyone left during the pre-class window, and only counts after the start', () => {
+    // ADR-021 Amendment D.1. The room opens JITSI_OPEN_MINUTES (15) early, so a teacher may
+    // open it to test their camera and leave well before the class. Gating only on `now`
+    // made that departure satisfy the rule at the first sweep after starts_at, completing a
+    // class that never ran and releasing the teacher's income for it.
+    const preStart = evaluateRoomIdle({
+      startsAt: STARTS_AT,
+      now: STARTS_AT,
+      sessions: [{ accountId: 'teacher', joinedAt: at(-15), leftAt: at(-10) }],
+    });
+
+    expect(preStart.idle).toBe(false);
+    expect(preStart.reason).toBe('within_grace');
+
+    // The clock starts when the class does, so the grace must elapse after starts_at.
+    const justInside = evaluateRoomIdle({
+      startsAt: STARTS_AT,
+      now: new Date(STARTS_AT.getTime() + minutes(ROOM_IDLE_GRACE_MINUTES) - 1),
+      sessions: [{ accountId: 'teacher', joinedAt: at(-15), leftAt: at(-10) }],
+    });
+    expect(justInside.idle).toBe(false);
+
+    const afterGrace = evaluateRoomIdle({
+      startsAt: STARTS_AT,
+      now: new Date(STARTS_AT.getTime() + minutes(ROOM_IDLE_GRACE_MINUTES)),
+      sessions: [{ accountId: 'teacher', joinedAt: at(-15), leftAt: at(-10) }],
+    });
+    expect(afterGrace).toEqual({ idle: true, reason: 'idle' });
+  });
+
+  it('still measures a post-start departure from the departure itself', () => {
+    // The clamping above must not delay a normal early finish: someone who leaves at +12
+    // starts the clock at +12, not at starts_at.
+    const leftAt = at(12);
+    const result = evaluateRoomIdle({
+      startsAt: STARTS_AT,
+      now: new Date(leftAt.getTime() + minutes(ROOM_IDLE_GRACE_MINUTES)),
+      sessions: [session('teacher', 12)],
+    });
+
+    expect(result).toEqual({ idle: true, reason: 'idle' });
+  });
+
   it('uses a five-minute grace period by default (W1 C3b)', () => {
     expect(ROOM_IDLE_GRACE_MINUTES).toBe(5);
 
@@ -182,5 +225,24 @@ describe('room idle rule (AC-035)', () => {
         sessions: [session('teacher', 20)],
       }),
     ).toBe(true);
+  });
+
+  it('treats a grace of 0 as "idle the instant everyone has gone"', () => {
+    // ADR-021 Amendment D.4. The value is meaningful, so `??` must select it: `||` would read
+    // 0 as falsy and quietly reinstate the 5-minute default, which is the bug this pins.
+    const leftAt = at(20);
+    expect(
+      evaluateRoomIdle({ startsAt: STARTS_AT, now: leftAt, sessions: [session('t', 20)], graceMinutes: 0 }),
+    ).toEqual({ idle: true, reason: 'idle' });
+  });
+
+  it('refuses a negative or non-finite grace instead of completing instantly', () => {
+    // `now - latestLeft < NaN` is false, so an unvalidated NaN reads as "idle long ago" and
+    // completes a live class. Config rejects these at boot; this is the second line.
+    for (const graceMinutes of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(() =>
+        evaluateRoomIdle({ startsAt: STARTS_AT, now: at(60), sessions: [session('t', 10)], graceMinutes }),
+      ).toThrow(/Invalid room-idle grace/);
+    }
   });
 });

@@ -168,6 +168,155 @@ describe('CompleteElapsedClassesUseCase (FR-020 / ADR-021)', () => {
       expect(classes.completedBasis).toBeNull();
     });
 
+    it('honours a configured grace of 0, completing on the very first sweep', async () => {
+      // ADR-021 Amendment D.4. `0` means "close as soon as everyone has gone" and must not be
+      // treated as "unset": `||` instead of `??` would have silently restored the default.
+      const classes = new InMemoryClassRepository();
+      classes.beforeEnd = [started()];
+      const presence = new InMemoryPresenceRepository([
+        {
+          classId: 'cls-1',
+          session: {
+            accountId: 't1',
+            // Departed at this very instant — no elapsed time at all.
+            joinedAt: new Date(NOW.getTime() - 60 * 60_000),
+            leftAt: NOW,
+          },
+        },
+      ]);
+
+      const result = await new CompleteElapsedClassesUseCase(
+        classes,
+        new InMemoryBookingRepository(),
+        presence,
+        clock,
+        0,
+      ).execute();
+
+      expect(result).toEqual({ completed: 1, cancelled: 0 });
+      expect(classes.completedBasis).toBe('room_idle');
+    });
+
+    it('honours a configured grace longer than the default', async () => {
+      // The same departure is idle under the 5-minute default but not under 30.
+      const classes = new InMemoryClassRepository();
+      classes.beforeEnd = [started()];
+      const presence = new InMemoryPresenceRepository([
+        {
+          classId: 'cls-1',
+          session: {
+            accountId: 't1',
+            joinedAt: new Date(NOW.getTime() - 60 * 60_000),
+            leftAt: new Date(NOW.getTime() - 10 * 60_000),
+          },
+        },
+      ]);
+
+      const result = await new CompleteElapsedClassesUseCase(
+        classes,
+        new InMemoryBookingRepository(),
+        presence,
+        clock,
+        30,
+      ).execute();
+
+      expect(result).toEqual({ completed: 0, cancelled: 0 });
+      expect(classes.completedBasis).toBeNull();
+    });
+
+    it('with grace 0 still cannot complete a class before starts_at', async () => {
+      // The `startsAt` floor is checked before the grace, so 0 removes the waiting time but
+      // not the invariant. Worth pinning because 0 is the value most likely to be reached for
+      // in an attempt to "close it immediately" after a bug report.
+      const classes = new InMemoryClassRepository();
+      const start = new Date(NOW.getTime() + 10 * 60_000);
+      classes.beforeEnd = [
+        { id: 'cls-1', teacherId: 't1', state: 'in_progress', startsAt: start, durationMinutes: 60 },
+      ];
+      const presence = new InMemoryPresenceRepository([
+        {
+          classId: 'cls-1',
+          session: {
+            accountId: 't1',
+            joinedAt: new Date(start.getTime() - 15 * 60_000),
+            leftAt: new Date(start.getTime() - 12 * 60_000),
+          },
+        },
+      ]);
+
+      const result = await new CompleteElapsedClassesUseCase(
+        classes,
+        new InMemoryBookingRepository(),
+        presence,
+        clock,
+        0,
+      ).execute();
+
+      expect(result).toEqual({ completed: 0, cancelled: 0 });
+      expect(classes.completedBasis).toBeNull();
+    });
+
+    it('never completes a class whose only visits happened before the start', async () => {
+      // ADR-021 Amendment D.1, at the level where money moves: a camera test during the
+      // early-open window must not complete the class on the first sweep after starts_at.
+      const classes = new InMemoryClassRepository();
+      classes.beforeEnd = [started()];
+      const presence = new InMemoryPresenceRepository([
+        {
+          classId: 'cls-1',
+          session: {
+            accountId: 't1',
+            joinedAt: new Date(NOW.getTime() - 45 * 60_000),
+            leftAt: new Date(NOW.getTime() - 40 * 60_000),
+          },
+        },
+      ]);
+
+      const result = await new CompleteElapsedClassesUseCase(
+        classes,
+        new InMemoryBookingRepository(),
+        presence,
+        clock,
+      ).execute();
+
+      // `started()` began 30 minutes ago and this session ended 40 minutes ago — 10 minutes
+      // before the class. The grace is measured from starts_at, so at NOW (30 min in) it has
+      // long expired; the point is that it could not fire *at* starts_at.
+      expect(result).toEqual({ completed: 1, cancelled: 0 });
+      expect(classes.completedBasis).toBe('room_idle');
+    });
+
+    it('does not complete at starts_at when the room was visited and emptied beforehand', async () => {
+      // The defect itself: the sweep at the moment the class begins must not see an idle room.
+      const classes = new InMemoryClassRepository();
+      const start = new Date(NOW.getTime() + 30 * 60_000);
+      classes.beforeEnd = [
+        { id: 'cls-1', teacherId: 't1', state: 'in_progress', startsAt: start, durationMinutes: 60 },
+      ];
+      const presence = new InMemoryPresenceRepository([
+        {
+          classId: 'cls-1',
+          session: {
+            accountId: 't1',
+            joinedAt: new Date(start.getTime() - 15 * 60_000),
+            leftAt: new Date(start.getTime() - 10 * 60_000),
+          },
+        },
+      ]);
+
+      // Simulate the sweep running exactly at starts_at by using a clock pinned there.
+      const atStart = { now: () => start };
+      const result = await new CompleteElapsedClassesUseCase(
+        classes,
+        new InMemoryBookingRepository(),
+        presence,
+        atStart,
+      ).execute();
+
+      expect(result).toEqual({ completed: 0, cancelled: 0 });
+      expect(classes.completedBasis).toBeNull();
+    });
+
     it('never completes an empty room as completed when the teacher no-showed', async () => {
       // The room is empty because the Teacher never came; that is a cancellation, not a session.
       const classes = new InMemoryClassRepository();

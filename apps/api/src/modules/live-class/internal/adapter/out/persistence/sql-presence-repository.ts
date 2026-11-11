@@ -68,6 +68,17 @@ export class SqlPresenceRepository implements PresenceRepository {
     );
   }
 
+  async closeOpenSessions(classId: string, leftAt: Date): Promise<number> {
+    const source = this.registry.get(this.moduleName);
+    const rows = (await source.query(
+      `UPDATE ${this.table} SET "left_at" = $2
+        WHERE "class_id" = $1 AND "left_at" IS NULL
+        RETURNING "id"`,
+      [classId, leftAt.toISOString()],
+    )) as Array<{ id: string }>;
+    return rows.length;
+  }
+
   async listSessions(classId: string): Promise<PresenceSession[]> {
     const source = this.registry.get(this.moduleName);
     const rows = (await source.query(

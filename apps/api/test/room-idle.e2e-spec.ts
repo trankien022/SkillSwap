@@ -2,7 +2,7 @@ import { ApiConfig } from '../src/shared/config/api-config';
 import { startHarness, type Harness } from './harness';
 import { accountIdFromToken, ApiClient, waitFor } from './support/api-client';
 import { resetDatabase, seedTeacherTrust, walletRow } from './support/db';
-import { participantEvent, signJaasWebhook } from './support/jaas-webhook';
+import { participantEvent, roomDestroyedEvent, signJaasWebhook } from './support/jaas-webhook';
 import { ClassCompletionSweeper } from '../src/modules/live-class/internal/adapter/in/scheduler/class-completion.sweeper';
 
 jest.setTimeout(60_000);
@@ -201,6 +201,15 @@ describe('E2E: room-idle completion (FR-020 / AC-035)', () => {
     });
   }
 
+  function roomDestroyed(classId: string, at: Date) {
+    api.actAs(null);
+    const signed = signJaasWebhook(roomDestroyedEvent(JITSI_APP_ID, classId, at), WEBHOOK_SECRET);
+    return api.request('POST', '/api/internal/jitsi/presence', undefined, {
+      headers: { ...signed.headers, 'content-type': 'application/json' },
+      rawBody: signed.body,
+    });
+  }
+
   it('completes a started class once everyone has been gone past the grace period, and pays out', async () => {
     const { classId } = await paidBooking();
     await startTwentyMinutesAgo(classId);
@@ -281,9 +290,14 @@ describe('E2E: room-idle completion (FR-020 / AC-035)', () => {
     const at = new Date(Date.now() - 10 * minute);
     const strangerJoin = await presence(classId, 'participant-joined', 'a1d00000-0000-4000-8000-000000000a04', at);
     expect(strangerJoin.status).toBe(200);
+    // A join is party-checked: creating presence is how an outsider holds a room open.
     expect(strangerJoin.json).toEqual({ accepted: false, reason: 'not_a_party' });
+
+    // A departure is not party-checked (ADR-021 Amendment D.2), because the write is keyed on
+    // (class_id, account_id) and can only close the departee's own session. `accepted` here
+    // means "safe to apply", not "a row changed" — the assertions below are the real property.
     const strangerLeave = await presence(classId, 'participant-left', 'a1d00000-0000-4000-8000-000000000a04', at);
-    expect(strangerLeave.json).toEqual({ accepted: false, reason: 'not_a_party' });
+    expect(strangerLeave.status).toBe(200);
 
     const rows = await harness.query<{ id: string }>(
       'live-class',
@@ -295,6 +309,52 @@ describe('E2E: room-idle completion (FR-020 / AC-035)', () => {
     await sweep();
     // Presence is therefore "unknown", which must never complete a class early.
     expect((await classState(classId)).state).toBe('in_progress');
+  });
+
+  it('recovers a lost departure from ROOM_DESTROYED and then completes on the grace', async () => {
+    // ADR-021 Amendment D.3, against the real schema. Presence is inferred from individual
+    // deliveries, so a single lost PARTICIPANT_LEFT leaves a row open forever and the class
+    // silently loses its early path. ROOM_DESTROYED arrives regardless.
+    const { classId } = await paidBooking();
+    await startTwentyMinutesAgo(classId);
+
+    const joined = new Date(Date.now() - 18 * minute);
+    const teacherJoin = await presence(classId, 'participant-joined', teacherId, joined);
+    expect(teacherJoin.json).toEqual({ accepted: true });
+    // Both departures are "lost" — never delivered.
+
+    const destroyed = await roomDestroyed(classId, new Date(Date.now() - 10 * minute));
+    expect(destroyed.json).toEqual({ accepted: true });
+
+    const rows = await harness.query<{ left_at: Date | null }>(
+      'live-class',
+      `SELECT "left_at" FROM class_presence WHERE "class_id" = $1`,
+      [classId],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.left_at).not.toBeNull();
+
+    await sweep();
+    expect(await classState(classId)).toEqual({ state: 'completed', basis: 'room_idle' });
+  });
+
+  it('does not let ROOM_DESTROYED skip the grace, so a reconnect does not end the class', async () => {
+    // The event cannot distinguish "finished" from "the WiFi dropped": JaaS destroys the room
+    // when it empties and recreates it on reconnect. Closing rows is reversible; completing a
+    // class is not, so the grace still has to run.
+    const { classId } = await paidBooking();
+    await startTwentyMinutesAgo(classId);
+
+    await presence(classId, 'participant-joined', teacherId, new Date(Date.now() - 18 * minute));
+    // Room destroyed ten seconds ago: well inside the 5-minute grace.
+    expect((await roomDestroyed(classId, new Date(Date.now() - 10 * 1000))).json).toEqual({
+      accepted: true,
+    });
+
+    await sweep();
+    expect(await classState(classId)).toEqual({ state: 'in_progress', basis: null });
+    const teacher = await walletRow(harness, teacherId);
+    expect(teacher?.pendingCredits).toBe(90);
   });
 
   it('rejects a webhook that is unsigned or signed with the wrong secret', async () => {

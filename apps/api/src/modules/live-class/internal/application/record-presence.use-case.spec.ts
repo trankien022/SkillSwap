@@ -1,4 +1,5 @@
 import { RecordPresenceUseCase } from './record-presence.use-case';
+import { ROOM_IDLE_GRACE_MINUTES, evaluateRoomIdle } from '../domain/presence';
 import {
   InMemoryBookingRepository,
   InMemoryClassRepository,
@@ -62,11 +63,21 @@ describe('RecordPresenceUseCase (FR-011 / AC-035)', () => {
   });
 
   it('changes nothing when a stranger sends a leave', async () => {
+    // A departure is not party-checked (ADR-021 Amendment D.2), because the write is keyed on
+    // `(classId, accountId)` and can only close the departee's own session. The property that
+    // matters is the one asserted here: nothing is created or closed for an outsider.
     const { presence, useCase } = setup();
-    expect(await useCase.execute(leave('stranger-9'))).toEqual({
-      accepted: false,
-      reason: 'not_a_party',
-    });
+    expect(await useCase.execute(leave('stranger-9'))).toEqual({ accepted: true });
+    expect(await presence.listSessions(CLASS_ID)).toEqual([]);
+  });
+
+  it('rejects a departure from a room that maps to no class', async () => {
+    // The one check a departure keeps: the room has to be one we issued, so a lead-in
+    // "skillswap-" on somebody else's room name cannot be used to probe our data.
+    const { presence, useCase } = setup();
+    expect(
+      await useCase.execute({ ...leave('teacher-1'), room: 'skillswap-not-a-real-class' }),
+    ).toEqual({ accepted: false, reason: 'unknown_room' });
     expect(await presence.listSessions(CLASS_ID)).toEqual([]);
   });
 
@@ -124,6 +135,174 @@ describe('RecordPresenceUseCase (FR-011 / AC-035)', () => {
     const sessions = await presence.listSessions(CLASS_ID);
     expect(sessions).toHaveLength(2);
     expect(sessions[1]?.leftAt).toBeNull();
+  });
+
+  it('records the departure of a learner whose booking was cancelled mid-class', async () => {
+    // ADR-021 Amendment D.2. Presence used to resolve its party list from `confirmed`
+    // bookings only, so a learner cancelled mid-session stopped being a party: their leave
+    // returned `not_a_party`, their row kept `left_at IS NULL`, and the room looked
+    // permanently occupied — `room_idle` could never fire again.
+    const classes = new InMemoryClassRepository(
+      classView({ id: CLASS_ID, teacherId: 'teacher-1', state: 'in_progress' }),
+    );
+    const bookings = new InMemoryBookingRepository([
+      makeBooking({ id: 'b1', classId: CLASS_ID, learnerId: 'learner-1', state: 'confirmed' }),
+    ]);
+    const presence = new InMemoryPresenceRepository();
+    const useCase = new RecordPresenceUseCase(classes, bookings, presence);
+
+    await useCase.execute(join('learner-1'));
+    await bookings.cancelAndEmit('b1', 'class_cancelled');
+
+    expect(await useCase.execute(leave('learner-1'))).toEqual({ accepted: true });
+    const sessions = await presence.listSessions(CLASS_ID);
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]?.leftAt).toEqual(AT);
+  });
+
+  it('lets the idle rule fire once that departure lands', async () => {
+    // The point of the fix, composed: a cancelled-booking departure must leave the room
+    // looking empty. Before D.2 the row stayed open, so this same evaluation reported
+    // `occupied` forever and the class could only end at its scheduled time.
+    const classes = new InMemoryClassRepository(
+      classView({ id: CLASS_ID, teacherId: 'teacher-1', state: 'in_progress' }),
+    );
+    const bookings = new InMemoryBookingRepository([
+      makeBooking({ id: 'b1', classId: CLASS_ID, learnerId: 'learner-1', state: 'confirmed' }),
+    ]);
+    const presence = new InMemoryPresenceRepository();
+    const useCase = new RecordPresenceUseCase(classes, bookings, presence);
+    const startsAt = new Date(AT.getTime() - 30 * 60_000);
+
+    await useCase.execute(join('teacher-1'));
+    await useCase.execute(leave('teacher-1'));
+    await useCase.execute(join('learner-1'));
+    await bookings.cancelAndEmit('b1', 'class_cancelled');
+    await useCase.execute(leave('learner-1'));
+
+    expect(
+      evaluateRoomIdle({
+        startsAt,
+        now: new Date(AT.getTime() + ROOM_IDLE_GRACE_MINUTES * 60_000),
+        sessions: await presence.listSessions(CLASS_ID),
+      }),
+    ).toEqual({ idle: true, reason: 'idle' });
+  });
+
+  it('still refuses a join from someone who is not a party', async () => {
+    // The leave relaxation must not become a join relaxation: a stranger creating presence
+    // is how an outsider holds a room open or becomes its last departure.
+    const { presence, useCase } = setup();
+    expect(await useCase.execute(join('stranger-9'))).toEqual({
+      accepted: false,
+      reason: 'not_a_party',
+    });
+    expect(await presence.listSessions(CLASS_ID)).toEqual([]);
+  });
+
+  it('does not invent a departure for an account with no open session', async () => {
+    // A leave is only evidence when there is something to close. The write is a no-op here
+    // (the repository only closes a matching open row), which is why the relaxed party check
+    // is safe: an account can never close somebody else's session.
+    const classes = new InMemoryClassRepository(
+      classView({ id: CLASS_ID, teacherId: 'teacher-1', state: 'in_progress' }),
+    );
+    const bookings = new InMemoryBookingRepository([]);
+    const presence = new InMemoryPresenceRepository();
+    const useCase = new RecordPresenceUseCase(classes, bookings, presence);
+
+    expect(await useCase.execute(leave('teacher-1'))).toEqual({ accepted: true });
+    expect(await presence.listSessions(CLASS_ID)).toEqual([]);
+  });
+
+  it('closes open sessions on ROOM_DESTROYED, recovering a lost departure', async () => {
+    // ADR-021 Amendment D.3. Presence is inferred from individual deliveries, so one lost
+    // `PARTICIPANT_LEFT` leaves a row open forever and the class never qualifies for the idle
+    // rule. ROOM_DESTROYED arrives regardless and closes what the individual events missed.
+    const classes = new InMemoryClassRepository(
+      classView({ id: CLASS_ID, teacherId: 'teacher-1', state: 'in_progress' }),
+    );
+    const bookings = new InMemoryBookingRepository([]);
+    const presence = new InMemoryPresenceRepository();
+    const useCase = new RecordPresenceUseCase(classes, bookings, presence);
+
+    await useCase.execute(join('teacher-1'));
+    // No `leave` is delivered — this is the packet that went missing.
+    const destroyed = await useCase.execute({
+      type: 'room-destroyed',
+      room: `skillswap-${CLASS_ID}`,
+      classId: CLASS_ID,
+      accountId: '',
+      occurredAt: AT,
+    });
+
+    expect(destroyed).toEqual({ accepted: true });
+    const sessions = await presence.listSessions(CLASS_ID);
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]?.leftAt).toEqual(AT);
+  });
+
+  it('treats ROOM_DESTROYED as recovery only, never as a completion signal', async () => {
+    // The event cannot distinguish "everyone finished" from "the WiFi dropped": JaaS destroys
+    // the room when it empties and recreates it on reconnect. Closing rows is reversible, so
+    // applying it is safe; the idle grace is what actually decides completion, and it still
+    // has to run afterwards.
+    const classes = new InMemoryClassRepository(
+      classView({ id: CLASS_ID, teacherId: 'teacher-1', state: 'in_progress' }),
+    );
+    const presence = new InMemoryPresenceRepository();
+    const useCase = new RecordPresenceUseCase(classes, new InMemoryBookingRepository([]), presence);
+    const startsAt = new Date(AT.getTime() - 60 * 60_000);
+
+    await useCase.execute(join('teacher-1'));
+    await useCase.execute({
+      type: 'room-destroyed',
+      room: `skillswap-${CLASS_ID}`,
+      classId: CLASS_ID,
+      accountId: '',
+      occurredAt: AT,
+    });
+
+    const sessions = await presence.listSessions(CLASS_ID);
+    // Empty, but the grace starts now rather than being skipped.
+    expect(evaluateRoomIdle({ startsAt, now: AT, sessions })).toEqual({
+      idle: false,
+      reason: 'within_grace',
+    });
+    expect(
+      evaluateRoomIdle({
+        startsAt,
+        now: new Date(AT.getTime() + ROOM_IDLE_GRACE_MINUTES * 60_000),
+        sessions,
+      }),
+    ).toEqual({ idle: true, reason: 'idle' });
+  });
+
+  it('is idempotent for a redelivered ROOM_DESTROYED', async () => {
+    // JaaS retries (and the docs tell consumers to dedupe on `idempotencyKey`, which this
+    // handler does not track), so a second delivery must not close anything twice.
+    const classes = new InMemoryClassRepository(
+      classView({ id: CLASS_ID, teacherId: 'teacher-1', state: 'in_progress' }),
+    );
+    const presence = new InMemoryPresenceRepository();
+    const useCase = new RecordPresenceUseCase(classes, new InMemoryBookingRepository([]), presence);
+    const destroyed = {
+      type: 'room-destroyed' as const,
+      room: `skillswap-${CLASS_ID}`,
+      classId: CLASS_ID,
+      accountId: '',
+      occurredAt: AT,
+    };
+
+    await useCase.execute(join('teacher-1'));
+    await useCase.execute(destroyed);
+    const later = new Date(AT.getTime() + 60_000);
+    await useCase.execute({ ...destroyed, occurredAt: later });
+
+    const sessions = await presence.listSessions(CLASS_ID);
+    expect(sessions).toHaveLength(1);
+    // The first close stands; the redelivery does not move the timestamp forward.
+    expect(sessions[0]?.leftAt).toEqual(AT);
   });
 
   it('exposes the Teacher first join as the no-show evidence', async () => {

@@ -31,6 +31,19 @@ export interface PresenceRepository {
    */
   recordLeave(record: PresenceRecord): Promise<void>;
 
+  /**
+   * Closes every open session for the class (ADR-021 Amendment D.3).
+   *
+   * Used by `ROOM_DESTROYED`, which 8x8 emits once the room empties. It is **recovery**, not
+   * a completion trigger: presence is inferred from individual deliveries, so a single lost
+   * `participant-left` leaves a row open forever and the class silently never qualifies for
+   * the idle rule. This closes what the individual events missed.
+   *
+   * Closing rows is reversible — a reconnect opens a new one — which is why this is safe to
+   * apply on a signal that cannot distinguish "finished" from "temporary disconnect".
+   */
+  closeOpenSessions(classId: string, leftAt: Date): Promise<number>;
+
   /** Every session recorded for the class, oldest first. Empty means unknown. */
   listSessions(classId: string): Promise<PresenceSession[]>;
 
