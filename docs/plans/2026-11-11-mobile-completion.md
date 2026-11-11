@@ -452,3 +452,16 @@ Remaining execution phases, with separate meaningful commits:
 The new round begins with Android auth attempt 1. No iOS retry is required for the Android
 environment setup. Flows use small Maestro scripts and the dedicated serial `emulator-5580`;
 do not restart a failed flow without a concrete repair or changed prerequisite.
+
+#### Native regression repair — FR-006 skill names
+
+Observed on the real class detail response: `skills` is missing while `/skills` contains the
+same Japanese skill. `skill_verification.skills.id` is PostgreSQL UUID, but
+`findSkillsByIds` compares it to `ANY($1::text[])`. PostgreSQL rejects this operator and the
+optional summary reader catches it. Before further native acceptance:
+1. Reproduce the UUID/text comparison on isolated local PostgreSQL and add/adjust a targeted
+   lookup regression check; keep opaque string IDs supported at the adapter boundary.
+2. Compare `id::text` with the text array, retaining active filtering and parameter binding.
+   Run the focused reader suite and the lookup against real PostgreSQL, rebuild/restart only
+   the task-owned API, then verify API and native class detail show the real skill name.
+3. Land the repair separately, then resume acceptance and run the full final gate.
