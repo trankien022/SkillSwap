@@ -3,13 +3,16 @@ import type { GatewayClient } from './gateway-client';
 
 export class NotificationGateway {
   constructor(private readonly gateway: GatewayClient) {}
-  async list(query: Partial<ListNotificationsQuery> = {}) {
+  async list(query: Partial<ListNotificationsQuery> = {}, locale?: 'vi' | 'en') {
     const params = new URLSearchParams();
     if (query.unreadOnly !== undefined) params.set('unreadOnly', String(query.unreadOnly));
     if (query.limit !== undefined) params.set('limit', String(query.limit));
     if (query.cursor) params.set('cursor', query.cursor);
     const qs = params.toString();
-    return notificationsPageSchema.parse(await this.gateway.authenticatedRequest<unknown>(`/notifications${qs ? `?${qs}` : ''}`, { method: 'GET' }));
+    return notificationsPageSchema.parse(await this.gateway.authenticatedRequest<unknown>(`/notifications${qs ? `?${qs}` : ''}`, {
+      method: 'GET',
+      ...(locale ? { headers: { 'Accept-Language': locale } } : {}),
+    }));
   }
   /** B6: marks one notification read; the server answers with the remaining unread count. */
   async markRead(id: string): Promise<MarkNotificationsReadResponse> {

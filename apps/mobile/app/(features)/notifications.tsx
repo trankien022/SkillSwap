@@ -20,27 +20,32 @@ export default function NotificationsScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const markingRef = useRef(new Set<string>());
+  const pageGeneration = useRef(0);
   const load = useCallback(async (next = false) => {
     if (!gatewayClient || busy) return;
+    const generation = pageGeneration.current;
     setBusy(true);
     try {
-      const page = await new NotificationGateway(gatewayClient).list({ limit: 20, ...(next && cursor ? { cursor } : {}) });
+      const page = await new NotificationGateway(gatewayClient).list({ limit: 20, ...(next && cursor ? { cursor } : {}) }, locale);
+      if (generation !== pageGeneration.current) return;
       setItems((old) => next ? [...old, ...page.items] : page.items); setCursor(page.nextCursor); setUnread(page.unreadCount); setError(null);
-    } catch { setError(t('Notifications.loadError')); }
-    finally { setBusy(false); }
-  }, [gatewayClient, busy, cursor, t]);
+    } catch { if (generation === pageGeneration.current) setError(t('Notifications.loadError')); }
+    finally { if (generation === pageGeneration.current) setBusy(false); }
+  }, [gatewayClient, busy, cursor, locale, t]);
   useFocusEffect(useCallback(() => {
     let active = true;
+    pageGeneration.current += 1;
+    setItems([]); setCursor(null); setUnread(0); setError(null);
     void defaultKeyValueStore().getItemAsync(PUSH_DEVICE_ID_KEY).then((id) => { if (active) setDeviceId(id); });
     if (gatewayClient) {
       setBusy(true);
-      void new NotificationGateway(gatewayClient).list({ limit: 20 }).then((page) => {
+      void new NotificationGateway(gatewayClient).list({ limit: 20 }, locale).then((page) => {
         if (active) { setItems(page.items); setCursor(page.nextCursor); setUnread(page.unreadCount); setError(null); }
       }).catch(() => { if (active) setError(t('Notifications.loadError')); })
         .finally(() => { if (active) setBusy(false); });
     }
-    return () => { active = false; };
-  }, [gatewayClient, t]));
+    return () => { active = false; pageGeneration.current += 1; };
+  }, [gatewayClient, locale, t]));
 
   const enablePush = async () => {
     if (!gatewayClient || busy) return;

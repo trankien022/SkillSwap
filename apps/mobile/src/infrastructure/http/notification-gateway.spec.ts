@@ -31,6 +31,18 @@ describe('NotificationGateway', () => {
     expect(fetchMock.mock.calls[0][1].method).toBe('POST');
   });
 
+  it.each(['vi', 'en'] as const)('requests server inbox copy in %s on every page', async (locale) => {
+    const fetchMock = jest.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ success: true, code: 'OK', message: 'OK', data: { items: [], nextCursor: null, unreadCount: 0 }, errors: [] }) });
+    const client = new GatewayClient(config, { fetchFn: fetchMock as unknown as typeof fetch });
+    client.setTokenProvider({ getAccessToken: async () => 'access', refreshSession: async () => ({ tokens: { accessToken: 'next' } }) });
+    const gateway = new NotificationGateway(client);
+    await gateway.list({ limit: 20 }, locale);
+    await gateway.list({ limit: 20, cursor: 'next-page' }, locale);
+    for (const [, init] of fetchMock.mock.calls) {
+      expect(init.headers['Accept-Language']).toBe(locale);
+    }
+  });
+
   it('marks the whole inbox read and parses the unread count from the server', async () => {
     const fetchMock = jest.fn().mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ success: true, code: 'OK', message: 'OK', data: { success: true, unreadCount: 0 }, errors: [] }) });
     const client = new GatewayClient(config, { fetchFn: fetchMock as unknown as typeof fetch });

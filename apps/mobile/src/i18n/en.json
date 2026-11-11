@@ -105,7 +105,7 @@
     "statusFailed": "Payment failed",
     "statusReversed": "Reversed",
     "polling": "Checking automatically...",
-    "orderCode": "Order: {{ref}}",
+    "orderCode": "Order: {ref}",
     "dismissIntent": "Dismiss",
     "invalidAmount": "Amount must be a positive integer not exceeding 100,000,000 VND.",
     "historyTitle": "Transaction History",

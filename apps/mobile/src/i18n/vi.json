@@ -105,7 +105,7 @@
     "statusFailed": "Thanh toán không thành công",
     "statusReversed": "Hoàn trả",
     "polling": "Đang tự động kiểm tra...",
-    "orderCode": "Mã đơn: {{ref}}",
+    "orderCode": "Mã đơn: {ref}",
     "dismissIntent": "Đóng",
     "invalidAmount": "Số tiền phải là số nguyên dương và không vượt quá 100.000.000 VNĐ.",
     "historyTitle": "Lịch sử giao dịch",

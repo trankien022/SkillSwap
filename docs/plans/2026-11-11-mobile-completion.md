@@ -486,3 +486,8 @@ Repair phases (one implementation commit, followed by native evidence):
    translator expects a single pair. No payment state or logic changes.
 3. Run targeted mobile tests/typecheck; use Fast Refresh and confirm VI inbox, one/all read,
    deep link, then EN/VI change on emulator. Include both repairs in the final full gate.
+
+Targeted inbox/gateway/translation tests 22/22 and mobile typecheck passed. Native VI inbox
+now shows server Vietnamese copy. Tapping the booking outcome navigated to schedule and
+changed server unread count from 4 to 3; mark-all changed it to 0. Screenshots:
+`artifacts/ai-simulator/12-inbox-vietnamese.png`, `13-inbox-read-all.png`.
