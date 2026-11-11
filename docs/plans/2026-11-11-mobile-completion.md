@@ -473,3 +473,16 @@ PostgreSQL (including duplicate, inactive, missing and opaque string IDs). The r
 task API returns the Japanese skill; Maestro asserted `Japanese` on the native detail screen.
 Evidence: `artifacts/ai-simulator/11-skill-name-fixed.png`,
 `/tmp/skillswap-native-lookup-e2e.log`. No schema migration is needed.
+
+#### Native regression repair — FR-016 inbox locale
+
+Android VI inbox displayed English server notification title/body. The client sends no
+`Accept-Language`; backend intentionally falls back to device/account locale then English.
+Repair phases (one implementation commit, followed by native evidence):
+1. Add the current VI/EN locale explicitly to inbox reads, including pagination. Preserve
+   server-owned copy. Reset visible pages when locale changes and discard stale page results.
+   Cover header propagation, locale switch with stable translator, and pagination in tests.
+2. Fix the checkout order-code copy's double-brace placeholder observed on Android; the local
+   translator expects a single pair. No payment state or logic changes.
+3. Run targeted mobile tests/typecheck; use Fast Refresh and confirm VI inbox, one/all read,
+   deep link, then EN/VI change on emulator. Include both repairs in the final full gate.
