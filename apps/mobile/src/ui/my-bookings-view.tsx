@@ -27,6 +27,8 @@ import { myBookingsStyles as styles } from './my-bookings-styles';
 import { useSession } from './session-context';
 import { StatusPill, type PillTone } from './status-pill';
 import { FeedbackBanner, ScreenScroll } from './primitives';
+import { BookingChat } from './booking-chat';
+import { ChatGateway } from '@/infrastructure/http/chat-gateway';
 import { JitsiRoom } from './jitsi-room';
 
 /**
@@ -46,6 +48,8 @@ import { JitsiRoom } from './jitsi-room';
 export function MyBookingsView() {
   const router = useRouter();
   const { t, locale, user, gatewayClient } = useSession();
+  const [chatBookingId, setChatBookingId] = useState<string | null>(null);
+  const chatGateway = useMemo(() => gatewayClient ? new ChatGateway(gatewayClient) : null, [gatewayClient]);
   const accountId = user?.id ?? '';
   const [openingBookingId, setOpeningBookingId] = useState<string | null>(null);
   const [roomError, setRoomError] = useState(false);
@@ -559,6 +563,7 @@ export function MyBookingsView() {
                       )}
                     </Pressable>
                   ) : null}
+                  {(item.state === 'confirmed' || item.state === 'completed') ? <Pressable style={styles.loadMoreButton} accessibilityRole="button" onPress={() => setChatBookingId(item.bookingId)}><Text style={styles.loadMoreText}>{t('Chat.title')}</Text></Pressable> : null}
                   {item.roomAccessEligible ? (
                     <Pressable
                       style={styles.loadMoreButton}
@@ -638,6 +643,7 @@ export function MyBookingsView() {
           )}
         </View>
       ) : null}
+      {chatBookingId && chatGateway ? <BookingChat key={`${accountId}:${chatBookingId}`} bookingId={chatBookingId} gateway={chatGateway} onClose={() => setChatBookingId(null)} /> : null}
       <JitsiRoom
         access={roomAccess}
         displayName={user?.displayName ?? 'SkillSwap user'}

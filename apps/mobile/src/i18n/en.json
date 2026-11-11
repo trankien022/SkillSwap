@@ -103,7 +103,7 @@
     "statusPending": "Waiting for SePay confirmation",
     "statusSettled": "Added to your wallet",
     "statusFailed": "Payment failed",
-    "statusReversed": "Transaction was reversed",
+    "statusReversed": "Reversed",
     "polling": "Checking automatically...",
     "orderCode": "Order: {{ref}}",
     "dismissIntent": "Dismiss",
@@ -113,7 +113,6 @@
     "directionCredit": "+{amount} credits",
     "directionDebit": "-{amount} credits",
     "statusCompleted": "Completed",
-    "statusReversed": "Reversed",
     "loadMore": "Load more transactions",
     "refreshBalance": "Update balance",
     "reference": "Ref: {ref}"
@@ -177,20 +176,69 @@
     "type_certificate": "Certificate",
     "type_verifier_assessment": "Verifier assessment",
     "chooseCertificate": "Choose certificate (image or PDF)",
-    "level_beginner": "Beginner", "level_intermediate": "Intermediate", "level_advanced": "Advanced", "level_expert": "Expert",
-    "state_pending": "Pending", "state_claimed": "In review", "state_approved": "Approved", "state_rejected": "Rejected", "state_superseded": "Superseded"
+    "level_beginner": "Beginner",
+    "level_intermediate": "Intermediate",
+    "level_advanced": "Advanced",
+    "level_expert": "Expert",
+    "state_pending": "Pending",
+    "state_claimed": "In review",
+    "state_approved": "Approved",
+    "state_rejected": "Rejected",
+    "state_superseded": "Superseded"
   },
   "Teaching": {
     "startsAtEmpty": "Enter the class start time.",
     "startsAtInvalid": "Enter the start time as an ISO 8601 date with a timezone, for example 2026-12-01T19:00:00+07:00.",
     "startsAtPast": "The start time must be in the future.",
-    "title": "Teaching", "createTitle": "Create a class", "detailTitle": "Class details", "classTitle": "Class title", "description": "Class description", "startsAt": "Start time", "pickDate": "Choose date", "pickTime": "Choose time", "earliestStart": "Earliest class time: {when} (at least 24 hours from now).", "dateTooSoon": "Choose a class time at least 24 hours from now.", "duration": "Minutes", "price": "Credits", "capacity": "Seats", "publish": "Publish class", "myClasses": "Classes I created", "empty": "You have no classes yet.", "openDetail": "View details", "save": "Save changes", "cancel": "Cancel class", "cancelTitle": "Confirm cancellation", "cancelConfirm": "Are you sure you want to cancel this class?", "invalidForm": "Check the description, time, price, and seat count.", "notFound": "Class was not found in your teaching list.", "start": "Start", "loadError": "Could not load class data.", "actionError": "Action failed. The server may have locked editing; reload the class to check its state.", "state": { "draft": "Draft", "published": "Open", "full": "Full", "in_progress": "In progress", "completed": "Completed", "cancelled": "Cancelled" }
+    "title": "Teaching",
+    "createTitle": "Create a class",
+    "detailTitle": "Class details",
+    "classTitle": "Class title",
+    "description": "Class description",
+    "startsAt": "Start time",
+    "pickDate": "Choose date",
+    "pickTime": "Choose time",
+    "earliestStart": "Earliest class time: {when} (at least 24 hours from now).",
+    "dateTooSoon": "Choose a class time at least 24 hours from now.",
+    "duration": "Minutes",
+    "price": "Credits",
+    "capacity": "Seats",
+    "publish": "Publish class",
+    "myClasses": "Classes I created",
+    "empty": "You have no classes yet.",
+    "openDetail": "View details",
+    "save": "Save changes",
+    "cancel": "Cancel class",
+    "cancelTitle": "Confirm cancellation",
+    "cancelConfirm": "Are you sure you want to cancel this class?",
+    "invalidForm": "Check the description, time, price, and seat count.",
+    "notFound": "Class was not found in your teaching list.",
+    "start": "Start",
+    "loadError": "Could not load class data.",
+    "actionError": "Action failed. The server may have locked editing; reload the class to check its state.",
+    "state": {
+      "draft": "Draft",
+      "published": "Open",
+      "full": "Full",
+      "in_progress": "In progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    }
   },
   "Notifications": {
     "read": "Read",
     "unreadItem": "Unread",
-    "title":"Notifications", "unread":"{count} unread notifications", "enablePush":"Enable push notifications on this device", "disablePush":"Disable push notifications on this device", "empty":"No notifications yet.", "loadMore":"Load more", "loadError":"Could not load your inbox.", "pushError":"Could not register this device. Check notification permission and retry.",
-    "markAllRead":"Mark all as read", "markReadError":"Could not mark the notification as read. Try again later.", "markAllReadError":"Could not mark all notifications as read. Try again."
+    "title": "Notifications",
+    "unread": "{count} unread notifications",
+    "enablePush": "Enable push notifications on this device",
+    "disablePush": "Disable push notifications on this device",
+    "empty": "No notifications yet.",
+    "loadMore": "Load more",
+    "loadError": "Could not load your inbox.",
+    "pushError": "Could not register this device. Check notification permission and retry.",
+    "markAllRead": "Mark all as read",
+    "markReadError": "Could not mark the notification as read. Try again later.",
+    "markAllReadError": "Could not mark all notifications as read. Try again."
   },
   "Verifier": {
     "title": "Moderation Queue",
@@ -408,5 +456,25 @@
     "noShowSuccess": "Teacher no-show recorded. The booking has been cancelled and credits refunded to your wallet.",
     "noShowRefused": "Request not accepted: 15 minutes have not passed since class start or teacher has already joined.",
     "noShowError": "Could not report teacher no-show. Please check your connection and try again."
+  },
+  "Chat": {
+    "title": "Class chat",
+    "window": "Send messages during the room access window. History remains readable after class.",
+    "refresh": "Refresh messages",
+    "more": "Load more messages",
+    "empty": "No messages yet.",
+    "error": "Could not load or send. Check your connection, access and class time, then retry.",
+    "draft": "Message",
+    "send": "Send",
+    "invalid": "Enter 1–1,000 valid characters.",
+    "learner": "Learner",
+    "teacher": "Teacher"
+  },
+  "Classroom": {
+    "leave": "Leave meeting",
+    "unavailable": "The meeting SDK could not be loaded on this build.",
+    "invalidTarget": "The meeting address is invalid.",
+    "roster": "Learners",
+    "rosterError": "Could not load the class roster."
   }
 }

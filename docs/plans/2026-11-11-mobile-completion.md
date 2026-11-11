@@ -372,3 +372,12 @@ Upload failure does not clear the selected file and cannot submit evidence befor
 Student verification and teaching already have dedicated negative-path suites. Teacher edit eligibility is finally enforced by the server commitment rule; class detail does not expose an irreversible commitment flag, so client must not infer it from availableSeats.
 No manual completion command remains. Booking/wallet keep server-confirmation and reconciliation adapters.
 Retain this implementation and rerun its suites; no new money or policy logic is required.
+
+### Phase 3 implementation
+Added shared-contract chat HTTP adapter and participant UI, manual refresh/forward pagination,
+plain-text accessible messages, validation and preserved drafts on failure. Teacher entry uses
+server-owned roster and class-level room access (ADR-040); learner entry uses booking-level access.
+Jitsi accepts forwardRef SDK exports, shows invalid-target errors with an exit action, uses locale
+copy and continues to use server-issued tokens with an allowlisted JaaS origin. Tenant comes from
+validated backend URL; encoded path separators are rejected.
+Initial post-change mobile run: 50 suites, 352 tests passed. This is source/test evidence only.
