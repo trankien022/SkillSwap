@@ -557,3 +557,20 @@ workspace/DerivedData with Xcode-managed Simulator ad-hoc signing enabled, and a
 iOS Simulator. Build/install/launch attempt 1; verify Keychain boot and login only after a
 runnable install. Do not wipe existing simulators. If signing/runtime remains blocked,
 preserve its diagnostics and stop; do not consume more attempts without a concrete repair.
+
+### Điều chỉnh phạm vi ngày 12/11: chỉ nghiệm thu Android
+
+Người dùng yêu cầu bỏ iOS, chỉ cần Android. Dừng iOS và giữ dữ liệu simulator;
+cache build đã chuyển ra `/tmp/skillswap-mobile-ios-derived-data`. Không còn yêu cầu
+hoàn thành smoke iOS trong task này. Android API35/ADB/Maestro là môi trường mặc định.
+
+Các phase tiếp tục, mỗi thay đổi triển khai được commit riêng:
+1. Chẩn đoán Jitsi từ lỗi module gốc: khôi phục Gateway/Metro local, đọc lỗi cache
+   module Metro hoặc debugger, đối chiếu SDK cài đặt/tài liệu chính thức. Chỉ thêm
+   diagnostics tạm không chứa token; xóa sau khi định vị. Không thử join lại trước
+   khi có sửa chữa cụ thể. Còn tối đa hai lần xác nhận Jitsi trong đợt hiện tại.
+2. Sửa đúng boundary đã xác định, thêm regression phù hợp, chạy focused gate rồi
+   Android teacher/learner join/leave; ghi provider failure riêng nếu gặp.
+3. Nghiệm thu APK nội bộ, offline draft và no-show đúng fixture nếu còn đủ điều kiện;
+   cập nhật ma trận Android, chạy `pnpm verify` sau mọi sửa code và đóng evidence.
+   SePay settled chỉ được ghi đạt khi có provider receipt, không giả webhook.
