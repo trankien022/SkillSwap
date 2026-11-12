@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { RoomAccessResponse } from '@skillswap/contracts';
+import { useSession } from './session-context';
 import { getJaasRoomTarget } from './jitsi-room-target';
 
 type MeetingRef = { close: () => void };
@@ -27,7 +28,7 @@ function loadJitsiMeeting():
     // it here keeps tsc from typechecking the SDK's whole internal source tree.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const meeting = require('@jitsi/react-native-sdk').JitsiMeeting as unknown;
-    return typeof meeting === 'function'
+    return (typeof meeting === 'function' || (typeof meeting === 'object' && meeting !== null && '$$typeof' in meeting && meeting.$$typeof === Symbol.for('react.forward_ref')))
       ? (meeting as React.ForwardRefExoticComponent<MeetingProps & React.RefAttributes<MeetingRef>>)
       : null;
   } catch {
@@ -42,14 +43,15 @@ type JitsiRoomProps = {
 };
 
 export function JitsiRoom({ access, displayName, onClose }: JitsiRoomProps) {
+  const { t, locale } = useSession();
   const meetingRef = useRef<MeetingRef>(null);
   if (!access) return null;
 
-  let target: ReturnType<typeof getJaasRoomTarget>;
+  let target: ReturnType<typeof getJaasRoomTarget> | null = null;
   try {
     target = getJaasRoomTarget(access);
   } catch {
-    return null;
+    // Keep an error and exit action visible for invalid provider responses.
   }
 
   const JitsiMeeting = loadJitsiMeeting();
@@ -62,21 +64,21 @@ export function JitsiRoom({ access, displayName, onClose }: JitsiRoomProps) {
   return (
     <Modal visible animationType="slide" presentationStyle="fullScreen" onRequestClose={close}>
       <View style={styles.container}>
-        {JitsiMeeting ? (
+        {JitsiMeeting && target ? (
           <JitsiMeeting
             ref={meetingRef}
             room={target.room}
             serverURL={target.serverURL}
             token={access.token}
-            config={{ prejoinPageEnabled: false }}
+            config={{ prejoinPageEnabled: false, defaultLanguage: locale }}
             userInfo={{ displayName, email: '', avatarURL: '' }}
-            eventListeners={{ onReadyToClose: close }}
+            eventListeners={{ onReadyToClose: onClose }}
             style={styles.meeting}
           />
         ) : (
           <View style={styles.sdkUnavailable}>
             <Text style={styles.sdkUnavailableText}>
-              The live meeting SDK could not be loaded on this build.
+              {t(target ? 'Classroom.unavailable' : 'Classroom.invalidTarget')}
             </Text>
           </View>
         )}
@@ -84,9 +86,9 @@ export function JitsiRoom({ access, displayName, onClose }: JitsiRoomProps) {
           style={styles.closeButton}
           onPress={close}
           accessibilityRole="button"
-          accessibilityLabel="Leave meeting"
+          accessibilityLabel={t('Classroom.leave')}
         >
-          <Text style={styles.closeText}>Leave meeting</Text>
+          <Text style={styles.closeText}>{t('Classroom.leave')}</Text>
         </Pressable>
       </View>
     </Modal>

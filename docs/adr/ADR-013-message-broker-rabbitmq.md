@@ -196,4 +196,28 @@ Two facts recorded rather than asserted:
 - **The 117 legacy queues still exist on CloudAMQP.** Code changes do not delete them, so the purge
   in plan phase 6 is required before the limit is actually relieved.
 
+## Amendment C — Independent consumer ordering streams (2026-11-12)
+
+Android certificate-to-publish acceptance exposed an implementation error in Amendment A:
+student-verification and skill-verification independently number events for an account, but
+the consumer compared both numbers against the same account watermark. A student event at
+sequence 100 could suppress an approved skill at sequence 2. Two profile skills also update
+independent rows and must not suppress each other's approvals when delivered out of order.
+
+Consumer watermark aggregate keys now encode `[event-family, entity-id]`, where the family
+is the routing key's first component. Skill evidence uses its stable `profileSkillId`; other
+events retain the existing booking/class/account/transaction entity selection. Sequences
+continue to come from the producer outbox; gaps within a profile-skill stream are harmless.
+Same-stream stale delivery is still rejected, and event-id deduplication is unchanged.
+
+Legacy watermark rows remain stored. They are not imported into the corrected keys because
+they can contain another stream's sequence. New keys begin with the first newly processed
+event. Events already marked DONE remain deduplicated; this correction does not automatically
+repair historical projections. Recovery must identify affected events/projections explicitly.
+
+Validation: the Rabbit consumer unit test checks the scoped key; the PostgreSQL
+`trust-stream-ordering.e2e-spec` verifies student/skill separation, independent skills and
+same-skill stale rejection across fresh store instances. It uses isolated fixture rows and
+cleans only those rows, without truncating a database.
+
 

@@ -16,7 +16,7 @@ export function getJaasRoomTarget(access: Pick<RoomAccessResponse, 'room' | 'url
   }
 
   const segments = url.pathname.split('/').filter(Boolean).map(decodeURIComponent);
-  if (segments.length !== 2 || segments[1] !== access.room) {
+  if (segments.length !== 2 || segments.some((segment) => !/^[a-zA-Z0-9_-]+$/.test(segment)) || segments[1] !== access.room) {
     throw new Error('Unexpected JaaS room URL');
   }
 

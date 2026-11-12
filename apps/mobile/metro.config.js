@@ -1,3 +1,8 @@
+// Jitsi owns an independent React Navigation tree. Expo's SDK 56+ core
+// rewrite targets its compatibility facade, which lacks SDK navigation APIs.
+// Apply the documented opt-out to dev, export, and native release bundling.
+process.env.EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK = '1';
+
 const { getDefaultConfig } = require('expo/metro-config');
 const path = require('node:path');
 

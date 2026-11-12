@@ -1,0 +1,16 @@
+# Run on the login screen. No authentication request or persisted account mutation.
+appId: com.skillswap.app
+---
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Close"
+    optional: true
+- assertVisible: "Email trường"
+- tapOn: "Email trường"
+- inputText: "ai-smoke@example.invalid"
+- assertVisible: "ai-smoke@example.invalid"
+- eraseText
+- hideKeyboard
+- assertVisible: "Đăng nhập"

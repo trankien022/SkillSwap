@@ -46,3 +46,6 @@ apps/mobile/build-*.apk
 ngrok.local.yml
 *.ngrok.yml
 !ngrok.yml
+
+# Local simulator screenshots, hierarchy and logs
+/artifacts/ai-simulator/

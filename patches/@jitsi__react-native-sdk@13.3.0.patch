@@ -1,5 +1,5 @@
 diff --git a/package.json b/package.json
-index 230268a29da517dd899732f777d5fd7254193caf..5774e67d95ffe3b5095618b10d149eb1c839134f 100644
+index 230268a29da517dd899732f777d5fd7254193caf..eba3deb3abb00a40c17889712e908e69e9a3bcc5 100644
 --- a/package.json
 +++ b/package.json
 @@ -31,7 +31,6 @@
@@ -27,3 +27,62 @@ index 230268a29da517dd899732f777d5fd7254193caf..5774e67d95ffe3b5095618b10d149eb1
          "@amplitude/analytics-react-native": "1.5.16",
          "@giphy/react-native-sdk": "5.0.1",
          "@react-native-async-storage/async-storage": "1.23.1",
+diff --git a/react/features/mobile/navigation/components/RootNavigationContainer.tsx b/react/features/mobile/navigation/components/RootNavigationContainer.tsx
+index b088189a047ccff5cf7e46ebabb06753bab70d9a..4d5c727ec5468ce2eff5b560ddb2a55be159f483 100644
+--- a/react/features/mobile/navigation/components/RootNavigationContainer.tsx
++++ b/react/features/mobile/navigation/components/RootNavigationContainer.tsx
+@@ -74,6 +74,7 @@ const RootNavigationContainer = ({ dispatch, hasRoomOnLaunch, isWelcomePageAvail
+                 ref = { rootNavigationRef }
+                 theme = { navigationContainerTheme }>
+                 <RootStack.Navigator
++                    detachInactiveScreens = { false }
+                     initialRouteName = { initialRouteName }>
+                     <RootStack.Screen // @ts-ignore
+                         component = { WelcomePage }
+diff --git a/react/features/mobile/navigation/components/conference/components/ConferenceNavigationContainer.tsx b/react/features/mobile/navigation/components/conference/components/ConferenceNavigationContainer.tsx
+index 874da8054f7ce803d0a0c6076c1ff01a65cb615f..ef8e701ac62d14e537e20e59f0b5b20477c741ca 100644
+--- a/react/features/mobile/navigation/components/conference/components/ConferenceNavigationContainer.tsx
++++ b/react/features/mobile/navigation/components/conference/components/ConferenceNavigationContainer.tsx
+@@ -123,6 +123,7 @@ const ConferenceNavigationContainer = () => {
+                 ref = { conferenceNavigationRef }
+                 theme = { navigationContainerTheme }>
+                 <ConferenceStack.Navigator
++                    detachInactiveScreens = { false }
+                     screenOptions = {{
+                         presentation: 'modal'
+                     }}>
+diff --git a/react/features/mobile/navigation/components/lobby/components/LobbyNavigationContainer.tsx b/react/features/mobile/navigation/components/lobby/components/LobbyNavigationContainer.tsx
+index ff2e2aa5fd920322b75fc7b47382864aea88f729..bce2a0e5fcda63b335f4eec7395e88736fa1f836 100644
+--- a/react/features/mobile/navigation/components/lobby/components/LobbyNavigationContainer.tsx
++++ b/react/features/mobile/navigation/components/lobby/components/LobbyNavigationContainer.tsx
+@@ -27,6 +27,7 @@ const LobbyNavigationContainer = () => {
+                 ref = { lobbyNavigationContainerRef }
+                 theme = { navigationContainerTheme }>
+                 <LobbyStack.Navigator
++                    detachInactiveScreens = { false }
+                     screenOptions = {{
+                         presentation: 'modal'
+                     }}>
+diff --git a/react/features/mobile/navigation/components/settings/components/SettingsNavigationContainer.tsx b/react/features/mobile/navigation/components/settings/components/SettingsNavigationContainer.tsx
+index cf501bf55d9d5f06f271a2f952ec832405d89efb..2606972305c2d69ecb6fd7e82818b46d8b219faf 100644
+--- a/react/features/mobile/navigation/components/settings/components/SettingsNavigationContainer.tsx
++++ b/react/features/mobile/navigation/components/settings/components/SettingsNavigationContainer.tsx
+@@ -62,6 +62,7 @@ const SettingsNavigationContainer = ({ isInWelcomePage }: IProps) => {
+                 ref = { settingsNavigationContainerRef }
+                 theme = { navigationContainerTheme }>
+                 <SettingsStack.Navigator
++                    detachInactiveScreens = { false }
+                     initialRouteName = { screen.settings.main }>
+                     <SettingsStack.Screen
+                         name = { screen.settings.main }
+diff --git a/react/features/mobile/navigation/components/welcome/components/WelcomePageTabs.tsx b/react/features/mobile/navigation/components/welcome/components/WelcomePageTabs.tsx
+index 888003d2268ba0a23500dfbd5180420c6501347f..00e3f64f3821e8fa09aed135d992729a3ed1bb72 100644
+--- a/react/features/mobile/navigation/components/welcome/components/WelcomePageTabs.tsx
++++ b/react/features/mobile/navigation/components/welcome/components/WelcomePageTabs.tsx
+@@ -67,5 +67,6 @@ const WelcomePageTabs = ({ disabled, onListContainerPress, onSettingsScreenFocus
+     return (
+         <WelcomePage.Navigator
++            detachInactiveScreens = { false }
+             backBehavior = { 'none' }
+             screenOptions = {{
+                 ...tabBarOptions,

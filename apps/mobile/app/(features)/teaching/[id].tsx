@@ -7,6 +7,7 @@ import { GatewayHttpError } from '@/infrastructure/http/gateway-client';
 import { TeachingGateway } from '@/infrastructure/http/teaching-gateway';
 import { colors, spacing, typography } from '@/design/tokens';
 import { useSession } from '@/ui/session-context';
+import { TeacherClassroom } from '@/ui/teacher-classroom';
 import { DateTimeField } from '@/ui/date-time-field';
 import { parseStartsAt, startsAtMessageKey } from '@/ui/teaching-form';
 import { AppButton, FeedbackBanner, ScreenScroll, SurfaceCard } from '@/ui/primitives';
@@ -15,7 +16,7 @@ export default function TeachingClassDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const classId = Array.isArray(id) ? id[0] : id;
   const router = useRouter();
-  const { t, locale, gatewayClient } = useSession();
+  const { t, locale, gatewayClient, user } = useSession();
   const [item, setItem] = useState<ClassDetailView | null>(null);
   const [classTitle, setClassTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -91,6 +92,7 @@ export default function TeachingClassDetailScreen() {
       {canEdit ? <AppButton busy={busy} onPress={() => void save()} label={t('Teaching.save')} /> : null}
       {canCancel ? <AppButton disabled={busy} onPress={cancel} label={t('Teaching.cancel')} /> : null}
       {(item.state === 'published' || item.state === 'full') && <AppButton disabled={busy} onPress={() => gatewayClient && void run(() => new TeachingGateway(gatewayClient).start(item.id))} label={t('Teaching.start')} />}
+      {user?.id === item.teacher.id ? <TeacherClassroom key={`${user.id}:${item.id}`} classId={item.id} /> : null}
     </> : null}
     {error && <FeedbackBanner tone="danger">{error}</FeedbackBanner>}
     <AppButton disabled={busy} onPress={() => router.back()} label={t('Common.back')} />

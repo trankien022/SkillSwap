@@ -83,6 +83,7 @@ describe('NotificationsScreen (MM11, MM4)', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockSession.locale = 'en';
     mockList.mockResolvedValue({ items: [item()], nextCursor: null, unreadCount: 1 });
     mockMarkRead.mockResolvedValue({ success: true, unreadCount: 0 });
     mockMarkAllRead.mockResolvedValue({ success: true, unreadCount: 0 });
@@ -118,6 +119,38 @@ describe('NotificationsScreen (MM11, MM4)', () => {
     const screen = await renderScreen();
     expect(texts(screen)).toEqual(expect.arrayContaining(['Server title', 'Server body']));
     expect(texts(screen).join('|')).not.toMatch(/Notifications\.(type|body)_/);
+  });
+
+  it('passes the active locale to initial and subsequent pages', async () => {
+    mockSession.locale = 'vi';
+    mockList.mockResolvedValue({ items: [item()], nextCursor: 'next-page', unreadCount: 1 });
+    const screen = await renderScreen();
+    expect(mockList).toHaveBeenLastCalledWith({ limit: 20 }, 'vi');
+    await act(async () => {
+      screen.root.find((node) => String(node.type) === 'AppButton' && node.props.label === 'Notifications.loadMore').props.onPress();
+    });
+    expect(mockList).toHaveBeenLastCalledWith({ limit: 20, cursor: 'next-page' }, 'vi');
+  });
+
+  it('reloads on locale change and discards a previous locale page arriving late', async () => {
+    mockList.mockResolvedValueOnce({ items: [item({ title: 'English first' })], nextCursor: 'old-page', unreadCount: 1 });
+    const screen = await renderScreen();
+    let resolveOld!: (value: unknown) => void;
+    mockList.mockImplementationOnce(() => new Promise((resolve) => { resolveOld = resolve; }));
+    await act(async () => {
+      screen.root.find((node) => String(node.type) === 'AppButton' && node.props.label === 'Notifications.loadMore').props.onPress();
+    });
+    mockSession.locale = 'vi';
+    mockList.mockResolvedValueOnce({ items: [item({ title: 'Vietnamese current' })], nextCursor: null, unreadCount: 2 });
+    await act(async () => { screen.update(<NotificationsScreen />); });
+    expect(mockList).toHaveBeenLastCalledWith({ limit: 20 }, 'vi');
+    await act(async () => {
+      resolveOld({ items: [item({ id: 'old', title: 'English stale page' })], nextCursor: null, unreadCount: 99 });
+    });
+    expect(texts(screen)).toContain('Vietnamese current');
+    expect(texts(screen)).not.toContain('English first');
+    expect(texts(screen)).not.toContain('English stale page');
+    expect(texts(screen)).toContain('Notifications.unread:2');
   });
 
   it('marks an unread item read, updates the unread count, and still navigates', async () => {

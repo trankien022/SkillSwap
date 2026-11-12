@@ -53,6 +53,22 @@ export function aggregateIdOf(payload: unknown): string | null {
   return null;
 }
 
+/**
+ * Outbox sequences are local to a producer family, not global account counters.
+ * Skill evidence projects one independent row per profile skill; an unrelated
+ * skill must not suppress its approval merely because it arrived later.
+ * Existing event-id deduplication stays unchanged. Legacy unscoped watermarks
+ * cannot be reused because they may contain an unrelated producer's sequence.
+ */
+export function orderingKeyOf(eventType: string, payload: unknown): string | null {
+  let id = aggregateIdOf(payload);
+  if (eventType.startsWith('skill.evidence.') && typeof payload === 'object' && payload !== null) {
+    const profileSkillId = (payload as Record<string, unknown>).profileSkillId;
+    if (typeof profileSkillId === 'string' && profileSkillId) id = profileSkillId;
+  }
+  return id === null ? null : JSON.stringify([eventType.split('.')[0], id]);
+}
+
 export interface Watermark {
   aggregateId: string;
   sequence: number;

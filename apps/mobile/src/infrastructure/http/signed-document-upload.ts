@@ -1,4 +1,5 @@
 import { sanitizeErrorMessage } from './gateway-client';
+import { createSignedUploadFile } from './signed-upload-file';
 
 export interface SignedDocumentUploadTarget {
   readonly uploadUrl: string;
@@ -79,6 +80,7 @@ export async function uploadSignedDocument(targetOrUrl: SignedDocumentUploadTarg
     // A caller-supplied content type would strip it and the provider would see a malformed body.
 
     let response: Response;
+    let file: ReturnType<typeof createSignedUploadFile> | undefined;
     try {
       if (isTarget) {
         // ADR-038: the provider authenticates from signed fields in the body, not from the URL.
@@ -87,13 +89,8 @@ export async function uploadSignedDocument(targetOrUrl: SignedDocumentUploadTarg
         for (const [key, value] of Object.entries(targetOrUrl.fields)) {
           form.append(key, value);
         }
-        form.append(
-          'file',
-          new Blob([bytes instanceof ArrayBuffer ? bytes : (new Uint8Array(bytes).buffer as ArrayBuffer)], {
-            type: options?.contentType ?? 'application/octet-stream',
-          }),
-          'document',
-        );
+        file = createSignedUploadFile(bytes, options?.contentType ?? 'application/octet-stream');
+        form.append('file', file.blob, 'document');
 
         response = await fetchFn(targetOrUrl.uploadUrl, {
           method: 'POST',
@@ -117,6 +114,9 @@ export async function uploadSignedDocument(targetOrUrl: SignedDocumentUploadTarg
         0,
         'Document storage upload failed: storage service unreachable',
       );
+    } finally {
+      // Cleanup must never replace the authoritative storage result.
+      try { file?.dispose(); } catch { /* OS cache eviction can remove it first. */ }
     }
 
     if (!response.ok) {

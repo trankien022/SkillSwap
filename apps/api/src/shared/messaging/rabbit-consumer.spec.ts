@@ -112,6 +112,33 @@ beforeEach(() => {
   (jest.requireMock('amqplib') as { connect: jest.Mock }).connect.mockClear();
 });
 
+describe('RabbitConsumer ordering streams', () => {
+  it('passes a producer-family/profile-skill watermark to the store', async () => {
+    const config = { rabbitmqUrl: 'amqp://localhost', maxDeliveryAttempts: 5 } as unknown as ApiConfig;
+    const registry = { ready: Promise.resolve(), names: () => [] } as unknown as ModuleDataSourceRegistry;
+    const runOnce = jest.fn(async () => undefined);
+    const consumer = new RabbitConsumer(config, registry, makeRegistry(1), { runOnce } as unknown as PostgresProcessedEventStore, makeLogger());
+    consumer.onApplicationBootstrap();
+    await flush();
+    const connection = makeConnection();
+    resolveConnect(connection);
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    try {
+      const callback = connection.channel.consume.mock.calls[0][1] as (message: unknown) => Promise<void>;
+      await callback({
+        content: Buffer.from(JSON.stringify({
+          id: 'approval', eventType: 'skill.evidence.approved', occurredAt: new Date().toISOString(),
+          sequence: 2, payload: { accountId: 'account', profileSkillId: 'profile-skill' },
+        })),
+        properties: { headers: {} }, fields: {},
+      });
+      expect(runOnce).toHaveBeenCalledWith('module-0', 'module-0', 'approval', expect.any(Function), {
+        aggregateId: '["skill","profile-skill"]', sequence: 2,
+      });
+    } finally { await consumer.onApplicationShutdown(); }
+  });
+});
+
 describe('RabbitConsumer shutdown race', () => {
   it('reports ready only after queues are bound and consuming', async () => {
     const consumer = makeConsumer();

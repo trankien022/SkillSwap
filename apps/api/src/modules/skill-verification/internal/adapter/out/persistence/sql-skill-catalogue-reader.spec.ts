@@ -142,7 +142,7 @@ describe('SqlSkillCatalogueReader', () => {
       const [sql, params] = mockQuery.mock.calls[0] as [string, unknown[]];
       expect(sql).toContain('"skill_verification"."skills"');
       expect(sql).toContain('"active" = true');
-      expect(sql).toContain('"id" = ANY($1::text[])');
+      expect(sql).toContain('"id"::text = ANY($1::text[])');
       expect(params).toEqual([['sk-1', 'sk-missing']]);
       expect(result).toEqual([
         { id: 'sk-1', name: 'TypeScript', category: 'Programming', active: true },
