@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
-  '@jitsi/react-native-sdk@13.3.0': 50d15e198d809cdd2dc92e3a33d1939352cf9b067ec085c52eb697ed4f98dff9
+  '@jitsi/react-native-sdk@13.3.0': c6cb793616f488e9ba938e196524b6435c84c5282bf620d5d67ec1047bf7eaa5
 
 importers:
 
@@ -201,7 +201,7 @@ importers:
         version: 5.0.1(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)
       '@jitsi/react-native-sdk':
         specifier: 13.3.0
-        version: 13.3.0(patch_hash=50d15e198d809cdd2dc92e3a33d1939352cf9b067ec085c52eb697ed4f98dff9)(f3e07fe55ddb371db5d6798ed74cd866)
+        version: 13.3.0(patch_hash=c6cb793616f488e9ba938e196524b6435c84c5282bf620d5d67ec1047bf7eaa5)(f3e07fe55ddb371db5d6798ed74cd866)
       '@react-native-async-storage/async-storage':
         specifier: 1.23.1
         version: 1.23.1(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1))
@@ -341,6 +341,15 @@ importers:
         specifier: 5.2.0
         version: 5.2.0
     devDependencies:
+      '@babel/core':
+        specifier: 7.29.7
+        version: 7.29.7(supports-color@8.1.1)
+      '@babel/plugin-proposal-nullish-coalescing-operator':
+        specifier: 7.18.6
+        version: 7.18.6(@babel/core@7.29.7(supports-color@8.1.1))
+      '@babel/plugin-proposal-optional-chaining':
+        specifier: 7.21.0
+        version: 7.21.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1)
       '@types/jest':
         specifier: ^29.5.14
         version: 29.5.14
@@ -603,6 +612,20 @@ packages:
   '@babel/plugin-proposal-export-default-from@7.29.7':
     resolution: {integrity: sha512-p+G5BNXDcy3bOXplhY4HybQ1GxH3i2Tppmdm/3epyRu2VgJJZuUlZ61MqRTg582Q7ZLBdP7fePYvsumSEkMxcQ==}
     engines: {node: '>=6.9.0'}
+    peerDependencies:
+      '@babel/core': ^7.0.0-0
+
+  '@babel/plugin-proposal-nullish-coalescing-operator@7.18.6':
+    resolution: {integrity: sha512-wQxQzxYeJqHcfppzBDnm1yAY0jSRkUXR2z8RePZYrKwMKgMlE8+Z6LUno+bd6LvbGh8Gltvy74+9pIYkr+XkKA==}
+    engines: {node: '>=6.9.0'}
+    deprecated: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-nullish-coalescing-operator instead.
+    peerDependencies:
+      '@babel/core': ^7.0.0-0
+
+  '@babel/plugin-proposal-optional-chaining@7.21.0':
+    resolution: {integrity: sha512-p4zeefM72gpmEe2fkUr/OnOXpWEf8nAgk7ZYVqqfFiyIG7oFfVZcCrU64hWn5xp4tQ9LkV4bTIa5rD0KANpKNA==}
+    engines: {node: '>=6.9.0'}
+    deprecated: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-optional-chaining instead.
     peerDependencies:
       '@babel/core': ^7.0.0-0
 
@@ -6020,6 +6043,7 @@ packages:
 
   node-abort-controller@3.1.1:
     resolution: {integrity: sha512-AGK2yQKIjRuqnc6VkX2Xj5d+QW8xZ87pa1UK6yA6ouUyuxfHuMP6umE5QK7UmTeOAymo+Zx1Fxiuw9rVx8taHQ==}
+    deprecated: This package is no longer needed on supported Node.js versions. Node.js 16+ includes AbortController and AbortSignal as built-in globals. All Node.js versions requiring this polyfill are end-of-life. Use the built-in globals instead.
 
   node-addon-api@7.1.1:
     resolution: {integrity: sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==}
@@ -8305,6 +8329,21 @@ snapshots:
       '@babel/core': 7.29.7(supports-color@8.1.1)
       '@babel/helper-plugin-utils': 7.29.7
 
+  '@babel/plugin-proposal-nullish-coalescing-operator@7.18.6(@babel/core@7.29.7(supports-color@8.1.1))':
+    dependencies:
+      '@babel/core': 7.29.7(supports-color@8.1.1)
+      '@babel/helper-plugin-utils': 7.29.7
+      '@babel/plugin-syntax-nullish-coalescing-operator': 7.8.3(@babel/core@7.29.7(supports-color@8.1.1))
+
+  '@babel/plugin-proposal-optional-chaining@7.21.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1)':
+    dependencies:
+      '@babel/core': 7.29.7(supports-color@8.1.1)
+      '@babel/helper-plugin-utils': 7.29.7
+      '@babel/helper-skip-transparent-expression-wrappers': 7.29.7(supports-color@8.1.1)
+      '@babel/plugin-syntax-optional-chaining': 7.8.3(@babel/core@7.29.7(supports-color@8.1.1))
+    transitivePeerDependencies:
+      - supports-color
+
   '@babel/plugin-syntax-async-generators@7.8.4(@babel/core@7.29.7(supports-color@8.1.1))':
     dependencies:
       '@babel/core': 7.29.7(supports-color@8.1.1)
@@ -9739,7 +9778,7 @@ snapshots:
 
   '@jitsi/precall-test@1.0.6': {}
 
-  '@jitsi/react-native-sdk@13.3.0(patch_hash=50d15e198d809cdd2dc92e3a33d1939352cf9b067ec085c52eb697ed4f98dff9)(f3e07fe55ddb371db5d6798ed74cd866)':
+  '@jitsi/react-native-sdk@13.3.0(patch_hash=c6cb793616f488e9ba938e196524b6435c84c5282bf620d5d67ec1047bf7eaa5)(f3e07fe55ddb371db5d6798ed74cd866)':
     dependencies:
       '@amplitude/analytics-react-native': 1.5.16(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)
       '@braintree/sanitize-url': 7.0.0

@@ -574,3 +574,46 @@ Các phase tiếp tục, mỗi thay đổi triển khai được commit riêng:
 3. Nghiệm thu APK nội bộ, offline draft và no-show đúng fixture nếu còn đủ điều kiện;
    cập nhật ma trận Android, chạy `pnpm verify` sau mọi sửa code và đóng evidence.
    SePay settled chỉ được ghi đạt khi có provider receipt, không giả webhook.
+
+#### Jitsi module root cause and repair
+
+Metro's failed-module registry localized the error to React Navigation stack's
+`createScreenFactory()`. The generated bundle mapped its native package's core import
+to `expo-router/react-navigation`; the Expo compatibility facade lacks that export.
+Installed Expo CLI `withMetroMultiPlatform.js` applies this rewrite since SDK56.
+Use documented `EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK=1` before Metro resolver setup
+in the shared Metro config, covering start/export/Gradle bundling. Jitsi already uses
+`NavigationIndependentTree`. No dependency upgrade or token/provider change is needed.
+Remove temporary diagnostics. Verify the bundled core path is the real package, then
+exercise the native meeting before claiming the repair complete.
+Reference: https://docs.expo.dev/router/migrate/sdk-55-to-56/#libraries
+
+The second native Jitsi attempt passed SDK module initialization but failed in Android
+`ScreenContainer.setupFragmentManager`: React Native Modal has no ReactRootView ancestor.
+Repair phase: disable native inactive-screen detachment only on Jitsi's independent JS
+stack/tab navigators through the existing reproducible SDK patch. Keep the app navigator
+unchanged. Confirm installed patch and run the third/final meeting attempt; rebuild APK
+and rerun the full gate after this dependency patch. No further meeting retries this round.
+
+### Nghiệm thu bổ sung: web và Android cùng phòng (yêu cầu 12/11)
+
+Dùng teacher `user8` trên Chrome với hồ sơ kiểm thử riêng và learner `user3` trên
+Android. Tạo lớp/booking synthetic trong DB local, xác nhận settlement rồi đưa đúng
+fixture vào access window. Hai client gọi room-access qua Gateway, cùng JaaS room.
+Ghi riêng: join provider, danh sách hai participant, remote video/track và leave.
+Không suy diễn thấy nhau từ HTTP200 hoặc từ participant count phía server.
+Camera simulator/fake media chỉ là media kiểm thử, không chứng minh camera thiết bị thật.
+
+Cross-device attempt 1: Chrome teacher joined provider, Android passed navigation/modal
+but failed `Worklets.createRunAsync` loading provider config. The SDK marks its config
+loader with `'worklet'`; babel-preset-expo alone does not apply Worklets Core's plugin.
+Repair phase: add `react-native-worklets-core/plugin` as in the official Jitsi sample,
+verify transformed SDK loader contains Worklets metadata, then restart Metro with cache
+clear and retry the same cross-device fixture (no duplicate booking/settlement).
+
+The unscoped plugin alone was insufficient: Expo's automatic Worklets transform claimed
+the directive first, emitting `__pluginVersion` without Core's required `__closure`.
+Scope the SDK override to Worklets Core and disable Expo/Reanimated transforms only in
+that override. Add the two Babel proposal plugins required by the pinned Core plugin,
+and a regression that transforms the actual SDK config loader while proving normal app
+worklets retain the Expo transform. Retry only after this ABI check passes.

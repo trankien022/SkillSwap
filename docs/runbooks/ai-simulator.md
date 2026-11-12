@@ -84,3 +84,25 @@ Tham khảo: [Android Emulator CLI](https://developer.android.com/studio/run/emu
 - Maestro MCP initialize/tools-list thành công; chưa cần khởi động lại Codex để dùng CLI.
 - `pnpm verify` đạt: mobile 357, API 1238, contracts 258, gateway 37, web 517 tests.
 - Đây là kiểm chứng môi trường điều khiển AI, chưa phải nghiệm thu mọi flow nghiệp vụ.
+
+## Jitsi và Expo Router 57
+
+`apps/mobile/metro.config.js` bật `EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK=1` cho
+mọi đường bundle. Jitsi có `NavigationIndependentTree` riêng và cần React Navigation
+core thật; shim của Expo thiếu `createScreenFactory`, gây lỗi ngay khi nạp SDK.
+Không bỏ cấu hình này khi nâng Expo/Jitsi mà chưa kiểm tra join/leave native.
+Xem [Expo SDK56 migration – Libraries](https://docs.expo.dev/router/migrate/sdk-55-to-56/#libraries).
+
+Jitsi trong Modal Android dùng bản patch SDK được khai báo ở `pnpm-workspace.yaml`;
+không sửa `node_modules` thủ công khi cài lại. Các navigator Jitsi tắt native screen
+detachment để không cần ReactRootView trong Modal. Babel chỉ áp dụng Worklets Core
+cho SDK Jitsi; app và thư viện gesture vẫn giữ Worklets của Expo. Chạy regression:
+
+```bash
+pnpm --filter @skillswap/mobile test -- --runInBand jitsi-babel.spec.ts
+```
+
+APK nghiệm thu ARM64 hiện nằm ở `artifacts/ai-simulator/SkillSwap-android-internal-20261112.apk`.
+APK có JS bundle, không cần Metro; Gateway local4000 và ADB reverse vẫn cần thiết.
+Đây là bản nội bộ localHTTP, không dùng phát hành production. Kết quả web–Android
+cùng phòng: `docs/plans/2026-11-12-mobile-runtime-acceptance.md`.
